@@ -1,0 +1,28 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2015",
+    "module": "esnext",
+    "lib": ["es2020", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@accounting/auth": ["libs/auth/src/index.ts"],
+      "@accounting/rbac": ["libs/rbac/src/index.ts"],
+      "@accounting/common": ["libs/common/src/index.ts"],
+      "@accounting/modules/simple-text": [
+        "libs/modules/simple-text/src/index.ts"
+      ],
+      "@accounting/api/admin": ["apps/api/src/admin/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}

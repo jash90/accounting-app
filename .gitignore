@@ -1,0 +1,12 @@
+
+.nx/installation
+.nx/cache
+.nx/workspace-data
+node_modules
+.env
+dist
+.serena
+.nx
+
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md

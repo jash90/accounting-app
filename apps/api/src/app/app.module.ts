@@ -1,0 +1,64 @@
+import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import {
+  User,
+  Company,
+  Module as ModuleEntity,
+  CompanyModuleAccess,
+  UserModulePermission,
+  SimpleText,
+} from '@accounting/common';
+import { AuthModule, JwtAuthGuard } from '@accounting/auth';
+import { AdminModule } from '../admin/admin.module';
+import { CompanyModule } from '../company/company.module';
+import { SimpleTextModule } from '@accounting/modules/simple-text';
+import { SeedersModule } from '../seeders/seeders.module';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
+    TypeOrmModule.forRootAsync({
+      useFactory: () => ({
+        type: 'postgres',
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '5432', 10),
+        username: process.env.DB_USERNAME || 'postgres',
+        password: process.env.DB_PASSWORD || 'postgres',
+        database: process.env.DB_DATABASE || 'accounting_db',
+        entities: [
+          User,
+          Company,
+          ModuleEntity,
+          CompanyModuleAccess,
+          UserModulePermission,
+          SimpleText,
+        ],
+        synchronize: process.env.NODE_ENV === 'development',
+        logging: process.env.NODE_ENV === 'development',
+        migrations: ['dist/migrations/*.js'],
+        migrationsRun: false,
+      }),
+    }),
+    AuthModule,
+    AdminModule,
+    CompanyModule,
+    SimpleTextModule,
+    SeedersModule,
+  ],
+  controllers: [AppController],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+  ],
+})
+export class AppModule {}
