@@ -15,13 +15,14 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@accounting/api/admin": ["apps/api/src/admin/src/index.ts"],
       "@accounting/auth": ["libs/auth/src/index.ts"],
-      "@accounting/rbac": ["libs/rbac/src/index.ts"],
       "@accounting/common": ["libs/common/src/index.ts"],
       "@accounting/modules/simple-text": [
         "libs/modules/simple-text/src/index.ts"
       ],
-      "@accounting/api/admin": ["apps/api/src/admin/src/index.ts"]
+      "@accounting/rbac": ["libs/rbac/src/index.ts"],
+      "@/*": ["web/src/*"]
     }
   },
   "exclude": ["node_modules", "tmp"]

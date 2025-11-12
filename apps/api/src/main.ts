@@ -14,6 +14,9 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // Set global API prefix
+  app.setGlobalPrefix('api');
+
   // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
@@ -46,7 +49,7 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document, {
+  SwaggerModule.setup('docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
     },

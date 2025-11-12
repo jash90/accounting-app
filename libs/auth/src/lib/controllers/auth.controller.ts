@@ -1,5 +1,5 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Post, Body, HttpCode, HttpStatus, Get, Request } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from '../services/auth.service';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
@@ -41,6 +41,16 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
   async refresh(@Body() refreshTokenDto: RefreshTokenDto): Promise<AuthResponseDto> {
     return this.authService.refreshToken(refreshTokenDto.refresh_token);
+  }
+
+  @Get('me')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get current user' })
+  @ApiResponse({ status: 200, description: 'Returns current authenticated user' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getCurrentUser(@Request() req: any) {
+    return req.user;
   }
 }
 
