@@ -62,7 +62,7 @@ export default function AdminLayout() {
           </Button>
         </div>
 
-        <nav className="space-y-1 p-3">
+        <nav role="navigation" className="space-y-1 p-3">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + '/');

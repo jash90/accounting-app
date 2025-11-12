@@ -36,7 +36,16 @@ function NotFound() {
 }
 
 function Unauthorized() {
-  return <div className="flex h-screen items-center justify-center">Unauthorized</div>;
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold mb-4">Unauthorized</h1>
+        <p className="text-muted-foreground">
+          You don't have permission to access this page.
+        </p>
+      </div>
+    </div>
+  );
 }
 
 // Protected Route Component

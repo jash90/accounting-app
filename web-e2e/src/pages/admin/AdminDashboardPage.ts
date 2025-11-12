@@ -9,14 +9,14 @@ export class AdminDashboardPage extends BasePage {
   readonly nav: NavigationComponent;
 
   // Selectors
-  private readonly heading = 'h1:has-text("Admin Dashboard"), h1:has-text("Dashboard")';
-  private readonly usersCard = '[data-testid="users-card"], div:has-text("Users")';
-  private readonly companiesCard = '[data-testid="companies-card"], div:has-text("Companies")';
-  private readonly modulesCard = '[data-testid="modules-card"], div:has-text("Modules")';
-  private readonly statsContainer = '[data-testid="stats-container"], .stats';
-  private readonly userCount = '[data-testid="user-count"]';
-  private readonly companyCount = '[data-testid="company-count"]';
-  private readonly moduleCount = '[data-testid="module-count"]';
+  private readonly heading = 'h1:has-text("Admin Dashboard")';
+  private readonly usersCard = '[data-testid="users-card"], .shadow-sm:has-text("Total Users")';
+  private readonly companiesCard = '[data-testid="companies-card"], .shadow-sm:has-text("Total Companies")';
+  private readonly modulesCard = '[data-testid="modules-card"], .shadow-sm:has-text("Modules")';
+  private readonly statsContainer = '[data-testid="stats-container"], .stats, .grid';
+  private readonly userCount = '[data-testid="user-count"], .text-4xl';
+  private readonly companyCount = '[data-testid="company-count"], .text-4xl';
+  private readonly moduleCount = '[data-testid="module-count"], .text-4xl';
 
   constructor(page: Page) {
     super(page);
@@ -43,7 +43,30 @@ export class AdminDashboardPage extends BasePage {
    */
   async expectToBeOnDashboard(): Promise<void> {
     await this.expectURL('/admin');
+
+    // Wait for content to load (indicates auth is ready)
+    await this.page.waitForSelector('h1', { state: 'visible', timeout: 10000 });
+
     await this.expectVisible(this.heading);
+  }
+
+  /**
+   * Ensure sidebar is expanded (not collapsed)
+   */
+  async ensureSidebarOpen(): Promise<void> {
+    // Wait for sidebar to be present
+    const sidebar = this.page.locator('aside').first();
+    await sidebar.waitFor({ state: 'visible', timeout: 5000 });
+
+    // Check if sidebar is collapsed (small width)
+    const width = await sidebar.evaluate((el) => el.clientWidth);
+
+    if (width < 100) {
+      // Look for menu toggle button and click it
+      const menuButton = this.page.locator('button:has(svg)').first();
+      await menuButton.click();
+      await this.page.waitForTimeout(300); // Wait for animation
+    }
   }
 
   /**

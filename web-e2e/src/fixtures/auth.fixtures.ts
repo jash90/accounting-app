@@ -33,6 +33,11 @@ export const test = base.extend<AuthFixtures>({
   authenticatedAdminPage: async ({ page }, use) => {
     const loginPage = new LoginPage(page);
     await loginPage.loginAsAdmin();
+
+    // Wait for page to be fully loaded and auth ready
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
+
     await use(page);
   },
 
@@ -42,6 +47,11 @@ export const test = base.extend<AuthFixtures>({
   authenticatedCompanyOwnerPage: async ({ page }, use) => {
     const loginPage = new LoginPage(page);
     await loginPage.loginAsCompanyOwner();
+
+    // Wait for page to be fully loaded and auth ready
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
+
     await use(page);
   },
 
@@ -51,6 +61,11 @@ export const test = base.extend<AuthFixtures>({
   authenticatedEmployeePage: async ({ page }, use) => {
     const loginPage = new LoginPage(page);
     await loginPage.loginAsEmployee();
+
+    // Wait for page to be fully loaded and auth ready
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
+
     await use(page);
   },
 

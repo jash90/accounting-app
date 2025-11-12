@@ -21,7 +21,7 @@ import { loginSchema, LoginFormData } from '@/lib/validation/schemas';
 import { useAuth } from '@/lib/hooks/use-auth';
 
 export default function LoginPage() {
-  const { login, isPending } = useAuth();
+  const { login, isPending, error } = useAuth();
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -44,6 +44,17 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
+          {error && (
+            <div
+              role="alert"
+              data-testid="form-error"
+              className="mb-4 rounded-md bg-destructive/15 p-3 text-sm text-destructive"
+            >
+              {(error as any)?.response?.data?.message ||
+               (error as any)?.message ||
+               'Invalid credentials. Please try again.'}
+            </div>
+          )}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField

@@ -47,6 +47,14 @@ apiClient.interceptors.response.use(
     };
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // Don't intercept 401 from login/register endpoints - let them show errors naturally
+      const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
+                            originalRequest.url?.includes('/auth/register');
+
+      if (isAuthEndpoint) {
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });

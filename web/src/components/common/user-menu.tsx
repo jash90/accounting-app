@@ -22,7 +22,11 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-accent transition-colors">
+        <Button
+          data-testid="user-menu-button"
+          variant="ghost"
+          className="relative h-10 w-10 rounded-full hover:bg-accent transition-colors"
+        >
           <Avatar>
             <AvatarFallback className="bg-primary/10 text-primary font-semibold">{initials}</AvatarFallback>
           </Avatar>
@@ -52,7 +56,11 @@ export function UserMenu() {
           Settings
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={logout} className="text-destructive">
+        <DropdownMenuItem
+          data-testid="logout-button"
+          onClick={logout}
+          className="text-destructive"
+        >
           <LogOut className="mr-2 h-4 w-4" />
           Logout
         </DropdownMenuItem>

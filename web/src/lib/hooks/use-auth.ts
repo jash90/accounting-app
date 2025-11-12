@@ -16,6 +16,9 @@ export const useAuth = () => {
       tokenStorage.setAccessToken(data.access_token);
       tokenStorage.setRefreshToken(data.refresh_token);
 
+      // Invalidate auth query to update AuthContext
+      queryClient.setQueryData(['auth', 'me'], data.user);
+
       // Navigate based on role
       switch (data.user.role) {
         case UserRole.ADMIN:
@@ -37,6 +40,10 @@ export const useAuth = () => {
     onSuccess: (data) => {
       tokenStorage.setAccessToken(data.access_token);
       tokenStorage.setRefreshToken(data.refresh_token);
+
+      // Update auth query to update AuthContext
+      queryClient.setQueryData(['auth', 'me'], data.user);
+
       navigate('/admin');
     },
   });

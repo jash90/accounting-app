@@ -8,10 +8,10 @@ export class NavigationComponent {
   readonly page: Page;
 
   // Navigation selectors
-  private readonly navContainer = '[role="navigation"]';
-  private readonly navLink = (text: string) => `a:has-text("${text}")`;
-  private readonly userMenuButton = '[data-testid="user-menu-button"], button:has-text("admin@"), button:has-text("owner"), button:has-text("employee")';
-  private readonly logoutButton = 'button:has-text("Logout"), [data-testid="logout-button"]';
+  private readonly navContainer = '[role="navigation"], aside nav, nav';
+  private readonly navLink = (text: string) => `a:has-text("${text}"), a:has(span:text-is("${text}"))`;
+  private readonly userMenuButton = '[data-testid="user-menu-button"], button:has(div[class*="avatar"]), button.rounded-full, button.relative.h-10.w-10';
+  private readonly logoutButton = '[role="menuitem"]:has-text("Logout"), button:has-text("Logout"), [data-testid="logout-button"]';
 
   constructor(page: Page) {
     this.page = page;
@@ -43,16 +43,17 @@ export class NavigationComponent {
    * Logout user
    */
   async logout(): Promise<void> {
-    // Try to find and click user menu if visible
-    const userMenuVisible = await this.page.isVisible(this.userMenuButton);
-    if (userMenuVisible) {
-      await this.openUserMenu();
-      await this.page.waitForTimeout(500); // Wait for menu animation
-    }
+    // Click user menu (Avatar button) to open dropdown
+    await this.page.click(this.userMenuButton);
+
+    // Wait for dropdown menu to appear
+    await this.page.waitForSelector(this.logoutButton, { state: 'visible', timeout: 5000 });
 
     // Click logout button
     await this.page.click(this.logoutButton);
-    await this.page.waitForURL('**/login');
+
+    // Wait for redirect to login page
+    await this.page.waitForURL('**/login', { timeout: 5000 });
   }
 
   /**

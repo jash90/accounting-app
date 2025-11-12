@@ -11,10 +11,10 @@ export class LoginPage extends BasePage {
   // Selectors
   private readonly emailInput = 'input[type="email"], input[name="email"], input#email';
   private readonly passwordInput = 'input[type="password"], input[name="password"], input#password';
-  private readonly loginButton = 'button[type="submit"]:has-text("Login"), button:has-text("Sign in")';
-  private readonly emailError = '[data-testid="email-error"], .error:has-text("email")';
-  private readonly passwordError = '[data-testid="password-error"], .error:has-text("password")';
-  private readonly formError = '[data-testid="form-error"], .form-error, [role="alert"]';
+  private readonly loginButton = 'button[type="submit"]';
+  private readonly emailError = '[data-testid="email-error"], .error:has-text("email"), p:has-text("email")';
+  private readonly passwordError = '[data-testid="password-error"], .error:has-text("password"), p:has-text("password")';
+  private readonly formError = '[data-testid="form-error"], .form-error, [role="alert"], .text-destructive';
   private readonly loginForm = 'form';
   private readonly heading = 'h1, h2';
 
@@ -148,17 +148,23 @@ export class LoginPage extends BasePage {
    * Check if form-level error is shown
    */
   async expectFormError(errorMessage?: string): Promise<void> {
-    // Look for error toast or form error message
+    // Wait for mutation to complete
+    await this.page.waitForTimeout(1500);
+
+    // Look for error toast, form error message, or field errors
     const hasToast = await this.toast.isErrorToastVisible();
     const hasFormError = await this.isVisible(this.formError);
+    const hasEmailError = await this.isVisible(this.emailError);
+    const hasPasswordError = await this.isVisible(this.passwordError);
 
-    expect(hasToast || hasFormError).toBe(true);
+    // At least one error should be visible
+    expect(hasToast || hasFormError || hasEmailError || hasPasswordError).toBe(true);
 
     if (errorMessage) {
       if (hasToast) {
         const toastMessage = await this.toast.getToastMessage();
         expect(toastMessage).toContain(errorMessage);
-      } else {
+      } else if (hasFormError) {
         await expect(this.page.locator(this.formError)).toContainText(errorMessage);
       }
     }

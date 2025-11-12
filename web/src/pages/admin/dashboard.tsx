@@ -18,37 +18,37 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
+        <Card data-testid="users-card" className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader>
             <CardTitle className="text-lg">Total Users</CardTitle>
             <CardDescription className="text-xs">All users in the system</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold text-primary">
+            <p data-testid="user-count" className="text-4xl font-bold text-primary">
               {usersLoading ? '...' : users?.length || 0}
             </p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
+        <Card data-testid="companies-card" className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader>
             <CardTitle className="text-lg">Total Companies</CardTitle>
             <CardDescription className="text-xs">Registered companies</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold text-primary">
+            <p data-testid="company-count" className="text-4xl font-bold text-primary">
               {companiesLoading ? '...' : companies?.length || 0}
             </p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
+        <Card data-testid="modules-card" className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader>
             <CardTitle className="text-lg">Modules</CardTitle>
             <CardDescription className="text-xs">Available modules</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold text-primary">
+            <p data-testid="module-count" className="text-4xl font-bold text-primary">
               {modulesLoading ? '...' : modules?.length || 0}
             </p>
           </CardContent>
