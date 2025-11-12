@@ -11,3 +11,7 @@ dist
 .github/instructions/nx.instructions.md
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
+web-e2e/playwright-report
+web-e2e/test-results
+web-e2e/screenshots
+web-e2e/test-reports
