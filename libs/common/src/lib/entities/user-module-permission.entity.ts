@@ -14,37 +14,37 @@ import { Module } from './module.entity';
 @Unique(['userId', 'moduleId'])
 export class UserModulePermission {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column()
-  userId: string;
+  userId!: string;
 
   @ManyToOne(() => User, (user) => user.modulePermissions, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user!: User;
 
   @Column()
-  moduleId: string;
+  moduleId!: string;
 
   @ManyToOne(() => Module, (module) => module.userPermissions, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'moduleId' })
-  module: Module;
+  module!: Module;
 
   @Column('simple-array')
-  permissions: string[];
+  permissions!: string[];
 
   @Column()
-  grantedById: string;
+  grantedById!: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'grantedById' })
-  grantedBy: User;
+  grantedBy!: User;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 }
 

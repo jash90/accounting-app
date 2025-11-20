@@ -137,4 +137,101 @@ export class NavigationComponent {
 
     return activeLink;
   }
+
+  // ============================================
+  // Employee Sidebar Specific Methods
+  // ============================================
+
+  private readonly sidebarContainer = 'aside';
+  private readonly sidebarToggle = 'button[aria-label*="sidebar" i], button[aria-label*="Collapse" i], button[aria-label*="Expand" i], aside button:has(svg)';
+  private readonly moduleLink = (moduleName: string) => `aside nav a:has-text("${moduleName}")`;
+
+  /**
+   * Get all modules visible in the sidebar
+   */
+  async getSidebarModules(): Promise<string[]> {
+    // Wait for sidebar to be visible
+    await this.page.waitForSelector(this.sidebarContainer, { state: 'visible' });
+
+    // Get all nav links except Dashboard
+    const modules = await this.page.$$eval(
+      `${this.sidebarContainer} nav a`,
+      (elements) => elements
+        .map((el) => el.textContent?.trim() || '')
+        .filter((text) => text && text !== 'Dashboard')
+    );
+
+    return modules;
+  }
+
+  /**
+   * Check if module is visible in sidebar
+   */
+  async expectModuleInSidebar(moduleName: string): Promise<void> {
+    const selector = this.moduleLink(moduleName);
+    await this.page.waitForSelector(selector, {
+      state: 'visible',
+      timeout: 5000
+    });
+  }
+
+  /**
+   * Check if module is NOT visible in sidebar
+   */
+  async expectModuleNotInSidebar(moduleName: string): Promise<void> {
+    const selector = this.moduleLink(moduleName);
+    const isVisible = await this.page.isVisible(selector);
+
+    if (isVisible) {
+      throw new Error(`Expected module "${moduleName}" NOT to be in sidebar, but it's visible`);
+    }
+  }
+
+  /**
+   * Check if sidebar is expanded (showing labels)
+   */
+  async isSidebarExpanded(): Promise<boolean> {
+    const sidebar = await this.page.$(this.sidebarContainer);
+    if (!sidebar) return false;
+
+    // Check if sidebar has expanded width (w-64 = 256px)
+    const width = await sidebar.evaluate((el) => el.getBoundingClientRect().width);
+    return width > 100; // Collapsed is w-16 (64px), expanded is w-64 (256px)
+  }
+
+  /**
+   * Get sidebar width in pixels
+   */
+  async getSidebarWidth(): Promise<number> {
+    const sidebar = await this.page.$(this.sidebarContainer);
+    if (!sidebar) return 0;
+
+    return await sidebar.evaluate((el) => el.getBoundingClientRect().width);
+  }
+
+  /**
+   * Toggle sidebar collapse/expand
+   */
+  async toggleSidebar(): Promise<void> {
+    await this.page.click(this.sidebarToggle);
+    // Wait for animation to complete
+    await this.page.waitForTimeout(300);
+  }
+
+  /**
+   * Navigate to a specific module from sidebar
+   */
+  async navigateToModule(moduleName: string): Promise<void> {
+    const selector = this.moduleLink(moduleName);
+    await this.page.click(selector);
+    await this.page.waitForLoadState('networkidle');
+  }
+
+  /**
+   * Check if module link is active (highlighted)
+   */
+  async isModuleActive(moduleName: string): Promise<boolean> {
+    const selector = `${this.moduleLink(moduleName)}[class*="primary"], ${this.moduleLink(moduleName)}[class*="bg-primary"]`;
+    return await this.page.isVisible(selector);
+  }
 }

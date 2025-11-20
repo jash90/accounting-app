@@ -13,31 +13,31 @@ import { User } from './user.entity';
 @Entity('simple_texts')
 export class SimpleText {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column()
-  companyId: string;
+  companyId!: string;
 
   @ManyToOne(() => Company, (company) => company.simpleTexts, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'companyId' })
-  company: Company;
+  company!: Company;
 
   @Column({ type: 'text' })
-  content: string;
+  content!: string;
 
   @Column()
-  createdById: string;
+  createdById!: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'createdById' })
-  createdBy: User;
+  createdBy!: User;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }
 

@@ -15,43 +15,43 @@ import { UserModulePermission } from './user-module-permission.entity';
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ unique: true })
-  email: string;
+  email!: string;
 
   @Column()
-  password: string;
+  password!: string;
 
   @Column()
-  firstName: string;
+  firstName!: string;
 
   @Column()
-  lastName: string;
+  lastName!: string;
 
   @Column({
     type: 'enum',
     enum: UserRole,
   })
-  role: UserRole;
+  role!: UserRole;
 
   @Column({ nullable: true })
-  companyId: string | null;
+  companyId!: string | null;
 
   @ManyToOne(() => Company, (company) => company.employees, { nullable: true })
   @JoinColumn({ name: 'companyId' })
-  company: Company | null;
+  company!: Company | null;
 
   @Column({ default: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   @OneToMany(() => UserModulePermission, (permission) => permission.user)
-  modulePermissions: UserModulePermission[];
+  modulePermissions!: UserModulePermission[];
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }
 

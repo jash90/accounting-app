@@ -3,6 +3,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { BrowserRouter } from 'react-router-dom';
 import { queryClient } from '@/lib/api/query-client';
 import { AuthProvider } from '@/contexts/auth-context';
+import { NavigationProvider } from '@/contexts/navigation-context';
 import { Toaster } from '@/components/ui/toaster';
 import { ErrorBoundary } from '@/components/common/error-boundary';
 import Routes from './routes';
@@ -13,8 +14,10 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <AuthProvider>
-            <Routes />
-            <Toaster />
+            <NavigationProvider>
+              <Routes />
+              <Toaster />
+            </NavigationProvider>
           </AuthProvider>
         </BrowserRouter>
 

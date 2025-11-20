@@ -5,3 +5,5 @@ export * from './lib/entities/module.entity';
 export * from './lib/entities/company-module-access.entity';
 export * from './lib/entities/user-module-permission.entity';
 export * from './lib/entities/simple-text.entity';
+export * from './lib/dto/responses';
+export * from './lib/dto/requests';

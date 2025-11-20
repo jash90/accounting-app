@@ -35,7 +35,29 @@ export default function EmployeePermissionsPage() {
 
   const handleGrantAccess = () => {
     if (!id || !selectedModule) return;
-    
+
+    // Validate that the selected module is in the list of available modules
+    const isModuleAvailable = availableModules.some(m => m.slug === selectedModule);
+    if (!isModuleAvailable) {
+      toast({
+        title: 'Error',
+        description: 'You cannot grant access to a module your company does not have access to.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check if module is already granted (double-check)
+    const isAlreadyGranted = employeeModules.some(em => em.module?.slug === selectedModule);
+    if (isAlreadyGranted) {
+      toast({
+        title: 'Error',
+        description: 'This module has already been granted to the employee.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     grantAccess.mutate({
       employeeId: id,
       moduleSlug: selectedModule,
@@ -181,27 +203,34 @@ export default function EmployeePermissionsPage() {
           <DialogHeader>
             <DialogTitle>Grant Module Access</DialogTitle>
             <DialogDescription>
-              Select a module and permissions to grant to this employee
+              Select a module and permissions to grant to this employee.
+              Only modules your company has access to are shown below.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Module</label>
-              <select
-                className="w-full mt-2 rounded-md border-2 border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                value={selectedModule || ''}
-                onChange={(e) => {
-                  setSelectedModule(e.target.value);
-                  setSelectedPermissions([]);
-                }}
-              >
-                <option value="">Select a module</option>
-                {availableModulesForGrant.map((module) => (
-                  <option key={module.id} value={module.slug}>
-                    {module.name}
-                  </option>
-                ))}
-              </select>
+              {availableModulesForGrant.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  All available modules have already been granted to this employee.
+                </p>
+              ) : (
+                <select
+                  className="w-full mt-2 rounded-md border-2 border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  value={selectedModule || ''}
+                  onChange={(e) => {
+                    setSelectedModule(e.target.value);
+                    setSelectedPermissions([]);
+                  }}
+                >
+                  <option value="">Select a module</option>
+                  {availableModulesForGrant.map((module) => (
+                    <option key={module.id} value={module.slug}>
+                      {module.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {selectedModule && (

@@ -14,30 +14,30 @@ import { Module } from './module.entity';
 @Unique(['companyId', 'moduleId'])
 export class CompanyModuleAccess {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column()
-  companyId: string;
+  companyId!: string;
 
   @ManyToOne(() => Company, (company) => company.moduleAccesses, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'companyId' })
-  company: Company;
+  company!: Company;
 
   @Column()
-  moduleId: string;
+  moduleId!: string;
 
   @ManyToOne(() => Module, (module) => module.companyAccesses, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'moduleId' })
-  module: Module;
+  module!: Module;
 
   @Column({ default: false })
-  isEnabled: boolean;
+  isEnabled!: boolean;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 }
 

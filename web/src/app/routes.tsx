@@ -12,11 +12,13 @@ const LoginPage = lazy(() => import('@/pages/public/login-page'));
 const AdminDashboard = lazy(() => import('@/pages/admin/dashboard'));
 const UsersListPage = lazy(() => import('@/pages/admin/users/users-list'));
 const CompaniesListPage = lazy(() => import('@/pages/admin/companies/companies-list'));
+const CompanyModulesPage = lazy(() => import('@/pages/admin/companies/company-modules'));
 const ModulesListPage = lazy(() => import('@/pages/admin/modules/modules-list'));
 const CompanyDashboard = lazy(() => import('@/pages/company/dashboard'));
 const EmployeesListPage = lazy(() => import('@/pages/company/employees/employees-list'));
 const EmployeePermissionsPage = lazy(() => import('@/pages/company/employees/employee-permissions'));
 const CompanyModulesListPage = lazy(() => import('@/pages/company/modules/modules-list'));
+const EmployeeDashboard = lazy(() => import('@/pages/employee/dashboard'));
 const SimpleTextListPage = lazy(() => import('@/pages/modules/simple-text/simple-text-list'));
 
 function PageLoader() {
@@ -119,6 +121,14 @@ export default function Routes() {
           }
         />
         <Route
+          path="companies/:id/modules"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <CompanyModulesPage />
+            </Suspense>
+          }
+        />
+        <Route
           path="modules"
           element={
             <Suspense fallback={<PageLoader />}>
@@ -168,6 +178,14 @@ export default function Routes() {
             </Suspense>
           }
         />
+        <Route
+          path="modules/simple-text"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SimpleTextListPage />
+            </Suspense>
+          }
+        />
       </Route>
       
       <Route
@@ -178,7 +196,14 @@ export default function Routes() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<div>Modules Dashboard - Coming Soon</div>} />
+        <Route
+          index
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmployeeDashboard />
+            </Suspense>
+          }
+        />
         <Route
           path="simple-text"
           element={

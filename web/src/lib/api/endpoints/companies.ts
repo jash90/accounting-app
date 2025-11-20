@@ -1,5 +1,12 @@
 import apiClient from '../client';
-import { CompanyDto, CreateCompanyDto, UpdateCompanyDto } from '@/types/dtos';
+import {
+  CompanyDto,
+  CreateCompanyDto,
+  UpdateCompanyDto,
+  ManageModulePermissionDto,
+  PermissionTargetType,
+} from '@/types/dtos';
+import { CompanyModuleAccess } from '@/types/entities';
 
 export const companiesApi = {
   getAll: async (): Promise<CompanyDto[]> => {
@@ -24,6 +31,30 @@ export const companiesApi = {
 
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/api/admin/companies/${id}`);
+  },
+
+  // Company Module Access Management
+  getCompanyModules: async (companyId: string): Promise<CompanyModuleAccess[]> => {
+    const { data } = await apiClient.get<CompanyModuleAccess[]>(`/api/modules/companies/${companyId}`);
+    return data;
+  },
+
+  grantModuleToCompany: async (companyId: string, moduleSlug: string): Promise<void> => {
+    const dto: ManageModulePermissionDto = {
+      targetType: PermissionTargetType.COMPANY,
+      targetId: companyId,
+      moduleSlug,
+    };
+    await apiClient.post('/api/modules/permissions', dto);
+  },
+
+  revokeModuleFromCompany: async (companyId: string, moduleSlug: string): Promise<void> => {
+    const dto: ManageModulePermissionDto = {
+      targetType: PermissionTargetType.COMPANY,
+      targetId: companyId,
+      moduleSlug,
+    };
+    await apiClient.delete('/api/modules/permissions', { data: dto });
   },
 };
 

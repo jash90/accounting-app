@@ -5,15 +5,12 @@ import * as bcrypt from 'bcrypt';
 import {
   User,
   Company,
-  Module as ModuleEntity,
-  CompanyModuleAccess,
   UserRole,
 } from '@accounting/common';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { CreateCompanyDto } from '../dto/create-company.dto';
 import { UpdateCompanyDto } from '../dto/update-company.dto';
-import { CreateModuleDto } from '../dto/create-module.dto';
 import { RBACService } from '@accounting/rbac';
 
 @Injectable()
@@ -23,10 +20,6 @@ export class AdminService {
     private userRepository: Repository<User>,
     @InjectRepository(Company)
     private companyRepository: Repository<Company>,
-    @InjectRepository(ModuleEntity)
-    private moduleRepository: Repository<ModuleEntity>,
-    @InjectRepository(CompanyModuleAccess)
-    private companyModuleAccessRepository: Repository<CompanyModuleAccess>,
     private rbacService: RBACService,
   ) {}
 
@@ -177,90 +170,6 @@ export class AdminService {
   async getCompanyEmployees(companyId: string) {
     const company = await this.findCompanyById(companyId);
     return company.employees;
-  }
-
-  // Module Management
-  async findAllModules() {
-    return this.moduleRepository.find({
-      order: { createdAt: 'DESC' },
-    });
-  }
-
-  async findModuleById(id: string) {
-    const module = await this.moduleRepository.findOne({
-      where: { id },
-    });
-
-    if (!module) {
-      throw new NotFoundException(`Module with ID ${id} not found`);
-    }
-
-    return module;
-  }
-
-  async createModule(createModuleDto: CreateModuleDto) {
-    const existingModule = await this.moduleRepository.findOne({
-      where: { slug: createModuleDto.slug },
-    });
-
-    if (existingModule) {
-      throw new ConflictException('Module with this slug already exists');
-    }
-
-    const module = this.moduleRepository.create(createModuleDto);
-    return this.moduleRepository.save(module);
-  }
-
-  async updateModule(id: string, updateModuleDto: Partial<CreateModuleDto>) {
-    const module = await this.findModuleById(id);
-    Object.assign(module, updateModuleDto);
-    return this.moduleRepository.save(module);
-  }
-
-  // Company Module Access Management
-  async getCompanyModules(companyId: string) {
-    const company = await this.findCompanyById(companyId);
-    return this.companyModuleAccessRepository.find({
-      where: { companyId: company.id },
-      relations: ['module'],
-    });
-  }
-
-  async grantModuleToCompany(companyId: string, moduleId: string) {
-    const company = await this.findCompanyById(companyId);
-    const module = await this.findModuleById(moduleId);
-
-    let access = await this.companyModuleAccessRepository.findOne({
-      where: { companyId: company.id, moduleId: module.id },
-    });
-
-    if (access) {
-      access.isEnabled = true;
-    } else {
-      access = this.companyModuleAccessRepository.create({
-        companyId: company.id,
-        moduleId: module.id,
-        isEnabled: true,
-      });
-    }
-
-    return this.companyModuleAccessRepository.save(access);
-  }
-
-  async revokeModuleFromCompany(companyId: string, moduleId: string) {
-    const company = await this.findCompanyById(companyId);
-    const module = await this.findModuleById(moduleId);
-
-    const access = await this.companyModuleAccessRepository.findOne({
-      where: { companyId: company.id, moduleId: module.id },
-    });
-
-    if (access) {
-      access.isEnabled = false;
-      return this.companyModuleAccessRepository.save(access);
-    }
-
-    throw new NotFoundException('Module access not found');
   }
 }
 

@@ -90,3 +90,62 @@ export function useDeleteCompany() {
   });
 }
 
+// Company Module Access Hooks
+export function useCompanyModules(companyId: string) {
+  return useQuery({
+    queryKey: [...queryKeys.companies.detail(companyId), 'modules'],
+    queryFn: () => companiesApi.getCompanyModules(companyId),
+    enabled: !!companyId,
+  });
+}
+
+export function useGrantModuleToCompany() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ companyId, moduleSlug }: { companyId: string; moduleSlug: string }) =>
+      companiesApi.grantModuleToCompany(companyId, moduleSlug),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.companies.detail(variables.companyId), 'modules'] });
+      toast({
+        title: 'Success',
+        description: 'Module enabled successfully',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to enable module',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useRevokeModuleFromCompany() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ companyId, moduleSlug }: { companyId: string; moduleSlug: string }) =>
+      companiesApi.revokeModuleFromCompany(companyId, moduleSlug),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.companies.detail(variables.companyId), 'modules'] });
+      // Also invalidate employee permissions queries as they might have been cascaded
+      queryClient.invalidateQueries({ queryKey: ['company', 'employees'] });
+      toast({
+        title: 'Success',
+        description: 'Module access revoked. All employee permissions for this module have been removed.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to disable module',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+

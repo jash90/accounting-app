@@ -335,18 +335,108 @@ export class RBACService {
       return [];
     }
 
-    // COMPANY_OWNER and EMPLOYEE see modules enabled for their company
-    const companyAccesses = await this.companyModuleAccessRepository.find({
-      where: {
-        companyId: user.companyId,
-        isEnabled: true,
-      },
-      relations: ['module'],
+    // COMPANY_OWNER sees all modules enabled for their company
+    if (user.role === UserRole.COMPANY_OWNER) {
+      const companyAccesses = await this.companyModuleAccessRepository.find({
+        where: {
+          companyId: user.companyId,
+          isEnabled: true,
+        },
+        relations: ['module'],
+      });
+
+      return companyAccesses
+        .map((access) => access.module)
+        .filter((module) => module.isActive);
+    }
+
+    // EMPLOYEE sees only modules they have explicit permissions for
+    // AND their company has access to
+    if (user.role === UserRole.EMPLOYEE) {
+      // Get employee's module permissions
+      const userPermissions = await this.userModulePermissionRepository.find({
+        where: {
+          userId: user.id,
+        },
+        relations: ['module'],
+      });
+
+      // Get company's enabled modules
+      const companyAccesses = await this.companyModuleAccessRepository.find({
+        where: {
+          companyId: user.companyId,
+          isEnabled: true,
+        },
+        relations: ['module'],
+      });
+
+      // Create set of company module IDs for fast lookup
+      const companyModuleIds = new Set(
+        companyAccesses.map((access) => access.module.id)
+      );
+
+      // Return only modules that employee has permissions for
+      // AND company has enabled access to
+      return userPermissions
+        .map((permission) => permission.module)
+        .filter((module) =>
+          module.isActive && companyModuleIds.has(module.id)
+        );
+    }
+
+    return [];
+  }
+
+  /**
+   * Check if a company has access to a specific module
+   * This is a more efficient check than canAccessModule for company-level validation
+   */
+  async companyHasModule(companyId: string, moduleSlug: string): Promise<boolean> {
+    // Find module
+    const module = await this.moduleRepository.findOne({
+      where: { slug: moduleSlug },
     });
 
-    return companyAccesses
-      .map((access) => access.module)
-      .filter((module) => module.isActive);
+    if (!module || !module.isActive) {
+      return false;
+    }
+
+    // Check if company has access to this module
+    const companyAccess = await this.companyModuleAccessRepository.findOne({
+      where: {
+        companyId,
+        moduleId: module.id,
+        isEnabled: true,
+      },
+    });
+
+    return !!companyAccess;
+  }
+
+  /**
+   * Check if a company has access to a specific module by module ID
+   * This is the most efficient check when module ID is already known
+   */
+  async companyHasModuleById(companyId: string, moduleId: string): Promise<boolean> {
+    // Check if module is active
+    const module = await this.moduleRepository.findOne({
+      where: { id: moduleId, isActive: true },
+    });
+
+    if (!module) {
+      return false;
+    }
+
+    // Check if company has access to this module
+    const companyAccess = await this.companyModuleAccessRepository.findOne({
+      where: {
+        companyId,
+        moduleId,
+        isEnabled: true,
+      },
+    });
+
+    return !!companyAccess;
   }
 }
 

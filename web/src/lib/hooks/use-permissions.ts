@@ -34,9 +34,23 @@ export function useGrantModuleAccess() {
       });
     },
     onError: (error: any) => {
+      let errorMessage = 'Failed to grant module access';
+
+      // Provide specific error messages based on the error
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+
+        // Check for specific error patterns
+        if (errorMessage.includes('does not have access to this module')) {
+          errorMessage = 'Your company does not have access to this module. Please contact your administrator to enable this module for your company first.';
+        } else if (errorMessage.includes('Module not found')) {
+          errorMessage = 'The selected module does not exist or is not active.';
+        }
+      }
+
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to grant module access',
+        description: errorMessage,
         variant: 'destructive',
       });
     },

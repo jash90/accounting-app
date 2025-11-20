@@ -15,34 +15,34 @@ import { SimpleText } from './simple-text.entity';
 @Entity('companies')
 export class Company {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column()
-  name: string;
+  name!: string;
 
   @Column()
-  ownerId: string;
+  ownerId!: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'ownerId' })
-  owner: User;
+  owner!: User;
 
   @OneToMany(() => User, (user) => user.company)
-  employees: User[];
+  employees!: User[];
 
   @OneToMany(() => CompanyModuleAccess, (access) => access.company)
-  moduleAccesses: CompanyModuleAccess[];
+  moduleAccesses!: CompanyModuleAccess[];
 
   @OneToMany(() => SimpleText, (text) => text.company)
-  simpleTexts: SimpleText[];
+  simpleTexts!: SimpleText[];
 
   @Column({ default: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }
 

@@ -126,6 +126,18 @@ export interface UpdateModulePermissionDto {
   permissions: string[];
 }
 
+export enum PermissionTargetType {
+  COMPANY = 'company',
+  EMPLOYEE = 'employee',
+}
+
+export interface ManageModulePermissionDto {
+  targetType: PermissionTargetType;
+  targetId: string;
+  moduleSlug: string;
+  permissions?: string[];
+}
+
 // SimpleText DTOs
 export interface CreateSimpleTextDto {
   content: string;

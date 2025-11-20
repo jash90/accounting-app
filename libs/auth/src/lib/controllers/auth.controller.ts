@@ -1,11 +1,12 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, Get, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiOkResponse, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { AuthService } from '../services/auth.service';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
 import { AuthResponseDto } from '../dto/auth-response.dto';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { Public } from '../decorators/public.decorator';
+import { UserResponseDto } from '@accounting/common';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -46,10 +47,10 @@ export class AuthController {
   @Get('me')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get current user' })
-  @ApiResponse({ status: 200, description: 'Returns current authenticated user' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getCurrentUser(@Request() req: any) {
+  @ApiOperation({ summary: 'Get current user', description: 'Retrieve the currently authenticated user profile information' })
+  @ApiOkResponse({ description: 'Returns current authenticated user', type: UserResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  async getCurrentUser(@Request() req: any): Promise<UserResponseDto> {
     return req.user;
   }
 }

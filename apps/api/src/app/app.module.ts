@@ -15,6 +15,7 @@ import {
 import { AuthModule, JwtAuthGuard } from '@accounting/auth';
 import { AdminModule } from '../admin/admin.module';
 import { CompanyModule } from '../company/company.module';
+import { ModulesModule } from '../modules/modules.module';
 import { SimpleTextModule } from '@accounting/modules/simple-text';
 import { SeedersModule } from '../seeders/seeders.module';
 
@@ -49,6 +50,7 @@ import { SeedersModule } from '../seeders/seeders.module';
     AuthModule,
     AdminModule,
     CompanyModule,
+    ModulesModule,
     SimpleTextModule,
     SeedersModule,
   ],

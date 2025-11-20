@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ColumnDef } from '@tanstack/react-table';
 import { useCompanies, useDeleteCompany } from '@/lib/hooks/use-companies';
 import { useCreateCompany, useUpdateCompany } from '@/lib/hooks/use-companies';
@@ -6,7 +7,7 @@ import { PageHeader } from '@/components/common/page-header';
 import { DataTable } from '@/components/common/data-table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Package } from 'lucide-react';
 import { CompanyDto } from '@/types/dtos';
 import { CompanyFormDialog } from '@/components/forms/company-form-dialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
@@ -39,6 +40,7 @@ const columns: ColumnDef<CompanyDto>[] = [
 ];
 
 export default function CompaniesListPage() {
+  const navigate = useNavigate();
   const { data: companies = [], isPending } = useCompanies();
   const createCompany = useCreateCompany();
   const updateCompany = useUpdateCompany();
@@ -55,6 +57,18 @@ export default function CompaniesListPage() {
       header: 'Actions',
       cell: ({ row }) => (
         <div className="flex gap-1">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 hover:bg-primary/10"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/admin/companies/${row.original.id}/modules`);
+            }}
+            title="Manage modules"
+          >
+            <Package className="h-4 w-4 text-primary" />
+          </Button>
           <Button
             size="icon"
             variant="ghost"
