@@ -451,9 +451,9 @@ export class ModulesService {
         throw new ForbiddenException('Only administrators can manage company module access');
       }
 
-      if (!dto.permissions) {
-        throw new BadRequestException('Permissions are required for granting company access');
-      }
+      // NOTE: permissions field is not used for company-level access
+      // Company module access is controlled by the isEnabled flag in CompanyModuleAccess entity
+      // The permissions field is only relevant for employee-level access (UserModulePermission)
 
       // Find module by slug
       const module = await this.getModuleBySlugDirect(dto.moduleSlug);

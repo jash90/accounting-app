@@ -13,9 +13,9 @@
     "serve": "nx serve api",
     "serve:web": "nx serve web",
     "dev": "nx run-many --target=serve --projects=api,web --parallel",
-    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d apps/api/typeorm.config.ts",
-    "migration:run": "typeorm-ts-node-commonjs migration:run -d apps/api/typeorm.config.ts",
-    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d apps/api/typeorm.config.ts",
+    "migration:generate": "ts-node -P apps/api/tsconfig.app.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d apps/api/typeorm.config.ts",
+    "migration:run": "ts-node -P apps/api/tsconfig.app.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d apps/api/typeorm.config.ts",
+    "migration:revert": "ts-node -P apps/api/tsconfig.app.json -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d apps/api/typeorm.config.ts",
     "seed": "ts-node -P apps/api/tsconfig.app.json -r tsconfig-paths/register apps/api/src/seeders/seed.ts"
   },
   "private": true,

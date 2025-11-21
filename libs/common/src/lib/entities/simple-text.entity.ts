@@ -15,14 +15,15 @@ export class SimpleText {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
-  companyId!: string;
+  @Column({ nullable: true })
+  companyId!: string | null;
 
   @ManyToOne(() => Company, (company) => company.simpleTexts, {
+    nullable: true,
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'companyId' })
-  company!: Company;
+  company!: Company | null;
 
   @Column({ type: 'text' })
   content!: string;

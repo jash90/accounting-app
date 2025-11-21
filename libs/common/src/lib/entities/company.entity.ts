@@ -36,6 +36,9 @@ export class Company {
   @OneToMany(() => SimpleText, (text) => text.company)
   simpleTexts!: SimpleText[];
 
+  @Column({ default: false })
+  isSystemCompany!: boolean;
+
   @Column({ default: true })
   isActive!: boolean;
 

@@ -136,6 +136,14 @@ export default function Routes() {
             </Suspense>
           }
         />
+        <Route
+          path="modules/simple-text"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SimpleTextListPage />
+            </Suspense>
+          }
+        />
       </Route>
       
       <Route
