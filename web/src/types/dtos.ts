@@ -1,5 +1,8 @@
-export { UserRole } from './enums';
+import { UserRole } from './enums';
 import { User, Company, Module, SimpleText } from './entities';
+
+// Re-export for external consumers
+export { UserRole };
 
 // Auth DTOs
 export interface LoginDto {
@@ -64,6 +67,7 @@ export interface CompanyDto {
   ownerId: string;
   owner?: UserDto;
   isActive: boolean;
+  isSystemCompany: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -150,7 +154,12 @@ export interface UpdateSimpleTextDto {
 export interface SimpleTextResponseDto {
   id: string;
   content: string;
-  companyId: string;
+  companyId: string | null;
+  company: {
+    id: string;
+    name: string;
+    isSystemCompany: boolean;
+  } | null;
   createdBy: {
     id: string;
     email: string;

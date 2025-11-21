@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { SimpleText, User } from '@accounting/common';
+import { SimpleText, User, Company } from '@accounting/common';
 import { SimpleTextController } from './controllers/simple-text.controller';
 import { SimpleTextService } from './services/simple-text.service';
 import { RBACModule } from '@accounting/rbac';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([SimpleText, User]), RBACModule],
+  imports: [TypeOrmModule.forFeature([SimpleText, User, Company]), RBACModule],
   controllers: [SimpleTextController],
   providers: [SimpleTextService],
   exports: [SimpleTextService],

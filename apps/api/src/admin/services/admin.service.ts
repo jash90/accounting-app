@@ -23,6 +23,18 @@ export class AdminService {
     private rbacService: RBACService,
   ) {}
 
+  private async getSystemCompany(): Promise<Company> {
+    const systemCompany = await this.companyRepository.findOne({
+      where: { isSystemCompany: true },
+    });
+
+    if (!systemCompany) {
+      throw new Error('System Admin company not found. Please run migrations.');
+    }
+
+    return systemCompany;
+  }
+
   // User Management
   async findAllUsers() {
     return this.userRepository.find({
@@ -51,6 +63,12 @@ export class AdminService {
 
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
+    }
+
+    // Auto-assign ADMIN users to System Admin company
+    if (createUserDto.role === UserRole.ADMIN) {
+      const systemCompany = await this.getSystemCompany();
+      createUserDto.companyId = systemCompany.id;
     }
 
     if (
@@ -97,6 +115,12 @@ export class AdminService {
       updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
     }
 
+    // Auto-assign to System Admin company when promoting to ADMIN role
+    if (updateUserDto.role === UserRole.ADMIN) {
+      const systemCompany = await this.getSystemCompany();
+      updateUserDto.companyId = systemCompany.id;
+    }
+
     Object.assign(user, updateUserDto);
     return this.userRepository.save(user);
   }
@@ -116,6 +140,7 @@ export class AdminService {
   // Company Management
   async findAllCompanies() {
     return this.companyRepository.find({
+      where: { isSystemCompany: false }, // Hide System Admin company from list
       relations: ['owner', 'employees'],
       order: { createdAt: 'DESC' },
     });
@@ -163,6 +188,12 @@ export class AdminService {
 
   async deleteCompany(id: string) {
     const company = await this.findCompanyById(id);
+
+    // Prevent deletion of System Admin company
+    if (company.isSystemCompany) {
+      throw new BadRequestException('Cannot delete System Admin company');
+    }
+
     company.isActive = false;
     return this.companyRepository.save(company);
   }
