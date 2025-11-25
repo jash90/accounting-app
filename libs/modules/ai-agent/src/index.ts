@@ -8,10 +8,10 @@ export * from './lib/services/ai-conversation.service';
 export * from './lib/services/token-usage.service';
 export * from './lib/services/token-limit.service';
 export * from './lib/services/openai-provider.service';
-export { AIProviderError } from './lib/services/openai-provider.service';
 export * from './lib/services/openrouter-provider.service';
 export * from './lib/services/rag.service';
 export * from './lib/services/ai-provider.interface';
+export { AIProviderError } from './lib/services/ai-provider.interface';
 
 // Controllers
 export * from './lib/controllers/ai-configuration.controller';

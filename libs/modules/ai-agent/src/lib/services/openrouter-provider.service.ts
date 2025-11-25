@@ -2,11 +2,11 @@ import { Injectable, Logger, HttpStatus } from '@nestjs/common';
 import axios, { AxiosError } from 'axios';
 import {
   AIProviderService,
+  AIProviderError,
   ChatMessage,
   ChatCompletionResponse,
   EmbeddingResponse,
 } from './ai-provider.interface';
-import { AIProviderError } from './openai-provider.service';
 
 /**
  * OpenRouter provider service with retry logic and error handling.
@@ -18,6 +18,8 @@ export class OpenRouterProviderService extends AIProviderService {
   private readonly MAX_RETRIES = 3;
   private readonly TIMEOUT_MS = 30000; // 30 seconds
   private readonly BASE_RETRY_DELAY_MS = 1000; // 1 second base delay
+  private readonly httpReferer = process.env.OPENROUTER_REFERER || 'http://localhost:3000';
+  private readonly xTitle = process.env.OPENROUTER_X_TITLE || 'Accounting App';
 
   /**
    * Execute an operation with retry logic and exponential backoff.
@@ -157,21 +159,38 @@ export class OpenRouterProviderService extends AIProviderService {
         {
           headers: {
             Authorization: `Bearer ${apiKey}`,
-            'HTTP-Referer': 'http://localhost:3000',
-            'X-Title': 'Accounting App',
+            'HTTP-Referer': this.httpReferer,
+            'X-Title': this.xTitle,
           },
           timeout: this.TIMEOUT_MS,
         },
       );
 
+      // Validate response structure
+      if (!response?.data?.choices?.length) {
+        throw new AIProviderError(
+          'Invalid response from AI service',
+          'Response missing choices array',
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
       const choice = response.data.choices[0];
+      if (!choice?.message) {
+        throw new AIProviderError(
+          'Invalid response from AI service',
+          'Response missing message content',
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
       const usage = response.data.usage;
 
       return {
         content: choice.message.content || '',
-        inputTokens: usage?.prompt_tokens || 0,
-        outputTokens: usage?.completion_tokens || 0,
-        totalTokens: usage?.total_tokens || 0,
+        inputTokens: usage?.prompt_tokens ?? 0,
+        outputTokens: usage?.completion_tokens ?? 0,
+        totalTokens: usage?.total_tokens ?? 0,
       };
     }, 'Chat completion');
   }

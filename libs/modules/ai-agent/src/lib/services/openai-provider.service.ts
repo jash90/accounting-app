@@ -1,24 +1,12 @@
-import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, Logger, HttpStatus } from '@nestjs/common';
 import OpenAI from 'openai';
 import {
   AIProviderService,
+  AIProviderError,
   ChatMessage,
   ChatCompletionResponse,
   EmbeddingResponse,
 } from './ai-provider.interface';
-
-/**
- * Custom error class for AI provider errors with user-friendly messages.
- */
-export class AIProviderError extends HttpException {
-  constructor(
-    public readonly userMessage: string,
-    public readonly technicalDetails: string,
-    status: HttpStatus = HttpStatus.SERVICE_UNAVAILABLE,
-  ) {
-    super(userMessage, status);
-  }
-}
 
 /**
  * OpenAI provider service with lazy singleton client caching.

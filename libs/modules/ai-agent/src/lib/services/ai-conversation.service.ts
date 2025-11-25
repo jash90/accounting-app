@@ -13,6 +13,7 @@ import {
   AIConversation,
   AIMessage,
   AIMessageRole,
+  AIContext,
   User,
   UserRole,
   AIProvider,
@@ -186,7 +187,7 @@ export class AIConversationService {
     }
 
     // Add RAG context (only for OpenAI provider with active documents)
-    let similarContexts: { id: string }[] = [];
+    let similarContexts: AIContext[] = [];
 
     // Only call RAG if:
     // 1. Using OpenAI provider (OpenRouter doesn't support embeddings)
@@ -206,7 +207,7 @@ export class AIConversationService {
 
           if (similarContexts.length > 0) {
             const ragContext = this.ragService.buildRAGContext(
-              similarContexts as any,
+              similarContexts,
             );
             chatMessages.push({
               role: 'system',
@@ -215,7 +216,7 @@ export class AIConversationService {
           }
         } catch (error) {
           // Log but don't fail - RAG is optional enhancement
-          console.warn(
+          this.logger.warn(
             'RAG context retrieval failed:',
             error instanceof Error ? error.message : error,
           );

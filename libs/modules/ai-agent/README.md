@@ -125,7 +125,9 @@ The module supports two AI providers:
 
 ### API Key Security
 
-- API keys are encrypted using AES-256-GCM before storage
+- API keys are encrypted using AES-256-CBC before storage
+  - Note: CBC provides confidentiality but not authentication (unlike GCM/AEAD modes)
+  - Consider migrating to AES-256-GCM if tamper detection is required
 - Keys are never returned in API responses
 - Only the presence of a key (`hasApiKey: true`) is indicated
 

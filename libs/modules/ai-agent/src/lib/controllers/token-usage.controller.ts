@@ -304,4 +304,62 @@ export class TokenUsageController {
 
     return limit;
   }
+
+  @Post('token-limit')
+  @RequirePermission('ai-agent', 'write')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Set token limit (unified endpoint)',
+    description: 'Set or update monthly token limit for a company or user. Routes to company limit (ADMIN only) or user limit (COMPANY_OWNER only) based on targetType.',
+  })
+  @ApiBody({
+    type: SetTokenLimitDto,
+    description: 'Limit configuration with target type and ID',
+  })
+  @ApiCreatedResponse({
+    description: 'Limit set successfully',
+    type: TokenLimitResponseDto,
+  })
+  @ApiForbiddenResponse({
+    description: 'Insufficient permissions for the target type',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid or missing JWT token',
+  })
+  async setTokenLimit(
+    @Body() setDto: SetTokenLimitDto,
+    @CurrentUser() user: User,
+  ) {
+    if (setDto.targetType === 'company') {
+      const limit = await this.limitService.setCompanyLimit(setDto.targetId, setDto, user);
+      const companyUsage = await this.usageService.getCompanyMonthlyTotal(setDto.targetId);
+      const usagePercentage = (companyUsage / limit.monthlyLimit) * 100;
+
+      return {
+        ...limit,
+        currentUsage: companyUsage,
+        usagePercentage,
+        isExceeded: companyUsage >= limit.monthlyLimit,
+        isWarning: companyUsage >= (limit.monthlyLimit * limit.warningThresholdPercentage) / 100,
+      };
+    } else {
+      const limit = await this.limitService.setUserLimit(setDto.targetId, setDto, user);
+      const userEntity = await this.limitService.findUserById(setDto.targetId);
+
+      if (userEntity) {
+        const userUsage = await this.usageService.getUserMonthlyTotal(userEntity);
+        const usagePercentage = (userUsage / limit.monthlyLimit) * 100;
+
+        return {
+          ...limit,
+          currentUsage: userUsage,
+          usagePercentage,
+          isExceeded: userUsage >= limit.monthlyLimit,
+          isWarning: userUsage >= (limit.monthlyLimit * limit.warningThresholdPercentage) / 100,
+        };
+      }
+
+      return limit;
+    }
+  }
 }

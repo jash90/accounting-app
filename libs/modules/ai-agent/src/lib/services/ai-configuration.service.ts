@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  ConflictException,
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -14,14 +15,20 @@ import * as crypto from 'crypto';
 
 @Injectable()
 export class AIConfigurationService {
-  private readonly ENCRYPTION_KEY = process.env.AI_API_KEY_ENCRYPTION_KEY || 'default-encryption-key-change-in-production';
+  private readonly ENCRYPTION_KEY: string;
   private readonly ALGORITHM = 'aes-256-cbc';
 
   constructor(
     @InjectRepository(AIConfiguration)
     private configRepository: Repository<AIConfiguration>,
     private systemCompanyService: SystemCompanyService,
-  ) {}
+  ) {
+    const encryptionKey = process.env.AI_API_KEY_ENCRYPTION_KEY;
+    if (!encryptionKey) {
+      throw new Error('AI_API_KEY_ENCRYPTION_KEY environment variable is required but not set');
+    }
+    this.ENCRYPTION_KEY = encryptionKey;
+  }
 
   /**
    * Encrypt API key
@@ -105,7 +112,7 @@ export class AIConfigurationService {
     });
 
     if (existing) {
-      throw new ForbiddenException('Configuration already exists. Use update instead.');
+      throw new ConflictException('Configuration already exists. Use update instead.');
     }
 
     // Encrypt API key

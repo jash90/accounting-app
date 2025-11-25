@@ -4,10 +4,30 @@ import {
   IsOptional,
   IsBoolean,
   Max,
+  IsString,
+  IsIn,
+  IsNotEmpty,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class SetTokenLimitDto {
+  @ApiProperty({
+    description: 'Target type for the limit',
+    enum: ['company', 'user'],
+    example: 'user',
+  })
+  @IsString()
+  @IsIn(['company', 'user'])
+  targetType: 'company' | 'user';
+
+  @ApiProperty({
+    description: 'Target ID (company ID or user ID)',
+    example: 'uuid-here',
+  })
+  @IsString()
+  @IsNotEmpty()
+  targetId: string;
+
   @ApiProperty({
     description: 'Monthly token limit',
     example: 1000000,

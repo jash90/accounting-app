@@ -49,14 +49,17 @@ export default function AIAgentChatPage() {
     setSelectedConversationId(result.id);
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!message.trim() || !selectedConversationId) return;
+  const sendMessageIfReady = () => {
+    if (!message.trim() || !selectedConversationId || sendMessage.isPending) return;
 
     const messageContent = message;
     setMessage('');
+    sendMessage.mutateAsync({ content: messageContent });
+  };
 
-    await sendMessage.mutateAsync({ content: messageContent });
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessageIfReady();
   };
 
   const handleDeleteConversation = async (id: string) => {
@@ -215,9 +218,9 @@ export default function AIAgentChatPage() {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey && message.trim() && selectedConversationId && !sendMessage.isPending) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
-                      handleSendMessage(e as unknown as React.FormEvent);
+                      sendMessageIfReady();
                     }
                   }}
                   placeholder="Type your message..."

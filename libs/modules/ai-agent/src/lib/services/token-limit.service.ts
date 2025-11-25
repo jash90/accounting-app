@@ -2,6 +2,7 @@ import {
   Injectable,
   ForbiddenException,
   BadRequestException,
+  NotFoundException,
   Inject,
   forwardRef,
 } from '@nestjs/common';
@@ -80,9 +81,18 @@ export class TokenLimitService {
       throw new ForbiddenException('Only company owners can set user limits');
     }
 
-    let companyId = user.companyId;
+    const companyId = user.companyId;
     if (!companyId) {
       throw new ForbiddenException('User not associated with company');
+    }
+
+    // Verify target user belongs to owner's company
+    const targetUser = await this.findUserById(userId);
+    if (!targetUser) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+    if (targetUser.companyId !== companyId) {
+      throw new ForbiddenException('Cannot set limits for users outside your company');
     }
 
     let limit = await this.limitRepository.findOne({
