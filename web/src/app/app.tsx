@@ -5,6 +5,7 @@ import { queryClient } from '@/lib/api/query-client';
 import { AuthProvider } from '@/contexts/auth-context';
 import { NavigationProvider } from '@/contexts/navigation-context';
 import { Toaster } from '@/components/ui/toaster';
+import { Toaster as SonnerToaster } from 'sonner';
 import { ErrorBoundary } from '@/components/common/error-boundary';
 import Routes from './routes';
 
@@ -17,6 +18,7 @@ function App() {
             <NavigationProvider>
               <Routes />
               <Toaster />
+              <SonnerToaster position="top-right" />
             </NavigationProvider>
           </AuthProvider>
         </BrowserRouter>

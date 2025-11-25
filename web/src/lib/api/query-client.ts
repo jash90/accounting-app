@@ -40,5 +40,26 @@ export const queryKeys = {
     all: ['simple-text'] as const,
     detail: (id: string) => ['simple-text', id] as const,
   },
+  aiAgent: {
+    conversations: {
+      all: ['ai-agent', 'conversations'] as const,
+      detail: (id: string) => ['ai-agent', 'conversations', id] as const,
+    },
+    configuration: ['ai-agent', 'configuration'] as const,
+    tokenUsage: {
+      me: ['ai-agent', 'token-usage', 'me'] as const,
+      myDetailed: ['ai-agent', 'token-usage', 'me', 'detailed'] as const,
+      company: ['ai-agent', 'token-usage', 'company'] as const,
+      allCompanies: ['ai-agent', 'token-usage', 'all-companies'] as const,
+      companyById: (companyId: string) => ['ai-agent', 'token-usage', 'company', companyId] as const,
+    },
+    context: {
+      all: ['ai-agent', 'context'] as const,
+    },
+    tokenLimit: {
+      byTarget: (targetType: 'company' | 'user', targetId: string) =>
+        ['ai-agent', 'token-limit', targetType, targetId] as const,
+    },
+  },
 };
 

@@ -11,9 +11,8 @@ import { ModulesDashboardPage } from '../pages/employee/ModulesDashboardPage';
  * - Sidebar toggle functionality
  *
  * Test Data (from seeder):
- * - employee1.a@company.com: Has access to "Simple Text" only
- * - employee2.a@company.com: Different permissions
- * - Tasks module: Company A has access but employee1.a does NOT have permissions
+ * - employee1.a@company.com: Has access to "Simple Text" and "AI Agent"
+ * - employee2.a@company.com: Different permissions (Simple Text and AI Agent)
  */
 
 test.describe('Employee Sidebar - Visibility', () => {
@@ -40,17 +39,16 @@ test.describe('Employee Sidebar - Visibility', () => {
     expect(modules).toContain('Simple Text');
   });
 
-  test('should not show denied modules in sidebar', async ({ authenticatedEmployeePage }) => {
+  test('should show AI Agent module in sidebar', async ({ authenticatedEmployeePage }) => {
     const dashboard = new ModulesDashboardPage(authenticatedEmployeePage);
     await dashboard.goto();
 
-    // Employee1.A does NOT have permissions for "Tasks"
-    // (even though Company A has access to it)
-    await dashboard.nav.expectModuleNotInSidebar('Tasks');
+    // Employee1.A has permissions for AI Agent
+    await dashboard.nav.expectModuleInSidebar('AI Agent');
 
-    // Verify it's not in the module list
+    // Verify it's in the module list
     const modules = await dashboard.nav.getSidebarModules();
-    expect(modules).not.toContain('Tasks');
+    expect(modules).toContain('AI Agent');
   });
 
   test('should always show Dashboard link', async ({ authenticatedEmployeePage }) => {
@@ -151,17 +149,13 @@ test.describe('Employee Sidebar - Permissions', () => {
     expect(modules).toContain('Simple Text');
   });
 
-  test('employee without permissions does not see module', async ({ authenticatedEmployeePage }) => {
+  test('employee does not see admin-only links in sidebar', async ({ authenticatedEmployeePage }) => {
     const dashboard = new ModulesDashboardPage(authenticatedEmployeePage);
     await dashboard.goto();
 
-    // employee1.a@company.com does NOT have permissions for Tasks
-    // Company A has access, but employee does not have UserModulePermission
-    await dashboard.nav.expectModuleNotInSidebar('Tasks');
-
-    const modules = await dashboard.nav.getSidebarModules();
-    expect(modules).not.toContain('Tasks');
-    expect(modules).not.toContain('Reports');
+    // Employees should not see admin-specific navigation items
+    await dashboard.nav.expectModuleNotInSidebar('Companies');
+    await dashboard.nav.expectModuleNotInSidebar('Modules Management');
   });
 
   test('only shows modules with explicit UserModulePermission', async ({ authenticatedEmployeePage }) => {
@@ -171,9 +165,11 @@ test.describe('Employee Sidebar - Permissions', () => {
     // Get all modules in sidebar
     const modules = await dashboard.nav.getSidebarModules();
 
-    // Employee1.A should ONLY see Simple Text
-    // (based on seeder data: only Simple Text has UserModulePermission)
-    expect(modules).toEqual(['Simple Text']);
+    // Employee1.A should see Simple Text and AI Agent
+    // (based on seeder data: both have UserModulePermission)
+    expect(modules).toContain('Simple Text');
+    expect(modules).toContain('AI Agent');
+    expect(modules.length).toBe(2);
   });
 });
 

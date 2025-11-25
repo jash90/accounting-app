@@ -11,12 +11,19 @@ import {
   CompanyModuleAccess,
   UserModulePermission,
   SimpleText,
+  AIConfiguration,
+  AIConversation,
+  AIMessage,
+  AIContext,
+  TokenUsage,
+  TokenLimit,
 } from '@accounting/common';
 import { AuthModule, JwtAuthGuard } from '@accounting/auth';
 import { AdminModule } from '../admin/admin.module';
 import { CompanyModule } from '../company/company.module';
 import { ModulesModule } from '../modules/modules.module';
 import { SimpleTextModule } from '@accounting/modules/simple-text';
+import { AIAgentModule } from '@accounting/modules/ai-agent';
 import { SeedersModule } from '../seeders/seeders.module';
 
 @Module({
@@ -40,6 +47,12 @@ import { SeedersModule } from '../seeders/seeders.module';
           CompanyModuleAccess,
           UserModulePermission,
           SimpleText,
+          AIConfiguration,
+          AIConversation,
+          AIMessage,
+          AIContext,
+          TokenUsage,
+          TokenLimit,
         ],
         synchronize: process.env.NODE_ENV === 'development',
         logging: process.env.NODE_ENV === 'development',
@@ -51,6 +64,7 @@ import { SeedersModule } from '../seeders/seeders.module';
     AdminModule,
     CompanyModule,
     SimpleTextModule,
+    AIAgentModule,
     ModulesModule,
     SeedersModule,
   ],

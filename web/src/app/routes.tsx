@@ -21,6 +21,16 @@ const CompanyModulesListPage = lazy(() => import('@/pages/company/modules/module
 const EmployeeDashboard = lazy(() => import('@/pages/employee/dashboard'));
 const SimpleTextListPage = lazy(() => import('@/pages/modules/simple-text/simple-text-list'));
 
+// AI Agent Pages
+const AIAgentChatPage = lazy(() => import('@/pages/modules/ai-agent/chat'));
+const AIAgentTokenUsagePage = lazy(() => import('@/pages/modules/ai-agent/token-usage'));
+const AIAgentAdminTokenUsagePage = lazy(() => import('@/pages/modules/ai-agent/admin-token-usage'));
+const AIAgentContextFilesPage = lazy(() => import('@/pages/modules/ai-agent/context-files'));
+const AIAgentAdminConfigPage = lazy(() => import('@/pages/modules/ai-agent/admin-configuration'));
+const AdminAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/admin-index'));
+const CompanyAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/company-index'));
+const EmployeeAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/employee-index'));
+
 function PageLoader() {
   return (
     <div className="flex h-screen items-center justify-center">
@@ -144,8 +154,48 @@ export default function Routes() {
             </Suspense>
           }
         />
+        <Route
+          path="modules/ai-agent"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <AdminAIAgentDashboard />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/ai-agent/chat"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <AIAgentChatPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/ai-agent/configuration"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <AIAgentAdminConfigPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/ai-agent/context"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <AIAgentContextFilesPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/ai-agent/token-usage"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <AIAgentAdminTokenUsagePage />
+            </Suspense>
+          }
+        />
       </Route>
-      
+
       <Route
         path="/company/*"
         element={
@@ -194,8 +244,40 @@ export default function Routes() {
             </Suspense>
           }
         />
+        <Route
+          path="modules/ai-agent"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <CompanyAIAgentDashboard />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/ai-agent/chat"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <AIAgentChatPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/ai-agent/token-usage"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <AIAgentTokenUsagePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/ai-agent/context"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <AIAgentContextFilesPage />
+            </Suspense>
+          }
+        />
       </Route>
-      
+
       <Route
         path="/modules/*"
         element={
@@ -217,6 +299,22 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <SimpleTextListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="ai-agent"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmployeeAIAgentDashboard />
+            </Suspense>
+          }
+        />
+        <Route
+          path="ai-agent/chat"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <AIAgentChatPage />
             </Suspense>
           }
         />

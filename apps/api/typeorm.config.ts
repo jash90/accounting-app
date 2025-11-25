@@ -6,6 +6,12 @@ import {
   CompanyModuleAccess,
   UserModulePermission,
   SimpleText,
+  AIConfiguration,
+  AIConversation,
+  AIMessage,
+  AIContext,
+  TokenUsage,
+  TokenLimit,
 } from '@accounting/common';
 
 export default new DataSource({
@@ -22,6 +28,12 @@ export default new DataSource({
     CompanyModuleAccess,
     UserModulePermission,
     SimpleText,
+    AIConfiguration,
+    AIConversation,
+    AIMessage,
+    AIContext,
+    TokenUsage,
+    TokenLimit,
   ],
   migrations: ['apps/api/src/migrations/*{.ts,.js}'],
   synchronize: false,
