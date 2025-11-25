@@ -162,7 +162,7 @@ export class ModulesListPage extends BasePage {
    * Get all available module names
    */
   async getAllModuleNames(): Promise<string[]> {
-    const moduleElements = await this.page.locator(this.moduleName('simple-text, tasks, reports')).all();
+    const moduleElements = await this.page.locator(this.moduleName('simple-text, ai-agent')).all();
     const names: string[] = [];
 
     for (const element of moduleElements) {

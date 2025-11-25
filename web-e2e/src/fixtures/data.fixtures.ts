@@ -146,8 +146,7 @@ export const SEEDED_DATA = {
   },
   modules: [
     { name: 'simple-text', displayName: 'Simple Text' },
-    { name: 'tasks', displayName: 'Tasks' },
-    { name: 'reports', displayName: 'Reports' },
+    { name: 'ai-agent', displayName: 'AI Agent' },
   ],
 };
 

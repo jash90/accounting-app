@@ -170,3 +170,207 @@ export interface SimpleTextResponseDto {
   updatedAt: Date;
 }
 
+// AI Agent DTOs
+
+// Enums
+export enum AIProvider {
+  OPENAI = 'openai',
+  OPENROUTER = 'openrouter',
+}
+
+export enum MessageRole {
+  USER = 'user',
+  ASSISTANT = 'assistant',
+  SYSTEM = 'system',
+}
+
+// AI Configuration DTOs
+export interface AIConfigurationResponseDto {
+  id: string;
+  companyId: string | null;
+  company: {
+    id: string;
+    name: string;
+    isSystemCompany: boolean;
+  } | null;
+  provider: AIProvider;
+  model: string;
+  systemPrompt: string | null;
+  temperature: number;
+  maxTokens: number;
+  createdBy: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  updatedBy: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateAIConfigurationDto {
+  provider: AIProvider;
+  model: string;
+  apiKey: string;
+  systemPrompt?: string;
+  temperature?: number;
+  maxTokens?: number;
+}
+
+export interface UpdateAIConfigurationDto {
+  provider?: AIProvider;
+  model?: string;
+  apiKey?: string;
+  systemPrompt?: string;
+  temperature?: number;
+  maxTokens?: number;
+}
+
+// Conversation DTOs
+export interface AIMessageDto {
+  id: string;
+  role: MessageRole;
+  content: string;
+  totalTokens: number;
+  createdAt: Date;
+}
+
+export interface ConversationResponseDto {
+  id: string;
+  title: string;
+  companyId: string | null;
+  company: {
+    id: string;
+    name: string;
+    isSystemCompany: boolean;
+  } | null;
+  createdBy: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  messages: AIMessageDto[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateConversationDto {
+  title?: string;
+}
+
+export interface SendMessageDto {
+  content: string;
+}
+
+// Context/RAG DTOs
+export interface AIContextResponseDto {
+  id: string;
+  filename: string;
+  mimeType: string;
+  filePath: string;
+  fileSize: number;
+  extractedText: string;
+  isActive: boolean;
+  companyId: string | null;
+  company: {
+    id: string;
+    name: string;
+    isSystemCompany: boolean;
+  } | null;
+  uploadedBy: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Token Usage DTOs
+export interface TokenUsageResponseDto {
+  id: string;
+  userId: string;
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  companyId: string | null;
+  company: {
+    id: string;
+    name: string;
+    isSystemCompany: boolean;
+  } | null;
+  conversationId: string;
+  messageId: string;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  model: string;
+  provider: AIProvider;
+  createdAt: Date;
+}
+
+export interface TokenUsageSummaryDto {
+  totalTokens: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  conversationCount: number;
+  messageCount: number;
+  byUser?: {
+    userId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    totalTokens: number;
+  }[];
+}
+
+export interface CompanyTokenUsageDto {
+  companyId: string;
+  companyName: string;
+  totalTokens: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  userCount: number;
+  conversationCount: number;
+  messageCount: number;
+  users: {
+    userId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    totalTokens: number;
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    conversationCount: number;
+    messageCount: number;
+  }[];
+}
+
+export interface SetTokenLimitDto {
+  targetType: 'company' | 'user';
+  targetId: string;
+  monthlyLimit: number;
+}
+
+export interface TokenLimitResponseDto {
+  id: string;
+  companyId: string | null;
+  userId: string | null;
+  monthlyLimit: number;
+  currentUsage: number;
+  resetDate: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+

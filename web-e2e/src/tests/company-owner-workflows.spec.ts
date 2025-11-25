@@ -282,18 +282,14 @@ test.describe('Company Owner - Company Modules', () => {
     await expect(authenticatedCompanyOwnerPage).toHaveURL(/simple-text/);
   });
 
-  test('should not access disabled module', async ({ authenticatedCompanyOwnerPage }) => {
+  test('should only show enabled modules', async ({ authenticatedCompanyOwnerPage }) => {
     const modulesPage = new CompanyModulesListPage(authenticatedCompanyOwnerPage);
 
     await modulesPage.goto();
 
-    // Assuming 'reports' module is not enabled for Company A
-    const hasReports = await modulesPage.hasModule('reports');
-
-    if (!hasReports) {
-      // Module not shown - correct behavior
-      expect(hasReports).toBe(false);
-    }
+    // Company A should have Simple Text and AI Agent enabled
+    await modulesPage.expectModuleVisible('simple-text');
+    await modulesPage.expectModuleVisible('ai-agent');
   });
 
   test('should view module count', async ({ authenticatedCompanyOwnerPage }) => {

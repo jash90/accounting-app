@@ -11,7 +11,10 @@ async function bootstrap() {
   app.use(helmet());
   app.enableCors({
     origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:4200'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
+    maxAge: 86400, // 24 hours preflight cache
   });
 
   // Set global API prefix
@@ -47,6 +50,7 @@ async function bootstrap() {
     .addTag('Company', 'Company owner endpoints')
     .addTag('Modules', 'Module management and access control endpoints')
     .addTag('simple-text', 'Simple Text module endpoints')
+    .addTag('ai-agent', 'AI Agent module endpoints - Chat, RAG, Token Management')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

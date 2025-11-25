@@ -22,7 +22,8 @@
         "libs/modules/simple-text/src/index.ts"
       ],
       "@accounting/rbac": ["libs/rbac/src/index.ts"],
-      "@/*": ["web/src/*"]
+      "@/*": ["web/src/*"],
+      "@accounting/modules/ai-agent": ["libs/modules/ai-agent/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

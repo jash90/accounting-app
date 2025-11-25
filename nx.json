@@ -1,5 +1,7 @@
 {
-  "installation": { "version": "22.0.3" },
+  "installation": {
+    "version": "22.0.3"
+  },
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "defaultBase": "master",
   "plugins": [
@@ -39,7 +41,12 @@
         "watchDepsTargetName": "watch-deps"
       }
     },
-    { "plugin": "@nx/playwright/plugin", "options": { "targetName": "e2e" } }
+    {
+      "plugin": "@nx/playwright/plugin",
+      "options": {
+        "targetName": "e2e"
+      }
+    }
   ],
   "generators": {
     "@nx/react": {
@@ -49,8 +56,20 @@
         "linter": "none",
         "bundler": "vite"
       },
-      "component": { "style": "css" },
-      "library": { "style": "css", "linter": "none" }
+      "component": {
+        "style": "css"
+      },
+      "library": {
+        "style": "css",
+        "linter": "none"
+      }
+    }
+  },
+  "targetDefaults": {
+    "@nx/js:tsc": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["default", "^default"]
     }
   }
 }

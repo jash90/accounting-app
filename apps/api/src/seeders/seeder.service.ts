@@ -36,8 +36,9 @@ export class SeederService {
     // Clear existing data
     await this.clearDatabase();
 
-    // Seed data
+    // Seed data in correct order
     const admin = await this.seedAdmin();
+    const systemCompany = await this.seedSystemAdminCompany(admin);
     const { companyA, ownerA, employeesA } = await this.seedCompanyA();
     const { companyB, ownerB, employeesB } = await this.seedCompanyB();
     const modules = await this.seedModules();
@@ -62,7 +63,7 @@ export class SeederService {
     await queryRunner.connect();
 
     try {
-      await queryRunner.query('TRUNCATE TABLE simple_texts, user_module_permissions, company_module_access, modules, users, companies RESTART IDENTITY CASCADE');
+      await queryRunner.query('TRUNCATE TABLE ai_messages, ai_conversations, ai_contexts, ai_configurations, token_usages, token_limits, simple_texts, user_module_permissions, company_module_access, modules, users, companies RESTART IDENTITY CASCADE');
     } finally {
       await queryRunner.release();
     }
@@ -80,6 +81,19 @@ export class SeederService {
       isActive: true,
     });
     return this.userRepository.save(admin);
+  }
+
+  private async seedSystemAdminCompany(admin: User) {
+    console.log('Creating System Admin company...');
+    const systemCompany = this.companyRepository.create({
+      name: 'System Admin',
+      ownerId: admin.id,
+      isSystemCompany: true,
+      isActive: true,
+    });
+    const savedCompany = await this.companyRepository.save(systemCompany);
+    console.log('✅ System Admin company created');
+    return savedCompany;
   }
 
   private async seedCompanyA() {
@@ -185,15 +199,9 @@ export class SeederService {
         isActive: true,
       },
       {
-        name: 'Tasks',
-        slug: 'tasks',
-        description: 'Task management module (placeholder)',
-        isActive: true,
-      },
-      {
-        name: 'Reports',
-        slug: 'reports',
-        description: 'Reporting module (placeholder)',
+        name: 'AI Agent',
+        slug: 'ai-agent',
+        description: 'AI-powered chat assistant with RAG and token management',
         isActive: true,
       },
     ];
@@ -212,9 +220,9 @@ export class SeederService {
     companyB: Company,
     modules: ModuleEntity[],
   ) {
-    // Company A: simple-text, tasks
+    // Company A: simple-text, ai-agent
     const simpleTextModule = modules.find((m) => m.slug === 'simple-text');
-    const tasksModule = modules.find((m) => m.slug === 'tasks');
+    const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
 
     if (simpleTextModule) {
       await this.companyModuleAccessRepository.save(
@@ -226,22 +234,32 @@ export class SeederService {
       );
     }
 
-    if (tasksModule) {
+    if (aiAgentModule) {
       await this.companyModuleAccessRepository.save(
         this.companyModuleAccessRepository.create({
           companyId: companyA.id,
-          moduleId: tasksModule.id,
+          moduleId: aiAgentModule.id,
           isEnabled: true,
         }),
       );
     }
 
-    // Company B: simple-text
+    // Company B: simple-text, ai-agent
     if (simpleTextModule) {
       await this.companyModuleAccessRepository.save(
         this.companyModuleAccessRepository.create({
           companyId: companyB.id,
           moduleId: simpleTextModule.id,
+          isEnabled: true,
+        }),
+      );
+    }
+
+    if (aiAgentModule) {
+      await this.companyModuleAccessRepository.save(
+        this.companyModuleAccessRepository.create({
+          companyId: companyB.id,
+          moduleId: aiAgentModule.id,
           isEnabled: true,
         }),
       );
@@ -254,6 +272,7 @@ export class SeederService {
     modules: ModuleEntity[],
   ) {
     const simpleTextModule = modules.find((m) => m.slug === 'simple-text');
+    const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
 
     if (simpleTextModule) {
       // Employee 1A: read, write
@@ -292,6 +311,54 @@ export class SeederService {
           this.userModulePermissionRepository.create({
             userId: employeesB[0].id,
             moduleId: simpleTextModule.id,
+            permissions: ['read', 'write', 'delete'],
+            grantedById: employeesB[0].companyId
+              ? (await this.companyRepository.findOne({ where: { id: employeesB[0].companyId } }))
+                  ?.ownerId || ''
+              : '',
+          }),
+        );
+      }
+    }
+
+    // AI Agent Module Permissions
+    if (aiAgentModule) {
+      // Employee 1A: read, write (can chat)
+      if (employeesA[0]) {
+        await this.userModulePermissionRepository.save(
+          this.userModulePermissionRepository.create({
+            userId: employeesA[0].id,
+            moduleId: aiAgentModule.id,
+            permissions: ['read', 'write'],
+            grantedById: employeesA[0].companyId
+              ? (await this.companyRepository.findOne({ where: { id: employeesA[0].companyId } }))
+                  ?.ownerId || ''
+              : '',
+          }),
+        );
+      }
+
+      // Employee 2A: read, write (can chat)
+      if (employeesA[1]) {
+        await this.userModulePermissionRepository.save(
+          this.userModulePermissionRepository.create({
+            userId: employeesA[1].id,
+            moduleId: aiAgentModule.id,
+            permissions: ['read', 'write'],
+            grantedById: employeesA[1].companyId
+              ? (await this.companyRepository.findOne({ where: { id: employeesA[1].companyId } }))
+                  ?.ownerId || ''
+              : '',
+          }),
+        );
+      }
+
+      // Employee 1B: read, write, delete (full access)
+      if (employeesB[0]) {
+        await this.userModulePermissionRepository.save(
+          this.userModulePermissionRepository.create({
+            userId: employeesB[0].id,
+            moduleId: aiAgentModule.id,
             permissions: ['read', 'write', 'delete'],
             grantedById: employeesB[0].companyId
               ? (await this.companyRepository.findOne({ where: { id: employeesB[0].companyId } }))
