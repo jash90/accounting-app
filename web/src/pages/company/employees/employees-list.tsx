@@ -17,7 +17,7 @@ const columns: ColumnDef<UserDto>[] = [
     accessorKey: 'email',
     header: 'Email',
     cell: ({ row }) => (
-      <div className="font-medium">{row.original.email}</div>
+      <div className="font-medium text-apptax-navy">{row.original.email}</div>
     ),
   },
   {
@@ -32,7 +32,7 @@ const columns: ColumnDef<UserDto>[] = [
     accessorKey: 'isActive',
     header: 'Status',
     cell: ({ row }) => (
-      <Badge variant={row.original.isActive ? 'default' : 'secondary'}>
+      <Badge variant={row.original.isActive ? 'success' : 'muted'}>
         {row.original.isActive ? 'Active' : 'Inactive'}
       </Badge>
     ),
@@ -60,26 +60,26 @@ export default function EmployeesListPage() {
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:bg-primary/10"
+            className="h-8 w-8 hover:bg-apptax-soft-teal"
             onClick={(e) => {
               e.stopPropagation();
               navigate(`/company/employees/${row.original.id}/permissions`);
             }}
             title="Manage permissions"
           >
-            <Key className="h-4 w-4 text-primary" />
+            <Key className="h-4 w-4 text-apptax-teal" />
           </Button>
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:bg-primary/10"
+            className="h-8 w-8 hover:bg-apptax-soft-teal"
             onClick={(e) => {
               e.stopPropagation();
               setEditingEmployee(row.original);
             }}
             title="Edit employee"
           >
-            <Edit className="h-4 w-4 text-primary" />
+            <Edit className="h-4 w-4 text-apptax-blue" />
           </Button>
           <Button
             size="icon"
@@ -99,7 +99,7 @@ export default function EmployeesListPage() {
   ];
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title="Employees"
         description="Manage your company employees"
@@ -111,9 +111,7 @@ export default function EmployeesListPage() {
         }
       />
 
-      <div className="mt-6">
-        <DataTable columns={actionColumns} data={employees} isLoading={isPending} />
-      </div>
+      <DataTable columns={actionColumns} data={employees} isLoading={isPending} />
 
       <EmployeeFormDialog
         open={createOpen}
@@ -153,4 +151,3 @@ export default function EmployeesListPage() {
     </div>
   );
 }
-

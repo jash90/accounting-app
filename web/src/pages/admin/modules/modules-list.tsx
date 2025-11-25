@@ -16,22 +16,35 @@ const columns: ColumnDef<ModuleDto>[] = [
     accessorKey: 'name',
     header: 'Name',
     cell: ({ row }) => (
-      <div className="font-medium">{row.original.name}</div>
+      <div className="flex items-center gap-2">
+        <span className="font-medium text-apptax-navy">{row.original.name}</span>
+        {row.original.slug === 'ai-agent' && (
+          <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
+        )}
+      </div>
     ),
   },
   {
     accessorKey: 'slug',
     header: 'Slug',
+    cell: ({ row }) => (
+      <code className="px-2 py-1 bg-gray-100 rounded text-sm text-gray-600">
+        {row.original.slug}
+      </code>
+    ),
   },
   {
     accessorKey: 'description',
     header: 'Description',
+    cell: ({ row }) => (
+      <span className="text-gray-600 line-clamp-1">{row.original.description}</span>
+    ),
   },
   {
     accessorKey: 'isActive',
     header: 'Status',
     cell: ({ row }) => (
-      <Badge variant={row.original.isActive ? 'default' : 'secondary'}>
+      <Badge variant={row.original.isActive ? 'success' : 'muted'}>
         {row.original.isActive ? 'Active' : 'Inactive'}
       </Badge>
     ),
@@ -58,14 +71,14 @@ export default function ModulesListPage() {
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:bg-primary/10"
+            className="h-8 w-8 hover:bg-apptax-soft-teal"
             onClick={(e) => {
               e.stopPropagation();
               setEditingModule(row.original);
             }}
             title="Edit module"
           >
-            <Edit className="h-4 w-4 text-primary" />
+            <Edit className="h-4 w-4 text-apptax-blue" />
           </Button>
           <Button
             size="icon"
@@ -85,7 +98,7 @@ export default function ModulesListPage() {
   ];
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title="Modules"
         description="Manage system modules"
@@ -97,9 +110,7 @@ export default function ModulesListPage() {
         }
       />
 
-      <div className="mt-6">
-        <DataTable columns={actionColumns} data={modules} isLoading={isPending} />
-      </div>
+      <DataTable columns={actionColumns} data={modules} isLoading={isPending} />
 
       <ModuleFormDialog
         open={createOpen}
@@ -139,4 +150,3 @@ export default function ModulesListPage() {
     </div>
   );
 }
-

@@ -7,10 +7,14 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: 'border-transparent bg-primary text-primary-foreground hover:bg-primary/80',
-        secondary: 'border border-border bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        default: 'border-transparent bg-apptax-blue text-white hover:bg-apptax-blue/80',
+        secondary: 'border-transparent bg-apptax-navy text-white hover:bg-apptax-navy/80',
         destructive: 'border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80',
-        outline: 'text-foreground',
+        outline: 'border-apptax-blue text-apptax-blue bg-transparent',
+        success: 'border-transparent bg-emerald-500 text-white hover:bg-emerald-500/80',
+        warning: 'border-transparent bg-amber-500 text-white hover:bg-amber-500/80',
+        teal: 'border-transparent bg-apptax-teal text-white hover:bg-apptax-teal/80',
+        muted: 'border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200',
       },
     },
     defaultVariants: {
@@ -28,4 +32,3 @@ function Badge({ className, variant, ...props }: BadgeProps) {
 }
 
 export { Badge, badgeVariants };
-
