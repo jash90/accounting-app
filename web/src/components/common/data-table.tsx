@@ -62,7 +62,7 @@ export function DataTable<TData, TValue>({
     return (
       <div className="space-y-3">
         {[...Array(5)].map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full" />
+          <Skeleton key={i} className="h-12 w-full rounded-lg" />
         ))}
       </div>
     );
@@ -70,59 +70,67 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border-2 border-border bg-card shadow-sm">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => (
+              <TableRow
+                key={row.id}
+                onClick={() => onRowClick?.(row.original)}
+                className={onRowClick ? 'cursor-pointer' : ''}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
                 ))}
               </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  onClick={() => onRowClick?.(row.original)}
-                  className={onRowClick ? 'cursor-pointer hover:bg-muted/50' : ''}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                  No results found
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-32 text-center">
+                <div className="flex flex-col items-center gap-2">
+                  <p className="text-muted-foreground">No results found</p>
+                </div>
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
 
-      {enablePagination && (
-        <div className="flex items-center justify-between">
+      {enablePagination && data.length > 0 && (
+        <div className="flex items-center justify-between px-2">
           <p className="text-sm text-muted-foreground">
-            Showing {table.getState().pagination.pageIndex * pageSize + 1} to{' '}
-            {Math.min(
-              (table.getState().pagination.pageIndex + 1) * pageSize,
-              data.length
-            )}{' '}
-            of {data.length} results
+            Showing{' '}
+            <span className="font-medium text-apptax-navy">
+              {table.getState().pagination.pageIndex * pageSize + 1}
+            </span>{' '}
+            to{' '}
+            <span className="font-medium text-apptax-navy">
+              {Math.min(
+                (table.getState().pagination.pageIndex + 1) * pageSize,
+                data.length
+              )}
+            </span>{' '}
+            of{' '}
+            <span className="font-medium text-apptax-navy">{data.length}</span>{' '}
+            results
           </p>
           <div className="flex gap-2">
             <Button
@@ -130,7 +138,6 @@ export function DataTable<TData, TValue>({
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="min-w-[100px]"
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
               Previous
@@ -140,7 +147,6 @@ export function DataTable<TData, TValue>({
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="min-w-[100px]"
             >
               Next
               <ChevronRight className="h-4 w-4 ml-1" />
@@ -151,4 +157,3 @@ export function DataTable<TData, TValue>({
     </div>
   );
 }
-
