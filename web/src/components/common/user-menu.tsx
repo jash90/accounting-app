@@ -25,41 +25,39 @@ export function UserMenu() {
         <Button
           data-testid="user-menu-button"
           variant="ghost"
-          className="relative h-10 w-10 rounded-full hover:bg-accent transition-colors"
+          className="relative h-10 w-10 rounded-full hover:bg-apptax-soft-teal transition-colors"
         >
           <Avatar>
-            <AvatarFallback className="bg-primary/10 text-primary font-semibold">{initials}</AvatarFallback>
+            <AvatarFallback className="bg-apptax-blue text-white font-semibold">{initials}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end">
+      <DropdownMenuContent className="w-56 shadow-apptax-md" align="end">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium">
+            <p className="text-sm font-semibold text-apptax-navy">
               {user.firstName} {user.lastName}
             </p>
             <p className="text-xs text-muted-foreground">{user.email}</p>
-            <p className="text-xs text-muted-foreground">
-              <Badge variant="outline" className="text-xs">
-                {user.role}
-              </Badge>
-            </p>
+            <Badge variant="outline" className="text-xs w-fit mt-1 border-apptax-blue text-apptax-blue">
+              {user.role}
+            </Badge>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <User className="mr-2 h-4 w-4" />
+        <DropdownMenuItem className="cursor-pointer hover:bg-apptax-soft-teal">
+          <User className="mr-2 h-4 w-4 text-apptax-navy" />
           Profile
         </DropdownMenuItem>
-        <DropdownMenuItem>
-          <Settings className="mr-2 h-4 w-4" />
+        <DropdownMenuItem className="cursor-pointer hover:bg-apptax-soft-teal">
+          <Settings className="mr-2 h-4 w-4 text-apptax-navy" />
           Settings
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           data-testid="logout-button"
           onClick={logout}
-          className="text-destructive"
+          className="text-destructive cursor-pointer focus:text-destructive focus:bg-destructive/10"
         >
           <LogOut className="mr-2 h-4 w-4" />
           Logout
@@ -68,4 +66,3 @@ export function UserMenu() {
     </DropdownMenu>
   );
 }
-

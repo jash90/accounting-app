@@ -8,16 +8,14 @@ export default function EmployeeLayout() {
   const { user } = useAuthContext();
   const navItems = useNavigationItems(user);
 
-  console.log(navItems);
-
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-apptax-warm-gray">
       <Sidebar title="Modules" navItems={navItems} />
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="border-b bg-background">
+        <header className="bg-white border-b border-gray-200 shadow-apptax-sm">
           <div className="flex h-16 items-center justify-between px-6">
             <div className="flex-1" />
             <UserMenu />
@@ -25,7 +23,7 @@ export default function EmployeeLayout() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-muted/10">
+        <main className="flex-1 overflow-y-auto">
           <div className="container mx-auto p-6">
             <Outlet />
           </div>
