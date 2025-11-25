@@ -27,6 +27,11 @@ export class AIConfigurationService {
     if (!encryptionKey) {
       throw new Error('AI_API_KEY_ENCRYPTION_KEY environment variable is required but not set');
     }
+    if (Buffer.byteLength(encryptionKey, 'utf8') !== 32) {
+      throw new Error(
+        `AI_API_KEY_ENCRYPTION_KEY must be exactly 32 bytes for AES-256-CBC. Current length: ${Buffer.byteLength(encryptionKey, 'utf8')} bytes`
+      );
+    }
     this.ENCRYPTION_KEY = encryptionKey;
   }
 
@@ -37,7 +42,7 @@ export class AIConfigurationService {
     const iv = crypto.randomBytes(16);
     const cipher = crypto.createCipheriv(
       this.ALGORITHM,
-      Buffer.from(this.ENCRYPTION_KEY.padEnd(32, '0').substring(0, 32)),
+      Buffer.from(this.ENCRYPTION_KEY),
       iv,
     );
     let encrypted = cipher.update(apiKey, 'utf8', 'hex');
@@ -62,7 +67,7 @@ export class AIConfigurationService {
       const iv = Buffer.from(ivHex, 'hex');
       const decipher = crypto.createDecipheriv(
         this.ALGORITHM,
-        Buffer.from(this.ENCRYPTION_KEY.padEnd(32, '0').substring(0, 32)),
+        Buffer.from(this.ENCRYPTION_KEY),
         iv,
       );
       let decrypted = decipher.update(encrypted, 'hex', 'utf8');
