@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- AppTax Logo - Stacked Version -->
+  
+  <!-- Calculator Icon with AI Core - Centered -->
+  <g id="logo-mark" transform="translate(30, 10)">
+    <!-- Calculator Body -->
+    <rect x="0" y="0" width="60" height="60" rx="10" fill="#1E3A5F"/>
+    
+    <!-- Calculator Screen (Display) -->
+    <rect x="8" y="8" width="44" height="16" rx="4" fill="#0A66C2"/>
+    
+    <!-- AI Core Indicator - Glowing dot -->
+    <circle cx="44" cy="16" r="4" fill="#00BFA6"/>
+    <circle cx="44" cy="16" r="7" fill="#00BFA6" opacity="0.25"/>
+    
+    <!-- Calculator Buttons Grid -->
+    <rect x="8" y="30" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.8"/>
+    <rect x="21" y="30" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.8"/>
+    <rect x="34" y="30" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.8"/>
+    
+    <rect x="8" y="40" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.6"/>
+    <rect x="21" y="40" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.6"/>
+    <rect x="34" y="40" width="10" height="7" rx="2" fill="#00BFA6"/>
+    
+    <rect x="8" y="50" width="23" height="7" rx="2" fill="#4A90D9" opacity="0.5"/>
+    <rect x="34" y="50" width="10" height="7" rx="2" fill="#00BFA6" opacity="0.8"/>
+  </g>
+  
+  <!-- Wordmark - Centered Below -->
+  <g id="wordmark">
+    <text x="60" y="100" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="26" font-weight="700" fill="#1E3A5F">
+      <tspan>App</tspan><tspan fill="#0A66C2">Tax</tspan>
+    </text>
+  </g>
+</svg>

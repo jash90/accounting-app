@@ -1,0 +1,1817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AppTax Visual Identity Guidelines</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Primary Colors */
+            --apptax-blue: #0A66C2;
+            --professional-navy: #1E3A5F;
+            --innovation-teal: #00BFA6;
+            
+            /* Secondary Colors */
+            --light-blue: #4A90D9;
+            --soft-teal: #E0F7F4;
+            --warm-gray: #F5F5F5;
+            
+            /* Neutral Colors */
+            --dark-text: #1A1A2E;
+            --medium-gray: #6B7280;
+            --light-gray: #E5E7EB;
+            --white: #FFFFFF;
+            
+            /* Status Colors */
+            --success: #10B981;
+            --warning: #F59E0B;
+            --error: #EF4444;
+            --info: #3B82F6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: var(--dark-text);
+            background: var(--white);
+        }
+
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 260px;
+            height: 100vh;
+            background: var(--professional-navy);
+            padding: 32px 24px;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 40px;
+            color: var(--white);
+        }
+
+        .nav-logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--white);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: var(--professional-navy);
+            font-size: 14px;
+        }
+
+        .nav-logo-text {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .nav-section {
+            margin-bottom: 24px;
+        }
+
+        .nav-section-title {
+            color: var(--innovation-teal);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 12px;
+        }
+
+        .nav-link {
+            display: block;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            padding: 8px 0;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--white);
+        }
+
+        /* Main Content */
+        .main {
+            margin-left: 260px;
+            min-height: 100vh;
+        }
+
+        .section {
+            padding: 80px 60px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+
+        .section:nth-child(even) {
+            background: var(--warm-gray);
+        }
+
+        .section-header {
+            margin-bottom: 48px;
+        }
+
+        .section-number {
+            color: var(--apptax-blue);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .section-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--professional-navy);
+            margin-bottom: 16px;
+        }
+
+        .section-subtitle {
+            font-size: 18px;
+            color: var(--medium-gray);
+            max-width: 700px;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--professional-navy) 0%, #0d2137 100%);
+            color: var(--white);
+            padding: 120px 60px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 191, 166, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: rgba(0, 191, 166, 0.2);
+            color: var(--innovation-teal);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 24px;
+        }
+
+        .hero-title {
+            font-size: 56px;
+            font-weight: 800;
+            margin-bottom: 24px;
+            line-height: 1.1;
+        }
+
+        .hero-title span {
+            color: var(--apptax-blue);
+        }
+
+        .hero-description {
+            font-size: 20px;
+            opacity: 0.9;
+            max-width: 600px;
+            line-height: 1.7;
+        }
+
+        /* Logo Section */
+        .logo-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 32px;
+            margin-top: 40px;
+        }
+
+        .logo-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .logo-card.dark {
+            background: var(--professional-navy);
+        }
+
+        .logo-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--medium-gray);
+            margin-bottom: 24px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .logo-card.dark .logo-card-title {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .logo-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 120px;
+        }
+
+        .logo-display svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Logomark Display */
+        .logomark-display {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .logomark-item {
+            text-align: center;
+        }
+
+        .logomark-item span {
+            display: block;
+            font-size: 12px;
+            color: var(--medium-gray);
+            margin-top: 12px;
+        }
+
+        /* Clear Space */
+        .clearspace-demo {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin-top: 40px;
+        }
+
+        .clearspace-box {
+            border: 2px dashed var(--apptax-blue);
+            padding: 40px;
+            position: relative;
+        }
+
+        .clearspace-label {
+            position: absolute;
+            font-size: 11px;
+            color: var(--apptax-blue);
+            font-weight: 600;
+        }
+
+        .clearspace-label.top {
+            top: -24px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .clearspace-label.left {
+            left: -40px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+        }
+
+        /* Color Section */
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-top: 40px;
+        }
+
+        .color-card {
+            background: var(--white);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .color-swatch {
+            height: 160px;
+            display: flex;
+            align-items: flex-end;
+            padding: 20px;
+        }
+
+        .color-swatch.primary {
+            background: var(--apptax-blue);
+        }
+
+        .color-swatch.navy {
+            background: var(--professional-navy);
+        }
+
+        .color-swatch.teal {
+            background: var(--innovation-teal);
+        }
+
+        .color-swatch.light-blue {
+            background: var(--light-blue);
+        }
+
+        .color-swatch.soft-teal {
+            background: var(--soft-teal);
+        }
+
+        .color-swatch.warm-gray {
+            background: var(--warm-gray);
+            border: 1px solid var(--light-gray);
+        }
+
+        .color-name {
+            color: var(--white);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .color-swatch.soft-teal .color-name,
+        .color-swatch.warm-gray .color-name {
+            color: var(--dark-text);
+        }
+
+        .color-info {
+            padding: 20px;
+        }
+
+        .color-title {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: var(--dark-text);
+        }
+
+        .color-values {
+            font-size: 13px;
+            color: var(--medium-gray);
+        }
+
+        .color-values div {
+            margin-bottom: 4px;
+        }
+
+        .color-values code {
+            background: var(--warm-gray);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+        }
+
+        /* Typography Section */
+        .type-specimen {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 48px;
+            margin-top: 40px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .type-sample {
+            margin-bottom: 48px;
+            padding-bottom: 48px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+
+        .type-sample:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .type-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--apptax-blue);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+
+        .type-display-1 {
+            font-size: 56px;
+            font-weight: 800;
+            color: var(--professional-navy);
+            line-height: 1.1;
+            margin-bottom: 8px;
+        }
+
+        .type-display-2 {
+            font-size: 40px;
+            font-weight: 700;
+            color: var(--professional-navy);
+            line-height: 1.2;
+            margin-bottom: 8px;
+        }
+
+        .type-h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 8px;
+        }
+
+        .type-h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--dark-text);
+            margin-bottom: 8px;
+        }
+
+        .type-h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--dark-text);
+            margin-bottom: 8px;
+        }
+
+        .type-body {
+            font-size: 16px;
+            font-weight: 400;
+            color: var(--dark-text);
+            line-height: 1.7;
+            margin-bottom: 8px;
+        }
+
+        .type-small {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--medium-gray);
+            margin-bottom: 8px;
+        }
+
+        .type-specs {
+            font-size: 13px;
+            color: var(--medium-gray);
+            margin-top: 12px;
+        }
+
+        .type-specs code {
+            background: var(--warm-gray);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        /* Weights Display */
+        .weights-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 16px;
+            margin-top: 40px;
+        }
+
+        .weight-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .weight-sample {
+            font-size: 48px;
+            color: var(--professional-navy);
+            margin-bottom: 12px;
+        }
+
+        .weight-sample.light { font-weight: 300; }
+        .weight-sample.regular { font-weight: 400; }
+        .weight-sample.medium { font-weight: 500; }
+        .weight-sample.semibold { font-weight: 600; }
+        .weight-sample.bold { font-weight: 700; }
+        .weight-sample.extrabold { font-weight: 800; }
+
+        .weight-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--dark-text);
+            margin-bottom: 4px;
+        }
+
+        .weight-value {
+            font-size: 12px;
+            color: var(--medium-gray);
+        }
+
+        /* Visual Elements */
+        .elements-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 32px;
+            margin-top: 40px;
+        }
+
+        .element-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .element-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark-text);
+            margin-bottom: 16px;
+        }
+
+        .element-description {
+            font-size: 14px;
+            color: var(--medium-gray);
+            margin-bottom: 24px;
+        }
+
+        /* Button Styles */
+        .button-showcase {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 24px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: var(--apptax-blue);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: #0952a5;
+        }
+
+        .btn-secondary {
+            background: var(--professional-navy);
+            color: var(--white);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--apptax-blue);
+            border: 2px solid var(--apptax-blue);
+        }
+
+        .btn-teal {
+            background: var(--innovation-teal);
+            color: var(--white);
+        }
+
+        /* Icon Grid */
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .icon-item {
+            background: var(--warm-gray);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-item svg {
+            width: 24px;
+            height: 24px;
+            color: var(--professional-navy);
+        }
+
+        /* Applications Grid */
+        .applications-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 32px;
+            margin-top: 40px;
+        }
+
+        .app-card {
+            background: var(--white);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .app-preview {
+            height: 240px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+        }
+
+        .app-preview.email {
+            background: linear-gradient(180deg, var(--warm-gray) 0%, var(--white) 100%);
+        }
+
+        .app-preview.card {
+            background: var(--professional-navy);
+        }
+
+        .app-preview.social {
+            background: linear-gradient(135deg, var(--apptax-blue) 0%, var(--professional-navy) 100%);
+        }
+
+        .app-preview.letterhead {
+            background: var(--warm-gray);
+        }
+
+        .app-info {
+            padding: 24px;
+        }
+
+        .app-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark-text);
+            margin-bottom: 8px;
+        }
+
+        .app-description {
+            font-size: 14px;
+            color: var(--medium-gray);
+        }
+
+        /* Business Card Preview */
+        .business-card {
+            width: 320px;
+            height: 180px;
+            background: var(--white);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .business-card-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 40px;
+        }
+
+        .business-card-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--professional-navy);
+            border-radius: 6px;
+        }
+
+        .business-card-name {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--professional-navy);
+        }
+
+        .business-card-name span {
+            color: var(--apptax-blue);
+        }
+
+        .business-card-info {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+        }
+
+        .business-card-person {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--dark-text);
+            margin-bottom: 4px;
+        }
+
+        .business-card-role {
+            font-size: 11px;
+            color: var(--medium-gray);
+            margin-bottom: 12px;
+        }
+
+        .business-card-contact {
+            font-size: 10px;
+            color: var(--medium-gray);
+        }
+
+        .business-card-accent {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 80px;
+            height: 80px;
+            background: var(--innovation-teal);
+            opacity: 0.1;
+            border-radius: 80px 0 12px 0;
+        }
+
+        /* Email Signature Preview */
+        .email-sig {
+            background: var(--white);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--apptax-blue);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .email-sig-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .email-sig-logo {
+            width: 40px;
+            height: 40px;
+            background: var(--professional-navy);
+            border-radius: 6px;
+        }
+
+        .email-sig-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--dark-text);
+        }
+
+        .email-sig-role {
+            font-size: 12px;
+            color: var(--medium-gray);
+        }
+
+        .email-sig-divider {
+            height: 1px;
+            background: var(--light-gray);
+            margin: 12px 0;
+        }
+
+        .email-sig-contact {
+            font-size: 11px;
+            color: var(--medium-gray);
+            line-height: 1.8;
+        }
+
+        /* Social Preview */
+        .social-preview {
+            width: 100%;
+            max-width: 300px;
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, var(--apptax-blue) 0%, var(--professional-navy) 100%);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            text-align: center;
+            padding: 32px;
+        }
+
+        .social-preview-logo {
+            width: 64px;
+            height: 64px;
+            background: var(--white);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .social-preview-text {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .social-preview-text span {
+            color: var(--innovation-teal);
+        }
+
+        /* Do's and Don'ts */
+        .dos-donts {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 32px;
+            margin-top: 40px;
+        }
+
+        .dos, .donts {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .dos-title, .donts-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        .dos-title::before {
+            content: '✓';
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: var(--success);
+            color: var(--white);
+            border-radius: 50%;
+            font-size: 14px;
+        }
+
+        .donts-title::before {
+            content: '✕';
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: var(--error);
+            color: var(--white);
+            border-radius: 50%;
+            font-size: 14px;
+        }
+
+        .dos ul, .donts ul {
+            list-style: none;
+        }
+
+        .dos li, .donts li {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--light-gray);
+            font-size: 14px;
+            color: var(--medium-gray);
+        }
+
+        .dos li:last-child, .donts li:last-child {
+            border-bottom: none;
+        }
+
+        /* Code Block */
+        .code-block {
+            background: var(--dark-text);
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 24px;
+            overflow-x: auto;
+        }
+
+        .code-block pre {
+            color: #e5e7eb;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .code-block .comment {
+            color: #6b7280;
+        }
+
+        .code-block .property {
+            color: #93c5fd;
+        }
+
+        .code-block .value {
+            color: #86efac;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--professional-navy);
+            color: var(--white);
+            padding: 60px;
+            text-align: center;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .footer-logo-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--white);
+            border-radius: 10px;
+        }
+
+        .footer-logo-text {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .footer-text {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .footer-version {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Utility Classes */
+        .mt-40 { margin-top: 40px; }
+        .mb-24 { margin-bottom: 24px; }
+        .text-center { text-align: center; }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .nav {
+                display: none;
+            }
+            .main {
+                margin-left: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .section {
+                padding: 40px 24px;
+            }
+            .hero {
+                padding: 60px 24px;
+            }
+            .hero-title {
+                font-size: 36px;
+            }
+            .logo-grid,
+            .color-palette,
+            .elements-grid,
+            .applications-grid,
+            .dos-donts {
+                grid-template-columns: 1fr;
+            }
+            .weights-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-logo">
+            <div class="nav-logo-icon">AT</div>
+            <span class="nav-logo-text">AppTax</span>
+        </div>
+        
+        <div class="nav-section">
+            <div class="nav-section-title">Foundation</div>
+            <a href="#brand-story" class="nav-link">Brand Story</a>
+            <a href="#logo" class="nav-link">Logo System</a>
+            <a href="#colors" class="nav-link">Color Palette</a>
+            <a href="#typography" class="nav-link">Typography</a>
+        </div>
+        
+        <div class="nav-section">
+            <div class="nav-section-title">Elements</div>
+            <a href="#visual-elements" class="nav-link">Visual Elements</a>
+            <a href="#iconography" class="nav-link">Iconography</a>
+            <a href="#ui-components" class="nav-link">UI Components</a>
+        </div>
+        
+        <div class="nav-section">
+            <div class="nav-section-title">Applications</div>
+            <a href="#applications" class="nav-link">Brand Applications</a>
+            <a href="#digital" class="nav-link">Digital Assets</a>
+            <a href="#guidelines" class="nav-link">Usage Guidelines</a>
+        </div>
+        
+        <div class="nav-section">
+            <div class="nav-section-title">Resources</div>
+            <a href="#code" class="nav-link">Code Snippets</a>
+            <a href="#downloads" class="nav-link">Downloads</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Hero Section -->
+        <section class="hero" id="brand-story">
+            <div class="hero-content">
+                <span class="hero-badge">Visual Identity Guidelines v1.0</span>
+                <h1 class="hero-title">App<span>Tax</span></h1>
+                <p class="hero-description">
+                    AI-powered accounting intelligence for the modern Polish market. 
+                    Our visual identity bridges traditional accounting reliability with 
+                    innovative AI capabilities, creating trust through smart automation.
+                </p>
+            </div>
+        </section>
+
+        <!-- Brand Essence -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-number">01 — Brand Foundation</span>
+                <h2 class="section-title">Brand Essence</h2>
+                <p class="section-subtitle">
+                    AppTax represents the evolution of accounting—where human expertise meets artificial intelligence 
+                    to create a seamless, trustworthy experience for modern accounting professionals.
+                </p>
+            </div>
+
+            <div class="elements-grid">
+                <div class="element-card">
+                    <h3 class="element-title">Mission</h3>
+                    <p class="element-description">
+                        To empower Polish accounting professionals with AI-driven tools that enhance efficiency, 
+                        ensure compliance, and enable proactive client service—transforming how accounting firms operate.
+                    </p>
+                </div>
+                <div class="element-card">
+                    <h3 class="element-title">Vision</h3>
+                    <p class="element-description">
+                        Become the leading AI-powered accounting platform in Poland, setting the standard for 
+                        intelligent automation while maintaining the trust and reliability the industry demands.
+                    </p>
+                </div>
+                <div class="element-card">
+                    <h3 class="element-title">Brand Personality</h3>
+                    <p class="element-description">
+                        <strong>Intelligent</strong> — Powered by advanced AI<br>
+                        <strong>Trustworthy</strong> — Professional and reliable<br>
+                        <strong>Progressive</strong> — Forward-thinking innovation<br>
+                        <strong>Approachable</strong> — Complex made simple
+                    </p>
+                </div>
+                <div class="element-card">
+                    <h3 class="element-title">Target Audience</h3>
+                    <p class="element-description">
+                        Tech-savvy accounting professionals and firms in Poland seeking efficiency gains through automation. 
+                        They value innovation but require the credibility and compliance assurance essential in their industry.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Logo Section -->
+        <section class="section" id="logo">
+            <div class="section-header">
+                <span class="section-number">02 — Logo System</span>
+                <h2 class="section-title">The Smart Calculator</h2>
+                <p class="section-subtitle">
+                    Our logo combines the familiar calculator iconography with an AI indicator, 
+                    creating instant industry recognition while signaling technological innovation.
+                </p>
+            </div>
+
+            <div class="logo-grid">
+                <div class="logo-card">
+                    <span class="logo-card-title">Primary Logo — Horizontal</span>
+                    <div class="logo-display">
+                        <svg width="240" height="60" viewBox="0 0 240 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <g id="logo-mark">
+                                <rect x="4" y="8" width="44" height="44" rx="8" fill="#1E3A5F"/>
+                                <rect x="10" y="14" width="32" height="12" rx="3" fill="#0A66C2"/>
+                                <circle cx="38" cy="20" r="3" fill="#00BFA6"/>
+                                <circle cx="38" cy="20" r="5" fill="#00BFA6" opacity="0.3"/>
+                                <rect x="10" y="30" width="7" height="5" rx="1" fill="#4A90D9" opacity="0.8"/>
+                                <rect x="19" y="30" width="7" height="5" rx="1" fill="#4A90D9" opacity="0.8"/>
+                                <rect x="28" y="30" width="7" height="5" rx="1" fill="#4A90D9" opacity="0.8"/>
+                                <rect x="10" y="37" width="7" height="5" rx="1" fill="#4A90D9" opacity="0.6"/>
+                                <rect x="19" y="37" width="7" height="5" rx="1" fill="#4A90D9" opacity="0.6"/>
+                                <rect x="28" y="37" width="7" height="5" rx="1" fill="#00BFA6"/>
+                                <rect x="10" y="44" width="16" height="5" rx="1" fill="#4A90D9" opacity="0.5"/>
+                                <rect x="28" y="44" width="7" height="5" rx="1" fill="#00BFA6" opacity="0.8"/>
+                            </g>
+                            <text x="60" y="40" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="700" fill="#1E3A5F">
+                                <tspan>App</tspan><tspan fill="#0A66C2">Tax</tspan>
+                            </text>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="logo-card dark">
+                    <span class="logo-card-title">Reversed Logo — Dark Backgrounds</span>
+                    <div class="logo-display">
+                        <svg width="240" height="60" viewBox="0 0 240 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <g id="logo-mark">
+                                <rect x="4" y="8" width="44" height="44" rx="8" fill="#FFFFFF"/>
+                                <rect x="10" y="14" width="32" height="12" rx="3" fill="#0A66C2"/>
+                                <circle cx="38" cy="20" r="3" fill="#00BFA6"/>
+                                <circle cx="38" cy="20" r="5" fill="#00BFA6" opacity="0.4"/>
+                                <rect x="10" y="30" width="7" height="5" rx="1" fill="#1E3A5F" opacity="0.3"/>
+                                <rect x="19" y="30" width="7" height="5" rx="1" fill="#1E3A5F" opacity="0.3"/>
+                                <rect x="28" y="30" width="7" height="5" rx="1" fill="#1E3A5F" opacity="0.3"/>
+                                <rect x="10" y="37" width="7" height="5" rx="1" fill="#1E3A5F" opacity="0.25"/>
+                                <rect x="19" y="37" width="7" height="5" rx="1" fill="#1E3A5F" opacity="0.25"/>
+                                <rect x="28" y="37" width="7" height="5" rx="1" fill="#00BFA6"/>
+                                <rect x="10" y="44" width="16" height="5" rx="1" fill="#1E3A5F" opacity="0.2"/>
+                                <rect x="28" y="44" width="7" height="5" rx="1" fill="#00BFA6" opacity="0.8"/>
+                            </g>
+                            <text x="60" y="40" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="700" fill="#FFFFFF">
+                                <tspan>App</tspan><tspan fill="#4A90D9">Tax</tspan>
+                            </text>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="logo-card">
+                    <span class="logo-card-title">Stacked Version</span>
+                    <div class="logo-display">
+                        <svg width="100" height="110" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <g transform="translate(30, 10)">
+                                <rect x="0" y="0" width="60" height="60" rx="10" fill="#1E3A5F"/>
+                                <rect x="8" y="8" width="44" height="16" rx="4" fill="#0A66C2"/>
+                                <circle cx="44" cy="16" r="4" fill="#00BFA6"/>
+                                <circle cx="44" cy="16" r="7" fill="#00BFA6" opacity="0.25"/>
+                                <rect x="8" y="30" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.8"/>
+                                <rect x="21" y="30" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.8"/>
+                                <rect x="34" y="30" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.8"/>
+                                <rect x="8" y="40" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.6"/>
+                                <rect x="21" y="40" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.6"/>
+                                <rect x="34" y="40" width="10" height="7" rx="2" fill="#00BFA6"/>
+                                <rect x="8" y="50" width="23" height="7" rx="2" fill="#4A90D9" opacity="0.5"/>
+                                <rect x="34" y="50" width="10" height="7" rx="2" fill="#00BFA6" opacity="0.8"/>
+                            </g>
+                            <text x="60" y="100" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="26" font-weight="700" fill="#1E3A5F">
+                                <tspan>App</tspan><tspan fill="#0A66C2">Tax</tspan>
+                            </text>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="logo-card">
+                    <span class="logo-card-title">Logomark — Icon Only</span>
+                    <div class="logo-display">
+                        <div class="logomark-display">
+                            <div class="logomark-item">
+                                <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="2" y="2" width="60" height="60" rx="12" fill="#1E3A5F"/>
+                                    <rect x="10" y="10" width="44" height="16" rx="4" fill="#0A66C2"/>
+                                    <circle cx="46" cy="18" r="4" fill="#00BFA6"/>
+                                    <circle cx="46" cy="18" r="7" fill="#00BFA6" opacity="0.3"/>
+                                    <rect x="10" y="32" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.8"/>
+                                    <rect x="23" y="32" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.8"/>
+                                    <rect x="36" y="32" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.8"/>
+                                    <rect x="10" y="42" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.6"/>
+                                    <rect x="23" y="42" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.6"/>
+                                    <rect x="36" y="42" width="10" height="7" rx="2" fill="#00BFA6"/>
+                                    <rect x="10" y="52" width="23" height="7" rx="2" fill="#4A90D9" opacity="0.5"/>
+                                    <rect x="36" y="52" width="10" height="7" rx="2" fill="#00BFA6" opacity="0.8"/>
+                                </svg>
+                                <span>64 × 64px</span>
+                            </div>
+                            <div class="logomark-item">
+                                <svg width="48" height="48" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="2" y="2" width="60" height="60" rx="12" fill="#1E3A5F"/>
+                                    <rect x="10" y="10" width="44" height="16" rx="4" fill="#0A66C2"/>
+                                    <circle cx="46" cy="18" r="4" fill="#00BFA6"/>
+                                    <rect x="10" y="32" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.8"/>
+                                    <rect x="23" y="32" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.8"/>
+                                    <rect x="36" y="32" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.8"/>
+                                    <rect x="10" y="42" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.6"/>
+                                    <rect x="23" y="42" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.6"/>
+                                    <rect x="36" y="42" width="10" height="7" rx="2" fill="#00BFA6"/>
+                                    <rect x="10" y="52" width="23" height="7" rx="2" fill="#4A90D9" opacity="0.5"/>
+                                    <rect x="36" y="52" width="10" height="7" rx="2" fill="#00BFA6" opacity="0.8"/>
+                                </svg>
+                                <span>48 × 48px</span>
+                            </div>
+                            <div class="logomark-item">
+                                <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="2" y="2" width="60" height="60" rx="12" fill="#1E3A5F"/>
+                                    <rect x="10" y="10" width="44" height="16" rx="4" fill="#0A66C2"/>
+                                    <circle cx="46" cy="18" r="4" fill="#00BFA6"/>
+                                    <rect x="10" y="32" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.8"/>
+                                    <rect x="23" y="32" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.8"/>
+                                    <rect x="36" y="32" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.8"/>
+                                    <rect x="10" y="42" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.6"/>
+                                    <rect x="23" y="42" width="10" height="7" rx="2" fill="#4A90D9" opacity="0.6"/>
+                                    <rect x="36" y="42" width="10" height="7" rx="2" fill="#00BFA6"/>
+                                    <rect x="10" y="52" width="23" height="7" rx="2" fill="#4A90D9" opacity="0.5"/>
+                                    <rect x="36" y="52" width="10" height="7" rx="2" fill="#00BFA6" opacity="0.8"/>
+                                </svg>
+                                <span>32 × 32px</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clear Space -->
+            <h3 class="element-title mt-40">Clear Space Requirements</h3>
+            <p class="element-description">
+                Maintain a minimum clear space around the logo equal to the height of the "A" in AppTax. 
+                This ensures visual integrity across all applications.
+            </p>
+            <div class="clearspace-demo">
+                <div class="clearspace-box">
+                    <span class="clearspace-label top">1× height</span>
+                    <span class="clearspace-label left">1× height</span>
+                    <svg width="200" height="50" viewBox="0 0 240 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g id="logo-mark">
+                            <rect x="4" y="8" width="44" height="44" rx="8" fill="#1E3A5F"/>
+                            <rect x="10" y="14" width="32" height="12" rx="3" fill="#0A66C2"/>
+                            <circle cx="38" cy="20" r="3" fill="#00BFA6"/>
+                            <rect x="10" y="30" width="7" height="5" rx="1" fill="#4A90D9" opacity="0.8"/>
+                            <rect x="19" y="30" width="7" height="5" rx="1" fill="#4A90D9" opacity="0.8"/>
+                            <rect x="28" y="30" width="7" height="5" rx="1" fill="#4A90D9" opacity="0.8"/>
+                            <rect x="10" y="37" width="7" height="5" rx="1" fill="#4A90D9" opacity="0.6"/>
+                            <rect x="19" y="37" width="7" height="5" rx="1" fill="#4A90D9" opacity="0.6"/>
+                            <rect x="28" y="37" width="7" height="5" rx="1" fill="#00BFA6"/>
+                            <rect x="10" y="44" width="16" height="5" rx="1" fill="#4A90D9" opacity="0.5"/>
+                            <rect x="28" y="44" width="7" height="5" rx="1" fill="#00BFA6" opacity="0.8"/>
+                        </g>
+                        <text x="60" y="40" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="700" fill="#1E3A5F">
+                            <tspan>App</tspan><tspan fill="#0A66C2">Tax</tspan>
+                        </text>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- Color Section -->
+        <section class="section" id="colors">
+            <div class="section-header">
+                <span class="section-number">03 — Color System</span>
+                <h2 class="section-title">Color Palette</h2>
+                <p class="section-subtitle">
+                    Our colors balance professional credibility with innovative energy. 
+                    The palette is designed for WCAG accessibility compliance and digital-first applications.
+                </p>
+            </div>
+
+            <h3 class="element-title">Primary Colors</h3>
+            <div class="color-palette">
+                <div class="color-card">
+                    <div class="color-swatch primary">
+                        <span class="color-name">AppTax Blue</span>
+                    </div>
+                    <div class="color-info">
+                        <h4 class="color-title">AppTax Blue</h4>
+                        <div class="color-values">
+                            <div><strong>HEX:</strong> <code>#0A66C2</code></div>
+                            <div><strong>RGB:</strong> <code>10, 102, 194</code></div>
+                            <div><strong>CMYK:</strong> <code>95, 47, 0, 24</code></div>
+                            <div><strong>Pantone:</strong> <code>2935 C</code></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-swatch navy">
+                        <span class="color-name">Professional Navy</span>
+                    </div>
+                    <div class="color-info">
+                        <h4 class="color-title">Professional Navy</h4>
+                        <div class="color-values">
+                            <div><strong>HEX:</strong> <code>#1E3A5F</code></div>
+                            <div><strong>RGB:</strong> <code>30, 58, 95</code></div>
+                            <div><strong>CMYK:</strong> <code>68, 39, 0, 63</code></div>
+                            <div><strong>Pantone:</strong> <code>289 C</code></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-swatch teal">
+                        <span class="color-name">Innovation Teal</span>
+                    </div>
+                    <div class="color-info">
+                        <h4 class="color-title">Innovation Teal</h4>
+                        <div class="color-values">
+                            <div><strong>HEX:</strong> <code>#00BFA6</code></div>
+                            <div><strong>RGB:</strong> <code>0, 191, 166</code></div>
+                            <div><strong>CMYK:</strong> <code>100, 0, 13, 25</code></div>
+                            <div><strong>Pantone:</strong> <code>3268 C</code></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="element-title mt-40">Secondary Colors</h3>
+            <div class="color-palette">
+                <div class="color-card">
+                    <div class="color-swatch light-blue">
+                        <span class="color-name">Light Blue</span>
+                    </div>
+                    <div class="color-info">
+                        <h4 class="color-title">Light Blue</h4>
+                        <div class="color-values">
+                            <div><strong>HEX:</strong> <code>#4A90D9</code></div>
+                            <div><strong>RGB:</strong> <code>74, 144, 217</code></div>
+                            <div><strong>Use:</strong> UI elements, accents</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-swatch soft-teal">
+                        <span class="color-name">Soft Teal</span>
+                    </div>
+                    <div class="color-info">
+                        <h4 class="color-title">Soft Teal</h4>
+                        <div class="color-values">
+                            <div><strong>HEX:</strong> <code>#E0F7F4</code></div>
+                            <div><strong>RGB:</strong> <code>224, 247, 244</code></div>
+                            <div><strong>Use:</strong> Backgrounds, highlights</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-swatch warm-gray">
+                        <span class="color-name">Warm Gray</span>
+                    </div>
+                    <div class="color-info">
+                        <h4 class="color-title">Warm Gray</h4>
+                        <div class="color-values">
+                            <div><strong>HEX:</strong> <code>#F5F5F5</code></div>
+                            <div><strong>RGB:</strong> <code>245, 245, 245</code></div>
+                            <div><strong>Use:</strong> Page backgrounds</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Color Usage -->
+            <h3 class="element-title mt-40">Color Usage Ratios</h3>
+            <div class="element-card" style="margin-top: 16px;">
+                <div style="display: flex; height: 48px; border-radius: 8px; overflow: hidden;">
+                    <div style="flex: 60; background: var(--professional-navy);"></div>
+                    <div style="flex: 30; background: var(--apptax-blue);"></div>
+                    <div style="flex: 10; background: var(--innovation-teal);"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 12px; font-size: 13px; color: var(--medium-gray);">
+                    <span>Professional Navy — 60%</span>
+                    <span>AppTax Blue — 30%</span>
+                    <span>Innovation Teal — 10%</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Typography Section -->
+        <section class="section" id="typography">
+            <div class="section-header">
+                <span class="section-number">04 — Typography</span>
+                <h2 class="section-title">Type System</h2>
+                <p class="section-subtitle">
+                    Inter is our primary typeface, selected for its exceptional screen legibility, 
+                    Polish character support, and modern professional aesthetic.
+                </p>
+            </div>
+
+            <div class="type-specimen">
+                <div class="type-sample">
+                    <span class="type-label">Display 1</span>
+                    <div class="type-display-1">Intelligent Accounting</div>
+                    <div class="type-specs"><code>Inter ExtraBold · 56px · Line Height 1.1</code></div>
+                </div>
+
+                <div class="type-sample">
+                    <span class="type-label">Display 2</span>
+                    <div class="type-display-2">AI-Powered Solutions</div>
+                    <div class="type-specs"><code>Inter Bold · 40px · Line Height 1.2</code></div>
+                </div>
+
+                <div class="type-sample">
+                    <span class="type-label">Heading 1</span>
+                    <div class="type-h1">Professional Tax Compliance</div>
+                    <div class="type-specs"><code>Inter Bold · 32px · Line Height 1.3</code></div>
+                </div>
+
+                <div class="type-sample">
+                    <span class="type-label">Heading 2</span>
+                    <div class="type-h2">Streamlined Document Management</div>
+                    <div class="type-specs"><code>Inter SemiBold · 24px · Line Height 1.4</code></div>
+                </div>
+
+                <div class="type-sample">
+                    <span class="type-label">Heading 3</span>
+                    <div class="type-h3">Automated Workflows</div>
+                    <div class="type-specs"><code>Inter SemiBold · 20px · Line Height 1.4</code></div>
+                </div>
+
+                <div class="type-sample">
+                    <span class="type-label">Body Text</span>
+                    <div class="type-body">
+                        AppTax transforms how accounting professionals work by combining traditional reliability 
+                        with cutting-edge AI capabilities. Our platform handles complex Polish tax regulations 
+                        while providing intuitive tools that save hours of manual work.
+                    </div>
+                    <div class="type-specs"><code>Inter Regular · 16px · Line Height 1.7</code></div>
+                </div>
+
+                <div class="type-sample">
+                    <span class="type-label">Small Text</span>
+                    <div class="type-small">
+                        Supporting information, captions, and helper text use this style for secondary content.
+                    </div>
+                    <div class="type-specs"><code>Inter Regular · 14px · Line Height 1.6</code></div>
+                </div>
+            </div>
+
+            <!-- Font Weights -->
+            <h3 class="element-title mt-40">Available Weights</h3>
+            <div class="weights-grid">
+                <div class="weight-card">
+                    <div class="weight-sample light">Aa</div>
+                    <div class="weight-name">Light</div>
+                    <div class="weight-value">300</div>
+                </div>
+                <div class="weight-card">
+                    <div class="weight-sample regular">Aa</div>
+                    <div class="weight-name">Regular</div>
+                    <div class="weight-value">400</div>
+                </div>
+                <div class="weight-card">
+                    <div class="weight-sample medium">Aa</div>
+                    <div class="weight-name">Medium</div>
+                    <div class="weight-value">500</div>
+                </div>
+                <div class="weight-card">
+                    <div class="weight-sample semibold">Aa</div>
+                    <div class="weight-name">SemiBold</div>
+                    <div class="weight-value">600</div>
+                </div>
+                <div class="weight-card">
+                    <div class="weight-sample bold">Aa</div>
+                    <div class="weight-name">Bold</div>
+                    <div class="weight-value">700</div>
+                </div>
+                <div class="weight-card">
+                    <div class="weight-sample extrabold">Aa</div>
+                    <div class="weight-name">ExtraBold</div>
+                    <div class="weight-value">800</div>
+                </div>
+            </div>
+
+            <!-- Polish Characters -->
+            <h3 class="element-title mt-40">Polish Character Support</h3>
+            <div class="element-card" style="margin-top: 16px;">
+                <p class="element-description">Inter provides complete support for Polish diacritics:</p>
+                <div style="font-size: 32px; font-weight: 600; color: var(--professional-navy); margin-top: 16px; letter-spacing: 4px;">
+                    Ą Ć Ę Ł Ń Ó Ś Ź Ż
+                </div>
+                <div style="font-size: 32px; font-weight: 400; color: var(--medium-gray); margin-top: 8px; letter-spacing: 4px;">
+                    ą ć ę ł ń ó ś ź ż
+                </div>
+            </div>
+        </section>
+
+        <!-- Visual Elements -->
+        <section class="section" id="visual-elements">
+            <div class="section-header">
+                <span class="section-number">05 — Visual Elements</span>
+                <h2 class="section-title">Design Language</h2>
+                <p class="section-subtitle">
+                    Our visual system uses clean geometric forms and subtle gradients 
+                    to create a modern, trustworthy aesthetic.
+                </p>
+            </div>
+
+            <div class="elements-grid">
+                <div class="element-card">
+                    <h3 class="element-title">Border Radius</h3>
+                    <p class="element-description">Consistent rounded corners create a friendly yet professional feel.</p>
+                    <div style="display: flex; gap: 16px; margin-top: 24px;">
+                        <div style="text-align: center;">
+                            <div style="width: 60px; height: 60px; background: var(--apptax-blue); border-radius: 4px;"></div>
+                            <span style="font-size: 12px; color: var(--medium-gray); margin-top: 8px; display: block;">4px</span>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="width: 60px; height: 60px; background: var(--apptax-blue); border-radius: 8px;"></div>
+                            <span style="font-size: 12px; color: var(--medium-gray); margin-top: 8px; display: block;">8px</span>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="width: 60px; height: 60px; background: var(--apptax-blue); border-radius: 12px;"></div>
+                            <span style="font-size: 12px; color: var(--medium-gray); margin-top: 8px; display: block;">12px</span>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="width: 60px; height: 60px; background: var(--apptax-blue); border-radius: 16px;"></div>
+                            <span style="font-size: 12px; color: var(--medium-gray); margin-top: 8px; display: block;">16px</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="element-card">
+                    <h3 class="element-title">Shadows</h3>
+                    <p class="element-description">Subtle elevation creates depth without distraction.</p>
+                    <div style="display: flex; gap: 24px; margin-top: 24px;">
+                        <div style="text-align: center;">
+                            <div style="width: 80px; height: 80px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);"></div>
+                            <span style="font-size: 12px; color: var(--medium-gray); margin-top: 8px; display: block;">Small</span>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="width: 80px; height: 80px; background: white; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);"></div>
+                            <span style="font-size: 12px; color: var(--medium-gray); margin-top: 8px; display: block;">Medium</span>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="width: 80px; height: 80px; background: white; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.16);"></div>
+                            <span style="font-size: 12px; color: var(--medium-gray); margin-top: 8px; display: block;">Large</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="element-card">
+                    <h3 class="element-title">Gradients</h3>
+                    <p class="element-description">Subtle gradients add depth to hero sections and CTAs.</p>
+                    <div style="display: flex; gap: 16px; margin-top: 24px;">
+                        <div style="flex: 1; height: 80px; background: linear-gradient(135deg, #0A66C2 0%, #1E3A5F 100%); border-radius: 12px;"></div>
+                        <div style="flex: 1; height: 80px; background: linear-gradient(135deg, #1E3A5F 0%, #0d2137 100%); border-radius: 12px;"></div>
+                        <div style="flex: 1; height: 80px; background: linear-gradient(135deg, #00BFA6 0%, #0A66C2 100%); border-radius: 12px;"></div>
+                    </div>
+                </div>
+
+                <div class="element-card">
+                    <h3 class="element-title">AI Indicator</h3>
+                    <p class="element-description">The teal glow represents AI intelligence throughout the interface.</p>
+                    <div style="display: flex; gap: 24px; align-items: center; margin-top: 24px;">
+                        <div style="position: relative;">
+                            <div style="width: 24px; height: 24px; background: var(--innovation-teal); border-radius: 50%;"></div>
+                            <div style="position: absolute; top: -6px; left: -6px; width: 36px; height: 36px; background: var(--innovation-teal); opacity: 0.3; border-radius: 50%;"></div>
+                        </div>
+                        <div style="position: relative;">
+                            <div style="width: 16px; height: 16px; background: var(--innovation-teal); border-radius: 50%;"></div>
+                            <div style="position: absolute; top: -4px; left: -4px; width: 24px; height: 24px; background: var(--innovation-teal); opacity: 0.3; border-radius: 50%;"></div>
+                        </div>
+                        <div style="position: relative;">
+                            <div style="width: 12px; height: 12px; background: var(--innovation-teal); border-radius: 50%;"></div>
+                            <div style="position: absolute; top: -3px; left: -3px; width: 18px; height: 18px; background: var(--innovation-teal); opacity: 0.3; border-radius: 50%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- UI Components -->
+            <h3 class="element-title mt-40" id="ui-components">UI Components</h3>
+            <div class="element-card" style="margin-top: 16px;">
+                <h4 class="element-title">Buttons</h4>
+                <p class="element-description">Button styles for various contexts and priorities.</p>
+                <div class="button-showcase">
+                    <button class="btn btn-primary">Primary Action</button>
+                    <button class="btn btn-secondary">Secondary</button>
+                    <button class="btn btn-outline">Outline</button>
+                    <button class="btn btn-teal">AI Feature</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Applications -->
+        <section class="section" id="applications">
+            <div class="section-header">
+                <span class="section-number">06 — Applications</span>
+                <h2 class="section-title">Brand Applications</h2>
+                <p class="section-subtitle">
+                    Examples of how the visual identity system applies across different touchpoints.
+                </p>
+            </div>
+
+            <div class="applications-grid">
+                <div class="app-card">
+                    <div class="app-preview card">
+                        <div class="business-card">
+                            <div class="business-card-logo">
+                                <div class="business-card-icon"></div>
+                                <span class="business-card-name">App<span>Tax</span></span>
+                            </div>
+                            <div class="business-card-info">
+                                <div class="business-card-person">Jan Kowalski</div>
+                                <div class="business-card-role">Senior Accountant</div>
+                                <div class="business-card-contact">
+                                    jan.kowalski@apptax.pl<br>
+                                    +48 123 456 789
+                                </div>
+                            </div>
+                            <div class="business-card-accent"></div>
+                        </div>
+                    </div>
+                    <div class="app-info">
+                        <h3 class="app-title">Business Cards</h3>
+                        <p class="app-description">Clean, professional cards with subtle AI accent. 90×50mm standard format.</p>
+                    </div>
+                </div>
+
+                <div class="app-card">
+                    <div class="app-preview email">
+                        <div class="email-sig">
+                            <div class="email-sig-header">
+                                <div class="email-sig-logo"></div>
+                                <div>
+                                    <div class="email-sig-name">Jan Kowalski</div>
+                                    <div class="email-sig-role">Senior Accountant</div>
+                                </div>
+                            </div>
+                            <div class="email-sig-divider"></div>
+                            <div class="email-sig-contact">
+                                <strong>AppTax</strong> — AI-Powered Accounting<br>
+                                jan.kowalski@apptax.pl · +48 123 456 789<br>
+                                www.apptax.pl
+                            </div>
+                        </div>
+                    </div>
+                    <div class="app-info">
+                        <h3 class="app-title">Email Signature</h3>
+                        <p class="app-description">Consistent email signatures reinforce brand identity in every communication.</p>
+                    </div>
+                </div>
+
+                <div class="app-card">
+                    <div class="app-preview social">
+                        <div class="social-preview">
+                            <div class="social-preview-logo"></div>
+                            <div class="social-preview-text">App<span>Tax</span></div>
+                        </div>
+                    </div>
+                    <div class="app-info">
+                        <h3 class="app-title">Social Media Profile</h3>
+                        <p class="app-description">Square format for LinkedIn, Facebook, and other platforms.</p>
+                    </div>
+                </div>
+
+                <div class="app-card">
+                    <div class="app-preview letterhead">
+                        <div style="background: white; width: 100%; max-width: 280px; height: 180px; padding: 20px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                                <div style="width: 28px; height: 28px; background: var(--professional-navy); border-radius: 5px;"></div>
+                                <span style="font-weight: 700; font-size: 12px; color: var(--professional-navy);">App<span style="color: var(--apptax-blue);">Tax</span></span>
+                            </div>
+                            <div style="height: 6px; background: var(--light-gray); border-radius: 3px; width: 60%; margin-bottom: 8px;"></div>
+                            <div style="height: 6px; background: var(--light-gray); border-radius: 3px; width: 80%; margin-bottom: 8px;"></div>
+                            <div style="height: 6px; background: var(--light-gray); border-radius: 3px; width: 40%; margin-bottom: 24px;"></div>
+                            <div style="height: 4px; background: var(--light-gray); border-radius: 2px; width: 100%; margin-bottom: 4px;"></div>
+                            <div style="height: 4px; background: var(--light-gray); border-radius: 2px; width: 100%; margin-bottom: 4px;"></div>
+                            <div style="height: 4px; background: var(--light-gray); border-radius: 2px; width: 70%;"></div>
+                        </div>
+                    </div>
+                    <div class="app-info">
+                        <h3 class="app-title">Letterhead</h3>
+                        <p class="app-description">A4 format for official correspondence and documents.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Usage Guidelines -->
+        <section class="section" id="guidelines">
+            <div class="section-header">
+                <span class="section-number">07 — Guidelines</span>
+                <h2 class="section-title">Usage Guidelines</h2>
+                <p class="section-subtitle">
+                    Maintain brand consistency by following these essential do's and don'ts.
+                </p>
+            </div>
+
+            <div class="dos-donts">
+                <div class="dos">
+                    <h3 class="dos-title">Do</h3>
+                    <ul>
+                        <li>Use the logo with adequate clear space</li>
+                        <li>Maintain color consistency across applications</li>
+                        <li>Use Inter typeface for all communications</li>
+                        <li>Apply the AI indicator (teal glow) for smart features</li>
+                        <li>Ensure sufficient contrast for accessibility</li>
+                        <li>Scale the logo proportionally</li>
+                        <li>Use approved color combinations</li>
+                        <li>Keep messaging professional yet approachable</li>
+                    </ul>
+                </div>
+                <div class="donts">
+                    <h3 class="donts-title">Don't</h3>
+                    <ul>
+                        <li>Distort or stretch the logo</li>
+                        <li>Use unapproved colors</li>
+                        <li>Add effects like drop shadows to the logo</li>
+                        <li>Place the logo on busy backgrounds</li>
+                        <li>Modify the logo's proportions</li>
+                        <li>Use the logo smaller than minimum size (24px height)</li>
+                        <li>Rotate or flip the logo</li>
+                        <li>Use low contrast color combinations</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Code Section -->
+        <section class="section" id="code">
+            <div class="section-header">
+                <span class="section-number">08 — Implementation</span>
+                <h2 class="section-title">Code Snippets</h2>
+                <p class="section-subtitle">
+                    Ready-to-use code for implementing the brand system in your projects.
+                </p>
+            </div>
+
+            <h3 class="element-title">CSS Variables</h3>
+            <div class="code-block">
+                <pre><span class="comment">/* AppTax Brand Colors */</span>
+<span class="property">:root</span> {
+  <span class="comment">/* Primary */</span>
+  <span class="property">--apptax-blue:</span> <span class="value">#0A66C2</span>;
+  <span class="property">--professional-navy:</span> <span class="value">#1E3A5F</span>;
+  <span class="property">--innovation-teal:</span> <span class="value">#00BFA6</span>;
+  
+  <span class="comment">/* Secondary */</span>
+  <span class="property">--light-blue:</span> <span class="value">#4A90D9</span>;
+  <span class="property">--soft-teal:</span> <span class="value">#E0F7F4</span>;
+  <span class="property">--warm-gray:</span> <span class="value">#F5F5F5</span>;
+  
+  <span class="comment">/* Typography */</span>
+  <span class="property">--font-family:</span> <span class="value">'Inter', -apple-system, sans-serif</span>;
+}</pre>
+            </div>
+
+            <h3 class="element-title mt-40">Tailwind Configuration</h3>
+            <div class="code-block">
+                <pre><span class="comment">// tailwind.config.js</span>
+<span class="property">module.exports</span> = {
+  <span class="property">theme:</span> {
+    <span class="property">extend:</span> {
+      <span class="property">colors:</span> {
+        <span class="property">apptax:</span> {
+          <span class="property">blue:</span> <span class="value">'#0A66C2'</span>,
+          <span class="property">navy:</span> <span class="value">'#1E3A5F'</span>,
+          <span class="property">teal:</span> <span class="value">'#00BFA6'</span>,
+          <span class="property">'light-blue':</span> <span class="value">'#4A90D9'</span>,
+          <span class="property">'soft-teal':</span> <span class="value">'#E0F7F4'</span>,
+        }
+      },
+      <span class="property">fontFamily:</span> {
+        <span class="property">sans:</span> [<span class="value">'Inter'</span>, <span class="value">'system-ui'</span>, <span class="value">'sans-serif'</span>],
+      }
+    }
+  }
+}</pre>
+            </div>
+
+            <h3 class="element-title mt-40">Swift (iOS)</h3>
+            <div class="code-block">
+                <pre><span class="comment">// AppTax Brand Colors for iOS</span>
+<span class="property">extension UIColor</span> {
+    <span class="property">static let</span> apptaxBlue = <span class="value">UIColor(hex: "#0A66C2")</span>
+    <span class="property">static let</span> professionalNavy = <span class="value">UIColor(hex: "#1E3A5F")</span>
+    <span class="property">static let</span> innovationTeal = <span class="value">UIColor(hex: "#00BFA6")</span>
+    <span class="property">static let</span> lightBlue = <span class="value">UIColor(hex: "#4A90D9")</span>
+}</pre>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-logo">
+                <div class="footer-logo-icon"></div>
+                <span class="footer-logo-text">AppTax</span>
+            </div>
+            <p class="footer-text">AI-Powered Accounting Intelligence</p>
+            <p class="footer-version">Visual Identity Guidelines v1.0 — 2025</p>
+        </footer>
+    </main>
+</body>
+</html>

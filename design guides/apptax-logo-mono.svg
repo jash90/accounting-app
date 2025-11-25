@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="240" height="60" viewBox="0 0 240 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- AppTax Logo - Monochrome Version -->
+  
+  <!-- Calculator Icon with AI Core -->
+  <g id="logo-mark">
+    <!-- Calculator Body -->
+    <rect x="4" y="8" width="44" height="44" rx="8" fill="currentColor"/>
+    
+    <!-- Calculator Screen (Display) -->
+    <rect x="10" y="14" width="32" height="12" rx="3" fill="white" opacity="0.9"/>
+    
+    <!-- AI Core Indicator -->
+    <circle cx="38" cy="20" r="3" fill="currentColor"/>
+    
+    <!-- Calculator Buttons Grid -->
+    <rect x="10" y="30" width="7" height="5" rx="1" fill="white" opacity="0.5"/>
+    <rect x="19" y="30" width="7" height="5" rx="1" fill="white" opacity="0.5"/>
+    <rect x="28" y="30" width="7" height="5" rx="1" fill="white" opacity="0.5"/>
+    
+    <rect x="10" y="37" width="7" height="5" rx="1" fill="white" opacity="0.4"/>
+    <rect x="19" y="37" width="7" height="5" rx="1" fill="white" opacity="0.4"/>
+    <rect x="28" y="37" width="7" height="5" rx="1" fill="white" opacity="0.7"/>
+    
+    <rect x="10" y="44" width="16" height="5" rx="1" fill="white" opacity="0.3"/>
+    <rect x="28" y="44" width="7" height="5" rx="1" fill="white" opacity="0.6"/>
+  </g>
+  
+  <!-- Wordmark -->
+  <g id="wordmark">
+    <text x="60" y="40" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="700" fill="currentColor">AppTax</text>
+  </g>
+</svg>
