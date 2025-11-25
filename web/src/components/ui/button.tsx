@@ -4,21 +4,22 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils/cn';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]',
+  'inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md',
-        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm hover:shadow-md',
-        outline: 'border-2 border-input bg-background hover:bg-accent hover:text-accent-foreground hover:border-primary/50 shadow-sm hover:shadow',
-        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border shadow-sm hover:shadow',
-        ghost: 'text-foreground/70 hover:bg-accent hover:text-foreground transition-all hover:shadow-sm',
-        link: 'text-primary underline-offset-4 hover:underline',
+        default: 'bg-apptax-blue text-white hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md',
+        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-apptax-sm hover:shadow-apptax-md',
+        outline: 'border-2 border-apptax-blue bg-white text-apptax-blue hover:bg-apptax-soft-teal shadow-apptax-sm hover:shadow-apptax-md',
+        secondary: 'bg-apptax-navy text-white hover:bg-apptax-navy/90 shadow-apptax-sm hover:shadow-apptax-md',
+        ghost: 'text-apptax-navy hover:bg-apptax-soft-teal transition-all',
+        link: 'text-apptax-blue underline-offset-4 hover:underline',
+        teal: 'bg-apptax-teal text-white hover:bg-apptax-teal/90 shadow-apptax-sm hover:shadow-apptax-md ai-glow',
       },
       size: {
-        default: 'h-10 px-4 py-2 min-w-[80px]',
-        sm: 'h-9 rounded-md px-3 min-w-[70px]',
-        lg: 'h-11 rounded-md px-8 min-w-[100px]',
+        default: 'h-10 px-5 py-2 min-w-[80px]',
+        sm: 'h-9 rounded-lg px-4 min-w-[70px]',
+        lg: 'h-11 rounded-lg px-8 min-w-[100px]',
         icon: 'h-10 w-10 min-w-[40px]',
       },
     },
@@ -46,4 +47,3 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = 'Button';
 
 export { Button, buttonVariants };
-
