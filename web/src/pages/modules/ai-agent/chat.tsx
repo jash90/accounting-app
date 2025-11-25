@@ -49,17 +49,23 @@ export default function AIAgentChatPage() {
     setSelectedConversationId(result.id);
   };
 
-  const sendMessageIfReady = () => {
+  const sendMessageIfReady = async () => {
     if (!message.trim() || !selectedConversationId || sendMessage.isPending) return;
 
     const messageContent = message;
     setMessage('');
-    sendMessage.mutateAsync({ content: messageContent });
+
+    try {
+      await sendMessage.mutateAsync({ content: messageContent });
+    } catch {
+      // Restore message on error so user can retry
+      setMessage(messageContent);
+    }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    sendMessageIfReady();
+    await sendMessageIfReady();
   };
 
   const handleDeleteConversation = async (id: string) => {
@@ -187,7 +193,7 @@ export default function AIAgentChatPage() {
                     >
                       <p className="whitespace-pre-wrap" data-testid="message-content">{msg.content}</p>
                       <p className="text-xs mt-1 opacity-70" data-testid="token-count">
-                        {new Date(msg.createdAt).toLocaleTimeString()} • {msg.totalTokens} tokens
+                        {new Date(msg.createdAt).toLocaleTimeString()} • {msg.totalTokens ?? 0} tokens
                       </p>
                     </div>
                     {msg.role === MessageRole.USER && (
@@ -220,7 +226,7 @@ export default function AIAgentChatPage() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
-                      sendMessageIfReady();
+                      void sendMessageIfReady();
                     }
                   }}
                   placeholder="Type your message..."
