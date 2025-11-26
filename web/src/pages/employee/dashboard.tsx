@@ -65,13 +65,13 @@ export default function EmployeeDashboard() {
         </Card>
       </div>
 
-      {/* Welcome Card */}
-      <Card className="bg-apptax-ai-gradient text-white border-0">
+      {/* Welcome Card - Uses accessible gradient with overlay for WCAG AA contrast */}
+      <Card className="bg-apptax-ai-gradient-accessible text-white border-0 overflow-hidden">
         <CardContent className="p-8">
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-2xl font-bold mb-2">Welcome to AppTax</h2>
-              <p className="text-white/90 max-w-xl">
+              <p className="text-white max-w-xl">
                 Access your assigned modules from the sidebar. Use AI-powered tools
                 to streamline your accounting tasks and improve productivity.
               </p>
