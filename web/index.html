@@ -8,16 +8,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="AppTax - AI-powered accounting CRM platform for the Polish market. Combine traditional accounting reliability with innovative AI capabilities." />
     <meta name="theme-color" content="#1E3A5F" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' http://localhost:3000;" />
+    <!-- CSP: No 'unsafe-inline', fonts self-hosted, connect limited to self and API -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' http://localhost:3000;" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/apptax-favicon.svg" />
     <link rel="apple-touch-icon" href="/apptax-logomark.svg" />
 
-    <!-- Inter Font from Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <!-- Inter font is self-hosted via @font-face in styles.css -->
   </head>
   <body>
     <div id="root"></div>

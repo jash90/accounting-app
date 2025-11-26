@@ -1,6 +1,55 @@
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
+/* Self-hosted Inter font */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/fonts/Inter-Light.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/Inter-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/Inter-Medium.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/Inter-SemiBold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/Inter-Bold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/Inter-ExtraBold.woff2') format('woff2');
+}
+
 @layer base {
   :root {
     /* AppTax Brand Colors (HSL equivalents) */
@@ -135,6 +184,28 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  /* WCAG AA compliant AI gradient with overlay for text contrast
+     Original teal #00BFA6 has 2.3:1 contrast with white - fails WCAG AA
+     This overlay ensures minimum 4.5:1 contrast ratio for body text */
+  .bg-apptax-ai-gradient-accessible {
+    position: relative;
+    background: linear-gradient(135deg, #00BFA6 0%, #0A66C2 100%);
+  }
+
+  .bg-apptax-ai-gradient-accessible::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.15) 100%);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .bg-apptax-ai-gradient-accessible > * {
+    position: relative;
+    z-index: 1;
   }
 }
 
