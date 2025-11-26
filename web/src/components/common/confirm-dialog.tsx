@@ -34,22 +34,25 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <div className="flex items-center gap-3">
             {variant === 'destructive' && (
-              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
             )}
-            <DialogTitle>{title}</DialogTitle>
+            <div>
+              <DialogTitle>{title}</DialogTitle>
+              <DialogDescription className="mt-1">{description}</DialogDescription>
+            </div>
           </div>
-          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2 sm:gap-3">
           <Button
-            variant="secondary"
+            variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isLoading}
-            className="min-w-[100px]"
           >
             {cancelText}
           </Button>
@@ -60,7 +63,6 @@ export function ConfirmDialog({
               onOpenChange(false);
             }}
             disabled={isLoading}
-            className="min-w-[100px]"
           >
             {isLoading ? 'Processing...' : confirmText}
           </Button>
@@ -69,4 +71,3 @@ export function ConfirmDialog({
     </Dialog>
   );
 }
-

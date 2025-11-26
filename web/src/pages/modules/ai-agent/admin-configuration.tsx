@@ -68,27 +68,41 @@ export default function AdminConfigurationPage() {
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-full">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="flex items-center gap-3 text-apptax-navy">
+          <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow animate-pulse" />
+          Loading...
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-8 space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">AI Configuration</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-3xl font-bold text-apptax-navy flex items-center gap-3">
+          AI Configuration
+          <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow" />
+        </h1>
+        <p className="text-muted-foreground mt-1">
           Configure AI provider, model, and system behavior
         </p>
       </div>
 
-      <Card>
+      <Card className="border-apptax-soft-teal/30">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            <CardTitle>AI Settings</CardTitle>
+            <div className="w-10 h-10 bg-apptax-soft-teal rounded-lg flex items-center justify-center">
+              <Settings className="h-5 w-5 text-apptax-blue" />
+            </div>
+            <div>
+              <CardTitle className="text-apptax-navy">AI Settings</CardTitle>
+              <CardDescription>
+                Configure the AI provider and model settings for all conversations
+              </CardDescription>
+            </div>
           </div>
-          <CardDescription>
-            Configure the AI provider and model settings for all conversations
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -243,7 +257,7 @@ export default function AdminConfigurationPage() {
               <Button
                 type="submit"
                 disabled={updateConfig.isPending || createConfig.isPending}
-                className="w-full"
+                className="w-full bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
                 {updateConfig.isPending || createConfig.isPending ? 'Saving...' : 'Save Configuration'}

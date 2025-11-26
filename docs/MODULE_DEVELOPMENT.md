@@ -137,6 +137,7 @@ npm run migration:run
 # 23. Create MSW mock handlers in web/src/lib/api/mocks/
 # 24. Implement permission-based UI rendering
 # 25. Ensure accessibility (aria-labels, focus states, contrast)
+# 26. Follow AppTax Visual Identity (see design guides/)
 ```
 
 **Key Files to Create/Modify**:
@@ -167,6 +168,11 @@ npm run migration:run
 - ✅ MSW Handlers: `web/src/lib/api/mocks/tasks-handlers.ts`
 - ✅ Navigation: `web/src/components/layouts/sidebar-nav.tsx` (update)
 - ✅ Permission Hook: `web/src/lib/hooks/use-task-permissions.ts`
+
+
+**Design System:**
+- 📖 Reference: `design guides/AppTax-Brand-Quick-Reference.md`
+- 📖 Reference: `design guides/AppTax-Brand-Guidelines.html`
 
 ### Complex Module Quick Start (AI Agent Example)
 
@@ -240,6 +246,7 @@ nx generate @nx/node:library ai-agent --directory=libs/modules/ai-agent
 | Vector Search | None | pgvector embeddings |
 | Rate Limiting | None | Token-based limits |
 | External APIs | None | OpenAI, OpenRouter |
+
 
 ---
 
@@ -2989,6 +2996,39 @@ User Interaction
 
 ---
 
+### Phase 14: Frontend Design System
+
+When building frontend components for new modules, follow the **AppTax Visual Identity System** to ensure consistent branding across the application.
+
+#### Design Guidelines Location
+
+```
+design guides/
+├── AppTax-Brand-Quick-Reference.md   # Quick reference (colors, typography, CSS)
+├── AppTax-Brand-Guidelines.html       # Complete interactive brand book
+├── apptax-logo-primary.svg            # Main horizontal logo
+├── apptax-logo-stacked.svg            # Vertical/stacked version
+├── apptax-logo-white.svg              # White version for dark backgrounds
+├── apptax-logo-mono.svg               # Monochrome version
+├── apptax-logomark.svg                # Icon only
+└── apptax-favicon.svg                 # Favicon
+```
+
+#### Key Design Principles
+
+- **Primary Colors**:
+  - AppTax Blue: `#0A66C2` (CTAs, primary actions)
+  - Professional Navy: `#1E3A5F` (text, backgrounds)
+  - Innovation Teal: `#00BFA6` (AI indicators, accents)
+- **Typography**: Inter font family (already configured in Tailwind)
+- **AI Indicator**: Use teal glow effect for AI-powered features
+- **Border Radius**: 4px (inputs), 8px (buttons/cards), 12px (large cards), 16px (modals)
+- **Color Usage Ratios**: Navy 60%, Blue 30%, Teal 10%
+
+For complete guidelines including typography scale, button styles, gradients, shadows, and usage do's/don'ts, refer to the design guides above.
+
+---
+
 ## Complete Code Examples
 
 ### System Admin Company Pattern
@@ -5243,6 +5283,7 @@ Before considering your module complete, verify all steps:
   - [ ] Page component in `web/src/pages/modules/tasks/task-list.tsx`
   - [ ] Form dialog in `web/src/components/forms/task-form-dialog.tsx`
   - [ ] Routes configured in `web/src/app/routes.tsx`
+  - [ ] Frontend follows AppTax Visual Identity (colors, typography, components)
 
 ### Backend Testing Checklist
 

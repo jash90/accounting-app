@@ -4,14 +4,14 @@ import { useCompanyModules, useEmployeeModules, useGrantModuleAccess, useUpdateM
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Shield, Key, Package } from 'lucide-react';
 import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -36,7 +36,6 @@ export default function EmployeePermissionsPage() {
   const handleGrantAccess = () => {
     if (!id || !selectedModule) return;
 
-    // Validate that the selected module is in the list of available modules
     const isModuleAvailable = availableModules.some(m => m.slug === selectedModule);
     if (!isModuleAvailable) {
       toast({
@@ -47,7 +46,6 @@ export default function EmployeePermissionsPage() {
       return;
     }
 
-    // Check if module is already granted (double-check)
     const isAlreadyGranted = employeeModules.some(em => em.module?.slug === selectedModule);
     if (isAlreadyGranted) {
       toast({
@@ -73,7 +71,7 @@ export default function EmployeePermissionsPage() {
 
   const handleUpdatePermissions = (moduleSlug: string, permissions: string[]) => {
     if (!id) return;
-    
+
     updatePermission.mutate({
       employeeId: id,
       moduleSlug,
@@ -83,16 +81,11 @@ export default function EmployeePermissionsPage() {
 
   const handleRevokeAccess = (moduleSlug: string) => {
     if (!id) return;
-    
+
     revokeAccess.mutate({
       employeeId: id,
       moduleSlug,
     });
-  };
-
-  const getModulePermissions = (moduleSlug: string) => {
-    const module = employeeModules.find((m) => m.module?.slug === moduleSlug);
-    return module?.permissions || [];
   };
 
   const availableModulesForGrant = availableModules.filter(
@@ -100,22 +93,46 @@ export default function EmployeePermissionsPage() {
   );
 
   if (employeeLoading || permissionsLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="space-y-6">
+        <div className="h-8 bg-apptax-soft-teal/30 rounded w-1/3 animate-pulse" />
+        <div className="space-y-4">
+          {[1, 2].map((i) => (
+            <Card key={i} className="animate-pulse border-apptax-soft-teal/30">
+              <CardHeader>
+                <div className="h-5 bg-apptax-soft-teal/30 rounded w-1/2" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-4 bg-apptax-soft-teal/20 rounded w-3/4" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title={`Permissions: ${employee?.firstName} ${employee?.lastName}`}
         description="Manage module access and permissions for this employee"
+        icon={<Key className="h-6 w-6" />}
         action={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate('/company/employees')}>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/company/employees')}
+              className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50 hover:border-apptax-teal"
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
             {availableModulesForGrant.length > 0 && (
-              <Button onClick={() => setGrantDialogOpen(true)}>
+              <Button
+                onClick={() => setGrantDialogOpen(true)}
+                className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Grant Module Access
               </Button>
@@ -124,45 +141,64 @@ export default function EmployeePermissionsPage() {
         }
       />
 
-      <div className="mt-6 space-y-4">
-        {employeeModules.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground">
-                No module access granted yet. Click "Grant Module Access" to get started.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          employeeModules.map((employeeModule) => {
+      {employeeModules.length === 0 ? (
+        <Card className="border-dashed border-apptax-soft-teal">
+          <CardContent className="py-12 text-center">
+            <div className="w-16 h-16 rounded-full bg-apptax-soft-teal flex items-center justify-center mx-auto mb-4">
+              <Shield className="h-8 w-8 text-apptax-teal" />
+            </div>
+            <p className="text-apptax-navy font-medium">
+              No module access granted yet.
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Click "Grant Module Access" to get started.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {employeeModules.map((employeeModule) => {
             const module = employeeModule.module;
             if (!module) return null;
 
             const currentPermissions = employeeModule.permissions || [];
+            const isAiModule = module.slug === 'ai-agent';
 
             return (
-              <Card key={employeeModule.id} className="shadow-sm hover:shadow-md transition-shadow">
-                <CardHeader>
+              <Card key={employeeModule.id} className="border-apptax-soft-teal/30 hover:shadow-apptax-md transition-all duration-300">
+                <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg">{module.name}</CardTitle>
-                      <CardDescription className="text-xs">{module.description}</CardDescription>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        isAiModule ? 'bg-apptax-ai-gradient ai-glow' : 'bg-apptax-gradient'
+                      }`}>
+                        <Package className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg flex items-center gap-2 text-apptax-navy">
+                          {module.name}
+                          {isAiModule && (
+                            <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
+                          )}
+                        </CardTitle>
+                        <CardDescription>{module.description}</CardDescription>
+                      </div>
                     </div>
                     <Button
-                      variant="destructive"
+                      variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-9 w-9 hover:bg-destructive/10"
                       onClick={() => handleRevokeAccess(module.slug)}
                       title="Revoke module access"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="text-sm font-semibold">Permissions:</div>
-                    <div className="flex flex-wrap gap-4">
+                    <div className="text-sm font-semibold text-apptax-navy">Permissions:</div>
+                    <div className="flex flex-wrap gap-6">
                       {[ModulePermission.READ, ModulePermission.WRITE, ModulePermission.DELETE].map((permission) => {
                         const hasPermission = currentPermissions.includes(permission);
                         return (
@@ -179,7 +215,7 @@ export default function EmployeePermissionsPage() {
                             />
                             <label
                               htmlFor={`${module.slug}-${permission}`}
-                              className="text-sm font-medium cursor-pointer"
+                              className="text-sm font-medium cursor-pointer text-apptax-navy/80"
                             >
                               {permission.charAt(0).toUpperCase() + permission.slice(1)}
                             </label>
@@ -194,9 +230,9 @@ export default function EmployeePermissionsPage() {
                 </CardContent>
               </Card>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
 
       <Dialog open={grantDialogOpen} onOpenChange={setGrantDialogOpen}>
         <DialogContent>
@@ -204,19 +240,18 @@ export default function EmployeePermissionsPage() {
             <DialogTitle>Grant Module Access</DialogTitle>
             <DialogDescription>
               Select a module and permissions to grant to this employee.
-              Only modules your company has access to are shown below.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 py-4">
             <div>
-              <label className="text-sm font-medium mb-2 block">Module</label>
+              <label className="text-sm font-medium text-apptax-navy mb-2 block">Module</label>
               {availableModulesForGrant.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   All available modules have already been granted to this employee.
                 </p>
               ) : (
                 <select
-                  className="w-full mt-2 rounded-md border-2 border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-apptax-blue/20 focus:border-apptax-blue"
                   value={selectedModule || ''}
                   onChange={(e) => {
                     setSelectedModule(e.target.value);
@@ -235,7 +270,7 @@ export default function EmployeePermissionsPage() {
 
             {selectedModule && (
               <div>
-                <label className="text-sm font-medium mb-2 block">Permissions</label>
+                <label className="text-sm font-medium text-apptax-navy mb-2 block">Permissions</label>
                 <div className="mt-2 space-y-3">
                   {[ModulePermission.READ, ModulePermission.WRITE, ModulePermission.DELETE].map((permission) => (
                     <div key={permission} className="flex items-center space-x-2">
@@ -250,7 +285,7 @@ export default function EmployeePermissionsPage() {
                           }
                         }}
                       />
-                      <label htmlFor={`grant-${permission}`} className="text-sm cursor-pointer">
+                      <label htmlFor={`grant-${permission}`} className="text-sm cursor-pointer text-gray-700">
                         {permission.charAt(0).toUpperCase() + permission.slice(1)}
                       </label>
                     </div>
@@ -258,22 +293,25 @@ export default function EmployeePermissionsPage() {
                 </div>
               </div>
             )}
-
-            <div className="flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setGrantDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleGrantAccess}
-                disabled={!selectedModule || selectedPermissions.length === 0 || grantAccess.isPending}
-              >
-                Grant Access
-              </Button>
-            </div>
           </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setGrantDialogOpen(false)}
+              className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleGrantAccess}
+              disabled={!selectedModule || selectedPermissions.length === 0 || grantAccess.isPending}
+              className="bg-apptax-blue hover:bg-apptax-blue/90"
+            >
+              Grant Access
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
 }
-

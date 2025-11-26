@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Settings, FolderOpen, BarChart3, ArrowRight } from 'lucide-react';
+import { MessageSquare, Settings, FolderOpen, BarChart3, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
 
 export default function AdminAIAgentDashboard() {
   const features = [
@@ -10,36 +10,39 @@ export default function AdminAIAgentDashboard() {
       description: 'Start conversations with the AI assistant. Get intelligent responses based on your knowledge base.',
       icon: MessageSquare,
       href: '/admin/modules/ai-agent/chat',
-      color: 'text-blue-500',
+      gradient: 'bg-apptax-ai-gradient',
     },
     {
       title: 'AI Configuration',
       description: 'Configure AI provider (OpenAI/OpenRouter), model, API keys, and system prompt.',
       icon: Settings,
       href: '/admin/modules/ai-agent/configuration',
-      color: 'text-purple-500',
+      gradient: 'bg-apptax-gradient',
     },
     {
       title: 'Knowledge Base Files',
       description: 'Upload and manage PDF, TXT, and MD files for RAG (Retrieval Augmented Generation).',
       icon: FolderOpen,
       href: '/admin/modules/ai-agent/context',
-      color: 'text-green-500',
+      gradient: 'bg-apptax-dark-gradient',
     },
     {
       title: 'Token Usage',
       description: 'View token consumption across all companies in the system.',
       icon: BarChart3,
       href: '/admin/modules/ai-agent/token-usage',
-      color: 'text-orange-500',
+      gradient: 'bg-gradient-to-br from-apptax-teal to-apptax-navy',
     },
   ];
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-8 space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">AI Agent Module</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-3xl font-bold text-apptax-navy flex items-center gap-3">
+          AI Agent Module
+          <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow" />
+        </h1>
+        <p className="text-muted-foreground mt-1">
           Intelligent AI assistant with RAG capabilities and token management
         </p>
       </div>
@@ -48,21 +51,24 @@ export default function AdminAIAgentDashboard() {
         {features.map((feature) => {
           const Icon = feature.icon;
           return (
-            <Card key={feature.title} className="hover:shadow-lg transition-shadow">
+            <Card
+              key={feature.title}
+              className="hover:shadow-apptax-md transition-all duration-300 hover:-translate-y-1 hover:border-apptax-blue group"
+            >
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <div className={`p-3 rounded-lg bg-muted ${feature.color}`}>
+                  <div className={`p-3 rounded-xl ${feature.gradient} text-white ai-glow group-hover:shadow-apptax-md transition-shadow`}>
                     <Icon className="h-6 w-6" />
                   </div>
-                  <CardTitle>{feature.title}</CardTitle>
+                  <CardTitle className="text-apptax-navy">{feature.title}</CardTitle>
                 </div>
                 <CardDescription>{feature.description}</CardDescription>
               </CardHeader>
               <CardContent>
                 <Link to={feature.href}>
-                  <Button className="w-full">
+                  <Button className="w-full group-hover:shadow-apptax-sm transition-shadow">
                     Open
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
               </CardContent>
@@ -71,20 +77,41 @@ export default function AdminAIAgentDashboard() {
         })}
       </div>
 
-      <Card className="bg-muted/50">
+      <Card className="bg-apptax-warm-gray border-0">
         <CardHeader>
-          <CardTitle>Quick Start</CardTitle>
+          <CardTitle className="text-apptax-navy flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-apptax-teal" />
+            Quick Start Guide
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          <p className="text-sm">
-            <strong>1. Configure AI:</strong> Set up your AI provider and model in Configuration
-          </p>
-          <p className="text-sm">
-            <strong>2. Upload Files:</strong> Add knowledge base files in Knowledge Base
-          </p>
-          <p className="text-sm">
-            <strong>3. Start Chatting:</strong> Begin conversations in AI Chat
-          </p>
+        <CardContent className="space-y-4">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-apptax-navy">1. Configure AI Provider</p>
+              <p className="text-sm text-muted-foreground">
+                Set up your AI provider (OpenAI/OpenRouter) and model in Configuration
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-apptax-navy">2. Upload Knowledge Base</p>
+              <p className="text-sm text-muted-foreground">
+                Add PDF, TXT, or MD files to enhance AI responses with your content
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-apptax-navy">3. Start Chatting</p>
+              <p className="text-sm text-muted-foreground">
+                Begin conversations with context-aware AI responses
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
