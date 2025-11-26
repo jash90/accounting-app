@@ -7,7 +7,8 @@ import { PageHeader } from '@/components/common/page-header';
 import { DataTable } from '@/components/common/data-table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Package } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Plus, Edit, Trash2, Package, Building2 } from 'lucide-react';
 import { CompanyDto } from '@/types/dtos';
 import { CompanyFormDialog } from '@/components/forms/company-form-dialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
@@ -107,15 +108,23 @@ export default function CompaniesListPage() {
       <PageHeader
         title="Companies"
         description="Manage companies in the system"
+        icon={<Building2 className="h-6 w-6" />}
         action={
-          <Button onClick={() => setCreateOpen(true)}>
+          <Button
+            onClick={() => setCreateOpen(true)}
+            className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+          >
             <Plus className="mr-2 h-4 w-4" />
             Create Company
           </Button>
         }
       />
 
-      <DataTable columns={actionColumns} data={companies} isLoading={isPending} />
+      <Card className="border-apptax-soft-teal/30">
+        <CardContent className="p-0">
+          <DataTable columns={actionColumns} data={companies} isLoading={isPending} />
+        </CardContent>
+      </Card>
 
       <CompanyFormDialog
         open={createOpen}

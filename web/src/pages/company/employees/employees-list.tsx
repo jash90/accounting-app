@@ -6,7 +6,8 @@ import { PageHeader } from '@/components/common/page-header';
 import { DataTable } from '@/components/common/data-table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Key } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Plus, Edit, Trash2, Key, Users, UserPlus } from 'lucide-react';
 import { UserDto } from '@/types/dtos';
 import { EmployeeFormDialog } from '@/components/forms/employee-form-dialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
@@ -103,15 +104,23 @@ export default function EmployeesListPage() {
       <PageHeader
         title="Employees"
         description="Manage your company employees"
+        icon={<Users className="h-6 w-6" />}
         action={
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
+          <Button
+            onClick={() => setCreateOpen(true)}
+            className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
             Add Employee
           </Button>
         }
       />
 
-      <DataTable columns={actionColumns} data={employees} isLoading={isPending} />
+      <Card className="border-apptax-soft-teal/30">
+        <CardContent className="p-0">
+          <DataTable columns={actionColumns} data={employees} isLoading={isPending} />
+        </CardContent>
+      </Card>
 
       <EmployeeFormDialog
         open={createOpen}

@@ -1,4 +1,4 @@
-import { Menu } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useSidebar } from '@/contexts/navigation-context';
 import { cn } from '@/lib/utils/cn';
 
@@ -29,22 +29,16 @@ export function SidebarHeader({ title }: SidebarHeaderProps) {
           </div>
         </div>
       )}
-      {!isOpen && (
-        <img
-          src="/apptax-logomark.svg"
-          alt="AppTax"
-          className="h-8 w-8"
-        />
-      )}
       <button
         onClick={toggle}
-        className={cn(
-          'p-2 rounded-lg hover:bg-white/10 transition-colors',
-          !isOpen && 'hidden'
-        )}
+        className="p-2 rounded-lg hover:bg-white/10 transition-colors"
         aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
       >
-        <Menu className="h-5 w-5 text-white/70" />
+        {isOpen ? (
+          <PanelLeftClose className="h-5 w-5 text-white/70" />
+        ) : (
+          <PanelLeftOpen className="h-5 w-5 text-white/70" />
+        )}
       </button>
     </div>
   );

@@ -1,14 +1,36 @@
 import * as React from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils/cn';
 
-const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+const cardVariants = cva(
+  'rounded-xl border bg-white text-card-foreground transition-all duration-200',
+  {
+    variants: {
+      variant: {
+        default: 'border-gray-100 shadow-apptax-sm hover:shadow-apptax-md',
+        branded: 'border-apptax-soft-teal/50 shadow-apptax-sm hover:shadow-apptax-md hover:border-apptax-teal/50',
+        outline: 'border-apptax-soft-teal bg-transparent shadow-none hover:bg-apptax-soft-teal/20',
+        ai: 'border-apptax-teal/30 shadow-apptax-sm hover:shadow-apptax-md ai-glow',
+        interactive: 'border-apptax-soft-teal/30 shadow-apptax-sm hover:shadow-apptax-md hover:border-apptax-blue hover:-translate-y-1 cursor-pointer',
+        elevated: 'border-transparent shadow-apptax-md hover:shadow-lg',
+        flat: 'border-apptax-soft-teal/30 shadow-none',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+    },
+  }
+);
+
+export interface CardProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof cardVariants> {}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, variant, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn(
-        'rounded-xl border border-gray-100 bg-white text-card-foreground shadow-apptax-sm hover:shadow-apptax-md transition-shadow duration-200',
-        className
-      )}
+      className={cn(cardVariants({ variant }), className)}
       {...props}
     />
   )
@@ -55,4 +77,4 @@ const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
 );
 CardFooter.displayName = 'CardFooter';
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, cardVariants };

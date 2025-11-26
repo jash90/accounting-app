@@ -14,7 +14,10 @@ const badgeVariants = cva(
         success: 'border-transparent bg-emerald-500 text-white hover:bg-emerald-500/80',
         warning: 'border-transparent bg-amber-500 text-white hover:bg-amber-500/80',
         teal: 'border-transparent bg-apptax-teal text-white hover:bg-apptax-teal/80',
-        muted: 'border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200',
+        muted: 'border-apptax-soft-teal bg-apptax-soft-teal text-apptax-navy/70 hover:bg-apptax-soft-teal/80',
+        'soft-blue': 'border-apptax-light-blue/30 bg-apptax-light-blue/10 text-apptax-blue hover:bg-apptax-light-blue/20',
+        'soft-teal': 'border-apptax-teal/30 bg-apptax-teal/10 text-apptax-teal hover:bg-apptax-teal/20',
+        ai: 'border-transparent bg-gradient-to-r from-apptax-teal to-apptax-blue text-white ai-glow',
       },
     },
     defaultVariants: {

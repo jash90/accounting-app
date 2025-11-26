@@ -6,7 +6,8 @@ import { PageHeader } from '@/components/common/page-header';
 import { DataTable } from '@/components/common/data-table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Plus, Edit, Trash2, Package } from 'lucide-react';
 import { ModuleDto } from '@/types/dtos';
 import { ModuleFormDialog } from '@/components/forms/module-form-dialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
@@ -28,7 +29,7 @@ const columns: ColumnDef<ModuleDto>[] = [
     accessorKey: 'slug',
     header: 'Slug',
     cell: ({ row }) => (
-      <code className="px-2 py-1 bg-gray-100 rounded text-sm text-gray-600">
+      <code className="px-2 py-1 bg-apptax-soft-teal rounded text-sm text-apptax-navy">
         {row.original.slug}
       </code>
     ),
@@ -37,7 +38,7 @@ const columns: ColumnDef<ModuleDto>[] = [
     accessorKey: 'description',
     header: 'Description',
     cell: ({ row }) => (
-      <span className="text-gray-600 line-clamp-1">{row.original.description}</span>
+      <span className="text-apptax-navy/70 line-clamp-1">{row.original.description}</span>
     ),
   },
   {
@@ -102,15 +103,23 @@ export default function ModulesListPage() {
       <PageHeader
         title="Modules"
         description="Manage system modules"
+        icon={<Package className="h-6 w-6" />}
         action={
-          <Button onClick={() => setCreateOpen(true)}>
+          <Button
+            onClick={() => setCreateOpen(true)}
+            className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+          >
             <Plus className="mr-2 h-4 w-4" />
             Create Module
           </Button>
         }
       />
 
-      <DataTable columns={actionColumns} data={modules} isLoading={isPending} />
+      <Card className="border-apptax-soft-teal/30">
+        <CardContent className="p-0">
+          <DataTable columns={actionColumns} data={modules} isLoading={isPending} />
+        </CardContent>
+      </Card>
 
       <ModuleFormDialog
         open={createOpen}

@@ -34,7 +34,11 @@ export function Sidebar({ title, navItems, className }: SidebarProps) {
           </div>
         ) : (
           <div className="flex justify-center">
-            <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
+            <img
+              src="/apptax-logomark.svg"
+              alt="AppTax"
+              className="h-8 w-8"
+            />
           </div>
         )}
       </div>

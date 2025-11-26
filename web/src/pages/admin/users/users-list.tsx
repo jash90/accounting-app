@@ -6,10 +6,11 @@ import { PageHeader } from '@/components/common/page-header';
 import { DataTable } from '@/components/common/data-table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, UserPlus } from 'lucide-react';
 import { UserDto, UserRole } from '@/types/dtos';
 import { UserFormDialog } from '@/components/forms/user-form-dialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { Card, CardContent } from '@/components/ui/card';
 
 const columns: ColumnDef<UserDto>[] = [
   {
@@ -106,15 +107,23 @@ export default function UsersListPage() {
       <PageHeader
         title="Users"
         description="Manage system users and their roles"
+        icon={<Users className="h-6 w-6" />}
         action={
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
+          <Button
+            onClick={() => setCreateOpen(true)}
+            className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
             Create User
           </Button>
         }
       />
 
-      <DataTable columns={actionColumns} data={users} isLoading={isPending} />
+      <Card className="border-apptax-soft-teal/30">
+        <CardContent className="p-0">
+          <DataTable columns={actionColumns} data={users} isLoading={isPending} />
+        </CardContent>
+      </Card>
 
       <UserFormDialog
         open={createOpen}

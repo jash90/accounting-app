@@ -6,7 +6,8 @@ import { PageHeader } from '@/components/common/page-header';
 import { DataTable } from '@/components/common/data-table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Plus, Edit, Trash2, FileText } from 'lucide-react';
 import { SimpleTextResponseDto, CreateSimpleTextDto, UpdateSimpleTextDto } from '@/types/dtos';
 import { SimpleTextFormDialog } from '@/components/forms/simple-text-form-dialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
@@ -18,7 +19,7 @@ const baseColumns: ColumnDef<SimpleTextResponseDto>[] = [
     accessorKey: 'content',
     header: 'Content',
     cell: ({ row }) => (
-      <div className="max-w-md truncate text-gray-700">{row.original.content}</div>
+      <div className="max-w-md truncate text-apptax-navy/80">{row.original.content}</div>
     ),
   },
   {
@@ -38,7 +39,7 @@ const baseColumns: ColumnDef<SimpleTextResponseDto>[] = [
     header: 'Created At',
     cell: ({ row }) => {
       return (
-        <span className="text-gray-600">
+        <span className="text-apptax-navy/60">
           {new Date(row.original.createdAt).toLocaleDateString()}
         </span>
       );
@@ -153,9 +154,13 @@ export default function SimpleTextListPage() {
       <PageHeader
         title="Simple Text"
         description="Manage simple text entries"
+        icon={<FileText className="h-6 w-6" />}
         action={
           hasWritePermission && (
-            <Button onClick={() => setCreateOpen(true)}>
+            <Button
+              onClick={() => setCreateOpen(true)}
+              className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+            >
               <Plus className="mr-2 h-4 w-4" />
               Create Text
             </Button>
@@ -163,7 +168,11 @@ export default function SimpleTextListPage() {
         }
       />
 
-      <DataTable columns={actionColumns} data={texts} isLoading={isPending} />
+      <Card className="border-apptax-soft-teal/30">
+        <CardContent className="p-0">
+          <DataTable columns={actionColumns} data={texts} isLoading={isPending} />
+        </CardContent>
+      </Card>
 
       {hasWritePermission && (
         <>

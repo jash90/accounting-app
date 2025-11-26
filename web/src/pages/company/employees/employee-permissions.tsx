@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Plus, Trash2, Shield } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Shield, Key, Package } from 'lucide-react';
 import { useState } from 'react';
 import {
   Dialog,
@@ -95,15 +95,15 @@ export default function EmployeePermissionsPage() {
   if (employeeLoading || permissionsLoading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 bg-gray-200 rounded w-1/3 animate-pulse" />
+        <div className="h-8 bg-apptax-soft-teal/30 rounded w-1/3 animate-pulse" />
         <div className="space-y-4">
           {[1, 2].map((i) => (
-            <Card key={i} className="animate-pulse">
+            <Card key={i} className="animate-pulse border-apptax-soft-teal/30">
               <CardHeader>
-                <div className="h-5 bg-gray-200 rounded w-1/2" />
+                <div className="h-5 bg-apptax-soft-teal/30 rounded w-1/2" />
               </CardHeader>
               <CardContent>
-                <div className="h-4 bg-gray-100 rounded w-3/4" />
+                <div className="h-4 bg-apptax-soft-teal/20 rounded w-3/4" />
               </CardContent>
             </Card>
           ))}
@@ -117,14 +117,22 @@ export default function EmployeePermissionsPage() {
       <PageHeader
         title={`Permissions: ${employee?.firstName} ${employee?.lastName}`}
         description="Manage module access and permissions for this employee"
+        icon={<Key className="h-6 w-6" />}
         action={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate('/company/employees')}>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/company/employees')}
+              className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50 hover:border-apptax-teal"
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
             {availableModulesForGrant.length > 0 && (
-              <Button onClick={() => setGrantDialogOpen(true)}>
+              <Button
+                onClick={() => setGrantDialogOpen(true)}
+                className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Grant Module Access
               </Button>
@@ -134,10 +142,12 @@ export default function EmployeePermissionsPage() {
       />
 
       {employeeModules.length === 0 ? (
-        <Card className="border-dashed">
+        <Card className="border-dashed border-apptax-soft-teal">
           <CardContent className="py-12 text-center">
-            <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">
+            <div className="w-16 h-16 rounded-full bg-apptax-soft-teal flex items-center justify-center mx-auto mb-4">
+              <Shield className="h-8 w-8 text-apptax-teal" />
+            </div>
+            <p className="text-apptax-navy font-medium">
               No module access granted yet.
             </p>
             <p className="text-sm text-muted-foreground mt-1">
@@ -152,19 +162,27 @@ export default function EmployeePermissionsPage() {
             if (!module) return null;
 
             const currentPermissions = employeeModule.permissions || [];
+            const isAiModule = module.slug === 'ai-agent';
 
             return (
-              <Card key={employeeModule.id}>
+              <Card key={employeeModule.id} className="border-apptax-soft-teal/30 hover:shadow-apptax-md transition-all duration-300">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        {module.name}
-                        {module.slug === 'ai-agent' && (
-                          <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
-                        )}
-                      </CardTitle>
-                      <CardDescription>{module.description}</CardDescription>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        isAiModule ? 'bg-apptax-ai-gradient ai-glow' : 'bg-apptax-gradient'
+                      }`}>
+                        <Package className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg flex items-center gap-2 text-apptax-navy">
+                          {module.name}
+                          {isAiModule && (
+                            <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
+                          )}
+                        </CardTitle>
+                        <CardDescription>{module.description}</CardDescription>
+                      </div>
                     </div>
                     <Button
                       variant="ghost"
@@ -197,7 +215,7 @@ export default function EmployeePermissionsPage() {
                             />
                             <label
                               htmlFor={`${module.slug}-${permission}`}
-                              className="text-sm font-medium cursor-pointer text-gray-700"
+                              className="text-sm font-medium cursor-pointer text-apptax-navy/80"
                             >
                               {permission.charAt(0).toUpperCase() + permission.slice(1)}
                             </label>
@@ -277,12 +295,17 @@ export default function EmployeePermissionsPage() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setGrantDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setGrantDialogOpen(false)}
+              className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50"
+            >
               Cancel
             </Button>
             <Button
               onClick={handleGrantAccess}
               disabled={!selectedModule || selectedPermissions.length === 0 || grantAccess.isPending}
+              className="bg-apptax-blue hover:bg-apptax-blue/90"
             >
               Grant Access
             </Button>
