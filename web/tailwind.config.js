@@ -7,12 +7,27 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        apptax: '8px',
       },
       colors: {
+        // AppTax Brand Colors
+        apptax: {
+          blue: '#0A66C2',
+          navy: '#1E3A5F',
+          'navy-dark': '#0d2137',
+          teal: '#00BFA6',
+          'light-blue': '#4A90D9',
+          'soft-teal': '#E0F7F4',
+          'warm-gray': '#F5F5F5',
+        },
+        // Shadcn/UI Theme Colors
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
@@ -43,6 +58,10 @@ module.exports = {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
         },
+        success: {
+          DEFAULT: 'hsl(var(--success))',
+          foreground: 'hsl(var(--success-foreground))',
+        },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
@@ -54,8 +73,17 @@ module.exports = {
           '5': 'hsl(var(--chart-5))',
         },
       },
+      boxShadow: {
+        'apptax-sm': '0 2px 8px rgba(0, 0, 0, 0.08)',
+        'apptax-md': '0 4px 16px rgba(0, 0, 0, 0.12)',
+        'apptax-lg': '0 8px 32px rgba(0, 0, 0, 0.16)',
+      },
+      backgroundImage: {
+        'apptax-gradient': 'linear-gradient(135deg, #0A66C2 0%, #1E3A5F 100%)',
+        'apptax-dark-gradient': 'linear-gradient(135deg, #1E3A5F 0%, #0d2137 100%)',
+        'apptax-ai-gradient': 'linear-gradient(135deg, #00BFA6 0%, #0A66C2 100%)',
+      },
     },
   },
   plugins: [require('tailwindcss-animate')],
 };
-

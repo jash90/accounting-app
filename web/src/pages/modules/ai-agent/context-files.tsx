@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { useContextFiles, useUploadContextFile, useDeleteContextFile } from '@/lib/hooks/use-ai-agent';
-import { Upload, Trash2, FileText, File as FileIcon } from 'lucide-react';
+import { Upload, Trash2, FileText, File as FileIcon, FolderOpen, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ContextFilesPage() {
@@ -56,30 +56,47 @@ export default function ContextFilesPage() {
   };
 
   const getFileIcon = (mimeType: string) => {
-    if (mimeType === 'application/pdf') return <FileIcon className="h-4 w-4 text-red-500" />;
-    return <FileText className="h-4 w-4 text-blue-500" />;
+    if (mimeType === 'application/pdf') return <FileIcon className="h-4 w-4 text-apptax-navy" />;
+    return <FileText className="h-4 w-4 text-apptax-blue" />;
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-full">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="flex items-center gap-3 text-apptax-navy">
+          <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow animate-pulse" />
+          Loading...
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-8 space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Knowledge Base Files</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-3xl font-bold text-apptax-navy flex items-center gap-3">
+          Knowledge Base Files
+          <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow" />
+        </h1>
+        <p className="text-muted-foreground mt-1">
           Upload PDF, TXT, or MD files for the AI to use as context
         </p>
       </div>
 
       {/* Upload Section */}
-      <Card>
+      <Card className="border-apptax-soft-teal/30 hover:shadow-apptax-md transition-all duration-300">
         <CardHeader>
-          <CardTitle>Upload New File</CardTitle>
-          <CardDescription>
-            Files are processed and used to enhance AI responses (Max 10MB, PDF/TXT/MD only)
-          </CardDescription>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-apptax-ai-gradient rounded-lg flex items-center justify-center ai-glow">
+              <Upload className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <CardTitle className="text-apptax-navy">Upload New File</CardTitle>
+              <CardDescription>
+                Files are processed and used to enhance AI responses (Max 10MB, PDF/TXT/MD only)
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4 items-end">
@@ -90,18 +107,21 @@ export default function ContextFilesPage() {
                 accept=".pdf,.txt,.md"
                 onChange={handleFileSelect}
                 disabled={uploadFile.isPending}
+                className="border-apptax-soft-teal focus:border-apptax-blue"
               />
             </div>
             <Button
               onClick={handleUpload}
               disabled={!selectedFile || uploadFile.isPending}
+              className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
             >
-              <Upload className="h-4 w-4 mr-2" />
+              <Sparkles className="h-4 w-4 mr-2" />
               {uploadFile.isPending ? 'Uploading...' : 'Upload'}
             </Button>
           </div>
           {selectedFile && (
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="text-sm text-apptax-navy/70 mt-3 flex items-center gap-2">
+              <FileText className="h-4 w-4 text-apptax-teal" />
               Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
             </p>
           )}
@@ -109,9 +129,12 @@ export default function ContextFilesPage() {
       </Card>
 
       {/* Files List */}
-      <Card>
+      <Card className="border-apptax-soft-teal/30">
         <CardHeader>
-          <CardTitle>Uploaded Files</CardTitle>
+          <CardTitle className="text-apptax-navy flex items-center gap-2">
+            <FolderOpen className="h-5 w-5 text-apptax-teal" />
+            Uploaded Files
+          </CardTitle>
           <CardDescription>
             {files?.length || 0} file(s) in knowledge base
           </CardDescription>
@@ -119,26 +142,28 @@ export default function ContextFilesPage() {
         <CardContent>
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>File</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Size</TableHead>
-                <TableHead>Uploaded By</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+              <TableRow className="bg-apptax-navy/5 hover:bg-apptax-navy/5">
+                <TableHead className="text-apptax-navy font-semibold">File</TableHead>
+                <TableHead className="text-apptax-navy font-semibold">Type</TableHead>
+                <TableHead className="text-apptax-navy font-semibold">Size</TableHead>
+                <TableHead className="text-apptax-navy font-semibold">Uploaded By</TableHead>
+                <TableHead className="text-apptax-navy font-semibold">Date</TableHead>
+                <TableHead className="text-right text-apptax-navy font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {files?.map((file) => (
-                <TableRow key={file.id}>
-                  <TableCell className="font-medium">
+                <TableRow key={file.id} className="hover:bg-apptax-soft-teal/30 transition-colors">
+                  <TableCell className="font-medium text-apptax-navy">
                     <div className="flex items-center gap-2">
                       {getFileIcon(file.mimeType)}
                       {file.filename}
                     </div>
                   </TableCell>
                   <TableCell>
-                    {file.mimeType.split('/')[1]?.toUpperCase() || 'Unknown'}
+                    <span className="px-2 py-1 rounded-md bg-apptax-soft-teal text-apptax-navy text-xs font-medium">
+                      {file.mimeType.split('/')[1]?.toUpperCase() || 'Unknown'}
+                    </span>
                   </TableCell>
                   <TableCell>{formatFileSize(file.fileSize)}</TableCell>
                   <TableCell>
@@ -151,6 +176,7 @@ export default function ContextFilesPage() {
                       size="sm"
                       onClick={() => handleDelete(file.id)}
                       disabled={deleteFile.isPending}
+                      className="hover:bg-destructive/10"
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
@@ -159,8 +185,13 @@ export default function ContextFilesPage() {
               ))}
               {files?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
-                    No files uploaded yet. Upload your first file to get started!
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-12 h-12 rounded-full bg-apptax-soft-teal flex items-center justify-center">
+                        <FolderOpen className="h-6 w-6 text-apptax-teal" />
+                      </div>
+                      <p>No files uploaded yet. Upload your first file to get started!</p>
+                    </div>
                   </TableCell>
                 </TableRow>
               )}

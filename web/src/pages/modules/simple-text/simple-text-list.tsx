@@ -5,20 +5,21 @@ import { useCreateSimpleText, useUpdateSimpleText } from '@/lib/hooks/use-simple
 import { PageHeader } from '@/components/common/page-header';
 import { DataTable } from '@/components/common/data-table';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Plus, Edit, Trash2, FileText } from 'lucide-react';
 import { SimpleTextResponseDto, CreateSimpleTextDto, UpdateSimpleTextDto } from '@/types/dtos';
 import { SimpleTextFormDialog } from '@/components/forms/simple-text-form-dialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { useAuthContext } from '@/contexts/auth-context';
 import { ModulePermission } from '@/types/enums';
 
-// Base columns for all users
 const baseColumns: ColumnDef<SimpleTextResponseDto>[] = [
   {
     accessorKey: 'content',
     header: 'Content',
     cell: ({ row }) => (
-      <div className="max-w-md truncate">{row.original.content}</div>
+      <div className="max-w-md truncate text-apptax-navy/80">{row.original.content}</div>
     ),
   },
   {
@@ -26,14 +27,22 @@ const baseColumns: ColumnDef<SimpleTextResponseDto>[] = [
     header: 'Created By',
     cell: ({ row }) => {
       const createdBy = row.original.createdBy;
-      return createdBy ? `${createdBy.firstName} ${createdBy.lastName}` : 'N/A';
+      return createdBy ? (
+        <span className="text-apptax-navy font-medium">{`${createdBy.firstName} ${createdBy.lastName}`}</span>
+      ) : (
+        <span className="text-muted-foreground">N/A</span>
+      );
     },
   },
   {
     accessorKey: 'createdAt',
     header: 'Created At',
     cell: ({ row }) => {
-      return new Date(row.original.createdAt).toLocaleDateString();
+      return (
+        <span className="text-apptax-navy/60">
+          {new Date(row.original.createdAt).toLocaleDateString()}
+        </span>
+      );
     },
   },
 ];
@@ -41,17 +50,13 @@ const baseColumns: ColumnDef<SimpleTextResponseDto>[] = [
 export default function SimpleTextListPage() {
   const { user } = useAuthContext();
 
-  // For COMPANY_OWNER, they have full access
-  // For EMPLOYEE, permissions are checked on the backend
-  // For ADMIN, can create/edit/delete their own entries (companyId = null)
   const hasWritePermission = user?.role === 'COMPANY_OWNER' || user?.role === 'EMPLOYEE' || user?.role === 'ADMIN';
   const hasDeletePermission = user?.role === 'COMPANY_OWNER' || user?.role === 'EMPLOYEE' || user?.role === 'ADMIN';
 
-  // Dynamic columns - add company column for admins
   const columns: ColumnDef<SimpleTextResponseDto>[] = useMemo(() => {
     if (user?.role === 'ADMIN') {
       return [
-        baseColumns[0], // content
+        baseColumns[0],
         {
           accessorKey: 'company',
           header: 'Company',
@@ -63,22 +68,22 @@ export default function SimpleTextListPage() {
               return (
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground font-medium">System Admin</span>
-                  <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                  <Badge variant="default" className="text-xs">
                     Admin Entry
-                  </span>
+                  </Badge>
                 </div>
               );
             }
 
             return company ? (
-              <div className="font-medium">{company.name}</div>
+              <div className="font-medium text-apptax-navy">{company.name}</div>
             ) : (
               <div className="text-muted-foreground">No Company</div>
             );
           },
         },
-        baseColumns[1], // createdBy
-        baseColumns[2], // createdAt
+        baseColumns[1],
+        baseColumns[2],
       ];
     }
     return baseColumns;
@@ -93,7 +98,6 @@ export default function SimpleTextListPage() {
   const [editingText, setEditingText] = useState<SimpleTextResponseDto | null>(null);
   const [deletingText, setDeletingText] = useState<SimpleTextResponseDto | null>(null);
 
-  // Add actions column with conditional buttons based on ownership
   const actionColumns: ColumnDef<SimpleTextResponseDto>[] = useMemo(() => {
     return [
       ...columns,
@@ -104,10 +108,9 @@ export default function SimpleTextListPage() {
           const text = row.original;
           const isSystemEntry = text.company?.isSystemCompany === true;
 
-          // Determine if current user can modify this entry
           const canModify = user?.role === 'ADMIN'
-            ? isSystemEntry // Admins can only modify system company entries
-            : text.companyId === user?.companyId; // Company users can only modify their company's entries
+            ? isSystemEntry
+            : text.companyId === user?.companyId;
 
           return (
             <div className="flex gap-1">
@@ -115,14 +118,14 @@ export default function SimpleTextListPage() {
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-8 w-8 hover:bg-primary/10"
+                  className="h-8 w-8 hover:bg-apptax-soft-teal"
                   onClick={(e) => {
                     e.stopPropagation();
                     setEditingText(row.original);
                   }}
                   title="Edit text"
                 >
-                  <Edit className="h-4 w-4 text-primary" />
+                  <Edit className="h-4 w-4 text-apptax-blue" />
                 </Button>
               )}
               {canModify && hasDeletePermission && (
@@ -147,13 +150,17 @@ export default function SimpleTextListPage() {
   }, [columns, user?.role, user?.companyId, hasWritePermission, hasDeletePermission]);
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title="Simple Text"
         description="Manage simple text entries"
+        icon={<FileText className="h-6 w-6" />}
         action={
           hasWritePermission && (
-            <Button onClick={() => setCreateOpen(true)}>
+            <Button
+              onClick={() => setCreateOpen(true)}
+              className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+            >
               <Plus className="mr-2 h-4 w-4" />
               Create Text
             </Button>
@@ -161,9 +168,11 @@ export default function SimpleTextListPage() {
         }
       />
 
-      <div className="mt-6">
-        <DataTable columns={actionColumns} data={texts} isLoading={isPending} />
-      </div>
+      <Card className="border-apptax-soft-teal/30">
+        <CardContent className="p-0">
+          <DataTable columns={actionColumns} data={texts} isLoading={isPending} />
+        </CardContent>
+      </Card>
 
       {hasWritePermission && (
         <>
@@ -207,4 +216,3 @@ export default function SimpleTextListPage() {
     </div>
   );
 }
-

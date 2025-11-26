@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, Plus, Trash2, Bot, User } from 'lucide-react';
+import { Send, Plus, Trash2, Bot, User, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -28,14 +28,12 @@ export default function AIAgentChatPage() {
   const sendMessage = useSendMessage(selectedConversationId || '');
   const deleteConversation = useDeleteConversation();
 
-  // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [currentConversation?.messages]);
 
-  // Auto-select first conversation if none selected
   useEffect(() => {
     if (conversations && conversations.length > 0 && !selectedConversationId) {
       setSelectedConversationId(conversations[0].id);
@@ -58,7 +56,6 @@ export default function AIAgentChatPage() {
     try {
       await sendMessage.mutateAsync({ content: messageContent });
     } catch {
-      // Restore message on error so user can retry
       setMessage(messageContent);
     }
   };
@@ -78,7 +75,14 @@ export default function AIAgentChatPage() {
   };
 
   if (conversationsLoading) {
-    return <div className="flex items-center justify-center h-full">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="flex items-center gap-3 text-apptax-navy">
+          <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow animate-pulse" />
+          Loading...
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -86,10 +90,13 @@ export default function AIAgentChatPage() {
       <div className="flex gap-6 h-[calc(100vh-12rem)]">
         {/* Conversations Sidebar */}
         <Card className="w-80 flex flex-col" data-testid="conversations-sidebar">
-          <CardHeader>
+          <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle data-testid="conversations-title">Conversations</CardTitle>
-              <Button onClick={handleNewConversation} size="sm" disabled={createConversation.isPending} data-testid="new-chat-button">
+              <CardTitle className="flex items-center gap-2" data-testid="conversations-title">
+                Conversations
+                <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
+              </CardTitle>
+              <Button onClick={handleNewConversation} size="sm" variant="teal" disabled={createConversation.isPending} data-testid="new-chat-button">
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
@@ -111,10 +118,10 @@ export default function AIAgentChatPage() {
                       }
                     }}
                     className={cn(
-                      'w-full text-left p-3 rounded-lg transition-colors group cursor-pointer',
+                      'w-full text-left p-3 rounded-lg transition-all duration-200 group cursor-pointer',
                       selectedConversationId === conv.id
-                        ? 'bg-primary text-primary-foreground'
-                        : 'hover:bg-muted'
+                        ? 'bg-apptax-blue text-white shadow-apptax-sm'
+                        : 'hover:bg-apptax-soft-teal'
                     )}
                     data-testid="conversation-item"
                   >
@@ -127,19 +134,25 @@ export default function AIAgentChatPage() {
                           e.stopPropagation();
                           handleDeleteConversation(conv.id);
                         }}
-                        className="opacity-0 group-hover:opacity-100"
+                        className={cn(
+                          'opacity-0 group-hover:opacity-100 h-7 w-7 p-0',
+                          selectedConversationId === conv.id ? 'hover:bg-white/20' : 'hover:bg-destructive/10'
+                        )}
                         data-testid="delete-conversation-button"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className={cn('h-4 w-4', selectedConversationId === conv.id ? 'text-white' : 'text-destructive')} />
                       </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className={cn(
+                      'text-xs mt-1',
+                      selectedConversationId === conv.id ? 'text-white/70' : 'text-muted-foreground'
+                    )}>
                       {new Date(conv.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 ))}
                 {conversations?.length === 0 && (
-                  <p className="text-muted-foreground text-sm text-center py-4" data-testid="no-conversations">
+                  <p className="text-muted-foreground text-sm text-center py-8" data-testid="no-conversations">
                     No conversations yet. Create one to get started!
                   </p>
                 )}
@@ -150,8 +163,11 @@ export default function AIAgentChatPage() {
 
         {/* Chat Area */}
         <Card className="flex-1 flex flex-col" data-testid="chat-area">
-          <CardHeader>
-            <CardTitle data-testid="ai-assistant-title">AI Assistant</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2" data-testid="ai-assistant-title">
+              <Sparkles className="h-5 w-5 text-apptax-teal" />
+              AI Assistant
+            </CardTitle>
             <CardDescription>
               {currentConversation ? currentConversation.title : 'Select or create a conversation'}
             </CardDescription>
@@ -163,8 +179,11 @@ export default function AIAgentChatPage() {
               {currentConversation?.messages.length === 0 && (
                 <div className="flex items-center justify-center h-full text-muted-foreground" data-testid="empty-chat">
                   <div className="text-center">
-                    <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Start a conversation with the AI assistant</p>
+                    <div className="w-16 h-16 rounded-full bg-apptax-ai-gradient flex items-center justify-center mx-auto mb-4">
+                      <Bot className="h-8 w-8 text-white" />
+                    </div>
+                    <p className="text-lg font-medium text-apptax-navy">Start a conversation</p>
+                    <p className="text-sm text-muted-foreground mt-1">Ask the AI assistant anything</p>
                   </div>
                 </div>
               )}
@@ -179,37 +198,43 @@ export default function AIAgentChatPage() {
                     data-testid={msg.role === MessageRole.USER ? 'user-message' : 'assistant-message'}
                   >
                     {msg.role === MessageRole.ASSISTANT && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                        <Bot className="h-4 w-4 text-primary-foreground" />
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-apptax-ai-gradient flex items-center justify-center ai-glow">
+                        <Bot className="h-4 w-4 text-white" />
                       </div>
                     )}
                     <div
                       className={cn(
-                        'rounded-lg px-4 py-2 max-w-[70%]',
+                        'rounded-xl px-4 py-3 max-w-[70%]',
                         msg.role === MessageRole.USER
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
+                          ? 'bg-apptax-blue text-white'
+                          : 'bg-apptax-soft-teal text-apptax-navy'
                       )}
                     >
                       <p className="whitespace-pre-wrap" data-testid="message-content">{msg.content}</p>
-                      <p className="text-xs mt-1 opacity-70" data-testid="token-count">
+                      <p className={cn(
+                        'text-xs mt-2',
+                        msg.role === MessageRole.USER ? 'text-white/70' : 'text-apptax-navy/50'
+                      )} data-testid="token-count">
                         {new Date(msg.createdAt).toLocaleTimeString()} • {msg.totalTokens ?? 0} tokens
                       </p>
                     </div>
                     {msg.role === MessageRole.USER && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                        <User className="h-4 w-4" />
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-apptax-navy flex items-center justify-center">
+                        <User className="h-4 w-4 text-white" />
                       </div>
                     )}
                   </div>
                 ))}
                 {sendMessage.isPending && (
                   <div className="flex gap-3" data-testid="thinking-indicator">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                      <Bot className="h-4 w-4 text-primary-foreground animate-pulse" />
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-apptax-ai-gradient flex items-center justify-center ai-glow">
+                      <Bot className="h-4 w-4 text-white animate-pulse" />
                     </div>
-                    <div className="bg-muted rounded-lg px-4 py-2">
-                      <p className="text-muted-foreground">Thinking...</p>
+                    <div className="bg-apptax-soft-teal rounded-xl px-4 py-3">
+                      <p className="text-apptax-navy flex items-center gap-2">
+                        <span className="inline-block w-2 h-2 rounded-full bg-apptax-teal animate-pulse" />
+                        Thinking...
+                      </p>
                     </div>
                   </div>
                 )}
@@ -217,8 +242,8 @@ export default function AIAgentChatPage() {
             </ScrollArea>
 
             {/* Input Form */}
-            <div className="p-4 border-t" data-testid="message-input-area">
-              <form onSubmit={handleSendMessage} className="flex gap-2">
+            <div className="p-4 border-t bg-apptax-warm-gray/50" data-testid="message-input-area">
+              <form onSubmit={handleSendMessage} className="flex gap-3">
                 <Input
                   type="text"
                   value={message}
@@ -236,6 +261,7 @@ export default function AIAgentChatPage() {
                 />
                 <Button
                   type="submit"
+                  variant="teal"
                   disabled={!message.trim() || !selectedConversationId || sendMessage.isPending}
                   data-testid="send-button"
                 >
