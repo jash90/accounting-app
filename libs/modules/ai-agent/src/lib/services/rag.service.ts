@@ -87,6 +87,7 @@ export class RAGService {
 
   /**
    * Find similar context using vector similarity
+   * Note: pgvector not available on Railway - fallback to recent documents
    */
   async findSimilarContext(
     query: string,
@@ -94,22 +95,14 @@ export class RAGService {
     apiKey: string,
     limit = 3,
   ): Promise<AIContext[]> {
-    // Generate embedding for query
-    const queryEmbedding = await this.openaiProvider.generateEmbedding(
-      query,
-      apiKey,
-    );
-
-    // Perform vector similarity search using pgvector
-    // Using cosine distance: 1 - (embedding <=> query_embedding)
-    const results = await this.contextRepository
-      .createQueryBuilder('context')
-      .where('context.companyId = :companyId', { companyId })
-      .andWhere('context.isActive = :isActive', { isActive: true })
-      .orderBy('context.embedding <=> :embedding', 'ASC')
-      .setParameter('embedding', JSON.stringify(queryEmbedding.embedding))
-      .limit(limit)
-      .getMany();
+    // Fallback: return most recent active documents without vector similarity
+    // Vector search with pgvector is disabled for Railway PostgreSQL compatibility
+    // TODO: Re-enable when pgvector is available or use alternative vector DB
+    const results = await this.contextRepository.find({
+      where: { companyId, isActive: true },
+      order: { createdAt: 'DESC' },
+      take: limit,
+    });
 
     return results;
   }

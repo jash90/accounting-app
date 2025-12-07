@@ -44,9 +44,9 @@ export class AIContext {
   extractedText!: string;
 
   // Vector embedding for RAG (1536 dimensions for OpenAI ada-002)
+  // Using jsonb instead of pgvector for Railway PostgreSQL compatibility
   @Column({
-    type: 'vector',
-    length: 1536,
+    type: 'jsonb',
     nullable: true,
   })
   embedding!: number[] | null;
