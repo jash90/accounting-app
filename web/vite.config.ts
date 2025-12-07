@@ -27,13 +27,7 @@ export default defineConfig({
   },
 
   plugins: [
-    react({
-      babel: {
-        plugins: [
-          ['babel-plugin-react-compiler', { target: '19' }], // React 19 Compiler
-        ],
-      },
-    }),
+    react(),
     nxViteTsPaths(),
     nxCopyAssetsPlugin(['*.md']),
   ],
