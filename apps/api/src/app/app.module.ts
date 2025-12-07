@@ -56,7 +56,7 @@ import { SeedersModule } from '../seeders/seeders.module';
               TokenUsage,
               TokenLimit,
             ],
-            synchronize: !isProduction,
+            synchronize: true, // Temporarily enabled to create tables - DISABLE after seeding
             logging: !isProduction,
             migrations: ['dist/migrations/*.js'],
             migrationsRun: false,
@@ -86,7 +86,7 @@ import { SeedersModule } from '../seeders/seeders.module';
             TokenUsage,
             TokenLimit,
           ],
-          synchronize: !isProduction,
+          synchronize: true, // Temporarily enabled to create tables - DISABLE after seeding
           logging: !isProduction,
           migrations: ['dist/migrations/*.js'],
           migrationsRun: false,
