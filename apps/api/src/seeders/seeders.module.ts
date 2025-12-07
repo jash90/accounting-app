@@ -7,6 +7,8 @@ import {
   CompanyModuleAccess,
   UserModulePermission,
   SimpleText,
+  Client,
+  ClientFieldDefinition,
 } from '@accounting/common';
 import { SeederService } from './seeder.service';
 
@@ -19,10 +21,11 @@ import { SeederService } from './seeder.service';
       CompanyModuleAccess,
       UserModulePermission,
       SimpleText,
+      Client,
+      ClientFieldDefinition,
     ]),
   ],
   providers: [SeederService],
   exports: [SeederService],
 })
 export class SeedersModule {}
-

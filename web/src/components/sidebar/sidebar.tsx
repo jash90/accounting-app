@@ -16,7 +16,7 @@ export function Sidebar({ title, navItems, className }: SidebarProps) {
       )}
     >
       <SidebarHeader title={title} />
-      <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+      <nav className="flex-1 p-2 space-y-1">
         {navItems.map((item) => (
           <SidebarItem key={item.href} item={item} />
         ))}

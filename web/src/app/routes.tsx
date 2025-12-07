@@ -15,6 +15,7 @@ const CompaniesListPage = lazy(() => import('@/pages/admin/companies/companies-l
 const CompanyModulesPage = lazy(() => import('@/pages/admin/companies/company-modules'));
 const ModulesListPage = lazy(() => import('@/pages/admin/modules/modules-list'));
 const CompanyDashboard = lazy(() => import('@/pages/company/dashboard'));
+const CompanySettingsPage = lazy(() => import('@/pages/company/settings'));
 const EmployeesListPage = lazy(() => import('@/pages/company/employees/employees-list'));
 const EmployeePermissionsPage = lazy(() => import('@/pages/company/employees/employee-permissions'));
 const CompanyModulesListPage = lazy(() => import('@/pages/company/modules/modules-list'));
@@ -30,6 +31,11 @@ const AIAgentAdminConfigPage = lazy(() => import('@/pages/modules/ai-agent/admin
 const AdminAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/admin-index'));
 const CompanyAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/company-index'));
 const EmployeeAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/employee-index'));
+
+// Clients Pages
+const ClientsListPage = lazy(() => import('@/pages/modules/clients/clients-list'));
+const ClientDetailPage = lazy(() => import('@/pages/modules/clients/client-detail'));
+const ClientsSettingsPage = lazy(() => import('@/pages/modules/clients/clients-settings'));
 
 function PageLoader() {
   return (
@@ -194,6 +200,30 @@ export default function Routes() {
             </Suspense>
           }
         />
+        <Route
+          path="modules/clients"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientsListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/clients/settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientsSettingsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/clients/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientDetailPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -225,6 +255,14 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <EmployeePermissionsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <CompanySettingsPage />
             </Suspense>
           }
         />
@@ -276,6 +314,30 @@ export default function Routes() {
             </Suspense>
           }
         />
+        <Route
+          path="modules/clients"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientsListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/clients/settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientsSettingsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/clients/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientDetailPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -318,8 +380,24 @@ export default function Routes() {
             </Suspense>
           }
         />
+        <Route
+          path="clients"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientsListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="clients/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientDetailPage />
+            </Suspense>
+          }
+        />
       </Route>
-      
+
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<NotFound />} />
     </RouterRoutes>

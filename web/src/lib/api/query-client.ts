@@ -61,5 +61,27 @@ export const queryKeys = {
         ['ai-agent', 'token-limit', targetType, targetId] as const,
     },
   },
+  clients: {
+    all: ['clients'] as const,
+    list: (filters?: Record<string, unknown>) => ['clients', 'list', filters] as const,
+    detail: (id: string) => ['clients', id] as const,
+    changelog: (clientId: string) => ['clients', clientId, 'changelog'] as const,
+    icons: (clientId: string) => ['clients', clientId, 'icons'] as const,
+    customFields: (clientId: string) => ['clients', clientId, 'custom-fields'] as const,
+  },
+  clientFieldDefinitions: {
+    all: ['client-field-definitions'] as const,
+    detail: (id: string) => ['client-field-definitions', id] as const,
+  },
+  clientIcons: {
+    all: ['client-icons'] as const,
+    detail: (id: string) => ['client-icons', id] as const,
+  },
+  notificationSettings: {
+    me: ['notification-settings', 'me'] as const,
+  },
+  companySettings: {
+    me: ['company-settings', 'me'] as const,
+  },
 };
 

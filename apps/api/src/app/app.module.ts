@@ -17,6 +17,13 @@ import {
   AIContext,
   TokenUsage,
   TokenLimit,
+  ChangeLog,
+  Client,
+  ClientFieldDefinition,
+  ClientCustomFieldValue,
+  ClientIcon,
+  ClientIconAssignment,
+  NotificationSettings,
 } from '@accounting/common';
 import { AuthModule, JwtAuthGuard } from '@accounting/auth';
 import { AdminModule } from '../admin/admin.module';
@@ -24,7 +31,11 @@ import { CompanyModule } from '../company/company.module';
 import { ModulesModule } from '../modules/modules.module';
 import { SimpleTextModule } from '@accounting/modules/simple-text';
 import { AIAgentModule } from '@accounting/modules/ai-agent';
+import { ClientsModule } from '@accounting/modules/clients';
 import { SeedersModule } from '../seeders/seeders.module';
+import { EmailModule } from '@accounting/infrastructure/email';
+import { StorageModule } from '@accounting/infrastructure/storage';
+import { ChangeLogModule } from '@accounting/infrastructure/change-log';
 
 @Module({
   imports: [
@@ -53,6 +64,13 @@ import { SeedersModule } from '../seeders/seeders.module';
           AIContext,
           TokenUsage,
           TokenLimit,
+          ChangeLog,
+          Client,
+          ClientFieldDefinition,
+          ClientCustomFieldValue,
+          ClientIcon,
+          ClientIconAssignment,
+          NotificationSettings,
         ],
         synchronize: process.env.NODE_ENV === 'development',
         logging: process.env.NODE_ENV === 'development',
@@ -65,8 +83,12 @@ import { SeedersModule } from '../seeders/seeders.module';
     CompanyModule,
     SimpleTextModule,
     AIAgentModule,
+    ClientsModule,
     ModulesModule,
     SeedersModule,
+    EmailModule,
+    StorageModule.forRoot(),
+    ChangeLogModule,
   ],
   controllers: [AppController],
   providers: [

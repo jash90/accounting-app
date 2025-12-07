@@ -183,3 +183,128 @@ export const setTokenLimitSchema = z.object({
 
 export type SetTokenLimitFormData = z.infer<typeof setTokenLimitSchema>;
 
+// Client Schemas
+export const createClientSchema = z.object({
+  name: z.string().min(1, 'Nazwa klienta jest wymagana').max(255),
+  nip: z.string().max(20).optional(),
+  email: z.string().email('Nieprawidłowy adres email').optional().or(z.literal('')),
+  phone: z.string().max(20).optional(),
+  companyStartDate: z.date().optional().nullable(),
+  cooperationStartDate: z.date().optional().nullable(),
+  suspensionDate: z.date().optional().nullable(),
+  companySpecificity: z.string().optional(),
+  additionalInfo: z.string().optional(),
+  gtuCode: z.string().max(10).optional(),
+  amlGroup: z.string().max(50).optional(),
+  employmentType: z.enum(['DG', 'DG_ETAT', 'DG_AKCJONARIUSZ', 'DG_HALF_TIME_BELOW_MIN', 'DG_HALF_TIME_ABOVE_MIN']).optional(),
+  vatStatus: z.enum(['VAT_MONTHLY', 'VAT_QUARTERLY', 'NO', 'NO_WATCH_LIMIT']).optional(),
+  taxScheme: z.enum(['PIT_17', 'PIT_19', 'LUMP_SUM', 'GENERAL']).optional(),
+  zusStatus: z.enum(['FULL', 'PREFERENTIAL', 'NONE']).optional(),
+});
+
+export type CreateClientFormData = z.infer<typeof createClientSchema>;
+
+export const updateClientSchema = createClientSchema.partial();
+
+export type UpdateClientFormData = z.infer<typeof updateClientSchema>;
+
+export const clientFiltersSchema = z.object({
+  search: z.string().optional(),
+  employmentType: z.enum(['DG', 'DG_ETAT', 'DG_AKCJONARIUSZ', 'DG_HALF_TIME_BELOW_MIN', 'DG_HALF_TIME_ABOVE_MIN']).optional(),
+  vatStatus: z.enum(['VAT_MONTHLY', 'VAT_QUARTERLY', 'NO', 'NO_WATCH_LIMIT']).optional(),
+  taxScheme: z.enum(['PIT_17', 'PIT_19', 'LUMP_SUM', 'GENERAL']).optional(),
+  zusStatus: z.enum(['FULL', 'PREFERENTIAL', 'NONE']).optional(),
+  isActive: z.boolean().optional(),
+});
+
+export type ClientFiltersFormData = z.infer<typeof clientFiltersSchema>;
+
+// Client Field Definition Schemas
+export const createClientFieldDefinitionSchema = z.object({
+  name: z.string().min(1, 'Nazwa pola jest wymagana').max(100),
+  label: z.string().min(1, 'Etykieta pola jest wymagana').max(200),
+  fieldType: z.enum(['TEXT', 'NUMBER', 'DATE', 'BOOLEAN', 'ENUM'], { required_error: 'Typ pola jest wymagany' }),
+  isRequired: z.boolean().default(false),
+  enumValues: z.array(z.string()).optional(),
+  displayOrder: z.number().int().min(0).optional(),
+});
+
+export type CreateClientFieldDefinitionFormData = z.infer<typeof createClientFieldDefinitionSchema>;
+
+export const updateClientFieldDefinitionSchema = createClientFieldDefinitionSchema.partial().extend({
+  isActive: z.boolean().optional(),
+});
+
+export type UpdateClientFieldDefinitionFormData = z.infer<typeof updateClientFieldDefinitionSchema>;
+
+// Auto-Assign Condition Schema
+const singleConditionSchema = z.object({
+  field: z.string().min(1),
+  operator: z.enum(['equals', 'notEquals', 'contains', 'notContains', 'greaterThan', 'lessThan', 'greaterThanOrEqual', 'lessThanOrEqual', 'isEmpty', 'isNotEmpty', 'in', 'notIn', 'between']),
+  value: z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]).optional(),
+  secondValue: z.union([z.string(), z.number()]).optional(),
+});
+
+const conditionGroupSchema: z.ZodType<any> = z.lazy(() =>
+  z.object({
+    logicalOperator: z.enum(['and', 'or']),
+    conditions: z.array(z.union([singleConditionSchema, conditionGroupSchema])),
+  })
+);
+
+const autoAssignConditionSchema = z.union([singleConditionSchema, conditionGroupSchema]);
+
+// Client Icon Schemas
+export const createClientIconSchema = z.object({
+  name: z.string().min(1, 'Nazwa ikony jest wymagana').max(100),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Nieprawidłowy format koloru').optional().or(z.literal('')),
+  iconType: z.enum(['lucide', 'custom', 'emoji'], { required_error: 'Wybierz typ ikony' }),
+  iconValue: z.string().optional(),
+  file: z.instanceof(File)
+    .refine((file) => file.size <= 5 * 1024 * 1024, 'Rozmiar pliku nie może przekraczać 5MB')
+    .refine(
+      (file) => ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp'].includes(file.type),
+      'Dozwolone są tylko pliki PNG, JPEG, SVG i WebP'
+    )
+    .optional(),
+  autoAssignCondition: autoAssignConditionSchema.optional().nullable(),
+}).refine(
+  (data) => {
+    // For LUCIDE and EMOJI types, iconValue is required
+    if (data.iconType === 'lucide' || data.iconType === 'emoji') {
+      return !!data.iconValue;
+    }
+    // For CUSTOM type, file is required
+    if (data.iconType === 'custom') {
+      return !!data.file;
+    }
+    return true;
+  },
+  {
+    message: 'Wybierz ikonę lub prześlij plik',
+    path: ['iconValue'],
+  }
+);
+
+export type CreateClientIconFormData = z.infer<typeof createClientIconSchema>;
+
+export const updateClientIconSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().or(z.literal('')),
+  iconType: z.enum(['lucide', 'custom', 'emoji']).optional(),
+  iconValue: z.string().optional(),
+  isActive: z.boolean().optional(),
+  autoAssignCondition: autoAssignConditionSchema.optional().nullable(),
+});
+
+export type UpdateClientIconFormData = z.infer<typeof updateClientIconSchema>;
+
+// Notification Settings Schemas
+export const notificationSettingsSchema = z.object({
+  receiveOnCreate: z.boolean().default(false),
+  receiveOnUpdate: z.boolean().default(false),
+  receiveOnDelete: z.boolean().default(false),
+});
+
+export type NotificationSettingsFormData = z.infer<typeof notificationSettingsSchema>;
+
