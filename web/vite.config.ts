@@ -45,36 +45,6 @@ export default defineConfig({
     commonjsOptions: {
       transformMixedEsModules: true,
     },
-    rollupOptions: {
-      output: {
-        manualChunks: (id) => {
-          // React and core libraries
-          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) {
-            return 'react-vendor';
-          }
-          // TanStack Query
-          if (id.includes('node_modules/@tanstack/react-query')) {
-            return 'query-vendor';
-          }
-          // UI libraries
-          if (id.includes('node_modules/lucide-react') || id.includes('node_modules/@radix-ui')) {
-            return 'ui-vendor';
-          }
-          // Form libraries
-          if (id.includes('node_modules/react-hook-form') || id.includes('node_modules/@hookform') || id.includes('node_modules/zod')) {
-            return 'form-vendor';
-          }
-          // Axios
-          if (id.includes('node_modules/axios')) {
-            return 'axios-vendor';
-          }
-          // Other node_modules
-          if (id.includes('node_modules')) {
-            return 'vendor';
-          }
-        },
-      },
-    },
   },
 
   test: {
