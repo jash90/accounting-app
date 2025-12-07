@@ -10,8 +10,19 @@ export class AppController {
 
   @Get()
   @Public()
-  @ApiOperation({ summary: 'Health check endpoint' })
+  @ApiOperation({ summary: 'Root endpoint' })
   getData() {
     return this.appService.getData();
+  }
+
+  @Get('health')
+  @Public()
+  @ApiOperation({ summary: 'Health check endpoint for Railway deployment' })
+  health() {
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+    };
   }
 }

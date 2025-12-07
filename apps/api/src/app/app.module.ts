@@ -33,32 +33,65 @@ import { SeedersModule } from '../seeders/seeders.module';
       envFilePath: '.env',
     }),
     TypeOrmModule.forRootAsync({
-      useFactory: () => ({
-        type: 'postgres',
-        host: process.env.DB_HOST || 'localhost',
-        port: parseInt(process.env.DB_PORT || '5432', 10),
-        username: process.env.DB_USERNAME || 'postgres',
-        password: process.env.DB_PASSWORD || 'postgres',
-        database: process.env.DB_DATABASE || 'accounting_db',
-        entities: [
-          User,
-          Company,
-          ModuleEntity,
-          CompanyModuleAccess,
-          UserModulePermission,
-          SimpleText,
-          AIConfiguration,
-          AIConversation,
-          AIMessage,
-          AIContext,
-          TokenUsage,
-          TokenLimit,
-        ],
-        synchronize: process.env.NODE_ENV === 'development',
-        logging: process.env.NODE_ENV === 'development',
-        migrations: ['dist/migrations/*.js'],
-        migrationsRun: false,
-      }),
+      useFactory: () => {
+        const isProduction = process.env.NODE_ENV === 'production';
+        const databaseUrl = process.env.DATABASE_URL;
+
+        // Railway provides DATABASE_URL, use it if available
+        if (databaseUrl) {
+          return {
+            type: 'postgres',
+            url: databaseUrl,
+            entities: [
+              User,
+              Company,
+              ModuleEntity,
+              CompanyModuleAccess,
+              UserModulePermission,
+              SimpleText,
+              AIConfiguration,
+              AIConversation,
+              AIMessage,
+              AIContext,
+              TokenUsage,
+              TokenLimit,
+            ],
+            synchronize: !isProduction,
+            logging: !isProduction,
+            migrations: ['dist/migrations/*.js'],
+            migrationsRun: false,
+            ssl: isProduction ? { rejectUnauthorized: false } : false,
+          };
+        }
+
+        // Fallback to individual environment variables (local development)
+        return {
+          type: 'postgres',
+          host: process.env.DB_HOST || 'localhost',
+          port: parseInt(process.env.DB_PORT || '5432', 10),
+          username: process.env.DB_USERNAME || 'postgres',
+          password: process.env.DB_PASSWORD || 'postgres',
+          database: process.env.DB_DATABASE || 'accounting_db',
+          entities: [
+            User,
+            Company,
+            ModuleEntity,
+            CompanyModuleAccess,
+            UserModulePermission,
+            SimpleText,
+            AIConfiguration,
+            AIConversation,
+            AIMessage,
+            AIContext,
+            TokenUsage,
+            TokenLimit,
+          ],
+          synchronize: !isProduction,
+          logging: !isProduction,
+          migrations: ['dist/migrations/*.js'],
+          migrationsRun: false,
+        };
+      },
     }),
     AuthModule,
     AdminModule,
