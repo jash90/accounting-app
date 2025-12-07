@@ -16,6 +16,7 @@ import { AIConversation } from './ai-conversation.entity';
 import { AIContext } from './ai-context.entity';
 import { TokenUsage } from './token-usage.entity';
 import { TokenLimit } from './token-limit.entity';
+import { Client } from './client.entity';
 
 @Entity('companies')
 export class Company {
@@ -56,11 +57,17 @@ export class Company {
   @OneToMany(() => TokenLimit, (limit) => limit.company)
   tokenLimits!: TokenLimit[];
 
+  @OneToMany(() => Client, (client) => client.company)
+  clients!: Client[];
+
   @Column({ default: false })
   isSystemCompany!: boolean;
 
   @Column({ default: true })
   isActive!: boolean;
+
+  @Column({ nullable: true })
+  notificationFromEmail?: string;
 
   @CreateDateColumn()
   createdAt!: Date;

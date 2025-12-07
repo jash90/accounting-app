@@ -10,6 +10,13 @@ import {
   UserModulePermission,
   SimpleText,
   UserRole,
+  Client,
+  ClientFieldDefinition,
+  EmploymentType,
+  VatStatus,
+  TaxScheme,
+  ZusStatus,
+  CustomFieldType,
 } from '@accounting/common';
 
 @Injectable()
@@ -27,6 +34,10 @@ export class SeederService {
     private userModulePermissionRepository: Repository<UserModulePermission>,
     @InjectRepository(SimpleText)
     private simpleTextRepository: Repository<SimpleText>,
+    @InjectRepository(Client)
+    private clientRepository: Repository<Client>,
+    @InjectRepository(ClientFieldDefinition)
+    private fieldDefinitionRepository: Repository<ClientFieldDefinition>,
     private dataSource: DataSource,
   ) {}
 
@@ -45,6 +56,7 @@ export class SeederService {
     await this.seedModuleAccess(companyA, companyB, modules);
     await this.seedEmployeePermissions(employeesA, employeesB, modules);
     await this.seedSimpleTexts(companyA, companyB, ownerA, ownerB, employeesA);
+    await this.seedClients(companyA, companyB, ownerA, ownerB);
 
     console.log('Database seeding completed!');
     console.log('\nTest Users:');
@@ -63,7 +75,7 @@ export class SeederService {
     await queryRunner.connect();
 
     try {
-      await queryRunner.query('TRUNCATE TABLE ai_messages, ai_conversations, ai_contexts, ai_configurations, token_usages, token_limits, simple_texts, user_module_permissions, company_module_access, modules, users, companies RESTART IDENTITY CASCADE');
+      await queryRunner.query('TRUNCATE TABLE ai_messages, ai_conversations, ai_contexts, ai_configurations, token_usages, token_limits, simple_texts, user_module_permissions, company_module_access, modules, client_icon_assignments, client_icons, client_custom_field_values, client_field_definitions, notification_settings, change_logs, clients, users, companies RESTART IDENTITY CASCADE');
     } finally {
       await queryRunner.release();
     }
@@ -204,6 +216,12 @@ export class SeederService {
         description: 'AI-powered chat assistant with RAG and token management',
         isActive: true,
       },
+      {
+        name: 'Clients',
+        slug: 'clients',
+        description: 'Client management with custom fields, icons, and change tracking',
+        isActive: true,
+      },
     ];
 
     const savedModules = [];
@@ -220,9 +238,10 @@ export class SeederService {
     companyB: Company,
     modules: ModuleEntity[],
   ) {
-    // Company A: simple-text, ai-agent
+    // Company A: simple-text, ai-agent, clients
     const simpleTextModule = modules.find((m) => m.slug === 'simple-text');
     const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
+    const clientsModule = modules.find((m) => m.slug === 'clients');
 
     if (simpleTextModule) {
       await this.companyModuleAccessRepository.save(
@@ -244,7 +263,17 @@ export class SeederService {
       );
     }
 
-    // Company B: simple-text, ai-agent
+    if (clientsModule) {
+      await this.companyModuleAccessRepository.save(
+        this.companyModuleAccessRepository.create({
+          companyId: companyA.id,
+          moduleId: clientsModule.id,
+          isEnabled: true,
+        }),
+      );
+    }
+
+    // Company B: simple-text, ai-agent, clients
     if (simpleTextModule) {
       await this.companyModuleAccessRepository.save(
         this.companyModuleAccessRepository.create({
@@ -260,6 +289,16 @@ export class SeederService {
         this.companyModuleAccessRepository.create({
           companyId: companyB.id,
           moduleId: aiAgentModule.id,
+          isEnabled: true,
+        }),
+      );
+    }
+
+    if (clientsModule) {
+      await this.companyModuleAccessRepository.save(
+        this.companyModuleAccessRepository.create({
+          companyId: companyB.id,
+          moduleId: clientsModule.id,
           isEnabled: true,
         }),
       );
@@ -273,6 +312,7 @@ export class SeederService {
   ) {
     const simpleTextModule = modules.find((m) => m.slug === 'simple-text');
     const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
+    const clientsModule = modules.find((m) => m.slug === 'clients');
 
     if (simpleTextModule) {
       // Employee 1A: read, write
@@ -368,6 +408,54 @@ export class SeederService {
         );
       }
     }
+
+    // Clients Module Permissions
+    if (clientsModule) {
+      // Employee 1A: read, write (can manage clients)
+      if (employeesA[0]) {
+        await this.userModulePermissionRepository.save(
+          this.userModulePermissionRepository.create({
+            userId: employeesA[0].id,
+            moduleId: clientsModule.id,
+            permissions: ['read', 'write'],
+            grantedById: employeesA[0].companyId
+              ? (await this.companyRepository.findOne({ where: { id: employeesA[0].companyId } }))
+                  ?.ownerId || ''
+              : '',
+          }),
+        );
+      }
+
+      // Employee 2A: read only
+      if (employeesA[1]) {
+        await this.userModulePermissionRepository.save(
+          this.userModulePermissionRepository.create({
+            userId: employeesA[1].id,
+            moduleId: clientsModule.id,
+            permissions: ['read'],
+            grantedById: employeesA[1].companyId
+              ? (await this.companyRepository.findOne({ where: { id: employeesA[1].companyId } }))
+                  ?.ownerId || ''
+              : '',
+          }),
+        );
+      }
+
+      // Employee 1B: read, write, delete (full access)
+      if (employeesB[0]) {
+        await this.userModulePermissionRepository.save(
+          this.userModulePermissionRepository.create({
+            userId: employeesB[0].id,
+            moduleId: clientsModule.id,
+            permissions: ['read', 'write', 'delete'],
+            grantedById: employeesB[0].companyId
+              ? (await this.companyRepository.findOne({ where: { id: employeesB[0].companyId } }))
+                  ?.ownerId || ''
+              : '',
+          }),
+        );
+      }
+    }
   }
 
   private async seedSimpleTexts(
@@ -406,6 +494,155 @@ export class SeederService {
         }),
       );
     }
+  }
+
+  private async seedClients(
+    companyA: Company,
+    companyB: Company,
+    ownerA: User,
+    ownerB: User,
+  ) {
+    console.log('Seeding clients...');
+
+    // Create field definitions for Company A
+    const fieldDefinitionsA = [
+      {
+        name: 'industry',
+        label: 'Branża',
+        fieldType: CustomFieldType.TEXT,
+        isRequired: false,
+        companyId: companyA.id,
+        displayOrder: 1,
+        createdById: ownerA.id,
+      },
+      {
+        name: 'contract_value',
+        label: 'Wartość kontraktu',
+        fieldType: CustomFieldType.NUMBER,
+        isRequired: false,
+        companyId: companyA.id,
+        displayOrder: 2,
+        createdById: ownerA.id,
+      },
+      {
+        name: 'contract_start',
+        label: 'Data rozpoczęcia',
+        fieldType: CustomFieldType.DATE,
+        isRequired: false,
+        companyId: companyA.id,
+        displayOrder: 3,
+        createdById: ownerA.id,
+      },
+      {
+        name: 'is_vip',
+        label: 'Klient VIP',
+        fieldType: CustomFieldType.BOOLEAN,
+        isRequired: false,
+        companyId: companyA.id,
+        displayOrder: 4,
+        createdById: ownerA.id,
+      },
+    ];
+
+    for (const fieldDef of fieldDefinitionsA) {
+      await this.fieldDefinitionRepository.save(
+        this.fieldDefinitionRepository.create(fieldDef),
+      );
+    }
+
+    // Create clients for Company A
+    const clientsA = [
+      {
+        name: 'Tech Solutions Sp. z o.o.',
+        nip: '1234567890',
+        email: 'kontakt@techsolutions.pl',
+        phone: '+48 123 456 789',
+        companyStartDate: new Date('2020-01-15'),
+        cooperationStartDate: new Date('2023-03-01'),
+        companySpecificity: 'Firma IT specjalizująca się w rozwiązaniach chmurowych',
+        employmentType: EmploymentType.DG,
+        vatStatus: VatStatus.VAT_MONTHLY,
+        taxScheme: TaxScheme.PIT_19,
+        zusStatus: ZusStatus.FULL,
+        companyId: companyA.id,
+        createdById: ownerA.id,
+      },
+      {
+        name: 'Marketing Pro',
+        nip: '9876543210',
+        email: 'biuro@marketingpro.pl',
+        phone: '+48 987 654 321',
+        companyStartDate: new Date('2019-06-20'),
+        cooperationStartDate: new Date('2022-11-15'),
+        companySpecificity: 'Agencja marketingu cyfrowego',
+        employmentType: EmploymentType.DG_ETAT,
+        vatStatus: VatStatus.VAT_QUARTERLY,
+        taxScheme: TaxScheme.LUMP_SUM,
+        zusStatus: ZusStatus.PREFERENTIAL,
+        companyId: companyA.id,
+        createdById: ownerA.id,
+      },
+      {
+        name: 'Jan Kowalski - Doradztwo',
+        nip: '5555555555',
+        email: 'jan.kowalski@doradztwo.pl',
+        phone: '+48 555 555 555',
+        companyStartDate: new Date('2021-09-01'),
+        cooperationStartDate: new Date('2024-01-10'),
+        companySpecificity: 'Doradztwo biznesowe dla małych firm',
+        employmentType: EmploymentType.DG_HALF_TIME_BELOW_MIN,
+        vatStatus: VatStatus.NO,
+        taxScheme: TaxScheme.GENERAL,
+        zusStatus: ZusStatus.NONE,
+        companyId: companyA.id,
+        createdById: ownerA.id,
+      },
+    ];
+
+    for (const client of clientsA) {
+      await this.clientRepository.save(this.clientRepository.create(client));
+    }
+
+    // Create clients for Company B
+    const clientsB = [
+      {
+        name: 'Global Trade Ltd.',
+        nip: '1111111111',
+        email: 'info@globaltrade.com',
+        phone: '+48 111 111 111',
+        companyStartDate: new Date('2018-03-10'),
+        cooperationStartDate: new Date('2023-06-01'),
+        companySpecificity: 'Handel międzynarodowy',
+        employmentType: EmploymentType.DG_AKCJONARIUSZ,
+        vatStatus: VatStatus.VAT_MONTHLY,
+        taxScheme: TaxScheme.PIT_17,
+        zusStatus: ZusStatus.FULL,
+        companyId: companyB.id,
+        createdById: ownerB.id,
+      },
+      {
+        name: 'Usługi Budowlane Nowak',
+        nip: '2222222222',
+        email: 'nowak@budowlane.pl',
+        phone: '+48 222 222 222',
+        companyStartDate: new Date('2015-07-15'),
+        cooperationStartDate: new Date('2022-02-28'),
+        companySpecificity: 'Roboty budowlane i remontowe',
+        gtuCode: 'GTU_10',
+        employmentType: EmploymentType.DG_HALF_TIME_ABOVE_MIN,
+        vatStatus: VatStatus.NO_WATCH_LIMIT,
+        taxScheme: TaxScheme.LUMP_SUM,
+        zusStatus: ZusStatus.PREFERENTIAL,
+        companyId: companyB.id,
+        createdById: ownerB.id,
+      },
+    ];
+
+    for (const client of clientsB) {
+      await this.clientRepository.save(this.clientRepository.create(client));
+    }
+
+    console.log('✅ Clients seeded successfully');
   }
 }
 

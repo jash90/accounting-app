@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsEmail } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateCompanyDto {
@@ -11,5 +11,13 @@ export class UpdateCompanyDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({
+    example: 'notifications@company.com',
+    description: 'Email address used as sender for notification emails',
+  })
+  @IsOptional()
+  @IsEmail()
+  notificationFromEmail?: string;
 }
 

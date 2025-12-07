@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 RBAC Multi-tenant SaaS Backend API with React Frontend built using NestJS and Nx monorepo architecture. Supports three user roles (ADMIN, COMPANY_OWNER, EMPLOYEE) with fine-grained permission management and modular business features.
 
 **Tech Stack:**
+
 - **Backend**: NestJS 11 + TypeORM + PostgreSQL + JWT + CASL
 - **Frontend**: React 19 + Vite + React Router + TanStack Query + Tailwind CSS + shadcn/ui
 - **Monorepo**: Nx 22 with workspace management
@@ -188,6 +189,7 @@ const { data } = useQuery({
 ### Database Entities
 
 All business entities must:
+
 - Include `companyId` column for multi-tenancy
 - Use TypeORM decorators
 - Be registered in `typeorm.config.ts`
@@ -201,3 +203,17 @@ Swagger UI available at `http://localhost:3000/api/docs` when backend is running
 - **ADMIN**: System administrator, manages companies and modules (no business data access)
 - **COMPANY_OWNER**: Company administrator, manages employees and module permissions
 - **EMPLOYEE**: End user with assigned module permissions
+
+<!-- nx configuration start-->
+<!-- Leave the start & end comments to automatically receive updates. -->
+
+# General Guidelines for working with Nx
+
+- When running tasks (for example build, lint, test, e2e, etc.), always prefer running the task through `nx` (i.e. `nx run`, `nx run-many`, `nx affected`) instead of using the underlying tooling directly
+- You have access to the Nx MCP server and its tools, use them to help the user
+- When answering questions about the repository, use the `nx_workspace` tool first to gain an understanding of the workspace architecture where applicable.
+- When working in individual projects, use the `nx_project_details` mcp tool to analyze and understand the specific project structure and dependencies
+- For questions around nx configuration, best practices or if you're unsure, use the `nx_docs` tool to get relevant, up-to-date docs. Always use this instead of assuming things about nx configuration
+- If the user needs help with an Nx configuration or project graph error, use the `nx_workspace` tool to get any errors
+
+<!-- nx configuration end-->

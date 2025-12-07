@@ -12,6 +12,13 @@ import {
   AIContext,
   TokenUsage,
   TokenLimit,
+  ChangeLog,
+  Client,
+  ClientFieldDefinition,
+  ClientCustomFieldValue,
+  ClientIcon,
+  ClientIconAssignment,
+  NotificationSettings,
 } from '@accounting/common';
 
 export default new DataSource({
@@ -34,6 +41,13 @@ export default new DataSource({
     AIContext,
     TokenUsage,
     TokenLimit,
+    ChangeLog,
+    Client,
+    ClientFieldDefinition,
+    ClientCustomFieldValue,
+    ClientIcon,
+    ClientIconAssignment,
+    NotificationSettings,
   ],
   migrations: ['apps/api/src/migrations/*{.ts,.js}'],
   synchronize: false,

@@ -1,5 +1,25 @@
-import { UserRole } from './enums';
-import { User, Company, Module, SimpleText } from './entities';
+import {
+  UserRole,
+  EmploymentType,
+  VatStatus,
+  TaxScheme,
+  ZusStatus,
+  CustomFieldType,
+  ChangeAction,
+} from './enums';
+import {
+  User,
+  Company,
+  Module,
+  SimpleText,
+  Client,
+  ClientFieldDefinition,
+  ClientCustomFieldValue,
+  ClientIcon,
+  ClientIconAssignment,
+  NotificationSettings,
+  ChangeLog,
+} from './entities';
 
 // Re-export for external consumers
 export { UserRole };
@@ -372,5 +392,116 @@ export interface TokenLimitResponseDto {
   resetDate: Date;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Client DTOs
+export interface CreateClientDto {
+  name: string;
+  nip?: string;
+  email?: string;
+  phone?: string;
+  companyStartDate?: Date;
+  cooperationStartDate?: Date;
+  suspensionDate?: Date;
+  companySpecificity?: string;
+  additionalInfo?: string;
+  gtuCode?: string;
+  amlGroup?: string;
+  employmentType?: EmploymentType;
+  vatStatus?: VatStatus;
+  taxScheme?: TaxScheme;
+  zusStatus?: ZusStatus;
+}
+
+export interface UpdateClientDto extends Partial<CreateClientDto> {}
+
+export interface ClientFiltersDto {
+  search?: string;
+  employmentType?: EmploymentType;
+  vatStatus?: VatStatus;
+  taxScheme?: TaxScheme;
+  zusStatus?: ZusStatus;
+  isActive?: boolean;
+}
+
+export interface SetClientIconsDto {
+  iconIds: string[];
+}
+
+export interface SetCustomFieldValuesDto {
+  values: Record<string, string | null>;
+}
+
+export interface ClientResponseDto extends Client {
+  createdBy?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  updatedBy?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+}
+
+// Client Field Definition DTOs
+export interface CreateClientFieldDefinitionDto {
+  name: string;
+  label: string;
+  fieldType: CustomFieldType;
+  isRequired?: boolean;
+  enumValues?: string[];
+  displayOrder?: number;
+}
+
+export interface UpdateClientFieldDefinitionDto extends Partial<CreateClientFieldDefinitionDto> {
+  isActive?: boolean;
+}
+
+export interface ClientFieldDefinitionResponseDto extends ClientFieldDefinition {}
+
+// Client Icon DTOs
+export interface CreateClientIconDto {
+  name: string;
+  color?: string;
+  iconType?: 'lucide' | 'custom' | 'emoji';
+  iconValue?: string;
+  autoAssignCondition?: AutoAssignCondition;
+}
+
+export interface UpdateClientIconDto {
+  name?: string;
+  color?: string;
+  iconType?: 'lucide' | 'custom' | 'emoji';
+  iconValue?: string;
+  isActive?: boolean;
+  autoAssignCondition?: AutoAssignCondition | null;
+}
+
+export interface ClientIconResponseDto extends ClientIcon {}
+
+// Notification Settings DTOs
+export interface CreateNotificationSettingsDto {
+  receiveOnCreate?: boolean;
+  receiveOnUpdate?: boolean;
+  receiveOnDelete?: boolean;
+  isAdminCopy?: boolean;
+}
+
+export interface UpdateNotificationSettingsDto extends CreateNotificationSettingsDto {}
+
+export interface NotificationSettingsResponseDto extends NotificationSettings {}
+
+// Change Log DTOs
+export interface ChangeLogResponseDto extends ChangeLog {
+  user?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
 }
 
