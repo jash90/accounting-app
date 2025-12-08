@@ -23,29 +23,27 @@ export default function AdminConfigurationPage() {
     configRef.current = config;
   }, [config]);
 
+  // Use 'values' prop for controlled form that syncs with config data
+  // This ensures Select component properly displays the loaded value
   const form = useForm<UpdateAIConfigurationFormData>({
     resolver: zodResolver(updateAIConfigurationSchema),
+    values: config ? {
+      provider: config.provider,
+      model: config.model,
+      systemPrompt: config.systemPrompt || '',
+      temperature: config.temperature,
+      maxTokens: config.maxTokens,
+      apiKey: '', // API key is never pre-filled for security
+    } : undefined,
     defaultValues: {
       provider: 'openai',
       model: 'gpt-4',
       systemPrompt: '',
       temperature: 0.7,
       maxTokens: 4000,
+      apiKey: '',
     },
   });
-
-  // Populate form when config loads
-  useEffect(() => {
-    if (config) {
-      form.reset({
-        provider: config.provider,
-        model: config.model,
-        systemPrompt: config.systemPrompt || '',
-        temperature: config.temperature,
-        maxTokens: config.maxTokens,
-      });
-    }
-  }, [config, form]);
 
   const onSubmit = async (data: UpdateAIConfigurationFormData) => {
     // Remove apiKey from data if it's empty (don't update key)
@@ -121,7 +119,7 @@ export default function AdminConfigurationPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>AI Provider</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} key={config?.provider || 'default'}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select provider" />
