@@ -4,8 +4,8 @@ export class AddAIAgentModule1700000000002 implements MigrationInterface {
   name = 'AddAIAgentModule1700000000002';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // 1. Enable pgvector extension
-    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS vector`);
+    // pgvector extension removed for Railway PostgreSQL compatibility
+    // Embeddings stored as jsonb instead of vector type
 
     // 2. Create enums
     await queryRunner.query(`
@@ -78,7 +78,7 @@ export class AddAIAgentModule1700000000002 implements MigrationInterface {
         "filePath" character varying NOT NULL,
         "fileSize" integer NOT NULL,
         "extractedText" text NOT NULL,
-        "embedding" vector(1536),
+        "embedding" jsonb,
         "isActive" boolean NOT NULL DEFAULT true,
         "uploadedById" uuid NOT NULL,
         "createdAt" TIMESTAMP NOT NULL DEFAULT now(),
@@ -283,13 +283,9 @@ export class AddAIAgentModule1700000000002 implements MigrationInterface {
       ON "ai_contexts" ("isActive")
     `);
 
-    // Vector index for semantic search
-    await queryRunner.query(`
-      CREATE INDEX "IDX_ai_contexts_embedding"
-      ON "ai_contexts"
-      USING ivfflat ("embedding" vector_cosine_ops)
-      WITH (lists = 100)
-    `);
+    // Note: Vector similarity search index not created
+    // pgvector not available on Railway PostgreSQL
+    // Fallback uses date-based sorting in RAG service
 
     // token_usages indexes
     await queryRunner.query(`
@@ -340,7 +336,7 @@ export class AddAIAgentModule1700000000002 implements MigrationInterface {
     await queryRunner.query(`DROP INDEX "public"."IDX_token_usages_date"`);
     await queryRunner.query(`DROP INDEX "public"."IDX_token_usages_userId"`);
     await queryRunner.query(`DROP INDEX "public"."IDX_token_usages_companyId"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_ai_contexts_embedding"`);
+    // IDX_ai_contexts_embedding not created (no pgvector)
     await queryRunner.query(`DROP INDEX "public"."IDX_ai_contexts_isActive"`);
     await queryRunner.query(`DROP INDEX "public"."IDX_ai_contexts_companyId"`);
     await queryRunner.query(`DROP INDEX "public"."IDX_ai_messages_userId"`);
