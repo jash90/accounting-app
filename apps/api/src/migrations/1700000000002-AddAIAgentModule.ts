@@ -7,18 +7,24 @@ export class AddAIAgentModule1700000000002 implements MigrationInterface {
     // pgvector extension removed for Railway PostgreSQL compatibility
     // Embeddings stored as jsonb instead of vector type
 
-    // 2. Create enums
+    // 1. Create enums (idempotent - handle if already exists)
     await queryRunner.query(`
-      CREATE TYPE "public"."ai_provider_enum" AS ENUM('openai', 'openrouter')
+      DO $$ BEGIN
+        CREATE TYPE "public"."ai_provider_enum" AS ENUM('openai', 'openrouter');
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $$;
     `);
 
     await queryRunner.query(`
-      CREATE TYPE "public"."ai_message_role_enum" AS ENUM('user', 'assistant', 'system')
+      DO $$ BEGIN
+        CREATE TYPE "public"."ai_message_role_enum" AS ENUM('user', 'assistant', 'system');
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $$;
     `);
 
-    // 3. Create ai_configurations table
+    // 2. Create ai_configurations table
     await queryRunner.query(`
-      CREATE TABLE "ai_configurations" (
+      CREATE TABLE IF NOT EXISTS "ai_configurations" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "companyId" uuid,
         "provider" "public"."ai_provider_enum" NOT NULL DEFAULT 'openai',
@@ -35,9 +41,9 @@ export class AddAIAgentModule1700000000002 implements MigrationInterface {
       )
     `);
 
-    // 4. Create ai_conversations table
+    // 3. Create ai_conversations table
     await queryRunner.query(`
-      CREATE TABLE "ai_conversations" (
+      CREATE TABLE IF NOT EXISTS "ai_conversations" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "title" character varying NOT NULL DEFAULT 'New Conversation',
         "companyId" uuid,
@@ -51,9 +57,9 @@ export class AddAIAgentModule1700000000002 implements MigrationInterface {
       )
     `);
 
-    // 5. Create ai_messages table
+    // 4. Create ai_messages table
     await queryRunner.query(`
-      CREATE TABLE "ai_messages" (
+      CREATE TABLE IF NOT EXISTS "ai_messages" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "conversationId" uuid NOT NULL,
         "role" "public"."ai_message_role_enum" NOT NULL,
@@ -68,9 +74,9 @@ export class AddAIAgentModule1700000000002 implements MigrationInterface {
       )
     `);
 
-    // 6. Create ai_contexts table with vector column
+    // 5. Create ai_contexts table
     await queryRunner.query(`
-      CREATE TABLE "ai_contexts" (
+      CREATE TABLE IF NOT EXISTS "ai_contexts" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "companyId" uuid,
         "filename" character varying NOT NULL,
@@ -87,9 +93,9 @@ export class AddAIAgentModule1700000000002 implements MigrationInterface {
       )
     `);
 
-    // 7. Create token_usages table
+    // 6. Create token_usages table
     await queryRunner.query(`
-      CREATE TABLE "token_usages" (
+      CREATE TABLE IF NOT EXISTS "token_usages" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "companyId" uuid,
         "userId" uuid NOT NULL,
@@ -105,9 +111,9 @@ export class AddAIAgentModule1700000000002 implements MigrationInterface {
       )
     `);
 
-    // 8. Create token_limits table
+    // 7. Create token_limits table
     await queryRunner.query(`
-      CREATE TABLE "token_limits" (
+      CREATE TABLE IF NOT EXISTS "token_limits" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "companyId" uuid,
         "userId" uuid,
@@ -122,164 +128,178 @@ export class AddAIAgentModule1700000000002 implements MigrationInterface {
       )
     `);
 
-    // 9. Add foreign key constraints
+    // 8. Add foreign key constraints (idempotent)
 
     // ai_configurations constraints
     await queryRunner.query(`
-      ALTER TABLE "ai_configurations"
-      ADD CONSTRAINT "FK_ai_configurations_company"
-      FOREIGN KEY ("companyId")
-      REFERENCES "companies"("id")
-      ON DELETE CASCADE
+      DO $$ BEGIN
+        ALTER TABLE "ai_configurations"
+        ADD CONSTRAINT "FK_ai_configurations_company"
+        FOREIGN KEY ("companyId") REFERENCES "companies"("id") ON DELETE CASCADE;
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $$;
     `);
 
     await queryRunner.query(`
-      ALTER TABLE "ai_configurations"
-      ADD CONSTRAINT "FK_ai_configurations_createdBy"
-      FOREIGN KEY ("createdById")
-      REFERENCES "users"("id")
-      ON DELETE NO ACTION
+      DO $$ BEGIN
+        ALTER TABLE "ai_configurations"
+        ADD CONSTRAINT "FK_ai_configurations_createdBy"
+        FOREIGN KEY ("createdById") REFERENCES "users"("id") ON DELETE NO ACTION;
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $$;
     `);
 
     await queryRunner.query(`
-      ALTER TABLE "ai_configurations"
-      ADD CONSTRAINT "FK_ai_configurations_updatedBy"
-      FOREIGN KEY ("updatedById")
-      REFERENCES "users"("id")
-      ON DELETE NO ACTION
+      DO $$ BEGIN
+        ALTER TABLE "ai_configurations"
+        ADD CONSTRAINT "FK_ai_configurations_updatedBy"
+        FOREIGN KEY ("updatedById") REFERENCES "users"("id") ON DELETE NO ACTION;
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $$;
     `);
 
     // ai_conversations constraints
     await queryRunner.query(`
-      ALTER TABLE "ai_conversations"
-      ADD CONSTRAINT "FK_ai_conversations_company"
-      FOREIGN KEY ("companyId")
-      REFERENCES "companies"("id")
-      ON DELETE CASCADE
+      DO $$ BEGIN
+        ALTER TABLE "ai_conversations"
+        ADD CONSTRAINT "FK_ai_conversations_company"
+        FOREIGN KEY ("companyId") REFERENCES "companies"("id") ON DELETE CASCADE;
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $$;
     `);
 
     await queryRunner.query(`
-      ALTER TABLE "ai_conversations"
-      ADD CONSTRAINT "FK_ai_conversations_createdBy"
-      FOREIGN KEY ("createdById")
-      REFERENCES "users"("id")
-      ON DELETE NO ACTION
+      DO $$ BEGIN
+        ALTER TABLE "ai_conversations"
+        ADD CONSTRAINT "FK_ai_conversations_createdBy"
+        FOREIGN KEY ("createdById") REFERENCES "users"("id") ON DELETE NO ACTION;
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $$;
     `);
 
     // ai_messages constraints
     await queryRunner.query(`
-      ALTER TABLE "ai_messages"
-      ADD CONSTRAINT "FK_ai_messages_conversation"
-      FOREIGN KEY ("conversationId")
-      REFERENCES "ai_conversations"("id")
-      ON DELETE CASCADE
+      DO $$ BEGIN
+        ALTER TABLE "ai_messages"
+        ADD CONSTRAINT "FK_ai_messages_conversation"
+        FOREIGN KEY ("conversationId") REFERENCES "ai_conversations"("id") ON DELETE CASCADE;
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $$;
     `);
 
     await queryRunner.query(`
-      ALTER TABLE "ai_messages"
-      ADD CONSTRAINT "FK_ai_messages_user"
-      FOREIGN KEY ("userId")
-      REFERENCES "users"("id")
-      ON DELETE SET NULL
+      DO $$ BEGIN
+        ALTER TABLE "ai_messages"
+        ADD CONSTRAINT "FK_ai_messages_user"
+        FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE SET NULL;
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $$;
     `);
 
     // ai_contexts constraints
     await queryRunner.query(`
-      ALTER TABLE "ai_contexts"
-      ADD CONSTRAINT "FK_ai_contexts_company"
-      FOREIGN KEY ("companyId")
-      REFERENCES "companies"("id")
-      ON DELETE CASCADE
+      DO $$ BEGIN
+        ALTER TABLE "ai_contexts"
+        ADD CONSTRAINT "FK_ai_contexts_company"
+        FOREIGN KEY ("companyId") REFERENCES "companies"("id") ON DELETE CASCADE;
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $$;
     `);
 
     await queryRunner.query(`
-      ALTER TABLE "ai_contexts"
-      ADD CONSTRAINT "FK_ai_contexts_uploadedBy"
-      FOREIGN KEY ("uploadedById")
-      REFERENCES "users"("id")
-      ON DELETE NO ACTION
+      DO $$ BEGIN
+        ALTER TABLE "ai_contexts"
+        ADD CONSTRAINT "FK_ai_contexts_uploadedBy"
+        FOREIGN KEY ("uploadedById") REFERENCES "users"("id") ON DELETE NO ACTION;
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $$;
     `);
 
     // token_usages constraints
     await queryRunner.query(`
-      ALTER TABLE "token_usages"
-      ADD CONSTRAINT "FK_token_usages_company"
-      FOREIGN KEY ("companyId")
-      REFERENCES "companies"("id")
-      ON DELETE CASCADE
+      DO $$ BEGIN
+        ALTER TABLE "token_usages"
+        ADD CONSTRAINT "FK_token_usages_company"
+        FOREIGN KEY ("companyId") REFERENCES "companies"("id") ON DELETE CASCADE;
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $$;
     `);
 
     await queryRunner.query(`
-      ALTER TABLE "token_usages"
-      ADD CONSTRAINT "FK_token_usages_user"
-      FOREIGN KEY ("userId")
-      REFERENCES "users"("id")
-      ON DELETE CASCADE
+      DO $$ BEGIN
+        ALTER TABLE "token_usages"
+        ADD CONSTRAINT "FK_token_usages_user"
+        FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE;
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $$;
     `);
 
     // token_limits constraints
     await queryRunner.query(`
-      ALTER TABLE "token_limits"
-      ADD CONSTRAINT "FK_token_limits_company"
-      FOREIGN KEY ("companyId")
-      REFERENCES "companies"("id")
-      ON DELETE CASCADE
+      DO $$ BEGIN
+        ALTER TABLE "token_limits"
+        ADD CONSTRAINT "FK_token_limits_company"
+        FOREIGN KEY ("companyId") REFERENCES "companies"("id") ON DELETE CASCADE;
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $$;
     `);
 
     await queryRunner.query(`
-      ALTER TABLE "token_limits"
-      ADD CONSTRAINT "FK_token_limits_user"
-      FOREIGN KEY ("userId")
-      REFERENCES "users"("id")
-      ON DELETE CASCADE
+      DO $$ BEGIN
+        ALTER TABLE "token_limits"
+        ADD CONSTRAINT "FK_token_limits_user"
+        FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE;
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $$;
     `);
 
     await queryRunner.query(`
-      ALTER TABLE "token_limits"
-      ADD CONSTRAINT "FK_token_limits_setBy"
-      FOREIGN KEY ("setById")
-      REFERENCES "users"("id")
-      ON DELETE NO ACTION
+      DO $$ BEGIN
+        ALTER TABLE "token_limits"
+        ADD CONSTRAINT "FK_token_limits_setBy"
+        FOREIGN KEY ("setById") REFERENCES "users"("id") ON DELETE NO ACTION;
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $$;
     `);
 
-    // 10. Create indexes for performance
+    // 9. Create indexes (idempotent)
 
     // ai_configurations indexes
     await queryRunner.query(`
-      CREATE INDEX "IDX_ai_configurations_companyId"
+      CREATE INDEX IF NOT EXISTS "IDX_ai_configurations_companyId"
       ON "ai_configurations" ("companyId")
     `);
 
     // ai_conversations indexes
     await queryRunner.query(`
-      CREATE INDEX "IDX_ai_conversations_companyId"
+      CREATE INDEX IF NOT EXISTS "IDX_ai_conversations_companyId"
       ON "ai_conversations" ("companyId")
     `);
 
     await queryRunner.query(`
-      CREATE INDEX "IDX_ai_conversations_createdById"
+      CREATE INDEX IF NOT EXISTS "IDX_ai_conversations_createdById"
       ON "ai_conversations" ("createdById")
     `);
 
     // ai_messages indexes
     await queryRunner.query(`
-      CREATE INDEX "IDX_ai_messages_conversationId"
+      CREATE INDEX IF NOT EXISTS "IDX_ai_messages_conversationId"
       ON "ai_messages" ("conversationId")
     `);
 
     await queryRunner.query(`
-      CREATE INDEX "IDX_ai_messages_userId"
+      CREATE INDEX IF NOT EXISTS "IDX_ai_messages_userId"
       ON "ai_messages" ("userId")
     `);
 
     // ai_contexts indexes
     await queryRunner.query(`
-      CREATE INDEX "IDX_ai_contexts_companyId"
+      CREATE INDEX IF NOT EXISTS "IDX_ai_contexts_companyId"
       ON "ai_contexts" ("companyId")
     `);
 
     await queryRunner.query(`
-      CREATE INDEX "IDX_ai_contexts_isActive"
+      CREATE INDEX IF NOT EXISTS "IDX_ai_contexts_isActive"
       ON "ai_contexts" ("isActive")
     `);
 
@@ -289,91 +309,87 @@ export class AddAIAgentModule1700000000002 implements MigrationInterface {
 
     // token_usages indexes
     await queryRunner.query(`
-      CREATE INDEX "IDX_token_usages_companyId"
+      CREATE INDEX IF NOT EXISTS "IDX_token_usages_companyId"
       ON "token_usages" ("companyId")
     `);
 
     await queryRunner.query(`
-      CREATE INDEX "IDX_token_usages_userId"
+      CREATE INDEX IF NOT EXISTS "IDX_token_usages_userId"
       ON "token_usages" ("userId")
     `);
 
     await queryRunner.query(`
-      CREATE INDEX "IDX_token_usages_date"
+      CREATE INDEX IF NOT EXISTS "IDX_token_usages_date"
       ON "token_usages" ("date")
     `);
 
     // Unique constraint for daily usage records
     await queryRunner.query(`
-      CREATE UNIQUE INDEX "IDX_token_usages_unique"
+      CREATE UNIQUE INDEX IF NOT EXISTS "IDX_token_usages_unique"
       ON "token_usages" ("companyId", "userId", "date")
     `);
 
     // token_limits indexes
     await queryRunner.query(`
-      CREATE INDEX "IDX_token_limits_companyId"
+      CREATE INDEX IF NOT EXISTS "IDX_token_limits_companyId"
       ON "token_limits" ("companyId")
     `);
 
     await queryRunner.query(`
-      CREATE INDEX "IDX_token_limits_userId"
+      CREATE INDEX IF NOT EXISTS "IDX_token_limits_userId"
       ON "token_limits" ("userId")
     `);
 
     // Unique constraint for limits
     await queryRunner.query(`
-      CREATE UNIQUE INDEX "IDX_token_limits_unique"
+      CREATE UNIQUE INDEX IF NOT EXISTS "IDX_token_limits_unique"
       ON "token_limits" ("companyId", "userId")
     `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    // Drop indexes
-    await queryRunner.query(`DROP INDEX "public"."IDX_token_limits_unique"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_token_limits_userId"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_token_limits_companyId"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_token_usages_unique"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_token_usages_date"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_token_usages_userId"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_token_usages_companyId"`);
-    // IDX_ai_contexts_embedding not created (no pgvector)
-    await queryRunner.query(`DROP INDEX "public"."IDX_ai_contexts_isActive"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_ai_contexts_companyId"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_ai_messages_userId"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_ai_messages_conversationId"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_ai_conversations_createdById"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_ai_conversations_companyId"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_ai_configurations_companyId"`);
+    // Drop indexes (use IF EXISTS for safety)
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_token_limits_unique"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_token_limits_userId"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_token_limits_companyId"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_token_usages_unique"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_token_usages_date"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_token_usages_userId"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_token_usages_companyId"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_ai_contexts_isActive"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_ai_contexts_companyId"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_ai_messages_userId"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_ai_messages_conversationId"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_ai_conversations_createdById"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_ai_conversations_companyId"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_ai_configurations_companyId"`);
 
-    // Drop constraints
-    await queryRunner.query(`ALTER TABLE "token_limits" DROP CONSTRAINT "FK_token_limits_setBy"`);
-    await queryRunner.query(`ALTER TABLE "token_limits" DROP CONSTRAINT "FK_token_limits_user"`);
-    await queryRunner.query(`ALTER TABLE "token_limits" DROP CONSTRAINT "FK_token_limits_company"`);
-    await queryRunner.query(`ALTER TABLE "token_usages" DROP CONSTRAINT "FK_token_usages_user"`);
-    await queryRunner.query(`ALTER TABLE "token_usages" DROP CONSTRAINT "FK_token_usages_company"`);
-    await queryRunner.query(`ALTER TABLE "ai_contexts" DROP CONSTRAINT "FK_ai_contexts_uploadedBy"`);
-    await queryRunner.query(`ALTER TABLE "ai_contexts" DROP CONSTRAINT "FK_ai_contexts_company"`);
-    await queryRunner.query(`ALTER TABLE "ai_messages" DROP CONSTRAINT "FK_ai_messages_user"`);
-    await queryRunner.query(`ALTER TABLE "ai_messages" DROP CONSTRAINT "FK_ai_messages_conversation"`);
-    await queryRunner.query(`ALTER TABLE "ai_conversations" DROP CONSTRAINT "FK_ai_conversations_createdBy"`);
-    await queryRunner.query(`ALTER TABLE "ai_conversations" DROP CONSTRAINT "FK_ai_conversations_company"`);
-    await queryRunner.query(`ALTER TABLE "ai_configurations" DROP CONSTRAINT "FK_ai_configurations_updatedBy"`);
-    await queryRunner.query(`ALTER TABLE "ai_configurations" DROP CONSTRAINT "FK_ai_configurations_createdBy"`);
-    await queryRunner.query(`ALTER TABLE "ai_configurations" DROP CONSTRAINT "FK_ai_configurations_company"`);
+    // Drop constraints (use IF EXISTS for safety)
+    await queryRunner.query(`ALTER TABLE "token_limits" DROP CONSTRAINT IF EXISTS "FK_token_limits_setBy"`);
+    await queryRunner.query(`ALTER TABLE "token_limits" DROP CONSTRAINT IF EXISTS "FK_token_limits_user"`);
+    await queryRunner.query(`ALTER TABLE "token_limits" DROP CONSTRAINT IF EXISTS "FK_token_limits_company"`);
+    await queryRunner.query(`ALTER TABLE "token_usages" DROP CONSTRAINT IF EXISTS "FK_token_usages_user"`);
+    await queryRunner.query(`ALTER TABLE "token_usages" DROP CONSTRAINT IF EXISTS "FK_token_usages_company"`);
+    await queryRunner.query(`ALTER TABLE "ai_contexts" DROP CONSTRAINT IF EXISTS "FK_ai_contexts_uploadedBy"`);
+    await queryRunner.query(`ALTER TABLE "ai_contexts" DROP CONSTRAINT IF EXISTS "FK_ai_contexts_company"`);
+    await queryRunner.query(`ALTER TABLE "ai_messages" DROP CONSTRAINT IF EXISTS "FK_ai_messages_user"`);
+    await queryRunner.query(`ALTER TABLE "ai_messages" DROP CONSTRAINT IF EXISTS "FK_ai_messages_conversation"`);
+    await queryRunner.query(`ALTER TABLE "ai_conversations" DROP CONSTRAINT IF EXISTS "FK_ai_conversations_createdBy"`);
+    await queryRunner.query(`ALTER TABLE "ai_conversations" DROP CONSTRAINT IF EXISTS "FK_ai_conversations_company"`);
+    await queryRunner.query(`ALTER TABLE "ai_configurations" DROP CONSTRAINT IF EXISTS "FK_ai_configurations_updatedBy"`);
+    await queryRunner.query(`ALTER TABLE "ai_configurations" DROP CONSTRAINT IF EXISTS "FK_ai_configurations_createdBy"`);
+    await queryRunner.query(`ALTER TABLE "ai_configurations" DROP CONSTRAINT IF EXISTS "FK_ai_configurations_company"`);
 
     // Drop tables
-    await queryRunner.query(`DROP TABLE "token_limits"`);
-    await queryRunner.query(`DROP TABLE "token_usages"`);
-    await queryRunner.query(`DROP TABLE "ai_contexts"`);
-    await queryRunner.query(`DROP TABLE "ai_messages"`);
-    await queryRunner.query(`DROP TABLE "ai_conversations"`);
-    await queryRunner.query(`DROP TABLE "ai_configurations"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "token_limits"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "token_usages"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "ai_contexts"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "ai_messages"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "ai_conversations"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "ai_configurations"`);
 
     // Drop enums
-    await queryRunner.query(`DROP TYPE "public"."ai_message_role_enum"`);
-    await queryRunner.query(`DROP TYPE "public"."ai_provider_enum"`);
-
-    // Note: We don't drop the vector extension as it may be used by other tables
-    // await queryRunner.query(`DROP EXTENSION IF EXISTS vector`);
+    await queryRunner.query(`DROP TYPE IF EXISTS "public"."ai_message_role_enum"`);
+    await queryRunner.query(`DROP TYPE IF EXISTS "public"."ai_provider_enum"`);
   }
 }

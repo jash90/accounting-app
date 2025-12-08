@@ -56,10 +56,10 @@ import { SeedersModule } from '../seeders/seeders.module';
               TokenUsage,
               TokenLimit,
             ],
-            synchronize: true, // Temporarily enabled to create tables - DISABLE after seeding
+            synchronize: false, // Disabled - use migrations for schema changes
             logging: !isProduction,
             migrations: ['dist/migrations/*.js'],
-            migrationsRun: false,
+            migrationsRun: false, // Migrations run via buildCommand in Railway
             ssl: isProduction ? { rejectUnauthorized: false } : false,
           };
         }
@@ -86,10 +86,10 @@ import { SeedersModule } from '../seeders/seeders.module';
             TokenUsage,
             TokenLimit,
           ],
-          synchronize: true, // Temporarily enabled to create tables - DISABLE after seeding
+          synchronize: process.env.NODE_ENV !== 'production', // Auto-sync only in development
           logging: !isProduction,
           migrations: ['dist/migrations/*.js'],
-          migrationsRun: false,
+          migrationsRun: false, // Migrations run manually or via buildCommand
         };
       },
     }),
