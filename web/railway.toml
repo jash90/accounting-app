@@ -3,8 +3,8 @@ builder = "nixpacks"
 buildCommand = "npm install && npm run build:web"
 
 [deploy]
-startCommand = "sed -i \"s|__API_BASE_URL__|${VITE_API_BASE_URL:-}|g\" dist/web/config.js && npx serve dist/web -l $PORT -s"
+startCommand = "npx serve dist/web -l $PORT -s"
 healthcheckPath = "/"
-healthcheckTimeout = 100
+healthcheckTimeout = 10000
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
