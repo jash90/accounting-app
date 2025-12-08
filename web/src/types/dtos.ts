@@ -196,6 +196,7 @@ export interface AIConfigurationResponseDto {
   provider: AIProvider;
   model: string;
   systemPrompt: string | null;
+  hasApiKey: boolean;  // API key status indicator (actual key is never returned)
   temperature: number;
   maxTokens: number;
   createdBy: {

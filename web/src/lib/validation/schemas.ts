@@ -141,7 +141,10 @@ export type CreateAIConfigurationFormData = z.infer<typeof createAIConfiguration
 export const updateAIConfigurationSchema = z.object({
   provider: z.enum(['openai', 'openrouter']).optional(),
   model: z.string().min(1).optional(),
-  apiKey: z.string().min(1).optional(),
+  apiKey: z.preprocess(
+    (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
+    z.string().min(1).optional()
+  ),
   systemPrompt: z.string().optional(),
   temperature: z.number().min(0).max(2).optional(),
   maxTokens: z.number().int().min(1).max(128000).optional(),

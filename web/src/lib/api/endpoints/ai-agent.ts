@@ -48,8 +48,8 @@ export const conversationApi = {
 
 // AI Configuration endpoints
 export const aiConfigurationApi = {
-  get: async (): Promise<AIConfigurationResponseDto> => {
-    const { data } = await apiClient.get<AIConfigurationResponseDto>('/api/modules/ai-agent/config');
+  get: async (): Promise<AIConfigurationResponseDto | null> => {
+    const { data } = await apiClient.get<AIConfigurationResponseDto | null>('/api/modules/ai-agent/config');
     return data;
   },
 

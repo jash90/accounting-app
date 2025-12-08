@@ -1,8 +1,34 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { tokenStorage } from '../auth/token-storage';
 
+// Extend Window interface for runtime config
+declare global {
+  interface Window {
+    __APP_CONFIG__?: {
+      API_BASE_URL?: string;
+    };
+  }
+}
+
+/**
+ * Get API base URL with runtime config support for Railway deployment.
+ * Priority: Runtime config (Railway) > Build-time env var > empty string (relative paths)
+ */
+const getApiBaseUrl = (): string => {
+  // Runtime config (injected by Railway at deploy time via sed)
+  if (typeof window !== 'undefined' && window.__APP_CONFIG__?.API_BASE_URL) {
+    const url = window.__APP_CONFIG__.API_BASE_URL;
+    // Only use if placeholder was replaced (not '__API_BASE_URL__')
+    if (url && url !== '__API_BASE_URL__') {
+      return url;
+    }
+  }
+  // Build-time fallback (works for local dev)
+  return import.meta.env.VITE_API_BASE_URL || '';
+};
+
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -79,7 +105,7 @@ apiClient.interceptors.response.use(
 
       try {
         const { data } = await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/auth/refresh`,
+          `${getApiBaseUrl()}/api/auth/refresh`,
           { refresh_token: refreshToken }
         );
 

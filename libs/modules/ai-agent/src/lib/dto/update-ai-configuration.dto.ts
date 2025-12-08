@@ -3,6 +3,7 @@ import {
   IsEnum,
   IsOptional,
   IsNumber,
+  IsNotEmpty,
   Min,
   Max,
 } from 'class-validator';
@@ -33,10 +34,11 @@ export class UpdateAIConfigurationDto {
   systemPrompt?: string;
 
   @ApiPropertyOptional({
-    description: 'API key for the AI provider (will be encrypted)',
+    description: 'API key for the AI provider (will be encrypted). If provided, must not be empty.',
   })
   @IsOptional()
   @IsString()
+  @IsNotEmpty({ message: 'API key cannot be empty if provided' })
   apiKey?: string;
 
   @ApiPropertyOptional({

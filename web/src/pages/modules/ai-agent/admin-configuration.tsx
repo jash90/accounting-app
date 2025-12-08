@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -15,6 +16,12 @@ export default function AdminConfigurationPage() {
   const { data: config, isLoading } = useAIConfiguration();
   const createConfig = useCreateAIConfiguration();
   const updateConfig = useUpdateAIConfiguration();
+
+  // Use ref to avoid stale closure in onSubmit
+  const configRef = useRef(config);
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
 
   const form = useForm<UpdateAIConfigurationFormData>({
     resolver: zodResolver(updateAIConfigurationSchema),

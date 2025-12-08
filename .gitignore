@@ -16,3 +16,5 @@ web-e2e/test-results
 web-e2e/screenshots
 web-e2e/test-reports
 /uploads
+.claude-flow/metrics/
+.swarm/memory.db
