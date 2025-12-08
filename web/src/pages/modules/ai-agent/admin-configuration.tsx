@@ -110,7 +110,8 @@ export default function AdminConfigurationPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
+          {/* Key forces form remount when config loads to sync Select with data */}
+          <Form {...form} key={config?.id || 'new-config'}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {/* Provider */}
               <FormField
