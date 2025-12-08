@@ -120,7 +120,11 @@ export default function AdminConfigurationPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>AI Provider</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      key={`provider-${config?.provider || 'default'}`}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select provider" />
