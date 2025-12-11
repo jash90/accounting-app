@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -629,9 +630,9 @@ export default function AdminConfigurationPage() {
     if (!submitData.apiKey || submitData.apiKey.trim() === '') {
       delete submitData.apiKey;
     }
-    // Remove embeddingApiKey from data if it's empty (don't update key)
+    // Send empty string to clear embeddingApiKey, or omit if unchanged
     if (!submitData.embeddingApiKey || submitData.embeddingApiKey.trim() === '') {
-      delete submitData.embeddingApiKey;
+      submitData.embeddingApiKey = '';
     }
 
     if (config) {
