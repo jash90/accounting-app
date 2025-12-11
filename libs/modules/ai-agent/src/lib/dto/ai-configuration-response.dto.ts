@@ -60,6 +60,22 @@ export class AIConfigurationResponseDto {
   @ApiProperty({ description: 'Maximum tokens' })
   maxTokens: number;
 
+  @ApiProperty({ description: 'Enable streaming mode for real-time responses' })
+  enableStreaming: boolean;
+
+  // Embedding configuration (for RAG/Knowledge Base)
+  @ApiPropertyOptional({
+    description: 'AI provider for embeddings',
+    enum: AIProvider,
+  })
+  embeddingProvider: AIProvider | null;
+
+  @ApiProperty({ description: 'Whether a separate embedding API key is configured' })
+  hasEmbeddingApiKey: boolean;
+
+  @ApiPropertyOptional({ description: 'Embedding model identifier' })
+  embeddingModel: string | null;
+
   @ApiProperty({
     description: 'User who created the configuration',
     type: UserBasicInfoDto,

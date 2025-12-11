@@ -46,9 +46,9 @@ export class AIConfiguration {
   @Column({ type: 'text', nullable: true })
   systemPrompt!: string | null;
 
-  // Encrypted API key
-  @Column({ type: 'text' })
-  apiKey!: string;
+  // Encrypted API key (nullable to allow reset/clearing)
+  @Column({ type: 'text', nullable: true })
+  apiKey!: string | null;
 
   // Model parameters
   @Column({ type: 'float', default: 0.7 })
@@ -56,6 +56,25 @@ export class AIConfiguration {
 
   @Column({ type: 'int', default: 4000 })
   maxTokens!: number;
+
+  // Streaming mode - enables real-time token streaming via SSE
+  @Column({ type: 'boolean', default: false })
+  enableStreaming!: boolean;
+
+  // Embedding configuration (for RAG/Knowledge Base)
+  @Column({
+    type: 'enum',
+    enum: AIProvider,
+    nullable: true,
+    default: AIProvider.OPENAI,
+  })
+  embeddingProvider!: AIProvider | null;
+
+  @Column({ type: 'text', nullable: true })
+  embeddingApiKey!: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true, default: 'text-embedding-ada-002' })
+  embeddingModel!: string | null;
 
   // Audit trail
   @Column()

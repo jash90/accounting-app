@@ -32,7 +32,7 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 180000, // 3 minutes - matches backend for AI responses
 });
 
 // Request interceptor - auto-add JWT token
@@ -77,7 +77,24 @@ apiClient.interceptors.response.use(
       const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
                             originalRequest.url?.includes('/auth/register');
 
-      if (isAuthEndpoint) {
+      // Don't intercept 401 from AI agent endpoints - these are API key issues, not JWT issues
+      const isAIAgentEndpoint = originalRequest.url?.includes('/modules/ai-agent/');
+
+      // Check if error message indicates API key issue (not JWT issue)
+      const responseData = error.response?.data;
+      const errorMessage = (
+        typeof responseData === 'object' &&
+        responseData !== null &&
+        'message' in responseData &&
+        typeof responseData.message === 'string'
+          ? responseData.message
+          : ''
+      ).toLowerCase();
+      const isApiKeyError = errorMessage.includes('api key') ||
+                            errorMessage.includes('invalid key') ||
+                            errorMessage.includes('configuration');
+
+      if (isAuthEndpoint || isAIAgentEndpoint || isApiKeyError) {
         return Promise.reject(error);
       }
 

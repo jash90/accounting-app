@@ -46,6 +46,9 @@ export const queryKeys = {
       detail: (id: string) => ['ai-agent', 'conversations', id] as const,
     },
     configuration: ['ai-agent', 'configuration'] as const,
+    models: ['ai-agent', 'models'] as const,
+    openaiModels: ['ai-agent', 'openai-models'] as const,
+    openaiEmbeddingModels: ['ai-agent', 'openai-embedding-models'] as const,
     tokenUsage: {
       me: ['ai-agent', 'token-usage', 'me'] as const,
       myDetailed: ['ai-agent', 'token-usage', 'me', 'detailed'] as const,
@@ -55,6 +58,7 @@ export const queryKeys = {
     },
     context: {
       all: ['ai-agent', 'context'] as const,
+      detail: (id: string) => ['ai-agent', 'context', id] as const,
     },
     tokenLimit: {
       byTarget: (targetType: 'company' | 'user', targetId: string) =>

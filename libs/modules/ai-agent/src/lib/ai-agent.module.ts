@@ -20,6 +20,8 @@ import { TokenUsageService } from './services/token-usage.service';
 import { TokenLimitService } from './services/token-limit.service';
 import { OpenAIProviderService } from './services/openai-provider.service';
 import { OpenRouterProviderService } from './services/openrouter-provider.service';
+import { OpenRouterModelsService } from './services/openrouter-models.service';
+import { OpenAIModelsService } from './services/openai-models.service';
 import { RAGService } from './services/rag.service';
 import { SystemCompanyService } from './services/system-company.service';
 
@@ -52,6 +54,8 @@ import { SystemCompanyService } from './services/system-company.service';
     TokenLimitService,
     OpenAIProviderService,
     OpenRouterProviderService,
+    OpenRouterModelsService,
+    OpenAIModelsService,
     RAGService,
   ],
   exports: [

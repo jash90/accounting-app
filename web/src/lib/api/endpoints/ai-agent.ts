@@ -1,4 +1,5 @@
 import apiClient from '../client';
+import { tokenStorage } from '@/lib/auth/token-storage';
 import {
   CreateConversationDto,
   SendMessageDto,
@@ -13,6 +14,9 @@ import {
   AIContextResponseDto,
   SetTokenLimitDto,
   TokenLimitResponseDto,
+  OpenRouterModelDto,
+  OpenAIModelDto,
+  ChatStreamChunk,
 } from '@/types/dtos';
 
 // Conversation endpoints
@@ -41,6 +45,93 @@ export const conversationApi = {
     return data;
   },
 
+  /**
+   * Send message with streaming response via SSE.
+   * Uses fetch with ReadableStream for POST+SSE support.
+   */
+  sendMessageStream: async (
+    conversationId: string,
+    messageData: SendMessageDto,
+    onChunk: (content: string) => void,
+    onDone?: (data: { inputTokens?: number; outputTokens?: number; totalTokens?: number }) => void,
+    onError?: (error: string) => void,
+    signal?: AbortSignal,
+  ): Promise<void> => {
+    const token = tokenStorage.getAccessToken();
+
+    if (!token) {
+      throw new Error('No access token available. Please log in again.');
+    }
+
+    const response = await fetch(`/api/modules/ai-agent/conversations/${conversationId}/messages/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'text/event-stream',
+      },
+      body: JSON.stringify(messageData),
+      signal,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Stream request failed' }));
+      throw new Error(errorData.message || `HTTP ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('No response body');
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete SSE lines
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (!trimmedLine || trimmedLine === '') continue;
+
+          // Handle SSE data lines
+          if (trimmedLine.startsWith('data:')) {
+            const data = trimmedLine.slice(5).trim();
+            if (!data) continue;
+
+            try {
+              const parsed = JSON.parse(data) as ChatStreamChunk;
+
+              if (parsed.type === 'content' && parsed.content) {
+                onChunk(parsed.content);
+              } else if (parsed.type === 'done') {
+                onDone?.({
+                  inputTokens: parsed.inputTokens,
+                  outputTokens: parsed.outputTokens,
+                  totalTokens: parsed.totalTokens,
+                });
+              } else if (parsed.type === 'error') {
+                onError?.(parsed.error || 'Unknown streaming error');
+              }
+            } catch {
+              // Skip non-JSON lines
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  },
+
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/api/modules/ai-agent/conversations/${id}`);
   },
@@ -60,6 +151,26 @@ export const aiConfigurationApi = {
 
   update: async (configData: UpdateAIConfigurationDto): Promise<AIConfigurationResponseDto> => {
     const { data } = await apiClient.patch<AIConfigurationResponseDto>('/api/modules/ai-agent/config', configData);
+    return data;
+  },
+
+  getModels: async (): Promise<OpenRouterModelDto[]> => {
+    const { data } = await apiClient.get<OpenRouterModelDto[]>('/api/modules/ai-agent/config/models');
+    return data;
+  },
+
+  getOpenAIModels: async (): Promise<OpenAIModelDto[]> => {
+    const { data } = await apiClient.get<OpenAIModelDto[]>('/api/modules/ai-agent/config/openai-models');
+    return data;
+  },
+
+  getOpenAIEmbeddingModels: async (): Promise<OpenAIModelDto[]> => {
+    const { data } = await apiClient.get<OpenAIModelDto[]>('/api/modules/ai-agent/config/openai-embedding-models');
+    return data;
+  },
+
+  resetApiKey: async (): Promise<AIConfigurationResponseDto> => {
+    const { data } = await apiClient.post<AIConfigurationResponseDto>('/api/modules/ai-agent/config/reset-api-key');
     return data;
   },
 };
@@ -116,6 +227,11 @@ export const tokenLimitApi = {
 export const contextApi = {
   getAll: async (): Promise<AIContextResponseDto[]> => {
     const { data } = await apiClient.get<AIContextResponseDto[]>('/api/modules/ai-agent/context');
+    return data;
+  },
+
+  getOne: async (id: string): Promise<AIContextResponseDto & { extractedText: string }> => {
+    const { data } = await apiClient.get<AIContextResponseDto & { extractedText: string }>(`/api/modules/ai-agent/context/${id}`);
     return data;
   },
 

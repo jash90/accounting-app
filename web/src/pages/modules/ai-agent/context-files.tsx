@@ -3,13 +3,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { useContextFiles, useUploadContextFile, useDeleteContextFile } from '@/lib/hooks/use-ai-agent';
-import { Upload, Trash2, FileText, File as FileIcon, FolderOpen, Sparkles } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useContextFiles, useUploadContextFile, useDeleteContextFile, useContextFile } from '@/lib/hooks/use-ai-agent';
+import { Upload, Trash2, FileText, File as FileIcon, FolderOpen, Sparkles, Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ContextFilesPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewFileId, setPreviewFileId] = useState<string | null>(null);
   const { data: files, isLoading } = useContextFiles();
+  const { data: previewFile, isLoading: isLoadingPreview } = useContextFile(previewFileId);
   const uploadFile = useUploadContextFile();
   const deleteFile = useDeleteContextFile();
 
@@ -171,15 +181,27 @@ export default function ContextFilesPage() {
                   </TableCell>
                   <TableCell>{new Date(file.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(file.id)}
-                      disabled={deleteFile.isPending}
-                      className="hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setPreviewFileId(file.id)}
+                        className="hover:bg-apptax-soft-teal"
+                        title="Preview content"
+                      >
+                        <Eye className="h-4 w-4 text-apptax-blue" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(file.id)}
+                        disabled={deleteFile.isPending}
+                        className="hover:bg-destructive/10"
+                        title="Delete file"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -199,6 +221,46 @@ export default function ContextFilesPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Preview Modal */}
+      <Dialog open={!!previewFileId} onOpenChange={(open) => !open && setPreviewFileId(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-apptax-navy">
+              {previewFile && getFileIcon(previewFile.mimeType)}
+              {previewFile?.filename || 'Loading...'}
+            </DialogTitle>
+            {previewFile && (
+              <DialogDescription className="flex flex-wrap gap-4 text-sm">
+                <span>
+                  Type: <span className="font-medium">{previewFile.mimeType.split('/')[1]?.toUpperCase()}</span>
+                </span>
+                <span>
+                  Size: <span className="font-medium">{formatFileSize(previewFile.fileSize)}</span>
+                </span>
+                <span>
+                  Uploaded: <span className="font-medium">{new Date(previewFile.createdAt).toLocaleDateString()} by {previewFile.uploadedBy.firstName} {previewFile.uploadedBy.lastName}</span>
+                </span>
+              </DialogDescription>
+            )}
+          </DialogHeader>
+
+          <div className="flex-1 min-h-0 mt-4">
+            <div className="text-sm font-medium text-apptax-navy mb-2">Extracted Content:</div>
+            {isLoadingPreview ? (
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-6 w-6 animate-spin text-apptax-teal" />
+              </div>
+            ) : (
+              <ScrollArea className="h-[400px] w-full rounded-md border border-apptax-soft-teal p-4 bg-apptax-navy/5">
+                <pre className="whitespace-pre-wrap text-sm text-apptax-navy/80 font-mono">
+                  {previewFile?.extractedText || 'No content extracted'}
+                </pre>
+              </ScrollArea>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
