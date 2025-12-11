@@ -144,7 +144,8 @@ export class OpenAIModelsService {
    * Check if model is a chat model
    */
   private isChatModel(modelId: string): boolean {
-    const chatModelPrefixes = ['gpt-4', 'gpt-3.5', 'o1', 'o3', 'chatgpt'];
+    // Use 'gpt-' prefix to match all GPT versions (3.5, 4, 5, 6, etc.)
+    const chatModelPrefixes = ['gpt-', 'o1', 'o3', 'chatgpt'];
     const lowerModel = modelId.toLowerCase();
 
     // Exclude specific non-chat models
@@ -236,6 +237,9 @@ export class OpenAIModelsService {
     if (lowerModel.startsWith('gpt-3.5')) return 'GPT-3.5 variant';
     if (lowerModel.startsWith('o1')) return 'Reasoning model';
     if (lowerModel.startsWith('o3')) return 'Reasoning model';
+
+    // Generic fallback for future GPT versions (gpt-5, gpt-6, etc.)
+    if (lowerModel.startsWith('gpt-')) return 'OpenAI GPT model';
 
     return 'OpenAI model';
   }
