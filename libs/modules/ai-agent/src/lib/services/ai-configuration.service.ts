@@ -178,9 +178,13 @@ export class AIConfigurationService {
     if (updateDto.embeddingProvider !== undefined) config.embeddingProvider = updateDto.embeddingProvider;
     if (updateDto.embeddingModel !== undefined) config.embeddingModel = updateDto.embeddingModel;
 
-    // Encrypt new embedding API key if provided
+    // Encrypt new embedding API key if provided, or clear if empty string
     if (updateDto.embeddingApiKey !== undefined) {
-      config.embeddingApiKey = this.encryptApiKey(updateDto.embeddingApiKey);
+      if (updateDto.embeddingApiKey === '') {
+        config.embeddingApiKey = null;
+      } else {
+        config.embeddingApiKey = this.encryptApiKey(updateDto.embeddingApiKey);
+      }
     }
 
     config.updatedById = user.id;
