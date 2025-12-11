@@ -130,7 +130,7 @@ export class OpenRouterProviderService extends AIProviderService {
             technicalDetails,
             HttpStatus.TOO_MANY_REQUESTS,
           );
-        case 400:
+        case 400: {
           // Include specific API error message if available
           const badRequestMessage = apiError?.message
             ? `Invalid request: ${apiError.message}`
@@ -140,6 +140,7 @@ export class OpenRouterProviderService extends AIProviderService {
             technicalDetails,
             HttpStatus.BAD_REQUEST,
           );
+        }
         case 500:
         case 502:
         case 503:

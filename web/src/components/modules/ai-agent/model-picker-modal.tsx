@@ -163,13 +163,13 @@ export function ModelPickerModal({
         e.preventDefault();
         document.getElementById('model-search')?.focus();
       }
-      // Ctrl+F: Toggle favorites bar
-      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+      // Ctrl+Shift+F: Toggle favorites bar (avoid conflict with browser find)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'f') {
         e.preventDefault();
         setShowFavoritesBar((prev) => !prev);
       }
-      // Ctrl+C: Toggle comparison view
-      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !e.shiftKey) {
+      // Ctrl+Shift+C: Toggle comparison view (avoid conflict with browser copy)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'c') {
         e.preventDefault();
         if (comparisonModels.length > 0) {
           setViewMode((prev) => (prev === 'compare' ? 'browse' : 'compare'));
@@ -325,11 +325,11 @@ export function ModelPickerModal({
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">⌘K</kbd>
               <span>Search</span>
-              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">⌘F</kbd>
+              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">⌘⇧F</kbd>
               <span>Favorites</span>
               {comparisonModels.length > 0 && (
                 <>
-                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">⌘C</kbd>
+                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">⌘⇧C</kbd>
                   <span>Compare</span>
                 </>
               )}
@@ -348,7 +348,6 @@ export function ModelPickerModal({
                     {favoriteModels.map((model) => (
                       <ModelFavoritesChip
                         key={model.id}
-                        modelId={model.id}
                         modelName={model.name}
                         isSelected={selectedModel?.id === model.id}
                         onClick={() => handleModelClick(model)}
@@ -366,7 +365,6 @@ export function ModelPickerModal({
                     {recentModels.map((model) => (
                       <ModelFavoritesChip
                         key={model.id}
-                        modelId={model.id}
                         modelName={model.name}
                         isSelected={selectedModel?.id === model.id}
                         onClick={() => handleModelClick(model)}

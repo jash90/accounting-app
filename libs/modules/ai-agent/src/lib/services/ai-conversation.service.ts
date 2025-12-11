@@ -211,7 +211,6 @@ export class AIConversationService {
           similarContexts = await this.ragService.findSimilarContext(
             sendDto.content,
             conversation.companyId,
-            apiKey,
             3,
           );
 
@@ -414,7 +413,6 @@ export class AIConversationService {
             similarContexts = await this.ragService.findSimilarContext(
               sendDto.content,
               conversation.companyId,
-              apiKey,
               3,
             );
 
@@ -479,7 +477,9 @@ export class AIConversationService {
       let totalTokens = 0;
 
       // Subscribe to provider stream
-      const streamSubscription = provider
+      // Note: Subscription auto-completes when stream ends (on 'done' or 'error')
+      // The finalize operator handles cleanup, and subject.complete() signals end to client
+      provider
         .chatStream(chatMessages, config.model, config.temperature, config.maxTokens, apiKey)
         .pipe(
           finalize(async () => {

@@ -106,6 +106,8 @@ export function useSendMessageStream(conversationId: string) {
           setIsStreaming(false);
           toast.error(error);
         },
+        // signal - for cancellation
+        abortControllerRef.current?.signal,
       );
     } catch (error: any) {
       setIsStreaming(false);

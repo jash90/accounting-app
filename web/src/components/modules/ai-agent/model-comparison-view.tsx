@@ -119,7 +119,7 @@ export function ModelComparisonView({
             <ComparisonRow
               label="Input Cost"
               values={models.map((m) => (
-                <span className={getCostTierColor(m.costPer1kInput)}>
+                <span key={m.id} className={getCostTierColor(m.costPer1kInput)}>
                   {formatCost(m.costPer1kInput)}
                 </span>
               ))}
@@ -128,7 +128,7 @@ export function ModelComparisonView({
             <ComparisonRow
               label="Output Cost"
               values={models.map((m) => (
-                <span className={getCostTierColor(m.costPer1kOutput)}>
+                <span key={m.id} className={getCostTierColor(m.costPer1kOutput)}>
                   {formatCost(m.costPer1kOutput)}
                 </span>
               ))}
@@ -136,26 +136,26 @@ export function ModelComparisonView({
             <ComparisonRow
               label="Context Window"
               values={models.map((m) => (
-                <span className="font-medium">{formatContextWindow(m.contextWindow)}</span>
+                <span key={m.id} className="font-medium">{formatContextWindow(m.contextWindow)}</span>
               ))}
               highlight
             />
             <ComparisonRow
               label="Max Output"
               values={models.map((m) => (
-                <span>{formatContextWindow(m.maxOutputTokens)}</span>
+                <span key={m.id}>{formatContextWindow(m.maxOutputTokens)}</span>
               ))}
             />
             <ComparisonRow
               label="Vision"
               values={models.map((m) => (
                 m.supportsVision ? (
-                  <Badge variant="default" className="gap-1">
+                  <Badge key={m.id} variant="default" className="gap-1">
                     <Eye className="w-3 h-3" />
                     <Check className="w-3 h-3" />
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-muted-foreground">
+                  <Badge key={m.id} variant="outline" className="text-muted-foreground">
                     <X className="w-3 h-3" />
                   </Badge>
                 )
@@ -166,12 +166,12 @@ export function ModelComparisonView({
               label="Tools/Functions"
               values={models.map((m) => (
                 m.supportsFunctionCalling ? (
-                  <Badge variant="default" className="gap-1">
+                  <Badge key={m.id} variant="default" className="gap-1">
                     <Wrench className="w-3 h-3" />
                     <Check className="w-3 h-3" />
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-muted-foreground">
+                  <Badge key={m.id} variant="outline" className="text-muted-foreground">
                     <X className="w-3 h-3" />
                   </Badge>
                 )
@@ -180,7 +180,7 @@ export function ModelComparisonView({
             <ComparisonRow
               label="Model ID"
               values={models.map((m) => (
-                <code className="text-xs bg-muted px-1.5 py-0.5 rounded break-all">
+                <code key={m.id} className="text-xs bg-muted px-1.5 py-0.5 rounded break-all">
                   {m.id}
                 </code>
               ))}

@@ -2,7 +2,6 @@ import { X, Star, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 interface ModelFavoritesChipProps {
-  modelId: string;
   modelName: string;
   isSelected?: boolean;
   onClick: () => void;
@@ -36,17 +35,25 @@ export function ModelFavoritesChip({
       )}
       <span className="max-w-[150px] truncate">{modelName}</span>
       {onRemove && type === 'favorite' && (
-        <button
-          type="button"
+        <span
+          role="button"
+          tabIndex={0}
           onClick={(e) => {
             e.stopPropagation();
             onRemove();
           }}
-          className="ml-0.5 p-0.5 rounded-full hover:bg-muted-foreground/20 transition-colors"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              e.stopPropagation();
+              onRemove();
+            }
+          }}
+          className="ml-0.5 p-0.5 rounded-full hover:bg-muted-foreground/20 transition-colors cursor-pointer"
           title="Remove from favorites"
         >
           <X className="w-3 h-3" />
-        </button>
+        </span>
       )}
     </button>
   );

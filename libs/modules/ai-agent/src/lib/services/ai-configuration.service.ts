@@ -219,8 +219,13 @@ export class AIConfigurationService {
       return this.decryptApiKey(config.embeddingApiKey);
     }
 
-    // Fall back to main API key
-    return this.decryptApiKey(config.apiKey);
+    // Fall back to main API key only if it exists
+    if (config.apiKey) {
+      return this.decryptApiKey(config.apiKey);
+    }
+
+    // No API key available
+    throw new BadRequestException('No API key configured. Please configure an API key in AI settings.');
   }
 
   /**
@@ -241,7 +246,7 @@ export class AIConfigurationService {
       throw new BadRequestException('API key is not configured');
     }
 
-    config.apiKey = null as unknown as string;
+    config.apiKey = null;
     config.updatedById = user.id;
 
     const saved = await this.configRepository.save(config);
@@ -266,9 +271,14 @@ export class AIConfigurationService {
     }
 
     // Get embedding API key (separate or fallback to main)
-    const embeddingApiKey = config.embeddingApiKey
-      ? this.decryptApiKey(config.embeddingApiKey)
-      : this.decryptApiKey(config.apiKey);
+    let embeddingApiKey: string;
+    if (config.embeddingApiKey) {
+      embeddingApiKey = this.decryptApiKey(config.embeddingApiKey);
+    } else if (config.apiKey) {
+      embeddingApiKey = this.decryptApiKey(config.apiKey);
+    } else {
+      throw new BadRequestException('No API key configured. Please configure an API key in AI settings to use embedding features.');
+    }
 
     // Get embedding model (default to text-embedding-ada-002)
     const embeddingModel = config.embeddingModel || 'text-embedding-ada-002';

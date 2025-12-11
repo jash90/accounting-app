@@ -28,17 +28,28 @@ export class OpenAIModelsService {
   private readonly CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
   private readonly TIMEOUT_MS = 10000; // 10 seconds
 
-  private chatModelsCache: CacheEntry | null = null;
-  private embeddingModelsCache: CacheEntry | null = null;
+  // Per-tenant cache using API key suffix as key
+  private chatModelsCache: Map<string, CacheEntry> = new Map();
+  private embeddingModelsCache: Map<string, CacheEntry> = new Map();
+
+  /**
+   * Get cache key from API key (use last 8 chars to avoid storing full key)
+   */
+  private getCacheKey(apiKey: string): string {
+    return apiKey.slice(-8);
+  }
 
   /**
    * Get available chat models (with caching)
    */
   async getChatModels(apiKey: string): Promise<OpenAIModel[]> {
+    const cacheKey = this.getCacheKey(apiKey);
+    const cached = this.chatModelsCache.get(cacheKey);
+
     // Check cache first
-    if (this.chatModelsCache && Date.now() - this.chatModelsCache.timestamp < this.CACHE_TTL_MS) {
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL_MS) {
       this.logger.debug('Returning cached OpenAI chat models');
-      return this.chatModelsCache.models;
+      return cached.models;
     }
 
     // Try to fetch from API
@@ -54,10 +65,10 @@ export class OpenAIModelsService {
         }))
         .sort((a, b) => (b.created ?? 0) - (a.created ?? 0));
 
-      this.chatModelsCache = {
+      this.chatModelsCache.set(cacheKey, {
         models: chatModels,
         timestamp: Date.now(),
-      };
+      });
       this.logger.log(`Fetched ${chatModels.length} chat models from OpenAI API`);
       return chatModels;
     } catch (error) {
@@ -66,10 +77,10 @@ export class OpenAIModelsService {
       );
       // Return fallback models
       const fallbackModels = this.getDefaultChatModels();
-      this.chatModelsCache = {
+      this.chatModelsCache.set(cacheKey, {
         models: fallbackModels,
         timestamp: Date.now(),
-      };
+      });
       return fallbackModels;
     }
   }
@@ -78,10 +89,13 @@ export class OpenAIModelsService {
    * Get available embedding models (with caching)
    */
   async getEmbeddingModels(apiKey: string): Promise<OpenAIModel[]> {
+    const cacheKey = this.getCacheKey(apiKey);
+    const cached = this.embeddingModelsCache.get(cacheKey);
+
     // Check cache first
-    if (this.embeddingModelsCache && Date.now() - this.embeddingModelsCache.timestamp < this.CACHE_TTL_MS) {
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL_MS) {
       this.logger.debug('Returning cached OpenAI embedding models');
-      return this.embeddingModelsCache.models;
+      return cached.models;
     }
 
     // Try to fetch from API
@@ -97,10 +111,10 @@ export class OpenAIModelsService {
         }))
         .sort((a, b) => (b.created ?? 0) - (a.created ?? 0));
 
-      this.embeddingModelsCache = {
+      this.embeddingModelsCache.set(cacheKey, {
         models: embeddingModels,
         timestamp: Date.now(),
-      };
+      });
       this.logger.log(`Fetched ${embeddingModels.length} embedding models from OpenAI API`);
       return embeddingModels;
     } catch (error) {
@@ -109,10 +123,10 @@ export class OpenAIModelsService {
       );
       // Return fallback models
       const fallbackModels = this.getDefaultEmbeddingModels();
-      this.embeddingModelsCache = {
+      this.embeddingModelsCache.set(cacheKey, {
         models: fallbackModels,
         timestamp: Date.now(),
-      };
+      });
       return fallbackModels;
     }
   }
@@ -243,8 +257,8 @@ export class OpenAIModelsService {
    * Clear cache (force refresh on next request)
    */
   clearCache(): void {
-    this.chatModelsCache = null;
-    this.embeddingModelsCache = null;
+    this.chatModelsCache.clear();
+    this.embeddingModelsCache.clear();
     this.logger.debug('OpenAI model caches cleared');
   }
 

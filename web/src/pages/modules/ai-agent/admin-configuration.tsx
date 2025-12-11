@@ -644,7 +644,7 @@ export default function AdminConfigurationPage() {
     } else {
       // Create new configuration - API key is required
       if (!data.apiKey || data.apiKey.trim() === '') {
-        alert('API Key is required when creating initial configuration');
+        toast.error('API Key is required when creating initial configuration');
         return;
       }
       await createConfig.mutateAsync({

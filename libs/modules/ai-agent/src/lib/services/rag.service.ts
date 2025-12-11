@@ -180,9 +180,7 @@ export class RAGService {
   async findSimilarContext(
     query: string,
     companyId: string | null,
-    apiKey: string,
     limit = 3,
-    embeddingModel?: string,
   ): Promise<AIContext[]> {
     let systemCompanyId: string | null = null;
 

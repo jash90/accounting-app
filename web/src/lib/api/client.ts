@@ -81,7 +81,15 @@ apiClient.interceptors.response.use(
       const isAIAgentEndpoint = originalRequest.url?.includes('/modules/ai-agent/');
 
       // Check if error message indicates API key issue (not JWT issue)
-      const errorMessage = (error.response?.data?.message || '').toLowerCase();
+      const responseData = error.response?.data;
+      const errorMessage = (
+        typeof responseData === 'object' &&
+        responseData !== null &&
+        'message' in responseData &&
+        typeof responseData.message === 'string'
+          ? responseData.message
+          : ''
+      ).toLowerCase();
       const isApiKeyError = errorMessage.includes('api key') ||
                             errorMessage.includes('invalid key') ||
                             errorMessage.includes('configuration');

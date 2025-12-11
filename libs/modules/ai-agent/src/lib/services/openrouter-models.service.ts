@@ -56,25 +56,36 @@ export class OpenRouterModelsService {
   private readonly CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
   private readonly TIMEOUT_MS = 10000; // 10 seconds
 
-  private cache: CacheEntry | null = null;
+  // Per-tenant cache using API key suffix as key
+  private cache: Map<string, CacheEntry> = new Map();
+
+  /**
+   * Get cache key from API key (use last 8 chars to avoid storing full key)
+   */
+  private getCacheKey(apiKey?: string): string {
+    return apiKey ? apiKey.slice(-8) : 'default';
+  }
 
   /**
    * Get available models (with caching)
    */
   async getModels(apiKey?: string): Promise<OpenRouterModel[]> {
+    const cacheKey = this.getCacheKey(apiKey);
+    const cached = this.cache.get(cacheKey);
+
     // Check cache first
-    if (this.cache && Date.now() - this.cache.timestamp < this.CACHE_TTL_MS) {
-      this.logger.debug('Returning cached models');
-      return this.cache.models;
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL_MS) {
+      this.logger.debug('Returning cached OpenRouter models');
+      return cached.models;
     }
 
     // Try to fetch from API
     try {
       const models = await this.fetchModelsFromAPI(apiKey);
-      this.cache = {
+      this.cache.set(cacheKey, {
         models,
         timestamp: Date.now(),
-      };
+      });
       this.logger.log(`Fetched ${models.length} models from OpenRouter API`);
       return models;
     } catch (error) {
@@ -83,10 +94,10 @@ export class OpenRouterModelsService {
       );
       // Return fallback models
       const fallbackModels = this.getDefaultModels();
-      this.cache = {
+      this.cache.set(cacheKey, {
         models: fallbackModels,
         timestamp: Date.now(),
-      };
+      });
       return fallbackModels;
     }
   }
@@ -177,8 +188,8 @@ export class OpenRouterModelsService {
    * Clear cache (force refresh on next request)
    */
   clearCache(): void {
-    this.cache = null;
-    this.logger.debug('Model cache cleared');
+    this.cache.clear();
+    this.logger.debug('OpenRouter model cache cleared');
   }
 
   /**

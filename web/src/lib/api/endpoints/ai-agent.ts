@@ -55,8 +55,13 @@ export const conversationApi = {
     onChunk: (content: string) => void,
     onDone?: (data: { inputTokens?: number; outputTokens?: number; totalTokens?: number }) => void,
     onError?: (error: string) => void,
+    signal?: AbortSignal,
   ): Promise<void> => {
     const token = tokenStorage.getAccessToken();
+
+    if (!token) {
+      throw new Error('No access token available. Please log in again.');
+    }
 
     const response = await fetch(`/api/modules/ai-agent/conversations/${conversationId}/messages/stream`, {
       method: 'POST',
@@ -66,6 +71,7 @@ export const conversationApi = {
         'Accept': 'text/event-stream',
       },
       body: JSON.stringify(messageData),
+      signal,
     });
 
     if (!response.ok) {
