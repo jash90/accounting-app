@@ -123,9 +123,15 @@ export class AIConfigurationService {
     // Encrypt API key
     const encryptedApiKey = this.encryptApiKey(createDto.apiKey);
 
+    // Encrypt embedding API key if provided
+    const encryptedEmbeddingApiKey = createDto.embeddingApiKey
+      ? this.encryptApiKey(createDto.embeddingApiKey)
+      : null;
+
     const config = this.configRepository.create({
       ...createDto,
       apiKey: encryptedApiKey,
+      embeddingApiKey: encryptedEmbeddingApiKey,
       companyId: systemCompanyId,
       createdById: user.id,
       updatedById: user.id,
@@ -161,10 +167,20 @@ export class AIConfigurationService {
     if (updateDto.systemPrompt !== undefined) config.systemPrompt = updateDto.systemPrompt;
     if (updateDto.temperature !== undefined) config.temperature = updateDto.temperature;
     if (updateDto.maxTokens !== undefined) config.maxTokens = updateDto.maxTokens;
+    if (updateDto.enableStreaming !== undefined) config.enableStreaming = updateDto.enableStreaming;
 
     // Encrypt new API key if provided
     if (updateDto.apiKey !== undefined) {
       config.apiKey = this.encryptApiKey(updateDto.apiKey);
+    }
+
+    // Update embedding configuration
+    if (updateDto.embeddingProvider !== undefined) config.embeddingProvider = updateDto.embeddingProvider;
+    if (updateDto.embeddingModel !== undefined) config.embeddingModel = updateDto.embeddingModel;
+
+    // Encrypt new embedding API key if provided
+    if (updateDto.embeddingApiKey !== undefined) {
+      config.embeddingApiKey = this.encryptApiKey(updateDto.embeddingApiKey);
     }
 
     config.updatedById = user.id;
@@ -186,5 +202,84 @@ export class AIConfigurationService {
       throw new NotFoundException('AI configuration not found. Please configure the AI agent first.');
     }
     return this.decryptApiKey(config.apiKey);
+  }
+
+  /**
+   * Get decrypted embedding API key (internal use only)
+   * Falls back to main API key if no separate embedding key is configured
+   */
+  async getDecryptedEmbeddingApiKey(user: User): Promise<string> {
+    const config = await this.getConfiguration(user);
+    if (!config) {
+      throw new NotFoundException('AI configuration not found. Please configure the AI agent first.');
+    }
+
+    // If separate embedding API key is configured, use it
+    if (config.embeddingApiKey) {
+      return this.decryptApiKey(config.embeddingApiKey);
+    }
+
+    // Fall back to main API key
+    return this.decryptApiKey(config.apiKey);
+  }
+
+  /**
+   * Reset (clear) API key (ADMIN only)
+   * This clears the API key, requiring reconfiguration before AI can be used
+   */
+  async resetApiKey(user: User): Promise<AIConfiguration> {
+    if (user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Only admins can reset API key');
+    }
+
+    const config = await this.getConfiguration(user);
+    if (!config) {
+      throw new NotFoundException('Configuration not found');
+    }
+
+    if (!config.apiKey) {
+      throw new BadRequestException('API key is not configured');
+    }
+
+    config.apiKey = null as unknown as string;
+    config.updatedById = user.id;
+
+    const saved = await this.configRepository.save(config);
+
+    return this.configRepository.findOne({
+      where: { id: saved.id },
+      relations: ['createdBy', 'updatedBy', 'company'],
+    }) as Promise<AIConfiguration>;
+  }
+
+  /**
+   * Get embedding configuration for RAG operations
+   */
+  async getEmbeddingConfig(user: User): Promise<{
+    apiKey: string;
+    model: string;
+    provider: string;
+  }> {
+    const config = await this.getConfiguration(user);
+    if (!config) {
+      throw new NotFoundException('AI configuration not found. Please configure the AI agent first.');
+    }
+
+    // Get embedding API key (separate or fallback to main)
+    const embeddingApiKey = config.embeddingApiKey
+      ? this.decryptApiKey(config.embeddingApiKey)
+      : this.decryptApiKey(config.apiKey);
+
+    // Get embedding model (default to text-embedding-ada-002)
+    const embeddingModel = config.embeddingModel || 'text-embedding-ada-002';
+
+    // Get embedding provider (default to OpenAI since OpenRouter doesn't support embeddings)
+    const embeddingProvider = config.embeddingProvider || 'openai';
+
+    return {
+      apiKey: embeddingApiKey,
+      model: embeddingModel,
+      provider: embeddingProvider,
+    };
   }
 }

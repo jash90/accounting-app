@@ -3,6 +3,7 @@ import {
   IsEnum,
   IsOptional,
   IsNumber,
+  IsBoolean,
   Min,
   Max,
 } from 'class-validator';
@@ -61,4 +62,38 @@ export class CreateAIConfigurationDto {
   @IsNumber()
   @Min(1)
   maxTokens?: number;
+
+  @ApiPropertyOptional({
+    description: 'Enable streaming mode for real-time token streaming via SSE',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  enableStreaming?: boolean;
+
+  // Embedding configuration (for RAG/Knowledge Base)
+  @ApiPropertyOptional({
+    description: 'AI provider to use for embeddings (defaults to OpenAI as OpenRouter does not support embeddings)',
+    enum: AIProvider,
+    example: AIProvider.OPENAI,
+  })
+  @IsOptional()
+  @IsEnum(AIProvider)
+  embeddingProvider?: AIProvider;
+
+  @ApiPropertyOptional({
+    description: 'Separate API key for embeddings (optional, falls back to main API key if not provided)',
+    example: 'sk-...',
+  })
+  @IsOptional()
+  @IsString()
+  embeddingApiKey?: string;
+
+  @ApiPropertyOptional({
+    description: 'Embedding model to use',
+    example: 'text-embedding-ada-002',
+  })
+  @IsOptional()
+  @IsString()
+  embeddingModel?: string;
 }

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useCallback, useRef } from 'react';
 import { aiAgentApi } from '../api/endpoints/ai-agent';
 import { queryKeys } from '../api/query-client';
 import {
@@ -63,6 +64,75 @@ export function useSendMessage(conversationId: string) {
   });
 }
 
+/**
+ * Hook for sending messages with streaming response.
+ * Provides real-time content updates as the AI generates its response.
+ */
+export function useSendMessageStream(conversationId: string) {
+  const queryClient = useQueryClient();
+  const [streamingContent, setStreamingContent] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const sendMessage = useCallback(async (content: string) => {
+    if (!conversationId) {
+      toast.error('No conversation selected');
+      return;
+    }
+
+    setIsStreaming(true);
+    setStreamingContent('');
+    abortControllerRef.current = new AbortController();
+
+    try {
+      await aiAgentApi.conversations.sendMessageStream(
+        conversationId,
+        { content },
+        // onChunk - called for each content piece
+        (chunk) => {
+          setStreamingContent((prev) => prev + chunk);
+        },
+        // onDone - called when streaming completes
+        () => {
+          setIsStreaming(false);
+          // Invalidate queries to refresh data with final message
+          queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.conversations.detail(conversationId) });
+          queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.me });
+          queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.myDetailed });
+          queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.company });
+        },
+        // onError - called if streaming fails
+        (error) => {
+          setIsStreaming(false);
+          toast.error(error);
+        },
+      );
+    } catch (error: any) {
+      setIsStreaming(false);
+      const message = error.message || 'Failed to send message';
+      toast.error(message);
+    }
+  }, [conversationId, queryClient]);
+
+  const cancelStream = useCallback(() => {
+    abortControllerRef.current?.abort();
+    setIsStreaming(false);
+  }, []);
+
+  const resetStream = useCallback(() => {
+    setStreamingContent('');
+    setIsStreaming(false);
+  }, []);
+
+  return {
+    sendMessage,
+    streamingContent,
+    isStreaming,
+    cancelStream,
+    resetStream,
+  };
+}
+
 export function useDeleteConversation() {
   const queryClient = useQueryClient();
 
@@ -116,6 +186,48 @@ export function useUpdateAIConfiguration() {
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to update AI configuration');
+    },
+  });
+}
+
+export function useOpenRouterModels() {
+  return useQuery({
+    queryKey: queryKeys.aiAgent.models,
+    queryFn: aiAgentApi.configuration.getModels,
+    staleTime: 60 * 60 * 1000, // 1 hour - models don't change often
+    gcTime: 2 * 60 * 60 * 1000, // 2 hours
+  });
+}
+
+export function useOpenAIModels() {
+  return useQuery({
+    queryKey: queryKeys.aiAgent.openaiModels,
+    queryFn: aiAgentApi.configuration.getOpenAIModels,
+    staleTime: 60 * 60 * 1000, // 1 hour - models don't change often
+    gcTime: 2 * 60 * 60 * 1000, // 2 hours
+  });
+}
+
+export function useOpenAIEmbeddingModels() {
+  return useQuery({
+    queryKey: queryKeys.aiAgent.openaiEmbeddingModels,
+    queryFn: aiAgentApi.configuration.getOpenAIEmbeddingModels,
+    staleTime: 60 * 60 * 1000, // 1 hour - models don't change often
+    gcTime: 2 * 60 * 60 * 1000, // 2 hours
+  });
+}
+
+export function useResetApiKey() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => aiAgentApi.configuration.resetApiKey(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.configuration });
+      toast.success('API key has been reset. Please configure a new API key to use AI features.');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to reset API key');
     },
   });
 }
@@ -219,6 +331,14 @@ export function useContextFiles() {
   });
 }
 
+export function useContextFile(id: string | null) {
+  return useQuery({
+    queryKey: queryKeys.aiAgent.context.detail(id!),
+    queryFn: () => aiAgentApi.context.getOne(id!),
+    enabled: !!id,
+  });
+}
+
 export function useUploadContextFile() {
   const queryClient = useQueryClient();
 
@@ -229,7 +349,21 @@ export function useUploadContextFile() {
       toast.success('File uploaded and processed successfully');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to upload file');
+      const message = error.response?.data?.message || 'Failed to upload file';
+      const status = error.response?.status;
+
+      // Provide more helpful error messages for common issues
+      if (message.toLowerCase().includes('api key')) {
+        toast.error('AI Configuration Error: Invalid API key. Please contact administrator to update the AI configuration.');
+      } else if (status === 413 || message.toLowerCase().includes('too large')) {
+        toast.error('File too large. Maximum file size is 10MB.');
+      } else if (message.toLowerCase().includes('file type') || message.toLowerCase().includes('not allowed')) {
+        toast.error('Invalid file type. Only PDF, TXT, and MD files are allowed.');
+      } else if (message.toLowerCase().includes('not found') && message.toLowerCase().includes('configuration')) {
+        toast.error('AI not configured. Please ask administrator to set up AI configuration first.');
+      } else {
+        toast.error(message);
+      }
     },
   });
 }

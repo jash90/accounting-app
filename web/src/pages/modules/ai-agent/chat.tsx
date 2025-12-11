@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, Plus, Trash2, Bot, User, Sparkles } from 'lucide-react';
+import { Send, Plus, Trash2, Bot, User, Sparkles, MessageSquare, Zap, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,9 @@ import {
   useConversation,
   useCreateConversation,
   useSendMessage,
+  useSendMessageStream,
   useDeleteConversation,
+  useAIConfiguration,
 } from '@/lib/hooks/use-ai-agent';
 import { cn } from '@/lib/utils/cn';
 import { MessageRole } from '@/types/dtos';
@@ -20,19 +22,34 @@ export default function AIAgentChatPage() {
   const navigate = useNavigate();
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [message, setMessage] = useState('');
+  const [rateLimitHit, setRateLimitHit] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: conversations, isLoading: conversationsLoading } = useConversations();
   const { data: currentConversation } = useConversation(selectedConversationId || '');
+  const { data: aiConfig } = useAIConfiguration();
   const createConversation = useCreateConversation();
-  const sendMessage = useSendMessage(selectedConversationId || '');
+  const sendMessageMutation = useSendMessage(selectedConversationId || '');
+  const {
+    sendMessage: sendMessageStream,
+    streamingContent,
+    isStreaming,
+    resetStream,
+  } = useSendMessageStream(selectedConversationId || '');
   const deleteConversation = useDeleteConversation();
+
+  // Check if streaming is enabled in config
+  const isStreamingEnabled = aiConfig?.enableStreaming ?? false;
+  const isSending = isStreamingEnabled ? isStreaming : sendMessageMutation.isPending;
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const viewport = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+      }
     }
-  }, [currentConversation?.messages]);
+  }, [currentConversation?.messages, streamingContent, isSending]);
 
   useEffect(() => {
     if (conversations && conversations.length > 0 && !selectedConversationId) {
@@ -48,15 +65,30 @@ export default function AIAgentChatPage() {
   };
 
   const sendMessageIfReady = async () => {
-    if (!message.trim() || !selectedConversationId || sendMessage.isPending) return;
+    if (!message.trim() || !selectedConversationId || isSending) return;
 
     const messageContent = message;
     setMessage('');
 
     try {
-      await sendMessage.mutateAsync({ content: messageContent });
-    } catch {
+      if (isStreamingEnabled) {
+        // Use streaming mode
+        resetStream();
+        await sendMessageStream(messageContent);
+      } else {
+        // Use regular mode
+        await sendMessageMutation.mutateAsync({ content: messageContent });
+      }
+      // Clear rate limit warning on successful message
+      setRateLimitHit(false);
+    } catch (error: unknown) {
       setMessage(messageContent);
+      // Check for rate limit error (429)
+      const errorMessage = error instanceof Error ? error.message : '';
+      const axiosStatus = (error as { response?: { status?: number } })?.response?.status;
+      if (axiosStatus === 429 || errorMessage.includes('overloaded') || errorMessage.includes('rate limit')) {
+        setRateLimitHit(true);
+      }
     }
   };
 
@@ -188,7 +220,9 @@ export default function AIAgentChatPage() {
                 </div>
               )}
               <div className="space-y-4" data-testid="messages-container">
-                {currentConversation?.messages.map((msg) => (
+                {[...(currentConversation?.messages ?? [])].sort(
+                  (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                ).map((msg) => (
                   <div
                     key={msg.id}
                     className={cn(
@@ -225,7 +259,22 @@ export default function AIAgentChatPage() {
                     )}
                   </div>
                 ))}
-                {sendMessage.isPending && (
+                {/* Streaming content or thinking indicator */}
+                {isStreaming && streamingContent && (
+                  <div className="flex gap-3" data-testid="streaming-message">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-apptax-ai-gradient flex items-center justify-center ai-glow">
+                      <Bot className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="bg-apptax-soft-teal rounded-xl px-4 py-3 max-w-[70%]">
+                      <p className="whitespace-pre-wrap text-apptax-navy">{streamingContent}</p>
+                      <p className="text-xs mt-2 text-apptax-navy/50 flex items-center gap-2">
+                        <span className="inline-block w-2 h-2 rounded-full bg-apptax-teal animate-pulse" />
+                        Streaming...
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {isSending && !streamingContent && (
                   <div className="flex gap-3" data-testid="thinking-indicator">
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-apptax-ai-gradient flex items-center justify-center ai-glow">
                       <Bot className="h-4 w-4 text-white animate-pulse" />
@@ -241,6 +290,28 @@ export default function AIAgentChatPage() {
               </div>
             </ScrollArea>
 
+            {/* Token/Message Info Bar */}
+            {currentConversation && (
+              <div className="px-4 py-2 bg-apptax-warm-gray/30 border-t text-xs text-muted-foreground flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <span className="flex items-center gap-1">
+                    <MessageSquare className="h-3 w-3" />
+                    {currentConversation.messages.length} messages
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Zap className="h-3 w-3" />
+                    {currentConversation.messages.reduce((sum, m) => sum + (m.totalTokens ?? 0), 0).toLocaleString()} tokens
+                  </span>
+                </div>
+                {rateLimitHit && (
+                  <span className="text-amber-600 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    Rate limit reached - please wait before sending more messages
+                  </span>
+                )}
+              </div>
+            )}
+
             {/* Input Form */}
             <div className="p-4 border-t bg-apptax-warm-gray/50" data-testid="message-input-area">
               <form onSubmit={handleSendMessage} className="flex gap-3">
@@ -255,14 +326,14 @@ export default function AIAgentChatPage() {
                     }
                   }}
                   placeholder="Type your message..."
-                  disabled={!selectedConversationId || sendMessage.isPending}
+                  disabled={!selectedConversationId || isSending}
                   className="flex-1"
                   data-testid="message-input"
                 />
                 <Button
                   type="submit"
                   variant="teal"
-                  disabled={!message.trim() || !selectedConversationId || sendMessage.isPending}
+                  disabled={!message.trim() || !selectedConversationId || isSending}
                   data-testid="send-button"
                 >
                   <Send className="h-4 w-4" />

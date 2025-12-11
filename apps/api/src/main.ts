@@ -12,7 +12,25 @@ async function bootstrap() {
   // Security
   app.use(helmet());
   app.enableCors({
-    origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:4200'],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, Postman)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      // Allow all localhost origins (any port)
+      if (origin.match(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/)) {
+        return callback(null, true);
+      }
+
+      // Allow origins from CORS_ORIGINS env variable (for production)
+      const allowedOrigins = process.env.CORS_ORIGINS?.split(',') || [];
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      callback(new Error('Not allowed by CORS'));
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
