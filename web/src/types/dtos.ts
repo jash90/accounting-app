@@ -216,8 +216,14 @@ export interface AIConfigurationResponseDto {
   provider: AIProvider;
   model: string;
   systemPrompt: string | null;
+  hasApiKey: boolean;  // API key status indicator (actual key is never returned)
   temperature: number;
   maxTokens: number;
+  enableStreaming: boolean;  // Enable real-time token streaming via SSE
+  // Embedding configuration (for RAG/Knowledge Base)
+  embeddingProvider: AIProvider | null;
+  hasEmbeddingApiKey: boolean;  // Separate embedding API key status indicator
+  embeddingModel: string | null;
   createdBy: {
     id: string;
     email: string;
@@ -241,6 +247,11 @@ export interface CreateAIConfigurationDto {
   systemPrompt?: string;
   temperature?: number;
   maxTokens?: number;
+  enableStreaming?: boolean;
+  // Embedding configuration (for RAG/Knowledge Base)
+  embeddingProvider?: AIProvider;
+  embeddingApiKey?: string;
+  embeddingModel?: string;
 }
 
 export interface UpdateAIConfigurationDto {
@@ -250,6 +261,11 @@ export interface UpdateAIConfigurationDto {
   systemPrompt?: string;
   temperature?: number;
   maxTokens?: number;
+  enableStreaming?: boolean;
+  // Embedding configuration (for RAG/Knowledge Base)
+  embeddingProvider?: AIProvider;
+  embeddingApiKey?: string;
+  embeddingModel?: string;
 }
 
 // Conversation DTOs
@@ -287,6 +303,16 @@ export interface CreateConversationDto {
 
 export interface SendMessageDto {
   content: string;
+}
+
+// Streaming DTOs
+export interface ChatStreamChunk {
+  type: 'content' | 'done' | 'error';
+  content?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  error?: string;
 }
 
 // Context/RAG DTOs
@@ -392,6 +418,28 @@ export interface TokenLimitResponseDto {
   resetDate: Date;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// OpenRouter Model DTOs
+export interface OpenRouterModelDto {
+  id: string;
+  name: string;
+  provider: string;
+  contextWindow: number;
+  maxOutputTokens: number;
+  costPer1kInput: number;
+  costPer1kOutput: number;
+  supportsVision: boolean;
+  supportsFunctionCalling: boolean;
+  description?: string;
+}
+
+// OpenAI Model DTOs
+export interface OpenAIModelDto {
+  id: string;
+  name: string;
+  description: string;
+  created?: number;
 }
 
 // Client DTOs

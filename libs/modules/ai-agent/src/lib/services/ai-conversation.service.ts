@@ -9,6 +9,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Observable, Subject } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 import {
   AIConversation,
   AIMessage,
@@ -28,6 +30,7 @@ import { RAGService } from './rag.service';
 import { TokenLimitService } from './token-limit.service';
 import { TokenUsageService } from './token-usage.service';
 import { SystemCompanyService } from './system-company.service';
+import { ChatStreamChunk } from './ai-provider.interface';
 
 @Injectable()
 export class AIConversationService {
@@ -113,6 +116,13 @@ export class AIConversationService {
       if (user.companyId !== conversation.companyId) {
         throw new ForbiddenException('Access denied');
       }
+    }
+
+    // Sort messages by createdAt ASC (oldest first)
+    if (conversation.messages) {
+      conversation.messages.sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      );
     }
 
     return conversation;
@@ -201,7 +211,6 @@ export class AIConversationService {
           similarContexts = await this.ragService.findSimilarContext(
             sendDto.content,
             conversation.companyId,
-            apiKey,
             3,
           );
 
@@ -324,5 +333,229 @@ export class AIConversationService {
   async remove(id: string, user: User): Promise<void> {
     const conversation = await this.findOne(id, user);
     await this.conversationRepository.remove(conversation);
+  }
+
+  /**
+   * Send message with streaming response.
+   * Returns an Observable that emits ChatStreamChunk events.
+   */
+  sendMessageStream(
+    conversationId: string,
+    sendDto: SendMessageDto,
+    user: User,
+  ): Observable<ChatStreamChunk> {
+    const subject = new Subject<ChatStreamChunk>();
+
+    // Execute async setup and streaming in the background
+    this.executeStreamingMessage(conversationId, sendDto, user, subject);
+
+    return subject.asObservable();
+  }
+
+  /**
+   * Internal method to execute the streaming message flow.
+   */
+  private async executeStreamingMessage(
+    conversationId: string,
+    sendDto: SendMessageDto,
+    user: User,
+    subject: Subject<ChatStreamChunk>,
+  ): Promise<void> {
+    try {
+      this.logger.debug(`sendMessageStream started for conversation: ${conversationId}`);
+
+      const conversation = await this.findOne(conversationId, user);
+      this.logger.debug(`Conversation found: ${conversation.id}`);
+
+      // Check token limits
+      await this.tokenLimitService.checkLimit(user);
+      this.logger.debug('Token limit check passed');
+
+      // Get AI configuration
+      const config = await this.configService.getConfiguration(user);
+      if (!config) {
+        this.logger.error('AI configuration not found for user');
+        subject.next({ type: 'error', error: 'AI not configured. Please contact admin.' });
+        subject.complete();
+        return;
+      }
+      this.logger.debug(`AI config found: provider=${config.provider}, model=${config.model}`);
+
+      const apiKey = await this.configService.getDecryptedApiKey(user);
+      this.logger.debug('API key decrypted successfully');
+
+      // Get conversation history
+      const messages = await this.messageRepository.find({
+        where: { conversationId: conversation.id },
+        order: { createdAt: 'ASC' },
+      });
+
+      // Build message array for AI
+      const chatMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [];
+
+      // Add system prompt if configured
+      if (config.systemPrompt) {
+        chatMessages.push({
+          role: 'system',
+          content: config.systemPrompt,
+        });
+      }
+
+      // Add RAG context (only for OpenAI provider with active documents)
+      let similarContexts: AIContext[] = [];
+
+      if (config.provider === AIProvider.OPENAI) {
+        const hasDocuments = await this.ragService.hasActiveDocuments(
+          conversation.companyId,
+        );
+        if (hasDocuments) {
+          try {
+            similarContexts = await this.ragService.findSimilarContext(
+              sendDto.content,
+              conversation.companyId,
+              3,
+            );
+
+            if (similarContexts.length > 0) {
+              const ragContext = this.ragService.buildRAGContext(
+                similarContexts,
+              );
+              chatMessages.push({
+                role: 'system',
+                content: `You have access to the following knowledge base documents. Use them to provide accurate answers:\n${ragContext}`,
+              });
+            }
+          } catch (error) {
+            this.logger.warn(
+              'RAG context retrieval failed:',
+              error instanceof Error ? error.message : error,
+            );
+          }
+        }
+      }
+
+      // Add conversation history
+      messages.forEach((msg) => {
+        chatMessages.push({
+          role: msg.role,
+          content: msg.content,
+        });
+      });
+
+      // Add user message
+      chatMessages.push({
+        role: 'user',
+        content: sendDto.content,
+      });
+
+      // Save user message
+      const userMessage = this.messageRepository.create({
+        conversationId: conversation.id,
+        role: AIMessageRole.USER,
+        content: sendDto.content,
+        userId: user.id,
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        contextUsed: similarContexts.map((ctx) => ctx.id),
+      });
+
+      await this.messageRepository.save(userMessage);
+
+      // Get AI provider
+      const provider =
+        config.provider === AIProvider.OPENAI
+          ? this.openaiProvider
+          : this.openrouterProvider;
+
+      this.logger.debug(`Starting streaming with provider: ${config.provider}, model: ${config.model}`);
+
+      // Track accumulated content and tokens
+      let accumulatedContent = '';
+      let inputTokens = 0;
+      let outputTokens = 0;
+      let totalTokens = 0;
+
+      // Subscribe to provider stream
+      // Note: Subscription auto-completes when stream ends (on 'done' or 'error')
+      // The finalize operator handles cleanup, and subject.complete() signals end to client
+      provider
+        .chatStream(chatMessages, config.model, config.temperature, config.maxTokens, apiKey)
+        .pipe(
+          finalize(async () => {
+            this.logger.debug(`Stream finalized, accumulated content: ${accumulatedContent.length} chars`);
+          }),
+        )
+        .subscribe({
+          next: async (chunk) => {
+            if (chunk.type === 'content') {
+              accumulatedContent += chunk.content || '';
+              subject.next(chunk);
+            } else if (chunk.type === 'done') {
+              inputTokens = chunk.inputTokens || 0;
+              outputTokens = chunk.outputTokens || 0;
+              totalTokens = chunk.totalTokens || 0;
+
+              // Save assistant message
+              try {
+                const assistantMessage = this.messageRepository.create({
+                  conversationId: conversation.id,
+                  role: AIMessageRole.ASSISTANT,
+                  content: accumulatedContent,
+                  userId: null,
+                  inputTokens,
+                  outputTokens,
+                  totalTokens,
+                });
+
+                await this.messageRepository.save(assistantMessage);
+
+                // Update conversation totals
+                await this.conversationRepository.update(
+                  { id: conversation.id },
+                  {
+                    totalTokens: () => `"totalTokens" + ${totalTokens}`,
+                    messageCount: () => `"messageCount" + 2`,
+                  },
+                );
+
+                // Track token usage
+                await this.tokenUsageService.trackUsage(
+                  user,
+                  inputTokens,
+                  outputTokens,
+                );
+
+                this.logger.debug(`Streaming message saved: ${totalTokens} tokens`);
+              } catch (saveError) {
+                this.logger.error('Failed to save streaming message:', saveError);
+              }
+
+              subject.next(chunk);
+              subject.complete();
+            } else if (chunk.type === 'error') {
+              this.logger.error(`Stream error: ${chunk.error}`);
+              if (chunk.technicalDetails) {
+                this.logger.error(`Technical details: ${chunk.technicalDetails}`);
+              }
+              subject.next(chunk);
+              subject.complete();
+            }
+          },
+          error: (error) => {
+            this.logger.error(`Stream subscription error: ${error.message}`);
+            subject.next({ type: 'error', error: error.message });
+            subject.complete();
+          },
+          complete: () => {
+            // Stream completed
+          },
+        });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`sendMessageStream error: ${errorMessage}`);
+      subject.next({ type: 'error', error: errorMessage });
+      subject.complete();
+    }
   }
 }

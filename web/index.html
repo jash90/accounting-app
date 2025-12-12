@@ -8,14 +8,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="AppTax - AI-powered accounting CRM platform for the Polish market. Combine traditional accounting reliability with innovative AI capabilities." />
     <meta name="theme-color" content="#1E3A5F" />
-    <!-- CSP: 'unsafe-inline' for styles (Vite dev mode), fonts self-hosted, connect limited to self and API -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' http://localhost:3000;" />
+    <!-- CSP: 'unsafe-inline' for styles (required by Radix UI), fonts self-hosted, connect limited to self and API -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' http://localhost:3000 https://*.up.railway.app;" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/apptax-favicon.svg" />
     <link rel="apple-touch-icon" href="/apptax-logomark.svg" />
 
     <!-- Inter font is self-hosted via @font-face in styles.css -->
+
+    <!-- Runtime configuration for Railway deployment -->
+    <script src="/config.js"></script>
   </head>
   <body>
     <div id="root"></div>

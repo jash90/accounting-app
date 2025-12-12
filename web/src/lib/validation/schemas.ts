@@ -128,12 +128,17 @@ export type UpdateSimpleTextFormData = z.infer<typeof updateSimpleTextSchema>;
 
 // AI Configuration Schemas
 export const createAIConfigurationSchema = z.object({
-  provider: z.enum(['openai', 'openrouter'], { required_error: 'Provider is required' }),
+  provider: z.enum(['openai', 'openrouter'], { message: 'Provider is required' }),
   model: z.string().min(1, 'Model is required'),
   apiKey: z.string().min(1, 'API Key is required'),
   systemPrompt: z.string().optional(),
   temperature: z.number().min(0).max(2).optional(),
   maxTokens: z.number().int().min(1).max(128000).optional(),
+  enableStreaming: z.boolean().optional(),
+  // Embedding configuration (for RAG/Knowledge Base)
+  embeddingProvider: z.enum(['openai', 'openrouter']).optional(),
+  embeddingApiKey: z.string().optional(),
+  embeddingModel: z.string().optional(),
 });
 
 export type CreateAIConfigurationFormData = z.infer<typeof createAIConfigurationSchema>;
@@ -141,10 +146,15 @@ export type CreateAIConfigurationFormData = z.infer<typeof createAIConfiguration
 export const updateAIConfigurationSchema = z.object({
   provider: z.enum(['openai', 'openrouter']).optional(),
   model: z.string().min(1).optional(),
-  apiKey: z.string().min(1).optional(),
+  apiKey: z.string().optional(),
   systemPrompt: z.string().optional(),
   temperature: z.number().min(0).max(2).optional(),
   maxTokens: z.number().int().min(1).max(128000).optional(),
+  enableStreaming: z.boolean().optional(),
+  // Embedding configuration (for RAG/Knowledge Base)
+  embeddingProvider: z.enum(['openai', 'openrouter']).optional(),
+  embeddingApiKey: z.string().optional(),
+  embeddingModel: z.string().optional(),
 });
 
 export type UpdateAIConfigurationFormData = z.infer<typeof updateAIConfigurationSchema>;
@@ -176,7 +186,7 @@ export type UploadContextFileFormData = z.infer<typeof uploadContextFileSchema>;
 
 // Token Limit Schemas
 export const setTokenLimitSchema = z.object({
-  targetType: z.enum(['company', 'user'], { required_error: 'Target type is required' }),
+  targetType: z.enum(['company', 'user'], { message: 'Target type is required' }),
   targetId: z.string().uuid('Invalid target ID'),
   monthlyLimit: z.number().int().min(0, 'Monthly limit must be non-negative'),
 });

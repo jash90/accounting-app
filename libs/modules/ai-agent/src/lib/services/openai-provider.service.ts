@@ -1,10 +1,12 @@
 import { Injectable, Logger, HttpStatus } from '@nestjs/common';
 import OpenAI from 'openai';
+import { Observable } from 'rxjs';
 import {
   AIProviderService,
   AIProviderError,
   ChatMessage,
   ChatCompletionResponse,
+  ChatStreamChunk,
   EmbeddingResponse,
 } from './ai-provider.interface';
 
@@ -18,7 +20,7 @@ export class OpenAIProviderService extends AIProviderService {
   private readonly clientCache = new Map<string, { client: OpenAI; lastUsed: number }>();
   private readonly CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
   private readonly MAX_RETRIES = 3;
-  private readonly TIMEOUT_MS = 30000; // 30 seconds
+  private readonly TIMEOUT_MS = 180000; // 3 minutes - generous timeout for complex AI responses
   private readonly BASE_RETRY_DELAY_MS = 1000; // 1 second base delay
 
   /**
@@ -134,7 +136,7 @@ export class OpenAIProviderService extends AIProviderService {
           return new AIProviderError(
             'Invalid API key. Please check your AI configuration.',
             technicalDetails,
-            HttpStatus.UNAUTHORIZED,
+            HttpStatus.BAD_REQUEST, // Changed from UNAUTHORIZED to prevent frontend from interpreting as JWT auth failure
           );
         case 429:
           return new AIProviderError(
@@ -198,6 +200,19 @@ export class OpenAIProviderService extends AIProviderService {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
+  /**
+   * Check if model is a reasoning model that doesn't support streaming.
+   * o1, o1-mini, o1-preview, o3, o3-mini don't support streaming
+   * and require max_completion_tokens instead of max_tokens.
+   */
+  private isReasoningModel(model: string): boolean {
+    const reasoningModelPrefixes = ['o1', 'o3'];
+    const lowerModel = model.toLowerCase();
+    return reasoningModelPrefixes.some(
+      (prefix) => lowerModel === prefix || lowerModel.startsWith(`${prefix}-`),
+    );
+  }
+
   async chat(
     messages: ChatMessage[],
     model: string,
@@ -206,13 +221,22 @@ export class OpenAIProviderService extends AIProviderService {
     apiKey: string,
   ): Promise<ChatCompletionResponse> {
     const openai = this.getClient(apiKey);
+    const isReasoning = this.isReasoningModel(model);
+
+    if (isReasoning) {
+      this.logger.debug(
+        `Using reasoning model parameters for ${model} (max_completion_tokens, no temperature)`,
+      );
+    }
 
     return this.withRetry(async () => {
+      // o1/o3 models use max_completion_tokens and don't support temperature
       const completion = await openai.chat.completions.create({
         model,
         messages,
-        temperature,
-        max_tokens: maxTokens,
+        ...(isReasoning
+          ? { max_completion_tokens: maxTokens }
+          : { temperature, max_tokens: maxTokens }),
       });
 
       const choice = completion.choices[0];
@@ -227,15 +251,150 @@ export class OpenAIProviderService extends AIProviderService {
     }, 'Chat completion');
   }
 
+  /**
+   * Stream chat completion with real-time token delivery.
+   * Returns an Observable that emits ChatStreamChunk events.
+   *
+   * Note: o1/o3 reasoning models don't support streaming, so they
+   * automatically fall back to non-streaming mode.
+   */
+  chatStream(
+    messages: ChatMessage[],
+    model: string,
+    temperature: number,
+    maxTokens: number,
+    apiKey: string,
+  ): Observable<ChatStreamChunk> {
+    // o1/o3 models don't support streaming - fall back to non-streaming
+    if (this.isReasoningModel(model)) {
+      this.logger.debug(
+        `Model ${model} doesn't support streaming, using non-streaming fallback`,
+      );
+      return this.chatWithFallback(messages, model, temperature, maxTokens, apiKey);
+    }
+
+    return new Observable((subscriber) => {
+      const openai = this.getClient(apiKey);
+
+      this.logger.debug(
+        `Starting streaming chat request to OpenAI: model=${model}, messages=${messages.length}`,
+      );
+
+      openai.chat.completions
+        .create({
+          model,
+          messages,
+          temperature,
+          max_tokens: maxTokens,
+          stream: true,
+        })
+        .then(async (stream) => {
+          let totalContent = '';
+
+          try {
+            for await (const chunk of stream) {
+              const delta = chunk.choices[0]?.delta;
+              const content = delta?.content;
+
+              if (content) {
+                totalContent += content;
+                subscriber.next({
+                  type: 'content',
+                  content,
+                });
+              }
+
+              // Check if this is the final chunk
+              if (chunk.choices[0]?.finish_reason) {
+                this.logger.debug(
+                  `Streaming complete: totalContent=${totalContent.length} chars`,
+                );
+              }
+            }
+
+            // OpenAI SDK doesn't provide token counts during streaming
+            // They're only available after the stream is complete via usage endpoints
+            subscriber.next({
+              type: 'done',
+              // Token counts not available in streaming mode for OpenAI
+              // Frontend should re-fetch conversation to get accurate counts
+            });
+            subscriber.complete();
+          } catch (streamError) {
+            const error = streamError as Error;
+            this.logger.error(`Stream processing error: ${error.message}`);
+            subscriber.next({
+              type: 'error',
+              error: error.message,
+            });
+            subscriber.complete();
+          }
+        })
+        .catch((error) => {
+          const aiError = this.mapToUserFriendlyError(error, 'Streaming chat');
+          this.logger.error(`Streaming request failed: ${aiError.message}`);
+          subscriber.next({
+            type: 'error',
+            error: aiError.message,
+          });
+          subscriber.complete();
+        });
+    });
+  }
+
+  /**
+   * Non-streaming fallback for models that don't support streaming.
+   * Emits the entire response as a single content chunk, then done.
+   */
+  private chatWithFallback(
+    messages: ChatMessage[],
+    model: string,
+    temperature: number,
+    maxTokens: number,
+    apiKey: string,
+  ): Observable<ChatStreamChunk> {
+    return new Observable((subscriber) => {
+      this.chat(messages, model, temperature, maxTokens, apiKey)
+        .then((response) => {
+          // Emit content as single chunk
+          subscriber.next({
+            type: 'content',
+            content: response.content,
+          });
+          // Emit done with token counts
+          subscriber.next({
+            type: 'done',
+            inputTokens: response.inputTokens,
+            outputTokens: response.outputTokens,
+            totalTokens: response.totalTokens,
+          });
+          subscriber.complete();
+        })
+        .catch((error) => {
+          const aiError =
+            error instanceof AIProviderError
+              ? error
+              : this.mapToUserFriendlyError(error, 'Chat (non-streaming fallback)');
+          this.logger.error(`Non-streaming fallback failed: ${aiError.message}`);
+          subscriber.next({
+            type: 'error',
+            error: aiError.message,
+          });
+          subscriber.complete();
+        });
+    });
+  }
+
   async generateEmbedding(
     text: string,
     apiKey: string,
+    model: string = 'text-embedding-ada-002',
   ): Promise<EmbeddingResponse> {
     const openai = this.getClient(apiKey);
 
     return this.withRetry(async () => {
       const response = await openai.embeddings.create({
-        model: 'text-embedding-ada-002',
+        model,
         input: text,
       });
 

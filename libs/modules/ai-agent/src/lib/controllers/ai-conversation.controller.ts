@@ -13,7 +13,11 @@ import {
   UploadedFile,
   BadRequestException,
   NotFoundException,
+  Sse,
+  MessageEvent,
 } from '@nestjs/common';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import {
@@ -225,6 +229,59 @@ export class AIConversationController {
     };
   }
 
+  @Post('conversations/:id/messages/stream')
+  @RequirePermission('ai-agent', 'write')
+  @Sse()
+  @ApiOperation({
+    summary: 'Send message with streaming response (SSE)',
+    description: 'Send a user message and receive AI response as a stream of Server-Sent Events. Use when enableStreaming is true in AI configuration.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Conversation ID (UUID)',
+    type: 'string',
+    format: 'uuid',
+  })
+  @ApiBody({
+    type: SendMessageDto,
+    description: 'Message content',
+  })
+  @ApiOkResponse({
+    description: 'SSE stream of AI response chunks',
+    schema: {
+      type: 'object',
+      properties: {
+        type: { type: 'string', enum: ['content', 'done', 'error'] },
+        content: { type: 'string', description: 'Content chunk (for type=content)' },
+        inputTokens: { type: 'number', description: 'Input tokens (for type=done)' },
+        outputTokens: { type: 'number', description: 'Output tokens (for type=done)' },
+        totalTokens: { type: 'number', description: 'Total tokens (for type=done)' },
+        error: { type: 'string', description: 'Error message (for type=error)' },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Token limit exceeded or AI not configured',
+  })
+  @ApiForbiddenResponse({
+    description: 'No write permission or access denied',
+  })
+  @ApiNotFoundResponse({
+    description: 'Conversation not found',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid or missing JWT token',
+  })
+  sendMessageStream(
+    @Param('id') id: string,
+    @Body() sendDto: SendMessageDto,
+    @CurrentUser() user: User,
+  ): Observable<MessageEvent> {
+    return this.conversationService.sendMessageStream(id, sendDto, user).pipe(
+      map((chunk) => ({ data: chunk } as MessageEvent)),
+    );
+  }
+
   @Delete('conversations/:id')
   @RequirePermission('ai-agent', 'delete')
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -336,7 +393,8 @@ export class AIConversationController {
       companyId = user.companyId;
     }
 
-    const apiKey = await this.configService.getDecryptedApiKey(user);
+    // Get embedding configuration (separate API key, model, and provider if configured)
+    const embeddingConfig = await this.configService.getEmbeddingConfig(user);
 
     const context = await this.ragService.processFile(
       file.path,
@@ -345,7 +403,8 @@ export class AIConversationController {
       file.size,
       companyId,
       user,
-      apiKey,
+      embeddingConfig.apiKey,
+      embeddingConfig.model,
     );
 
     return this.contextRepository.findOne({
@@ -390,6 +449,79 @@ export class AIConversationController {
       relations: ['uploadedBy', 'company'],
       order: { createdAt: 'DESC' },
     });
+  }
+
+  @Get('context/:id')
+  @RequirePermission('ai-agent', 'read')
+  @ApiOperation({
+    summary: 'Get context file details',
+    description: 'Retrieve a single context file with extracted text content for preview.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Context file ID (UUID)',
+    type: 'string',
+    format: 'uuid',
+  })
+  @ApiOkResponse({
+    description: 'Context file retrieved successfully with extracted text',
+    type: AIContextResponseDto,
+  })
+  @ApiNotFoundResponse({
+    description: 'Context file not found',
+  })
+  @ApiForbiddenResponse({
+    description: 'No read permission or access denied',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid or missing JWT token',
+  })
+  async getContextFile(@Param('id') id: string, @CurrentUser() user: User) {
+    let companyId: string | null;
+
+    if (user.role === UserRole.ADMIN) {
+      const systemCompany = await this.companyRepository.findOne({
+        where: { isSystemCompany: true },
+      });
+      if (!systemCompany) {
+        throw new Error('System Admin company not found');
+      }
+      companyId = systemCompany.id;
+    } else {
+      companyId = user.companyId;
+    }
+
+    const context = await this.contextRepository.findOne({
+      where: { id, companyId },
+      relations: ['uploadedBy', 'company'],
+    });
+
+    if (!context) {
+      throw new NotFoundException('Context file not found');
+    }
+
+    return {
+      id: context.id,
+      companyId: context.companyId,
+      company: context.company ? {
+        id: context.company.id,
+        name: context.company.name,
+        isSystemCompany: context.company.isSystemCompany,
+      } : null,
+      filename: context.filename,
+      mimeType: context.mimeType,
+      fileSize: context.fileSize,
+      isActive: context.isActive,
+      uploadedBy: {
+        id: context.uploadedBy.id,
+        email: context.uploadedBy.email,
+        firstName: context.uploadedBy.firstName,
+        lastName: context.uploadedBy.lastName,
+      },
+      createdAt: context.createdAt,
+      updatedAt: context.updatedAt,
+      extractedText: context.extractedText,
+    };
   }
 
   @Delete('context/:id')

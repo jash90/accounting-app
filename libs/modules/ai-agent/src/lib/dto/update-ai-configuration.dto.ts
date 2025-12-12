@@ -3,6 +3,8 @@ import {
   IsEnum,
   IsOptional,
   IsNumber,
+  IsNotEmpty,
+  IsBoolean,
   Min,
   Max,
 } from 'class-validator';
@@ -33,10 +35,11 @@ export class UpdateAIConfigurationDto {
   systemPrompt?: string;
 
   @ApiPropertyOptional({
-    description: 'API key for the AI provider (will be encrypted)',
+    description: 'API key for the AI provider (will be encrypted). If provided, must not be empty.',
   })
   @IsOptional()
   @IsString()
+  @IsNotEmpty({ message: 'API key cannot be empty if provided' })
   apiKey?: string;
 
   @ApiPropertyOptional({
@@ -58,4 +61,34 @@ export class UpdateAIConfigurationDto {
   @IsNumber()
   @Min(1)
   maxTokens?: number;
+
+  @ApiPropertyOptional({
+    description: 'Enable streaming mode for real-time token streaming via SSE',
+  })
+  @IsOptional()
+  @IsBoolean()
+  enableStreaming?: boolean;
+
+  // Embedding configuration (for RAG/Knowledge Base)
+  @ApiPropertyOptional({
+    description: 'AI provider to use for embeddings (defaults to OpenAI as OpenRouter does not support embeddings)',
+    enum: AIProvider,
+  })
+  @IsOptional()
+  @IsEnum(AIProvider)
+  embeddingProvider?: AIProvider;
+
+  @ApiPropertyOptional({
+    description: 'Separate API key for embeddings (optional, falls back to main API key if not provided)',
+  })
+  @IsOptional()
+  @IsString()
+  embeddingApiKey?: string;
+
+  @ApiPropertyOptional({
+    description: 'Embedding model to use',
+  })
+  @IsOptional()
+  @IsString()
+  embeddingModel?: string;
 }
