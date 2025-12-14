@@ -23,10 +23,15 @@ export class CreateUserDto {
   @IsEnum(UserRole)
   role: UserRole;
 
-  @ApiProperty({ required: false, example: '123e4567-e89b-12d3-a456-426614174000', description: 'Company ID (required for COMPANY_OWNER and EMPLOYEE roles)' })
+  @ApiProperty({ required: false, example: '123e4567-e89b-12d3-a456-426614174000', description: 'Company ID (required for EMPLOYEE role)' })
   @IsOptional()
   @IsString()
   companyId?: string;
+
+  @ApiProperty({ required: false, example: 'Acme Corporation', description: 'Company name (required for COMPANY_OWNER - auto-creates company)' })
+  @IsOptional()
+  @IsString()
+  companyName?: string;
 
   @ApiProperty({ required: false, default: true, example: true, description: 'Whether the user account is active' })
   @IsOptional()
