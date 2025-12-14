@@ -14,10 +14,18 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { createCompanySchema, updateCompanySchema, CreateCompanyFormData, UpdateCompanyFormData } from '@/lib/validation/schemas';
 import { CompanyDto } from '@/types/dtos';
+import { useAvailableOwners } from '@/lib/hooks/use-users';
 
 interface CompanyFormDialogProps {
   open: boolean;
@@ -29,6 +37,7 @@ interface CompanyFormDialogProps {
 export function CompanyFormDialog({ open, onOpenChange, company, onSubmit }: CompanyFormDialogProps) {
   const isEditing = !!company;
   const schema = isEditing ? updateCompanySchema : createCompanySchema;
+  const { data: availableOwners, isLoading: ownersLoading } = useAvailableOwners();
 
   const form = useForm<CreateCompanyFormData | UpdateCompanyFormData>({
     resolver: zodResolver(schema),
@@ -42,6 +51,8 @@ export function CompanyFormDialog({ open, onOpenChange, company, onSubmit }: Com
     onSubmit(data);
     form.reset();
   };
+
+  const hasAvailableOwners = availableOwners && availableOwners.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -72,10 +83,31 @@ export function CompanyFormDialog({ open, onOpenChange, company, onSubmit }: Com
                 name="ownerId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Owner ID</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Owner user ID" {...field} />
-                    </FormControl>
+                    <FormLabel>Owner</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={ownersLoading ? "Loading owners..." : "Select an owner"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {!hasAvailableOwners && !ownersLoading && (
+                          <SelectItem value="" disabled>
+                            No available owners. Create a Company Owner user first.
+                          </SelectItem>
+                        )}
+                        {availableOwners?.map((owner) => (
+                          <SelectItem key={owner.id} value={owner.id}>
+                            {owner.firstName} {owner.lastName} ({owner.email})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {!hasAvailableOwners && !ownersLoading && (
+                      <p className="text-sm text-muted-foreground">
+                        First create a user with "Company Owner" role, then create a company for them.
+                      </p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}

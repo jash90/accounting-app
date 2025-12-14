@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -25,6 +26,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { createUserSchema, updateUserSchema, CreateUserFormData, UpdateUserFormData } from '@/lib/validation/schemas';
 import { UserDto, UserRole } from '@/types/dtos';
+import { useCompanies } from '@/lib/hooks/use-companies';
 
 interface UserFormDialogProps {
   open: boolean;
@@ -36,6 +38,7 @@ interface UserFormDialogProps {
 export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormDialogProps) {
   const isEditing = !!user;
   const schema = isEditing ? updateUserSchema : createUserSchema;
+  const { data: companies = [], isLoading: companiesLoading } = useCompanies();
 
   const form = useForm<CreateUserFormData | UpdateUserFormData>({
     resolver: zodResolver(schema),
@@ -45,8 +48,27 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
       firstName: '',
       lastName: '',
       role: UserRole.EMPLOYEE,
+      companyId: '',
+      companyName: '',
     },
   });
+
+  const watchedRole = form.watch('role');
+
+  // Reset form when dialog opens or user changes
+  useEffect(() => {
+    if (open) {
+      form.reset(user || {
+        email: '',
+        password: '',
+        firstName: '',
+        lastName: '',
+        role: UserRole.EMPLOYEE,
+        companyId: '',
+        companyName: '',
+      });
+    }
+  }, [open, user, form]);
 
   const handleSubmit = (data: CreateUserFormData | UpdateUserFormData) => {
     onSubmit(data);
@@ -126,7 +148,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a role" />
@@ -142,6 +164,59 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
                 </FormItem>
               )}
             />
+
+            {/* Company Name field for COMPANY_OWNER (creates company automatically) */}
+            {!isEditing && watchedRole === UserRole.COMPANY_OWNER && (
+              <FormField
+                control={form.control}
+                name="companyName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Acme Corporation" {...field} />
+                    </FormControl>
+                    <p className="text-sm text-muted-foreground">
+                      A company will be created automatically for this owner.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {/* Company dropdown for EMPLOYEE */}
+            {!isEditing && watchedRole === UserRole.EMPLOYEE && (
+              <FormField
+                control={form.control}
+                name="companyId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={companiesLoading ? "Loading companies..." : "Select a company"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {companies.length === 0 && !companiesLoading && (
+                          <SelectItem value="" disabled>
+                            No companies available. Create a company first.
+                          </SelectItem>
+                        )}
+                        {companies.map((company) => (
+                          <SelectItem key={company.id} value={company.id}>
+                            {company.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>

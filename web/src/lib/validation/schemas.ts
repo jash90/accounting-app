@@ -35,7 +35,28 @@ export const createUserSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   role: z.nativeEnum(UserRole),
-  companyId: z.string().uuid().optional(),
+  companyId: z.preprocess(
+    (val) => (val === '' ? undefined : val),
+    z.string().uuid().optional()
+  ),
+  companyName: z.string().optional(),
+}).superRefine((data, ctx) => {
+  // EMPLOYEE requires companyId
+  if (data.role === UserRole.EMPLOYEE && !data.companyId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Company is required for Employee role',
+      path: ['companyId'],
+    });
+  }
+  // COMPANY_OWNER requires companyName
+  if (data.role === UserRole.COMPANY_OWNER && !data.companyName?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Company name is required for Company Owner role',
+      path: ['companyName'],
+    });
+  }
 });
 
 export type CreateUserFormData = z.infer<typeof createUserSchema>;
