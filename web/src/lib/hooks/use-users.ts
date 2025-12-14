@@ -27,6 +27,10 @@ export function useCreateUser() {
     mutationFn: (userData: CreateUserDto) => usersApi.create(userData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+      // Invalidate available owners in case a new COMPANY_OWNER was created
+      queryClient.invalidateQueries({ queryKey: ['available-owners'] });
+      // Invalidate companies in case a company was created with COMPANY_OWNER
+      queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
       toast({
         title: 'Success',
         description: 'User created successfully',
@@ -87,6 +91,13 @@ export function useDeleteUser() {
         variant: 'destructive',
       });
     },
+  });
+}
+
+export function useAvailableOwners() {
+  return useQuery({
+    queryKey: ['available-owners'],
+    queryFn: usersApi.getAvailableOwners,
   });
 }
 

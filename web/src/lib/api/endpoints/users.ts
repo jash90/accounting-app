@@ -30,5 +30,10 @@ export const usersApi = {
     const { data } = await apiClient.patch<UserDto>(`/api/admin/users/${id}/activate`, { isActive });
     return data;
   },
+
+  getAvailableOwners: async (): Promise<UserDto[]> => {
+    const { data } = await apiClient.get<UserDto[]>('/api/admin/available-owners');
+    return data;
+  },
 };
 

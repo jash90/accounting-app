@@ -120,6 +120,16 @@ export class AdminController {
     return this.adminService.activateUser(id, isActive === 'true');
   }
 
+  // Available Owners (for company creation dropdown)
+  @Get('available-owners')
+  @ApiOperation({ summary: 'Get available owners', description: 'Retrieve COMPANY_OWNER users without assigned company (for company creation)' })
+  @ApiOkResponse({ description: 'List of available owners', type: [UserResponseDto] })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
+  findAvailableOwners() {
+    return this.adminService.findAvailableOwners();
+  }
+
   // Company Management
   @Get('companies')
   @ApiOperation({ summary: 'Get all companies', description: 'Retrieve a complete list of all companies in the system' })
