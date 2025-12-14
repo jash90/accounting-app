@@ -71,12 +71,14 @@ export class AdminService {
       createUserDto.companyId = systemCompany.id;
     }
 
-    if (
-      (createUserDto.role === UserRole.COMPANY_OWNER ||
-        createUserDto.role === UserRole.EMPLOYEE) &&
-      !createUserDto.companyId
-    ) {
-      throw new BadRequestException('companyId is required for COMPANY_OWNER and EMPLOYEE roles');
+    // EMPLOYEE requires companyId
+    if (createUserDto.role === UserRole.EMPLOYEE && !createUserDto.companyId) {
+      throw new BadRequestException('companyId is required for EMPLOYEE role');
+    }
+
+    // COMPANY_OWNER requires companyName (to auto-create company)
+    if (createUserDto.role === UserRole.COMPANY_OWNER && !createUserDto.companyName) {
+      throw new BadRequestException('companyName is required for COMPANY_OWNER role');
     }
 
     if (createUserDto.companyId) {
@@ -96,7 +98,20 @@ export class AdminService {
       isActive: createUserDto.isActive ?? true,
     });
 
-    return this.userRepository.save(user);
+    const savedUser = await this.userRepository.save(user);
+
+    // If COMPANY_OWNER and companyName provided, auto-create company
+    if (createUserDto.role === UserRole.COMPANY_OWNER && createUserDto.companyName) {
+      const company = this.companyRepository.create({
+        name: createUserDto.companyName,
+        ownerId: savedUser.id,
+      });
+      const savedCompany = await this.companyRepository.save(company);
+      savedUser.companyId = savedCompany.id;
+      await this.userRepository.save(savedUser);
+    }
+
+    return savedUser;
   }
 
   async updateUser(id: string, updateUserDto: UpdateUserDto) {
@@ -137,6 +152,18 @@ export class AdminService {
     return this.userRepository.save(user);
   }
 
+  // Get available owners (COMPANY_OWNER without assigned company)
+  async findAvailableOwners() {
+    return this.userRepository.find({
+      where: {
+        role: UserRole.COMPANY_OWNER,
+        companyId: null as unknown as string, // TypeORM requires this cast for null comparison
+        isActive: true,
+      },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   // Company Management
   async findAllCompanies() {
     return this.companyRepository.find({
@@ -172,12 +199,23 @@ export class AdminService {
       throw new BadRequestException('Owner must have COMPANY_OWNER role');
     }
 
+    // Check if owner already has a company assigned
+    if (owner.companyId) {
+      throw new BadRequestException('This owner is already assigned to another company');
+    }
+
     const company = this.companyRepository.create({
       name: createCompanyDto.name,
       ownerId: createCompanyDto.ownerId,
     });
 
-    return this.companyRepository.save(company);
+    const savedCompany = await this.companyRepository.save(company);
+
+    // Auto-assign the owner to the newly created company
+    owner.companyId = savedCompany.id;
+    await this.userRepository.save(owner);
+
+    return savedCompany;
   }
 
   async updateCompany(id: string, updateCompanyDto: UpdateCompanyDto) {
