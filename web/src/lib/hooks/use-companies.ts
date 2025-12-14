@@ -27,6 +27,8 @@ export function useCreateCompany() {
     mutationFn: (companyData: CreateCompanyDto) => companiesApi.create(companyData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
+      // Invalidate available owners as the selected owner is now assigned
+      queryClient.invalidateQueries({ queryKey: ['available-owners'] });
       toast({
         title: 'Success',
         description: 'Company created successfully',

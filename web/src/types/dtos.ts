@@ -69,6 +69,7 @@ export interface CreateUserDto {
   lastName: string;
   role: UserRole;
   companyId?: string;
+  companyName?: string;
 }
 
 export interface UpdateUserDto {
