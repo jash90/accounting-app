@@ -103,6 +103,13 @@ import { ChangeLogModule } from '@accounting/infrastructure/change-log';
             AIContext,
             TokenUsage,
             TokenLimit,
+            ChangeLog,
+            Client,
+            ClientFieldDefinition,
+            ClientCustomFieldValue,
+            ClientIcon,
+            ClientIconAssignment,
+            NotificationSettings,
           ],
           synchronize: process.env.NODE_ENV !== 'production', // Auto-sync only in development
           logging: !isProduction,

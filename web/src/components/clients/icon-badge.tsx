@@ -103,7 +103,7 @@ export function IconBadge({
 
         return (
           <img
-            src={`/api/clients/icons/${icon.id}/file`}
+            src={`/api/modules/clients/icons/${icon.id}/file`}
             alt={icon.name}
             className={cn('object-contain rounded', sizeClasses[size])}
           />
