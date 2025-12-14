@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import {
   User,
@@ -21,6 +21,7 @@ export class AdminService {
     @InjectRepository(Company)
     private companyRepository: Repository<Company>,
     private rbacService: RBACService,
+    private dataSource: DataSource,
   ) {}
 
   private async getSystemCompany(): Promise<Company> {
@@ -92,26 +93,29 @@ export class AdminService {
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
-    const user = this.userRepository.create({
-      ...createUserDto,
-      password: hashedPassword,
-      isActive: createUserDto.isActive ?? true,
-    });
-
-    const savedUser = await this.userRepository.save(user);
-
-    // If COMPANY_OWNER and companyName provided, auto-create company
-    if (createUserDto.role === UserRole.COMPANY_OWNER && createUserDto.companyName) {
-      const company = this.companyRepository.create({
-        name: createUserDto.companyName,
-        ownerId: savedUser.id,
+    // Use transaction to ensure atomic creation of user and company for COMPANY_OWNER
+    return this.dataSource.transaction(async (manager) => {
+      const user = manager.create(User, {
+        ...createUserDto,
+        password: hashedPassword,
+        isActive: createUserDto.isActive ?? true,
       });
-      const savedCompany = await this.companyRepository.save(company);
-      savedUser.companyId = savedCompany.id;
-      await this.userRepository.save(savedUser);
-    }
 
-    return savedUser;
+      const savedUser = await manager.save(user);
+
+      // If COMPANY_OWNER and companyName provided, auto-create company within same transaction
+      if (createUserDto.role === UserRole.COMPANY_OWNER && createUserDto.companyName) {
+        const company = manager.create(Company, {
+          name: createUserDto.companyName,
+          ownerId: savedUser.id,
+        });
+        const savedCompany = await manager.save(company);
+        savedUser.companyId = savedCompany.id;
+        await manager.save(savedUser);
+      }
+
+      return savedUser;
+    });
   }
 
   async updateUser(id: string, updateUserDto: UpdateUserDto) {
@@ -187,35 +191,50 @@ export class AdminService {
   }
 
   async createCompany(createCompanyDto: CreateCompanyDto) {
-    const owner = await this.userRepository.findOne({
+    // Initial validation outside transaction
+    const ownerCheck = await this.userRepository.findOne({
       where: { id: createCompanyDto.ownerId },
     });
 
-    if (!owner) {
+    if (!ownerCheck) {
       throw new NotFoundException('Owner user not found');
     }
 
-    if (owner.role !== UserRole.COMPANY_OWNER) {
+    if (ownerCheck.role !== UserRole.COMPANY_OWNER) {
       throw new BadRequestException('Owner must have COMPANY_OWNER role');
     }
 
-    // Check if owner already has a company assigned
-    if (owner.companyId) {
-      throw new BadRequestException('This owner is already assigned to another company');
-    }
+    // Use transaction with pessimistic lock to prevent race conditions
+    return this.dataSource.transaction(async (manager) => {
+      // Acquire pessimistic write lock on the owner row and re-check companyId
+      const owner = await manager.findOne(User, {
+        where: { id: createCompanyDto.ownerId },
+        lock: { mode: 'pessimistic_write' },
+      });
 
-    const company = this.companyRepository.create({
-      name: createCompanyDto.name,
-      ownerId: createCompanyDto.ownerId,
+      if (!owner) {
+        throw new NotFoundException('Owner user not found');
+      }
+
+      // Re-check if owner already has a company assigned (within lock)
+      if (owner.companyId) {
+        throw new BadRequestException('This owner is already assigned to another company');
+      }
+
+      // Create and save company within transaction
+      const company = manager.create(Company, {
+        name: createCompanyDto.name,
+        ownerId: createCompanyDto.ownerId,
+      });
+
+      const savedCompany = await manager.save(company);
+
+      // Auto-assign the owner to the newly created company within same transaction
+      owner.companyId = savedCompany.id;
+      await manager.save(owner);
+
+      return savedCompany;
     });
-
-    const savedCompany = await this.companyRepository.save(company);
-
-    // Auto-assign the owner to the newly created company
-    owner.companyId = savedCompany.id;
-    await this.userRepository.save(owner);
-
-    return savedCompany;
   }
 
   async updateCompany(id: string, updateCompanyDto: UpdateCompanyDto) {
