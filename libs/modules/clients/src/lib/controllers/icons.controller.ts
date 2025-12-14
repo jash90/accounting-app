@@ -36,7 +36,7 @@ import { CreateIconDto, UpdateIconDto, AssignIconDto } from '../dto/icon.dto';
 
 @ApiTags('Client Icons')
 @ApiBearerAuth()
-@Controller('clients/icons')
+@Controller('modules/clients/icons')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('clients')
 export class IconsController {

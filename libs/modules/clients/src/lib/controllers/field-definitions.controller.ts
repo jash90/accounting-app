@@ -25,7 +25,7 @@ import {
 
 @ApiTags('Client Field Definitions')
 @ApiBearerAuth()
-@Controller('clients/field-definitions')
+@Controller('modules/clients/field-definitions')
 @UseGuards(RolesGuard)
 @Roles(UserRole.ADMIN)
 export class FieldDefinitionsController {

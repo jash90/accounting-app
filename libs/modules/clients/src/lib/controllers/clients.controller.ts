@@ -33,7 +33,7 @@ import {
 
 @ApiTags('Clients')
 @ApiBearerAuth()
-@Controller('clients')
+@Controller('modules/clients')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('clients')
 export class ClientsController {

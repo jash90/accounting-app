@@ -18,7 +18,7 @@ import {
   ChangeLogResponseDto,
 } from '@/types/dtos';
 
-const BASE_URL = '/api/clients';
+const BASE_URL = '/api/modules/clients';
 
 // Client API
 export const clientsApi = {
@@ -81,7 +81,7 @@ export const clientsApi = {
 };
 
 // Field Definitions API
-const FIELD_DEFINITIONS_URL = '/api/clients/field-definitions';
+const FIELD_DEFINITIONS_URL = '/api/modules/clients/field-definitions';
 
 export const fieldDefinitionsApi = {
   getAll: async (): Promise<ClientFieldDefinitionResponseDto[]> => {
@@ -131,7 +131,7 @@ export const fieldDefinitionsApi = {
 };
 
 // Icons API
-const ICONS_URL = '/api/clients/icons';
+const ICONS_URL = '/api/modules/clients/icons';
 
 export const clientIconsApi = {
   getAll: async (): Promise<ClientIconResponseDto[]> => {
@@ -190,7 +190,7 @@ export const clientIconsApi = {
 };
 
 // Notification Settings API
-const NOTIFICATION_SETTINGS_URL = '/api/clients/notification-settings';
+const NOTIFICATION_SETTINGS_URL = '/api/modules/clients/notification-settings';
 
 export const notificationSettingsApi = {
   getMe: async (): Promise<NotificationSettingsResponseDto | null> => {
