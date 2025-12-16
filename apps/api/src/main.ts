@@ -78,6 +78,10 @@ async function bootstrap() {
     .addTag('Modules', 'Module management and access control endpoints')
     .addTag('simple-text', 'Simple Text module endpoints')
     .addTag('ai-agent', 'AI Agent module endpoints - Chat, RAG, Token Management')
+    .addTag('Clients', 'Client management endpoints')
+    .addTag('Client Field Definitions', 'Custom field definitions for clients')
+    .addTag('Client Icons', 'Client icon management endpoints')
+    .addTag('Client Notification Settings', 'Client notification settings endpoints')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

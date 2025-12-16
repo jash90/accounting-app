@@ -33,6 +33,7 @@ const CompanyAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/comp
 const EmployeeAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/employee-index'));
 
 // Clients Pages
+const ClientsDashboardPage = lazy(() => import('@/pages/modules/clients/clients-dashboard'));
 const ClientsListPage = lazy(() => import('@/pages/modules/clients/clients-list'));
 const ClientDetailPage = lazy(() => import('@/pages/modules/clients/client-detail'));
 const ClientsSettingsPage = lazy(() => import('@/pages/modules/clients/clients-settings'));
@@ -204,6 +205,14 @@ export default function Routes() {
           path="modules/clients"
           element={
             <Suspense fallback={<PageLoader />}>
+              <ClientsDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/clients/list"
+          element={
+            <Suspense fallback={<PageLoader />}>
               <ClientsListPage />
             </Suspense>
           }
@@ -318,6 +327,14 @@ export default function Routes() {
           path="modules/clients"
           element={
             <Suspense fallback={<PageLoader />}>
+              <ClientsDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/clients/list"
+          element={
+            <Suspense fallback={<PageLoader />}>
               <ClientsListPage />
             </Suspense>
           }
@@ -382,6 +399,14 @@ export default function Routes() {
         />
         <Route
           path="clients"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientsDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="clients/list"
           element={
             <Suspense fallback={<PageLoader />}>
               <ClientsListPage />

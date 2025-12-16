@@ -165,6 +165,26 @@ export class ChangeLogService {
     return { logs, total };
   }
 
+  async getCompanyChangeLogs(
+    entityType: string,
+    companyId: string,
+    options?: { limit?: number; offset?: number },
+  ): Promise<{ logs: ChangeLog[]; total: number }> {
+    // Join with changedBy user to filter by company
+    const query = this.changeLogRepository
+      .createQueryBuilder('log')
+      .leftJoinAndSelect('log.changedBy', 'user')
+      .where('log.entityType = :entityType', { entityType })
+      .andWhere('user.companyId = :companyId', { companyId })
+      .orderBy('log.createdAt', 'DESC')
+      .take(options?.limit || 50)
+      .skip(options?.offset || 0);
+
+    const [logs, total] = await query.getManyAndCount();
+
+    return { logs, total };
+  }
+
   async getRecentChanges(
     entityType: string,
     companyId?: string,

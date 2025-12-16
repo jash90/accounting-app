@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import { useNavigate } from 'react-router-dom';
-import { useClients, useDeleteClient, useRestoreClient } from '@/lib/hooks/use-clients';
+import { useClients, useDeleteClient, useRestoreClient, useSetClientCustomFields } from '@/lib/hooks/use-clients';
 import { useCreateClient, useUpdateClient } from '@/lib/hooks/use-clients';
 import { PageHeader } from '@/components/common/page-header';
 import { DataTable } from '@/components/common/data-table';
@@ -16,8 +16,8 @@ import {
   Eye,
   RotateCcw,
   MoreHorizontal,
-  Settings,
   History,
+  ArrowLeft,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -26,7 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ClientResponseDto, CreateClientDto, UpdateClientDto, ClientFiltersDto } from '@/types/dtos';
+import { ClientResponseDto, CreateClientDto, UpdateClientDto, ClientFiltersDto, SetCustomFieldValuesDto } from '@/types/dtos';
 import { ClientFormDialog } from '@/components/forms/client-form-dialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { ClientFilters } from '@/components/clients/client-filters';
@@ -63,12 +63,27 @@ export default function ClientsListPage() {
   const hasWritePermission = true; // Will be checked via RBAC
   const hasDeletePermission = true;
 
+  // Determine the base path based on user role
+  const getBasePath = () => {
+    switch (user?.role) {
+      case UserRole.ADMIN:
+        return '/admin/modules/clients';
+      case UserRole.COMPANY_OWNER:
+        return '/company/modules/clients';
+      default:
+        return '/modules/clients';
+    }
+  };
+
+  const basePath = getBasePath();
+
   const [filters, setFilters] = useState<ClientFiltersDto>({});
   const { data: clients = [], isPending } = useClients(filters);
   const createClient = useCreateClient();
   const updateClient = useUpdateClient();
   const deleteClient = useDeleteClient();
   const restoreClient = useRestoreClient();
+  const setCustomFields = useSetClientCustomFields();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientResponseDto | null>(null);
@@ -188,7 +203,7 @@ export default function ClientsListPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => navigate(`/modules/clients/${client.id}`)}
+                  onClick={() => navigate(`${basePath}/${client.id}`)}
                 >
                   <Eye className="mr-2 h-4 w-4" />
                   Szczegóły
@@ -205,7 +220,7 @@ export default function ClientsListPage() {
                 )}
 
                 <DropdownMenuItem
-                  onClick={() => navigate(`/modules/clients/${client.id}/changelog`)}
+                  onClick={() => navigate(`${basePath}/${client.id}`)}
                 >
                   <History className="mr-2 h-4 w-4" />
                   Historia zmian
@@ -241,36 +256,32 @@ export default function ClientsListPage() {
         },
       },
     ],
-    [navigate, hasWritePermission, hasDeletePermission]
+    [navigate, hasWritePermission, hasDeletePermission, basePath]
   );
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" onClick={() => navigate(basePath)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Powrót
+        </Button>
+      </div>
+
       <PageHeader
         title="Klienci"
         description="Zarządzaj listą klientów biura rachunkowego"
         icon={<Users className="h-6 w-6" />}
         action={
-          <div className="flex gap-2">
-            {user?.role === UserRole.ADMIN && (
-              <Button
-                variant="outline"
-                onClick={() => navigate('/admin/modules/clients/settings')}
-              >
-                <Settings className="mr-2 h-4 w-4" />
-                Ustawienia
-              </Button>
-            )}
-            {hasWritePermission && (
-              <Button
-                onClick={() => setCreateOpen(true)}
-                className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Dodaj klienta
-              </Button>
-            )}
-          </div>
+          hasWritePermission && (
+            <Button
+              onClick={() => setCreateOpen(true)}
+              className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Dodaj klienta
+            </Button>
+          )
         }
       />
 
@@ -282,7 +293,7 @@ export default function ClientsListPage() {
             columns={columns}
             data={clients}
             isLoading={isPending}
-            onRowClick={(client) => navigate(`/modules/clients/${client.id}`)}
+            onRowClick={(client) => navigate(`${basePath}/${client.id}`)}
           />
         </CardContent>
       </Card>
@@ -292,9 +303,18 @@ export default function ClientsListPage() {
           <ClientFormDialog
             open={createOpen}
             onOpenChange={setCreateOpen}
-            onSubmit={(data) => {
-              createClient.mutate(data as CreateClientDto);
-              setCreateOpen(false);
+            onSubmit={async (data, customFields) => {
+              createClient.mutate(data as CreateClientDto, {
+                onSuccess: (newClient) => {
+                  if (customFields && Object.keys(customFields.values).length > 0) {
+                    setCustomFields.mutate({
+                      id: newClient.id,
+                      data: customFields,
+                    });
+                  }
+                  setCreateOpen(false);
+                },
+              });
             }}
           />
 
@@ -303,12 +323,21 @@ export default function ClientsListPage() {
               open={!!editingClient}
               onOpenChange={(open) => !open && setEditingClient(null)}
               client={editingClient}
-              onSubmit={(data) => {
+              onSubmit={async (data, customFields) => {
                 updateClient.mutate({
                   id: editingClient.id,
                   data: data as UpdateClientDto,
+                }, {
+                  onSuccess: () => {
+                    if (customFields && Object.keys(customFields.values).length > 0) {
+                      setCustomFields.mutate({
+                        id: editingClient.id,
+                        data: customFields,
+                      });
+                    }
+                    setEditingClient(null);
+                  },
                 });
-                setEditingClient(null);
               }}
             />
           )}

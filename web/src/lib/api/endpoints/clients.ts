@@ -73,10 +73,50 @@ export const clientsApi = {
 
   // Changelog
   getChangelog: async (clientId: string): Promise<ChangeLogResponseDto[]> => {
-    const { data } = await apiClient.get<ChangeLogResponseDto[]>(
+    interface BackendChangeLog {
+      id: string;
+      entityType: string;
+      entityId: string;
+      action: string;
+      changes: Array<{ field: string; oldValue: unknown; newValue: unknown }>;
+      changedById: string;
+      changedBy: { id: string; email: string; firstName: string; lastName: string };
+      createdAt: string;
+    }
+
+    const { data } = await apiClient.get<{ logs: BackendChangeLog[]; total: number }>(
       `${BASE_URL}/${clientId}/changelog`
     );
-    return data;
+
+    // Transform backend format to frontend format
+    return data.logs.map((log) => {
+      const oldValues: Record<string, unknown> = {};
+      const newValues: Record<string, unknown> = {};
+
+      log.changes.forEach((change) => {
+        oldValues[change.field] = change.oldValue;
+        newValues[change.field] = change.newValue;
+      });
+
+      return {
+        id: log.id,
+        entityType: log.entityType,
+        entityId: log.entityId,
+        action: log.action,
+        oldValues,
+        newValues,
+        userId: log.changedById,
+        user: log.changedBy
+          ? {
+              id: log.changedBy.id,
+              email: log.changedBy.email,
+              firstName: log.changedBy.firstName,
+              lastName: log.changedBy.lastName,
+            }
+          : undefined,
+        createdAt: new Date(log.createdAt),
+      } as ChangeLogResponseDto;
+    });
   },
 };
 

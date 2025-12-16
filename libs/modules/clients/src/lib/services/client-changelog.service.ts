@@ -33,6 +33,12 @@ export class ClientChangelogService {
     return this.changeLogService.getChangeLogs('Client', clientId);
   }
 
+  async getCompanyChangelog(
+    user: User,
+  ): Promise<{ logs: ChangeLog[]; total: number }> {
+    return this.changeLogService.getCompanyChangeLogs('Client', user.companyId);
+  }
+
   async notifyClientCreated(client: Client, performedBy: User): Promise<void> {
     const recipients = await this.getNotificationRecipients(
       client.companyId,

@@ -7,6 +7,7 @@ import {
   MaxLength,
   IsUUID,
   IsArray,
+  IsObject,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
@@ -146,5 +147,6 @@ export class SetCustomFieldValuesDto {
     additionalProperties: { type: 'string', nullable: true },
     description: 'Object mapping field definition IDs to values',
   })
+  @IsObject()
   values!: Record<string, string | null>;
 }

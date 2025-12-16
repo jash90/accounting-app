@@ -8,6 +8,7 @@ export * from './lib/enums/custom-field-type.enum';
 export * from './lib/enums/change-action.enum';
 export * from './lib/enums/aml-group.enum';
 export * from './lib/enums/icon-type.enum';
+export * from './lib/enums/delete-request-status.enum';
 
 // Constants
 export * from './lib/constants';
@@ -35,6 +36,7 @@ export * from './lib/entities/client-custom-field-value.entity';
 export * from './lib/entities/client-icon.entity';
 export * from './lib/entities/client-icon-assignment.entity';
 export * from './lib/entities/notification-settings.entity';
+export * from './lib/entities/client-delete-request.entity';
 export { AIProvider } from './lib/entities/ai-configuration.entity';
 export { AIMessageRole } from './lib/entities/ai-message.entity';
 export * from './lib/dto/responses';

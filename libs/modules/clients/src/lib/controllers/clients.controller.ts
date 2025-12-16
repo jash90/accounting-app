@@ -18,11 +18,22 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
-import { ModuleAccessGuard, PermissionGuard, RequireModule, RequirePermission } from '@accounting/rbac';
-import { User } from '@accounting/common';
+import {
+  ModuleAccessGuard,
+  PermissionGuard,
+  RequireModule,
+  RequirePermission,
+  OwnerOrAdminGuard,
+  OwnerOrAdmin,
+} from '@accounting/rbac';
+import { User, UserRole } from '@accounting/common';
 import { ClientsService } from '../services/clients.service';
 import { CustomFieldsService } from '../services/custom-fields.service';
 import { ClientChangelogService } from '../services/client-changelog.service';
+import {
+  DeleteRequestService,
+  CreateDeleteRequestDto,
+} from '../services/delete-request.service';
 import {
   CreateClientDto,
   UpdateClientDto,
@@ -41,6 +52,7 @@ export class ClientsController {
     private readonly clientsService: ClientsService,
     private readonly customFieldsService: CustomFieldsService,
     private readonly clientChangelogService: ClientChangelogService,
+    private readonly deleteRequestService: DeleteRequestService,
   ) {}
 
   @Get()
@@ -49,6 +61,14 @@ export class ClientsController {
   @RequirePermission('clients', 'read')
   async findAll(@CurrentUser() user: User, @Query() filters: ClientFiltersDto) {
     return this.clientsService.findAll(user, filters);
+  }
+
+  @Get('history')
+  @ApiOperation({ summary: 'Get all client changes for the company' })
+  @ApiResponse({ status: 200, description: 'List of all client changes' })
+  @RequirePermission('clients', 'read')
+  async getAllHistory(@CurrentUser() user: User) {
+    return this.clientChangelogService.getCompanyChangelog(user);
   }
 
   @Get(':id')
@@ -85,9 +105,12 @@ export class ClientsController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a client (soft delete)' })
+  @ApiOperation({ summary: 'Delete a client (Owner/Admin only - Employees must use delete-request)' })
   @ApiResponse({ status: 200, description: 'Client deleted' })
+  @ApiResponse({ status: 403, description: 'Employees must use delete-request endpoint' })
   @ApiResponse({ status: 404, description: 'Client not found' })
+  @UseGuards(OwnerOrAdminGuard)
+  @OwnerOrAdmin()
   @RequirePermission('clients', 'delete')
   async remove(
     @Param('id', ParseUUIDPipe) id: string,
@@ -95,6 +118,20 @@ export class ClientsController {
   ) {
     await this.clientsService.remove(id, user);
     return { message: 'Client deleted successfully' };
+  }
+
+  @Post(':id/delete-request')
+  @ApiOperation({ summary: 'Request client deletion (for Employees)' })
+  @ApiResponse({ status: 201, description: 'Delete request created' })
+  @ApiResponse({ status: 400, description: 'Delete request already pending' })
+  @ApiResponse({ status: 404, description: 'Client not found' })
+  @RequirePermission('clients', 'write')
+  async requestDelete(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateDeleteRequestDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.deleteRequestService.createDeleteRequest(id, dto, user);
   }
 
   @Post(':id/restore')

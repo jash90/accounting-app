@@ -360,6 +360,14 @@ export class CustomFieldsService {
         }
         break;
 
+      case CustomFieldType.DATETIME:
+        if (isNaN(Date.parse(value))) {
+          throw new BadRequestException(
+            `Field "${definition.label}" must be a valid datetime`,
+          );
+        }
+        break;
+
       case CustomFieldType.BOOLEAN:
         if (!['true', 'false', '1', '0'].includes(value.toLowerCase())) {
           throw new BadRequestException(
@@ -375,6 +383,60 @@ export class CustomFieldsService {
         ) {
           throw new BadRequestException(
             `Field "${definition.label}" must be one of: ${definition.enumValues?.join(', ')}`,
+          );
+        }
+        break;
+
+      case CustomFieldType.MULTISELECT:
+        // Value should be JSON array of strings
+        try {
+          const selectedValues = JSON.parse(value);
+          if (!Array.isArray(selectedValues)) {
+            throw new Error('Not an array');
+          }
+          if (definition.enumValues) {
+            const invalidValues = selectedValues.filter(
+              (v: string) => !definition.enumValues!.includes(v),
+            );
+            if (invalidValues.length > 0) {
+              throw new BadRequestException(
+                `Field "${definition.label}" contains invalid values: ${invalidValues.join(', ')}. Allowed: ${definition.enumValues.join(', ')}`,
+              );
+            }
+          }
+        } catch (e) {
+          if (e instanceof BadRequestException) throw e;
+          throw new BadRequestException(
+            `Field "${definition.label}" must be a valid JSON array`,
+          );
+        }
+        break;
+
+      case CustomFieldType.EMAIL:
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+          throw new BadRequestException(
+            `Field "${definition.label}" must be a valid email address`,
+          );
+        }
+        break;
+
+      case CustomFieldType.PHONE:
+        // Allow digits, spaces, dashes, parentheses, and plus sign
+        const phoneRegex = /^[\d\s\-\(\)\+]+$/;
+        if (!phoneRegex.test(value) || value.replace(/\D/g, '').length < 7) {
+          throw new BadRequestException(
+            `Field "${definition.label}" must be a valid phone number`,
+          );
+        }
+        break;
+
+      case CustomFieldType.URL:
+        try {
+          new URL(value);
+        } catch {
+          throw new BadRequestException(
+            `Field "${definition.label}" must be a valid URL`,
           );
         }
         break;
