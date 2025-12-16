@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useClient, useUpdateClient, useSetClientIcons, useSetClientCustomFields } from '@/lib/hooks/use-clients';
 import { useFieldDefinitions, useClientIcons } from '@/lib/hooks/use-clients';
+import { useAuthContext } from '@/contexts/auth-context';
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,7 +23,7 @@ import { useState } from 'react';
 import { ClientFormDialog } from '@/components/forms/client-form-dialog';
 import { ClientChangelog } from '@/components/clients/client-changelog';
 import { UpdateClientDto } from '@/types/dtos';
-import { EmploymentType, VatStatus, TaxScheme, ZusStatus } from '@/types/enums';
+import { EmploymentType, VatStatus, TaxScheme, ZusStatus, UserRole } from '@/types/enums';
 
 const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
   [EmploymentType.DG]: 'DG',
@@ -69,12 +70,28 @@ function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuthContext();
   const { data: client, isPending, error } = useClient(id!);
   const { data: fieldDefinitions = [] } = useFieldDefinitions();
   const { data: icons = [] } = useClientIcons();
   const updateClient = useUpdateClient();
+  const setCustomFields = useSetClientCustomFields();
 
   const [editOpen, setEditOpen] = useState(false);
+
+  // Determine the base path based on user role
+  const getBasePath = () => {
+    switch (user?.role) {
+      case UserRole.ADMIN:
+        return '/admin/modules/clients';
+      case UserRole.COMPANY_OWNER:
+        return '/company/modules/clients';
+      default:
+        return '/modules/clients';
+    }
+  };
+
+  const basePath = getBasePath();
 
   if (isPending) {
     return (
@@ -97,7 +114,7 @@ export default function ClientDetailPage() {
   if (error || !client) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" onClick={() => navigate('/modules/clients')}>
+        <Button variant="ghost" onClick={() => navigate(`${basePath}/list`)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Powrót do listy
         </Button>
@@ -123,9 +140,9 @@ export default function ClientDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate('/modules/clients')}>
+          <Button variant="ghost" onClick={() => navigate(`${basePath}/list`)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Powrót
+            Powrót do listy
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-apptax-navy flex items-center gap-2">
@@ -379,12 +396,21 @@ export default function ClientDetailPage() {
           open={editOpen}
           onOpenChange={setEditOpen}
           client={client}
-          onSubmit={(data) => {
+          onSubmit={async (data, customFields) => {
             updateClient.mutate({
               id: client.id,
               data: data as UpdateClientDto,
+            }, {
+              onSuccess: () => {
+                if (customFields && Object.keys(customFields.values).length > 0) {
+                  setCustomFields.mutate({
+                    id: client.id,
+                    data: customFields,
+                  });
+                }
+                setEditOpen(false);
+              },
             });
-            setEditOpen(false);
           }}
         />
       )}

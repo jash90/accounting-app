@@ -3,6 +3,8 @@ import {
   Get,
   Post,
   Put,
+  Patch,
+  Delete,
   Body,
   UseGuards,
 } from '@nestjs/common';
@@ -33,6 +35,35 @@ export class NotificationSettingsController {
     private readonly notificationSettingsService: NotificationSettingsService,
   ) {}
 
+  // /me endpoints (for frontend compatibility)
+  @Get('me')
+  @ApiOperation({ summary: 'Get current user notification settings' })
+  @ApiResponse({ status: 200, description: 'Notification settings' })
+  @RequirePermission('clients', 'read')
+  async getMySettings(@CurrentUser() user: User) {
+    return this.notificationSettingsService.getSettings(user);
+  }
+
+  @Patch('me')
+  @ApiOperation({ summary: 'Update current user notification settings' })
+  @ApiResponse({ status: 200, description: 'Notification settings updated' })
+  @RequirePermission('clients', 'write')
+  async updateMySettings(
+    @Body() dto: UpdateNotificationSettingsDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.notificationSettingsService.updateSettings(user, dto);
+  }
+
+  @Delete('me')
+  @ApiOperation({ summary: 'Delete current user notification settings' })
+  @ApiResponse({ status: 200, description: 'Notification settings deleted' })
+  @RequirePermission('clients', 'write')
+  async deleteMySettings(@CurrentUser() user: User) {
+    return this.notificationSettingsService.deleteSettings(user.id);
+  }
+
+  // Legacy endpoints (kept for backward compatibility)
   @Get()
   @ApiOperation({ summary: 'Get current user notification settings' })
   @ApiResponse({ status: 200, description: 'Notification settings' })

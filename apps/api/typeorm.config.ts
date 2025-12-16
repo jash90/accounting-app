@@ -19,6 +19,7 @@ import {
   ClientIcon,
   ClientIconAssignment,
   NotificationSettings,
+  ClientDeleteRequest,
 } from '@accounting/common';
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -62,6 +63,7 @@ export default new DataSource({
     ClientIcon,
     ClientIconAssignment,
     NotificationSettings,
+    ClientDeleteRequest,
   ],
   migrations: ['apps/api/src/migrations/*{.ts,.js}'],
   synchronize: false,

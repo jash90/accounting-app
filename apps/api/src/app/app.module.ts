@@ -24,6 +24,7 @@ import {
   ClientIcon,
   ClientIconAssignment,
   NotificationSettings,
+  ClientDeleteRequest,
 } from '@accounting/common';
 import { AuthModule, JwtAuthGuard } from '@accounting/auth';
 import { AdminModule } from '../admin/admin.module';
@@ -73,6 +74,7 @@ import { ChangeLogModule } from '@accounting/infrastructure/change-log';
               ClientIcon,
               ClientIconAssignment,
               NotificationSettings,
+              ClientDeleteRequest,
             ],
             synchronize: false, // Disabled - use migrations for schema changes
             logging: !isProduction,
@@ -110,6 +112,7 @@ import { ChangeLogModule } from '@accounting/infrastructure/change-log';
             ClientIcon,
             ClientIconAssignment,
             NotificationSettings,
+            ClientDeleteRequest,
           ],
           synchronize: process.env.NODE_ENV !== 'production', // Auto-sync only in development
           logging: !isProduction,

@@ -13,6 +13,8 @@ import {
   useCreateNotificationSettings,
   useUpdateNotificationSettings,
 } from '@/lib/hooks/use-clients';
+import { useAuthContext } from '@/contexts/auth-context';
+import { UserRole } from '@/types/enums';
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -67,6 +69,21 @@ const FIELD_TYPE_LABELS: Record<CustomFieldType, string> = {
 
 export default function ClientsSettingsPage() {
   const navigate = useNavigate();
+  const { user } = useAuthContext();
+
+  // Determine the base path based on user role
+  const getBasePath = () => {
+    switch (user?.role) {
+      case UserRole.ADMIN:
+        return '/admin/modules/clients';
+      case UserRole.COMPANY_OWNER:
+        return '/company/modules/clients';
+      default:
+        return '/modules/clients';
+    }
+  };
+
+  const basePath = getBasePath();
 
   // Field Definitions
   const { data: fieldDefinitions = [], isPending: loadingFields } = useFieldDefinitions();
@@ -140,9 +157,9 @@ export default function ClientsSettingsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={() => navigate('/modules/clients')}>
+        <Button variant="ghost" onClick={() => navigate(basePath)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Powrót
+          Powrót do modułu
         </Button>
         <PageHeader
           title="Ustawienia modułu Klienci"

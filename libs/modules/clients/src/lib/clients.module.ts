@@ -10,6 +10,7 @@ import {
   Company,
   User,
   ChangeLog,
+  ClientDeleteRequest,
 } from '@accounting/common';
 import { RBACModule } from '@accounting/rbac';
 import { StorageModule } from '@accounting/infrastructure/storage';
@@ -20,10 +21,12 @@ import { ClientChangelogService } from './services/client-changelog.service';
 import { NotificationSettingsService } from './services/notification-settings.service';
 import { ConditionEvaluatorService } from './services/condition-evaluator.service';
 import { AutoAssignService } from './services/auto-assign.service';
+import { DeleteRequestService } from './services/delete-request.service';
 import { ClientsController } from './controllers/clients.controller';
 import { FieldDefinitionsController } from './controllers/field-definitions.controller';
 import { IconsController } from './controllers/icons.controller';
 import { NotificationSettingsController } from './controllers/notification-settings.controller';
+import { DeleteRequestsController } from './controllers/delete-requests.controller';
 
 @Module({
   imports: [
@@ -37,6 +40,7 @@ import { NotificationSettingsController } from './controllers/notification-setti
       Company,
       User,
       ChangeLog,
+      ClientDeleteRequest,
     ]),
     RBACModule,
     StorageModule,
@@ -46,6 +50,7 @@ import { NotificationSettingsController } from './controllers/notification-setti
     FieldDefinitionsController,
     IconsController,
     NotificationSettingsController,
+    DeleteRequestsController,
     ClientsController,
   ],
   providers: [
@@ -56,6 +61,7 @@ import { NotificationSettingsController } from './controllers/notification-setti
     NotificationSettingsService,
     ConditionEvaluatorService,
     AutoAssignService,
+    DeleteRequestService,
   ],
   exports: [
     ClientsService,
@@ -65,6 +71,7 @@ import { NotificationSettingsController } from './controllers/notification-setti
     NotificationSettingsService,
     ConditionEvaluatorService,
     AutoAssignService,
+    DeleteRequestService,
   ],
 })
 export class ClientsModule {}

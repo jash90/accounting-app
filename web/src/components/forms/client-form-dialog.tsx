@@ -1,5 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -30,15 +32,17 @@ import {
   CreateClientFormData,
   UpdateClientFormData,
 } from '@/lib/validation/schemas';
-import { ClientResponseDto } from '@/types/dtos';
-import { EmploymentType, VatStatus, TaxScheme, ZusStatus } from '@/types/enums';
+import { ClientResponseDto, SetCustomFieldValuesDto } from '@/types/dtos';
+import { EmploymentType, VatStatus, TaxScheme, ZusStatus, CustomFieldType } from '@/types/enums';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useFieldDefinitions } from '@/lib/hooks/use-clients';
+import { ClientFieldDefinition } from '@/types/entities';
 
 interface ClientFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   client?: ClientResponseDto;
-  onSubmit: (data: CreateClientFormData | UpdateClientFormData) => void;
+  onSubmit: (data: CreateClientFormData | UpdateClientFormData, customFields?: SetCustomFieldValuesDto) => void;
 }
 
 const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
@@ -78,6 +82,26 @@ export function ClientFormDialog({
   const isEditing = !!client;
   const schema = isEditing ? updateClientSchema : createClientSchema;
 
+  // Fetch field definitions
+  const { data: fieldDefinitions = [] } = useFieldDefinitions();
+  const activeFieldDefinitions = fieldDefinitions.filter((fd) => fd.isActive);
+
+  // Custom field values state
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
+
+  // Initialize custom field values when editing
+  useEffect(() => {
+    if (client?.customFieldValues) {
+      const values: Record<string, string> = {};
+      client.customFieldValues.forEach((cfv) => {
+        values[cfv.fieldDefinitionId] = cfv.value || '';
+      });
+      setCustomFieldValues(values);
+    } else {
+      setCustomFieldValues({});
+    }
+  }, [client]);
+
   const form = useForm<CreateClientFormData | UpdateClientFormData>({
     resolver: zodResolver(schema),
     defaultValues: client
@@ -116,6 +140,13 @@ export function ClientFormDialog({
         },
   });
 
+  const handleCustomFieldChange = (fieldId: string, value: string) => {
+    setCustomFieldValues((prev) => ({
+      ...prev,
+      [fieldId]: value,
+    }));
+  };
+
   const handleSubmit = (data: CreateClientFormData | UpdateClientFormData) => {
     // Clean up empty strings to undefined
     const cleanedData = Object.fromEntries(
@@ -124,8 +155,101 @@ export function ClientFormDialog({
         value === '' ? undefined : value,
       ])
     );
-    onSubmit(cleanedData as CreateClientFormData | UpdateClientFormData);
+
+    // Prepare custom field values - convert empty strings to null
+    const customFieldsData: SetCustomFieldValuesDto = {
+      values: Object.fromEntries(
+        Object.entries(customFieldValues).map(([key, value]) => [
+          key,
+          value === '' ? null : value,
+        ])
+      ),
+    };
+
+    // Check if any custom fields have values
+    const hasCustomFieldValues = Object.values(customFieldsData.values).some(v => v !== null);
+
+    onSubmit(
+      cleanedData as CreateClientFormData | UpdateClientFormData,
+      hasCustomFieldValues ? customFieldsData : undefined
+    );
     form.reset();
+    setCustomFieldValues({});
+  };
+
+  const renderCustomField = (definition: ClientFieldDefinition) => {
+    const value = customFieldValues[definition.id] || '';
+
+    switch (definition.fieldType) {
+      case CustomFieldType.TEXT:
+        return (
+          <Input
+            value={value}
+            onChange={(e) => handleCustomFieldChange(definition.id, e.target.value)}
+            placeholder={definition.label}
+          />
+        );
+
+      case CustomFieldType.NUMBER:
+        return (
+          <Input
+            type="number"
+            value={value}
+            onChange={(e) => handleCustomFieldChange(definition.id, e.target.value)}
+            placeholder={definition.label}
+          />
+        );
+
+      case CustomFieldType.DATE:
+        return (
+          <Input
+            type="date"
+            value={value}
+            onChange={(e) => handleCustomFieldChange(definition.id, e.target.value)}
+          />
+        );
+
+      case CustomFieldType.BOOLEAN:
+        return (
+          <div className="flex items-center space-x-2">
+            <Switch
+              checked={value === 'true'}
+              onCheckedChange={(checked) => handleCustomFieldChange(definition.id, String(checked))}
+            />
+            <span className="text-sm text-muted-foreground">
+              {value === 'true' ? 'Tak' : 'Nie'}
+            </span>
+          </div>
+        );
+
+      case CustomFieldType.ENUM:
+        return (
+          <Select
+            value={value}
+            onValueChange={(v) => handleCustomFieldChange(definition.id, v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Wybierz..." />
+            </SelectTrigger>
+            <SelectContent>
+              {definition.enumValues?.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+
+      default:
+        return (
+          <Input
+            value={value}
+            onChange={(e) => handleCustomFieldChange(definition.id, e.target.value)}
+            placeholder={definition.label}
+          />
+        );
+    }
   };
 
   return (
@@ -216,13 +340,13 @@ export function ClientFormDialog({
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-apptax-navy">Daty</h3>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-4 items-end">
                   <FormField
                     control={form.control}
                     name="companyStartDate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Data rozpoczęcia firmy</FormLabel>
+                        <FormLabel className="min-h-[40px] flex items-end">Data rozpoczęcia firmy</FormLabel>
                         <FormControl>
                           <Input
                             type="date"
@@ -507,6 +631,36 @@ export function ClientFormDialog({
                   )}
                 />
               </div>
+
+              {/* Custom Fields */}
+              {activeFieldDefinitions.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-apptax-navy">
+                    Pola niestandardowe
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {activeFieldDefinitions
+                      .sort((a, b) => a.displayOrder - b.displayOrder)
+                      .map((definition) => (
+                        <div key={definition.id} className="space-y-2">
+                          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                            {definition.label}
+                            {definition.isRequired && ' *'}
+                          </label>
+                          {renderCustomField(definition)}
+                          {definition.isRequired &&
+                            !customFieldValues[definition.id] &&
+                            form.formState.isSubmitted && (
+                              <p className="text-sm font-medium text-destructive">
+                                To pole jest wymagane
+                              </p>
+                            )}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button
