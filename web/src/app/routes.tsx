@@ -31,6 +31,10 @@ const AdminAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/admin-
 const CompanyAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/company-index'));
 const EmployeeAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/employee-index'));
 
+// Email Configuration Pages
+const UserEmailConfigPage = lazy(() => import('@/pages/settings/email-config'));
+const CompanyEmailConfigPage = lazy(() => import('@/pages/company/email-config'));
+
 function PageLoader() {
   return (
     <div className="flex h-screen items-center justify-center">
@@ -276,6 +280,14 @@ export default function Routes() {
             </Suspense>
           }
         />
+        <Route
+          path="email-config"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <CompanyEmailConfigPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -319,7 +331,26 @@ export default function Routes() {
           }
         />
       </Route>
-      
+
+      {/* Settings Routes - Accessible to all authenticated users */}
+      <Route
+        path="/settings/*"
+        element={
+          <ProtectedRoute>
+            <EmployeeLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route
+          path="email-config"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <UserEmailConfigPage />
+            </Suspense>
+          }
+        />
+      </Route>
+
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<NotFound />} />
     </RouterRoutes>

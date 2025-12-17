@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { LayoutDashboard, Users, Building2, Package } from 'lucide-react';
+import { LayoutDashboard, Users, Building2, Package, Mail } from 'lucide-react';
 import { UserDto } from '@/types/dtos';
 import { UserRole } from '@/types/enums';
 import { useModules } from '@/lib/hooks/use-modules';
@@ -46,6 +46,7 @@ export function useNavigationItems(user: UserDto | null): NavItem[] {
           { label: 'Dashboard', href: '/company', icon: LayoutDashboard },
           { label: 'Employees', href: '/company/employees', icon: Users },
           { label: 'Modules', href: '/company/modules', icon: Package },
+          { label: 'Email Config', href: '/company/email-config', icon: Mail },
         );
 
         // Add company modules for company owner
