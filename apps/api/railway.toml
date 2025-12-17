@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm install && npm run build && npm run db:migrate:prod"
+buildCommand = "pnpm install --frozen-lockfile && pnpm run build && pnpm run db:migrate:prod"
 
 [deploy]
 startCommand = "node dist/apps/api/main.js"
