@@ -18,6 +18,20 @@ export class UserDto {
 
   @ApiProperty({ required: false, nullable: true })
   companyId: string | null;
+
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    description: 'ID aktywnej firmy (dla administratorów przełączonych na Firmę Testową)',
+  })
+  activeCompanyId: string | null;
+
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    description: 'Efektywne ID firmy używane do filtrowania danych (activeCompanyId lub companyId)',
+  })
+  effectiveCompanyId: string | null;
 }
 
 export class AuthResponseDto {

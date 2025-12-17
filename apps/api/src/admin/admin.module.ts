@@ -5,7 +5,9 @@ import {
   Company,
 } from '@accounting/common';
 import { AdminController } from './controllers/admin.controller';
+import { AdminContextController } from './controllers/admin-context.controller';
 import { AdminService } from './services/admin.service';
+import { AdminContextService } from './services/admin-context.service';
 import { RBACModule } from '@accounting/rbac';
 
 @Module({
@@ -13,9 +15,9 @@ import { RBACModule } from '@accounting/rbac';
     TypeOrmModule.forFeature([User, Company]),
     RBACModule,
   ],
-  controllers: [AdminController],
-  providers: [AdminService],
-  exports: [AdminService],
+  controllers: [AdminController, AdminContextController],
+  providers: [AdminService, AdminContextService],
+  exports: [AdminService, AdminContextService],
 })
 export class AdminModule {}
 

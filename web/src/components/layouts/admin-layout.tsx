@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import { UserMenu } from '@/components/common/user-menu';
+import { CompanyContextSwitcher } from '@/components/common/company-context-switcher';
 import { Sidebar } from '@/components/sidebar';
 import { useNavigationItems } from '@/hooks/use-navigation-items';
 import { useAuthContext } from '@/contexts/auth-context';
@@ -18,7 +19,10 @@ export default function AdminLayout() {
         <header className="bg-white border-b border-gray-200 shadow-apptax-sm">
           <div className="flex h-16 items-center justify-between px-6">
             <div className="flex-1" />
-            <UserMenu />
+            <div className="flex items-center gap-3">
+              <CompanyContextSwitcher />
+              <UserMenu />
+            </div>
           </div>
         </header>
 
