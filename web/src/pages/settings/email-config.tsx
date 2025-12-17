@@ -11,6 +11,8 @@ import {
   useCreateUserEmailConfig,
   useUpdateUserEmailConfig,
   useDeleteUserEmailConfig,
+  useTestSmtp,
+  useTestImap,
 } from '@/lib/hooks/use-email-config';
 import { CreateEmailConfigFormData, UpdateEmailConfigFormData } from '@/lib/validation/schemas';
 import { Mail, Edit, Trash2, Plus, Server, Lock } from 'lucide-react';
@@ -20,6 +22,8 @@ export default function UserEmailConfigPage() {
   const createConfig = useCreateUserEmailConfig();
   const updateConfig = useUpdateUserEmailConfig();
   const deleteConfig = useDeleteUserEmailConfig();
+  const testSmtp = useTestSmtp();
+  const testImap = useTestImap();
 
   const [formOpen, setFormOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -245,6 +249,10 @@ export default function UserEmailConfigPage() {
         config={hasConfig ? emailConfig : undefined}
         onSubmit={hasConfig ? handleUpdate : handleCreate}
         type="user"
+        onTestSmtp={(data) => testSmtp.mutate(data)}
+        onTestImap={(data) => testImap.mutate(data)}
+        isTestingSmtp={testSmtp.isPending}
+        isTestingImap={testImap.isPending}
       />
 
       {/* Delete Confirmation */}

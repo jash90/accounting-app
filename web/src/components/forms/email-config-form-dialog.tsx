@@ -28,8 +28,8 @@ import {
   CreateEmailConfigFormData,
   UpdateEmailConfigFormData,
 } from '@/lib/validation/schemas';
-import { EmailConfigResponseDto } from '@/types/dtos';
-import { Mail, Send, Download, AlertTriangle } from 'lucide-react';
+import { EmailConfigResponseDto, TestSmtpDto, TestImapDto } from '@/types/dtos';
+import { Mail, Send, Download, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 
 interface EmailConfigFormDialogProps {
   open: boolean;
@@ -37,6 +37,10 @@ interface EmailConfigFormDialogProps {
   config?: EmailConfigResponseDto;
   onSubmit: (data: CreateEmailConfigFormData | UpdateEmailConfigFormData) => void;
   type: 'user' | 'company';
+  onTestSmtp?: (data: TestSmtpDto) => void;
+  onTestImap?: (data: TestImapDto) => void;
+  isTestingSmtp?: boolean;
+  isTestingImap?: boolean;
 }
 
 export function EmailConfigFormDialog({
@@ -45,6 +49,10 @@ export function EmailConfigFormDialog({
   config,
   onSubmit,
   type,
+  onTestSmtp,
+  onTestImap,
+  isTestingSmtp = false,
+  isTestingImap = false,
 }: EmailConfigFormDialogProps) {
   const isEditing = !!config;
   const schema = isEditing ? updateEmailConfigSchema : createEmailConfigSchema;
@@ -117,6 +125,64 @@ export function EmailConfigFormDialog({
     onSubmit(data);
     form.reset();
   };
+
+  const handleTestSmtp = () => {
+    if (!onTestSmtp) return;
+
+    const smtpHost = form.getValues('smtpHost');
+    const smtpPort = form.getValues('smtpPort');
+    const smtpSecure = form.getValues('smtpSecure');
+    const smtpUser = form.getValues('smtpUser');
+    const smtpPassword = form.getValues('smtpPassword');
+
+    if (!smtpHost || !smtpPort || !smtpUser || !smtpPassword) {
+      return;
+    }
+
+    onTestSmtp({
+      smtpHost,
+      smtpPort,
+      smtpSecure: smtpSecure ?? true,
+      smtpUser,
+      smtpPassword,
+    });
+  };
+
+  const handleTestImap = () => {
+    if (!onTestImap) return;
+
+    const imapHost = form.getValues('imapHost');
+    const imapPort = form.getValues('imapPort');
+    const imapTls = form.getValues('imapTls');
+    const imapUser = form.getValues('imapUser');
+    const imapPassword = form.getValues('imapPassword');
+
+    if (!imapHost || !imapPort || !imapUser || !imapPassword) {
+      return;
+    }
+
+    onTestImap({
+      imapHost,
+      imapPort,
+      imapTls: imapTls ?? true,
+      imapUser,
+      imapPassword,
+    });
+  };
+
+  const canTestSmtp = !!(
+    form.watch('smtpHost') &&
+    form.watch('smtpPort') &&
+    form.watch('smtpUser') &&
+    form.watch('smtpPassword')
+  );
+
+  const canTestImap = !!(
+    form.watch('imapHost') &&
+    form.watch('imapPort') &&
+    form.watch('imapUser') &&
+    form.watch('imapPassword')
+  );
 
   const title = type === 'company' ? 'Company Email Configuration' : 'Personal Email Configuration';
   const description =
@@ -257,6 +323,29 @@ export function EmailConfigFormDialog({
                   </FormItem>
                 )}
               />
+
+              {onTestSmtp && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTestSmtp}
+                  disabled={!canTestSmtp || isTestingSmtp}
+                  className="w-full"
+                >
+                  {isTestingSmtp ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Testowanie...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Testuj połączenie SMTP
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
 
             {/* IMAP Configuration Section */}
@@ -363,6 +452,29 @@ export function EmailConfigFormDialog({
                   </FormItem>
                 )}
               />
+
+              {onTestImap && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTestImap}
+                  disabled={!canTestImap || isTestingImap}
+                  className="w-full"
+                >
+                  {isTestingImap ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Testowanie...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Testuj połączenie IMAP
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
 
             {/* Action Buttons */}

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { emailConfigApi } from '../api/endpoints/email-config';
 import { queryKeys } from '../api/query-client';
-import { CreateEmailConfigDto, UpdateEmailConfigDto } from '@/types/dtos';
+import { CreateEmailConfigDto, UpdateEmailConfigDto, TestSmtpDto, TestImapDto } from '@/types/dtos';
 import { useToast } from '@/components/ui/use-toast';
 
 // User Email Configuration Hooks
@@ -173,6 +173,92 @@ export function useDeleteCompanyEmailConfig() {
         title: 'Error',
         description:
           error.response?.data?.message || 'Failed to delete company email configuration',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+// Connection Test Hooks
+
+export function useTestSmtp() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: TestSmtpDto) => emailConfigApi.testSmtp(data),
+    onSuccess: (result) => {
+      toast({
+        title: 'Sukces',
+        description: result.message,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Błąd testu SMTP',
+        description: error.response?.data?.message || 'Nie udało się połączyć z serwerem SMTP',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useTestImap() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: TestImapDto) => emailConfigApi.testImap(data),
+    onSuccess: (result) => {
+      toast({
+        title: 'Sukces',
+        description: result.message,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Błąd testu IMAP',
+        description: error.response?.data?.message || 'Nie udało się połączyć z serwerem IMAP',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useTestCompanySmtp() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: TestSmtpDto) => emailConfigApi.testCompanySmtp(data),
+    onSuccess: (result) => {
+      toast({
+        title: 'Sukces',
+        description: result.message,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Błąd testu SMTP',
+        description: error.response?.data?.message || 'Nie udało się połączyć z serwerem SMTP',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useTestCompanyImap() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: TestImapDto) => emailConfigApi.testCompanyImap(data),
+    onSuccess: (result) => {
+      toast({
+        title: 'Sukces',
+        description: result.message,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Błąd testu IMAP',
+        description: error.response?.data?.message || 'Nie udało się połączyć z serwerem IMAP',
         variant: 'destructive',
       });
     },
