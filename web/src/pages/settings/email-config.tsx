@@ -49,26 +49,27 @@ export default function UserEmailConfigPage() {
       <PageHeader
         title="Email Configuration"
         description="Manage your personal email settings for sending and receiving emails"
-        icon={Mail}
-      >
-        {hasConfig ? (
-          <div className="flex gap-2">
-            <Button onClick={() => setFormOpen(true)} variant="secondary" size="sm">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Configuration
+        icon={<Mail className="h-6 w-6" />}
+        action={
+          hasConfig ? (
+            <div className="flex gap-2">
+              <Button onClick={() => setFormOpen(true)} variant="secondary" size="sm">
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Configuration
+              </Button>
+              <Button onClick={() => setDeleteOpen(true)} variant="destructive" size="sm">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </div>
+          ) : (
+            <Button onClick={() => setFormOpen(true)} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Configuration
             </Button>
-            <Button onClick={() => setDeleteOpen(true)} variant="destructive" size="sm">
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </Button>
-          </div>
-        ) : (
-          <Button onClick={() => setFormOpen(true)} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Configuration
-          </Button>
-        )}
-      </PageHeader>
+          )
+        }
+      />
 
       {/* Loading State */}
       {isPending && (
