@@ -36,7 +36,7 @@ interface EmailConfigFormDialogProps {
   onOpenChange: (open: boolean) => void;
   config?: EmailConfigResponseDto;
   onSubmit: (data: CreateEmailConfigFormData | UpdateEmailConfigFormData) => void;
-  type: 'user' | 'company';
+  type: 'user' | 'company' | 'system-admin';
   onTestSmtp?: (data: TestSmtpDto) => void;
   onTestImap?: (data: TestImapDto) => void;
   isTestingSmtp?: boolean;
@@ -184,11 +184,30 @@ export function EmailConfigFormDialog({
     form.watch('imapPassword')
   );
 
-  const title = type === 'company' ? 'Company Email Configuration' : 'Personal Email Configuration';
-  const description =
-    type === 'company'
-      ? 'Configure email settings for your company. This will be used for company-wide email communications.'
-      : 'Configure your personal email settings for sending and receiving emails.';
+  const getTitle = () => {
+    switch (type) {
+      case 'company':
+        return 'Company Email Configuration';
+      case 'system-admin':
+        return 'System Admin Email Configuration';
+      default:
+        return 'Personal Email Configuration';
+    }
+  };
+
+  const getDescription = () => {
+    switch (type) {
+      case 'company':
+        return 'Configure email settings for your company. This will be used for company-wide email communications.';
+      case 'system-admin':
+        return 'Configure shared email settings for all administrators. This will be used for system-wide email communications.';
+      default:
+        return 'Configure your personal email settings for sending and receiving emails.';
+    }
+  };
+
+  const title = getTitle();
+  const description = getDescription();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

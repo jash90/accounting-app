@@ -334,4 +334,151 @@ export class EmailConfigController {
     }
     return this.emailService.testImapConnection(testDto);
   }
+
+  // ========== SYSTEM ADMIN EMAIL CONFIGURATION ENDPOINTS (ADMIN ONLY) ==========
+
+  @Get('system-admin')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Get System Admin email configuration',
+    description: 'Retrieve the shared email configuration for all admins (ADMIN only)',
+  })
+  @ApiOkResponse({ description: 'System Admin email configuration', type: EmailConfiguration })
+  @ApiNotFoundResponse({ description: 'System Admin email configuration not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - ADMIN role required' })
+  getSystemAdminEmailConfig(@CurrentUser() user: User) {
+    return this.emailConfigService.getSystemAdminConfig();
+  }
+
+  @Post('system-admin')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Create System Admin email configuration',
+    description: 'Create a new shared email configuration for all admins (ADMIN only)',
+  })
+  @ApiBody({ type: CreateEmailConfigDto })
+  @ApiCreatedResponse({ description: 'System Admin email configuration created successfully', type: EmailConfiguration })
+  @ApiBadRequestResponse({ description: 'Invalid input data' })
+  @ApiConflictResponse({ description: 'System Admin already has an email configuration' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - ADMIN role required' })
+  createSystemAdminEmailConfig(@CurrentUser() user: User, @Body() createDto: CreateEmailConfigDto) {
+    return this.emailConfigService.createSystemAdminConfig(createDto);
+  }
+
+  @Put('system-admin')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Update System Admin email configuration',
+    description: 'Update the shared email configuration for all admins (ADMIN only)',
+  })
+  @ApiBody({ type: UpdateEmailConfigDto })
+  @ApiOkResponse({ description: 'System Admin email configuration updated successfully', type: EmailConfiguration })
+  @ApiBadRequestResponse({ description: 'Invalid input data' })
+  @ApiNotFoundResponse({ description: 'System Admin email configuration not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - ADMIN role required' })
+  updateSystemAdminEmailConfig(@CurrentUser() user: User, @Body() updateDto: UpdateEmailConfigDto) {
+    return this.emailConfigService.updateSystemAdminConfig(updateDto);
+  }
+
+  @Delete('system-admin')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Delete System Admin email configuration',
+    description: 'Delete the shared email configuration for all admins (ADMIN only)',
+  })
+  @ApiNoContentResponse({ description: 'System Admin email configuration deleted successfully' })
+  @ApiNotFoundResponse({ description: 'System Admin email configuration not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - ADMIN role required' })
+  async deleteSystemAdminEmailConfig(@CurrentUser() user: User) {
+    await this.emailConfigService.deleteSystemAdminConfig();
+  }
+
+  @Post('system-admin/send')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Send email using System Admin email configuration',
+    description: 'Send an email using the shared System Admin SMTP configuration (ADMIN only)',
+  })
+  @ApiBody({ type: SendEmailDto })
+  @ApiNoContentResponse({ description: 'Email sent successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid input data or email configuration error' })
+  @ApiNotFoundResponse({ description: 'Email configuration not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - ADMIN role required' })
+  async sendSystemAdminEmail(@CurrentUser() user: User, @Body() sendDto: SendEmailDto) {
+    const systemAdminCompanyId = await this.emailConfigService.getSystemAdminCompanyId();
+    await this.emailService.sendCompanyEmail(systemAdminCompanyId, sendDto);
+  }
+
+  @Get('system-admin/inbox')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Check System Admin inbox',
+    description: 'Retrieve recent emails from the System Admin inbox using IMAP (ADMIN only)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of recent emails to retrieve (default: 10)',
+    example: 10,
+  })
+  @ApiOkResponse({ description: 'System Admin inbox emails retrieved successfully' })
+  @ApiBadRequestResponse({ description: 'Email configuration error or IMAP connection failed' })
+  @ApiNotFoundResponse({ description: 'Email configuration not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - ADMIN role required' })
+  async checkSystemAdminInbox(@CurrentUser() user: User, @Query('limit') limit?: number) {
+    const systemAdminCompanyId = await this.emailConfigService.getSystemAdminCompanyId();
+    return this.emailService.checkCompanyInbox(systemAdminCompanyId, limit || 10);
+  }
+
+  // ========== SYSTEM ADMIN CONNECTION TEST ENDPOINTS ==========
+
+  @Post('test/system-admin/smtp')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Test System Admin SMTP connection',
+    description: 'Test SMTP connection for System Admin without sending an email (ADMIN only)',
+  })
+  @ApiBody({ type: TestSmtpDto })
+  @ApiOkResponse({ description: 'SMTP connection test result', type: TestConnectionResultDto })
+  @ApiBadRequestResponse({ description: 'SMTP connection failed' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - ADMIN role required' })
+  async testSystemAdminSmtp(@CurrentUser() user: User, @Body() testDto: TestSmtpDto) {
+    return this.emailService.testSmtpConnection(testDto);
+  }
+
+  @Post('test/system-admin/imap')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Test System Admin IMAP connection',
+    description: 'Test IMAP connection for System Admin without fetching emails (ADMIN only)',
+  })
+  @ApiBody({ type: TestImapDto })
+  @ApiOkResponse({ description: 'IMAP connection test result', type: TestConnectionResultDto })
+  @ApiBadRequestResponse({ description: 'IMAP connection failed' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - ADMIN role required' })
+  async testSystemAdminImap(@CurrentUser() user: User, @Body() testDto: TestImapDto) {
+    return this.emailService.testImapConnection(testDto);
+  }
 }

@@ -24,6 +24,7 @@ export function useNavigationItems(user: UserDto | null): NavItem[] {
           { label: 'Users', href: '/admin/users', icon: Users },
           { label: 'Companies', href: '/admin/companies', icon: Building2 },
           { label: 'Modules', href: '/admin/modules', icon: Package },
+          { label: 'Email Config', href: '/admin/email-config', icon: Mail },
         );
 
         // Add all modules for admin

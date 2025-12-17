@@ -97,4 +97,51 @@ export const emailConfigApi = {
     );
     return result;
   },
+
+  // System Admin Email Configuration (ADMIN only)
+  getSystemAdminConfig: async (): Promise<EmailConfigResponseDto> => {
+    const { data } = await apiClient.get<EmailConfigResponseDto>('/api/email-config/system-admin');
+    return data;
+  },
+
+  createSystemAdminConfig: async (
+    configData: CreateEmailConfigDto
+  ): Promise<EmailConfigResponseDto> => {
+    const { data } = await apiClient.post<EmailConfigResponseDto>(
+      '/api/email-config/system-admin',
+      configData
+    );
+    return data;
+  },
+
+  updateSystemAdminConfig: async (
+    configData: UpdateEmailConfigDto
+  ): Promise<EmailConfigResponseDto> => {
+    const { data } = await apiClient.put<EmailConfigResponseDto>(
+      '/api/email-config/system-admin',
+      configData
+    );
+    return data;
+  },
+
+  deleteSystemAdminConfig: async (): Promise<void> => {
+    await apiClient.delete('/api/email-config/system-admin');
+  },
+
+  // System Admin Connection Testing
+  testSystemAdminSmtp: async (data: TestSmtpDto): Promise<TestConnectionResultDto> => {
+    const { data: result } = await apiClient.post<TestConnectionResultDto>(
+      '/api/email-config/test/system-admin/smtp',
+      data
+    );
+    return result;
+  },
+
+  testSystemAdminImap: async (data: TestImapDto): Promise<TestConnectionResultDto> => {
+    const { data: result } = await apiClient.post<TestConnectionResultDto>(
+      '/api/email-config/test/system-admin/imap',
+      data
+    );
+    return result;
+  },
 };

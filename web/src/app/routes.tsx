@@ -34,6 +34,7 @@ const EmployeeAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/emp
 // Email Configuration Pages
 const UserEmailConfigPage = lazy(() => import('@/pages/settings/email-config'));
 const CompanyEmailConfigPage = lazy(() => import('@/pages/company/email-config'));
+const AdminEmailConfigPage = lazy(() => import('@/pages/admin/email-config'));
 
 function PageLoader() {
   return (
@@ -195,6 +196,14 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <AIAgentAdminTokenUsagePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="email-config"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <AdminEmailConfigPage />
             </Suspense>
           }
         />
