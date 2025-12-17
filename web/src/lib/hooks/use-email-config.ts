@@ -264,3 +264,137 @@ export function useTestCompanyImap() {
     },
   });
 }
+
+// System Admin Email Configuration Hooks (ADMIN only)
+
+export function useSystemAdminEmailConfig() {
+  return useQuery({
+    queryKey: queryKeys.emailConfig.systemAdmin,
+    queryFn: emailConfigApi.getSystemAdminConfig,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 404 (no config exists yet)
+      if (error?.response?.status === 404) {
+        return false;
+      }
+      return failureCount < 1;
+    },
+  });
+}
+
+export function useCreateSystemAdminEmailConfig() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (configData: CreateEmailConfigDto) =>
+      emailConfigApi.createSystemAdminConfig(configData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.emailConfig.systemAdmin });
+      toast({
+        title: 'Sukces',
+        description: 'Konfiguracja email System Admin została utworzona',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Błąd',
+        description:
+          error.response?.data?.message || 'Nie udało się utworzyć konfiguracji email System Admin',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useUpdateSystemAdminEmailConfig() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (configData: UpdateEmailConfigDto) =>
+      emailConfigApi.updateSystemAdminConfig(configData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.emailConfig.systemAdmin });
+      toast({
+        title: 'Sukces',
+        description: 'Konfiguracja email System Admin została zaktualizowana',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Błąd',
+        description:
+          error.response?.data?.message || 'Nie udało się zaktualizować konfiguracji email System Admin',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useDeleteSystemAdminEmailConfig() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: emailConfigApi.deleteSystemAdminConfig,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.emailConfig.systemAdmin });
+      toast({
+        title: 'Sukces',
+        description: 'Konfiguracja email System Admin została usunięta',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Błąd',
+        description:
+          error.response?.data?.message || 'Nie udało się usunąć konfiguracji email System Admin',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+// System Admin Connection Test Hooks
+
+export function useTestSystemAdminSmtp() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: TestSmtpDto) => emailConfigApi.testSystemAdminSmtp(data),
+    onSuccess: (result) => {
+      toast({
+        title: 'Sukces',
+        description: result.message,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Błąd testu SMTP',
+        description: error.response?.data?.message || 'Nie udało się połączyć z serwerem SMTP',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useTestSystemAdminImap() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: TestImapDto) => emailConfigApi.testSystemAdminImap(data),
+    onSuccess: (result) => {
+      toast({
+        title: 'Sukces',
+        description: result.message,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Błąd testu IMAP',
+        description: error.response?.data?.message || 'Nie udało się połączyć z serwerem IMAP',
+        variant: 'destructive',
+      });
+    },
+  });
+}
