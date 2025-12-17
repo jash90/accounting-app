@@ -31,7 +31,7 @@ export class EmailConfiguration {
   @Column({ type: 'uuid', nullable: true })
   userId!: string | null;
 
-  @OneToOne(() => User, { nullable: true, onDelete: 'CASCADE' })
+  @OneToOne(() => User, (user) => user.emailConfig, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user!: User | null;
 
@@ -39,7 +39,7 @@ export class EmailConfiguration {
   @Column({ type: 'uuid', nullable: true })
   companyId!: string | null;
 
-  @OneToOne(() => Company, { nullable: true, onDelete: 'CASCADE' })
+  @OneToOne(() => Company, (company) => company.emailConfig, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'companyId' })
   company!: Company | null;
 
