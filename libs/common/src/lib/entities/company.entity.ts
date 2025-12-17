@@ -64,9 +64,6 @@ export class Company {
   @Column({ default: false })
   isSystemCompany!: boolean;
 
-  @Column({ default: false })
-  isTestCompany!: boolean;
-
   @Column({ default: true })
   isActive!: boolean;
 

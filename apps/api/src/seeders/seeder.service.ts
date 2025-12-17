@@ -39,15 +39,12 @@ export class SeederService {
     // Seed data in correct order
     const admin = await this.seedAdmin();
     const systemCompany = await this.seedSystemAdminCompany(admin);
-    const testCompany = await this.seedTestCompany(admin);
     const { companyA, ownerA, employeesA } = await this.seedCompanyA();
     const { companyB, ownerB, employeesB } = await this.seedCompanyB();
     const modules = await this.seedModules();
     await this.seedModuleAccess(companyA, companyB, modules);
-    await this.seedTestCompanyModuleAccess(testCompany, modules);
     await this.seedEmployeePermissions(employeesA, employeesB, modules);
     await this.seedSimpleTexts(companyA, companyB, ownerA, ownerB, employeesA);
-    await this.seedTestCompanyData(testCompany, admin);
 
     console.log('Database seeding completed!');
     console.log('\nTest Users:');
@@ -57,8 +54,6 @@ export class SeederService {
     console.log('Company A Employee 2: employee2.a@company.com / Employee123!');
     console.log('Company B Owner: owner.b@company.com / Owner123!');
     console.log('Company B Employee 1: employee1.b@company.com / Employee123!');
-    console.log('\nAdmin Test Company:');
-    console.log('Firma Testowa - Dostępna przez przełączenie kontekstu w panelu admina');
   }
 
   private async clearDatabase() {
@@ -99,59 +94,6 @@ export class SeederService {
     const savedCompany = await this.companyRepository.save(systemCompany);
     console.log('✅ System Admin company created');
     return savedCompany;
-  }
-
-  private async seedTestCompany(admin: User) {
-    console.log('Creating Firma Testowa (Test Company) for admin testing...');
-    const testCompany = this.companyRepository.create({
-      name: 'Firma Testowa',
-      ownerId: admin.id,
-      isTestCompany: true,
-      isSystemCompany: false,
-      isActive: true,
-    });
-    const savedCompany = await this.companyRepository.save(testCompany);
-    console.log('✅ Firma Testowa created');
-    return savedCompany;
-  }
-
-  private async seedTestCompanyModuleAccess(testCompany: Company, modules: ModuleEntity[]) {
-    console.log('Granting all modules to Firma Testowa...');
-
-    for (const module of modules) {
-      await this.companyModuleAccessRepository.save(
-        this.companyModuleAccessRepository.create({
-          companyId: testCompany.id,
-          moduleId: module.id,
-          isEnabled: true,
-        }),
-      );
-    }
-
-    console.log('✅ All modules granted to Firma Testowa');
-  }
-
-  private async seedTestCompanyData(testCompany: Company, admin: User) {
-    console.log('Creating sample data for Firma Testowa...');
-
-    // Create sample SimpleText entries for the test company
-    const testTexts = [
-      'Przykładowy tekst testowy 1 - Firma Testowa',
-      'Przykładowy tekst testowy 2 - Firma Testowa',
-      'Przykładowy tekst testowy 3 - Firma Testowa',
-    ];
-
-    for (const text of testTexts) {
-      await this.simpleTextRepository.save(
-        this.simpleTextRepository.create({
-          content: text,
-          companyId: testCompany.id,
-          createdById: admin.id,
-        }),
-      );
-    }
-
-    console.log('✅ Sample data created for Firma Testowa');
   }
 
   private async seedCompanyA() {
@@ -466,4 +408,3 @@ export class SeederService {
     }
   }
 }
-

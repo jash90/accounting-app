@@ -69,8 +69,5 @@ export const queryKeys = {
     user: ['email-config', 'user'] as const,
     company: ['email-config', 'company'] as const,
   },
-  adminContext: {
-    current: ['admin-context'] as const,
-  },
 };
 
