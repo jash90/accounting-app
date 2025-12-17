@@ -6,6 +6,7 @@ Complete guide for using the `@accounting/email` module for IMAP and SMTP operat
 
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Persistent Email Configuration](#persistent-email-configuration)
 - [Configuration](#configuration)
 - [Sending Emails (SMTP)](#sending-emails-smtp)
 - [Reading Emails (IMAP)](#reading-emails-imap)
@@ -57,6 +58,176 @@ export class YourService {
   ) {}
 }
 ```
+
+## Persistent Email Configuration
+
+The email module now supports persistent email configuration stored in the database with encrypted passwords. Each user can have their own email configuration, and company owners can assign an additional email configuration to their company.
+
+### API Endpoints
+
+#### User Email Configuration
+
+Users can manage their own email configuration through these endpoints:
+
+**Create User Configuration:**
+```bash
+POST /api/email-config/user
+Authorization: Bearer <jwt-token>
+Content-Type: application/json
+
+{
+  "smtpHost": "mail-server123456.lh.pl",
+  "smtpPort": 465,
+  "smtpSecure": true,
+  "smtpUser": "user@domain.pl",
+  "smtpPassword": "password123",
+  "imapHost": "mail-server123456.lh.pl",
+  "imapPort": 993,
+  "imapTls": true,
+  "imapUser": "user@domain.pl",
+  "imapPassword": "password123",
+  "displayName": "My Personal Email"
+}
+```
+
+**Get User Configuration:**
+```bash
+GET /api/email-config/user
+Authorization: Bearer <jwt-token>
+```
+
+**Update User Configuration:**
+```bash
+PUT /api/email-config/user
+Authorization: Bearer <jwt-token>
+Content-Type: application/json
+
+{
+  "displayName": "Updated Name",
+  "smtpPassword": "newpassword"  // Partial updates supported
+}
+```
+
+**Delete User Configuration:**
+```bash
+DELETE /api/email-config/user
+Authorization: Bearer <jwt-token>
+```
+
+#### Company Email Configuration
+
+Company owners can manage company-wide email configuration:
+
+**Create Company Configuration:**
+```bash
+POST /api/email-config/company
+Authorization: Bearer <jwt-token>
+Content-Type: application/json
+
+{
+  "smtpHost": "mail-server123456.lh.pl",
+  "smtpPort": 465,
+  "smtpSecure": true,
+  "smtpUser": "contact@company.pl",
+  "smtpPassword": "password123",
+  "imapHost": "mail-server123456.lh.pl",
+  "imapPort": 993,
+  "imapTls": true,
+  "imapUser": "contact@company.pl",
+  "imapPassword": "password123",
+  "displayName": "Company Contact Email"
+}
+```
+
+**Get Company Configuration:**
+```bash
+GET /api/email-config/company
+Authorization: Bearer <jwt-token>
+```
+
+**Update Company Configuration:**
+```bash
+PUT /api/email-config/company
+Authorization: Bearer <jwt-token>
+Content-Type: application/json
+
+{
+  "displayName": "Support Email"
+}
+```
+
+**Delete Company Configuration:**
+```bash
+DELETE /api/email-config/company
+Authorization: Bearer <jwt-token>
+```
+
+### Using Persistent Configuration
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import {
+  EmailConfigurationService,
+  EmailSenderService
+} from '@accounting/email';
+
+@Injectable()
+export class NotificationService {
+  constructor(
+    private readonly emailConfigService: EmailConfigurationService,
+    private readonly emailSender: EmailSenderService,
+  ) {}
+
+  async sendUserNotification(userId: string, message: string) {
+    // Get user's email configuration
+    const userConfig = await this.emailConfigService.getUserConfig(userId);
+
+    // Get decrypted SMTP config for sending
+    const smtpConfig = await this.emailConfigService.getDecryptedSmtpConfig(
+      userConfig.id
+    );
+
+    // Send email using user's configuration
+    await this.emailSender.sendEmail(smtpConfig, {
+      to: 'recipient@example.com',
+      subject: 'Notification',
+      html: `<p>${message}</p>`,
+    });
+  }
+
+  async sendCompanyNotification(companyId: string, message: string) {
+    // Get company's email configuration
+    const companyConfig = await this.emailConfigService.getCompanyConfig(companyId);
+
+    // Get decrypted SMTP config
+    const smtpConfig = await this.emailConfigService.getDecryptedSmtpConfig(
+      companyConfig.id
+    );
+
+    // Send email using company's configuration
+    await this.emailSender.sendEmail(smtpConfig, {
+      to: 'customer@example.com',
+      subject: 'Company Notification',
+      html: `<p>${message}</p>`,
+    });
+  }
+}
+```
+
+### Security Features
+
+- **Encrypted Passwords**: All SMTP and IMAP passwords are encrypted in the database using AES-256-CBC
+- **Secure Key**: Encryption key is stored in environment variables (`ENCRYPTION_KEY`)
+- **User Isolation**: Users can only access and modify their own email configurations
+- **Owner-Only Company Config**: Only company owners and admins can manage company email configurations
+- **Connection Verification**: Email credentials are verified before saving
+
+### Configuration Constraints
+
+- **One per User**: Each user can have only one email configuration
+- **One per Company**: Each company can have only one email configuration
+- **Mutually Exclusive**: Configuration belongs to either a user OR a company, never both
+- **Automatic Cascade**: Deleting a user or company automatically deletes associated email configuration
 
 ## Configuration
 
