@@ -21,3 +21,11 @@ web-e2e/test-reports
 /web/.claude-flow/metrics/
 /api/.claude-flow/metrics/
 /.idea/
+/.claude/
+/.claude-flow/
+/.swarm/
+/.playwright-mcp/
+/apps/api/.claude/
+/apps/api/.claude-flow/
+web/.claude/
+web/.claude-flow/
