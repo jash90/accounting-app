@@ -9,6 +9,7 @@ import {
   HttpStatus,
   UseGuards,
   ForbiddenException,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -23,10 +24,13 @@ import {
   ApiForbiddenResponse,
   ApiConflictResponse,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { EmailConfigService } from '../services/email-config.service';
+import { EmailService } from '../services/email.service';
 import { CreateEmailConfigDto } from '../dto/create-email-config.dto';
 import { UpdateEmailConfigDto } from '../dto/update-email-config.dto';
+import { SendEmailDto } from '../dto/send-email.dto';
 import { CurrentUser, Roles, RolesGuard } from '@accounting/auth';
 import { User, UserRole, EmailConfiguration } from '@accounting/common';
 import { OwnerOrAdminGuard } from '@accounting/rbac';
@@ -35,7 +39,10 @@ import { OwnerOrAdminGuard } from '@accounting/rbac';
 @ApiBearerAuth('JWT-auth')
 @Controller('email-config')
 export class EmailConfigController {
-  constructor(private readonly emailConfigService: EmailConfigService) {}
+  constructor(
+    private readonly emailConfigService: EmailConfigService,
+    private readonly emailService: EmailService,
+  ) {}
 
   // ========== USER EMAIL CONFIGURATION ENDPOINTS ==========
 
@@ -91,6 +98,41 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   async deleteUserEmailConfig(@CurrentUser() user: User) {
     await this.emailConfigService.deleteUserConfig(user.id);
+  }
+
+  @Post('send')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Send email using user email configuration',
+    description: 'Send an email using the authenticated user\'s SMTP configuration',
+  })
+  @ApiBody({ type: SendEmailDto })
+  @ApiNoContentResponse({ description: 'Email sent successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid input data or email configuration error' })
+  @ApiNotFoundResponse({ description: 'Email configuration not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  async sendEmail(@CurrentUser() user: User, @Body() sendDto: SendEmailDto) {
+    await this.emailService.sendEmail(user.id, sendDto);
+  }
+
+  @Get('inbox')
+  @ApiOperation({
+    summary: 'Check user inbox',
+    description: 'Retrieve recent emails from the authenticated user\'s inbox using IMAP',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of recent emails to retrieve (default: 10)',
+    example: 10,
+  })
+  @ApiOkResponse({ description: 'Inbox emails retrieved successfully' })
+  @ApiBadRequestResponse({ description: 'Email configuration error or IMAP connection failed' })
+  @ApiNotFoundResponse({ description: 'Email configuration not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  async checkInbox(@CurrentUser() user: User, @Query('limit') limit?: number) {
+    return this.emailService.checkInbox(user.id, limit || 10);
   }
 
   // ========== COMPANY EMAIL CONFIGURATION ENDPOINTS ==========
@@ -171,5 +213,52 @@ export class EmailConfigController {
       throw new ForbiddenException('User is not associated with a company');
     }
     await this.emailConfigService.deleteCompanyConfig(user.companyId);
+  }
+
+  @Post('company/send')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(RolesGuard, OwnerOrAdminGuard)
+  @Roles(UserRole.COMPANY_OWNER)
+  @ApiOperation({
+    summary: 'Send email using company email configuration',
+    description: 'Send an email using the company\'s SMTP configuration (COMPANY_OWNER only)',
+  })
+  @ApiBody({ type: SendEmailDto })
+  @ApiNoContentResponse({ description: 'Email sent successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid input data or email configuration error' })
+  @ApiNotFoundResponse({ description: 'Email configuration not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER role required' })
+  async sendCompanyEmail(@CurrentUser() user: User, @Body() sendDto: SendEmailDto) {
+    if (!user.companyId) {
+      throw new ForbiddenException('User is not associated with a company');
+    }
+    await this.emailService.sendCompanyEmail(user.companyId, sendDto);
+  }
+
+  @Get('company/inbox')
+  @UseGuards(RolesGuard, OwnerOrAdminGuard)
+  @Roles(UserRole.COMPANY_OWNER)
+  @ApiOperation({
+    summary: 'Check company inbox',
+    description: 'Retrieve recent emails from the company\'s inbox using IMAP (COMPANY_OWNER only)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of recent emails to retrieve (default: 10)',
+    example: 10,
+  })
+  @ApiOkResponse({ description: 'Company inbox emails retrieved successfully' })
+  @ApiBadRequestResponse({ description: 'Email configuration error or IMAP connection failed' })
+  @ApiNotFoundResponse({ description: 'Email configuration not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER role required' })
+  async checkCompanyInbox(@CurrentUser() user: User, @Query('limit') limit?: number) {
+    if (!user.companyId) {
+      throw new ForbiddenException('User is not associated with a company');
+    }
+    return this.emailService.checkCompanyInbox(user.companyId, limit || 10);
   }
 }
