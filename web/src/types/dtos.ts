@@ -37,6 +37,8 @@ export interface UserDto {
   lastName: string;
   role: UserRole;
   companyId: string | null;
+  activeCompanyId: string | null;
+  effectiveCompanyId: string | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -69,6 +71,7 @@ export interface CompanyDto {
   owner?: UserDto;
   isActive: boolean;
   isSystemCompany: boolean;
+  isTestCompany: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -499,5 +502,25 @@ export interface TestImapDto {
 export interface TestConnectionResultDto {
   success: boolean;
   message: string;
+}
+
+// Admin Context DTOs
+export interface AdminContextDto {
+  currentContext: {
+    companyId: string;
+    companyName: string;
+    isTestCompany: boolean;
+    isSystemCompany: boolean;
+  } | null;
+  availableContexts: {
+    companyId: string;
+    companyName: string;
+    isTestCompany: boolean;
+    isSystemCompany: boolean;
+  }[];
+}
+
+export interface SwitchContextDto {
+  companyId: string;
 }
 

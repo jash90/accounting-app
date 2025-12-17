@@ -18,3 +18,4 @@ export * from './lib/dto/responses';
 export * from './lib/dto/requests';
 export * from './lib/services/encryption.service';
 export * from './lib/common.module';
+export * from './lib/utils/company-context.util';

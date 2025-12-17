@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { User, UserRole, Company } from '@accounting/common';
+import { User, UserRole, Company, getEffectiveCompanyId } from '@accounting/common';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
 import { AuthResponseDto, UserDto } from '../dto/auth-response.dto';
@@ -136,11 +136,15 @@ export class AuthService {
   }
 
   private generateTokens(user: User): AuthResponseDto {
+    const effectiveCompanyId = getEffectiveCompanyId(user);
+
     const payload: Record<string, any> = {
       sub: user.id,
       email: user.email,
       role: user.role,
       companyId: user.companyId,
+      activeCompanyId: user.activeCompanyId,
+      effectiveCompanyId: effectiveCompanyId,
     };
 
     const accessToken = this.jwtService.sign(payload);
@@ -157,6 +161,8 @@ export class AuthService {
   }
 
   private toUserDto(user: User): UserDto {
+    const effectiveCompanyId = getEffectiveCompanyId(user);
+
     return {
       id: user.id,
       email: user.email,
@@ -164,6 +170,8 @@ export class AuthService {
       lastName: user.lastName,
       role: user.role,
       companyId: user.companyId,
+      activeCompanyId: user.activeCompanyId ?? null,
+      effectiveCompanyId: effectiveCompanyId,
     };
   }
 }
