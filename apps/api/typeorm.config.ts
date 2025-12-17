@@ -12,6 +12,7 @@ import {
   AIContext,
   TokenUsage,
   TokenLimit,
+  EmailConfiguration,
 } from '@accounting/common';
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -48,6 +49,7 @@ export default new DataSource({
     AIContext,
     TokenUsage,
     TokenLimit,
+    EmailConfiguration,
   ],
   migrations: ['apps/api/src/migrations/*{.ts,.js}'],
   synchronize: false,
