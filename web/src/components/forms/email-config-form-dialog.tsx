@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   createEmailConfigSchema,
   updateEmailConfigSchema,
@@ -28,7 +29,7 @@ import {
   UpdateEmailConfigFormData,
 } from '@/lib/validation/schemas';
 import { EmailConfigResponseDto } from '@/types/dtos';
-import { Mail, Send, Download } from 'lucide-react';
+import { Mail, Send, Download, AlertTriangle } from 'lucide-react';
 
 interface EmailConfigFormDialogProps {
   open: boolean;
@@ -195,6 +196,17 @@ export function EmailConfigFormDialog({
                 />
               </div>
 
+              {(form.watch('smtpPort') === 465 || form.watch('smtpPort') === 587) && (
+                <Alert className="border-amber-200 bg-amber-50">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <AlertDescription className="text-amber-800 text-sm">
+                    Niektórzy dostawcy poczty (np. Onet, Interia, WP) wymagają włączenia dostępu SMTP w panelu
+                    użytkownika konta email. Jeśli wystąpią błędy uwierzytelniania, sprawdź ustawienia bezpieczeństwa
+                    w panelu swojego dostawcy poczty.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <FormField
                 control={form.control}
                 name="smtpSecure"
@@ -289,6 +301,17 @@ export function EmailConfigFormDialog({
                   )}
                 />
               </div>
+
+              {form.watch('imapPort') === 993 && (
+                <Alert className="border-amber-200 bg-amber-50">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <AlertDescription className="text-amber-800 text-sm">
+                    Niektórzy dostawcy poczty (np. Onet, Interia, WP) wymagają włączenia dostępu IMAP w panelu
+                    użytkownika konta email. Jeśli wystąpią błędy uwierzytelniania, sprawdź ustawienia bezpieczeństwa
+                    w panelu swojego dostawcy poczty.
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <FormField
                 control={form.control}
