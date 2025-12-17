@@ -22,6 +22,27 @@ export interface EmailMessage {
   html?: string;
 }
 
+export interface TestSmtpDto {
+  smtpHost: string;
+  smtpPort: number;
+  smtpSecure: boolean;
+  smtpUser: string;
+  smtpPassword: string;
+}
+
+export interface TestImapDto {
+  imapHost: string;
+  imapPort: number;
+  imapTls: boolean;
+  imapUser: string;
+  imapPassword: string;
+}
+
+export interface TestConnectionResult {
+  success: boolean;
+  message: string;
+}
+
 /**
  * Email Service for sending and receiving emails
  * Uses SMTP for sending and IMAP for receiving
