@@ -17,6 +17,7 @@ import {
   AIContext,
   TokenUsage,
   TokenLimit,
+  EmailConfiguration,
 } from '@accounting/common';
 import { AuthModule, JwtAuthGuard } from '@accounting/auth';
 import { AdminModule } from '../admin/admin.module';
@@ -55,6 +56,7 @@ import { SeedersModule } from '../seeders/seeders.module';
               AIContext,
               TokenUsage,
               TokenLimit,
+              EmailConfiguration,
             ],
             synchronize: false, // Disabled - use migrations for schema changes
             logging: !isProduction,
@@ -85,6 +87,7 @@ import { SeedersModule } from '../seeders/seeders.module';
             AIContext,
             TokenUsage,
             TokenLimit,
+            EmailConfiguration,
           ],
           synchronize: process.env.NODE_ENV !== 'production', // Auto-sync only in development
           logging: !isProduction,
