@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -77,6 +78,39 @@ export function EmailConfigFormDialog({
           displayName: '',
         },
   });
+
+  // Reset form when dialog opens with config data
+  useEffect(() => {
+    if (open && config) {
+      form.reset({
+        smtpHost: config.smtpHost,
+        smtpPort: config.smtpPort,
+        smtpSecure: config.smtpSecure,
+        smtpUser: config.smtpUser,
+        smtpPassword: '', // Never pre-fill passwords
+        imapHost: config.imapHost,
+        imapPort: config.imapPort,
+        imapTls: config.imapTls,
+        imapUser: config.imapUser,
+        imapPassword: '', // Never pre-fill passwords
+        displayName: config.displayName,
+      });
+    } else if (open && !config) {
+      form.reset({
+        smtpHost: '',
+        smtpPort: 465,
+        smtpSecure: true,
+        smtpUser: '',
+        smtpPassword: '',
+        imapHost: '',
+        imapPort: 993,
+        imapTls: true,
+        imapUser: '',
+        imapPassword: '',
+        displayName: '',
+      });
+    }
+  }, [open, config, form]);
 
   const handleSubmit = (data: CreateEmailConfigFormData | UpdateEmailConfigFormData) => {
     onSubmit(data);

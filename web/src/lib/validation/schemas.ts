@@ -240,13 +240,13 @@ export const updateEmailConfigSchema = z.object({
   smtpPort: z.number().int().min(1).max(65535).optional(),
   smtpSecure: z.boolean().optional(),
   smtpUser: z.string().email().optional(),
-  smtpPassword: z.string().min(1).optional(),
+  smtpPassword: z.string().optional(), // Empty string allowed for updates (keeps existing password)
   // IMAP Configuration
   imapHost: z.string().min(3).optional(),
   imapPort: z.number().int().min(1).max(65535).optional(),
   imapTls: z.boolean().optional(),
   imapUser: z.string().email().optional(),
-  imapPassword: z.string().min(1).optional(),
+  imapPassword: z.string().optional(), // Empty string allowed for updates (keeps existing password)
   // Optional metadata
   displayName: z.string().optional(),
 });

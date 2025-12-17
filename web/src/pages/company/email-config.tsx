@@ -49,26 +49,27 @@ export default function CompanyEmailConfigPage() {
       <PageHeader
         title="Company Email Configuration"
         description="Manage company-wide email settings for business communications"
-        icon={Building2}
-      >
-        {hasConfig ? (
-          <div className="flex gap-2">
-            <Button onClick={() => setFormOpen(true)} variant="secondary" size="sm">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Configuration
+        icon={<Building2 className="h-6 w-6" />}
+        action={
+          hasConfig ? (
+            <div className="flex gap-2">
+              <Button onClick={() => setFormOpen(true)} variant="secondary" size="sm">
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Configuration
+              </Button>
+              <Button onClick={() => setDeleteOpen(true)} variant="destructive" size="sm">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </div>
+          ) : (
+            <Button onClick={() => setFormOpen(true)} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Configuration
             </Button>
-            <Button onClick={() => setDeleteOpen(true)} variant="destructive" size="sm">
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </Button>
-          </div>
-        ) : (
-          <Button onClick={() => setFormOpen(true)} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Configuration
-          </Button>
-        )}
-      </PageHeader>
+          )
+        }
+      />
 
       {/* Important Notice */}
       <Card className="border-apptax-blue bg-apptax-soft-teal/30">
