@@ -25,7 +25,7 @@ export interface EmailMessage {
 export interface TestSmtpDto {
   smtpHost: string;
   smtpPort: number;
-  smtpSecure: boolean;
+  smtpSecure?: boolean;
   smtpUser: string;
   smtpPassword: string;
 }
@@ -33,7 +33,7 @@ export interface TestSmtpDto {
 export interface TestImapDto {
   imapHost: string;
   imapPort: number;
-  imapTls: boolean;
+  imapTls?: boolean;
   imapUser: string;
   imapPassword: string;
 }
@@ -42,6 +42,8 @@ export interface TestConnectionResult {
   success: boolean;
   message: string;
 }
+
+const CONNECTION_TIMEOUT_MS = 10000; // 10 seconds timeout
 
 /**
  * Email Service for sending and receiving emails
@@ -53,6 +55,96 @@ export class EmailService {
     private emailConfigService: EmailConfigService,
     private encryptionService: EncryptionService,
   ) {}
+
+  /**
+   * Test SMTP connection without sending an email
+   * Uses nodemailer's verify() method to validate credentials
+   */
+  async testSmtpConnection(dto: TestSmtpDto): Promise<TestConnectionResult> {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: dto.smtpHost,
+        port: dto.smtpPort,
+        secure: dto.smtpSecure ?? true,
+        auth: {
+          user: dto.smtpUser,
+          pass: dto.smtpPassword,
+        },
+        connectionTimeout: CONNECTION_TIMEOUT_MS,
+      });
+
+      await transporter.verify();
+
+      return {
+        success: true,
+        message: 'Połączenie SMTP działa poprawnie',
+      };
+    } catch (error) {
+      throw new BadRequestException(`Błąd połączenia SMTP: ${error.message}`);
+    }
+  }
+
+  /**
+   * Test IMAP connection without fetching emails
+   * Opens inbox in readonly mode to validate credentials
+   */
+  async testImapConnection(dto: TestImapDto): Promise<TestConnectionResult> {
+    return new Promise((resolve, reject) => {
+      let timeoutHandle: NodeJS.Timeout;
+      let imap: any;
+
+      try {
+        imap = new Imap({
+          user: dto.imapUser,
+          password: dto.imapPassword,
+          host: dto.imapHost,
+          port: dto.imapPort,
+          tls: dto.imapTls ?? true,
+          tlsOptions: { rejectUnauthorized: false },
+          connTimeout: CONNECTION_TIMEOUT_MS,
+          authTimeout: CONNECTION_TIMEOUT_MS,
+        });
+
+        // Set timeout for the entire operation
+        timeoutHandle = setTimeout(() => {
+          try {
+            imap.end();
+          } catch {
+            // Ignore cleanup errors
+          }
+          reject(new BadRequestException('Błąd połączenia IMAP: Przekroczono limit czasu połączenia'));
+        }, CONNECTION_TIMEOUT_MS);
+
+        imap.once('ready', () => {
+          imap.openBox('INBOX', true, (err: Error | null) => {
+            clearTimeout(timeoutHandle);
+            imap.end();
+
+            if (err) {
+              reject(new BadRequestException(`Błąd połączenia IMAP: ${err.message}`));
+            } else {
+              resolve({
+                success: true,
+                message: 'Połączenie IMAP działa poprawnie',
+              });
+            }
+          });
+        });
+
+        imap.once('error', (err: Error) => {
+          clearTimeout(timeoutHandle);
+          reject(new BadRequestException(`Błąd połączenia IMAP: ${err.message}`));
+        });
+
+        imap.connect();
+      } catch (error) {
+        if (timeoutHandle) {
+          clearTimeout(timeoutHandle);
+        }
+        reject(new BadRequestException(`Błąd połączenia IMAP: ${error.message}`));
+      }
+    });
+  }
 
   /**
    * Send email using user's SMTP configuration

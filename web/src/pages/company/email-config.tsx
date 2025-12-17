@@ -11,6 +11,8 @@ import {
   useCreateCompanyEmailConfig,
   useUpdateCompanyEmailConfig,
   useDeleteCompanyEmailConfig,
+  useTestCompanySmtp,
+  useTestCompanyImap,
 } from '@/lib/hooks/use-email-config';
 import { CreateEmailConfigFormData, UpdateEmailConfigFormData } from '@/lib/validation/schemas';
 import { Building2, Edit, Trash2, Plus, Server, Lock, AlertCircle } from 'lucide-react';
@@ -20,6 +22,8 @@ export default function CompanyEmailConfigPage() {
   const createConfig = useCreateCompanyEmailConfig();
   const updateConfig = useUpdateCompanyEmailConfig();
   const deleteConfig = useDeleteCompanyEmailConfig();
+  const testSmtp = useTestCompanySmtp();
+  const testImap = useTestCompanyImap();
 
   const [formOpen, setFormOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -273,6 +277,10 @@ export default function CompanyEmailConfigPage() {
         config={hasConfig ? emailConfig : undefined}
         onSubmit={hasConfig ? handleUpdate : handleCreate}
         type="company"
+        onTestSmtp={(data) => testSmtp.mutate(data)}
+        onTestImap={(data) => testImap.mutate(data)}
+        isTestingSmtp={testSmtp.isPending}
+        isTestingImap={testImap.isPending}
       />
 
       {/* Delete Confirmation */}

@@ -480,3 +480,24 @@ export interface UpdateEmailConfigDto {
   displayName?: string;
 }
 
+export interface TestSmtpDto {
+  smtpHost: string;
+  smtpPort: number;
+  smtpSecure?: boolean;
+  smtpUser: string;
+  smtpPassword: string;
+}
+
+export interface TestImapDto {
+  imapHost: string;
+  imapPort: number;
+  imapTls?: boolean;
+  imapUser: string;
+  imapPassword: string;
+}
+
+export interface TestConnectionResultDto {
+  success: boolean;
+  message: string;
+}
+

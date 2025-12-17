@@ -3,6 +3,9 @@ import {
   EmailConfigResponseDto,
   CreateEmailConfigDto,
   UpdateEmailConfigDto,
+  TestSmtpDto,
+  TestImapDto,
+  TestConnectionResultDto,
 } from '@/types/dtos';
 
 export const emailConfigApi = {
@@ -60,5 +63,38 @@ export const emailConfigApi = {
 
   deleteCompanyConfig: async (): Promise<void> => {
     await apiClient.delete('/api/email-config/company');
+  },
+
+  // Connection Testing
+  testSmtp: async (data: TestSmtpDto): Promise<TestConnectionResultDto> => {
+    const { data: result } = await apiClient.post<TestConnectionResultDto>(
+      '/api/email-config/test/smtp',
+      data
+    );
+    return result;
+  },
+
+  testImap: async (data: TestImapDto): Promise<TestConnectionResultDto> => {
+    const { data: result } = await apiClient.post<TestConnectionResultDto>(
+      '/api/email-config/test/imap',
+      data
+    );
+    return result;
+  },
+
+  testCompanySmtp: async (data: TestSmtpDto): Promise<TestConnectionResultDto> => {
+    const { data: result } = await apiClient.post<TestConnectionResultDto>(
+      '/api/email-config/test/company/smtp',
+      data
+    );
+    return result;
+  },
+
+  testCompanyImap: async (data: TestImapDto): Promise<TestConnectionResultDto> => {
+    const { data: result } = await apiClient.post<TestConnectionResultDto>(
+      '/api/email-config/test/company/imap',
+      data
+    );
+    return result;
   },
 };

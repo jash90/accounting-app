@@ -31,6 +31,7 @@ import { EmailService } from '../services/email.service';
 import { CreateEmailConfigDto } from '../dto/create-email-config.dto';
 import { UpdateEmailConfigDto } from '../dto/update-email-config.dto';
 import { SendEmailDto } from '../dto/send-email.dto';
+import { TestSmtpDto, TestImapDto, TestConnectionResultDto } from '../dto/test-connection.dto';
 import { CurrentUser, Roles, RolesGuard } from '@accounting/auth';
 import { User, UserRole, EmailConfiguration } from '@accounting/common';
 import { OwnerOrAdminGuard } from '@accounting/rbac';
@@ -133,6 +134,36 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   async checkInbox(@CurrentUser() user: User, @Query('limit') limit?: number) {
     return this.emailService.checkInbox(user.id, limit || 10);
+  }
+
+  // ========== CONNECTION TEST ENDPOINTS ==========
+
+  @Post('test/smtp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Test SMTP connection',
+    description: 'Test SMTP connection without sending an email. Validates credentials and server connectivity.',
+  })
+  @ApiBody({ type: TestSmtpDto })
+  @ApiOkResponse({ description: 'SMTP connection test result', type: TestConnectionResultDto })
+  @ApiBadRequestResponse({ description: 'SMTP connection failed' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  async testSmtp(@Body() testDto: TestSmtpDto) {
+    return this.emailService.testSmtpConnection(testDto);
+  }
+
+  @Post('test/imap')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Test IMAP connection',
+    description: 'Test IMAP connection without fetching emails. Validates credentials and server connectivity.',
+  })
+  @ApiBody({ type: TestImapDto })
+  @ApiOkResponse({ description: 'IMAP connection test result', type: TestConnectionResultDto })
+  @ApiBadRequestResponse({ description: 'IMAP connection failed' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  async testImap(@Body() testDto: TestImapDto) {
+    return this.emailService.testImapConnection(testDto);
   }
 
   // ========== COMPANY EMAIL CONFIGURATION ENDPOINTS ==========
@@ -260,5 +291,47 @@ export class EmailConfigController {
       throw new ForbiddenException('User is not associated with a company');
     }
     return this.emailService.checkCompanyInbox(user.companyId, limit || 10);
+  }
+
+  // ========== COMPANY CONNECTION TEST ENDPOINTS ==========
+
+  @Post('test/company/smtp')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(RolesGuard, OwnerOrAdminGuard)
+  @Roles(UserRole.COMPANY_OWNER)
+  @ApiOperation({
+    summary: 'Test company SMTP connection',
+    description: 'Test SMTP connection for company without sending an email (COMPANY_OWNER only)',
+  })
+  @ApiBody({ type: TestSmtpDto })
+  @ApiOkResponse({ description: 'SMTP connection test result', type: TestConnectionResultDto })
+  @ApiBadRequestResponse({ description: 'SMTP connection failed' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER role required' })
+  async testCompanySmtp(@CurrentUser() user: User, @Body() testDto: TestSmtpDto) {
+    if (!user.companyId) {
+      throw new ForbiddenException('User is not associated with a company');
+    }
+    return this.emailService.testSmtpConnection(testDto);
+  }
+
+  @Post('test/company/imap')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(RolesGuard, OwnerOrAdminGuard)
+  @Roles(UserRole.COMPANY_OWNER)
+  @ApiOperation({
+    summary: 'Test company IMAP connection',
+    description: 'Test IMAP connection for company without fetching emails (COMPANY_OWNER only)',
+  })
+  @ApiBody({ type: TestImapDto })
+  @ApiOkResponse({ description: 'IMAP connection test result', type: TestConnectionResultDto })
+  @ApiBadRequestResponse({ description: 'IMAP connection failed' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER role required' })
+  async testCompanyImap(@CurrentUser() user: User, @Body() testDto: TestImapDto) {
+    if (!user.companyId) {
+      throw new ForbiddenException('User is not associated with a company');
+    }
+    return this.emailService.testImapConnection(testDto);
   }
 }
