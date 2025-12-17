@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   OneToMany,
+  OneToOne,
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
@@ -16,6 +17,7 @@ import { AIConversation } from './ai-conversation.entity';
 import { AIContext } from './ai-context.entity';
 import { TokenUsage } from './token-usage.entity';
 import { TokenLimit } from './token-limit.entity';
+import { EmailConfiguration } from './email-configuration.entity';
 
 @Entity('companies')
 export class Company {
@@ -55,6 +57,9 @@ export class Company {
 
   @OneToMany(() => TokenLimit, (limit) => limit.company)
   tokenLimits!: TokenLimit[];
+
+  @OneToOne(() => EmailConfiguration, (config) => config.company, { nullable: true })
+  emailConfig?: EmailConfiguration | null;
 
   @Column({ default: false })
   isSystemCompany!: boolean;
