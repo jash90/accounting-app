@@ -87,5 +87,10 @@ export const queryKeys = {
   companySettings: {
     me: ['company-settings', 'me'] as const,
   },
+  emailConfig: {
+    user: ['email-config', 'user'] as const,
+    company: ['email-config', 'company'] as const,
+    systemAdmin: ['email-config', 'system-admin'] as const,
+  },
 };
 

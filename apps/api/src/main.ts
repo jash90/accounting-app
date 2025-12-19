@@ -5,6 +5,8 @@ import helmet from 'helmet';
 import { AppModule } from './app/app.module';
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { SeedersModule } from './seeders/seeders.module';
+import { SeederService } from './seeders/seeder.service';
 
 // Parse CORS origins at module scope for O(1) lookups
 const allowedOrigins = new Set(
@@ -15,6 +17,24 @@ const allowedOrigins = new Set(
 );
 
 async function bootstrap() {
+  // One-time seed mode: Run full seeder and exit
+  if (process.env.RUN_SEED === 'true') {
+    console.log('🌱 Running one-time database seed...');
+    const app = await NestFactory.createApplicationContext(AppModule);
+    try {
+      const seedersModule = app.select(SeedersModule);
+      const seeder = seedersModule.get(SeederService);
+      await seeder.seed();
+      console.log('✅ Seeding completed successfully');
+    } catch (error) {
+      console.error('❌ Seeding failed:', error);
+      await app.close();
+      process.exit(1);
+    }
+    await app.close();
+    process.exit(0);
+  }
+
   const app = await NestFactory.create(AppModule);
 
   // Security
