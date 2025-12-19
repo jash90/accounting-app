@@ -10,10 +10,12 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useAuthContext } from '@/contexts/auth-context';
-import { User, LogOut, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { User, LogOut, Settings, Mail } from 'lucide-react';
 
 export function UserMenu() {
   const { user, logout } = useAuthContext();
+  const navigate = useNavigate();
 
   if (!user) return null;
 
@@ -52,6 +54,13 @@ export function UserMenu() {
         <DropdownMenuItem className="cursor-pointer hover:bg-apptax-soft-teal">
           <Settings className="mr-2 h-4 w-4 text-apptax-navy" />
           Settings
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => navigate('/settings/email-config')}
+          className="cursor-pointer hover:bg-apptax-soft-teal"
+        >
+          <Mail className="mr-2 h-4 w-4 text-apptax-teal" />
+          Email Settings
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem

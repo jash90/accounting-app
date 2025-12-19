@@ -423,3 +423,82 @@ export interface OpenAIModelDto {
   created?: number;
 }
 
+// Email Configuration DTOs
+export interface EmailConfigResponseDto {
+  id: string;
+  userId: string | null;
+  companyId: string | null;
+  user?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+  company?: {
+    id: string;
+    name: string;
+  } | null;
+  smtpHost: string;
+  smtpPort: number;
+  smtpSecure: boolean;
+  smtpUser: string;
+  imapHost: string;
+  imapPort: number;
+  imapTls: boolean;
+  imapUser: string;
+  displayName: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateEmailConfigDto {
+  smtpHost: string;
+  smtpPort: number;
+  smtpSecure: boolean;
+  smtpUser: string;
+  smtpPassword: string;
+  imapHost: string;
+  imapPort: number;
+  imapTls: boolean;
+  imapUser: string;
+  imapPassword: string;
+  displayName?: string;
+}
+
+export interface UpdateEmailConfigDto {
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpSecure?: boolean;
+  smtpUser?: string;
+  smtpPassword?: string;
+  imapHost?: string;
+  imapPort?: number;
+  imapTls?: boolean;
+  imapUser?: string;
+  imapPassword?: string;
+  displayName?: string;
+}
+
+export interface TestSmtpDto {
+  smtpHost: string;
+  smtpPort: number;
+  smtpSecure?: boolean;
+  smtpUser: string;
+  smtpPassword: string;
+}
+
+export interface TestImapDto {
+  imapHost: string;
+  imapPort: number;
+  imapTls?: boolean;
+  imapUser: string;
+  imapPassword: string;
+}
+
+export interface TestConnectionResultDto {
+  success: boolean;
+  message: string;
+}
+
+

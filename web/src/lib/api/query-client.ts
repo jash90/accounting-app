@@ -65,5 +65,10 @@ export const queryKeys = {
         ['ai-agent', 'token-limit', targetType, targetId] as const,
     },
   },
+  emailConfig: {
+    user: ['email-config', 'user'] as const,
+    company: ['email-config', 'company'] as const,
+    systemAdmin: ['email-config', 'system-admin'] as const,
+  },
 };
 

@@ -26,6 +26,7 @@ import { ModulesModule } from '../modules/modules.module';
 import { SimpleTextModule } from '@accounting/modules/simple-text';
 import { AIAgentModule } from '@accounting/modules/ai-agent';
 import { SeedersModule } from '../seeders/seeders.module';
+import { EmailConfigModule } from '../email-config/email-config.module';
 
 @Module({
   imports: [
@@ -103,6 +104,7 @@ import { SeedersModule } from '../seeders/seeders.module';
     AIAgentModule,
     ModulesModule,
     SeedersModule,
+    EmailConfigModule,
   ],
   controllers: [AppController],
   providers: [

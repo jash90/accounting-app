@@ -18,7 +18,9 @@ export default function AdminLayout() {
         <header className="bg-white border-b border-gray-200 shadow-apptax-sm">
           <div className="flex h-16 items-center justify-between px-6">
             <div className="flex-1" />
-            <UserMenu />
+            <div className="flex items-center gap-3">
+              <UserMenu />
+            </div>
           </div>
         </header>
 
