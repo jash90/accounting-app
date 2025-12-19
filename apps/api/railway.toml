@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "pnpm install --frozen-lockfile && pnpm run build && pnpm run db:migrate:prod"
+buildCommand = "pnpm install --frozen-lockfile && pnpm run build && pnpm run db:migrate:prod && if [ \"$RUN_SEED\" = \"true\" ]; then pnpm run seed:prod; fi"
 
 [deploy]
 startCommand = "node dist/apps/api/main.js"
