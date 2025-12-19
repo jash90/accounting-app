@@ -214,3 +214,42 @@ export const setTokenLimitSchema = z.object({
 
 export type SetTokenLimitFormData = z.infer<typeof setTokenLimitSchema>;
 
+// Email Configuration Schemas
+export const createEmailConfigSchema = z.object({
+  // SMTP Configuration
+  smtpHost: z.string().min(3, 'SMTP host is required'),
+  smtpPort: z.number().int().min(1, 'Port must be at least 1').max(65535, 'Port must be at most 65535'),
+  smtpSecure: z.boolean(),
+  smtpUser: z.string().email('Invalid email address'),
+  smtpPassword: z.string().min(1, 'SMTP password is required'),
+  // IMAP Configuration
+  imapHost: z.string().min(3, 'IMAP host is required'),
+  imapPort: z.number().int().min(1, 'Port must be at least 1').max(65535, 'Port must be at most 65535'),
+  imapTls: z.boolean(),
+  imapUser: z.string().email('Invalid email address'),
+  imapPassword: z.string().min(1, 'IMAP password is required'),
+  // Optional metadata
+  displayName: z.string().optional(),
+});
+
+export type CreateEmailConfigFormData = z.infer<typeof createEmailConfigSchema>;
+
+export const updateEmailConfigSchema = z.object({
+  // SMTP Configuration
+  smtpHost: z.string().min(3).optional(),
+  smtpPort: z.number().int().min(1).max(65535).optional(),
+  smtpSecure: z.boolean().optional(),
+  smtpUser: z.string().email().optional(),
+  smtpPassword: z.string().optional(), // Empty string allowed for updates (keeps existing password)
+  // IMAP Configuration
+  imapHost: z.string().min(3).optional(),
+  imapPort: z.number().int().min(1).max(65535).optional(),
+  imapTls: z.boolean().optional(),
+  imapUser: z.string().email().optional(),
+  imapPassword: z.string().optional(), // Empty string allowed for updates (keeps existing password)
+  // Optional metadata
+  displayName: z.string().optional(),
+});
+
+export type UpdateEmailConfigFormData = z.infer<typeof updateEmailConfigSchema>;
+
