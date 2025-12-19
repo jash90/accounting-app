@@ -27,22 +27,21 @@ export class SimpleTextService {
   }
 
   async findAll(user: User): Promise<SimpleText[]> {
-    // ADMIN can view only System Admin company records (their own texts)
+    // For ADMINs: use system company
+    // For non-ADMINs: use their regular companyId
+    let companyId = user.companyId;
+
     if (user.role === UserRole.ADMIN) {
       const systemCompany = await this.getSystemCompany();
-      return this.simpleTextRepository.find({
-        where: { companyId: systemCompany.id },
-        relations: ['createdBy', 'company'],
-        order: { createdAt: 'DESC' },
-      });
+      companyId = systemCompany.id;
     }
 
-    if (!user.companyId) {
+    if (!companyId) {
       return [];
     }
 
     return this.simpleTextRepository.find({
-      where: { companyId: user.companyId },
+      where: { companyId },
       relations: ['createdBy', 'company'],
       order: { createdAt: 'DESC' },
     });
@@ -58,17 +57,16 @@ export class SimpleTextService {
       throw new NotFoundException(`SimpleText with ID ${id} not found`);
     }
 
-    // ADMIN can only view System Admin company records
+    // Get effective company ID
+    let companyId = user.companyId;
+
     if (user.role === UserRole.ADMIN) {
       const systemCompany = await this.getSystemCompany();
-      if (simpleText.companyId !== systemCompany.id) {
-        throw new NotFoundException(`SimpleText with ID ${id} not found`);
-      }
-      return simpleText;
+      companyId = systemCompany.id;
     }
 
     // Ensure user can only access texts from their company
-    if (user.companyId !== simpleText.companyId) {
+    if (companyId !== simpleText.companyId) {
       throw new ForbiddenException('Access denied to this resource');
     }
 
@@ -76,32 +74,21 @@ export class SimpleTextService {
   }
 
   async create(createSimpleTextDto: CreateSimpleTextDto, user: User): Promise<SimpleText> {
-    // ADMIN creates entries in System Admin company
+    // Get effective company ID
+    let companyId = user.companyId;
+
     if (user.role === UserRole.ADMIN) {
       const systemCompany = await this.getSystemCompany();
-
-      const simpleText = this.simpleTextRepository.create({
-        content: createSimpleTextDto.content,
-        companyId: systemCompany.id, // Use system company instead of null
-        createdById: user.id,
-      });
-      const saved = await this.simpleTextRepository.save(simpleText);
-
-      // Load relations to match findAll() response structure
-      return this.simpleTextRepository.findOne({
-        where: { id: saved.id },
-        relations: ['createdBy', 'company'],
-      }) as Promise<SimpleText>;
+      companyId = systemCompany.id;
     }
 
-    // Company users create company entries
-    if (!user.companyId) {
+    if (!companyId) {
       throw new ForbiddenException('User is not associated with a company');
     }
 
     const simpleText = this.simpleTextRepository.create({
       content: createSimpleTextDto.content,
-      companyId: user.companyId,
+      companyId,
       createdById: user.id,
     });
     const saved = await this.simpleTextRepository.save(simpleText);
@@ -114,20 +101,8 @@ export class SimpleTextService {
   }
 
   async update(id: string, updateSimpleTextDto: UpdateSimpleTextDto, user: User): Promise<SimpleText> {
+    // findOne already validates access
     const simpleText = await this.findOne(id, user);
-
-    // ADMIN can only update System Admin company entries
-    if (user.role === UserRole.ADMIN) {
-      const systemCompany = await this.getSystemCompany();
-      if (simpleText.companyId !== systemCompany.id) {
-        throw new ForbiddenException('Admins cannot modify company data');
-      }
-    } else {
-      // Company users can only update their company's entries
-      if (simpleText.companyId !== user.companyId) {
-        throw new ForbiddenException('Cannot modify entries from other companies');
-      }
-    }
 
     Object.assign(simpleText, updateSimpleTextDto);
     const saved = await this.simpleTextRepository.save(simpleText);
@@ -140,22 +115,9 @@ export class SimpleTextService {
   }
 
   async remove(id: string, user: User): Promise<void> {
+    // findOne already validates access
     const simpleText = await this.findOne(id, user);
-
-    // ADMIN can only delete System Admin company entries
-    if (user.role === UserRole.ADMIN) {
-      const systemCompany = await this.getSystemCompany();
-      if (simpleText.companyId !== systemCompany.id) {
-        throw new ForbiddenException('Admins cannot delete company data');
-      }
-    } else {
-      // Company users can only delete their company's entries
-      if (simpleText.companyId !== user.companyId) {
-        throw new ForbiddenException('Cannot delete entries from other companies');
-      }
-    }
 
     await this.simpleTextRepository.remove(simpleText);
   }
 }
-

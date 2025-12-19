@@ -25,6 +25,7 @@ import {
   ClientIconAssignment,
   NotificationSettings,
   ClientDeleteRequest,
+  EmailConfiguration,
 } from '@accounting/common';
 import { AuthModule, JwtAuthGuard } from '@accounting/auth';
 import { AdminModule } from '../admin/admin.module';
@@ -34,6 +35,7 @@ import { SimpleTextModule } from '@accounting/modules/simple-text';
 import { AIAgentModule } from '@accounting/modules/ai-agent';
 import { ClientsModule } from '@accounting/modules/clients';
 import { SeedersModule } from '../seeders/seeders.module';
+import { EmailConfigModule } from '../email-config/email-config.module';
 import { EmailModule } from '@accounting/infrastructure/email';
 import { StorageModule } from '@accounting/infrastructure/storage';
 import { ChangeLogModule } from '@accounting/infrastructure/change-log';
@@ -75,6 +77,7 @@ import { ChangeLogModule } from '@accounting/infrastructure/change-log';
               ClientIconAssignment,
               NotificationSettings,
               ClientDeleteRequest,
+              EmailConfiguration,
             ],
             synchronize: false, // Disabled - use migrations for schema changes
             logging: !isProduction,
@@ -113,6 +116,7 @@ import { ChangeLogModule } from '@accounting/infrastructure/change-log';
             ClientIconAssignment,
             NotificationSettings,
             ClientDeleteRequest,
+            EmailConfiguration,
           ],
           synchronize: process.env.NODE_ENV !== 'production', // Auto-sync only in development
           logging: !isProduction,
@@ -132,6 +136,7 @@ import { ChangeLogModule } from '@accounting/infrastructure/change-log';
     EmailModule,
     StorageModule.forRoot(),
     ChangeLogModule,
+    EmailConfigModule,
   ],
   controllers: [AppController],
   providers: [

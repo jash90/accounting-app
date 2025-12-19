@@ -33,10 +33,10 @@ export class CreateSystemCompany1700000000001 implements MigrationInterface {
     `);
 
     if (adminUsers.length === 0) {
-      throw new Error(
-        'No active ADMIN user found. Cannot create System Admin company. ' +
-        'Please ensure at least one admin user exists before running this migration.'
-      );
+      console.log('ℹ️ No ADMIN user found - skipping data migration.');
+      console.log('ℹ️ System Admin company will be created by seeder.');
+      console.log('✅ Schema changes (isSystemCompany column) applied successfully.');
+      return; // Exit early, schema changes already applied
     }
 
     const adminUserId = adminUsers[0].id;

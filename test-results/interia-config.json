@@ -1,0 +1,13 @@
+{
+  "displayName": "Interia Email Account",
+  "smtpHost": "poczta.interia.pl",
+  "smtpPort": 465,
+  "smtpSecure": true,
+  "smtpUser": "bartlomiej.zimny@interia.pl",
+  "smtpPassword": "qYmX1ru3AHgmYZHNKMP^",
+  "imapHost": "poczta.interia.pl",
+  "imapPort": 993,
+  "imapTls": true,
+  "imapUser": "bartlomiej.zimny@interia.pl",
+  "imapPassword": "qYmX1ru3AHgmYZHNKMP^"
+}

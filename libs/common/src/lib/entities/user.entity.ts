@@ -5,12 +5,14 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
+  OneToOne,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { UserRole } from '../enums/user-role.enum';
 import { Company } from './company.entity';
 import { UserModulePermission } from './user-module-permission.entity';
+import { EmailConfiguration } from './email-configuration.entity';
 
 @Entity('users')
 export class User {
@@ -47,6 +49,9 @@ export class User {
 
   @OneToMany(() => UserModulePermission, (permission) => permission.user)
   modulePermissions!: UserModulePermission[];
+
+  @OneToOne(() => EmailConfiguration, (config) => config.user, { nullable: true })
+  emailConfig?: EmailConfiguration | null;
 
   @CreateDateColumn()
   createdAt!: Date;

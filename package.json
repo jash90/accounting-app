@@ -19,7 +19,8 @@
     "seed": "ts-node -P apps/api/tsconfig.app.json -r tsconfig-paths/register apps/api/src/seeders/seed.ts",
     "migration:compile:prod": "tsc apps/api/typeorm.prod.config.ts apps/api/src/migrations/*.ts --outDir dist/apps/api --module commonjs --target ES2021 --esModuleInterop --experimentalDecorators --emitDecoratorMetadata --skipLibCheck --resolveJsonModule",
     "migration:run:prod": "cd dist/apps/api && node ../../../node_modules/typeorm/cli.js migration:run -d typeorm.prod.config.js",
-    "db:migrate:prod": "npm run migration:compile:prod && npm run migration:run:prod"
+    "db:migrate:prod": "npm run migration:compile:prod && npm run migration:run:prod",
+    "seed:prod": "node dist/apps/api/main.js"
   },
   "private": true,
   "dependencies": {
@@ -45,8 +46,10 @@
     "date-fns": "^4.1.0",
     "handlebars": "^4.7.8",
     "helmet": "^8.1.0",
+    "mailparser": "^3.7.1",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^7.0.11",
+    "node-imap": "^0.9.6",
     "openai": "^4.77.3",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -116,6 +119,7 @@
     "@types/multer": "^1.4.12",
     "@types/node": "^24.10.0",
     "@types/nodemailer": "^7.0.4",
+    "@types/node-imap": "^0.9.3",
     "@types/passport-jwt": "^4.0.1",
     "@types/pdf-parse": "^1.1.4",
     "@types/pg": "^8.15.6",
