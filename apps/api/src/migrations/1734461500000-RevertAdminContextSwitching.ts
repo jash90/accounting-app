@@ -2,20 +2,25 @@ import { MigrationInterface, QueryRunner, TableColumn, TableForeignKey } from "t
 
 export class RevertAdminContextSwitching1734461500000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Drop foreign key constraint first
-    const usersTable = await queryRunner.getTable("users");
-    const foreignKey = usersTable?.foreignKeys.find(
-      (fk) => fk.columnNames.indexOf("activeCompanyId") !== -1
-    );
-    if (foreignKey) {
-      await queryRunner.dropForeignKey("users", foreignKey);
+    // Check and drop activeCompanyId from users (idempotent)
+    const hasActiveCompanyId = await queryRunner.hasColumn("users", "activeCompanyId");
+    if (hasActiveCompanyId) {
+      // Drop foreign key constraint first
+      const usersTable = await queryRunner.getTable("users");
+      const foreignKey = usersTable?.foreignKeys.find(
+        (fk) => fk.columnNames.indexOf("activeCompanyId") !== -1
+      );
+      if (foreignKey) {
+        await queryRunner.dropForeignKey("users", foreignKey);
+      }
+      await queryRunner.dropColumn("users", "activeCompanyId");
     }
 
-    // Drop activeCompanyId column from users
-    await queryRunner.dropColumn("users", "activeCompanyId");
-
-    // Drop isTestCompany column from companies
-    await queryRunner.dropColumn("companies", "isTestCompany");
+    // Check and drop isTestCompany from companies (idempotent)
+    const hasIsTestCompany = await queryRunner.hasColumn("companies", "isTestCompany");
+    if (hasIsTestCompany) {
+      await queryRunner.dropColumn("companies", "isTestCompany");
+    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
