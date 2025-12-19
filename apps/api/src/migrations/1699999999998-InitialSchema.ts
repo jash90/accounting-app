@@ -48,17 +48,27 @@ export class InitialSchema1699999999998 implements MigrationInterface {
       )
     `);
 
-    // 3. Add FK constraints for circular dependency
+    // 3. Add FK constraints for circular dependency (idempotent)
     await queryRunner.query(`
-      ALTER TABLE "users"
-      ADD CONSTRAINT "FK_users_company"
-      FOREIGN KEY ("companyId") REFERENCES "companies"("id") ON DELETE SET NULL
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'FK_users_company') THEN
+          ALTER TABLE "users"
+          ADD CONSTRAINT "FK_users_company"
+          FOREIGN KEY ("companyId") REFERENCES "companies"("id") ON DELETE SET NULL;
+        END IF;
+      END $$;
     `);
 
     await queryRunner.query(`
-      ALTER TABLE "companies"
-      ADD CONSTRAINT "FK_companies_owner"
-      FOREIGN KEY ("ownerId") REFERENCES "users"("id") ON DELETE NO ACTION
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'FK_companies_owner') THEN
+          ALTER TABLE "companies"
+          ADD CONSTRAINT "FK_companies_owner"
+          FOREIGN KEY ("ownerId") REFERENCES "users"("id") ON DELETE NO ACTION;
+        END IF;
+      END $$;
     `);
 
     // 4. Create modules table
