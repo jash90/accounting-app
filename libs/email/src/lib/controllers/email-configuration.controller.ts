@@ -9,23 +9,37 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
 import { OwnerOrAdminGuard } from '@accounting/rbac';
 import { User } from '@accounting/common';
 import { EmailConfigurationService } from '../services/email-configuration.service';
+import { EmailAutodiscoveryService } from '../services/email-autodiscovery.service';
 import { CreateEmailConfigDto } from '../dto/create-email-config.dto';
 import { UpdateEmailConfigDto } from '../dto/update-email-config.dto';
 import { EmailConfigResponseDto } from '../dto/email-config-response.dto';
+import {
+  AutodiscoverRequestDto,
+  AutodiscoverResponseDto,
+} from '../dto/autodiscover.dto';
 
 /**
  * Controller for managing email configurations
  * Provides separate endpoints for user and company configurations
  */
+@ApiTags('Email Configuration')
+@ApiBearerAuth('JWT-auth')
 @Controller('email-config')
 @UseGuards(JwtAuthGuard)
 export class EmailConfigurationController {
   constructor(
     private readonly emailConfigService: EmailConfigurationService,
+    private readonly autodiscoveryService: EmailAutodiscoveryService,
   ) {}
 
   // ==================== USER ENDPOINTS ====================
@@ -132,5 +146,35 @@ export class EmailConfigurationController {
       throw new Error('User is not associated with a company');
     }
     return this.emailConfigService.deleteCompanyConfig(user.companyId);
+  }
+
+  // ==================== AUTODISCOVERY ENDPOINTS ====================
+
+  /**
+   * Auto-discover email server configuration
+   * Attempts to find SMTP/IMAP settings for the given email address
+   * Uses multiple discovery methods: known providers, Autoconfig, Autodiscover, DNS SRV, MX heuristics
+   */
+  @Post('autodiscover')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Auto-discover email server configuration',
+    description:
+      'Attempts to automatically discover SMTP and IMAP server settings for the given email address. ' +
+      'Uses multiple discovery methods in sequence: known provider database, Mozilla Autoconfig, ' +
+      'Microsoft Autodiscover, DNS SRV records, and MX record heuristics.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Discovery completed (check success field for result)',
+    type: AutodiscoverResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid email address format' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - JWT token required' })
+  async autodiscover(
+    @Body() dto: AutodiscoverRequestDto,
+  ): Promise<AutodiscoverResponseDto> {
+    const result = await this.autodiscoveryService.discover(dto.email);
+    return AutodiscoverResponseDto.fromResult(result);
   }
 }

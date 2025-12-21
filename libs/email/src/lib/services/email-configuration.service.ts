@@ -395,4 +395,38 @@ export class EmailConfigurationService {
       displayName: dto.displayName ?? config.displayName,
     };
   }
+
+  /**
+   * Get company's email configuration by companyId
+   * Returns null if not found
+   */
+  async findCompanyConfig(companyId: string): Promise<EmailConfiguration | null> {
+    return this.emailConfigRepo.findOne({
+      where: { companyId },
+    });
+  }
+
+  /**
+   * Get decrypted SMTP config for a company by companyId
+   * For internal use - sending emails from company address
+   */
+  async getDecryptedSmtpConfigByCompanyId(companyId: string): Promise<SmtpConfig | null> {
+    const config = await this.emailConfigRepo.findOne({
+      where: { companyId },
+    });
+
+    if (!config || !config.isActive) {
+      return null;
+    }
+
+    return {
+      host: config.smtpHost,
+      port: config.smtpPort,
+      secure: config.smtpSecure,
+      auth: {
+        user: config.smtpUser,
+        pass: this.encryptionService.decrypt(config.smtpPassword),
+      },
+    };
+  }
 }

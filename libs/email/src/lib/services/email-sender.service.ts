@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
-import { SmtpConfig, EmailMessage } from '../interfaces/email-message.interface';
+import { SmtpConfig } from '../interfaces/email-config.interface';
+import { EmailMessage } from '../interfaces/email-message.interface';
 
 /**
  * Service for sending emails via SMTP
@@ -39,7 +40,7 @@ export class EmailSenderService {
     try {
       const transporter = this.getOrCreateTransporter(smtpConfig);
 
-      const mailOptions = {
+      const mailOptions: nodemailer.SendMailOptions = {
         from: message.from || smtpConfig.auth.user,
         to: Array.isArray(message.to) ? message.to.join(', ') : message.to,
         subject: message.subject,
@@ -48,14 +49,14 @@ export class EmailSenderService {
         cc: Array.isArray(message.cc) ? message.cc.join(', ') : message.cc,
         bcc: Array.isArray(message.bcc) ? message.bcc.join(', ') : message.bcc,
         replyTo: message.replyTo,
-        attachments: message.attachments,
+        attachments: message.attachments as nodemailer.SendMailOptions['attachments'],
         headers: message.headers,
       };
 
       const info = await transporter.sendMail(mailOptions);
 
-      this.logger.log(`Email sent successfully: ${info.messageId}`);
-      this.logger.debug(`Preview URL: ${nodemailer.getTestMessageUrl(info)}`);
+      this.logger.log(`Email sent successfully: ${(info as { messageId?: string }).messageId}`);
+      this.logger.debug(`Preview URL: ${nodemailer.getTestMessageUrl(info as nodemailer.SentMessageInfo)}`);
     } catch (error) {
       this.logger.error(`Failed to send email: ${error.message}`, error.stack);
       throw error;
