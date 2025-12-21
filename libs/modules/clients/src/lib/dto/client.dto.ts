@@ -97,6 +97,11 @@ export class CreateClientDto {
   @IsOptional()
   @IsEnum(ZusStatus)
   zusStatus?: ZusStatus;
+
+  @ApiPropertyOptional({ description: 'Whether client should receive email copies' })
+  @IsOptional()
+  @IsBoolean()
+  receiveEmailCopy?: boolean;
 }
 
 export class UpdateClientDto extends PartialType(CreateClientDto) {}

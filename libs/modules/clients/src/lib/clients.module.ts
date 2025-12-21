@@ -14,6 +14,7 @@ import {
 } from '@accounting/common';
 import { RBACModule } from '@accounting/rbac';
 import { StorageModule } from '@accounting/infrastructure/storage';
+import { EmailModule } from '@accounting/email';
 import { ClientsService } from './services/clients.service';
 import { CustomFieldsService } from './services/custom-fields.service';
 import { ClientIconsService } from './services/client-icons.service';
@@ -44,6 +45,7 @@ import { DeleteRequestsController } from './controllers/delete-requests.controll
     ]),
     RBACModule,
     StorageModule,
+    EmailModule,
   ],
   controllers: [
     // More specific routes must be registered before generic /:id routes

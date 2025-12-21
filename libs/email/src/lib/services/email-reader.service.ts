@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as Imap from 'node-imap';
+import Imap from 'node-imap';
 import { simpleParser, ParsedMail, AddressObject } from 'mailparser';
-import { ImapConfig, ReceivedEmail, FetchEmailsOptions, EmailAddress } from '../interfaces/email-message.interface';
+import { ImapConfig } from '../interfaces/email-config.interface';
+import { ReceivedEmail, FetchEmailsOptions, EmailAddress } from '../interfaces/email-message.interface';
 
 /**
  * Service for reading emails via IMAP

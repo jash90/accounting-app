@@ -1,15 +1,28 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
+import * as handlebars from 'handlebars';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   Client,
   User,
   NotificationSettings,
   ChangeLog,
   Company,
+  VatStatusLabels,
+  TaxSchemeLabels,
+  ZusStatusLabels,
+  EmploymentTypeLabels,
+  AmlGroupLabels,
 } from '@accounting/common';
 import { EmailService } from '@accounting/infrastructure/email';
 import { ChangeLogService, ChangeDetail } from '@accounting/infrastructure/change-log';
+import {
+  EmailConfigurationService,
+  EmailSenderService,
+  SmtpConfig,
+} from '@accounting/email';
 
 @Injectable()
 export class ClientChangelogService {
@@ -25,7 +38,19 @@ export class ClientChangelogService {
     private readonly companyRepository: Repository<Company>,
     private readonly emailService: EmailService,
     private readonly changeLogService: ChangeLogService,
+    private readonly emailConfigService: EmailConfigurationService,
+    private readonly emailSenderService: EmailSenderService,
   ) {}
+
+  private readonly templatesDir = path.join(
+    process.cwd(),
+    'libs',
+    'infrastructure',
+    'email',
+    'src',
+    'lib',
+    'templates',
+  );
 
   async getClientChangelog(
     clientId: string,
@@ -40,33 +65,35 @@ export class ClientChangelogService {
   }
 
   async notifyClientCreated(client: Client, performedBy: User): Promise<void> {
-    const recipients = await this.getNotificationRecipients(
-      client.companyId,
-      'receiveOnCreate',
-      performedBy.id,
-    );
-
-    if (recipients.length === 0) {
-      return;
-    }
-
     const company = await this.companyRepository.findOne({
       where: { id: client.companyId },
     });
 
-    try {
-      await this.emailService.sendClientCreatedNotification(
-        recipients.map((r) => r.email),
-        {
-          name: client.name,
-          nip: client.nip,
-          companyName: company?.name || 'Nieznana firma',
-          createdByName: `${performedBy.firstName} ${performedBy.lastName}`,
-        },
+    // Get company's SMTP configuration
+    const smtpConfig =
+      await this.emailConfigService.getDecryptedSmtpConfigByCompanyId(
+        client.companyId,
       );
-    } catch (error) {
-      this.logger.error('Failed to send client created notification', error);
+
+    if (!smtpConfig) {
+      this.logger.warn(
+        `No active email configuration for company ${client.companyId}. Skipping notifications.`,
+      );
+      return;
     }
+
+    // 1. Send welcome email to client (if receiveEmailCopy is true and has email)
+    if (client.email && client.receiveEmailCopy) {
+      await this.sendWelcomeEmailToClient(client, company, smtpConfig);
+    }
+
+    // 2. Send notifications to company users using company SMTP
+    await this.notifyCompanyUsersWithCompanySmtp(
+      client,
+      company,
+      performedBy,
+      smtpConfig,
+    );
   }
 
   async notifyClientUpdated(
@@ -238,5 +265,148 @@ export class ClientChangelogService {
     }
 
     return oldValue !== newValue;
+  }
+
+  /**
+   * Send welcome email to client with all their data
+   */
+  private async sendWelcomeEmailToClient(
+    client: Client,
+    company: Company | null,
+    smtpConfig: SmtpConfig,
+  ): Promise<void> {
+    try {
+      const html = await this.compileClientWelcomeTemplate(client, company);
+
+      await this.emailSenderService.sendEmail(smtpConfig, {
+        to: client.email!,
+        subject: `Potwierdzenie rejestracji - ${company?.name || 'Biuro rachunkowe'}`,
+        html,
+      });
+
+      this.logger.log(`Welcome email sent to client ${client.email}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send welcome email to client: ${error.message}`,
+        error.stack,
+      );
+    }
+  }
+
+  /**
+   * Send notifications to company users using company SMTP
+   */
+  private async notifyCompanyUsersWithCompanySmtp(
+    client: Client,
+    company: Company | null,
+    performedBy: User,
+    smtpConfig: SmtpConfig,
+  ): Promise<void> {
+    const recipients = await this.getNotificationRecipients(
+      client.companyId,
+      'receiveOnCreate',
+      performedBy.id,
+    );
+
+    if (recipients.length === 0) {
+      return;
+    }
+
+    try {
+      const html = await this.compileTemplate('client-created', {
+        clientName: client.name,
+        clientNip: client.nip || 'Nie podano',
+        companyName: company?.name || 'Nieznana firma',
+        createdByName: `${performedBy.firstName} ${performedBy.lastName}`,
+        createdAt: new Date().toLocaleString('pl-PL'),
+      });
+
+      const messages = recipients.map((recipient) => ({
+        to: recipient.email,
+        subject: `Nowy klient dodany: ${client.name}`,
+        html,
+      }));
+
+      await this.emailSenderService.sendBatchEmails(smtpConfig, messages);
+      this.logger.log(
+        `Notifications sent to ${recipients.length} users for new client`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send client created notifications: ${error.message}`,
+        error.stack,
+      );
+    }
+  }
+
+  /**
+   * Compile client welcome template with all data
+   */
+  private async compileClientWelcomeTemplate(
+    client: Client,
+    company: Company | null,
+  ): Promise<string> {
+    const context = {
+      companyName: company?.name || 'Biuro rachunkowe',
+      clientName: client.name,
+      clientNip: client.nip,
+      clientEmail: client.email,
+      clientPhone: client.phone,
+      companyStartDate: this.formatDatePolish(client.companyStartDate),
+      cooperationStartDate: this.formatDatePolish(client.cooperationStartDate),
+      suspensionDate: this.formatDatePolish(client.suspensionDate),
+      vatStatusLabel: client.vatStatus
+        ? VatStatusLabels[client.vatStatus]
+        : null,
+      taxSchemeLabel: client.taxScheme
+        ? TaxSchemeLabels[client.taxScheme]
+        : null,
+      zusStatusLabel: client.zusStatus
+        ? ZusStatusLabels[client.zusStatus]
+        : null,
+      employmentTypeLabel: client.employmentType
+        ? EmploymentTypeLabels[client.employmentType]
+        : null,
+      amlGroupLabel: client.amlGroup ? AmlGroupLabels[client.amlGroup] : null,
+      gtuCodes: client.gtuCodes?.join(', '),
+      companySpecificity: client.companySpecificity,
+      additionalInfo: client.additionalInfo,
+      createdAt: new Date().toLocaleString('pl-PL'),
+    };
+
+    return this.compileTemplate('client-welcome', context);
+  }
+
+  /**
+   * Compile a Handlebars template with context
+   */
+  private async compileTemplate(
+    templateName: string,
+    context: Record<string, unknown>,
+  ): Promise<string> {
+    const templatePath = path.join(this.templatesDir, `${templateName}.hbs`);
+
+    try {
+      const templateContent = fs.readFileSync(templatePath, 'utf-8');
+      const template = handlebars.compile(templateContent);
+      return template(context);
+    } catch (error) {
+      this.logger.error(`Failed to compile template: ${templateName}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Format date to Polish locale string
+   */
+  private formatDatePolish(date: Date | string | null | undefined): string | null {
+    if (!date) return null;
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleDateString('pl-PL', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   }
 }
