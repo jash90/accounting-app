@@ -6,6 +6,7 @@ import {
   ZusStatus,
   CustomFieldType,
   ChangeAction,
+  AutoAssignCondition,
 } from './enums';
 import {
   User,

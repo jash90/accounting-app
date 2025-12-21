@@ -7,6 +7,7 @@ import {
   IsArray,
   MaxLength,
   Min,
+  ValidateIf,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { CustomFieldType } from '@accounting/common';
@@ -56,6 +57,7 @@ export class SetCustomFieldValueDto {
 
   @ApiProperty({ description: 'Field value', nullable: true })
   @IsOptional()
+  @ValidateIf((o) => o.value !== null)
   @IsString()
   value?: string | null;
 }

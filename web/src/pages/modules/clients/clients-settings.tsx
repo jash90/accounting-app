@@ -386,8 +386,11 @@ export default function ClientsSettingsPage() {
           description={`Czy na pewno chcesz usunąć pole "${deletingField.label}"?`}
           variant="destructive"
           onConfirm={() => {
-            deleteFieldDefinition.mutate(deletingField.id);
-            setDeletingField(null);
+            deleteFieldDefinition.mutate(deletingField.id, {
+              onSuccess: () => {
+                setDeletingField(null);
+              },
+            });
           }}
           isLoading={deleteFieldDefinition.isPending}
         />
@@ -417,8 +420,11 @@ export default function ClientsSettingsPage() {
           description={`Czy na pewno chcesz usunąć ikonę "${deletingIcon.name}"?`}
           variant="destructive"
           onConfirm={() => {
-            deleteIcon.mutate(deletingIcon.id);
-            setDeletingIcon(null);
+            deleteIcon.mutate(deletingIcon.id, {
+              onSuccess: () => {
+                setDeletingIcon(null);
+              },
+            });
           }}
           isLoading={deleteIcon.isPending}
         />

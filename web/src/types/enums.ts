@@ -83,6 +83,7 @@ export type ConditionOperator =
 export type LogicalOperator = 'and' | 'or';
 
 export interface SingleCondition {
+  id?: string; // Stable key for React rendering
   field: string;
   operator: ConditionOperator;
   value?: string | number | boolean | string[];
@@ -90,6 +91,7 @@ export interface SingleCondition {
 }
 
 export interface ConditionGroup {
+  id?: string; // Stable key for React rendering
   logicalOperator: LogicalOperator;
   conditions: (SingleCondition | ConditionGroup)[];
 }

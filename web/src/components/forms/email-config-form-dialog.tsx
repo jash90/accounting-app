@@ -122,8 +122,9 @@ export function EmailConfigFormDialog({
   }, [open, config, form]);
 
   const handleSubmit = (data: CreateEmailConfigFormData | UpdateEmailConfigFormData) => {
+    // Note: Form reset is handled by parent closing dialog on success
+    // Do NOT reset here - if mutation fails, user loses their data
     onSubmit(data);
-    form.reset();
   };
 
   const handleTestSmtp = () => {

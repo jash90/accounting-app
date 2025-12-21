@@ -28,7 +28,7 @@ export default function CompanySettingsPage() {
     });
   };
 
-  const hasChanges = settings?.notificationFromEmail !== notificationEmail;
+  const hasChanges = (settings?.notificationFromEmail ?? '').trim() !== notificationEmail.trim();
 
   return (
     <div className="space-y-6">

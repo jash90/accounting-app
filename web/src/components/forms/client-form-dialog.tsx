@@ -169,12 +169,12 @@ export function ClientFormDialog({
     // Check if any custom fields have values
     const hasCustomFieldValues = Object.values(customFieldsData.values).some(v => v !== null);
 
+    // Note: Form reset is handled by parent closing dialog on success
+    // Do NOT reset here - if mutation fails, user loses their data
     onSubmit(
       cleanedData as CreateClientFormData | UpdateClientFormData,
       hasCustomFieldValues ? customFieldsData : undefined
     );
-    form.reset();
-    setCustomFieldValues({});
   };
 
   const renderCustomField = (definition: ClientFieldDefinition) => {

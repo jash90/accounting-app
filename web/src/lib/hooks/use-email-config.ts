@@ -29,14 +29,14 @@ export function useCreateUserEmailConfig() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.emailConfig.user });
       toast({
-        title: 'Success',
-        description: 'Email configuration created successfully',
+        title: 'Sukces',
+        description: 'Konfiguracja email została utworzona',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to create email configuration',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się utworzyć konfiguracji email',
         variant: 'destructive',
       });
     },
@@ -52,14 +52,14 @@ export function useUpdateUserEmailConfig() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.emailConfig.user });
       toast({
-        title: 'Success',
-        description: 'Email configuration updated successfully',
+        title: 'Sukces',
+        description: 'Konfiguracja email została zaktualizowana',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to update email configuration',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się zaktualizować konfiguracji email',
         variant: 'destructive',
       });
     },
@@ -75,14 +75,14 @@ export function useDeleteUserEmailConfig() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.emailConfig.user });
       toast({
-        title: 'Success',
-        description: 'Email configuration deleted successfully',
+        title: 'Sukces',
+        description: 'Konfiguracja email została usunięta',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete email configuration',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się usunąć konfiguracji email',
         variant: 'destructive',
       });
     },
@@ -115,15 +115,15 @@ export function useCreateCompanyEmailConfig() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.emailConfig.company });
       toast({
-        title: 'Success',
-        description: 'Company email configuration created successfully',
+        title: 'Sukces',
+        description: 'Konfiguracja email firmy została utworzona',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
+        title: 'Błąd',
         description:
-          error.response?.data?.message || 'Failed to create company email configuration',
+          error.response?.data?.message || 'Nie udało się utworzyć konfiguracji email firmy',
         variant: 'destructive',
       });
     },
@@ -140,15 +140,15 @@ export function useUpdateCompanyEmailConfig() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.emailConfig.company });
       toast({
-        title: 'Success',
-        description: 'Company email configuration updated successfully',
+        title: 'Sukces',
+        description: 'Konfiguracja email firmy została zaktualizowana',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
+        title: 'Błąd',
         description:
-          error.response?.data?.message || 'Failed to update company email configuration',
+          error.response?.data?.message || 'Nie udało się zaktualizować konfiguracji email firmy',
         variant: 'destructive',
       });
     },
@@ -164,15 +164,15 @@ export function useDeleteCompanyEmailConfig() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.emailConfig.company });
       toast({
-        title: 'Success',
-        description: 'Company email configuration deleted successfully',
+        title: 'Sukces',
+        description: 'Konfiguracja email firmy została usunięta',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
+        title: 'Błąd',
         description:
-          error.response?.data?.message || 'Failed to delete company email configuration',
+          error.response?.data?.message || 'Nie udało się usunąć konfiguracji email firmy',
         variant: 'destructive',
       });
     },

@@ -8,6 +8,12 @@ import {
   LogicalOperator,
   isConditionGroup,
 } from '@/types/enums';
+
+// Generate unique ID for condition tracking (stable React keys)
+let conditionIdCounter = 0;
+function generateConditionId(): string {
+  return `cond-${Date.now()}-${++conditionIdCounter}`;
+}
 import {
   CONDITION_FIELDS,
   OPERATORS_BY_TYPE,
@@ -47,6 +53,7 @@ export function ConditionBuilder({
 }: ConditionBuilderProps) {
   const handleAddCondition = useCallback(() => {
     const newCondition: SingleCondition = {
+      id: generateConditionId(),
       field: CONDITION_FIELDS[0].field,
       operator: 'equals',
       value: '',
@@ -62,6 +69,7 @@ export function ConditionBuilder({
     } else {
       // Convert single condition to group
       onChange({
+        id: generateConditionId(),
         logicalOperator: 'and',
         conditions: [value, newCondition],
       });
@@ -70,9 +78,11 @@ export function ConditionBuilder({
 
   const handleAddGroup = useCallback(() => {
     const newGroup: ConditionGroup = {
+      id: generateConditionId(),
       logicalOperator: 'and',
       conditions: [
         {
+          id: generateConditionId(),
           field: CONDITION_FIELDS[0].field,
           operator: 'equals',
           value: '',
@@ -90,6 +100,7 @@ export function ConditionBuilder({
     } else {
       // Convert single condition to group with nested group
       onChange({
+        id: generateConditionId(),
         logicalOperator: 'and',
         conditions: [value, newGroup],
       });
@@ -244,6 +255,7 @@ function GroupConditionRenderer({
 
   const handleAddCondition = useCallback(() => {
     const newCondition: SingleCondition = {
+      id: generateConditionId(),
       field: CONDITION_FIELDS[0].field,
       operator: 'equals',
       value: '',
@@ -256,9 +268,11 @@ function GroupConditionRenderer({
 
   const handleAddNestedGroup = useCallback(() => {
     const newGroup: ConditionGroup = {
+      id: generateConditionId(),
       logicalOperator: group.logicalOperator === 'and' ? 'or' : 'and',
       conditions: [
         {
+          id: generateConditionId(),
           field: CONDITION_FIELDS[0].field,
           operator: 'equals',
           value: '',
@@ -308,7 +322,7 @@ function GroupConditionRenderer({
         <div className="space-y-2 pl-4 border-l-2 border-muted">
           {group.conditions.map((cond, index) => (
             <ConditionRenderer
-              key={index}
+              key={cond.id || `fallback-${index}`}
               condition={cond}
               onChange={(newCond) => handleConditionChange(index, newCond)}
               onRemove={() => handleConditionRemove(index)}

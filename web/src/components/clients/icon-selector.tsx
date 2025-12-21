@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils/cn';
 import { IconType } from '@/types/enums';
 import { IconTypeLabels } from '@/lib/constants/polish-labels';
@@ -55,9 +55,25 @@ interface IconSelectorProps {
   className?: string;
 }
 
+const MAX_FILE_SIZE = 1024 * 1024; // 1MB
+
 export function IconSelector({ value, onChange, className }: IconSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [customEmoji, setCustomEmoji] = useState('');
+  const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+
+  // Manage blob URL lifecycle to prevent memory leaks
+  useEffect(() => {
+    if (value.file) {
+      const url = URL.createObjectURL(value.file);
+      setFilePreviewUrl(url);
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } else {
+      setFilePreviewUrl(null);
+    }
+  }, [value.file]);
 
   const handleIconTypeChange = useCallback(
     (type: string) => {
@@ -107,6 +123,11 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
+        if (file.size > MAX_FILE_SIZE) {
+          alert('Plik jest za duży. Maksymalny rozmiar to 1MB.');
+          e.target.value = '';
+          return;
+        }
         onChange({
           ...value,
           iconType: IconType.CUSTOM,
@@ -143,9 +164,9 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
           <span className="text-3xl">{value.iconValue || '⭐'}</span>
         );
       case IconType.CUSTOM:
-        return value.file ? (
+        return filePreviewUrl ? (
           <img
-            src={URL.createObjectURL(value.file)}
+            src={filePreviewUrl}
             alt="Podgląd ikony"
             className="w-8 h-8 object-contain"
           />

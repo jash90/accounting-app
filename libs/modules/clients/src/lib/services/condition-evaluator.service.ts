@@ -146,8 +146,16 @@ export class ConditionEvaluatorService {
         );
 
       case 'between':
+        if (secondValue === undefined || secondValue === null) {
+          return false;
+        }
         const numValue = Number(fieldValue);
-        return numValue >= Number(conditionValue) && numValue <= Number(secondValue);
+        const minValue = Number(conditionValue);
+        const maxValue = Number(secondValue);
+        if (isNaN(numValue) || isNaN(minValue) || isNaN(maxValue)) {
+          return false;
+        }
+        return numValue >= minValue && numValue <= maxValue;
 
       default:
         return false;

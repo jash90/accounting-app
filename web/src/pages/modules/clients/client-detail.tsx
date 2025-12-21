@@ -71,7 +71,10 @@ export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
-  const { data: client, isPending, error } = useClient(id!);
+
+  // Guard against undefined id
+  const clientId = id ?? '';
+  const { data: client, isPending, error } = useClient(clientId);
   const { data: fieldDefinitions = [] } = useFieldDefinitions();
   const { data: icons = [] } = useClientIcons();
   const updateClient = useUpdateClient();
@@ -92,6 +95,20 @@ export default function ClientDetailPage() {
   };
 
   const basePath = getBasePath();
+
+  // Handle missing id
+  if (!id) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <h1 className="text-2xl font-semibold text-destructive">Błąd</h1>
+        <p className="text-muted-foreground mt-2">Nie podano identyfikatora klienta</p>
+        <Button onClick={() => navigate(basePath)} className="mt-4">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Powrót do listy
+        </Button>
+      </div>
+    );
+  }
 
   if (isPending) {
     return (
@@ -386,8 +403,8 @@ export default function ClientDetailPage() {
           )}
         </div>
 
-        <div>
-          <ClientChangelog clientId={id!} />
+        <div id="changelog">
+          <ClientChangelog clientId={id} />
         </div>
       </div>
 
