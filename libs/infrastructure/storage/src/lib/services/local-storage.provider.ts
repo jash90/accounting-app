@@ -1,9 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { StorageProvider, StorageResult } from '../interfaces/storage-provider.interface';
+import {
+  StorageProvider,
+  StorageResult,
+} from '../interfaces/storage-provider.interface';
 
 @Injectable()
 export class LocalStorageProvider implements StorageProvider {
@@ -12,11 +15,40 @@ export class LocalStorageProvider implements StorageProvider {
   private readonly urlPrefix: string;
 
   constructor(private configService: ConfigService) {
-    this.basePath = this.configService.get<string>('STORAGE_LOCAL_PATH', './uploads');
-    this.urlPrefix = this.configService.get<string>('STORAGE_LOCAL_URL', '/uploads');
+    this.basePath = path.resolve(
+      this.configService.get<string>('STORAGE_LOCAL_PATH', './uploads')
+    );
+    this.urlPrefix = this.configService.get<string>(
+      'STORAGE_LOCAL_URL',
+      '/uploads'
+    );
 
     // Ensure base directory exists
     this.ensureDirectoryExists(this.basePath);
+  }
+
+  /**
+   * Sanitize and validate a path to prevent directory traversal attacks
+   * @param userPath The user-provided path component
+   * @returns The sanitized absolute path
+   * @throws BadRequestException if path traversal is detected
+   */
+  private sanitizePath(userPath: string): string {
+    // Remove null bytes and normalize path separators
+    const sanitized = userPath.replace(/\0/g, '').replace(/\\/g, '/');
+
+    // Resolve the full path
+    const fullPath = path.resolve(this.basePath, sanitized);
+
+    // Ensure the resolved path is within basePath
+    if (!fullPath.startsWith(this.basePath + path.sep) && fullPath !== this.basePath) {
+      this.logger.warn(
+        `Path traversal attempt detected: ${userPath} -> ${fullPath}`
+      );
+      throw new BadRequestException('Invalid file path');
+    }
+
+    return fullPath;
   }
 
   private ensureDirectoryExists(dirPath: string): void {
@@ -26,18 +58,28 @@ export class LocalStorageProvider implements StorageProvider {
     }
   }
 
-  async upload(file: Express.Multer.File, subPath: string): Promise<StorageResult> {
+  async upload(
+    file: Express.Multer.File,
+    subPath: string
+  ): Promise<StorageResult> {
+    // Sanitize the subPath to prevent directory traversal
+    const sanitizedDir = this.sanitizePath(subPath);
+
     const ext = path.extname(file.originalname);
     const fileName = `${uuidv4()}${ext}`;
-    const fullPath = path.join(this.basePath, subPath);
-    const filePath = path.join(fullPath, fileName);
+    const filePath = path.join(sanitizedDir, fileName);
 
-    this.ensureDirectoryExists(fullPath);
+    // Double-check the final path is still within basePath
+    if (!filePath.startsWith(this.basePath + path.sep)) {
+      throw new BadRequestException('Invalid file path');
+    }
+
+    this.ensureDirectoryExists(sanitizedDir);
 
     try {
       fs.writeFileSync(filePath, file.buffer);
 
-      const relativePath = path.join(subPath, fileName);
+      const relativePath = path.relative(this.basePath, filePath);
       const url = `${this.urlPrefix}/${relativePath.replace(/\\/g, '/')}`;
 
       this.logger.log(`File uploaded: ${relativePath}`);
@@ -57,7 +99,8 @@ export class LocalStorageProvider implements StorageProvider {
   }
 
   async delete(filePath: string): Promise<boolean> {
-    const fullPath = path.join(this.basePath, filePath);
+    // Sanitize the filePath to prevent directory traversal
+    const fullPath = this.sanitizePath(filePath);
 
     try {
       if (fs.existsSync(fullPath)) {
@@ -67,12 +110,17 @@ export class LocalStorageProvider implements StorageProvider {
       }
       return false;
     } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       this.logger.error(`Failed to delete file: ${filePath}`, error);
       return false;
     }
   }
 
   async getUrl(filePath: string): Promise<string> {
+    // Validate path even for URL generation
+    this.sanitizePath(filePath);
     return `${this.urlPrefix}/${filePath.replace(/\\/g, '/')}`;
   }
 
@@ -82,7 +130,8 @@ export class LocalStorageProvider implements StorageProvider {
   }
 
   async exists(filePath: string): Promise<boolean> {
-    const fullPath = path.join(this.basePath, filePath);
+    // Sanitize the filePath to prevent directory traversal
+    const fullPath = this.sanitizePath(filePath);
     return fs.existsSync(fullPath);
   }
 }

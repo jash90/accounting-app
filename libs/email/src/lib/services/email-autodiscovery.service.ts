@@ -16,6 +16,9 @@ import { PROVIDER_LOOKUP } from '../data/known-providers';
 const resolveSrv = promisify(dns.resolveSrv);
 const resolveMx = promisify(dns.resolveMx);
 
+// TLS validation - configurable via env, defaults to true in production
+const REJECT_UNAUTHORIZED = process.env.EMAIL_REJECT_UNAUTHORIZED !== 'false';
+
 /**
  * Cache entry with TTL tracking
  */
@@ -35,6 +38,18 @@ export interface VerificationResult {
 @Injectable()
 export class EmailAutodiscoveryService {
   private readonly logger = new Logger(EmailAutodiscoveryService.name);
+
+  /**
+   * Escapes special XML characters to prevent XML injection
+   */
+  private escapeXml(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+  }
 
   // Cache for discovery results
   private cache = new Map<string, CacheEntry>();
@@ -284,7 +299,7 @@ export class EmailAutodiscoveryService {
     const body = `<?xml version="1.0" encoding="utf-8"?>
 <Autodiscover xmlns="http://schemas.microsoft.com/exchange/autodiscover/outlook/requestschema/2006">
   <Request>
-    <EMailAddress>${email}</EMailAddress>
+    <EMailAddress>${this.escapeXml(email)}</EMailAddress>
     <AcceptableResponseSchema>http://schemas.microsoft.com/exchange/autodiscover/outlook/responseschema/2006a</AcceptableResponseSchema>
   </Request>
 </Autodiscover>`;
@@ -812,7 +827,7 @@ export class EmailAutodiscoveryService {
           host: config.imap.host,
           port: config.imap.port,
           tls: config.imap.tls,
-          tlsOptions: { rejectUnauthorized: false },
+          tlsOptions: { rejectUnauthorized: REJECT_UNAUTHORIZED },
           connTimeout: this.VERIFICATION_TIMEOUT,
           authTimeout: 5000,
         });

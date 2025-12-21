@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import {
   ClientDeleteRequest,
   Client,
@@ -36,6 +36,7 @@ export class DeleteRequestService {
     private readonly companyRepository: Repository<Company>,
     private readonly clientsService: ClientsService,
     private readonly clientChangelogService: ClientChangelogService,
+    private readonly dataSource: DataSource,
   ) {}
 
   private async getEffectiveCompanyId(user: User): Promise<string> {
@@ -166,18 +167,35 @@ export class DeleteRequestService {
       throw new NotFoundException('Client no longer exists');
     }
 
-    // Update request status
-    request.status = DeleteRequestStatus.APPROVED;
-    request.processedById = user.id;
-    request.processedAt = new Date();
-    await this.deleteRequestRepository.save(request);
+    // Clone client data before deletion for response
+    const deletedClientData = { ...client } as Client;
 
-    // Perform the actual deletion via clients service
-    await this.clientsService.remove(request.clientId, user);
+    // Use transaction to ensure atomicity: both operations succeed or both fail
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Delete the client first (if this fails, status won't be updated)
+      await this.clientsService.remove(request.clientId, user);
+
+      // Update request status
+      request.status = DeleteRequestStatus.APPROVED;
+      request.processedById = user.id;
+      request.processedAt = new Date();
+      await queryRunner.manager.save(request);
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
 
     return {
       message: 'Delete request approved and client deleted',
-      deletedClient: client,
+      deletedClient: deletedClientData,
     };
   }
 

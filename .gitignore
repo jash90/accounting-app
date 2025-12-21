@@ -29,3 +29,6 @@ web-e2e/test-reports
 /apps/api/.claude-flow/
 web/.claude/
 web/.claude-flow/
+
+# Test result credentials (should never be committed)
+test-results/*.json

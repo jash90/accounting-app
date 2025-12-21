@@ -107,7 +107,7 @@ export class CompanyService {
         company.notificationFromEmail,
       );
 
-      this.logger.log(`User creation notification sent for ${newUser.email}`);
+      this.logger.log(`User creation notification sent for user ${newUser.id}`);
     } catch (error) {
       this.logger.error(`Failed to send user creation notification`, error);
       // Don't throw - email failure should not block user creation

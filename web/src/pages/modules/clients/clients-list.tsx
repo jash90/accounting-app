@@ -220,7 +220,7 @@ export default function ClientsListPage() {
                 )}
 
                 <DropdownMenuItem
-                  onClick={() => navigate(`${basePath}/${client.id}`)}
+                  onClick={() => navigate(`${basePath}/${client.id}#changelog`)}
                 >
                   <History className="mr-2 h-4 w-4" />
                   Historia zmian

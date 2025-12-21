@@ -219,11 +219,14 @@ export class ClientChangelogService {
       'companySpecificity',
       'additionalInfo',
       'gtuCode',
+      'gtuCodes',
       'amlGroup',
+      'amlGroupEnum',
       'employmentType',
       'vatStatus',
       'taxScheme',
       'zusStatus',
+      'receiveEmailCopy',
       'isActive',
     ];
 
@@ -367,7 +370,7 @@ export class ClientChangelogService {
       employmentTypeLabel: client.employmentType
         ? EmploymentTypeLabels[client.employmentType]
         : null,
-      amlGroupLabel: client.amlGroup ? AmlGroupLabels[client.amlGroup] : null,
+      amlGroupLabel: client.amlGroupEnum ? AmlGroupLabels[client.amlGroupEnum] : null,
       gtuCodes: client.gtuCodes?.join(', '),
       companySpecificity: client.companySpecificity,
       additionalInfo: client.additionalInfo,

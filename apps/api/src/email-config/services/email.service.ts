@@ -6,6 +6,9 @@ import { EncryptionService } from './encryption.service';
 
 const Imap = require('node-imap');
 
+// TLS validation - configurable via env, defaults to true in production
+const REJECT_UNAUTHORIZED = process.env.EMAIL_REJECT_UNAUTHORIZED !== 'false';
+
 export interface SendEmailDto {
   to: string;
   subject: string;
@@ -100,7 +103,7 @@ export class EmailService {
           host: dto.imapHost,
           port: dto.imapPort,
           tls: dto.imapTls ?? true,
-          tlsOptions: { rejectUnauthorized: false },
+          tlsOptions: { rejectUnauthorized: REJECT_UNAUTHORIZED },
           connTimeout: CONNECTION_TIMEOUT_MS,
           authTimeout: CONNECTION_TIMEOUT_MS,
         });
@@ -232,98 +235,93 @@ export class EmailService {
    * Check user's inbox and retrieve recent emails
    */
   async checkInbox(userId: string, limit: number = 10): Promise<EmailMessage[]> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        // Get user's email configuration
-        const config = await this.emailConfigService.getUserConfig(userId);
+    // Get user's email configuration (async operations before Promise)
+    const config = await this.emailConfigService.getUserConfig(userId);
 
-        // Decrypt IMAP password
-        const imapPassword = await this.encryptionService.decrypt(config.imapPassword);
+    // Decrypt IMAP password
+    const imapPassword = await this.encryptionService.decrypt(config.imapPassword);
 
-        // Create IMAP connection
-        const imap = new Imap({
-          user: config.imapUser,
-          password: imapPassword,
-          host: config.imapHost,
-          port: config.imapPort,
-          tls: config.imapTls,
-          tlsOptions: { rejectUnauthorized: false },
-        });
+    // Wrap callback-based IMAP operations in Promise
+    return new Promise((resolve, reject) => {
+      // Create IMAP connection
+      const imap = new Imap({
+        user: config.imapUser,
+        password: imapPassword,
+        host: config.imapHost,
+        port: config.imapPort,
+        tls: config.imapTls,
+        tlsOptions: { rejectUnauthorized: REJECT_UNAUTHORIZED },
+        connTimeout: CONNECTION_TIMEOUT_MS,
+        authTimeout: CONNECTION_TIMEOUT_MS,
+      });
 
-        const messages: EmailMessage[] = [];
+      const messages: EmailMessage[] = [];
 
-        imap.once('ready', () => {
-          imap.openBox('INBOX', true, (err, box) => {
-            if (err) {
-              imap.end();
-              return reject(new BadRequestException(`Failed to open inbox: ${err.message}`));
-            }
+      imap.once('ready', () => {
+        imap.openBox('INBOX', true, (err, box) => {
+          if (err) {
+            imap.end();
+            return reject(new BadRequestException(`Failed to open inbox: ${err.message}`));
+          }
 
-            // Calculate fetch range (get last N messages)
-            const total = box.messages.total;
-            const start = Math.max(1, total - limit + 1);
-            const end = total;
+          // Calculate fetch range (get last N messages)
+          const total = box.messages.total;
+          const start = Math.max(1, total - limit + 1);
+          const end = total;
 
-            if (total === 0) {
-              imap.end();
-              return resolve([]);
-            }
+          if (total === 0) {
+            imap.end();
+            return resolve([]);
+          }
 
-            const fetch = imap.seq.fetch(`${start}:${end}`, {
-              bodies: '',
-              struct: true,
-            });
+          const fetch = imap.seq.fetch(`${start}:${end}`, {
+            bodies: '',
+            struct: true,
+          });
 
-            fetch.on('message', (msg) => {
-              msg.on('body', (stream) => {
-                simpleParser(stream, (err, parsed) => {
-                  if (err) {
-                    console.error('Error parsing email:', err);
-                    return;
-                  }
+          fetch.on('message', (msg) => {
+            msg.on('body', (stream) => {
+              simpleParser(stream, (err, parsed) => {
+                if (err) {
+                  console.error('Error parsing email:', err);
+                  return;
+                }
 
-                  messages.push({
-                    from: parsed.from?.text || '',
-                    to: parsed.to?.text || '',
-                    subject: parsed.subject || '',
-                    date: parsed.date || new Date(),
-                    text: parsed.text || '',
-                    html: parsed.html || '',
-                  });
+                messages.push({
+                  from: parsed.from?.text || '',
+                  to: parsed.to?.text || '',
+                  subject: parsed.subject || '',
+                  date: parsed.date || new Date(),
+                  text: parsed.text || '',
+                  html: parsed.html || '',
                 });
               });
             });
+          });
 
-            fetch.once('error', (err) => {
-              imap.end();
-              reject(new BadRequestException(`Failed to fetch emails: ${err.message}`));
-            });
+          fetch.once('error', (err) => {
+            imap.end();
+            reject(new BadRequestException(`Failed to fetch emails: ${err.message}`));
+          });
 
-            fetch.once('end', () => {
-              imap.end();
-              // Sort by date, newest first
-              messages.sort((a, b) => b.date.getTime() - a.date.getTime());
-              resolve(messages);
-            });
+          fetch.once('end', () => {
+            imap.end();
+            // Sort by date, newest first
+            messages.sort((a, b) => b.date.getTime() - a.date.getTime());
+            resolve(messages);
           });
         });
+      });
 
-        imap.once('error', (err) => {
-          reject(new BadRequestException(`IMAP connection error: ${err.message}`));
-        });
+      imap.once('error', (err) => {
+        reject(new BadRequestException(`IMAP connection error: ${err.message}`));
+      });
 
-        imap.once('end', () => {
-          // Connection closed
-        });
+      imap.once('end', () => {
+        // Connection closed
+      });
 
-        imap.connect();
-      } catch (error) {
-        if (error.message?.includes('not found')) {
-          reject(error); // Re-throw NotFoundException
-        } else {
-          reject(new InternalServerErrorException(`Failed to check inbox: ${error.message}`));
-        }
-      }
+      imap.connect();
     });
   }
 
@@ -331,98 +329,93 @@ export class EmailService {
    * Check company's inbox and retrieve recent emails
    */
   async checkCompanyInbox(companyId: string, limit: number = 10): Promise<EmailMessage[]> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        // Get company's email configuration
-        const config = await this.emailConfigService.getCompanyConfig(companyId);
+    // Get company's email configuration (async operations before Promise)
+    const config = await this.emailConfigService.getCompanyConfig(companyId);
 
-        // Decrypt IMAP password
-        const imapPassword = await this.encryptionService.decrypt(config.imapPassword);
+    // Decrypt IMAP password
+    const imapPassword = await this.encryptionService.decrypt(config.imapPassword);
 
-        // Create IMAP connection
-        const imap = new Imap({
-          user: config.imapUser,
-          password: imapPassword,
-          host: config.imapHost,
-          port: config.imapPort,
-          tls: config.imapTls,
-          tlsOptions: { rejectUnauthorized: false },
-        });
+    // Wrap callback-based IMAP operations in Promise
+    return new Promise((resolve, reject) => {
+      // Create IMAP connection
+      const imap = new Imap({
+        user: config.imapUser,
+        password: imapPassword,
+        host: config.imapHost,
+        port: config.imapPort,
+        tls: config.imapTls,
+        tlsOptions: { rejectUnauthorized: REJECT_UNAUTHORIZED },
+        connTimeout: CONNECTION_TIMEOUT_MS,
+        authTimeout: CONNECTION_TIMEOUT_MS,
+      });
 
-        const messages: EmailMessage[] = [];
+      const messages: EmailMessage[] = [];
 
-        imap.once('ready', () => {
-          imap.openBox('INBOX', true, (err, box) => {
-            if (err) {
-              imap.end();
-              return reject(new BadRequestException(`Failed to open inbox: ${err.message}`));
-            }
+      imap.once('ready', () => {
+        imap.openBox('INBOX', true, (err, box) => {
+          if (err) {
+            imap.end();
+            return reject(new BadRequestException(`Failed to open inbox: ${err.message}`));
+          }
 
-            // Calculate fetch range (get last N messages)
-            const total = box.messages.total;
-            const start = Math.max(1, total - limit + 1);
-            const end = total;
+          // Calculate fetch range (get last N messages)
+          const total = box.messages.total;
+          const start = Math.max(1, total - limit + 1);
+          const end = total;
 
-            if (total === 0) {
-              imap.end();
-              return resolve([]);
-            }
+          if (total === 0) {
+            imap.end();
+            return resolve([]);
+          }
 
-            const fetch = imap.seq.fetch(`${start}:${end}`, {
-              bodies: '',
-              struct: true,
-            });
+          const fetch = imap.seq.fetch(`${start}:${end}`, {
+            bodies: '',
+            struct: true,
+          });
 
-            fetch.on('message', (msg) => {
-              msg.on('body', (stream) => {
-                simpleParser(stream, (err, parsed) => {
-                  if (err) {
-                    console.error('Error parsing email:', err);
-                    return;
-                  }
+          fetch.on('message', (msg) => {
+            msg.on('body', (stream) => {
+              simpleParser(stream, (err, parsed) => {
+                if (err) {
+                  console.error('Error parsing email:', err);
+                  return;
+                }
 
-                  messages.push({
-                    from: parsed.from?.text || '',
-                    to: parsed.to?.text || '',
-                    subject: parsed.subject || '',
-                    date: parsed.date || new Date(),
-                    text: parsed.text || '',
-                    html: parsed.html || '',
-                  });
+                messages.push({
+                  from: parsed.from?.text || '',
+                  to: parsed.to?.text || '',
+                  subject: parsed.subject || '',
+                  date: parsed.date || new Date(),
+                  text: parsed.text || '',
+                  html: parsed.html || '',
                 });
               });
             });
+          });
 
-            fetch.once('error', (err) => {
-              imap.end();
-              reject(new BadRequestException(`Failed to fetch emails: ${err.message}`));
-            });
+          fetch.once('error', (err) => {
+            imap.end();
+            reject(new BadRequestException(`Failed to fetch emails: ${err.message}`));
+          });
 
-            fetch.once('end', () => {
-              imap.end();
-              // Sort by date, newest first
-              messages.sort((a, b) => b.date.getTime() - a.date.getTime());
-              resolve(messages);
-            });
+          fetch.once('end', () => {
+            imap.end();
+            // Sort by date, newest first
+            messages.sort((a, b) => b.date.getTime() - a.date.getTime());
+            resolve(messages);
           });
         });
+      });
 
-        imap.once('error', (err) => {
-          reject(new BadRequestException(`IMAP connection error: ${err.message}`));
-        });
+      imap.once('error', (err) => {
+        reject(new BadRequestException(`IMAP connection error: ${err.message}`));
+      });
 
-        imap.once('end', () => {
-          // Connection closed
-        });
+      imap.once('end', () => {
+        // Connection closed
+      });
 
-        imap.connect();
-      } catch (error) {
-        if (error.message?.includes('not found')) {
-          reject(error); // Re-throw NotFoundException
-        } else {
-          reject(new InternalServerErrorException(`Failed to check company inbox: ${error.message}`));
-        }
-      }
+      imap.connect();
     });
   }
 }

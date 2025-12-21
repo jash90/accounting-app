@@ -30,7 +30,6 @@ import {
   OwnerOrAdmin,
 } from '@accounting/rbac';
 import { User } from '@accounting/common';
-import { IconFileValidator } from '@accounting/infrastructure/storage';
 import { ClientIconsService } from '../services/client-icons.service';
 import { CreateIconDto, UpdateIconDto, AssignIconDto } from '../dto/icon.dto';
 
@@ -42,6 +41,10 @@ import { CreateIconDto, UpdateIconDto, AssignIconDto } from '../dto/icon.dto';
 export class IconsController {
   constructor(private readonly iconsService: ClientIconsService) {}
 
+  // ============================================
+  // ROUTES WITH LITERAL PATHS (must come first)
+  // ============================================
+
   @Get()
   @ApiOperation({ summary: 'Get all icons' })
   @ApiResponse({ status: 200, description: 'List of icons' })
@@ -50,17 +53,41 @@ export class IconsController {
     return this.iconsService.findAllIcons(user);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get an icon by ID' })
-  @ApiResponse({ status: 200, description: 'Icon details' })
-  @ApiResponse({ status: 404, description: 'Icon not found' })
+  @Get('client/:clientId')
+  @ApiOperation({ summary: 'Get icons assigned to a client' })
+  @ApiResponse({ status: 200, description: 'Client icons' })
   @RequirePermission('clients', 'read')
-  async findOne(
-    @Param('id', ParseUUIDPipe) id: string,
+  async getClientIcons(
+    @Param('clientId', ParseUUIDPipe) clientId: string,
     @CurrentUser() user: User,
   ) {
-    return this.iconsService.findIconById(id, user);
+    return this.iconsService.getClientIcons(clientId, user);
   }
+
+  @Post('assign')
+  @ApiOperation({ summary: 'Assign an icon to a client' })
+  @ApiResponse({ status: 201, description: 'Icon assigned' })
+  @RequirePermission('clients', 'write')
+  async assignIcon(@Body() dto: AssignIconDto, @CurrentUser() user: User) {
+    return this.iconsService.assignIcon(dto, user);
+  }
+
+  @Delete('unassign/:clientId/:iconId')
+  @ApiOperation({ summary: 'Unassign an icon from a client' })
+  @ApiResponse({ status: 200, description: 'Icon unassigned' })
+  @RequirePermission('clients', 'write')
+  async unassignIcon(
+    @Param('clientId', ParseUUIDPipe) clientId: string,
+    @Param('iconId', ParseUUIDPipe) iconId: string,
+    @CurrentUser() user: User,
+  ) {
+    await this.iconsService.unassignIcon(clientId, iconId, user);
+    return { message: 'Icon unassigned successfully' };
+  }
+
+  // ============================================
+  // ROUTES WITH PARAMETERIZED PATHS
+  // ============================================
 
   @Get(':id/url')
   @ApiOperation({ summary: 'Get icon file URL' })
@@ -75,6 +102,18 @@ export class IconsController {
     return { url };
   }
 
+  @Get(':id')
+  @ApiOperation({ summary: 'Get an icon by ID' })
+  @ApiResponse({ status: 200, description: 'Icon details' })
+  @ApiResponse({ status: 404, description: 'Icon not found' })
+  @RequirePermission('clients', 'read')
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.iconsService.findIconById(id, user);
+  }
+
   @Post()
   @ApiOperation({ summary: 'Create a new icon' })
   @ApiConsumes('multipart/form-data')
@@ -86,7 +125,10 @@ export class IconsController {
         color: { type: 'string' },
         iconType: { type: 'string', enum: ['lucide', 'custom', 'emoji'] },
         iconValue: { type: 'string' },
-        autoAssignCondition: { type: 'string', description: 'JSON string with auto-assign condition' },
+        autoAssignCondition: {
+          type: 'string',
+          description: 'JSON string with auto-assign condition',
+        },
         file: { type: 'string', format: 'binary' },
       },
       required: ['name'],
@@ -116,7 +158,10 @@ export class IconsController {
         color: { type: 'string' },
         iconType: { type: 'string', enum: ['lucide', 'custom', 'emoji'] },
         iconValue: { type: 'string' },
-        autoAssignCondition: { type: 'string', description: 'JSON string with auto-assign condition (null to remove)' },
+        autoAssignCondition: {
+          type: 'string',
+          description: 'JSON string with auto-assign condition (null to remove)',
+        },
         file: { type: 'string', format: 'binary' },
       },
     },
@@ -149,37 +194,5 @@ export class IconsController {
   ) {
     await this.iconsService.removeIcon(id, user);
     return { message: 'Icon deleted successfully' };
-  }
-
-  @Post('assign')
-  @ApiOperation({ summary: 'Assign an icon to a client' })
-  @ApiResponse({ status: 201, description: 'Icon assigned' })
-  @RequirePermission('clients', 'write')
-  async assignIcon(@Body() dto: AssignIconDto, @CurrentUser() user: User) {
-    return this.iconsService.assignIcon(dto, user);
-  }
-
-  @Delete('unassign/:clientId/:iconId')
-  @ApiOperation({ summary: 'Unassign an icon from a client' })
-  @ApiResponse({ status: 200, description: 'Icon unassigned' })
-  @RequirePermission('clients', 'write')
-  async unassignIcon(
-    @Param('clientId', ParseUUIDPipe) clientId: string,
-    @Param('iconId', ParseUUIDPipe) iconId: string,
-    @CurrentUser() user: User,
-  ) {
-    await this.iconsService.unassignIcon(clientId, iconId, user);
-    return { message: 'Icon unassigned successfully' };
-  }
-
-  @Get('client/:clientId')
-  @ApiOperation({ summary: 'Get icons assigned to a client' })
-  @ApiResponse({ status: 200, description: 'Client icons' })
-  @RequirePermission('clients', 'read')
-  async getClientIcons(
-    @Param('clientId', ParseUUIDPipe) clientId: string,
-    @CurrentUser() user: User,
-  ) {
-    return this.iconsService.getClientIcons(clientId, user);
   }
 }

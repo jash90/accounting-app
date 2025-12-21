@@ -143,15 +143,18 @@ export class EmailConfigService {
   async updateUserConfig(userId: string, dto: UpdateEmailConfigDto): Promise<EmailConfiguration> {
     const config = await this.getUserConfig(userId);
 
+    // Create a copy to avoid mutating the input DTO
+    const updateData: Partial<UpdateEmailConfigDto> = { ...dto };
+
     // Encrypt passwords if provided
-    if (dto.smtpPassword) {
-      dto.smtpPassword = await this.encryptionService.encrypt(dto.smtpPassword);
+    if (updateData.smtpPassword) {
+      updateData.smtpPassword = await this.encryptionService.encrypt(updateData.smtpPassword);
     }
-    if (dto.imapPassword) {
-      dto.imapPassword = await this.encryptionService.encrypt(dto.imapPassword);
+    if (updateData.imapPassword) {
+      updateData.imapPassword = await this.encryptionService.encrypt(updateData.imapPassword);
     }
 
-    Object.assign(config, dto);
+    Object.assign(config, updateData);
     return this.emailConfigRepository.save(config);
   }
 
@@ -161,15 +164,18 @@ export class EmailConfigService {
   async updateCompanyConfig(companyId: string, dto: UpdateEmailConfigDto): Promise<EmailConfiguration> {
     const config = await this.getCompanyConfig(companyId);
 
+    // Create a copy to avoid mutating the input DTO
+    const updateData: Partial<UpdateEmailConfigDto> = { ...dto };
+
     // Encrypt passwords if provided
-    if (dto.smtpPassword) {
-      dto.smtpPassword = await this.encryptionService.encrypt(dto.smtpPassword);
+    if (updateData.smtpPassword) {
+      updateData.smtpPassword = await this.encryptionService.encrypt(updateData.smtpPassword);
     }
-    if (dto.imapPassword) {
-      dto.imapPassword = await this.encryptionService.encrypt(dto.imapPassword);
+    if (updateData.imapPassword) {
+      updateData.imapPassword = await this.encryptionService.encrypt(updateData.imapPassword);
     }
 
-    Object.assign(config, dto);
+    Object.assign(config, updateData);
     return this.emailConfigRepository.save(config);
   }
 
@@ -254,15 +260,18 @@ export class EmailConfigService {
   async updateSystemAdminConfig(dto: UpdateEmailConfigDto): Promise<EmailConfiguration> {
     const config = await this.getSystemAdminConfig();
 
+    // Create a copy to avoid mutating the input DTO
+    const updateData: Partial<UpdateEmailConfigDto> = { ...dto };
+
     // Encrypt passwords if provided
-    if (dto.smtpPassword) {
-      dto.smtpPassword = await this.encryptionService.encrypt(dto.smtpPassword);
+    if (updateData.smtpPassword) {
+      updateData.smtpPassword = await this.encryptionService.encrypt(updateData.smtpPassword);
     }
-    if (dto.imapPassword) {
-      dto.imapPassword = await this.encryptionService.encrypt(dto.imapPassword);
+    if (updateData.imapPassword) {
+      updateData.imapPassword = await this.encryptionService.encrypt(updateData.imapPassword);
     }
 
-    Object.assign(config, dto);
+    Object.assign(config, updateData);
     return this.emailConfigRepository.save(config);
   }
 
