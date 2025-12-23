@@ -6,3 +6,4 @@ export { ClientChangelogService } from './lib/services/client-changelog.service'
 export { NotificationSettingsService } from './lib/services/notification-settings.service';
 export * from './lib/controllers';
 export * from './lib/dto';
+export * from './lib/exceptions';

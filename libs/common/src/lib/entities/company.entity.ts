@@ -8,6 +8,7 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { User } from './user.entity';
 import { CompanyModuleAccess } from './company-module-access.entity';
@@ -21,6 +22,9 @@ import { EmailConfiguration } from './email-configuration.entity';
 import { Client } from './client.entity';
 
 @Entity('companies')
+@Index(['ownerId']) // For owner's companies queries
+@Index(['isSystemCompany']) // For system company lookups
+@Index(['isActive']) // For active company queries
 export class Company {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

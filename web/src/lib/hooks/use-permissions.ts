@@ -1,8 +1,95 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { permissionsApi } from '../api/endpoints/permissions';
 import { queryKeys } from '../api/query-client';
 import { GrantModuleAccessDto, UpdateModulePermissionDto } from '@/types/dtos';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuthContext } from '@/contexts/auth-context';
+import { UserRole } from '@/types/enums';
+
+/**
+ * Permission constants matching backend RBAC system
+ */
+export const ModulePermission = {
+  READ: 'READ',
+  WRITE: 'WRITE',
+  DELETE: 'DELETE',
+} as const;
+
+export type ModulePermissionType = typeof ModulePermission[keyof typeof ModulePermission];
+
+/**
+ * Hook to check current user's permissions for a specific module.
+ * Centralizes RBAC logic to avoid hardcoding role checks throughout the app.
+ *
+ * Permission model (from module-description/client-module.md):
+ * - ADMIN/COMPANY_OWNER: Full access (READ, WRITE, DELETE)
+ * - EMPLOYEE: Limited access (READ, WRITE - DELETE requires owner approval)
+ *
+ * @param moduleSlug - The module identifier (e.g., 'clients')
+ * @returns Object with permission flags and helper functions
+ */
+export function useModulePermissions(moduleSlug: string) {
+  const { user, isAuthenticated } = useAuthContext();
+
+  return useMemo(() => {
+    // Not authenticated - no permissions
+    if (!isAuthenticated || !user) {
+      return {
+        hasReadPermission: false,
+        hasWritePermission: false,
+        hasDeletePermission: false,
+        canRead: false,
+        canWrite: false,
+        canDelete: false,
+        isAdmin: false,
+        isOwner: false,
+        isEmployee: false,
+        checkPermission: (_permission: ModulePermissionType) => false,
+      };
+    }
+
+    const isAdmin = user.role === UserRole.ADMIN;
+    const isOwner = user.role === UserRole.COMPANY_OWNER;
+    const isEmployee = user.role === UserRole.EMPLOYEE;
+
+    // ADMIN and COMPANY_OWNER have full permissions
+    // EMPLOYEE has READ and WRITE but NOT DELETE (per module specification)
+    const hasReadPermission = isAdmin || isOwner || isEmployee;
+    const hasWritePermission = isAdmin || isOwner || isEmployee;
+    const hasDeletePermission = isAdmin || isOwner; // Employees cannot delete
+
+    const checkPermission = (permission: ModulePermissionType): boolean => {
+      switch (permission) {
+        case ModulePermission.READ:
+          return hasReadPermission;
+        case ModulePermission.WRITE:
+          return hasWritePermission;
+        case ModulePermission.DELETE:
+          return hasDeletePermission;
+        default:
+          return false;
+      }
+    };
+
+    return {
+      // Permission flags
+      hasReadPermission,
+      hasWritePermission,
+      hasDeletePermission,
+      // Aliases for semantic clarity
+      canRead: hasReadPermission,
+      canWrite: hasWritePermission,
+      canDelete: hasDeletePermission,
+      // Role flags for edge cases
+      isAdmin,
+      isOwner,
+      isEmployee,
+      // Helper function for dynamic permission checks
+      checkPermission,
+    };
+  }, [user, isAuthenticated]);
+}
 
 export function useCompanyModules() {
   return useQuery({

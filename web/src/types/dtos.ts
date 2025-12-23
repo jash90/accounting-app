@@ -553,10 +553,6 @@ export interface ClientFiltersDto {
   isActive?: boolean;
 }
 
-export interface SetClientIconsDto {
-  iconIds: string[];
-}
-
 export interface SetCustomFieldValuesDto {
   values: Record<string, string | null>;
 }

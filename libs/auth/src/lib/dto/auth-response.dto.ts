@@ -2,32 +2,31 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class UserDto {
   @ApiProperty()
-  id: string;
+  id!: string;
 
   @ApiProperty()
-  email: string;
+  email!: string;
 
   @ApiProperty()
-  firstName: string;
+  firstName!: string;
 
   @ApiProperty()
-  lastName: string;
+  lastName!: string;
 
   @ApiProperty()
-  role: string;
+  role!: string;
 
   @ApiProperty({ required: false, nullable: true })
-  companyId: string | null;
+  companyId!: string | null;
 }
 
 export class AuthResponseDto {
   @ApiProperty()
-  access_token: string;
+  access_token!: string;
 
   @ApiProperty()
-  refresh_token: string;
+  refresh_token!: string;
 
   @ApiProperty({ type: UserDto })
-  user: UserDto;
+  user!: UserDto;
 }
-

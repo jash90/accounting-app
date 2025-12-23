@@ -1,5 +1,8 @@
 import { EmailConfig, EmailConfigOptions, SmtpConfig, ImapConfig } from '../interfaces/email-config.interface';
 
+// TLS validation - secure by default, configurable via env
+const REJECT_UNAUTHORIZED = process.env['EMAIL_REJECT_UNAUTHORIZED'] !== 'false';
+
 /**
  * Helper class for creating email configurations
  * Simplifies configuration setup for LH.pl mail servers
@@ -56,6 +59,9 @@ export class EmailConfigHelper {
         user,
         pass: password,
       },
+      tls: {
+        rejectUnauthorized: REJECT_UNAUTHORIZED,
+      },
     };
   }
 
@@ -75,7 +81,7 @@ export class EmailConfigHelper {
       user,
       password,
       tlsOptions: {
-        rejectUnauthorized: false, // For self-signed certificates
+        rejectUnauthorized: REJECT_UNAUTHORIZED,
       },
     };
   }
@@ -94,9 +100,9 @@ export class EmailConfigHelper {
    * ```
    */
   static createFromEnv(env: NodeJS.ProcessEnv): EmailConfig {
-    const serverNumber = env.MAIL_SERVER_NUMBER;
-    const emailAddress = env.MAIL_ADDRESS;
-    const password = env.MAIL_PASSWORD;
+    const serverNumber = env['MAIL_SERVER_NUMBER'];
+    const emailAddress = env['MAIL_ADDRESS'];
+    const password = env['MAIL_PASSWORD'];
 
     if (!serverNumber || !emailAddress || !password) {
       throw new Error(
@@ -108,8 +114,8 @@ export class EmailConfigHelper {
       serverNumber,
       emailAddress,
       password,
-      smtpPort: env.MAIL_SMTP_PORT ? parseInt(env.MAIL_SMTP_PORT) : 465,
-      imapPort: env.MAIL_IMAP_PORT ? parseInt(env.MAIL_IMAP_PORT) : 993,
+      smtpPort: env['MAIL_SMTP_PORT'] ? parseInt(env['MAIL_SMTP_PORT']) : 465,
+      imapPort: env['MAIL_IMAP_PORT'] ? parseInt(env['MAIL_IMAP_PORT']) : 993,
     });
   }
 

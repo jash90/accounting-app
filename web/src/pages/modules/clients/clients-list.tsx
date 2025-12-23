@@ -3,6 +3,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { useNavigate } from 'react-router-dom';
 import { useClients, useDeleteClient, useRestoreClient, useSetClientCustomFields } from '@/lib/hooks/use-clients';
 import { useCreateClient, useUpdateClient } from '@/lib/hooks/use-clients';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import { PageHeader } from '@/components/common/page-header';
 import { DataTable } from '@/components/common/data-table';
 import { Button } from '@/components/ui/button';
@@ -32,36 +33,22 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { ClientFilters } from '@/components/clients/client-filters';
 import { IconBadgeList } from '@/components/clients/icon-badge';
 import { useAuthContext } from '@/contexts/auth-context';
-import { EmploymentType, VatStatus, TaxScheme, ZusStatus, UserRole } from '@/types/enums';
-
-const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
-  [EmploymentType.DG]: 'DG',
-  [EmploymentType.DG_ETAT]: 'DG + Etat',
-  [EmploymentType.DG_AKCJONARIUSZ]: 'DG Akcjonariusz',
-  [EmploymentType.DG_HALF_TIME_BELOW_MIN]: 'DG 1/2 poniżej',
-  [EmploymentType.DG_HALF_TIME_ABOVE_MIN]: 'DG 1/2 powyżej',
-};
-
-const VAT_STATUS_LABELS: Record<VatStatus, string> = {
-  [VatStatus.VAT_MONTHLY]: 'VAT M',
-  [VatStatus.VAT_QUARTERLY]: 'VAT K',
-  [VatStatus.NO]: 'Nie',
-  [VatStatus.NO_WATCH_LIMIT]: 'Nie (limit)',
-};
-
-const TAX_SCHEME_LABELS: Record<TaxScheme, string> = {
-  [TaxScheme.PIT_17]: 'PIT 17%',
-  [TaxScheme.PIT_19]: 'PIT 19%',
-  [TaxScheme.LUMP_SUM]: 'Ryczałt',
-  [TaxScheme.GENERAL]: 'Ogólne',
-};
+import {
+  EmploymentType,
+  EmploymentTypeLabels,
+  VatStatus,
+  VatStatusLabels,
+  TaxScheme,
+  TaxSchemeLabels,
+  UserRole,
+} from '@/types/enums';
 
 export default function ClientsListPage() {
   const { user } = useAuthContext();
   const navigate = useNavigate();
 
-  const hasWritePermission = true; // Will be checked via RBAC
-  const hasDeletePermission = true;
+  // Use centralized permission hook instead of hardcoding role checks
+  const { hasWritePermission, hasDeletePermission } = useModulePermissions('clients');
 
   // Determine the base path based on user role
   const getBasePath = () => {
@@ -78,7 +65,8 @@ export default function ClientsListPage() {
   const basePath = getBasePath();
 
   const [filters, setFilters] = useState<ClientFiltersDto>({});
-  const { data: clients = [], isPending } = useClients(filters);
+  const { data: clientsResponse, isPending } = useClients(filters);
+  const clients = clientsResponse?.data ?? [];
   const createClient = useCreateClient();
   const updateClient = useUpdateClient();
   const deleteClient = useDeleteClient();
@@ -141,7 +129,7 @@ export default function ClientsListPage() {
           const type = row.original.employmentType;
           return type ? (
             <Badge variant="secondary" className="text-xs">
-              {EMPLOYMENT_TYPE_LABELS[type]}
+              {EmploymentTypeLabels[type]}
             </Badge>
           ) : (
             <span className="text-muted-foreground">-</span>
@@ -158,7 +146,7 @@ export default function ClientsListPage() {
               variant={status === VatStatus.NO ? 'outline' : 'default'}
               className="text-xs"
             >
-              {VAT_STATUS_LABELS[status]}
+              {VatStatusLabels[status]}
             </Badge>
           ) : (
             <span className="text-muted-foreground">-</span>
@@ -172,7 +160,7 @@ export default function ClientsListPage() {
           const scheme = row.original.taxScheme;
           return scheme ? (
             <Badge variant="secondary" className="text-xs">
-              {TAX_SCHEME_LABELS[scheme]}
+              {TaxSchemeLabels[scheme]}
             </Badge>
           ) : (
             <span className="text-muted-foreground">-</span>
@@ -197,8 +185,9 @@ export default function ClientsListPage() {
           return (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
+                <Button variant="ghost" className="h-8 w-8 p-0" aria-label="Otwórz menu akcji">
                   <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Otwórz menu akcji</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -304,17 +293,19 @@ export default function ClientsListPage() {
             open={createOpen}
             onOpenChange={setCreateOpen}
             onSubmit={async (data, customFields) => {
-              createClient.mutate(data as CreateClientDto, {
-                onSuccess: (newClient) => {
-                  if (customFields && Object.keys(customFields.values).length > 0) {
-                    setCustomFields.mutate({
-                      id: newClient.id,
-                      data: customFields,
-                    });
-                  }
-                  setCreateOpen(false);
-                },
-              });
+              try {
+                const newClient = await createClient.mutateAsync(data as CreateClientDto);
+                if (customFields && Object.keys(customFields.values).length > 0) {
+                  await setCustomFields.mutateAsync({
+                    id: newClient.id,
+                    data: customFields,
+                  });
+                }
+                setCreateOpen(false);
+              } catch {
+                // Error is handled by mutation's onError callback
+                // Dialog stays open so user can retry
+              }
             }}
           />
 
@@ -324,20 +315,22 @@ export default function ClientsListPage() {
               onOpenChange={(open) => !open && setEditingClient(null)}
               client={editingClient}
               onSubmit={async (data, customFields) => {
-                updateClient.mutate({
-                  id: editingClient.id,
-                  data: data as UpdateClientDto,
-                }, {
-                  onSuccess: () => {
-                    if (customFields && Object.keys(customFields.values).length > 0) {
-                      setCustomFields.mutate({
-                        id: editingClient.id,
-                        data: customFields,
-                      });
-                    }
-                    setEditingClient(null);
-                  },
-                });
+                try {
+                  await updateClient.mutateAsync({
+                    id: editingClient.id,
+                    data: data as UpdateClientDto,
+                  });
+                  if (customFields && Object.keys(customFields.values).length > 0) {
+                    await setCustomFields.mutateAsync({
+                      id: editingClient.id,
+                      data: customFields,
+                    });
+                  }
+                  setEditingClient(null);
+                } catch {
+                  // Error is handled by mutation's onError callback
+                  // Dialog stays open so user can retry
+                }
               }}
             />
           )}

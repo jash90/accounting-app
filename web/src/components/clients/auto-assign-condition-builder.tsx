@@ -98,6 +98,10 @@ export function AutoAssignConditionBuilder({
   };
 
   const handleValueChange = (newValue: string) => {
+    // Guard against undefined/empty currentField
+    if (!currentField) {
+      return;
+    }
     onChange({
       field: currentField,
       operator: 'equals',

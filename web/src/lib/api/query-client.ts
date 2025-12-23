@@ -80,6 +80,7 @@ export const queryKeys = {
   clientIcons: {
     all: ['client-icons'] as const,
     detail: (id: string) => ['client-icons', id] as const,
+    byClient: (clientId: string) => ['client-icons', 'by-client', clientId] as const,
   },
   notificationSettings: {
     me: ['notification-settings', 'me'] as const,

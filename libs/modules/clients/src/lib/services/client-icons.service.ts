@@ -1,39 +1,31 @@
 import {
   Injectable,
-  NotFoundException,
   BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import {
   ClientIcon,
   ClientIconAssignment,
   Client,
-  Company,
   User,
-  UserRole,
   IconType,
-  AutoAssignCondition,
+  PaginatedResponseDto,
+  TenantService,
 } from '@accounting/common';
 import { StorageService } from '@accounting/infrastructure/storage';
 import { AutoAssignService } from './auto-assign.service';
-
-export interface CreateIconDto {
-  name: string;
-  color?: string;
-  iconType?: IconType;
-  iconValue?: string;
-  tooltip?: string;
-  autoAssignCondition?: AutoAssignCondition;
-}
-
-export interface UpdateIconDto extends Partial<CreateIconDto> {}
-
-export interface AssignIconDto {
-  clientId: string;
-  iconId: string;
-}
+import {
+  CreateIconDto,
+  UpdateIconDto,
+  AssignIconDto,
+  IconQueryDto,
+} from '../dto/icon.dto';
+import {
+  ClientNotFoundException,
+  IconNotFoundException,
+  IconAssignmentException,
+} from '../exceptions';
 
 @Injectable()
 export class ClientIconsService {
@@ -44,45 +36,42 @@ export class ClientIconsService {
     private readonly assignmentRepository: Repository<ClientIconAssignment>,
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
-    @InjectRepository(Company)
-    private readonly companyRepository: Repository<Company>,
     private readonly storageService: StorageService,
     private readonly autoAssignService: AutoAssignService,
+    private readonly tenantService: TenantService,
+    private readonly dataSource: DataSource,
   ) {}
-
-  private async getEffectiveCompanyId(user: User): Promise<string> {
-    if (user.role === UserRole.ADMIN) {
-      const systemCompany = await this.companyRepository.findOne({
-        where: { isSystemCompany: true },
-      });
-      if (!systemCompany) {
-        throw new ForbiddenException('System company not found for admin user');
-      }
-      return systemCompany.id;
-    }
-    return user.companyId;
-  }
 
   // Icon CRUD
 
-  async findAllIcons(user: User): Promise<ClientIcon[]> {
-    const companyId = await this.getEffectiveCompanyId(user);
+  async findAllIcons(
+    user: User,
+    query?: IconQueryDto,
+  ): Promise<PaginatedResponseDto<ClientIcon>> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const page = query?.page ?? 1;
+    const limit = query?.limit ?? 50;
+    const skip = (page - 1) * limit;
 
-    return this.iconRepository.find({
+    const [data, total] = await this.iconRepository.findAndCount({
       where: { companyId, isActive: true },
       order: { name: 'ASC' },
+      skip,
+      take: limit,
     });
+
+    return new PaginatedResponseDto(data, total, page, limit);
   }
 
   async findIconById(id: string, user: User): Promise<ClientIcon> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     const icon = await this.iconRepository.findOne({
       where: { id, companyId },
     });
 
     if (!icon) {
-      throw new NotFoundException(`Icon with ID ${id} not found`);
+      throw new IconNotFoundException(id, companyId);
     }
 
     return icon;
@@ -93,7 +82,7 @@ export class ClientIconsService {
     file: Express.Multer.File | undefined,
     user: User,
   ): Promise<ClientIcon> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
     const iconType = dto.iconType || IconType.CUSTOM;
 
     // Validate based on icon type
@@ -134,11 +123,17 @@ export class ClientIconsService {
 
     // Handle file upload for custom type
     if (iconType === IconType.CUSTOM && file) {
-      const result = await this.storageService.uploadIcon(file, companyId);
-      iconData.fileName = file.originalname;
-      iconData.filePath = result.path;
-      iconData.mimeType = file.mimetype;
-      iconData.fileSize = file.size;
+      try {
+        const result = await this.storageService.uploadIcon(file, companyId);
+        iconData.fileName = file.originalname;
+        iconData.filePath = result.path;
+        iconData.mimeType = file.mimetype;
+        iconData.fileSize = file.size;
+      } catch (error) {
+        throw new BadRequestException(
+          `Failed to upload icon file: ${(error as Error).message}`,
+        );
+      }
     }
 
     const icon = this.iconRepository.create(iconData);
@@ -159,7 +154,7 @@ export class ClientIconsService {
     user: User,
   ): Promise<ClientIcon> {
     const icon = await this.findIconById(id, user);
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     // Check for duplicate name if changing
     if (dto.name && dto.name !== icon.name) {
@@ -204,17 +199,30 @@ export class ClientIconsService {
 
     // Handle file update for custom type
     if (newIconType === IconType.CUSTOM && file) {
-      // Delete old file if exists
-      if (icon.filePath) {
-        await this.storageService.deleteFile(icon.filePath);
+      const oldFilePath = icon.filePath;
+
+      // Upload new file FIRST (before deleting old) to prevent data loss on failure
+      try {
+        const result = await this.storageService.uploadIcon(file, companyId);
+        icon.fileName = file.originalname;
+        icon.filePath = result.path;
+        icon.mimeType = file.mimetype;
+        icon.fileSize = file.size;
+      } catch (error) {
+        throw new BadRequestException(
+          `Failed to upload new icon file: ${(error as Error).message}`,
+        );
       }
 
-      // Upload new file
-      const result = await this.storageService.uploadIcon(file, companyId);
-      icon.fileName = file.originalname;
-      icon.filePath = result.path;
-      icon.mimeType = file.mimetype;
-      icon.fileSize = file.size;
+      // Delete old file only after new file is successfully uploaded
+      if (oldFilePath) {
+        try {
+          await this.storageService.deleteFile(oldFilePath);
+        } catch {
+          // Log but don't fail - the new file is already in place
+          // Old file can be cleaned up later via maintenance job
+        }
+      }
     }
 
     // Track if auto-assign condition changed
@@ -264,7 +272,7 @@ export class ClientIconsService {
     const icon = await this.findIconById(id, user);
 
     if (!icon.filePath) {
-      throw new NotFoundException('Icon file not found');
+      throw new IconNotFoundException(id, null);
     }
 
     return this.storageService.getFileUrl(icon.filePath);
@@ -273,7 +281,7 @@ export class ClientIconsService {
   // Icon Assignments
 
   async getClientIcons(clientId: string, user: User): Promise<ClientIcon[]> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     // Verify client
     const client = await this.clientRepository.findOne({
@@ -281,7 +289,7 @@ export class ClientIconsService {
     });
 
     if (!client) {
-      throw new NotFoundException(`Client with ID ${clientId} not found`);
+      throw new ClientNotFoundException(clientId, companyId);
     }
 
     const assignments = await this.assignmentRepository.find({
@@ -295,7 +303,7 @@ export class ClientIconsService {
   }
 
   async assignIcon(dto: AssignIconDto, user: User): Promise<ClientIconAssignment> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     // Verify client
     const client = await this.clientRepository.findOne({
@@ -303,7 +311,7 @@ export class ClientIconsService {
     });
 
     if (!client) {
-      throw new NotFoundException(`Client with ID ${dto.clientId} not found`);
+      throw new ClientNotFoundException(dto.clientId, companyId);
     }
 
     // Verify icon
@@ -312,7 +320,7 @@ export class ClientIconsService {
     });
 
     if (!icon) {
-      throw new NotFoundException(`Icon with ID ${dto.iconId} not found`);
+      throw new IconNotFoundException(dto.iconId, companyId);
     }
 
     // Check if already assigned
@@ -337,7 +345,7 @@ export class ClientIconsService {
     iconId: string,
     user: User,
   ): Promise<void> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     // Verify client
     const client = await this.clientRepository.findOne({
@@ -345,7 +353,7 @@ export class ClientIconsService {
     });
 
     if (!client) {
-      throw new NotFoundException(`Client with ID ${clientId} not found`);
+      throw new ClientNotFoundException(clientId, companyId);
     }
 
     await this.assignmentRepository.delete({ clientId, iconId });
@@ -356,39 +364,66 @@ export class ClientIconsService {
     iconIds: string[],
     user: User,
   ): Promise<ClientIcon[]> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
-    // Verify client
+    // Verify client OUTSIDE transaction
     const client = await this.clientRepository.findOne({
       where: { id: clientId, companyId },
     });
 
     if (!client) {
-      throw new NotFoundException(`Client with ID ${clientId} not found`);
+      throw new ClientNotFoundException(clientId, companyId);
     }
 
-    // Verify all icons exist
+    // Verify all icons exist OUTSIDE transaction
     const icons: ClientIcon[] = [];
     for (const iconId of iconIds) {
       const icon = await this.iconRepository.findOne({
         where: { id: iconId, companyId, isActive: true },
       });
       if (!icon) {
-        throw new BadRequestException(`Icon with ID ${iconId} not found`);
+        throw new IconNotFoundException(iconId, companyId);
       }
       icons.push(icon);
     }
 
-    // Remove all existing assignments
-    await this.assignmentRepository.delete({ clientId });
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    // Create new assignments
-    const assignments = iconIds.map((iconId) =>
-      this.assignmentRepository.create({ clientId, iconId }),
-    );
+    try {
+      // Remove all existing assignments
+      await queryRunner.manager.delete(ClientIconAssignment, { clientId });
 
-    await this.assignmentRepository.save(assignments);
+      // Create new assignments if there are any
+      if (iconIds.length > 0) {
+        const assignments = iconIds.map((iconId) =>
+          queryRunner.manager.create(ClientIconAssignment, {
+            clientId,
+            iconId,
+            isAutoAssigned: false, // Manual assignment
+          }),
+        );
+        await queryRunner.manager.save(assignments);
+      }
 
-    return icons;
+      await queryRunner.commitTransaction();
+      return icons;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+
+      throw new IconAssignmentException(
+        clientId,
+        iconIds.length,
+        (error as Error).message,
+        {
+          companyId,
+          userId: user.id,
+          operationStage: 'setClientIcons',
+        },
+      );
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

@@ -1,8 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
-import Imap from 'node-imap';
-import { simpleParser, ParsedMail, AddressObject } from 'mailparser';
+import { simpleParser, ParsedMail, AddressObject, Source } from 'mailparser';
+import type * as ImapTypes from 'node-imap';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const Imap = require('node-imap');
 import { ImapConfig } from '../interfaces/email-config.interface';
 import { ReceivedEmail, FetchEmailsOptions, EmailAddress } from '../interfaces/email-message.interface';
+
+// TLS validation - secure by default, configurable via env
+const REJECT_UNAUTHORIZED = process.env['EMAIL_REJECT_UNAUTHORIZED'] !== 'false';
 
 /**
  * Service for reading emails via IMAP
@@ -45,7 +51,7 @@ export class EmailReaderService {
       imap.once('ready', () => {
         const mailbox = options.mailbox || 'INBOX';
 
-        imap.openBox(mailbox, false, (err, box) => {
+        imap.openBox(mailbox, false, (err: Error | null, box: ImapTypes.Box) => {
           if (err) {
             imap.end();
             return reject(err);
@@ -53,7 +59,7 @@ export class EmailReaderService {
 
           const searchCriteria = this.buildSearchCriteria(options);
 
-          imap.search(searchCriteria, (err, results) => {
+          imap.search(searchCriteria, (err: Error | null, results: number[]) => {
             if (err) {
               imap.end();
               return reject(err);
@@ -74,9 +80,9 @@ export class EmailReaderService {
               struct: true,
             });
 
-            fetch.on('message', (msg, seqno) => {
-              msg.on('body', (stream) => {
-                simpleParser(stream, async (err, parsed) => {
+            fetch.on('message', (msg: ImapTypes.ImapMessage, seqno: number) => {
+              msg.on('body', (stream: NodeJS.ReadableStream) => {
+                simpleParser(stream as unknown as Source, async (err: Error | null, parsed: ParsedMail) => {
                   if (err) {
                     this.logger.error(`Error parsing email: ${err.message}`);
                     return;
@@ -87,9 +93,9 @@ export class EmailReaderService {
                 });
               });
 
-              msg.once('attributes', (attrs) => {
+              msg.once('attributes', (attrs: ImapTypes.ImapMessageAttributes) => {
                 if (options.markAsSeen && !attrs.flags.includes('\\Seen')) {
-                  imap.addFlags(attrs.uid, '\\Seen', (err) => {
+                  imap.addFlags(attrs.uid, '\\Seen', (err: Error | null) => {
                     if (err) {
                       this.logger.error(`Failed to mark email as seen: ${err.message}`);
                     }
@@ -98,7 +104,7 @@ export class EmailReaderService {
               });
             });
 
-            fetch.once('error', (err) => {
+            fetch.once('error', (err: Error) => {
               this.logger.error(`Fetch error: ${err.message}`);
               imap.end();
               reject(err);
@@ -112,7 +118,7 @@ export class EmailReaderService {
         });
       });
 
-      imap.once('error', (err) => {
+      imap.once('error', (err: Error) => {
         this.logger.error(`IMAP connection error: ${err.message}`);
         reject(err);
       });
@@ -134,7 +140,7 @@ export class EmailReaderService {
       const imap = this.createImapConnection(imapConfig);
 
       imap.once('ready', () => {
-        imap.getBoxes((err, boxes) => {
+        imap.getBoxes((err: Error | null, boxes: ImapTypes.MailBoxes) => {
           imap.end();
 
           if (err) {
@@ -163,7 +169,7 @@ export class EmailReaderService {
       const imap = this.createImapConnection(imapConfig);
 
       imap.once('ready', () => {
-        imap.openBox('INBOX', false, (err) => {
+        imap.openBox('INBOX', false, (err: Error | null) => {
           if (err) {
             imap.end();
             return reject(err);
@@ -172,7 +178,7 @@ export class EmailReaderService {
           const flag = seen ? '\\Seen' : '';
           const action = seen ? imap.addFlags : imap.delFlags;
 
-          action.call(imap, messageIds, flag, (err) => {
+          action.call(imap, messageIds, flag, (err: Error | null) => {
             imap.end();
 
             if (err) {
@@ -197,19 +203,19 @@ export class EmailReaderService {
       const imap = this.createImapConnection(imapConfig);
 
       imap.once('ready', () => {
-        imap.openBox('INBOX', false, (err) => {
+        imap.openBox('INBOX', false, (err: Error | null) => {
           if (err) {
             imap.end();
             return reject(err);
           }
 
-          imap.addFlags(messageIds, '\\Deleted', (err) => {
+          imap.addFlags(messageIds, '\\Deleted', (err: Error | null) => {
             if (err) {
               imap.end();
               return reject(err);
             }
 
-            imap.expunge((err) => {
+            imap.expunge((err: Error | null) => {
               imap.end();
 
               if (err) {
@@ -230,14 +236,14 @@ export class EmailReaderService {
   /**
    * Create IMAP connection instance
    */
-  private createImapConnection(config: ImapConfig): Imap {
+  private createImapConnection(config: ImapConfig): InstanceType<typeof Imap> {
     return new Imap({
       host: config.host,
       port: config.port,
       tls: config.tls,
       user: config.user,
       password: config.password,
-      tlsOptions: config.tlsOptions || { rejectUnauthorized: false },
+      tlsOptions: config.tlsOptions || { rejectUnauthorized: REJECT_UNAUTHORIZED },
       connTimeout: 10000,
       authTimeout: 5000,
     });
@@ -269,7 +275,7 @@ export class EmailReaderService {
       flags: [],
       text: parsed.text,
       html: parsed.html ? parsed.html.toString() : undefined,
-      attachments: parsed.attachments?.map(att => ({
+      attachments: parsed.attachments?.map((att: { filename?: string; contentType: string; size: number; content: Buffer; contentId?: string }) => ({
         filename: att.filename || 'unknown',
         contentType: att.contentType,
         size: att.size,
@@ -290,7 +296,7 @@ export class EmailReaderService {
     const addresses = Array.isArray(addressObj) ? addressObj : [addressObj];
 
     return addresses.flatMap(addr =>
-      addr.value.map(v => ({
+      addr.value.map((v: { name?: string; address?: string }) => ({
         name: v.name,
         address: v.address || '',
       }))
@@ -300,7 +306,7 @@ export class EmailReaderService {
   /**
    * Extract mailbox names from IMAP boxes structure
    */
-  private extractMailboxNames(boxes: any, prefix = ''): string[] {
+  private extractMailboxNames(boxes: ImapTypes.MailBoxes, prefix = ''): string[] {
     const names: string[] = [];
 
     for (const [name, box] of Object.entries(boxes)) {
@@ -308,7 +314,7 @@ export class EmailReaderService {
       names.push(fullName);
 
       if (box && typeof box === 'object' && 'children' in box) {
-        names.push(...this.extractMailboxNames((box as any).children, fullName));
+        names.push(...this.extractMailboxNames((box as ImapTypes.Folder).children as ImapTypes.MailBoxes, fullName));
       }
     }
 

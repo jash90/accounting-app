@@ -15,8 +15,9 @@ import {
   ZusStatusLabels,
   EmploymentTypeLabels,
   AmlGroupLabels,
+  PaginationQueryDto,
+  PaginatedResponseDto,
 } from '@accounting/common';
-import { EmailService } from '@accounting/infrastructure/email';
 import { ChangeLogService, ChangeDetail } from '@accounting/infrastructure/change-log';
 import {
   EmailConfigurationService,
@@ -36,15 +37,18 @@ export class ClientChangelogService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Company)
     private readonly companyRepository: Repository<Company>,
-    private readonly emailService: EmailService,
     private readonly changeLogService: ChangeLogService,
     private readonly emailConfigService: EmailConfigurationService,
     private readonly emailSenderService: EmailSenderService,
   ) {}
 
-  private readonly templatesDir = path.join(
-    process.cwd(),
-    'libs',
+  // Use __dirname for reliable path resolution in containers and monorepos
+  private readonly templatesDir = path.resolve(
+    __dirname,
+    '..',
+    '..',
+    '..',
+    '..',
     'infrastructure',
     'email',
     'src',
@@ -60,8 +64,18 @@ export class ClientChangelogService {
 
   async getCompanyChangelog(
     user: User,
-  ): Promise<{ logs: ChangeLog[]; total: number }> {
-    return this.changeLogService.getCompanyChangeLogs('Client', user.companyId);
+    pagination?: PaginationQueryDto,
+  ): Promise<PaginatedResponseDto<ChangeLog>> {
+    const { page = 1, limit = 50 } = pagination || {};
+    const skip = (page - 1) * limit;
+
+    const { logs, total } = await this.changeLogService.getCompanyChangeLogs(
+      'Client',
+      user.companyId!,
+      { limit, offset: skip },
+    );
+
+    return new PaginatedResponseDto(logs, total, page, limit);
   }
 
   async notifyClientCreated(client: Client, performedBy: User): Promise<void> {
@@ -77,7 +91,12 @@ export class ClientChangelogService {
 
     if (!smtpConfig) {
       this.logger.warn(
-        `No active email configuration for company ${client.companyId}. Skipping notifications.`,
+        `No active email configuration for company. Skipping create notifications.`,
+        {
+          companyId: client.companyId,
+          clientId: client.id,
+          notificationType: 'create',
+        },
       );
       return;
     }
@@ -101,6 +120,24 @@ export class ClientChangelogService {
     oldValues: Record<string, unknown>,
     performedBy: User,
   ): Promise<void> {
+    // Check for SMTP configuration first
+    const smtpConfig =
+      await this.emailConfigService.getDecryptedSmtpConfigByCompanyId(
+        client.companyId,
+      );
+
+    if (!smtpConfig) {
+      this.logger.warn(
+        `No active email configuration for company. Skipping update notifications.`,
+        {
+          companyId: client.companyId,
+          clientId: client.id,
+          notificationType: 'update',
+        },
+      );
+      return;
+    }
+
     const recipients = await this.getNotificationRecipients(
       client.companyId,
       'receiveOnUpdate',
@@ -127,21 +164,62 @@ export class ClientChangelogService {
     );
 
     try {
-      await this.emailService.sendClientUpdatedNotification(
-        recipients.map((r) => r.email),
+      const html = await this.compileTemplate('client-updated', {
+        clientName: client.name,
+        companyName: company?.name || 'Nieznana firma',
+        updatedByName: `${performedBy.firstName} ${performedBy.lastName}`,
+        changes: formattedChanges,
+        updatedAt: new Date().toLocaleString('pl-PL'),
+      });
+
+      const messages = recipients.map((recipient) => ({
+        to: recipient.email,
+        subject: `Klient zaktualizowany: ${client.name}`,
+        html,
+      }));
+
+      await this.emailSenderService.sendBatchEmails(smtpConfig, messages);
+      this.logger.log(
+        `Update notifications sent to users for client`,
         {
-          name: client.name,
-          companyName: company?.name || 'Nieznana firma',
-          updatedByName: `${performedBy.firstName} ${performedBy.lastName}`,
-          changes: formattedChanges,
+          companyId: client.companyId,
+          clientId: client.id,
+          recipientCount: recipients.length,
         },
       );
     } catch (error) {
-      this.logger.error('Failed to send client updated notification', error);
+      this.logger.error(
+        `Failed to send client updated notification`,
+        {
+          companyId: client.companyId,
+          clientId: client.id,
+          error: (error as Error).message,
+          errorName: (error as Error).name,
+          stack: (error as Error).stack,
+        },
+      );
     }
   }
 
   async notifyClientDeleted(client: Client, performedBy: User): Promise<void> {
+    // Check for SMTP configuration first
+    const smtpConfig =
+      await this.emailConfigService.getDecryptedSmtpConfigByCompanyId(
+        client.companyId,
+      );
+
+    if (!smtpConfig) {
+      this.logger.warn(
+        `No active email configuration for company. Skipping delete notifications.`,
+        {
+          companyId: client.companyId,
+          clientId: client.id,
+          notificationType: 'delete',
+        },
+      );
+      return;
+    }
+
     const recipients = await this.getNotificationRecipients(
       client.companyId,
       'receiveOnDelete',
@@ -157,17 +235,40 @@ export class ClientChangelogService {
     });
 
     try {
-      await this.emailService.sendClientDeletedNotification(
-        recipients.map((r) => r.email),
+      const html = await this.compileTemplate('client-deleted', {
+        clientName: client.name,
+        clientNip: client.nip || 'Nie podano',
+        companyName: company?.name || 'Nieznana firma',
+        deletedByName: `${performedBy.firstName} ${performedBy.lastName}`,
+        deletedAt: new Date().toLocaleString('pl-PL'),
+      });
+
+      const messages = recipients.map((recipient) => ({
+        to: recipient.email,
+        subject: `Klient usunięty: ${client.name}`,
+        html,
+      }));
+
+      await this.emailSenderService.sendBatchEmails(smtpConfig, messages);
+      this.logger.log(
+        `Delete notifications sent to users for client`,
         {
-          name: client.name,
-          nip: client.nip,
-          companyName: company?.name || 'Nieznana firma',
-          deletedByName: `${performedBy.firstName} ${performedBy.lastName}`,
+          companyId: client.companyId,
+          clientId: client.id,
+          recipientCount: recipients.length,
         },
       );
     } catch (error) {
-      this.logger.error('Failed to send client deleted notification', error);
+      this.logger.error(
+        `Failed to send client deleted notification`,
+        {
+          companyId: client.companyId,
+          clientId: client.id,
+          error: (error as Error).message,
+          errorName: (error as Error).name,
+          stack: (error as Error).stack,
+        },
+      );
     }
   }
 
@@ -257,10 +358,14 @@ export class ClientChangelogService {
       return false;
     }
 
-    // Handle Date strings
+    // Handle Date strings - only accept ISO-8601 format to avoid false positives
+    // Pattern matches: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS (with optional timezone/ms)
+    const isoDatePattern = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?/;
     if (
       typeof oldValue === 'string' &&
       typeof newValue === 'string' &&
+      isoDatePattern.test(oldValue) &&
+      isoDatePattern.test(newValue) &&
       !isNaN(Date.parse(oldValue)) &&
       !isNaN(Date.parse(newValue))
     ) {
@@ -287,11 +392,25 @@ export class ClientChangelogService {
         html,
       });
 
-      this.logger.log(`Welcome email sent to client ${client.email}`);
+      this.logger.log(
+        `Welcome email sent to client`,
+        {
+          companyId: client.companyId,
+          clientId: client.id,
+          clientEmail: client.email,
+        },
+      );
     } catch (error) {
       this.logger.error(
-        `Failed to send welcome email to client: ${error.message}`,
-        error.stack,
+        `Failed to send welcome email to client`,
+        {
+          companyId: client.companyId,
+          clientId: client.id,
+          clientEmail: client.email,
+          error: (error as Error).message,
+          errorName: (error as Error).name,
+          stack: (error as Error).stack,
+        },
       );
     }
   }
@@ -332,12 +451,23 @@ export class ClientChangelogService {
 
       await this.emailSenderService.sendBatchEmails(smtpConfig, messages);
       this.logger.log(
-        `Notifications sent to ${recipients.length} users for new client`,
+        `Create notifications sent to users for new client`,
+        {
+          companyId: client.companyId,
+          clientId: client.id,
+          recipientCount: recipients.length,
+        },
       );
     } catch (error) {
       this.logger.error(
-        `Failed to send client created notifications: ${error.message}`,
-        error.stack,
+        `Failed to send client created notifications`,
+        {
+          companyId: client.companyId,
+          clientId: client.id,
+          error: (error as Error).message,
+          errorName: (error as Error).name,
+          stack: (error as Error).stack,
+        },
       );
     }
   }
@@ -394,7 +524,15 @@ export class ClientChangelogService {
       const template = handlebars.compile(templateContent);
       return template(context);
     } catch (error) {
-      this.logger.error(`Failed to compile template: ${templateName}`, error);
+      this.logger.error(
+        `Failed to compile template`,
+        {
+          templateName,
+          error: (error as Error).message,
+          errorName: (error as Error).name,
+          stack: (error as Error).stack,
+        },
+      );
       throw error;
     }
   }

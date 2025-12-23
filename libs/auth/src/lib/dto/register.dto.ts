@@ -7,24 +7,24 @@ export class RegisterDto {
   @ApiProperty({ example: 'user@example.com' })
   @IsEmail()
   @Transform(({ value }) => value?.toLowerCase().trim())
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: 'SecurePassword123!', minLength: 8 })
   @IsString()
   @MinLength(8)
-  password: string;
+  password!: string;
 
   @ApiProperty({ example: 'John' })
   @IsString()
-  firstName: string;
+  firstName!: string;
 
   @ApiProperty({ example: 'Doe' })
   @IsString()
-  lastName: string;
+  lastName!: string;
 
   @ApiProperty({ enum: UserRole, example: UserRole.EMPLOYEE })
   @IsEnum(UserRole)
-  role: UserRole;
+  role!: UserRole;
 
   @ApiProperty({ required: false, example: 'uuid-here' })
   @IsOptional()

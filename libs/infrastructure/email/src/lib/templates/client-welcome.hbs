@@ -29,7 +29,7 @@
   <div class="container">
     <div class="header">
       <h1>Potwierdzenie rejestracji</h1>
-      <p>Twoje dane zostaly pomyslnie zarejestrowane w systemie</p>
+      <p>Twoje dane zostały pomyślnie zarejestrowane w systemie</p>
       <div class="company-badge">{{companyName}}</div>
     </div>
 
@@ -59,11 +59,11 @@
       <div class="section">
         <div class="section-title">Daty</div>
         <div class="field">
-          <div class="label">Data zalozenia firmy</div>
+          <div class="label">Data założenia firmy</div>
           <div class="value{{#unless companyStartDate}} empty{{/unless}}">{{#if companyStartDate}}{{companyStartDate}}{{else}}Nie podano{{/if}}</div>
         </div>
         <div class="field">
-          <div class="label">Data rozpoczecia wspolpracy</div>
+          <div class="label">Data rozpoczęcia współpracy</div>
           <div class="value{{#unless cooperationStartDate}} empty{{/unless}}">{{#if cooperationStartDate}}{{cooperationStartDate}}{{else}}Nie podano{{/if}}</div>
         </div>
         {{#if suspensionDate}}
@@ -102,7 +102,7 @@
 
       <!-- Zgodność i klasyfikacja -->
       <div class="section">
-        <div class="section-title">Zgodnosc i klasyfikacja</div>
+        <div class="section-title">Zgodność i klasyfikacja</div>
         <div class="field">
           <div class="label">Grupa ryzyka AML</div>
           <div class="value{{#unless amlGroupLabel}} empty{{/unless}}">{{#if amlGroupLabel}}{{amlGroupLabel}}{{else}}Nie określono{{/if}}</div>
@@ -138,13 +138,13 @@
 
       <div class="highlight-box">
         <h3>Kontakt</h3>
-        <p>W razie pytan lub koniecznosci aktualizacji danych, prosimy o kontakt z biurem <strong>{{companyName}}</strong>.</p>
+        <p>W razie pytań lub konieczności aktualizacji danych, prosimy o kontakt z biurem <strong>{{companyName}}</strong>.</p>
       </div>
     </div>
 
     <div class="footer">
-      <p>Ta wiadomosc zostala wygenerowana automatycznie w dniu {{createdAt}}.</p>
-      <p>Prosimy nie odpowiadac na ta wiadomosc.</p>
+      <p>Ta wiadomość została wygenerowana automatycznie w dniu {{createdAt}}.</p>
+      <p>Prosimy nie odpowiadać na tę wiadomość.</p>
     </div>
   </div>
 </body>

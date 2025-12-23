@@ -5,9 +5,14 @@ import {
   IsEnum,
   IsBoolean,
   MaxLength,
+  MinLength,
   IsUUID,
   IsArray,
   IsObject,
+  IsInt,
+  Min,
+  Max,
+  Matches,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
@@ -16,27 +21,34 @@ import {
   VatStatus,
   TaxScheme,
   ZusStatus,
+  Sanitize,
+  SanitizeWithFormatting,
 } from '@accounting/common';
 
 export class CreateClientDto {
-  @ApiProperty({ description: 'Client name' })
+  @ApiProperty({ description: 'Client name', minLength: 2, maxLength: 255 })
+  @Sanitize()
   @IsString()
+  @MinLength(2, { message: 'Nazwa musi mieć minimum 2 znaki' })
   @MaxLength(255)
   name!: string;
 
-  @ApiPropertyOptional({ description: 'NIP (Tax Identification Number)' })
+  @ApiPropertyOptional({ description: 'NIP (Tax Identification Number) - 10 digits' })
   @IsOptional()
+  @Sanitize()
   @IsString()
-  @MaxLength(20)
+  @Matches(/^\d{10}$/, { message: 'NIP musi składać się z 10 cyfr' })
   nip?: string;
 
   @ApiPropertyOptional({ description: 'Email address' })
   @IsOptional()
+  @Sanitize()
   @IsEmail()
   email?: string;
 
   @ApiPropertyOptional({ description: 'Phone number' })
   @IsOptional()
+  @Sanitize()
   @IsString()
   @MaxLength(20)
   phone?: string;
@@ -58,22 +70,26 @@ export class CreateClientDto {
 
   @ApiPropertyOptional({ description: 'Company specificity notes' })
   @IsOptional()
+  @SanitizeWithFormatting()
   @IsString()
   companySpecificity?: string;
 
   @ApiPropertyOptional({ description: 'Additional information' })
   @IsOptional()
+  @SanitizeWithFormatting()
   @IsString()
   additionalInfo?: string;
 
   @ApiPropertyOptional({ description: 'GTU code' })
   @IsOptional()
+  @Sanitize()
   @IsString()
   @MaxLength(10)
   gtuCode?: string;
 
   @ApiPropertyOptional({ description: 'AML group' })
   @IsOptional()
+  @Sanitize()
   @IsString()
   @MaxLength(50)
   amlGroup?: string;
@@ -107,9 +123,11 @@ export class CreateClientDto {
 export class UpdateClientDto extends PartialType(CreateClientDto) {}
 
 export class ClientFiltersDto {
-  @ApiPropertyOptional({ description: 'Search query' })
+  @ApiPropertyOptional({ description: 'Search query', maxLength: 100 })
   @IsOptional()
+  @Sanitize()
   @IsString()
+  @MaxLength(100, { message: 'Wyszukiwanie nie może przekraczać 100 znaków' })
   search?: string;
 
   @ApiPropertyOptional({ enum: EmploymentType })
@@ -141,13 +159,32 @@ export class ClientFiltersDto {
     return value;
   })
   isActive?: boolean;
-}
 
-export class SetClientIconsDto {
-  @ApiProperty({ type: [String], description: 'Array of icon IDs' })
-  @IsArray()
-  @IsUUID('4', { each: true })
-  iconIds!: string[];
+  @ApiPropertyOptional({
+    description: 'Page number (1-based)',
+    minimum: 1,
+    default: 1,
+    example: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @ApiPropertyOptional({
+    description: 'Number of items per page',
+    minimum: 1,
+    maximum: 100,
+    default: 20,
+    example: 20,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number = 20;
 }
 
 export class SetCustomFieldValuesDto {

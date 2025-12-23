@@ -8,6 +8,7 @@ import {
   OneToOne,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { UserRole } from '../enums/user-role.enum';
 import { Company } from './company.entity';
@@ -15,6 +16,9 @@ import { UserModulePermission } from './user-module-permission.entity';
 import { EmailConfiguration } from './email-configuration.entity';
 
 @Entity('users')
+@Index(['companyId']) // For company employee queries
+@Index(['companyId', 'isActive']) // For active employee queries
+@Index(['role']) // For role-based queries
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

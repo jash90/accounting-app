@@ -144,7 +144,7 @@ export function ClientIconFormDialog({
                   iconType: iconType || IconType.LUCIDE,
                   iconValue: iconValue,
                   color: color,
-                  file: form.getValues('file' as any),
+                  file: 'file' in form.getValues() ? (form.getValues() as { file?: File }).file : undefined,
                 }}
                 onChange={(value) => {
                   form.setValue('iconType', value.iconType as 'lucide' | 'custom' | 'emoji');
@@ -153,7 +153,8 @@ export function ClientIconFormDialog({
                     form.setValue('color', value.color || '');
                   }
                   if (value.file) {
-                    form.setValue('file' as any, value.file);
+                    // Type-safe file field access - both schemas now include file
+                    (form.setValue as (name: string, value: File) => void)('file', value.file);
                   }
                 }}
               />

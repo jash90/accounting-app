@@ -1,31 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as dns from 'dns';
-import { promisify } from 'util';
 import * as nodemailer from 'nodemailer';
-import Imap from 'imap';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const Imap = require('imap');
 import {
   AutodiscoveryResult,
   DiscoveredConfig,
-  AutoconfigResponse,
-  SrvRecord,
-  MxRecord,
-  ConfidenceLevel,
 } from '../interfaces/autodiscovery.interface';
-import { PROVIDER_LOOKUP } from '../data/known-providers';
-
-const resolveSrv = promisify(dns.resolveSrv);
-const resolveMx = promisify(dns.resolveMx);
+import { DiscoveryCacheService } from './discovery-cache.service';
+import { ProviderLookupService } from './provider-lookup.service';
+import { DnsDiscoveryService } from './dns-discovery.service';
 
 // TLS validation - configurable via env, defaults to true in production
-const REJECT_UNAUTHORIZED = process.env.EMAIL_REJECT_UNAUTHORIZED !== 'false';
-
-/**
- * Cache entry with TTL tracking
- */
-interface CacheEntry {
-  result: AutodiscoveryResult;
-  expiry: number;
-}
+const REJECT_UNAUTHORIZED = process.env['EMAIL_REJECT_UNAUTHORIZED'] !== 'false';
 
 /**
  * Connection verification result
@@ -35,30 +22,34 @@ export interface VerificationResult {
   imap: { success: boolean; error?: string };
 }
 
+/**
+ * Email Autodiscovery Service
+ *
+ * Discovers email server configuration using multiple strategies:
+ * 1. Known provider lookup (fastest, most reliable)
+ * 2. Mozilla Autoconfig XML
+ * 3. Microsoft Autodiscover protocol
+ * 4. Mozilla Thunderbird ISPDB
+ * 5. DNS SRV records
+ * 6. MX record heuristics (fallback)
+ *
+ * Results are cached to improve performance on repeated lookups.
+ */
 @Injectable()
 export class EmailAutodiscoveryService {
   private readonly logger = new Logger(EmailAutodiscoveryService.name);
-
-  /**
-   * Escapes special XML characters to prevent XML injection
-   */
-  private escapeXml(str: string): string {
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&apos;');
-  }
-
-  // Cache for discovery results
-  private cache = new Map<string, CacheEntry>();
-  private readonly CACHE_TTL_SUCCESS = 3600000; // 1 hour for successful lookups
-  private readonly CACHE_TTL_FAILURE = 900000; // 15 minutes for failed lookups
   private readonly VERIFICATION_TIMEOUT = 10000; // 10 seconds for connection tests
+
+  constructor(
+    private readonly cacheService: DiscoveryCacheService,
+    private readonly providerLookup: ProviderLookupService,
+    private readonly dnsDiscovery: DnsDiscoveryService,
+  ) {}
 
   /**
    * Main autodiscovery method - tries multiple strategies in order of reliability
+   * @param email Email address to discover configuration for
+   * @returns Autodiscovery result with config if successful
    */
   async discover(email: string): Promise<AutodiscoveryResult> {
     const domain = this.extractDomain(email);
@@ -72,63 +63,63 @@ export class EmailAutodiscoveryService {
     }
 
     // Check cache first
-    const cached = this.getCached(domain);
+    const cached = this.cacheService.get(domain);
     if (cached) {
-      this.logger.debug(`Returning cached result for ${domain}`);
+      this.logger.debug('Returning cached result', { domain });
       return cached;
     }
 
-    this.logger.debug(`Starting autodiscovery for domain: ${domain}`);
+    this.logger.debug('Starting autodiscovery', { domain });
 
     // 1. Check known providers first (fastest and most reliable)
-    const knownResult = this.checkKnownProviders(domain);
+    const knownResult = this.providerLookup.checkKnownProviders(domain);
     if (knownResult.success) {
-      this.logger.log(`Found known provider for ${domain}: ${knownResult.config?.provider}`);
-      this.setCache(domain, knownResult);
+      this.logger.log('Found known provider', { domain, provider: knownResult.config?.provider });
+      this.cacheService.set(domain, knownResult);
       return knownResult;
     }
 
     // 2. Try Mozilla Autoconfig
     const autoconfigResult = await this.tryAutoconfig(domain);
     if (autoconfigResult.success) {
-      this.logger.log(`Found Autoconfig for ${domain}`);
-      this.setCache(domain, autoconfigResult);
+      this.logger.log('Found Autoconfig', { domain });
+      this.cacheService.set(domain, autoconfigResult);
       return autoconfigResult;
     }
 
     // 3. Try Microsoft Autodiscover
     const autodiscoverResult = await this.tryAutodiscover(domain, email);
     if (autodiscoverResult.success) {
-      this.logger.log(`Found Autodiscover for ${domain}`);
-      this.setCache(domain, autodiscoverResult);
+      this.logger.log('Found Autodiscover', { domain });
+      this.cacheService.set(domain, autodiscoverResult);
       return autodiscoverResult;
     }
 
     // 4. Try Mozilla Thunderbird ISPDB
     const ispdbResult = await this.tryIspdb(domain);
     if (ispdbResult.success) {
-      this.logger.log(`Found ISPDB entry for ${domain}`);
-      this.setCache(domain, ispdbResult);
+      this.logger.log('Found ISPDB entry', { domain });
+      this.cacheService.set(domain, ispdbResult);
       return ispdbResult;
     }
 
     // 5. Try DNS SRV records
-    const srvResult = await this.tryDnsSrv(domain);
+    const srvResult = await this.dnsDiscovery.tryDnsSrv(domain);
     if (srvResult.success) {
-      this.logger.log(`Found DNS SRV records for ${domain}`);
-      this.setCache(domain, srvResult);
+      this.logger.log('Found DNS SRV records', { domain });
+      this.cacheService.set(domain, srvResult);
       return srvResult;
     }
 
     // 6. Last resort: MX record heuristics
-    const mxResult = await this.tryMxHeuristics(domain);
+    const mxResult = await this.dnsDiscovery.tryMxHeuristics(domain);
     if (mxResult.success) {
-      this.logger.log(`Using MX heuristics for ${domain}`);
-      this.setCache(domain, mxResult);
+      this.logger.log('Using MX heuristics', { domain });
+      this.cacheService.set(domain, mxResult);
       return mxResult;
     }
 
-    this.logger.warn(`No configuration found for ${domain}`);
+    this.logger.warn('No configuration found', { domain });
     const failResult: AutodiscoveryResult = {
       success: false,
       source: 'mx-heuristic',
@@ -142,51 +133,16 @@ export class EmailAutodiscoveryService {
         'MX heuristics failed',
       ],
     };
-    this.setCache(domain, failResult);
+    this.cacheService.set(domain, failResult);
     return failResult;
   }
 
   /**
-   * Get cached result for domain
-   */
-  private getCached(domain: string): AutodiscoveryResult | null {
-    const key = domain.toLowerCase().trim();
-    const entry = this.cache.get(key);
-
-    if (!entry) {
-      return null;
-    }
-
-    if (Date.now() > entry.expiry) {
-      this.cache.delete(key);
-      return null;
-    }
-
-    return entry.result;
-  }
-
-  /**
-   * Set cache entry with appropriate TTL
-   */
-  private setCache(domain: string, result: AutodiscoveryResult): void {
-    const key = domain.toLowerCase().trim();
-    const ttl = result.success ? this.CACHE_TTL_SUCCESS : this.CACHE_TTL_FAILURE;
-
-    this.cache.set(key, {
-      result,
-      expiry: Date.now() + ttl,
-    });
-  }
-
-  /**
    * Clear cache for a specific domain or all domains
+   * @param domain Optional domain to clear
    */
   clearCache(domain?: string): void {
-    if (domain) {
-      this.cache.delete(domain.toLowerCase().trim());
-    } else {
-      this.cache.clear();
-    }
+    this.cacheService.clear(domain);
   }
 
   /**
@@ -201,53 +157,19 @@ export class EmailAutodiscoveryService {
   }
 
   /**
-   * Check if domain matches a known provider
+   * Escapes special XML characters to prevent XML injection
    */
-  private checkKnownProviders(domain: string): AutodiscoveryResult {
-    const provider = PROVIDER_LOOKUP.get(domain.toLowerCase());
-
-    if (provider) {
-      const config: DiscoveredConfig = {
-        smtp: { ...provider.smtp },
-        imap: { ...provider.imap },
-        provider: provider.provider,
-        displayName: provider.displayName,
-        documentationUrl: provider.documentationUrl,
-        requiresAppPassword: provider.requiresAppPassword,
-        requiresOAuth: provider.requiresOAuth,
-        notes: provider.notes,
-      };
-
-      const warnings: string[] = [];
-      if (provider.requiresAppPassword) {
-        warnings.push('This provider requires an App Password instead of your regular password');
-      }
-      if (provider.requiresOAuth) {
-        warnings.push('This provider prefers OAuth2 authentication');
-      }
-      if (provider.notes) {
-        warnings.push(provider.notes);
-      }
-
-      return {
-        success: true,
-        config,
-        source: 'known-provider',
-        confidence: 'high',
-        warnings: warnings.length > 0 ? warnings : undefined,
-      };
-    }
-
-    return {
-      success: false,
-      source: 'known-provider',
-      confidence: 'low',
-    };
+  private escapeXml(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
   }
 
   /**
    * Try Mozilla Autoconfig XML discovery
-   * Checks multiple URLs according to Mozilla specification
    */
   private async tryAutoconfig(domain: string): Promise<AutodiscoveryResult> {
     const urls = [
@@ -258,7 +180,7 @@ export class EmailAutodiscoveryService {
 
     for (const url of urls) {
       try {
-        this.logger.debug(`Trying Autoconfig URL: ${url}`);
+        this.logger.debug('Trying Autoconfig URL', { url });
         const response = await this.fetchWithTimeout(url, 5000);
 
         if (response.ok) {
@@ -276,7 +198,7 @@ export class EmailAutodiscoveryService {
         }
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
-        this.logger.debug(`Autoconfig failed for ${url}: ${message}`);
+        this.logger.debug('Autoconfig failed', { url, error: message });
       }
     }
 
@@ -306,12 +228,10 @@ export class EmailAutodiscoveryService {
 
     for (const url of urls) {
       try {
-        this.logger.debug(`Trying Autodiscover URL: ${url}`);
+        this.logger.debug('Trying Autodiscover URL', { url });
         const response = await this.fetchWithTimeout(url, 5000, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'text/xml',
-          },
+          headers: { 'Content-Type': 'text/xml' },
           body,
         });
 
@@ -330,7 +250,7 @@ export class EmailAutodiscoveryService {
         }
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
-        this.logger.debug(`Autodiscover failed for ${url}: ${message}`);
+        this.logger.debug('Autodiscover failed', { url, error: message });
       }
     }
 
@@ -343,14 +263,12 @@ export class EmailAutodiscoveryService {
 
   /**
    * Try Mozilla Thunderbird ISPDB
-   * Uses the public ISPDB maintained by Mozilla for Thunderbird
-   * https://autoconfig.thunderbird.net/v1.1/{domain}
    */
   private async tryIspdb(domain: string): Promise<AutodiscoveryResult> {
     const url = `https://autoconfig.thunderbird.net/v1.1/${domain}`;
 
     try {
-      this.logger.debug(`Trying ISPDB URL: ${url}`);
+      this.logger.debug('Trying ISPDB URL', { url });
       const response = await this.fetchWithTimeout(url, 5000);
 
       if (response.ok) {
@@ -368,7 +286,7 @@ export class EmailAutodiscoveryService {
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.debug(`ISPDB failed for ${domain}: ${message}`);
+      this.logger.debug('ISPDB failed', { domain, error: message });
     }
 
     return {
@@ -379,211 +297,10 @@ export class EmailAutodiscoveryService {
   }
 
   /**
-   * Try DNS SRV record discovery
-   */
-  private async tryDnsSrv(domain: string): Promise<AutodiscoveryResult> {
-    try {
-      const srvQueries = [
-        { query: `_submission._tcp.${domain}`, type: 'smtp' },
-        { query: `_smtps._tcp.${domain}`, type: 'smtp-ssl' },
-        { query: `_imaps._tcp.${domain}`, type: 'imap-ssl' },
-        { query: `_imap._tcp.${domain}`, type: 'imap' },
-      ];
-
-      let smtpRecord: SrvRecord | null = null;
-      let imapRecord: SrvRecord | null = null;
-      let smtpSecure = false;
-      let imapTls = false;
-
-      for (const srv of srvQueries) {
-        try {
-          const records = await resolveSrv(srv.query);
-          if (records && records.length > 0) {
-            const record = records.sort((a, b) => a.priority - b.priority)[0];
-            this.logger.debug(`Found SRV record for ${srv.query}: ${record.name}:${record.port}`);
-
-            if (srv.type.startsWith('smtp') && !smtpRecord) {
-              smtpRecord = record;
-              smtpSecure = srv.type === 'smtp-ssl';
-            } else if (srv.type.startsWith('imap') && !imapRecord) {
-              imapRecord = record;
-              imapTls = srv.type === 'imap-ssl';
-            }
-          }
-        } catch {
-          // SRV record not found, continue
-        }
-      }
-
-      if (smtpRecord && imapRecord) {
-        return {
-          success: true,
-          config: {
-            smtp: {
-              host: smtpRecord.name,
-              port: smtpRecord.port,
-              secure: smtpSecure,
-              authMethod: 'plain',
-            },
-            imap: {
-              host: imapRecord.name,
-              port: imapRecord.port,
-              tls: imapTls,
-            },
-          },
-          source: 'dns-srv',
-          confidence: 'medium',
-          warnings: ['Configuration discovered via DNS SRV records. Verify settings before use.'],
-        };
-      }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.logger.debug(`DNS SRV lookup failed: ${message}`);
-    }
-
-    return {
-      success: false,
-      source: 'dns-srv',
-      confidence: 'low',
-    };
-  }
-
-  /**
-   * Try MX record-based heuristics as last resort
-   */
-  private async tryMxHeuristics(domain: string): Promise<AutodiscoveryResult> {
-    try {
-      const mxRecords = await resolveMx(domain);
-
-      if (mxRecords && mxRecords.length > 0) {
-        const primaryMx = mxRecords.sort((a, b) => a.priority - b.priority)[0].exchange;
-        this.logger.debug(`Primary MX for ${domain}: ${primaryMx}`);
-
-        // Check for known hosting patterns in MX records
-        const config = this.inferFromMxRecord(primaryMx, domain);
-        if (config) {
-          return {
-            success: true,
-            config,
-            source: 'mx-heuristic',
-            confidence: 'low',
-            warnings: [
-              'Configuration inferred from MX records. These settings may not be accurate.',
-              'Please verify the configuration before saving.',
-            ],
-          };
-        }
-
-        // Generic fallback based on domain
-        return {
-          success: true,
-          config: {
-            smtp: {
-              host: `smtp.${domain}`,
-              port: 465,
-              secure: true,
-              authMethod: 'plain',
-            },
-            imap: {
-              host: `imap.${domain}`,
-              port: 993,
-              tls: true,
-            },
-          },
-          source: 'mx-heuristic',
-          confidence: 'low',
-          warnings: [
-            'Configuration is a best guess based on common patterns.',
-            `Tried smtp.${domain} and imap.${domain} - verify these servers exist.`,
-            'Consider contacting your email provider for correct settings.',
-          ],
-        };
-      }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.logger.debug(`MX lookup failed for ${domain}: ${message}`);
-    }
-
-    return {
-      success: false,
-      source: 'mx-heuristic',
-      confidence: 'low',
-    };
-  }
-
-  /**
-   * Infer configuration from MX record patterns
-   */
-  private inferFromMxRecord(mxHost: string, domain: string): DiscoveredConfig | null {
-    const mxLower = mxHost.toLowerCase();
-
-    // Google Workspace
-    if (mxLower.includes('google') || mxLower.includes('googlemail')) {
-      return {
-        smtp: { host: 'smtp.gmail.com', port: 465, secure: true, authMethod: 'oauth2' },
-        imap: { host: 'imap.gmail.com', port: 993, tls: true },
-        provider: 'Google Workspace',
-        requiresOAuth: true,
-        requiresAppPassword: true,
-      };
-    }
-
-    // Microsoft 365
-    if (mxLower.includes('outlook') || mxLower.includes('microsoft') || mxLower.includes('protection.outlook')) {
-      return {
-        smtp: { host: 'smtp.office365.com', port: 587, secure: false, authMethod: 'login' },
-        imap: { host: 'outlook.office365.com', port: 993, tls: true },
-        provider: 'Microsoft 365',
-        requiresOAuth: true,
-      };
-    }
-
-    // Zoho
-    if (mxLower.includes('zoho')) {
-      return {
-        smtp: { host: 'smtp.zoho.eu', port: 465, secure: true, authMethod: 'plain' },
-        imap: { host: 'imap.zoho.eu', port: 993, tls: true },
-        provider: 'Zoho',
-      };
-    }
-
-    // ProtonMail
-    if (mxLower.includes('protonmail') || mxLower.includes('proton')) {
-      return {
-        smtp: { host: '127.0.0.1', port: 1025, secure: false, authMethod: 'plain' },
-        imap: { host: '127.0.0.1', port: 1143, tls: false },
-        provider: 'ProtonMail',
-        notes: 'Requires ProtonMail Bridge running locally',
-      };
-    }
-
-    // Polish hosting - home.pl
-    if (mxLower.includes('home.pl')) {
-      return {
-        smtp: { host: 'smtp.home.pl', port: 465, secure: true, authMethod: 'plain' },
-        imap: { host: 'imap.home.pl', port: 993, tls: true },
-        provider: 'home.pl',
-      };
-    }
-
-    // Polish hosting - nazwa.pl
-    if (mxLower.includes('nazwa.pl')) {
-      return {
-        smtp: { host: 'smtp.nazwa.pl', port: 465, secure: true, authMethod: 'plain' },
-        imap: { host: 'imap.nazwa.pl', port: 993, tls: true },
-        provider: 'nazwa.pl',
-      };
-    }
-
-    return null;
-  }
-
-  /**
    * Parse Mozilla Autoconfig XML response
    */
   private parseAutoconfigXml(xml: string): DiscoveredConfig | null {
     try {
-      // Simple XML parsing without external dependencies
       const getTagContent = (tag: string, content: string): string | null => {
         const regex = new RegExp(`<${tag}[^>]*>([^<]*)</${tag}>`, 'i');
         const match = content.match(regex);
@@ -627,13 +344,13 @@ export class EmailAutodiscoveryService {
         imap: {
           host: imapHost,
           port: parseInt(imapPort, 10),
-          tls: imapSocket?.toUpperCase() === 'SSL' || imapSocket?.toUpperCase() === 'STARTTLS',
+          tls: smtpSocket?.toUpperCase() === 'SSL' || imapSocket?.toUpperCase() === 'STARTTLS',
         },
         displayName: displayName || undefined,
       };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.debug(`Failed to parse Autoconfig XML: ${message}`);
+      this.logger.debug('Failed to parse Autoconfig XML', { error: message });
       return null;
     }
   }
@@ -689,7 +406,7 @@ export class EmailAutodiscoveryService {
       };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.debug(`Failed to parse Autodiscover XML: ${message}`);
+      this.logger.debug('Failed to parse Autodiscover XML', { error: message });
       return null;
     }
   }
@@ -723,28 +440,14 @@ export class EmailAutodiscoveryService {
    * @param config - The discovered email configuration
    * @param credentials - Email and password for authentication
    * @returns Verification result for both SMTP and IMAP
-   *
-   * @example
-   * ```typescript
-   * const result = await autodiscoveryService.discover('user@gmail.com');
-   * if (result.success) {
-   *   const verification = await autodiscoveryService.verifyConfig(
-   *     result.config,
-   *     { email: 'user@gmail.com', password: 'app-password' }
-   *   );
-   *   if (verification.smtp.success && verification.imap.success) {
-   *     console.log('Configuration verified successfully');
-   *   }
-   * }
-   * ```
    */
   async verifyConfig(
     config: DiscoveredConfig,
     credentials: { email: string; password: string }
   ): Promise<VerificationResult> {
-    this.logger.debug(`Verifying config for ${credentials.email}`);
+    const domain = credentials.email.split('@')[1] || 'unknown';
+    this.logger.debug('Verifying config', { domain });
 
-    // Test both connections in parallel
     const [smtpResult, imapResult] = await Promise.allSettled([
       this.verifySmtp(config, credentials),
       this.verifyImap(config, credentials),
@@ -770,12 +473,21 @@ export class EmailAutodiscoveryService {
     credentials: { email: string; password: string }
   ): Promise<{ success: boolean; error?: string }> {
     return new Promise((resolve) => {
+      let transport: nodemailer.Transporter | null = null;
+      let resolved = false;
+
       const timeoutId = setTimeout(() => {
-        resolve({ success: false, error: 'SMTP connection timeout' });
+        if (!resolved) {
+          resolved = true;
+          if (transport) {
+            transport.close();
+          }
+          resolve({ success: false, error: 'SMTP connection timeout' });
+        }
       }, this.VERIFICATION_TIMEOUT);
 
       try {
-        const transport = nodemailer.createTransport({
+        transport = nodemailer.createTransport({
           host: config.smtp.host,
           port: config.smtp.port,
           secure: config.smtp.secure,
@@ -783,17 +495,23 @@ export class EmailAutodiscoveryService {
             user: credentials.email,
             pass: credentials.password,
           },
+          tls: { rejectUnauthorized: REJECT_UNAUTHORIZED },
           connectionTimeout: this.VERIFICATION_TIMEOUT,
           greetingTimeout: 5000,
         });
 
         transport.verify((error) => {
+          if (resolved) {
+            transport?.close();
+            return;
+          }
+          resolved = true;
           clearTimeout(timeoutId);
-          transport.close();
+          transport?.close();
 
           if (error) {
             const errorMessage = this.formatVerificationError(error);
-            this.logger.debug(`SMTP verification failed: ${errorMessage}`);
+            this.logger.debug('SMTP verification failed', { error: errorMessage });
             resolve({ success: false, error: errorMessage });
           } else {
             this.logger.debug('SMTP verification successful');
@@ -801,9 +519,12 @@ export class EmailAutodiscoveryService {
           }
         });
       } catch (error: unknown) {
-        clearTimeout(timeoutId);
-        const message = error instanceof Error ? error.message : String(error);
-        resolve({ success: false, error: message });
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeoutId);
+          const message = error instanceof Error ? error.message : String(error);
+          resolve({ success: false, error: message });
+        }
       }
     });
   }
@@ -842,7 +563,7 @@ export class EmailAutodiscoveryService {
         imap.once('error', (error: Error) => {
           clearTimeout(timeoutId);
           const errorMessage = this.formatVerificationError(error);
-          this.logger.debug(`IMAP verification failed: ${errorMessage}`);
+          this.logger.debug('IMAP verification failed', { error: errorMessage });
           imap.end();
           resolve({ success: false, error: errorMessage });
         });

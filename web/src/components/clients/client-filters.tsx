@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Form,
   FormControl,
@@ -23,7 +23,16 @@ import {
   clientFiltersSchema,
   ClientFiltersFormData,
 } from '@/lib/validation/schemas';
-import { EmploymentType, VatStatus, TaxScheme, ZusStatus } from '@/types/enums';
+import {
+  EmploymentType,
+  EmploymentTypeLabels,
+  VatStatus,
+  VatStatusLabels,
+  TaxScheme,
+  TaxSchemeLabels,
+  ZusStatus,
+  ZusStatusLabels,
+} from '@/types/enums';
 import { ClientFiltersDto } from '@/types/dtos';
 
 interface ClientFiltersProps {
@@ -31,33 +40,7 @@ interface ClientFiltersProps {
   onFiltersChange: (filters: ClientFiltersDto) => void;
 }
 
-const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
-  [EmploymentType.DG]: 'DG',
-  [EmploymentType.DG_ETAT]: 'DG + Etat',
-  [EmploymentType.DG_AKCJONARIUSZ]: 'DG Akcjonariusz',
-  [EmploymentType.DG_HALF_TIME_BELOW_MIN]: 'DG 1/2 etatu poniżej min.',
-  [EmploymentType.DG_HALF_TIME_ABOVE_MIN]: 'DG 1/2 etatu powyżej min.',
-};
-
-const VAT_STATUS_LABELS: Record<VatStatus, string> = {
-  [VatStatus.VAT_MONTHLY]: 'VAT miesięczny',
-  [VatStatus.VAT_QUARTERLY]: 'VAT kwartalny',
-  [VatStatus.NO]: 'Nie',
-  [VatStatus.NO_WATCH_LIMIT]: 'Nie (obserwuj limit)',
-};
-
-const TAX_SCHEME_LABELS: Record<TaxScheme, string> = {
-  [TaxScheme.PIT_17]: 'PIT 17%',
-  [TaxScheme.PIT_19]: 'PIT 19%',
-  [TaxScheme.LUMP_SUM]: 'Ryczałt',
-  [TaxScheme.GENERAL]: 'Zasady ogólne',
-};
-
-const ZUS_STATUS_LABELS: Record<ZusStatus, string> = {
-  [ZusStatus.FULL]: 'Pełny',
-  [ZusStatus.PREFERENTIAL]: 'Preferencyjny',
-  [ZusStatus.NONE]: 'Brak',
-};
+const SEARCH_DEBOUNCE_MS = 300;
 
 export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) {
   const form = useForm<ClientFiltersFormData>({
@@ -72,23 +55,56 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
     },
   });
 
-  // Watch form changes and update filters
+  // Debounced search value
+  const [debouncedSearch, setDebouncedSearch] = useState(filters.search || '');
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Build filters object from form values
+  const buildFilters = useCallback((value: Partial<ClientFiltersFormData>, searchValue: string): ClientFiltersDto => {
+    const cleanedFilters: ClientFiltersDto = {};
+
+    if (searchValue) cleanedFilters.search = searchValue;
+    if (value.employmentType) cleanedFilters.employmentType = value.employmentType as EmploymentType;
+    if (value.vatStatus) cleanedFilters.vatStatus = value.vatStatus as VatStatus;
+    if (value.taxScheme) cleanedFilters.taxScheme = value.taxScheme as TaxScheme;
+    if (value.zusStatus) cleanedFilters.zusStatus = value.zusStatus as ZusStatus;
+    if (value.isActive !== undefined) cleanedFilters.isActive = value.isActive;
+
+    return cleanedFilters;
+  }, []);
+
+  // Watch form changes and update filters with debounced search
   useEffect(() => {
     const subscription = form.watch((value) => {
-      const cleanedFilters: ClientFiltersDto = {};
+      const currentSearch = value.search || '';
 
-      if (value.search) cleanedFilters.search = value.search;
-      if (value.employmentType) cleanedFilters.employmentType = value.employmentType as EmploymentType;
-      if (value.vatStatus) cleanedFilters.vatStatus = value.vatStatus as VatStatus;
-      if (value.taxScheme) cleanedFilters.taxScheme = value.taxScheme as TaxScheme;
-      if (value.zusStatus) cleanedFilters.zusStatus = value.zusStatus as ZusStatus;
-      if (value.isActive !== undefined) cleanedFilters.isActive = value.isActive;
+      // Clear existing timeout
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
 
-      onFiltersChange(cleanedFilters);
+      // Check if only search changed
+      const searchChanged = currentSearch !== debouncedSearch;
+
+      if (searchChanged) {
+        // Debounce search changes
+        searchTimeoutRef.current = setTimeout(() => {
+          setDebouncedSearch(currentSearch);
+          onFiltersChange(buildFilters(value, currentSearch));
+        }, SEARCH_DEBOUNCE_MS);
+      } else {
+        // Immediate update for non-search filters
+        onFiltersChange(buildFilters(value, debouncedSearch));
+      }
     });
 
-    return () => subscription.unsubscribe();
-  }, [form, onFiltersChange]);
+    return () => {
+      subscription.unsubscribe();
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [form, onFiltersChange, debouncedSearch, buildFilters]);
 
   const handleClearFilters = () => {
     form.reset({
@@ -172,7 +188,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="_all">Wszystkie</SelectItem>
-                        {Object.entries(EMPLOYMENT_TYPE_LABELS).map(
+                        {Object.entries(EmploymentTypeLabels).map(
                           ([value, label]) => (
                             <SelectItem key={value} value={value}>
                               {label}
@@ -204,7 +220,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="_all">Wszystkie</SelectItem>
-                        {Object.entries(VAT_STATUS_LABELS).map(
+                        {Object.entries(VatStatusLabels).map(
                           ([value, label]) => (
                             <SelectItem key={value} value={value}>
                               {label}
@@ -236,7 +252,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="_all">Wszystkie</SelectItem>
-                        {Object.entries(TAX_SCHEME_LABELS).map(
+                        {Object.entries(TaxSchemeLabels).map(
                           ([value, label]) => (
                             <SelectItem key={value} value={value}>
                               {label}
@@ -268,7 +284,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="_all">Wszystkie</SelectItem>
-                        {Object.entries(ZUS_STATUS_LABELS).map(
+                        {Object.entries(ZusStatusLabels).map(
                           ([value, label]) => (
                             <SelectItem key={value} value={value}>
                               {label}

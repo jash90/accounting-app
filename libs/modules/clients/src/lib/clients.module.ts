@@ -11,6 +11,7 @@ import {
   User,
   ChangeLog,
   ClientDeleteRequest,
+  CommonModule,
 } from '@accounting/common';
 import { RBACModule } from '@accounting/rbac';
 import { StorageModule } from '@accounting/infrastructure/storage';
@@ -43,6 +44,7 @@ import { DeleteRequestsController } from './controllers/delete-requests.controll
       ChangeLog,
       ClientDeleteRequest,
     ]),
+    CommonModule,
     RBACModule,
     StorageModule,
     EmailModule,

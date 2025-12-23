@@ -11,6 +11,7 @@ import {
   ForbiddenException,
   Query,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -140,6 +141,9 @@ export class EmailConfigController {
 
   @Post('test/smtp')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.COMPANY_OWNER, UserRole.ADMIN)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
   @ApiOperation({
     summary: 'Test SMTP connection',
     description: 'Test SMTP connection without sending an email. Validates credentials and server connectivity.',
@@ -148,12 +152,16 @@ export class EmailConfigController {
   @ApiOkResponse({ description: 'SMTP connection test result', type: TestConnectionResultDto })
   @ApiBadRequestResponse({ description: 'SMTP connection failed' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER or ADMIN role required' })
   async testSmtp(@Body() testDto: TestSmtpDto) {
     return this.emailService.testSmtpConnection(testDto);
   }
 
   @Post('test/imap')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.COMPANY_OWNER, UserRole.ADMIN)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
   @ApiOperation({
     summary: 'Test IMAP connection',
     description: 'Test IMAP connection without fetching emails. Validates credentials and server connectivity.',
@@ -162,6 +170,7 @@ export class EmailConfigController {
   @ApiOkResponse({ description: 'IMAP connection test result', type: TestConnectionResultDto })
   @ApiBadRequestResponse({ description: 'IMAP connection failed' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER or ADMIN role required' })
   async testImap(@Body() testDto: TestImapDto) {
     return this.emailService.testImapConnection(testDto);
   }

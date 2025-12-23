@@ -9,6 +9,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -156,13 +157,15 @@ export class EmailConfigurationController {
    * Uses multiple discovery methods: known providers, Autoconfig, Autodiscover, DNS SRV, MX heuristics
    */
   @Post('autodiscover')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Auto-discover email server configuration',
     description:
       'Attempts to automatically discover SMTP and IMAP server settings for the given email address. ' +
       'Uses multiple discovery methods in sequence: known provider database, Mozilla Autoconfig, ' +
-      'Microsoft Autodiscover, DNS SRV records, and MX record heuristics.',
+      'Microsoft Autodiscover, DNS SRV records, and MX record heuristics. ' +
+      'Limited to 10 requests per minute per user.',
   })
   @ApiResponse({
     status: 200,
@@ -171,6 +174,10 @@ export class EmailConfigurationController {
   })
   @ApiResponse({ status: 400, description: 'Invalid email address format' })
   @ApiResponse({ status: 401, description: 'Unauthorized - JWT token required' })
+  @ApiResponse({
+    status: 429,
+    description: 'Too Many Requests - Rate limit exceeded. Check Retry-After header.',
+  })
   async autodiscover(
     @Body() dto: AutodiscoverRequestDto,
   ): Promise<AutodiscoverResponseDto> {

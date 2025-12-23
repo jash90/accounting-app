@@ -1,20 +1,24 @@
 import {
   Injectable,
-  NotFoundException,
   BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import {
   ClientFieldDefinition,
   ClientCustomFieldValue,
   Client,
-  Company,
   User,
-  UserRole,
   CustomFieldType,
+  PaginatedResponseDto,
+  TenantService,
 } from '@accounting/common';
+import {
+  ClientNotFoundException,
+  FieldNotFoundException,
+  ClientException,
+  ClientErrorCode,
+} from '../exceptions';
 
 export interface CreateFieldDefinitionDto {
   name: string;
@@ -34,6 +38,11 @@ export interface SetCustomFieldValueDto {
   value: string | null;
 }
 
+export interface FieldDefinitionQueryDto {
+  page?: number;
+  limit?: number;
+}
+
 @Injectable()
 export class CustomFieldsService {
   constructor(
@@ -43,46 +52,43 @@ export class CustomFieldsService {
     private readonly fieldValueRepository: Repository<ClientCustomFieldValue>,
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
-    @InjectRepository(Company)
-    private readonly companyRepository: Repository<Company>,
+    private readonly tenantService: TenantService,
+    private readonly dataSource: DataSource,
   ) {}
-
-  private async getEffectiveCompanyId(user: User): Promise<string> {
-    if (user.role === UserRole.ADMIN) {
-      const systemCompany = await this.companyRepository.findOne({
-        where: { isSystemCompany: true },
-      });
-      if (!systemCompany) {
-        throw new ForbiddenException('System company not found for admin user');
-      }
-      return systemCompany.id;
-    }
-    return user.companyId;
-  }
 
   // Field Definition CRUD
 
-  async findAllDefinitions(user: User): Promise<ClientFieldDefinition[]> {
-    const companyId = await this.getEffectiveCompanyId(user);
+  async findAllDefinitions(
+    user: User,
+    query?: FieldDefinitionQueryDto,
+  ): Promise<PaginatedResponseDto<ClientFieldDefinition>> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const page = query?.page ?? 1;
+    const limit = query?.limit ?? 50;
+    const skip = (page - 1) * limit;
 
-    return this.fieldDefinitionRepository.find({
+    const [data, total] = await this.fieldDefinitionRepository.findAndCount({
       where: { companyId, isActive: true },
       order: { displayOrder: 'ASC', name: 'ASC' },
+      skip,
+      take: limit,
     });
+
+    return new PaginatedResponseDto(data, total, page, limit);
   }
 
   async findDefinitionById(
     id: string,
     user: User,
   ): Promise<ClientFieldDefinition> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     const definition = await this.fieldDefinitionRepository.findOne({
-      where: { id, companyId },
+      where: { id, companyId, isActive: true },
     });
 
     if (!definition) {
-      throw new NotFoundException(`Field definition with ID ${id} not found`);
+      throw new FieldNotFoundException(id, companyId);
     }
 
     return definition;
@@ -92,13 +98,13 @@ export class CustomFieldsService {
     dto: CreateFieldDefinitionDto,
     user: User,
   ): Promise<ClientFieldDefinition> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
-    // Validate enum options for ENUM type
-    if (dto.fieldType === CustomFieldType.ENUM) {
+    // Validate enum options for ENUM and MULTISELECT types
+    if (dto.fieldType === CustomFieldType.ENUM || dto.fieldType === CustomFieldType.MULTISELECT) {
       if (!dto.enumValues || dto.enumValues.length === 0) {
         throw new BadRequestException(
-          'Options are required for ENUM field type',
+          `Options are required for ${dto.fieldType} field type`,
         );
       }
     }
@@ -143,14 +149,14 @@ export class CustomFieldsService {
       }
     }
 
-    // Validate enum options
-    if (
-      dto.fieldType === CustomFieldType.ENUM ||
-      (definition.fieldType === CustomFieldType.ENUM && dto.enumValues)
-    ) {
-      if (!dto.enumValues || dto.enumValues.length === 0) {
+    // Validate enum options for ENUM and MULTISELECT types
+    const requiresEnumValues = [CustomFieldType.ENUM, CustomFieldType.MULTISELECT];
+    const targetType = dto.fieldType || definition.fieldType;
+    if (requiresEnumValues.includes(targetType)) {
+      const enumValues = dto.enumValues ?? definition.enumValues;
+      if (!enumValues || enumValues.length === 0) {
         throw new BadRequestException(
-          'Options are required for ENUM field type',
+          `Options are required for ${targetType} field type`,
         );
       }
     }
@@ -179,7 +185,7 @@ export class CustomFieldsService {
     clientId: string,
     user: User,
   ): Promise<ClientCustomFieldValue[]> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     // Verify client belongs to company
     const client = await this.clientRepository.findOne({
@@ -187,7 +193,7 @@ export class CustomFieldsService {
     });
 
     if (!client) {
-      throw new NotFoundException(`Client with ID ${clientId} not found`);
+      throw new ClientNotFoundException(clientId, companyId);
     }
 
     return this.fieldValueRepository.find({
@@ -201,7 +207,7 @@ export class CustomFieldsService {
     dto: SetCustomFieldValueDto,
     user: User,
   ): Promise<ClientCustomFieldValue> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     // Verify client
     const client = await this.clientRepository.findOne({
@@ -209,7 +215,7 @@ export class CustomFieldsService {
     });
 
     if (!client) {
-      throw new NotFoundException(`Client with ID ${dto.clientId} not found`);
+      throw new ClientNotFoundException(dto.clientId, companyId);
     }
 
     // Verify field definition
@@ -218,9 +224,7 @@ export class CustomFieldsService {
     });
 
     if (!definition) {
-      throw new NotFoundException(
-        `Field definition with ID ${dto.fieldDefinitionId} not found`,
-      );
+      throw new FieldNotFoundException(dto.fieldDefinitionId, companyId);
     }
 
     // Validate value based on field type
@@ -253,55 +257,88 @@ export class CustomFieldsService {
     values: Record<string, string | null>,
     user: User,
   ): Promise<ClientCustomFieldValue[]> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
-    // Verify client
+    // Verify client OUTSIDE transaction (read-only check)
     const client = await this.clientRepository.findOne({
       where: { id: clientId, companyId },
     });
 
     if (!client) {
-      throw new NotFoundException(`Client with ID ${clientId} not found`);
+      throw new ClientNotFoundException(clientId, companyId);
     }
 
-    // Get all active field definitions for this company
+    // Get all active field definitions OUTSIDE transaction
     const definitions = await this.fieldDefinitionRepository.find({
       where: { companyId, isActive: true },
     });
 
     const definitionMap = new Map(definitions.map((d) => [d.id, d]));
-    const results: ClientCustomFieldValue[] = [];
 
-    for (const [fieldDefinitionId, value] of Object.entries(values)) {
-      const definition = definitionMap.get(fieldDefinitionId);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-      if (!definition) {
-        throw new NotFoundException(
-          `Field definition with ID ${fieldDefinitionId} not found`,
+    try {
+      const results: ClientCustomFieldValue[] = [];
+
+      for (const [fieldDefinitionId, value] of Object.entries(values)) {
+        const definition = definitionMap.get(fieldDefinitionId);
+
+        if (!definition) {
+          throw new FieldNotFoundException(fieldDefinitionId, companyId);
+        }
+
+        // Validate BEFORE saving
+        this.validateFieldValue(value, definition);
+
+        let fieldValue = await queryRunner.manager.findOne(
+          ClientCustomFieldValue,
+          { where: { clientId, fieldDefinitionId } },
         );
+
+        if (fieldValue) {
+          fieldValue.value = value ?? undefined;
+          fieldValue.isActive = true;
+        } else {
+          fieldValue = queryRunner.manager.create(ClientCustomFieldValue, {
+            clientId,
+            fieldDefinitionId,
+            value: value ?? undefined,
+          });
+        }
+
+        const saved = await queryRunner.manager.save(fieldValue);
+        results.push(saved);
       }
 
-      this.validateFieldValue(value, definition);
+      await queryRunner.commitTransaction();
+      return results;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
 
-      let fieldValue = await this.fieldValueRepository.findOne({
-        where: { clientId, fieldDefinitionId },
-      });
+      // If it's already a ClientException, rethrow it
+      if (error instanceof ClientException) {
+        throw error;
+      }
 
-      if (fieldValue) {
-        fieldValue.value = value ?? undefined;
-        fieldValue.isActive = true;
-      } else {
-        fieldValue = this.fieldValueRepository.create({
+      // Otherwise wrap in generic batch operation exception
+      throw new ClientException(
+        ClientErrorCode.CLIENT_BATCH_OPERATION_FAILED,
+        'Failed to set multiple custom field values',
+        {
           clientId,
-          fieldDefinitionId,
-          value: value ?? undefined,
-        });
-      }
-
-      results.push(await this.fieldValueRepository.save(fieldValue));
+          companyId,
+          operationStage: 'setMultipleCustomFieldValues',
+          additionalInfo: {
+            error: (error as Error).message,
+            fieldCount: Object.keys(values).length,
+          },
+        },
+      );
+    } finally {
+      await queryRunner.release();
     }
-
-    return results;
   }
 
   async removeCustomFieldValue(
@@ -309,7 +346,7 @@ export class CustomFieldsService {
     fieldDefinitionId: string,
     user: User,
   ): Promise<void> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     // Verify client
     const client = await this.clientRepository.findOne({
@@ -317,7 +354,7 @@ export class CustomFieldsService {
     });
 
     if (!client) {
-      throw new NotFoundException(`Client with ID ${clientId} not found`);
+      throw new ClientNotFoundException(clientId, companyId);
     }
 
     const fieldValue = await this.fieldValueRepository.findOne({
