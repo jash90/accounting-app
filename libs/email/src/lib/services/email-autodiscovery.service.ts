@@ -344,7 +344,7 @@ export class EmailAutodiscoveryService {
         imap: {
           host: imapHost,
           port: parseInt(imapPort, 10),
-          tls: smtpSocket?.toUpperCase() === 'SSL' || imapSocket?.toUpperCase() === 'STARTTLS',
+          tls: imapSocket?.toUpperCase() === 'SSL' || imapSocket?.toUpperCase() === 'STARTTLS',
         },
         displayName: displayName || undefined,
       };

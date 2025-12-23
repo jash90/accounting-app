@@ -11,11 +11,13 @@ import {
 } from 'typeorm';
 import { Client } from './client.entity';
 import { ClientFieldDefinition } from './client-field-definition.entity';
+import { Company } from './company.entity';
 
 @Entity('client_custom_field_values')
-@Unique(['clientId', 'fieldDefinitionId'])
+@Unique(['companyId', 'clientId', 'fieldDefinitionId'])
 @Index(['clientId'])
 @Index(['fieldDefinitionId'])
+@Index(['companyId'])
 export class ClientCustomFieldValue {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -28,6 +30,13 @@ export class ClientCustomFieldValue {
   })
   @JoinColumn({ name: 'clientId' })
   client!: Client;
+
+  @Column()
+  companyId!: string;
+
+  @ManyToOne(() => Company, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'companyId' })
+  company!: Company;
 
   @Column()
   fieldDefinitionId!: string;

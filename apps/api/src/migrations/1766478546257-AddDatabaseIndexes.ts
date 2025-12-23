@@ -19,6 +19,9 @@ export class AddDatabaseIndexes1766478546257 implements MigrationInterface {
         await queryRunner.query(`CREATE INDEX "IDX_ace513fa30d485cfd25c11a9e4" ON "users" ("role") `);
         await queryRunner.query(`CREATE INDEX "IDX_ce9dccc3162cbe075e0ab77108" ON "users" ("companyId", "isActive") `);
         await queryRunner.query(`CREATE INDEX "IDX_6f9395c9037632a31107c8a9e5" ON "users" ("companyId") `);
+        // Restore FK constraints that were dropped at the beginning of up()
+        await queryRunner.query(`ALTER TABLE "users" ADD CONSTRAINT "FK_users_company" FOREIGN KEY ("companyId") REFERENCES "companies"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "companies" ADD CONSTRAINT "FK_companies_owner" FOREIGN KEY ("ownerId") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {

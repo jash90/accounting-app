@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../../../../api/src/app/app.module';
+import { VatStatus } from '@accounting/common';
 
 /**
  * E2E Tests for Client Icons Management
@@ -127,7 +128,7 @@ describe('Client Icons E2E Tests', () => {
         .set('Authorization', `Bearer ${ownerToken}`)
         .send({
           name: 'E2E Icons Test Client',
-          vatStatus: 'VAT',
+          vatStatus: VatStatus.VAT_MONTHLY,
           employmentType: 'DG',
         })
         .expect(201);
@@ -183,7 +184,7 @@ describe('Client Icons E2E Tests', () => {
           {
             field: 'vatStatus',
             operator: 'equals',
-            value: 'VAT',
+            value: VatStatus.VAT_MONTHLY,
           },
         ],
       };
@@ -331,7 +332,7 @@ describe('Client Icons E2E Tests', () => {
       const newCondition = {
         type: 'or',
         conditions: [
-          { field: 'vatStatus', operator: 'equals', value: 'VAT_EXEMPT' },
+          { field: 'vatStatus', operator: 'equals', value: VatStatus.NO },
           { field: 'employmentType', operator: 'equals', value: 'DG_R' },
         ],
       };
