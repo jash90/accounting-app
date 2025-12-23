@@ -10,11 +10,14 @@ import {
   Unique,
 } from 'typeorm';
 import { User } from './user.entity';
+import { Company } from './company.entity';
 
 @Entity('notification_settings')
-@Unique(['userId', 'moduleSlug'])
+@Unique(['companyId', 'userId', 'moduleSlug'])
 @Index(['userId'])
 @Index(['moduleSlug'])
+@Index(['companyId'])
+@Index(['companyId', 'moduleSlug'])
 export class NotificationSettings {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -27,6 +30,13 @@ export class NotificationSettings {
   })
   @JoinColumn({ name: 'userId' })
   user!: User;
+
+  @Column()
+  companyId!: string;
+
+  @ManyToOne(() => Company, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'companyId' })
+  company!: Company;
 
   @Column()
   moduleSlug!: string;

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../../../api/src/app/app.module';
+import { VatStatus } from '@accounting/common';
 
 describe('Delete Request Workflow E2E Tests', () => {
   let app: INestApplication;
@@ -57,7 +58,7 @@ describe('Delete Request Workflow E2E Tests', () => {
         .send({
           name: 'Test Client for Deletion',
           nip: '1234567890',
-          vatStatus: 'monthly',
+          vatStatus: VatStatus.VAT_MONTHLY,
           employmentType: 'DG',
           taxScheme: 'general',
         })
@@ -81,7 +82,7 @@ describe('Delete Request Workflow E2E Tests', () => {
         .send({
           name: 'Client for Approval Test',
           nip: '9876543210',
-          vatStatus: 'quarterly',
+          vatStatus: VatStatus.VAT_QUARTERLY,
           employmentType: 'DG_R',
           taxScheme: 'lump_sum',
         })
@@ -215,7 +216,7 @@ describe('Delete Request Workflow E2E Tests', () => {
         .send({
           name: 'Client for Rejection Test',
           nip: '5555555555',
-          vatStatus: 'no',
+          vatStatus: VatStatus.NO,
           employmentType: 'DZ',
           taxScheme: 'tax_card',
         })
@@ -297,7 +298,7 @@ describe('Delete Request Workflow E2E Tests', () => {
         .send({
           name: 'Client for Cancellation Test',
           nip: '7777777777',
-          vatStatus: 'monthly',
+          vatStatus: VatStatus.VAT_MONTHLY,
           employmentType: 'DG',
           taxScheme: 'general',
         })
@@ -420,7 +421,7 @@ describe('Delete Request Workflow E2E Tests', () => {
         .send({
           name: 'Transaction Test Client',
           nip: '8888888888',
-          vatStatus: 'monthly',
+          vatStatus: VatStatus.VAT_MONTHLY,
           employmentType: 'DG',
           taxScheme: 'general',
         })

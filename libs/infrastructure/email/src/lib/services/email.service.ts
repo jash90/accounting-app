@@ -28,6 +28,8 @@ export class EmailService {
 
     this.templatesDir = path.join(__dirname, '..', 'templates');
 
+    this.registerHandlebarsHelpers();
+
     if (this.config.enabled) {
       this.initializeTransporter();
     } else {
@@ -50,6 +52,10 @@ export class EmailService {
     } catch (error) {
       this.logger.error('Failed to initialize email transporter', error);
     }
+  }
+
+  private registerHandlebarsHelpers(): void {
+    handlebars.registerHelper('eq', (a: unknown, b: unknown) => a === b);
   }
 
   async sendEmail(options: EmailOptions): Promise<boolean> {

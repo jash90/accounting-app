@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../../../../api/src/app/app.module';
+import { VatStatus } from '@accounting/common';
 
 /**
  * E2E Tests for Clients CRUD Operations
@@ -137,7 +138,7 @@ describe('Clients CRUD E2E Tests', () => {
         gtuCode: 'GTU_01',
         amlGroup: 'LOW',
         employmentType: 'DG',
-        vatStatus: 'VAT',
+        vatStatus: VatStatus.VAT_MONTHLY,
         taxScheme: 'GENERAL',
         zusStatus: 'FULL',
       };
@@ -258,12 +259,12 @@ describe('Clients CRUD E2E Tests', () => {
     it('should filter by VAT status', async () => {
       const response = await request(app.getHttpServer())
         .get('/modules/clients')
-        .query({ vatStatus: 'VAT' })
+        .query({ vatStatus: VatStatus.VAT_MONTHLY })
         .set('Authorization', `Bearer ${ownerToken}`)
         .expect(200);
 
       if (response.body.data.length > 0) {
-        expect(response.body.data.every((c: { vatStatus: string }) => c.vatStatus === 'VAT')).toBe(true);
+        expect(response.body.data.every((c: { vatStatus: string }) => c.vatStatus === VatStatus.VAT_MONTHLY)).toBe(true);
       }
     });
 
@@ -371,7 +372,7 @@ describe('Clients CRUD E2E Tests', () => {
       const updateData = {
         email: 'updated@e2e-test.com',
         phone: '+48 987 654 321',
-        vatStatus: 'VAT_EXEMPT',
+        vatStatus: VatStatus.NO,
       };
 
       const response = await request(app.getHttpServer())

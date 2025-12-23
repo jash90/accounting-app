@@ -8,6 +8,7 @@ import {
   Index,
 } from 'typeorm';
 import { User } from './user.entity';
+import { Company } from './company.entity';
 import { ChangeAction } from '../enums/change-action.enum';
 
 export interface ChangeDetail {
@@ -19,6 +20,8 @@ export interface ChangeDetail {
 @Entity('change_logs')
 @Index(['entityType', 'entityId'])
 @Index(['changedById'])
+@Index(['companyId'])
+@Index(['companyId', 'entityType', 'entityId'])
 export class ChangeLog {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -44,6 +47,13 @@ export class ChangeLog {
   @ManyToOne(() => User)
   @JoinColumn({ name: 'changedById' })
   changedBy!: User;
+
+  @Column()
+  companyId!: string;
+
+  @ManyToOne(() => Company, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'companyId' })
+  company!: Company;
 
   @CreateDateColumn()
   createdAt!: Date;
