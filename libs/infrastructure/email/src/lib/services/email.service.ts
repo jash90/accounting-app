@@ -1,13 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import * as handlebars from 'handlebars';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 import { EmailOptions, EmailConfig } from '../interfaces/email-options.interface';
 
 @Injectable()
-export class EmailService {
+export class EmailService implements OnModuleInit {
   private readonly logger = new Logger(EmailService.name);
   private transporter: nodemailer.Transporter | null = null;
   private readonly config: EmailConfig;
@@ -26,19 +26,35 @@ export class EmailService {
       from: this.configService.get<string>('SMTP_FROM', 'noreply@accounting.local'),
     };
 
-    this.templatesDir = path.join(__dirname, '..', 'templates');
+    // Use environment-configurable templates path, fallback to relative path
+    this.templatesDir = this.configService.get<string>(
+      'EMAIL_TEMPLATES_DIR',
+      path.resolve(process.cwd(), 'libs/infrastructure/email/src/lib/templates')
+    );
 
     this.registerHandlebarsHelpers();
+  }
 
+  async onModuleInit(): Promise<void> {
     if (this.config.enabled) {
-      this.initializeTransporter();
+      await this.initializeTransporter();
     } else {
       this.logger.warn('Email service is disabled. Set SMTP_ENABLED=true to enable.');
     }
   }
 
-  private initializeTransporter(): void {
+  private async initializeTransporter(): Promise<void> {
+    // Validate credentials before attempting to create transporter
+    if (!this.config.auth.user || !this.config.auth.pass) {
+      this.logger.error('SMTP credentials not configured. Set SMTP_USER and SMTP_PASS environment variables.');
+      return;
+    }
+
     try {
+      const tlsOptions = {
+        rejectUnauthorized: this.configService.get<string>('SMTP_TLS_REJECT_UNAUTHORIZED', 'true') === 'true',
+      };
+
       this.transporter = nodemailer.createTransport({
         host: this.config.host,
         port: this.config.port,
@@ -47,8 +63,17 @@ export class EmailService {
           user: this.config.auth.user,
           pass: this.config.auth.pass,
         },
+        tls: tlsOptions,
       });
-      this.logger.log('Email transporter initialized successfully');
+
+      // Verify SMTP connection
+      try {
+        await this.transporter.verify();
+        this.logger.log('Email transporter initialized and verified successfully');
+      } catch (verifyError) {
+        this.logger.error('SMTP connection verification failed', verifyError);
+        this.transporter = null;
+      }
     } catch (error) {
       this.logger.error('Failed to initialize email transporter', error);
     }
@@ -102,7 +127,7 @@ export class EmailService {
     const templatePath = path.join(this.templatesDir, `${templateName}.hbs`);
 
     try {
-      const templateContent = fs.readFileSync(templatePath, 'utf-8');
+      const templateContent = await fs.readFile(templatePath, 'utf-8');
       const template = handlebars.compile(templateContent);
       return template(context);
     } catch (error) {

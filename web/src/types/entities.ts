@@ -173,6 +173,7 @@ export interface ClientIconAssignment {
 export interface NotificationSettings {
   id: string;
   userId: string;
+  companyId: string;
   moduleSlug: string;
   receiveOnCreate: boolean;
   receiveOnUpdate: boolean;
@@ -190,6 +191,7 @@ export interface ChangeLog {
   oldValues?: Record<string, unknown>;
   newValues?: Record<string, unknown>;
   userId: string;
+  companyId: string;
   createdAt: Date;
 }
 

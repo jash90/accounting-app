@@ -11,6 +11,10 @@ describe('Delete Request Workflow E2E Tests', () => {
   let testClientId: string;
   let testDeleteRequestId: string;
 
+  // Track created entities for cleanup
+  const createdClientIds: string[] = [];
+  const createdDeleteRequestIds: string[] = [];
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -21,6 +25,30 @@ describe('Delete Request Workflow E2E Tests', () => {
   });
 
   afterAll(async () => {
+    // Clean up test data in reverse order (delete requests first, then clients)
+    if (ownerToken) {
+      // Delete any pending delete requests first
+      for (const requestId of createdDeleteRequestIds) {
+        try {
+          await request(app.getHttpServer())
+            .delete(`/modules/clients/delete-requests/${requestId}/cancel`)
+            .set('Authorization', `Bearer ${ownerToken}`);
+        } catch {
+          // Request may already be processed or deleted, ignore errors
+        }
+      }
+
+      // Delete clients (hard delete for test cleanup)
+      for (const clientId of createdClientIds) {
+        try {
+          await request(app.getHttpServer())
+            .delete(`/modules/clients/${clientId}`)
+            .set('Authorization', `Bearer ${ownerToken}`);
+        } catch {
+          // Client may already be deleted, ignore errors
+        }
+      }
+    }
     await app.close();
   });
 
@@ -68,6 +96,7 @@ describe('Delete Request Workflow E2E Tests', () => {
       expect(response.body.name).toBe('Test Client for Deletion');
       expect(response.body.isActive).toBe(true);
       testClientId = response.body.id;
+      createdClientIds.push(testClientId);
     });
   });
 
@@ -89,6 +118,7 @@ describe('Delete Request Workflow E2E Tests', () => {
         .expect(201);
 
       approvalTestClientId = response.body.id;
+      createdClientIds.push(approvalTestClientId);
     });
 
     it('should allow employee to create delete request', async () => {
@@ -105,6 +135,7 @@ describe('Delete Request Workflow E2E Tests', () => {
       expect(response.body.reason).toBe('Client no longer needed - approval test');
       expect(response.body.clientId).toBe(approvalTestClientId);
       approvalRequestId = response.body.id;
+      createdDeleteRequestIds.push(approvalRequestId);
     });
 
     it('should prevent duplicate delete request for same client', async () => {
@@ -117,7 +148,7 @@ describe('Delete Request Workflow E2E Tests', () => {
         .expect(409); // Conflict
 
       expect(response.body).toHaveProperty('errorCode');
-      expect(response.body.errorCode).toBe('DELETE_REQUEST_006'); // ALREADY_PROCESSED
+      expect(response.body.errorCode).toBe('DELETE_002'); // PENDING_REQUEST_EXISTS
     });
 
     it('should show delete request in pending list (owner)', async () => {
@@ -223,6 +254,7 @@ describe('Delete Request Workflow E2E Tests', () => {
         .expect(201);
 
       rejectionTestClientId = response.body.id;
+      createdClientIds.push(rejectionTestClientId);
     });
 
     it('should allow employee to create delete request', async () => {
@@ -236,6 +268,7 @@ describe('Delete Request Workflow E2E Tests', () => {
 
       expect(response.body.status).toBe('PENDING');
       rejectionRequestId = response.body.id;
+      createdDeleteRequestIds.push(rejectionRequestId);
     });
 
     it('should prevent employee from rejecting their own request', async () => {
@@ -305,6 +338,7 @@ describe('Delete Request Workflow E2E Tests', () => {
         .expect(201);
 
       cancelTestClientId = response.body.id;
+      createdClientIds.push(cancelTestClientId);
     });
 
     it('should allow employee to create delete request', async () => {
@@ -318,6 +352,7 @@ describe('Delete Request Workflow E2E Tests', () => {
 
       expect(response.body.status).toBe('PENDING');
       cancelRequestId = response.body.id;
+      createdDeleteRequestIds.push(cancelRequestId);
     });
 
     it('should allow employee to cancel their own request', async () => {
@@ -428,6 +463,7 @@ describe('Delete Request Workflow E2E Tests', () => {
         .expect(201);
 
       const transactionClientId = createResponse.body.id;
+      createdClientIds.push(transactionClientId);
 
       // Create delete request
       const deleteRequestResponse = await request(app.getHttpServer())
@@ -439,6 +475,7 @@ describe('Delete Request Workflow E2E Tests', () => {
         .expect(201);
 
       const transactionRequestId = deleteRequestResponse.body.id;
+      createdDeleteRequestIds.push(transactionRequestId);
 
       // Approve the request
       await request(app.getHttpServer())
