@@ -537,12 +537,29 @@ export class EmailAutodiscoveryService {
     credentials: { email: string; password: string }
   ): Promise<{ success: boolean; error?: string }> {
     return new Promise((resolve) => {
+      let resolved = false;
+      let imap: InstanceType<typeof Imap> | null = null;
+
+      const safeResolve = (result: { success: boolean; error?: string }) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timeoutId);
+        if (imap) {
+          try {
+            imap.end();
+          } catch {
+            // Ignore cleanup errors
+          }
+        }
+        resolve(result);
+      };
+
       const timeoutId = setTimeout(() => {
-        resolve({ success: false, error: 'IMAP connection timeout' });
+        safeResolve({ success: false, error: 'IMAP connection timeout' });
       }, this.VERIFICATION_TIMEOUT);
 
       try {
-        const imap = new Imap({
+        imap = new Imap({
           user: credentials.email,
           password: credentials.password,
           host: config.imap.host,
@@ -554,25 +571,20 @@ export class EmailAutodiscoveryService {
         });
 
         imap.once('ready', () => {
-          clearTimeout(timeoutId);
           this.logger.debug('IMAP verification successful');
-          imap.end();
-          resolve({ success: true });
+          safeResolve({ success: true });
         });
 
         imap.once('error', (error: Error) => {
-          clearTimeout(timeoutId);
           const errorMessage = this.formatVerificationError(error);
           this.logger.debug('IMAP verification failed', { error: errorMessage });
-          imap.end();
-          resolve({ success: false, error: errorMessage });
+          safeResolve({ success: false, error: errorMessage });
         });
 
         imap.connect();
       } catch (error: unknown) {
-        clearTimeout(timeoutId);
         const message = error instanceof Error ? error.message : String(error);
-        resolve({ success: false, error: message });
+        safeResolve({ success: false, error: message });
       }
     });
   }

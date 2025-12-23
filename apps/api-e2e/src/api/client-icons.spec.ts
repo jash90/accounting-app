@@ -543,7 +543,7 @@ describe('Client Icons E2E Tests', () => {
       const autoAssignCondition = {
         type: 'and',
         conditions: [
-          { field: 'vatStatus', operator: 'equals', value: 'VAT_QUARTERLY' },
+          { field: 'vatStatus', operator: 'equals', value: VatStatus.VAT_QUARTERLY },
         ],
       };
 
@@ -567,7 +567,7 @@ describe('Client Icons E2E Tests', () => {
         .set('Authorization', `Bearer ${ownerToken}`)
         .send({
           name: 'VAT Quarterly Client',
-          vatStatus: 'VAT_QUARTERLY',
+          vatStatus: VatStatus.VAT_QUARTERLY,
         })
         .expect(201);
 

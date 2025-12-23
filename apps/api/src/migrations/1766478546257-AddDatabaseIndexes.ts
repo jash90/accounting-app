@@ -38,8 +38,7 @@ export class AddDatabaseIndexes1766478546257 implements MigrationInterface {
         await queryRunner.query(`DROP INDEX "public"."IDX_62c34340705568e5b02222d4f2"`);
         await queryRunner.query(`DROP INDEX "public"."IDX_0f760a14ed395d73bbbe688764"`);
         await queryRunner.query(`DROP INDEX "public"."IDX_b48860677afe62cd96e1265948"`);
-        await queryRunner.query(`ALTER TABLE "users" ADD CONSTRAINT "FK_users_company" FOREIGN KEY ("companyId") REFERENCES "companies"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "companies" ADD CONSTRAINT "FK_companies_owner" FOREIGN KEY ("ownerId") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        // FK constraints are not touched - they exist both before and after this migration
     }
 
 }
