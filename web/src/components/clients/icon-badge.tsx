@@ -49,10 +49,11 @@ export function IconBadge({
         const LucideIcon = (LucideIcons as Record<string, React.ComponentType<{ size?: number; className?: string }>>)[pascalCaseName];
 
         if (LucideIcon) {
+          // Use inline style for color - Tailwind can't detect dynamic classes like text-[${color}]
           return (
             <LucideIcon
               size={iconSizeMap[size]}
-              className={cn('shrink-0', icon.color && `text-[${icon.color}]`)}
+              className="shrink-0"
               style={icon.color ? { color: icon.color } : undefined}
             />
           );

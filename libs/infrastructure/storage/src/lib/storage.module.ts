@@ -17,6 +17,13 @@ export class StorageModule {
           provide: STORAGE_PROVIDER,
           useFactory: (configService: ConfigService) => {
             const storageType = configService.get<string>('STORAGE_TYPE', 'local');
+            const validTypes = ['local', 's3'];
+
+            if (!validTypes.includes(storageType)) {
+              console.warn(
+                `Invalid STORAGE_TYPE "${storageType}". Valid options: ${validTypes.join(', ')}. Defaulting to "local".`
+              );
+            }
 
             if (storageType === 's3') {
               return new S3StorageProvider(configService);

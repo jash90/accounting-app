@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import * as handlebars from 'handlebars';
@@ -37,6 +37,8 @@ export class ClientChangelogService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Company)
     private readonly companyRepository: Repository<Company>,
+    @InjectRepository(Client)
+    private readonly clientRepository: Repository<Client>,
     private readonly changeLogService: ChangeLogService,
     private readonly emailConfigService: EmailConfigurationService,
     private readonly emailSenderService: EmailSenderService,
@@ -58,7 +60,26 @@ export class ClientChangelogService {
 
   async getClientChangelog(
     clientId: string,
+    user: User,
   ): Promise<{ logs: ChangeLog[]; total: number }> {
+    // Validate user has a company for multi-tenant isolation
+    if (!user.companyId) {
+      throw new ForbiddenException(
+        'Access denied: user must belong to a company to view changelog'
+      );
+    }
+
+    // Verify client belongs to user's company for multi-tenant isolation
+    const client = await this.clientRepository.findOne({
+      where: { id: clientId, companyId: user.companyId },
+    });
+
+    if (!client) {
+      throw new ForbiddenException(
+        'Access denied: Client not found or belongs to a different company',
+      );
+    }
+
     return this.changeLogService.getChangeLogs('Client', clientId);
   }
 
@@ -66,12 +87,18 @@ export class ClientChangelogService {
     user: User,
     pagination?: PaginationQueryDto,
   ): Promise<PaginatedResponseDto<ChangeLog>> {
+    if (!user.companyId) {
+      throw new ForbiddenException(
+        'User must belong to a company to view changelog'
+      );
+    }
+
     const { page = 1, limit = 50 } = pagination || {};
     const skip = (page - 1) * limit;
 
     const { logs, total } = await this.changeLogService.getCompanyChangeLogs(
       'Client',
-      user.companyId!,
+      user.companyId,
       { limit, offset: skip },
     );
 
@@ -399,7 +426,8 @@ export class ClientChangelogService {
         {
           companyId: client.companyId,
           clientId: client.id,
-          clientEmail: client.email,
+          // PII: Email masked for privacy
+          clientEmailDomain: client.email ? `***@${client.email.split('@')[1] || 'unknown'}` : null,
         },
       );
     } catch (error) {
@@ -408,10 +436,10 @@ export class ClientChangelogService {
         {
           companyId: client.companyId,
           clientId: client.id,
-          clientEmail: client.email,
+          // PII: Email masked for privacy
+          clientEmailDomain: client.email ? `***@${client.email.split('@')[1] || 'unknown'}` : null,
           error: (error as Error).message,
           errorName: (error as Error).name,
-          stack: (error as Error).stack,
         },
       );
     }

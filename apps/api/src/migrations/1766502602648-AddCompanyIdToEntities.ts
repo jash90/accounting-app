@@ -4,11 +4,32 @@ export class AddCompanyIdToEntities1766502602648 implements MigrationInterface {
     name = 'AddCompanyIdToEntities1766502602648'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE "client_custom_field_values" DROP CONSTRAINT "UQ_53ce6cb03c435c964ead03b7842"`);
-        await queryRunner.query(`ALTER TABLE "notification_settings" DROP CONSTRAINT "UQ_78a1734f847d34c65a06db0e200"`);
-        await queryRunner.query(`ALTER TABLE "client_custom_field_values" ADD "companyId" uuid NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "change_logs" ADD "companyId" uuid NOT NULL`);
-        await queryRunner.query(`ALTER TABLE "notification_settings" ADD "companyId" uuid NOT NULL`);
+        await queryRunner.query(`ALTER TABLE "client_custom_field_values" DROP CONSTRAINT IF EXISTS "UQ_53ce6cb03c435c964ead03b7842"`);
+        await queryRunner.query(`ALTER TABLE "notification_settings" DROP CONSTRAINT IF EXISTS "UQ_78a1734f847d34c65a06db0e200"`);
+
+        // Add columns as nullable first to handle existing data
+        await queryRunner.query(`ALTER TABLE "client_custom_field_values" ADD "companyId" uuid`);
+        await queryRunner.query(`ALTER TABLE "change_logs" ADD "companyId" uuid`);
+        await queryRunner.query(`ALTER TABLE "notification_settings" ADD "companyId" uuid`);
+
+        // Populate companyId from related entities for existing data
+        // client_custom_field_values gets companyId from client
+        await queryRunner.query(`
+            UPDATE "client_custom_field_values" ccfv
+            SET "companyId" = c."companyId"
+            FROM "clients" c
+            WHERE ccfv."clientId" = c."id" AND ccfv."companyId" IS NULL
+        `);
+
+        // change_logs and notification_settings may need manual population or default
+        // For now, delete orphaned records without valid company reference
+        await queryRunner.query(`DELETE FROM "change_logs" WHERE "companyId" IS NULL`);
+        await queryRunner.query(`DELETE FROM "notification_settings" WHERE "companyId" IS NULL`);
+
+        // Now make columns NOT NULL
+        await queryRunner.query(`ALTER TABLE "client_custom_field_values" ALTER COLUMN "companyId" SET NOT NULL`);
+        await queryRunner.query(`ALTER TABLE "change_logs" ALTER COLUMN "companyId" SET NOT NULL`);
+        await queryRunner.query(`ALTER TABLE "notification_settings" ALTER COLUMN "companyId" SET NOT NULL`);
         await queryRunner.query(`CREATE INDEX "IDX_aa1d122f0696c5824bc1535554" ON "client_custom_field_values" ("companyId") `);
         await queryRunner.query(`CREATE INDEX "IDX_9bd0b0a952ec9c81efe796e9d0" ON "change_logs" ("companyId", "entityType", "entityId") `);
         await queryRunner.query(`CREATE INDEX "IDX_b7ed63f45c31b498eca6995a77" ON "change_logs" ("companyId") `);

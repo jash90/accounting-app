@@ -135,6 +135,20 @@ export class CustomFieldsService {
     user: User,
   ): Promise<ClientFieldDefinition> {
     const definition = await this.findDefinitionById(id, user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+
+    // Check for duplicate name if changing
+    if (dto.name && dto.name !== definition.name) {
+      const existing = await this.fieldDefinitionRepository.findOne({
+        where: { companyId, name: dto.name, isActive: true },
+      });
+
+      if (existing) {
+        throw new BadRequestException(
+          `Field with name "${dto.name}" already exists`,
+        );
+      }
+    }
 
     // Don't allow changing field type if values exist
     if (dto.fieldType && dto.fieldType !== definition.fieldType) {

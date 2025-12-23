@@ -660,9 +660,12 @@ describe('AutoAssignService', () => {
       const client = createMockClient();
       const icon = createMockIcon();
 
+      // Use mockResolvedValueOnce for each sequential call to avoid overwriting
       entityManager.find
-        .mockResolvedValue([icon])
-        .mockResolvedValue([]);
+        .mockResolvedValueOnce([icon])  // First call: get icons with conditions
+        .mockResolvedValueOnce([])      // First call: get current assignments
+        .mockResolvedValueOnce([icon])  // Second call: get icons with conditions
+        .mockResolvedValueOnce([]);     // Second call: get current assignments
 
       conditionEvaluator.evaluate.mockReturnValue(true);
       entityManager.findOne.mockResolvedValue(null);

@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NotificationSettings, User } from '@accounting/common';
@@ -17,6 +17,8 @@ export class NotificationSettingsService {
   constructor(
     @InjectRepository(NotificationSettings)
     private readonly settingsRepository: Repository<NotificationSettings>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async getSettings(user: User): Promise<NotificationSettings> {
@@ -117,6 +119,18 @@ export class NotificationSettingsService {
     companyId: string,
     dto: UpdateNotificationSettingsDto,
   ): Promise<NotificationSettings> {
+    // Validate user belongs to the specified company (multi-tenant isolation)
+    const targetUser = await this.userRepository.findOne({
+      where: { id: userId, companyId },
+      select: ['id'],
+    });
+
+    if (!targetUser) {
+      throw new ForbiddenException(
+        'Cannot modify notification settings: user not found or belongs to a different company'
+      );
+    }
+
     // Use atomic upsert to prevent race conditions
     // companyId is required for multi-tenant isolation
     const defaultSettings = {
@@ -160,6 +174,18 @@ export class NotificationSettingsService {
   }
 
   async deleteSettings(userId: string, companyId: string): Promise<void> {
+    // Validate user belongs to the specified company (multi-tenant isolation)
+    const targetUser = await this.userRepository.findOne({
+      where: { id: userId, companyId },
+      select: ['id'],
+    });
+
+    if (!targetUser) {
+      throw new ForbiddenException(
+        'Cannot delete notification settings: user not found or belongs to a different company'
+      );
+    }
+
     await this.settingsRepository.delete({
       userId,
       companyId,

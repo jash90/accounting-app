@@ -9,7 +9,8 @@ export class AddIsActiveAndUpdatedByFields1764172786867 implements MigrationInte
         await queryRunner.query(`ALTER TABLE "client_icons" ADD "isActive" boolean NOT NULL DEFAULT true`);
         await queryRunner.query(`ALTER TABLE "clients" ADD "isActive" boolean NOT NULL DEFAULT true`);
         await queryRunner.query(`ALTER TABLE "clients" ADD "updatedById" uuid`);
-        await queryRunner.query(`ALTER TABLE "clients" ADD CONSTRAINT "FK_a04d443b4a49fad8843337faa1e" FOREIGN KEY ("updatedById") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        // Use SET NULL for audit trail - when user is deleted, preserve the client record
+        await queryRunner.query(`ALTER TABLE "clients" ADD CONSTRAINT "FK_a04d443b4a49fad8843337faa1e" FOREIGN KEY ("updatedById") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {

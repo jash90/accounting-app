@@ -1,6 +1,10 @@
 const axios = require('axios');
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = process.env.TEST_API_URL || 'http://localhost:3000/api';
+
+// Test credentials from environment variables with fallbacks for development
+const TEST_EMAIL = process.env.TEST_EMAIL || 'test@example.com';
+const TEST_PASSWORD = process.env.TEST_PASSWORD || 'wrongpassword';
 
 async function testRateLimiting() {
   console.log('\n🚦 Testing Rate Limiting\n');
@@ -16,8 +20,8 @@ async function testRateLimiting() {
     for (let i = 1; i <= 7; i++) {
       try {
         const response = await axios.post(`${API_URL}/auth/login`, {
-          email: 'test@example.com',
-          password: 'wrongpassword'
+          email: TEST_EMAIL,
+          password: TEST_PASSWORD
         });
         successfulLoginRequests++;
         console.log(`   Request ${i}: ✅ Accepted (${response.status})`);
@@ -25,10 +29,13 @@ async function testRateLimiting() {
         if (error.response && error.response.status === 429) {
           throttledLoginRequests++;
           console.log(`   Request ${i}: 🚫 Throttled (429 - Too Many Requests)`);
-        } else {
+        } else if (error.response) {
           // 401 Unauthorized is expected for wrong credentials
           successfulLoginRequests++;
-          console.log(`   Request ${i}: ✅ Accepted (${error.response.status} - ${error.response.data.message})`);
+          console.log(`   Request ${i}: ✅ Accepted (${error.response.status} - ${error.response.data?.message || error.response.statusText})`);
+        } else {
+          // Network error or no response
+          console.log(`   Request ${i}: ⚠️ Network error (${error.message})`);
         }
       }
       // Small delay between requests
@@ -68,10 +75,13 @@ async function testRateLimiting() {
         if (error.response && error.response.status === 429) {
           throttledRegisterRequests++;
           console.log(`   Request ${i}: 🚫 Throttled (429 - Too Many Requests)`);
-        } else {
+        } else if (error.response) {
           // Other errors (400, 409) count as accepted (not throttled)
           successfulRegisterRequests++;
-          console.log(`   Request ${i}: ✅ Accepted (${error.response.status} - ${error.response.data.message || error.response.statusText})`);
+          console.log(`   Request ${i}: ✅ Accepted (${error.response.status} - ${error.response.data?.message || error.response.statusText})`);
+        } else {
+          // Network error or no response
+          console.log(`   Request ${i}: ⚠️ Network error (${error.message})`);
         }
       }
       await new Promise(resolve => setTimeout(resolve, 100));

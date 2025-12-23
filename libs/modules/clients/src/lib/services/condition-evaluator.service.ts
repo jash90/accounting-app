@@ -111,17 +111,41 @@ export class ConditionEvaluatorService {
           .toLowerCase()
           .includes(String(conditionValue ?? '').toLowerCase());
 
-      case 'greaterThan':
-        return Number(fieldValue) > Number(conditionValue);
+      case 'greaterThan': {
+        const numField = Number(fieldValue);
+        const numCondition = Number(conditionValue);
+        if (isNaN(numField) || isNaN(numCondition)) {
+          return false;
+        }
+        return numField > numCondition;
+      }
 
-      case 'lessThan':
-        return Number(fieldValue) < Number(conditionValue);
+      case 'lessThan': {
+        const numField = Number(fieldValue);
+        const numCondition = Number(conditionValue);
+        if (isNaN(numField) || isNaN(numCondition)) {
+          return false;
+        }
+        return numField < numCondition;
+      }
 
-      case 'greaterThanOrEqual':
-        return Number(fieldValue) >= Number(conditionValue);
+      case 'greaterThanOrEqual': {
+        const numField = Number(fieldValue);
+        const numCondition = Number(conditionValue);
+        if (isNaN(numField) || isNaN(numCondition)) {
+          return false;
+        }
+        return numField >= numCondition;
+      }
 
-      case 'lessThanOrEqual':
-        return Number(fieldValue) <= Number(conditionValue);
+      case 'lessThanOrEqual': {
+        const numField = Number(fieldValue);
+        const numCondition = Number(conditionValue);
+        if (isNaN(numField) || isNaN(numCondition)) {
+          return false;
+        }
+        return numField <= numCondition;
+      }
 
       case 'isEmpty':
         return this.isEmpty(fieldValue);

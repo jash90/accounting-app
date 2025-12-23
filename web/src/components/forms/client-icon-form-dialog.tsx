@@ -153,8 +153,9 @@ export function ClientIconFormDialog({
                     form.setValue('color', value.color || '');
                   }
                   if (value.file) {
-                    // Type-safe file field access - both schemas now include file
-                    (form.setValue as (name: string, value: File) => void)('file', value.file);
+                    // Both Create and Update schemas include file field
+                    // Using explicit key assertion since both FormData types have this field
+                    form.setValue('file' as keyof (CreateClientIconFormData & UpdateClientIconFormData), value.file);
                   }
                 }}
               />

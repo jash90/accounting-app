@@ -38,3 +38,7 @@ test-results/*.json
 
 # Auto Claude data directory
 .auto-claude/
+
+# Telemetry and metrics files
+performance.json
+*.telemetry.json

@@ -7,6 +7,7 @@ import {
   IsArray,
   MaxLength,
   MinLength,
+  ArrayMinSize,
   ArrayMaxSize,
   Min,
   Max,
@@ -58,6 +59,7 @@ export class CreateFieldDefinitionDto {
     return value;
   })
   @IsArray({ message: 'ENUM/MULTISELECT fields require enumValues array' })
+  @ArrayMinSize(1, { message: 'At least one enum value is required' })
   @ArrayMaxSize(50, { message: 'Maksymalna liczba wartości ENUM to 50' })
   @IsString({ each: true })
   enumValues?: string[];

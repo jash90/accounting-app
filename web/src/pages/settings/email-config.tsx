@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/common/page-header';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
+import { useToast } from '@/components/ui/use-toast';
 import {
   useUserEmailConfig,
   useCreateUserEmailConfig,
@@ -24,6 +25,7 @@ export default function UserEmailConfigPage() {
   const deleteConfig = useDeleteUserEmailConfig();
   const testSmtp = useTestSmtp();
   const testImap = useTestImap();
+  const { toast } = useToast();
 
   const [formOpen, setFormOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -33,18 +35,40 @@ export default function UserEmailConfigPage() {
   const handleCreate = (data: CreateEmailConfigFormData) => {
     createConfig.mutate(data, {
       onSuccess: () => setFormOpen(false),
+      onError: (err: Error) => {
+        toast({
+          title: 'Error',
+          description: err.message || 'Failed to create email configuration',
+          variant: 'destructive',
+        });
+      },
     });
   };
 
   const handleUpdate = (data: UpdateEmailConfigFormData) => {
     updateConfig.mutate(data, {
       onSuccess: () => setFormOpen(false),
+      onError: (err: Error) => {
+        toast({
+          title: 'Error',
+          description: err.message || 'Failed to update email configuration',
+          variant: 'destructive',
+        });
+      },
     });
   };
 
   const handleDelete = () => {
     deleteConfig.mutate(undefined, {
       onSuccess: () => setDeleteOpen(false),
+      onError: (err: Error) => {
+        toast({
+          title: 'Error',
+          description: err.message || 'Failed to delete email configuration',
+          variant: 'destructive',
+        });
+        setDeleteOpen(false);
+      },
     });
   };
 

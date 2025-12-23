@@ -19,7 +19,8 @@ import { memoryStorage } from 'multer';
 
 // File upload configuration
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
-const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/svg+xml', 'image/webp'];
+// Note: SVG intentionally excluded due to XSS/script injection security risks
+const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 
 const fileFilter = (
   _req: Express.Request,
@@ -385,7 +386,7 @@ export class IconsController {
       'Creates a new icon for the company. This endpoint is restricted to Company Owners and Admins. ' +
       'Icons can be one of three types:\n' +
       '- **lucide**: Use a Lucide icon name (e.g., "star", "user", "settings")\n' +
-      '- **custom**: Upload a custom image file (PNG, JPEG, GIF, SVG, WebP, max 2MB)\n' +
+      '- **custom**: Upload a custom image file (PNG, JPEG, GIF, WebP, max 2MB)\n' +
       '- **emoji**: Use an emoji character directly\n\n' +
       'An optional auto-assign condition can be provided as a JSON object to automatically ' +
       'assign this icon to clients matching specific criteria.',

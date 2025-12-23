@@ -20,6 +20,59 @@ import { v4 as uuidv4 } from 'uuid';
  * 2. HttpException (NestJS) - Map to error codes and normalize
  * 3. Unexpected errors - Sanitize and log for security
  */
+/**
+ * Keys that should never be exposed in error responses
+ */
+const SENSITIVE_KEYS = new Set([
+  'password', 'secret', 'token', 'apiKey', 'api_key', 'auth', 'authorization',
+  'credential', 'credentials', 'ssn', 'social_security', 'credit_card', 'creditCard',
+  'cvv', 'pin', 'private_key', 'privateKey', 'client_secret', 'clientSecret',
+  'refresh_token', 'refreshToken', 'access_token', 'accessToken', 'jwt',
+]);
+
+/**
+ * Sanitize context object to prevent sensitive data leakage
+ */
+function sanitizeContext(
+  context: Record<string, any> | undefined,
+  maxDepth = 2,
+): Record<string, any> | undefined {
+  if (!context || typeof context !== 'object') {
+    return undefined;
+  }
+
+  const sanitize = (obj: any, depth: number): any => {
+    if (depth > maxDepth) {
+      return '[truncated]';
+    }
+
+    if (Array.isArray(obj)) {
+      return obj.slice(0, 10).map((item) => sanitize(item, depth + 1));
+    }
+
+    if (obj && typeof obj === 'object') {
+      const result: Record<string, any> = {};
+      for (const [key, value] of Object.entries(obj)) {
+        const lowerKey = key.toLowerCase();
+        if (SENSITIVE_KEYS.has(lowerKey) || SENSITIVE_KEYS.has(key)) {
+          result[key] = '[REDACTED]';
+        } else if (typeof value === 'string' && value.length > 200) {
+          result[key] = value.substring(0, 200) + '...[truncated]';
+        } else if (value && typeof value === 'object') {
+          result[key] = sanitize(value, depth + 1);
+        } else {
+          result[key] = value;
+        }
+      }
+      return result;
+    }
+
+    return obj;
+  };
+
+  return sanitize(context, 0);
+}
+
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
@@ -72,7 +125,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     errorResponse.statusCode = exception.getStatus();
     errorResponse.message = exception.message;
     errorResponse.errorCode = exception.errorCode;
-    errorResponse.context = exception.context;
+    errorResponse.context = sanitizeContext(exception.context);
 
     // Log custom exceptions at warn level (business logic errors)
     this.logger.warn(

@@ -26,15 +26,21 @@ export class SimpleTextService {
     return systemCompany;
   }
 
-  async findAll(user: User): Promise<SimpleText[]> {
-    // For ADMINs: use system company
-    // For non-ADMINs: use their regular companyId
-    let companyId = user.companyId;
-
+  /**
+   * Gets the effective company ID for operations.
+   * For ADMINs: uses system company
+   * For non-ADMINs: uses their regular companyId
+   */
+  private async getEffectiveCompanyId(user: User): Promise<string | null> {
     if (user.role === UserRole.ADMIN) {
       const systemCompany = await this.getSystemCompany();
-      companyId = systemCompany.id;
+      return systemCompany.id;
     }
+    return user.companyId ?? null;
+  }
+
+  async findAll(user: User): Promise<SimpleText[]> {
+    const companyId = await this.getEffectiveCompanyId(user);
 
     if (!companyId) {
       return [];
@@ -57,13 +63,7 @@ export class SimpleTextService {
       throw new NotFoundException(`SimpleText with ID ${id} not found`);
     }
 
-    // Get effective company ID
-    let companyId = user.companyId;
-
-    if (user.role === UserRole.ADMIN) {
-      const systemCompany = await this.getSystemCompany();
-      companyId = systemCompany.id;
-    }
+    const companyId = await this.getEffectiveCompanyId(user);
 
     // Ensure user can only access texts from their company
     if (companyId !== simpleText.companyId) {
@@ -74,13 +74,7 @@ export class SimpleTextService {
   }
 
   async create(createSimpleTextDto: CreateSimpleTextDto, user: User): Promise<SimpleText> {
-    // Get effective company ID
-    let companyId = user.companyId;
-
-    if (user.role === UserRole.ADMIN) {
-      const systemCompany = await this.getSystemCompany();
-      companyId = systemCompany.id;
-    }
+    const companyId = await this.getEffectiveCompanyId(user);
 
     if (!companyId) {
       throw new ForbiddenException('User is not associated with a company');

@@ -104,6 +104,7 @@ export class EmailSenderService {
           user: smtpConfig.auth.user,
           pass: smtpConfig.auth.pass,
         },
+        ...(smtpConfig.tls && { tls: smtpConfig.tls }),
       });
 
       this.transporters.set(configKey, transporter);

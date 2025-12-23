@@ -208,15 +208,16 @@ export const clientIconsApi = {
     if (iconData.iconValue) {
       formData.append('iconValue', iconData.iconValue);
     }
+    if (iconData.tooltip) {
+      formData.append('tooltip', iconData.tooltip);
+    }
     if (iconData.autoAssignCondition) {
       formData.append('autoAssignCondition', JSON.stringify(iconData.autoAssignCondition));
     }
 
-    const { data } = await apiClient.post<ClientIconResponseDto>(ICONS_URL, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    // Let axios/browser set the Content-Type automatically for FormData
+    // Setting it explicitly breaks the multipart boundary
+    const { data } = await apiClient.post<ClientIconResponseDto>(ICONS_URL, formData);
     return data;
   },
 

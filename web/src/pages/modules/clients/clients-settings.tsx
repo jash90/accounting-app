@@ -114,37 +114,50 @@ export default function ClientsSettingsPage() {
 
   const handleFieldSubmit = (data: CreateClientFieldDefinitionFormData | UpdateClientFieldDefinitionFormData) => {
     if (editingField) {
-      updateFieldDefinition.mutate({
-        id: editingField.id,
-        data: data as UpdateClientFieldDefinitionDto,
-      });
-      setEditingField(null);
+      updateFieldDefinition.mutate(
+        {
+          id: editingField.id,
+          data: data as UpdateClientFieldDefinitionDto,
+        },
+        {
+          onSuccess: () => setEditingField(null),
+        }
+      );
     } else {
-      createFieldDefinition.mutate(data as CreateClientFieldDefinitionDto);
-      setCreateFieldOpen(false);
+      createFieldDefinition.mutate(data as CreateClientFieldDefinitionDto, {
+        onSuccess: () => setCreateFieldOpen(false),
+      });
     }
   };
 
   const handleIconSubmit = (data: CreateClientIconFormData | UpdateClientIconFormData) => {
     if (editingIcon) {
-      updateIcon.mutate({
-        id: editingIcon.id,
-        data: data as UpdateClientIconDto,
-      });
-      setEditingIcon(null);
+      updateIcon.mutate(
+        {
+          id: editingIcon.id,
+          data: data as UpdateClientIconDto,
+        },
+        {
+          onSuccess: () => setEditingIcon(null),
+        }
+      );
     } else {
       const formData = data as CreateClientIconFormData;
-      createIcon.mutate({
-        iconData: {
-          name: formData.name,
-          color: formData.color,
-          iconType: formData.iconType,
-          iconValue: formData.iconValue,
-          autoAssignCondition: formData.autoAssignCondition,
+      createIcon.mutate(
+        {
+          iconData: {
+            name: formData.name,
+            color: formData.color,
+            iconType: formData.iconType,
+            iconValue: formData.iconValue,
+            autoAssignCondition: formData.autoAssignCondition,
+          },
+          file: formData.file,
         },
-        file: formData.file,
-      });
-      setCreateIconOpen(false);
+        {
+          onSuccess: () => setCreateIconOpen(false),
+        }
+      );
     }
   };
 
@@ -246,6 +259,7 @@ export default function ClientsSettingsPage() {
                           size="icon"
                           variant="ghost"
                           onClick={() => setEditingField(field)}
+                          aria-label={`Edytuj pole ${field.label}`}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -254,6 +268,7 @@ export default function ClientsSettingsPage() {
                           variant="ghost"
                           onClick={() => setDeletingField(field)}
                           className="text-destructive hover:text-destructive"
+                          aria-label={`Usuń pole ${field.label}`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -331,6 +346,7 @@ export default function ClientsSettingsPage() {
                       variant="ghost"
                       className="h-6 w-6"
                       onClick={() => setEditingIcon(icon)}
+                      aria-label={`Edytuj ikonę ${icon.name}`}
                     >
                       <Edit className="h-3 w-3" />
                     </Button>
@@ -339,6 +355,7 @@ export default function ClientsSettingsPage() {
                       variant="ghost"
                       className="h-6 w-6 text-destructive hover:text-destructive"
                       onClick={() => setDeletingIcon(icon)}
+                      aria-label={`Usuń ikonę ${icon.name}`}
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>

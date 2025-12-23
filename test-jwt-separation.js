@@ -1,7 +1,20 @@
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = process.env.TEST_API_URL || 'http://localhost:3000/api';
+
+// Test credentials must be provided via environment variables
+// See .env.example for required variables: TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD
+const TEST_ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL;
+const TEST_ADMIN_PASSWORD = process.env.TEST_ADMIN_PASSWORD;
+
+// Validate credentials are set
+if (!TEST_ADMIN_EMAIL || !TEST_ADMIN_PASSWORD) {
+  console.error('❌ ERROR: Test credentials must be set via environment variables');
+  console.error('   Required: TEST_ADMIN_EMAIL and TEST_ADMIN_PASSWORD');
+  console.error('   See .env.example for reference');
+  process.exit(1);
+}
 
 async function testJWTSeparation() {
   console.log('\n🧪 Testing JWT Token Separation\n');
@@ -11,8 +24,8 @@ async function testJWTSeparation() {
     // 1. Login with admin user
     console.log('\n1️⃣  Testing Login...');
     const loginResponse = await axios.post(`${API_URL}/auth/login`, {
-      email: 'admin@system.com',
-      password: 'Admin123!'
+      email: TEST_ADMIN_EMAIL,
+      password: TEST_ADMIN_PASSWORD
     });
 
     const { access_token, refresh_token, user } = loginResponse.data;

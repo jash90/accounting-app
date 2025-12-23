@@ -13,6 +13,34 @@ export class FieldNotFoundException extends ClientException {
   }
 }
 
+/**
+ * Sanitize a value for safe inclusion in error responses
+ * Masks sensitive patterns and truncates long values
+ */
+function sanitizeValueForError(value: unknown): unknown {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    // Truncate long strings
+    const maxLength = 100;
+    let sanitized = value.length > maxLength ? `${value.substring(0, maxLength)}...` : value;
+    // Mask potential sensitive patterns (credit card-like, tokens)
+    sanitized = sanitized.replace(/\b\d{13,19}\b/g, '[MASKED]');
+    sanitized = sanitized.replace(/\b[A-Za-z0-9]{32,}\b/g, '[MASKED]');
+    return sanitized;
+  }
+
+  if (typeof value === 'object') {
+    // For objects, only return type and keys to avoid leaking data
+    const keys = Object.keys(value as object);
+    return { type: Array.isArray(value) ? 'array' : 'object', keys: keys.slice(0, 5) };
+  }
+
+  return value;
+}
+
 export class FieldValidationException extends ClientException {
   constructor(
     fieldLabel: string,
@@ -27,7 +55,7 @@ export class FieldValidationException extends ClientException {
         additionalInfo: {
           fieldLabel,
           fieldType,
-          providedValue,
+          providedValue: sanitizeValueForError(providedValue),
           validationError: reason,
         },
       },
