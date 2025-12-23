@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import * as handlebars from 'handlebars';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 import {
   Client,
@@ -277,9 +277,11 @@ export class ClientChangelogService {
     notificationType: 'receiveOnCreate' | 'receiveOnUpdate' | 'receiveOnDelete',
     excludeUserId?: string,
   ): Promise<User[]> {
-    // Get all notification settings for this module and notification type
+    // Get notification settings for this module, company, and notification type
+    // companyId filter ensures multi-tenant isolation
     const settings = await this.notificationSettingsRepository.find({
       where: {
+        companyId,
         moduleSlug: this.moduleSlug,
         [notificationType]: true,
       },
@@ -291,7 +293,7 @@ export class ClientChangelogService {
 
     const userIds = settings.map((s) => s.userId);
 
-    // Get users from the same company
+    // Get users from the same company with active status
     const users = await this.userRepository.find({
       where: {
         id: In(userIds),
@@ -520,7 +522,7 @@ export class ClientChangelogService {
     const templatePath = path.join(this.templatesDir, `${templateName}.hbs`);
 
     try {
-      const templateContent = fs.readFileSync(templatePath, 'utf-8');
+      const templateContent = await fs.readFile(templatePath, 'utf-8');
       const template = handlebars.compile(templateContent);
       return template(context);
     } catch (error) {

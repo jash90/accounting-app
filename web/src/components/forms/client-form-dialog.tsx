@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -72,56 +72,84 @@ export function ClientFormDialog({
   // Custom field values state
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
 
-  // Initialize custom field values when editing
-  useEffect(() => {
-    if (client?.customFieldValues) {
-      const values: Record<string, string> = {};
-      client.customFieldValues.forEach((cfv) => {
-        values[cfv.fieldDefinitionId] = cfv.value || '';
-      });
-      setCustomFieldValues(values);
-    } else {
-      setCustomFieldValues({});
-    }
-  }, [client]);
+  // Generate default values from client data or empty form
+  const getDefaultValues = useCallback(
+    (clientData?: ClientResponseDto): CreateClientFormData | UpdateClientFormData => {
+      if (clientData) {
+        return {
+          name: clientData.name,
+          nip: clientData.nip || '',
+          email: clientData.email || '',
+          phone: clientData.phone || '',
+          companyStartDate: clientData.companyStartDate
+            ? new Date(clientData.companyStartDate)
+            : undefined,
+          cooperationStartDate: clientData.cooperationStartDate
+            ? new Date(clientData.cooperationStartDate)
+            : undefined,
+          suspensionDate: clientData.suspensionDate
+            ? new Date(clientData.suspensionDate)
+            : undefined,
+          companySpecificity: clientData.companySpecificity || '',
+          additionalInfo: clientData.additionalInfo || '',
+          gtuCode: clientData.gtuCode || '',
+          amlGroup: clientData.amlGroup || '',
+          employmentType: clientData.employmentType,
+          vatStatus: clientData.vatStatus,
+          taxScheme: clientData.taxScheme,
+          zusStatus: clientData.zusStatus,
+        };
+      }
+      return {
+        name: '',
+        nip: '',
+        email: '',
+        phone: '',
+        companySpecificity: '',
+        additionalInfo: '',
+        gtuCode: '',
+        amlGroup: '',
+      };
+    },
+    []
+  );
 
   const form = useForm<CreateClientFormData | UpdateClientFormData>({
     resolver: zodResolver(schema),
-    defaultValues: client
-      ? {
-          name: client.name,
-          nip: client.nip || '',
-          email: client.email || '',
-          phone: client.phone || '',
-          companyStartDate: client.companyStartDate
-            ? new Date(client.companyStartDate)
-            : undefined,
-          cooperationStartDate: client.cooperationStartDate
-            ? new Date(client.cooperationStartDate)
-            : undefined,
-          suspensionDate: client.suspensionDate
-            ? new Date(client.suspensionDate)
-            : undefined,
-          companySpecificity: client.companySpecificity || '',
-          additionalInfo: client.additionalInfo || '',
-          gtuCode: client.gtuCode || '',
-          amlGroup: client.amlGroup || '',
-          employmentType: client.employmentType,
-          vatStatus: client.vatStatus,
-          taxScheme: client.taxScheme,
-          zusStatus: client.zusStatus,
-        }
-      : {
-          name: '',
-          nip: '',
-          email: '',
-          phone: '',
-          companySpecificity: '',
-          additionalInfo: '',
-          gtuCode: '',
-          amlGroup: '',
-        },
+    defaultValues: getDefaultValues(client),
   });
+
+  // Sync form and custom fields when dialog opens or client changes
+  useEffect(() => {
+    if (open) {
+      // Reset form with new values
+      form.reset(getDefaultValues(client));
+
+      // Reset custom field values
+      if (client?.customFieldValues) {
+        const values: Record<string, string> = {};
+        client.customFieldValues.forEach((cfv) => {
+          values[cfv.fieldDefinitionId] = cfv.value || '';
+        });
+        setCustomFieldValues(values);
+      } else {
+        setCustomFieldValues({});
+      }
+    }
+  }, [open, client, form, getDefaultValues]);
+
+  // Reset form when dialog closes
+  const handleOpenChange = useCallback(
+    (newOpen: boolean) => {
+      if (!newOpen) {
+        // Reset on close to prevent stale data
+        form.reset(getDefaultValues(undefined));
+        setCustomFieldValues({});
+      }
+      onOpenChange(newOpen);
+    },
+    [form, getDefaultValues, onOpenChange]
+  );
 
   const handleCustomFieldChange = (fieldId: string, value: string) => {
     setCustomFieldValues((prev) => ({
@@ -236,7 +264,7 @@ export function ClientFormDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
@@ -649,7 +677,7 @@ export function ClientFormDialog({
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={() => onOpenChange(false)}
+                  onClick={() => handleOpenChange(false)}
                 >
                   Anuluj
                 </Button>

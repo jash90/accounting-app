@@ -9,6 +9,18 @@ import { AuthController } from './controllers/auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { ACCESS_JWT_SERVICE, REFRESH_JWT_SERVICE } from './constants/jwt.constants';
 
+function getRequiredSecret(configService: ConfigService, key: string): string {
+  const secret = configService.get<string>(key);
+  if (!secret) {
+    throw new Error(
+      `Missing required environment variable: ${key}. ` +
+      `JWT secrets must be explicitly configured for security. ` +
+      `Please set ${key} in your environment or .env file.`
+    );
+  }
+  return secret;
+}
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Company]),
@@ -19,7 +31,7 @@ import { ACCESS_JWT_SERVICE, REFRESH_JWT_SERVICE } from './constants/jwt.constan
       useFactory: (configService: ConfigService): JwtModuleOptions => {
         const expiresIn = configService.get<string>('JWT_EXPIRES_IN') || '15m';
         return {
-          secret: configService.get<string>('JWT_SECRET') || 'secret',
+          secret: getRequiredSecret(configService, 'JWT_SECRET'),
           signOptions: {
             expiresIn: expiresIn as any,
           },
@@ -33,7 +45,7 @@ import { ACCESS_JWT_SERVICE, REFRESH_JWT_SERVICE } from './constants/jwt.constan
       useFactory: (configService: ConfigService): JwtModuleOptions => {
         const expiresIn = configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
         return {
-          secret: configService.get<string>('JWT_REFRESH_SECRET') || 'refresh-secret',
+          secret: getRequiredSecret(configService, 'JWT_REFRESH_SECRET'),
           signOptions: {
             expiresIn: expiresIn as any,
           },
@@ -52,7 +64,7 @@ import { ACCESS_JWT_SERVICE, REFRESH_JWT_SERVICE } from './constants/jwt.constan
       useFactory: (configService: ConfigService) => {
         const expiresIn = configService.get<string>('JWT_EXPIRES_IN') || '15m';
         return new JwtService({
-          secret: configService.get<string>('JWT_SECRET') || 'secret',
+          secret: getRequiredSecret(configService, 'JWT_SECRET'),
           signOptions: {
             expiresIn: expiresIn as any,
           },
@@ -65,7 +77,7 @@ import { ACCESS_JWT_SERVICE, REFRESH_JWT_SERVICE } from './constants/jwt.constan
       useFactory: (configService: ConfigService) => {
         const expiresIn = configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
         return new JwtService({
-          secret: configService.get<string>('JWT_REFRESH_SECRET') || 'refresh-secret',
+          secret: getRequiredSecret(configService, 'JWT_REFRESH_SECRET'),
           signOptions: {
             expiresIn: expiresIn as any,
           },

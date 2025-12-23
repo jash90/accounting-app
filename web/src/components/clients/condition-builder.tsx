@@ -10,9 +10,14 @@ import {
 } from '@/types/enums';
 
 // Generate unique ID for condition tracking (stable React keys)
-let conditionIdCounter = 0;
+// Uses crypto.randomUUID() for SSR-safe, collision-resistant IDs
 function generateConditionId(): string {
-  return `cond-${Date.now()}-${++conditionIdCounter}`;
+  // crypto.randomUUID() is available in Node.js 14.17+ and all modern browsers
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for older environments (SSR-safe - doesn't use mutable counter)
+  return `cond-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
 import {
   CONDITION_FIELDS,
@@ -542,22 +547,37 @@ function ValueInput({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-48 p-0" align="start">
-          <div className="max-h-60 overflow-auto p-1">
+          <div
+            className="max-h-60 overflow-auto p-1"
+            role="listbox"
+            aria-multiselectable="true"
+            aria-label="Wybierz wartości"
+          >
             {options.map((opt) => {
               const isSelected = selectedValues.includes(opt.value);
               return (
                 <div
                   key={opt.value}
-                  className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent"
+                  role="option"
+                  aria-selected={isSelected}
+                  tabIndex={0}
+                  className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent focus:bg-accent focus:outline-none"
                   onClick={() => handleToggle(opt.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleToggle(opt.value);
+                    }
+                  }}
                 >
                   <Checkbox
                     checked={isSelected}
-                    onCheckedChange={() => handleToggle(opt.value)}
+                    aria-hidden="true"
+                    tabIndex={-1}
                     className="pointer-events-none"
                   />
                   <span className="flex-1">{opt.label}</span>
-                  {isSelected && <Check className="h-4 w-4" />}
+                  {isSelected && <Check className="h-4 w-4" aria-hidden="true" />}
                 </div>
               );
             })}
