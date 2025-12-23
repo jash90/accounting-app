@@ -138,6 +138,7 @@ export class AutoAssignService {
 
   /**
    * Adds an auto-assigned icon to a client
+   * Uses upsert pattern to prevent race conditions
    * @param clientId Client ID
    * @param iconId Icon ID
    * @param manager Optional EntityManager to use for transaction. If not provided, uses repository directly.
@@ -147,40 +148,37 @@ export class AutoAssignService {
     iconId: string,
     manager?: EntityManager
   ): Promise<void> {
-    const repo = manager || this.assignmentRepository.manager;
+    const repo = manager
+      ? manager.getRepository(ClientIconAssignment)
+      : this.assignmentRepository;
 
-    // Check if there's already a manual assignment
-    const existingManual = await repo.findOne(ClientIconAssignment, {
+    // Check if there's already a manual assignment - don't override manual assignments
+    const existingManual = await repo.findOne({
       where: { clientId, iconId, isAutoAssigned: false },
     });
 
     if (existingManual) {
-      // Don't override manual assignments
       return;
     }
 
-    // Check if there's already an auto-assignment
-    const existingAuto = await repo.findOne(ClientIconAssignment, {
-      where: { clientId, iconId, isAutoAssigned: true },
-    });
-
-    if (existingAuto) {
-      // Already auto-assigned
-      return;
-    }
-
-    // Create new auto-assignment
-    const assignment = repo.create(ClientIconAssignment, {
-      clientId,
-      iconId,
-      isAutoAssigned: true,
-    });
-
-    await repo.save(assignment);
+    // Use upsert pattern to prevent race conditions on auto-assignment creation
+    // orIgnore() handles the case where another process created the assignment concurrently
+    await repo
+      .createQueryBuilder()
+      .insert()
+      .into(ClientIconAssignment)
+      .values({
+        clientId,
+        iconId,
+        isAutoAssigned: true,
+      })
+      .orIgnore() // Ignore if already exists (race-safe)
+      .execute();
   }
 
   /**
    * Removes auto-assigned icons that no longer match conditions
+   * Uses bulk delete for efficiency and atomicity
    * @param clientId Client ID
    * @param currentMatchingIconIds Icon IDs that currently match conditions
    * @param manager Optional EntityManager to use for transaction. If not provided, uses repository directly.
@@ -190,23 +188,27 @@ export class AutoAssignService {
     currentMatchingIconIds: string[],
     manager?: EntityManager
   ): Promise<void> {
-    const repo = manager || this.assignmentRepository.manager;
+    const repo = manager
+      ? manager.getRepository(ClientIconAssignment)
+      : this.assignmentRepository;
 
-    const currentAutoAssignments = await repo.find(ClientIconAssignment, {
-      where: {
-        clientId,
-        isAutoAssigned: true,
-      },
-    });
+    // Use bulk delete query for efficiency - removes all auto-assignments
+    // that are not in the current matching set in a single atomic operation
+    const qb = repo
+      .createQueryBuilder()
+      .delete()
+      .from(ClientIconAssignment)
+      .where('clientId = :clientId', { clientId })
+      .andWhere('isAutoAssigned = :isAutoAssigned', { isAutoAssigned: true });
 
-    const matchingSet = new Set(currentMatchingIconIds);
-
-    for (const assignment of currentAutoAssignments) {
-      if (!matchingSet.has(assignment.iconId)) {
-        // This auto-assignment no longer matches, remove it
-        await repo.remove(assignment);
-      }
+    // Only add NOT IN condition if there are matching icons to exclude
+    if (currentMatchingIconIds.length > 0) {
+      qb.andWhere('iconId NOT IN (:...matchingIds)', {
+        matchingIds: currentMatchingIconIds,
+      });
     }
+
+    await qb.execute();
   }
 
   /**
@@ -296,6 +298,7 @@ export class AutoAssignService {
 
   /**
    * Process a batch of clients for icon assignment
+   * Uses atomic operations to prevent race conditions
    */
   private async processBatch(clients: Client[], icon: ClientIcon): Promise<void> {
     for (const client of clients) {
@@ -305,20 +308,21 @@ export class AutoAssignService {
           icon.autoAssignCondition ?? null,
         );
 
-        const existingAssignment = await this.assignmentRepository.findOne({
-          where: { clientId: client.id, iconId: icon.id },
-        });
-
         if (matches) {
-          // Should be assigned
-          if (!existingAssignment) {
-            await this.addAutoAssignment(client.id, icon.id);
-          }
+          // Should be assigned - addAutoAssignment uses upsert pattern (race-safe)
+          await this.addAutoAssignment(client.id, icon.id);
         } else {
-          // Should not be assigned
-          if (existingAssignment && existingAssignment.isAutoAssigned) {
-            await this.assignmentRepository.remove(existingAssignment);
-          }
+          // Should not be assigned - use atomic delete with condition
+          // This is race-safe: if assignment doesn't exist or isn't auto-assigned,
+          // the delete simply affects 0 rows
+          await this.assignmentRepository
+            .createQueryBuilder()
+            .delete()
+            .from(ClientIconAssignment)
+            .where('clientId = :clientId', { clientId: client.id })
+            .andWhere('iconId = :iconId', { iconId: icon.id })
+            .andWhere('isAutoAssigned = :isAutoAssigned', { isAutoAssigned: true })
+            .execute();
         }
       } catch (error) {
         // Log error but continue with other clients

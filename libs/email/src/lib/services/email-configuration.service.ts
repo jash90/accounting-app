@@ -16,6 +16,8 @@ import { EmailReaderService } from './email-reader.service';
 import { SmtpConfig, ImapConfig } from '../interfaces/email-config.interface';
 
 // TLS validation - secure by default, configurable via env
+// TODO: Future enhancement - move to per-company EmailConfiguration entity
+// to support multi-tenant TLS settings (requires migration + entity update)
 const REJECT_UNAUTHORIZED = process.env['EMAIL_REJECT_UNAUTHORIZED'] !== 'false';
 
 /**
@@ -400,13 +402,31 @@ export class EmailConfigurationService {
   }
 
   /**
-   * Get company's email configuration by companyId
-   * Returns null if not found
+   * Check if company has an active email configuration
+   * For internal use - does not expose sensitive data
    */
-  async findCompanyConfig(companyId: string): Promise<EmailConfiguration | null> {
-    return this.emailConfigRepo.findOne({
+  async hasActiveCompanyConfig(companyId: string): Promise<boolean> {
+    const config = await this.emailConfigRepo.findOne({
+      where: { companyId, isActive: true },
+      select: ['id'],
+    });
+    return !!config;
+  }
+
+  /**
+   * Get company's email configuration by companyId (internal use only)
+   * Returns null if not found or not active
+   * WARNING: This method is for internal service use - never expose directly via API
+   * @internal
+   */
+  protected async findCompanyConfigInternal(companyId: string): Promise<EmailConfiguration | null> {
+    const config = await this.emailConfigRepo.findOne({
       where: { companyId },
     });
+    if (!config?.isActive) {
+      return null;
+    }
+    return config;
   }
 
   /**

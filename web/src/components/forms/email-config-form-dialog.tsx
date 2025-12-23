@@ -273,7 +273,10 @@ export function EmailConfigFormDialog({
                           type="number"
                           placeholder="465"
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value, 10))}
+                          onChange={(e) => {
+                            const parsed = parseInt(e.target.value, 10);
+                            field.onChange(isNaN(parsed) ? undefined : parsed);
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -286,9 +289,8 @@ export function EmailConfigFormDialog({
                 <Alert className="border-amber-200 bg-amber-50">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-amber-800 text-sm">
-                    Niektórzy dostawcy poczty (np. Onet, Interia, WP) wymagają włączenia dostępu SMTP w panelu
-                    użytkownika konta email. Jeśli wystąpią błędy uwierzytelniania, sprawdź ustawienia bezpieczeństwa
-                    w panelu swojego dostawcy poczty.
+                    Some email providers require enabling SMTP access in your email account's user panel.
+                    If you encounter authentication errors, check the security settings in your email provider's panel.
                   </AlertDescription>
                 </Alert>
               )}
@@ -356,12 +358,12 @@ export function EmailConfigFormDialog({
                   {isTestingSmtp ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Testowanie...
+                      Testing...
                     </>
                   ) : (
                     <>
                       <CheckCircle className="mr-2 h-4 w-4" />
-                      Testuj połączenie SMTP
+                      Test SMTP Connection
                     </>
                   )}
                 </Button>
@@ -402,7 +404,10 @@ export function EmailConfigFormDialog({
                           type="number"
                           placeholder="993"
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value, 10))}
+                          onChange={(e) => {
+                            const parsed = parseInt(e.target.value, 10);
+                            field.onChange(isNaN(parsed) ? undefined : parsed);
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -415,9 +420,8 @@ export function EmailConfigFormDialog({
                 <Alert className="border-amber-200 bg-amber-50">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-amber-800 text-sm">
-                    Niektórzy dostawcy poczty (np. Onet, Interia, WP) wymagają włączenia dostępu IMAP w panelu
-                    użytkownika konta email. Jeśli wystąpią błędy uwierzytelniania, sprawdź ustawienia bezpieczeństwa
-                    w panelu swojego dostawcy poczty.
+                    Some email providers require enabling IMAP access in your email account's user panel.
+                    If you encounter authentication errors, check the security settings in your email provider's panel.
                   </AlertDescription>
                 </Alert>
               )}
@@ -485,12 +489,12 @@ export function EmailConfigFormDialog({
                   {isTestingImap ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Testowanie...
+                      Testing...
                     </>
                   ) : (
                     <>
                       <CheckCircle className="mr-2 h-4 w-4" />
-                      Testuj połączenie IMAP
+                      Test IMAP Connection
                     </>
                   )}
                 </Button>

@@ -57,7 +57,8 @@ export class CreateIconDto {
       try {
         return JSON.parse(value);
       } catch {
-        return value;
+        // Return undefined for invalid JSON - let validation handle it
+        return undefined;
       }
     }
     return value;

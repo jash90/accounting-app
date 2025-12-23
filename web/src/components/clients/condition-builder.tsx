@@ -8,17 +8,6 @@ import {
   LogicalOperator,
   isConditionGroup,
 } from '@/types/enums';
-
-// Generate unique ID for condition tracking (stable React keys)
-// Uses crypto.randomUUID() for SSR-safe, collision-resistant IDs
-function generateConditionId(): string {
-  // crypto.randomUUID() is available in Node.js 14.17+ and all modern browsers
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  // Fallback for older environments (SSR-safe - doesn't use mutable counter)
-  return `cond-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-}
 import {
   CONDITION_FIELDS,
   OPERATORS_BY_TYPE,
@@ -50,6 +39,17 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Plus, Trash2, FolderPlus, ChevronDown, Check } from 'lucide-react';
+
+// Generate unique ID for condition tracking (stable React keys)
+// Uses crypto.randomUUID() for SSR-safe, collision-resistant IDs
+function generateConditionId(): string {
+  // crypto.randomUUID() is available in Node.js 14.17+ and all modern browsers
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for older environments (SSR-safe - doesn't use mutable counter)
+  return `cond-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
 
 interface ConditionBuilderProps {
   value?: AutoAssignCondition;
@@ -393,12 +393,13 @@ function SingleConditionRenderer({
         : newOperators[0];
 
       onChange({
+        id: condition.id, // Preserve condition ID for stable React keys
         field,
         operator: newOperator,
         value: newType === 'boolean' ? false : '',
       });
     },
-    [condition.operator, onChange]
+    [condition.id, condition.operator, onChange]
   );
 
   const handleOperatorChange = useCallback(

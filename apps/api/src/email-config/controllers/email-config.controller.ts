@@ -28,7 +28,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { EmailConfigService } from '../services/email-config.service';
-import { EmailService } from '../services/email.service';
+import { SmtpImapService } from '../services/smtp-imap.service';
 import { CreateEmailConfigDto } from '../dto/create-email-config.dto';
 import { UpdateEmailConfigDto } from '../dto/update-email-config.dto';
 import { SendEmailDto } from '../dto/send-email.dto';
@@ -43,7 +43,7 @@ import { OwnerOrAdminGuard } from '@accounting/rbac';
 export class EmailConfigController {
   constructor(
     private readonly emailConfigService: EmailConfigService,
-    private readonly emailService: EmailService,
+    private readonly smtpImapService: SmtpImapService,
   ) {}
 
   // ========== USER EMAIL CONFIGURATION ENDPOINTS ==========
@@ -114,7 +114,7 @@ export class EmailConfigController {
   @ApiNotFoundResponse({ description: 'Email configuration not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   async sendEmail(@CurrentUser() user: User, @Body() sendDto: SendEmailDto) {
-    await this.emailService.sendEmail(user.id, sendDto);
+    await this.smtpImapService.sendEmail(user.id, sendDto);
   }
 
   @Get('inbox')
@@ -134,7 +134,7 @@ export class EmailConfigController {
   @ApiNotFoundResponse({ description: 'Email configuration not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   async checkInbox(@CurrentUser() user: User, @Query('limit') limit?: number) {
-    return this.emailService.checkInbox(user.id, limit || 10);
+    return this.smtpImapService.checkInbox(user.id, limit || 10);
   }
 
   // ========== CONNECTION TEST ENDPOINTS ==========
@@ -154,7 +154,7 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER or ADMIN role required' })
   async testSmtp(@Body() testDto: TestSmtpDto) {
-    return this.emailService.testSmtpConnection(testDto);
+    return this.smtpImapService.testSmtpConnection(testDto);
   }
 
   @Post('test/imap')
@@ -172,7 +172,7 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER or ADMIN role required' })
   async testImap(@Body() testDto: TestImapDto) {
-    return this.emailService.testImapConnection(testDto);
+    return this.smtpImapService.testImapConnection(testDto);
   }
 
   // ========== COMPANY EMAIL CONFIGURATION ENDPOINTS ==========
@@ -273,7 +273,7 @@ export class EmailConfigController {
     if (!user.companyId) {
       throw new ForbiddenException('User is not associated with a company');
     }
-    await this.emailService.sendCompanyEmail(user.companyId, sendDto);
+    await this.smtpImapService.sendCompanyEmail(user.companyId, sendDto);
   }
 
   @Get('company/inbox')
@@ -299,7 +299,7 @@ export class EmailConfigController {
     if (!user.companyId) {
       throw new ForbiddenException('User is not associated with a company');
     }
-    return this.emailService.checkCompanyInbox(user.companyId, limit || 10);
+    return this.smtpImapService.checkCompanyInbox(user.companyId, limit || 10);
   }
 
   // ========== COMPANY CONNECTION TEST ENDPOINTS ==========
@@ -321,7 +321,7 @@ export class EmailConfigController {
     if (!user.companyId) {
       throw new ForbiddenException('User is not associated with a company');
     }
-    return this.emailService.testSmtpConnection(testDto);
+    return this.smtpImapService.testSmtpConnection(testDto);
   }
 
   @Post('test/company/imap')
@@ -341,7 +341,7 @@ export class EmailConfigController {
     if (!user.companyId) {
       throw new ForbiddenException('User is not associated with a company');
     }
-    return this.emailService.testImapConnection(testDto);
+    return this.smtpImapService.testImapConnection(testDto);
   }
 
   // ========== SYSTEM ADMIN EMAIL CONFIGURATION ENDPOINTS (ADMIN ONLY) ==========
@@ -428,7 +428,7 @@ export class EmailConfigController {
   @ApiForbiddenResponse({ description: 'Forbidden - ADMIN role required' })
   async sendSystemAdminEmail(@CurrentUser() user: User, @Body() sendDto: SendEmailDto) {
     const systemAdminCompanyId = await this.emailConfigService.getSystemAdminCompanyId();
-    await this.emailService.sendCompanyEmail(systemAdminCompanyId, sendDto);
+    await this.smtpImapService.sendCompanyEmail(systemAdminCompanyId, sendDto);
   }
 
   @Get('system-admin/inbox')
@@ -452,7 +452,7 @@ export class EmailConfigController {
   @ApiForbiddenResponse({ description: 'Forbidden - ADMIN role required' })
   async checkSystemAdminInbox(@CurrentUser() user: User, @Query('limit') limit?: number) {
     const systemAdminCompanyId = await this.emailConfigService.getSystemAdminCompanyId();
-    return this.emailService.checkCompanyInbox(systemAdminCompanyId, limit || 10);
+    return this.smtpImapService.checkCompanyInbox(systemAdminCompanyId, limit || 10);
   }
 
   // ========== SYSTEM ADMIN CONNECTION TEST ENDPOINTS ==========
@@ -471,7 +471,7 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - ADMIN role required' })
   async testSystemAdminSmtp(@CurrentUser() user: User, @Body() testDto: TestSmtpDto) {
-    return this.emailService.testSmtpConnection(testDto);
+    return this.smtpImapService.testSmtpConnection(testDto);
   }
 
   @Post('test/system-admin/imap')
@@ -488,6 +488,6 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - ADMIN role required' })
   async testSystemAdminImap(@CurrentUser() user: User, @Body() testDto: TestImapDto) {
-    return this.emailService.testImapConnection(testDto);
+    return this.smtpImapService.testImapConnection(testDto);
   }
 }

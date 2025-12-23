@@ -106,7 +106,10 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
     };
   }, [form, onFiltersChange, debouncedSearch, buildFilters]);
 
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
+    // Reset debounced search to sync with form reset
+    setDebouncedSearch('');
+    // Reset form - watch subscription will call onFiltersChange automatically
     form.reset({
       search: '',
       employmentType: undefined,
@@ -115,8 +118,8 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
       zusStatus: undefined,
       isActive: undefined,
     });
-    onFiltersChange({});
-  };
+    // Note: Do NOT call onFiltersChange({}) here - the watch subscription handles it
+  }, [form]);
 
   const hasActiveFilters =
     filters.search ||
@@ -148,7 +151,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
               <FormField
                 control={form.control}
                 name="search"
@@ -291,6 +294,33 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
                             </SelectItem>
                           )
                         )}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs">Status</FormLabel>
+                    <Select
+                      onValueChange={(value) =>
+                        field.onChange(value === '_all' ? undefined : value === 'true')
+                      }
+                      value={field.value === undefined ? '_all' : field.value ? 'true' : 'false'}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Wszystkie" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="_all">Wszystkie</SelectItem>
+                        <SelectItem value="true">Aktywni</SelectItem>
+                        <SelectItem value="false">Nieaktywni</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormItem>

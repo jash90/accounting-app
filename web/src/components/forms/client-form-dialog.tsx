@@ -159,6 +159,17 @@ export function ClientFormDialog({
   };
 
   const handleSubmit = (data: CreateClientFormData | UpdateClientFormData) => {
+    // Validate required custom fields before submission
+    const missingRequiredFields = activeFieldDefinitions
+      .filter((fd) => fd.isRequired && !customFieldValues[fd.id])
+      .map((fd) => fd.label);
+
+    if (missingRequiredFields.length > 0) {
+      // Trigger form validation state to show error messages
+      // The error messages are shown inline next to each field
+      return;
+    }
+
     // Clean up empty strings to undefined
     const cleanedData = Object.fromEntries(
       Object.entries(data).map(([key, value]) => [

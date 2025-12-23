@@ -58,11 +58,11 @@ export interface TestConnectionResult {
 const CONNECTION_TIMEOUT_MS = 10000; // 10 seconds timeout
 
 /**
- * Email Service for sending and receiving emails
- * Uses SMTP for sending and IMAP for receiving
+ * SMTP/IMAP Service for testing connections and sending/receiving emails
+ * Uses nodemailer for SMTP and node-imap for IMAP operations
  */
 @Injectable()
-export class EmailService {
+export class SmtpImapService {
   constructor(
     private emailConfigService: EmailConfigService,
     private encryptionService: EncryptionService,
@@ -182,7 +182,7 @@ export class EmailService {
       // Decrypt SMTP password
       const smtpPassword = await this.encryptionService.decrypt(config.smtpPassword);
 
-      // Create nodemailer transporter
+      // Create nodemailer transporter with per-connection TLS config
       const transporter = nodemailer.createTransport({
         host: config.smtpHost,
         port: config.smtpPort,
@@ -190,6 +190,9 @@ export class EmailService {
         auth: {
           user: config.smtpUser,
           pass: smtpPassword,
+        },
+        tls: {
+          rejectUnauthorized: REJECT_UNAUTHORIZED,
         },
       });
 
@@ -223,7 +226,7 @@ export class EmailService {
       // Decrypt SMTP password
       const smtpPassword = await this.encryptionService.decrypt(config.smtpPassword);
 
-      // Create nodemailer transporter
+      // Create nodemailer transporter with per-connection TLS config
       const transporter = nodemailer.createTransport({
         host: config.smtpHost,
         port: config.smtpPort,
@@ -231,6 +234,9 @@ export class EmailService {
         auth: {
           user: config.smtpUser,
           pass: smtpPassword,
+        },
+        tls: {
+          rejectUnauthorized: REJECT_UNAUTHORIZED,
         },
       });
 

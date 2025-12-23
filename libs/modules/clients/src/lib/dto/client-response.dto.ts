@@ -263,6 +263,12 @@ export class PaginatedChangelogResponseDto {
     example: 20,
   })
   limit!: number;
+
+  @ApiProperty({
+    description: 'Total number of pages',
+    example: 25,
+  })
+  totalPages!: number;
 }
 
 /**

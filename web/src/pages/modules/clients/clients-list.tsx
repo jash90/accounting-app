@@ -345,8 +345,10 @@ export default function ClientsListPage() {
           description={`Czy na pewno chcesz usunąć klienta "${deletingClient.name}"? Klient zostanie dezaktywowany i można go będzie przywrócić później.`}
           variant="destructive"
           onConfirm={() => {
-            deleteClient.mutate(deletingClient.id);
-            setDeletingClient(null);
+            deleteClient.mutate(deletingClient.id, {
+              onSuccess: () => setDeletingClient(null),
+              onSettled: () => setDeletingClient(null),
+            });
           }}
           isLoading={deleteClient.isPending}
         />
@@ -359,8 +361,10 @@ export default function ClientsListPage() {
           title="Przywróć klienta"
           description={`Czy na pewno chcesz przywrócić klienta "${restoringClient.name}"?`}
           onConfirm={() => {
-            restoreClient.mutate(restoringClient.id);
-            setRestoringClient(null);
+            restoreClient.mutate(restoringClient.id, {
+              onSuccess: () => setRestoringClient(null),
+              onSettled: () => setRestoringClient(null),
+            });
           }}
           isLoading={restoreClient.isPending}
         />

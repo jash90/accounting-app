@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -85,6 +85,32 @@ export function FieldDefinitionFormDialog({
           displayOrder: 0,
         },
   });
+
+  // Reset form when dialog opens or fieldDefinition changes
+  useEffect(() => {
+    if (open) {
+      form.reset(
+        fieldDefinition
+          ? {
+              name: fieldDefinition.name,
+              label: fieldDefinition.label,
+              fieldType: fieldDefinition.fieldType,
+              isRequired: fieldDefinition.isRequired,
+              enumValues: fieldDefinition.enumValues || [],
+              displayOrder: fieldDefinition.displayOrder,
+            }
+          : {
+              name: '',
+              label: '',
+              fieldType: undefined,
+              isRequired: false,
+              enumValues: [],
+              displayOrder: 0,
+            }
+      );
+      setEnumValue('');
+    }
+  }, [open, fieldDefinition, form]);
 
   const fieldType = form.watch('fieldType');
   const enumValues = form.watch('enumValues') || [];
@@ -217,6 +243,7 @@ export function FieldDefinitionFormDialog({
                           type="button"
                           onClick={() => handleRemoveEnumValue(value)}
                           className="ml-1 hover:text-destructive"
+                          aria-label={`Usuń wartość ${value}`}
                         >
                           <X className="h-3 w-3" />
                         </button>

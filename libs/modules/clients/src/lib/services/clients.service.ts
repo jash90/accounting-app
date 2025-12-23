@@ -292,6 +292,26 @@ export class ClientsService {
 
   async hardDelete(id: string, user: User): Promise<void> {
     const client = await this.findOne(id, user);
+
+    // Log permanent deletion for audit trail before removing
+    this.logger.warn(
+      `Permanent deletion of client`,
+      {
+        clientId: client.id,
+        clientName: client.name,
+        companyId: client.companyId,
+        performedBy: user.id,
+      },
+    );
+
+    // Record in changelog before permanent deletion
+    await this.changeLogService.logDelete(
+      'Client',
+      client.id,
+      { name: client.name, nip: client.nip, deletionType: 'permanent' },
+      user,
+    );
+
     await this.clientRepository.remove(client);
   }
 
@@ -306,10 +326,23 @@ export class ClientsService {
       throw new ClientNotFoundException(id, companyId);
     }
 
+    const oldValues = this.sanitizeClientForLog(client);
+
     client.isActive = true;
     client.updatedById = user.id;
 
-    return this.clientRepository.save(client);
+    const savedClient = await this.clientRepository.save(client);
+
+    // Log restore in changelog for audit consistency
+    await this.changeLogService.logUpdate(
+      'Client',
+      savedClient.id,
+      oldValues,
+      this.sanitizeClientForLog(savedClient),
+      user,
+    );
+
+    return savedClient;
   }
 
   private sanitizeClientForLog(client: Client): Record<string, unknown> {

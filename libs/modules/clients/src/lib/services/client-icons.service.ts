@@ -98,17 +98,6 @@ export class ClientIconsService {
       );
     }
 
-    // Check for duplicate name
-    const existing = await this.iconRepository.findOne({
-      where: { companyId, name: dto.name, isActive: true },
-    });
-
-    if (existing) {
-      throw new BadRequestException(
-        `Icon with name "${dto.name}" already exists`,
-      );
-    }
-
     // Build icon data based on type
     const iconData: Partial<ClientIcon> = {
       name: dto.name,
@@ -121,7 +110,7 @@ export class ClientIconsService {
       createdById: user.id,
     };
 
-    // Handle file upload for custom type
+    // Handle file upload for custom type (before transaction to avoid long lock)
     if (iconType === IconType.CUSTOM && file) {
       try {
         const result = await this.storageService.uploadIcon(file, companyId);
@@ -136,15 +125,48 @@ export class ClientIconsService {
       }
     }
 
-    const icon = this.iconRepository.create(iconData);
-    const savedIcon = await this.iconRepository.save(icon);
+    // Use transaction to prevent race condition on duplicate name check
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    // If icon has auto-assign condition, evaluate it for all existing clients
-    if (savedIcon.autoAssignCondition) {
-      await this.autoAssignService.reevaluateIconForAllClients(savedIcon);
+    try {
+      // Check for duplicate name within transaction
+      const existing = await queryRunner.manager.findOne(ClientIcon, {
+        where: { companyId, name: dto.name, isActive: true },
+      });
+
+      if (existing) {
+        throw new BadRequestException(
+          `Icon with name "${dto.name}" already exists`,
+        );
+      }
+
+      const icon = queryRunner.manager.create(ClientIcon, iconData);
+      const savedIcon = await queryRunner.manager.save(icon);
+
+      await queryRunner.commitTransaction();
+
+      // After transaction: evaluate auto-assign (non-critical)
+      if (savedIcon.autoAssignCondition) {
+        await this.autoAssignService.reevaluateIconForAllClients(savedIcon);
+      }
+
+      return savedIcon;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      // Clean up uploaded file if transaction failed
+      if (iconData.filePath) {
+        try {
+          await this.storageService.deleteFile(iconData.filePath);
+        } catch {
+          // Ignore cleanup error
+        }
+      }
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-
-    return savedIcon;
   }
 
   async updateIcon(
@@ -254,18 +276,40 @@ export class ClientIconsService {
 
   async removeIcon(id: string, user: User): Promise<void> {
     const icon = await this.findIconById(id, user);
+    const filePath = icon.filePath;
 
-    // Remove all assignments for this icon
-    await this.assignmentRepository.delete({ iconId: id });
+    // Use transaction to atomically remove assignments and soft-delete icon
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    // Delete file from storage
-    if (icon.filePath) {
-      await this.storageService.deleteFile(icon.filePath);
+    try {
+      // Remove all assignments for this icon
+      await queryRunner.manager.delete(ClientIconAssignment, { iconId: id });
+
+      // Soft delete the icon
+      icon.isActive = false;
+      await queryRunner.manager.save(icon);
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
 
-    // Soft delete the icon
-    icon.isActive = false;
-    await this.iconRepository.save(icon);
+    // Delete file from storage AFTER transaction (non-critical - log but don't fail)
+    if (filePath) {
+      try {
+        await this.storageService.deleteFile(filePath);
+      } catch (error) {
+        // Log but don't fail - orphaned files can be cleaned up via maintenance job
+        console.warn(
+          `Failed to delete icon file ${filePath}: ${(error as Error).message}`,
+        );
+      }
+    }
   }
 
   async getIconUrl(id: string, user: User): Promise<string> {
@@ -323,21 +367,36 @@ export class ClientIconsService {
       throw new IconNotFoundException(dto.iconId, companyId);
     }
 
-    // Check if already assigned
-    const existing = await this.assignmentRepository.findOne({
+    // Use upsert to prevent race condition - if assignment exists, just return it
+    // The ON CONFLICT DO NOTHING pattern handles concurrent inserts safely
+    await this.assignmentRepository
+      .createQueryBuilder()
+      .insert()
+      .into(ClientIconAssignment)
+      .values({
+        clientId: dto.clientId,
+        iconId: dto.iconId,
+        isAutoAssigned: false,
+      })
+      .orIgnore() // Ignore if already exists (race-safe)
+      .execute();
+
+    // Fetch and return the assignment (either newly created or existing)
+    const assignment = await this.assignmentRepository.findOne({
       where: { clientId: dto.clientId, iconId: dto.iconId },
     });
 
-    if (existing) {
-      return existing;
+    // Should always exist after upsert, but TypeScript doesn't know that
+    if (!assignment) {
+      throw new IconAssignmentException(
+        dto.clientId,
+        1,
+        'Failed to create or find assignment',
+        { companyId, userId: user.id, operationStage: 'assignIcon' },
+      );
     }
 
-    const assignment = this.assignmentRepository.create({
-      clientId: dto.clientId,
-      iconId: dto.iconId,
-    });
-
-    return this.assignmentRepository.save(assignment);
+    return assignment;
   }
 
   async unassignIcon(

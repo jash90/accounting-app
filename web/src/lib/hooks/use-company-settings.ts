@@ -23,10 +23,13 @@ export function useUpdateCompanySettings() {
         description: 'Ustawienia firmy zostały zaktualizowane',
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const message = error instanceof Error
+        ? error.message
+        : (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Nie udało się zaktualizować ustawień';
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować ustawień',
+        description: message,
         variant: 'destructive',
       });
     },

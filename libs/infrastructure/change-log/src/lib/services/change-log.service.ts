@@ -190,9 +190,29 @@ export class ChangeLogService {
       return a.getTime() === b.getTime();
     }
 
-    // Handle objects and arrays
+    // Handle arrays with deep comparison
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) return false;
+      return a.every((item, index) => this.areEqual(item, b[index]));
+    }
+
+    // Handle objects with order-independent deep comparison
     if (typeof a === 'object' && typeof b === 'object') {
-      return JSON.stringify(a) === JSON.stringify(b);
+      // Different types (e.g., array vs plain object)
+      if (Array.isArray(a) !== Array.isArray(b)) return false;
+
+      const objA = a as Record<string, unknown>;
+      const objB = b as Record<string, unknown>;
+      const keysA = Object.keys(objA);
+      const keysB = Object.keys(objB);
+
+      if (keysA.length !== keysB.length) return false;
+
+      return keysA.every(
+        (key) =>
+          Object.prototype.hasOwnProperty.call(objB, key) &&
+          this.areEqual(objA[key], objB[key]),
+      );
     }
 
     return a === b;
@@ -228,7 +248,7 @@ export class ChangeLogService {
     const saved = await this.changeLogRepository.save(log);
 
     this.logger.log(
-      `Change logged: ${action} ${entityType}:${entityId} by ${user.email} (${changes.length} changes)`,
+      `Change logged: ${action} ${entityType}:${entityId} by user:${user.id} (${changes.length} changes)`,
     );
 
     return saved;

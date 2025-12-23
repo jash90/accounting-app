@@ -48,7 +48,8 @@ export function NotificationSettingsForm({
         receiveOnDelete: settings.receiveOnDelete,
       });
     }
-  }, [settings, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings]);
 
   const handleSubmit = (data: NotificationSettingsFormData) => {
     onSubmit(data);

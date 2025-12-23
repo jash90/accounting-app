@@ -137,9 +137,10 @@ export class LocalStorageProvider implements StorageProvider {
   }
 
   async getUrl(filePath: string): Promise<string> {
-    // Validate path even for URL generation
-    this.sanitizePath(filePath);
-    return `${this.urlPrefix}/${filePath.replace(/\\/g, '/')}`;
+    // Validate and sanitize path - use sanitized path for security
+    const fullPath = this.sanitizePath(filePath);
+    const relativePath = path.relative(this.basePath, fullPath);
+    return `${this.urlPrefix}/${relativePath.replace(/\\/g, '/')}`;
   }
 
   async getSignedUrl(filePath: string, _expiresIn?: number): Promise<string> {

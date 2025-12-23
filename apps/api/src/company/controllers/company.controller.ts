@@ -9,6 +9,7 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -53,7 +54,7 @@ export class CompanyController {
   @ApiForbiddenResponse({ description: 'Forbidden - Company owner or employee role required and must belong to a company' })
   getEmployees(@CurrentUser() user: User) {
     if (!user.companyId) {
-      throw new Error('User is not associated with a company');
+      throw new BadRequestException('User is not associated with a company');
     }
     return this.companyService.getEmployees(user.companyId);
   }
@@ -67,7 +68,7 @@ export class CompanyController {
   @ApiForbiddenResponse({ description: 'Forbidden - Company owner role required and must belong to a company' })
   getEmployeeById(@CurrentUser() user: User, @Param('id') id: string) {
     if (!user.companyId) {
-      throw new Error('User is not associated with a company');
+      throw new BadRequestException('User is not associated with a company');
     }
     return this.companyService.getEmployeeById(user.companyId, id);
   }
@@ -83,7 +84,7 @@ export class CompanyController {
   @ApiForbiddenResponse({ description: 'Forbidden - Company owner role required and must belong to a company' })
   createEmployee(@CurrentUser() user: User, @Body() createEmployeeDto: CreateEmployeeDto) {
     if (!user.companyId) {
-      throw new Error('User is not associated with a company');
+      throw new BadRequestException('User is not associated with a company');
     }
     // Build creator name safely handling null/undefined values
     const creatorName = [user.firstName, user.lastName]
@@ -112,7 +113,7 @@ export class CompanyController {
     @Body() updateEmployeeDto: UpdateEmployeeDto,
   ) {
     if (!user.companyId) {
-      throw new Error('User is not associated with a company');
+      throw new BadRequestException('User is not associated with a company');
     }
     return this.companyService.updateEmployee(user.companyId, id, updateEmployeeDto);
   }
@@ -127,7 +128,7 @@ export class CompanyController {
   @ApiForbiddenResponse({ description: 'Forbidden - Company owner role required and must belong to a company' })
   deleteEmployee(@CurrentUser() user: User, @Param('id') id: string) {
     if (!user.companyId) {
-      throw new Error('User is not associated with a company');
+      throw new BadRequestException('User is not associated with a company');
     }
     return this.companyService.deleteEmployee(user.companyId, id);
   }
@@ -143,7 +144,7 @@ export class CompanyController {
   @ApiForbiddenResponse({ description: 'Forbidden - Company owner role required' })
   getCompanySettings(@CurrentUser() user: User) {
     if (!user.companyId) {
-      throw new Error('User is not associated with a company');
+      throw new BadRequestException('User is not associated with a company');
     }
     return this.companyService.getCompanySettings(user.companyId);
   }
@@ -163,7 +164,7 @@ export class CompanyController {
     @Body() updateCompanySettingsDto: UpdateCompanySettingsDto,
   ) {
     if (!user.companyId) {
-      throw new Error('User is not associated with a company');
+      throw new BadRequestException('User is not associated with a company');
     }
     return this.companyService.updateCompanySettings(user.companyId, updateCompanySettingsDto);
   }

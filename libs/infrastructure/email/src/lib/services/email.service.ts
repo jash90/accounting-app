@@ -124,7 +124,21 @@ export class EmailService implements OnModuleInit {
     templateName: string,
     context: Record<string, unknown>,
   ): Promise<string> {
-    const templatePath = path.join(this.templatesDir, `${templateName}.hbs`);
+    // Security: Validate template name to prevent path traversal attacks
+    const safeNamePattern = /^[A-Za-z0-9._-]+$/;
+    if (!safeNamePattern.test(templateName)) {
+      this.logger.error(`Invalid template name rejected: ${templateName}`);
+      throw new Error(`Invalid template name: ${templateName}`);
+    }
+
+    const templatePath = path.resolve(this.templatesDir, `${templateName}.hbs`);
+    const resolvedTemplatesDir = path.resolve(this.templatesDir);
+
+    // Security: Verify resolved path is within templates directory
+    if (!templatePath.startsWith(resolvedTemplatesDir + path.sep)) {
+      this.logger.error(`Path traversal attempt detected: ${templateName}`);
+      throw new Error(`Invalid template path: ${templateName}`);
+    }
 
     try {
       const templateContent = await fs.readFile(templatePath, 'utf-8');

@@ -11,6 +11,12 @@ export enum CustomFieldType {
   URL = 'URL',
 }
 
+/**
+ * Human-readable labels for CustomFieldType enum values.
+ * These labels are used for display purposes in the UI.
+ * Note: Labels are in Polish as this is a Polish-language application.
+ * For internationalization, consider moving to a dedicated i18n system.
+ */
 export const CustomFieldTypeLabels: Record<CustomFieldType, string> = {
   [CustomFieldType.TEXT]: 'Tekst',
   [CustomFieldType.NUMBER]: 'Liczba',

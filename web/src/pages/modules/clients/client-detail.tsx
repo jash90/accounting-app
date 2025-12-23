@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ClientIcon } from '@/types/entities';
 import {
   ArrowLeft,
   Edit,
@@ -128,11 +129,10 @@ export default function ClientDetailPage() {
     );
   }
 
-  // Get assigned icons
-  const assignedIcons = client.iconAssignments?.map((assignment) => {
-    const icon = icons.find((i) => i.id === assignment.iconId);
-    return icon;
-  }).filter(Boolean) || [];
+  // Get assigned icons - use type predicate to properly narrow the type
+  const assignedIcons = (client.iconAssignments?.map((assignment) => {
+    return icons.find((i) => i.id === assignment.iconId);
+  }).filter((icon): icon is ClientIcon => icon !== undefined)) ?? [];
 
   // Get custom field values
   const customFieldValues = client.customFieldValues || [];

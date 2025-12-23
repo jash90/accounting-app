@@ -167,7 +167,8 @@ export class CompanyService {
     }
 
     if (updateDto.notificationFromEmail !== undefined) {
-      company.notificationFromEmail = updateDto.notificationFromEmail || undefined;
+      // Use nullish coalescing to preserve empty string as intentional clearing
+      company.notificationFromEmail = updateDto.notificationFromEmail ?? undefined;
     }
 
     await this.companyRepository.save(company);

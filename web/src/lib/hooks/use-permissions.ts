@@ -29,7 +29,8 @@ export type ModulePermissionType = typeof ModulePermission[keyof typeof ModulePe
  * @param moduleSlug - The module identifier (e.g., 'clients')
  * @returns Object with permission flags and helper functions
  */
-export function useModulePermissions(moduleSlug: string) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- moduleSlug reserved for future per-module permission queries
+export function useModulePermissions(_moduleSlug: string) {
   const { user, isAuthenticated } = useAuthContext();
 
   return useMemo(() => {
@@ -88,7 +89,7 @@ export function useModulePermissions(moduleSlug: string) {
       // Helper function for dynamic permission checks
       checkPermission,
     };
-  }, [user, isAuthenticated]);
+  }, [user, isAuthenticated, _moduleSlug]);
 }
 
 export function useCompanyModules() {

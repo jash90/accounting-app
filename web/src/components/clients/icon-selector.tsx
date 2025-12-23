@@ -226,6 +226,8 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
           <div className="grid grid-cols-8 gap-2 max-h-48 overflow-y-auto p-1">
             {filteredLucideIcons.map((iconName) => {
               const IconComponent = (LucideIcons as Record<string, React.ComponentType<{ size?: number; className?: string }>>)[iconName];
+              // Only render button if IconComponent exists to avoid empty buttons
+              if (!IconComponent) return null;
               return (
                 <Button
                   key={iconName}
@@ -236,7 +238,7 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
                   onClick={() => handleLucideIconSelect(iconName)}
                   title={iconName}
                 >
-                  {IconComponent && <IconComponent size={18} />}
+                  <IconComponent size={18} />
                 </Button>
               );
             })}

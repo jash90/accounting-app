@@ -494,9 +494,10 @@ describe('Field Definitions E2E Tests', () => {
       const booleanField = testFields.find((f: { id: string }) => f.id === booleanFieldId);
       const textField = testFields.find((f: { id: string }) => f.id === textFieldId);
 
-      if (booleanField && textField) {
-        expect(booleanField.displayOrder).toBeLessThan(textField.displayOrder);
-      }
+      // Explicitly assert the fields exist before comparing
+      expect(booleanField).toBeDefined();
+      expect(textField).toBeDefined();
+      expect(booleanField.displayOrder).toBeLessThan(textField.displayOrder);
     });
 
     it('should fail with incomplete orderedIds', async () => {
@@ -563,9 +564,9 @@ describe('Field Definitions E2E Tests', () => {
       const textValue = response.body.find(
         (v: { fieldDefinitionId: string }) => v.fieldDefinitionId === textFieldId
       );
-      if (textValue) {
-        expect(textValue.value).toBe('Custom text value');
-      }
+      // Explicitly assert the value exists before checking its content
+      expect(textValue).toBeDefined();
+      expect(textValue.value).toBe('Custom text value');
     });
 
     it('should update custom field values', async () => {

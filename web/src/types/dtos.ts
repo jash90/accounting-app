@@ -7,6 +7,7 @@ import {
   CustomFieldType,
   ChangeAction,
   AutoAssignCondition,
+  AmlGroup,
 } from './enums';
 import {
   User,
@@ -535,7 +536,10 @@ export interface CreateClientDto {
   companySpecificity?: string;
   additionalInfo?: string;
   gtuCode?: string;
+  gtuCodes?: string[];
   amlGroup?: string;
+  amlGroupEnum?: AmlGroup;
+  receiveEmailCopy?: boolean;
   employmentType?: EmploymentType;
   vatStatus?: VatStatus;
   taxScheme?: TaxScheme;
@@ -594,6 +598,7 @@ export interface CreateClientIconDto {
   color?: string;
   iconType?: 'lucide' | 'custom' | 'emoji';
   iconValue?: string;
+  tooltip?: string;
   autoAssignCondition?: AutoAssignCondition;
 }
 
@@ -602,6 +607,7 @@ export interface UpdateClientIconDto {
   color?: string;
   iconType?: 'lucide' | 'custom' | 'emoji';
   iconValue?: string;
+  tooltip?: string;
   isActive?: boolean;
   autoAssignCondition?: AutoAssignCondition | null;
 }

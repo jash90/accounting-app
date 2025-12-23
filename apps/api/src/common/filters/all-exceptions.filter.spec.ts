@@ -96,13 +96,14 @@ describe('AllExceptionsFilter', () => {
     });
 
     it('should extract user context from request when available', () => {
-      mockRequest = {
-        ...mockRequest,
+      // Update mockRequest with user context - the closure in mockHost captures
+      // the variable reference, so updating the object properties works correctly
+      Object.assign(mockRequest, {
         user: {
           id: 'user-123',
           companyId: 'company-456',
         },
-      } as any;
+      });
 
       const exception = new ClientException(
         ClientErrorCode.CLIENT_NOT_FOUND,

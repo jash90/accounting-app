@@ -200,17 +200,17 @@ describe('Clients CRUD E2E Tests', () => {
         .set('Authorization', `Bearer ${employeeToken}`)
         .send({
           name: 'E2E Employee Created Client',
-        });
+        })
+        .expect(201);
 
-      // Depending on permissions, this might succeed or fail
-      // The seeder grants permissions, so it should succeed
-      if (response.status === 201) {
-        expect(response.body).toHaveProperty('id');
-        // Cleanup
-        await request(app.getHttpServer())
-          .delete(`/modules/clients/${response.body.id}`)
-          .set('Authorization', `Bearer ${ownerToken}`);
-      }
+      // The seeder grants write permissions to employees, so this should succeed
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.name).toBe('E2E Employee Created Client');
+
+      // Cleanup
+      await request(app.getHttpServer())
+        .delete(`/modules/clients/${response.body.id}`)
+        .set('Authorization', `Bearer ${ownerToken}`);
     });
   });
 

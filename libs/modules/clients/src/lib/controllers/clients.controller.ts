@@ -459,8 +459,11 @@ export class ClientsController {
     type: ErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
-  async getChangelog(@Param('id', ParseUUIDPipe) id: string) {
-    return this.clientChangelogService.getClientChangelog(id);
+  async getChangelog(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.clientChangelogService.getClientChangelog(id, user);
   }
 
   /**
