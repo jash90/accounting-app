@@ -1,6 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
+import { promises as fsPromises } from 'fs';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -23,8 +24,8 @@ export class LocalStorageProvider implements StorageProvider {
       '/uploads'
     );
 
-    // Ensure base directory exists
-    this.ensureDirectoryExists(this.basePath);
+    // Ensure base directory exists (sync ok during startup)
+    this.ensureDirectoryExistsSync(this.basePath);
   }
 
   /**
@@ -51,9 +52,24 @@ export class LocalStorageProvider implements StorageProvider {
     return fullPath;
   }
 
-  private ensureDirectoryExists(dirPath: string): void {
+  /**
+   * Synchronous directory creation - used only during constructor initialization
+   */
+  private ensureDirectoryExistsSync(dirPath: string): void {
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath, { recursive: true });
+      this.logger.log(`Created storage directory: ${dirPath}`);
+    }
+  }
+
+  /**
+   * Async directory creation - used for runtime operations
+   */
+  private async ensureDirectoryExistsAsync(dirPath: string): Promise<void> {
+    try {
+      await fsPromises.access(dirPath);
+    } catch {
+      await fsPromises.mkdir(dirPath, { recursive: true });
       this.logger.log(`Created storage directory: ${dirPath}`);
     }
   }
@@ -74,10 +90,10 @@ export class LocalStorageProvider implements StorageProvider {
       throw new BadRequestException('Invalid file path');
     }
 
-    this.ensureDirectoryExists(sanitizedDir);
+    await this.ensureDirectoryExistsAsync(sanitizedDir);
 
     try {
-      fs.writeFileSync(filePath, file.buffer);
+      await fsPromises.writeFile(filePath, file.buffer);
 
       const relativePath = path.relative(this.basePath, filePath);
       const url = `${this.urlPrefix}/${relativePath.replace(/\\/g, '/')}`;
@@ -103,15 +119,17 @@ export class LocalStorageProvider implements StorageProvider {
     const fullPath = this.sanitizePath(filePath);
 
     try {
-      if (fs.existsSync(fullPath)) {
-        fs.unlinkSync(fullPath);
-        this.logger.log(`File deleted: ${filePath}`);
-        return true;
-      }
-      return false;
+      await fsPromises.access(fullPath);
+      await fsPromises.unlink(fullPath);
+      this.logger.log(`File deleted: ${filePath}`);
+      return true;
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
+      }
+      // File doesn't exist or other error
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return false;
       }
       this.logger.error(`Failed to delete file: ${filePath}`, error);
       return false;
@@ -132,6 +150,11 @@ export class LocalStorageProvider implements StorageProvider {
   async exists(filePath: string): Promise<boolean> {
     // Sanitize the filePath to prevent directory traversal
     const fullPath = this.sanitizePath(filePath);
-    return fs.existsSync(fullPath);
+    try {
+      await fsPromises.access(fullPath);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }

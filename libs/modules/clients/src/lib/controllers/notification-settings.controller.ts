@@ -7,6 +7,7 @@ import {
   Delete,
   Body,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -60,7 +61,10 @@ export class NotificationSettingsController {
   @ApiResponse({ status: 200, description: 'Notification settings deleted' })
   @RequirePermission('clients', 'write')
   async deleteMySettings(@CurrentUser() user: User) {
-    return this.notificationSettingsService.deleteSettings(user.id);
+    if (!user.companyId) {
+      throw new BadRequestException('User must belong to a company');
+    }
+    return this.notificationSettingsService.deleteSettings(user.id, user.companyId);
   }
 
   // Legacy endpoints (kept for backward compatibility)

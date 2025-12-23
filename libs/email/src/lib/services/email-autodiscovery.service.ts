@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import { XMLParser } from 'fast-xml-parser';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const Imap = require('imap');
@@ -39,12 +40,22 @@ export interface VerificationResult {
 export class EmailAutodiscoveryService {
   private readonly logger = new Logger(EmailAutodiscoveryService.name);
   private readonly VERIFICATION_TIMEOUT = 10000; // 10 seconds for connection tests
+  private readonly xmlParser: XMLParser;
 
   constructor(
     private readonly cacheService: DiscoveryCacheService,
     private readonly providerLookup: ProviderLookupService,
     private readonly dnsDiscovery: DnsDiscoveryService,
-  ) {}
+  ) {
+    // Initialize XML parser with options to handle attributes and preserve structure
+    this.xmlParser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: '@_',
+      textNodeName: '#text',
+      parseAttributeValue: true,
+      trimValues: true,
+    });
+  }
 
   /**
    * Main autodiscovery method - tries multiple strategies in order of reliability
@@ -297,42 +308,71 @@ export class EmailAutodiscoveryService {
   }
 
   /**
-   * Parse Mozilla Autoconfig XML response
+   * Parse Mozilla Autoconfig XML response using fast-xml-parser
    */
   private parseAutoconfigXml(xml: string): DiscoveredConfig | null {
     try {
-      const getTagContent = (tag: string, content: string): string | null => {
-        const regex = new RegExp(`<${tag}[^>]*>([^<]*)</${tag}>`, 'i');
-        const match = content.match(regex);
-        return match ? match[1].trim() : null;
-      };
+      const parsed = this.xmlParser.parse(xml);
+      const config = parsed?.clientConfig || parsed?.ClientConfig;
 
-      const getServerBlock = (type: string, content: string): string | null => {
-        const regex = new RegExp(`<(incomingServer|outgoingServer)[^>]*type="${type}"[^>]*>([\\s\\S]*?)</\\1>`, 'i');
-        const match = content.match(regex);
-        return match ? match[2] : null;
-      };
-
-      const smtpBlock = getServerBlock('smtp', xml);
-      const imapBlock = getServerBlock('imap', xml);
-
-      if (!smtpBlock || !imapBlock) {
+      if (!config) {
         return null;
       }
 
-      const smtpHost = getTagContent('hostname', smtpBlock);
-      const smtpPort = getTagContent('port', smtpBlock);
-      const smtpSocket = getTagContent('socketType', smtpBlock);
+      // Handle emailProvider which may be nested
+      const provider = config.emailProvider || config.EmailProvider || config;
 
-      const imapHost = getTagContent('hostname', imapBlock);
-      const imapPort = getTagContent('port', imapBlock);
-      const imapSocket = getTagContent('socketType', imapBlock);
+      // Find SMTP (outgoingServer) and IMAP (incomingServer) configurations
+      let smtpConfig: Record<string, unknown> | null = null;
+      let imapConfig: Record<string, unknown> | null = null;
+
+      // Handle outgoingServer (SMTP)
+      const outgoing = provider.outgoingServer || provider.OutgoingServer;
+      if (outgoing) {
+        const servers = Array.isArray(outgoing) ? outgoing : [outgoing];
+        smtpConfig = servers.find((s: Record<string, unknown>) =>
+          s['@_type']?.toString().toLowerCase() === 'smtp' || !s['@_type']
+        ) || servers[0];
+      }
+
+      // Handle incomingServer (IMAP preferred over POP3)
+      const incoming = provider.incomingServer || provider.IncomingServer;
+      if (incoming) {
+        const servers = Array.isArray(incoming) ? incoming : [incoming];
+        imapConfig = servers.find((s: Record<string, unknown>) =>
+          s['@_type']?.toString().toLowerCase() === 'imap'
+        ) || servers[0];
+      }
+
+      if (!smtpConfig || !imapConfig) {
+        return null;
+      }
+
+      // Extract values (handle both direct values and #text for text nodes)
+      const getValue = (obj: Record<string, unknown> | undefined, key: string): string | null => {
+        if (!obj) return null;
+        const val = obj[key];
+        if (typeof val === 'string') return val;
+        if (typeof val === 'number') return String(val);
+        if (val && typeof val === 'object' && '#text' in val) {
+          return String((val as Record<string, unknown>)['#text']);
+        }
+        return null;
+      };
+
+      const smtpHost = getValue(smtpConfig, 'hostname') || getValue(smtpConfig, 'Hostname');
+      const smtpPort = getValue(smtpConfig, 'port') || getValue(smtpConfig, 'Port');
+      const smtpSocket = getValue(smtpConfig, 'socketType') || getValue(smtpConfig, 'SocketType');
+
+      const imapHost = getValue(imapConfig, 'hostname') || getValue(imapConfig, 'Hostname');
+      const imapPort = getValue(imapConfig, 'port') || getValue(imapConfig, 'Port');
+      const imapSocket = getValue(imapConfig, 'socketType') || getValue(imapConfig, 'SocketType');
 
       if (!smtpHost || !smtpPort || !imapHost || !imapPort) {
         return null;
       }
 
-      const displayName = getTagContent('displayName', xml);
+      const displayName = getValue(provider, 'displayName') || getValue(provider, 'DisplayName');
 
       return {
         smtp: {
@@ -356,36 +396,55 @@ export class EmailAutodiscoveryService {
   }
 
   /**
-   * Parse Microsoft Autodiscover XML response
+   * Parse Microsoft Autodiscover XML response using fast-xml-parser
    */
   private parseAutodiscoverXml(xml: string): DiscoveredConfig | null {
     try {
-      const getProtocolBlock = (type: string, content: string): string | null => {
-        const regex = new RegExp(`<Protocol>[\\s\\S]*?<Type>${type}</Type>[\\s\\S]*?</Protocol>`, 'gi');
-        const match = content.match(regex);
-        return match ? match[0] : null;
-      };
+      const parsed = this.xmlParser.parse(xml);
 
-      const getTagContent = (tag: string, content: string): string | null => {
-        const regex = new RegExp(`<${tag}>([^<]*)</${tag}>`, 'i');
-        const match = content.match(regex);
-        return match ? match[1].trim() : null;
-      };
+      // Navigate to the Account/Protocol section (handle various response formats)
+      const autodiscover = parsed?.Autodiscover || parsed?.autodiscover;
+      const response = autodiscover?.Response || autodiscover?.response;
+      const account = response?.Account || response?.account;
+      const protocols = account?.Protocol || account?.protocol;
 
-      const smtpBlock = getProtocolBlock('SMTP', xml);
-      const imapBlock = getProtocolBlock('IMAP', xml);
-
-      if (!smtpBlock || !imapBlock) {
+      if (!protocols) {
         return null;
       }
 
-      const smtpServer = getTagContent('Server', smtpBlock);
-      const smtpPort = getTagContent('Port', smtpBlock);
-      const smtpSSL = getTagContent('SSL', smtpBlock);
+      // Ensure protocols is an array
+      const protocolList = Array.isArray(protocols) ? protocols : [protocols];
 
-      const imapServer = getTagContent('Server', imapBlock);
-      const imapPort = getTagContent('Port', imapBlock);
-      const imapSSL = getTagContent('SSL', imapBlock);
+      // Find SMTP and IMAP protocol blocks
+      const smtpProtocol = protocolList.find((p: Record<string, unknown>) =>
+        (p.Type || p.type)?.toString().toUpperCase() === 'SMTP'
+      );
+      const imapProtocol = protocolList.find((p: Record<string, unknown>) =>
+        (p.Type || p.type)?.toString().toUpperCase() === 'IMAP'
+      );
+
+      if (!smtpProtocol || !imapProtocol) {
+        return null;
+      }
+
+      // Extract values helper
+      const getValue = (obj: Record<string, unknown>, key: string): string | null => {
+        const val = obj[key] || obj[key.toLowerCase()] || obj[key.toUpperCase()];
+        if (typeof val === 'string') return val;
+        if (typeof val === 'number') return String(val);
+        if (val && typeof val === 'object' && '#text' in val) {
+          return String((val as Record<string, unknown>)['#text']);
+        }
+        return null;
+      };
+
+      const smtpServer = getValue(smtpProtocol, 'Server');
+      const smtpPort = getValue(smtpProtocol, 'Port');
+      const smtpSSL = getValue(smtpProtocol, 'SSL');
+
+      const imapServer = getValue(imapProtocol, 'Server');
+      const imapPort = getValue(imapProtocol, 'Port');
+      const imapSSL = getValue(imapProtocol, 'SSL');
 
       if (!smtpServer || !smtpPort || !imapServer || !imapPort) {
         return null;

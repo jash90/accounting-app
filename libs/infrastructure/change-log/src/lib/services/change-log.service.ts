@@ -9,6 +9,69 @@ export interface ChangeDetail {
   newValue: unknown;
 }
 
+// Fields that should be redacted from change logs for security
+const SENSITIVE_FIELDS = new Set([
+  // Authentication & credentials
+  'password',
+  'passwordHash',
+  'hashedPassword',
+  'currentPassword',
+  'newPassword',
+  'confirmPassword',
+  'salt',
+  'secret',
+  'apiKey',
+  'apiSecret',
+  'accessToken',
+  'refreshToken',
+  'token',
+  'authToken',
+  'bearerToken',
+  'jwtSecret',
+  'privateKey',
+  'publicKey',
+  'encryptionKey',
+  'decryptionKey',
+  'masterKey',
+  'secretKey',
+  // SMTP/Email credentials
+  'smtpPassword',
+  'emailPassword',
+  'imapPassword',
+  // OAuth
+  'clientSecret',
+  'oauthToken',
+  'oauthSecret',
+  // Financial/sensitive PII
+  'ssn',
+  'socialSecurityNumber',
+  'taxId',
+  'bankAccountNumber',
+  'creditCardNumber',
+  'cvv',
+  'pin',
+  // Two-factor auth
+  'totpSecret',
+  'backupCodes',
+  'recoveryCode',
+  'mfaSecret',
+  '2faSecret',
+]);
+
+// Patterns for detecting sensitive field names (case-insensitive)
+const SENSITIVE_PATTERNS = [
+  /password/i,
+  /secret/i,
+  /token/i,
+  /apikey/i,
+  /api[_-]?key/i,
+  /private[_-]?key/i,
+  /credential/i,
+  /auth[_-]?key/i,
+];
+
+const REDACTED_VALUE = '[REDACTED]';
+
 @Injectable()
 export class ChangeLogService {
   private readonly logger = new Logger(ChangeLogService.name);
@@ -65,6 +128,19 @@ export class ChangeLogService {
     return this.createLog(entityType, entityId, ChangeAction.DELETE, changes, user);
   }
 
+  /**
+   * Check if a field name contains sensitive data that should be redacted
+   */
+  private isSensitiveField(fieldName: string): boolean {
+    // Check exact matches first (case-insensitive)
+    if (SENSITIVE_FIELDS.has(fieldName) || SENSITIVE_FIELDS.has(fieldName.toLowerCase())) {
+      return true;
+    }
+
+    // Check pattern matches
+    return SENSITIVE_PATTERNS.some((pattern) => pattern.test(fieldName));
+  }
+
   private calculateChanges(
     oldData: Record<string, unknown>,
     newData: Record<string, unknown>,
@@ -83,11 +159,20 @@ export class ChangeLogService {
 
       // Compare values
       if (!this.areEqual(oldValue, newValue)) {
-        changes.push({
-          field: key,
-          oldValue: this.sanitizeValue(oldValue),
-          newValue: this.sanitizeValue(newValue),
-        });
+        // Redact sensitive fields
+        if (this.isSensitiveField(key)) {
+          changes.push({
+            field: key,
+            oldValue: oldValue != null ? REDACTED_VALUE : null,
+            newValue: newValue != null ? REDACTED_VALUE : null,
+          });
+        } else {
+          changes.push({
+            field: key,
+            oldValue: this.sanitizeValue(oldValue),
+            newValue: this.sanitizeValue(newValue),
+          });
+        }
       }
     }
 

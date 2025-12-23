@@ -175,7 +175,8 @@ export class EmailReaderService {
             return reject(err);
           }
 
-          const flag = seen ? '\\Seen' : '';
+          // Always use \\Seen flag - add it when marking as seen, delete it when marking as unseen
+          const flag = '\\Seen';
           const action = seen ? imap.addFlags : imap.delFlags;
 
           action.call(imap, messageIds, flag, (err: Error | null) => {

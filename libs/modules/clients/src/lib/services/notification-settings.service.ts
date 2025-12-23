@@ -20,11 +20,18 @@ export class NotificationSettingsService {
   ) {}
 
   async getSettings(user: User): Promise<NotificationSettings> {
+    if (!user.companyId) {
+      throw new InternalServerErrorException(
+        'User must belong to a company to have notification settings'
+      );
+    }
+
     // Use atomic upsert to prevent race conditions
-    // First try to find existing settings
+    // First try to find existing settings with companyId for tenant isolation
     let settings = await this.settingsRepository.findOne({
       where: {
         userId: user.id,
+        companyId: user.companyId,
         moduleSlug: this.moduleSlug,
       },
     });
@@ -33,6 +40,7 @@ export class NotificationSettingsService {
       // Create default settings using upsert to handle concurrent requests
       const defaultSettings = {
         userId: user.id,
+        companyId: user.companyId,
         moduleSlug: this.moduleSlug,
         receiveOnCreate: true,
         receiveOnUpdate: true,
@@ -52,6 +60,7 @@ export class NotificationSettingsService {
       settings = await this.settingsRepository.findOne({
         where: {
           userId: user.id,
+          companyId: user.companyId,
           moduleSlug: this.moduleSlug,
         },
       });
@@ -105,11 +114,14 @@ export class NotificationSettingsService {
 
   async setUserSettings(
     userId: string,
+    companyId: string,
     dto: UpdateNotificationSettingsDto,
   ): Promise<NotificationSettings> {
     // Use atomic upsert to prevent race conditions
+    // companyId is required for multi-tenant isolation
     const defaultSettings = {
       userId,
+      companyId,
       moduleSlug: this.moduleSlug,
       receiveOnCreate: dto.receiveOnCreate ?? true,
       receiveOnUpdate: dto.receiveOnUpdate ?? true,
@@ -125,14 +137,15 @@ export class NotificationSettingsService {
       .values(defaultSettings)
       .orUpdate(
         ['receiveOnCreate', 'receiveOnUpdate', 'receiveOnDelete', 'isAdminCopy'],
-        ['userId', 'moduleSlug'],
+        ['companyId', 'userId', 'moduleSlug'],
       )
       .execute();
 
-    // Fetch and return the updated settings
+    // Fetch and return the updated settings with tenant isolation
     const settings = await this.settingsRepository.findOne({
       where: {
         userId,
+        companyId,
         moduleSlug: this.moduleSlug,
       },
     });
@@ -146,9 +159,10 @@ export class NotificationSettingsService {
     return settings;
   }
 
-  async deleteSettings(userId: string): Promise<void> {
+  async deleteSettings(userId: string, companyId: string): Promise<void> {
     await this.settingsRepository.delete({
       userId,
+      companyId,
       moduleSlug: this.moduleSlug,
     });
   }
