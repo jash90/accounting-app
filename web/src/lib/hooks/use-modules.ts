@@ -14,7 +14,7 @@ export function useModules() {
 export function useModule(id: string) {
   return useQuery({
     queryKey: queryKeys.modules.detail(id),
-    queryFn: () => modulesApi.getById(id),
+    queryFn: () => modulesApi.getByIdentifier(id),
     enabled: !!id,
   });
 }

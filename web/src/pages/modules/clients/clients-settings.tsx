@@ -86,7 +86,8 @@ export default function ClientsSettingsPage() {
   const basePath = getBasePath();
 
   // Field Definitions
-  const { data: fieldDefinitions = [], isPending: loadingFields } = useFieldDefinitions();
+  const { data: fieldDefinitionsResponse, isPending: loadingFields } = useFieldDefinitions();
+  const fieldDefinitions = fieldDefinitionsResponse?.data ?? [];
   const createFieldDefinition = useCreateFieldDefinition();
   const updateFieldDefinition = useUpdateFieldDefinition();
   const deleteFieldDefinition = useDeleteFieldDefinition();
@@ -96,7 +97,8 @@ export default function ClientsSettingsPage() {
   const [deletingField, setDeletingField] = useState<ClientFieldDefinitionResponseDto | null>(null);
 
   // Icons
-  const { data: icons = [], isPending: loadingIcons } = useClientIcons();
+  const { data: iconsResponse, isPending: loadingIcons } = useClientIcons();
+  const icons = iconsResponse?.data ?? [];
   const createIcon = useCreateClientIcon();
   const updateIcon = useUpdateClientIcon();
   const deleteIcon = useDeleteClientIcon();

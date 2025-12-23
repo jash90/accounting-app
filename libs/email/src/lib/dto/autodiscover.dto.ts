@@ -112,7 +112,7 @@ export class AutodiscoverResponseDto {
   @ApiProperty({
     description: 'Source of the discovered configuration',
     example: 'known-provider',
-    enum: ['known-provider', 'autoconfig', 'autodiscover', 'dns-srv', 'mx-heuristic'],
+    enum: ['known-provider', 'autoconfig', 'autodiscover', 'ispdb', 'dns-srv', 'mx-heuristic'],
   })
   source!: DiscoverySource;
 

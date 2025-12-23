@@ -22,14 +22,6 @@ export const modulesApi = {
     return data;
   },
 
-  /**
-   * @deprecated Use getByIdentifier instead
-   */
-  getById: async (id: string): Promise<ModuleDto> => {
-    const { data } = await apiClient.get<ModuleDto>(`/api/modules/${id}`);
-    return data;
-  },
-
   // Admin-only operations
   create: async (moduleData: CreateModuleDto): Promise<ModuleDto> => {
     const { data } = await apiClient.post<ModuleDto>('/api/modules', moduleData);

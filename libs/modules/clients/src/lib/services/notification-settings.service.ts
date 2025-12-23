@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NotificationSettings, User } from '@accounting/common';
@@ -20,6 +20,8 @@ export class NotificationSettingsService {
   ) {}
 
   async getSettings(user: User): Promise<NotificationSettings> {
+    // Use atomic upsert to prevent race conditions
+    // First try to find existing settings
     let settings = await this.settingsRepository.findOne({
       where: {
         userId: user.id,
@@ -27,17 +29,38 @@ export class NotificationSettingsService {
       },
     });
 
-    // Create default settings if not exists
     if (!settings) {
-      settings = this.settingsRepository.create({
+      // Create default settings using upsert to handle concurrent requests
+      const defaultSettings = {
         userId: user.id,
         moduleSlug: this.moduleSlug,
         receiveOnCreate: true,
         receiveOnUpdate: true,
         receiveOnDelete: true,
         isAdminCopy: false,
+      };
+
+      await this.settingsRepository
+        .createQueryBuilder()
+        .insert()
+        .into(NotificationSettings)
+        .values(defaultSettings)
+        .orIgnore() // Ignore if unique constraint violated (concurrent insert)
+        .execute();
+
+      // Fetch the settings (either newly created or from concurrent insert)
+      settings = await this.settingsRepository.findOne({
+        where: {
+          userId: user.id,
+          moduleSlug: this.moduleSlug,
+        },
       });
-      settings = await this.settingsRepository.save(settings);
+
+      if (!settings) {
+        throw new InternalServerErrorException(
+          'Failed to create or retrieve notification settings'
+        );
+      }
     }
 
     return settings;
@@ -84,7 +107,30 @@ export class NotificationSettingsService {
     userId: string,
     dto: UpdateNotificationSettingsDto,
   ): Promise<NotificationSettings> {
-    let settings = await this.settingsRepository.findOne({
+    // Use atomic upsert to prevent race conditions
+    const defaultSettings = {
+      userId,
+      moduleSlug: this.moduleSlug,
+      receiveOnCreate: dto.receiveOnCreate ?? true,
+      receiveOnUpdate: dto.receiveOnUpdate ?? true,
+      receiveOnDelete: dto.receiveOnDelete ?? true,
+      isAdminCopy: dto.isAdminCopy ?? false,
+    };
+
+    // Upsert: insert or update on conflict
+    await this.settingsRepository
+      .createQueryBuilder()
+      .insert()
+      .into(NotificationSettings)
+      .values(defaultSettings)
+      .orUpdate(
+        ['receiveOnCreate', 'receiveOnUpdate', 'receiveOnDelete', 'isAdminCopy'],
+        ['userId', 'moduleSlug'],
+      )
+      .execute();
+
+    // Fetch and return the updated settings
+    const settings = await this.settingsRepository.findOne({
       where: {
         userId,
         moduleSlug: this.moduleSlug,
@@ -92,18 +138,12 @@ export class NotificationSettingsService {
     });
 
     if (!settings) {
-      settings = this.settingsRepository.create({
-        userId,
-        moduleSlug: this.moduleSlug,
-        receiveOnCreate: true,
-        receiveOnUpdate: true,
-        receiveOnDelete: true,
-        isAdminCopy: false,
-      });
+      throw new InternalServerErrorException(
+        'Failed to create or retrieve notification settings'
+      );
     }
 
-    Object.assign(settings, dto);
-    return this.settingsRepository.save(settings);
+    return settings;
   }
 
   async deleteSettings(userId: string): Promise<void> {

@@ -38,7 +38,13 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Trash2, FolderPlus } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Plus, Trash2, FolderPlus, ChevronDown, Check } from 'lucide-react';
 
 interface ConditionBuilderProps {
   value?: AutoAssignCondition;
@@ -505,26 +511,59 @@ function ValueInput({
   value,
   onChange,
 }: ValueInputProps) {
-  // Multi-select for 'in' and 'notIn' operators
+  // Multi-select for 'in' and 'notIn' operators - use proper multi-select with checkboxes
   if (['in', 'notIn'].includes(operator) && fieldConfig?.type === 'enum') {
     const selectedValues = Array.isArray(value) ? value : [];
+    const options = getEnumOptions(fieldConfig.field);
+
+    const handleToggle = (optValue: string) => {
+      const newValues = selectedValues.includes(optValue)
+        ? selectedValues.filter((v) => v !== optValue)
+        : [...selectedValues, optValue];
+      onChange(newValues);
+    };
 
     return (
-      <Select
-        value={selectedValues.join(',')}
-        onValueChange={(v) => onChange(v.split(',').filter(Boolean))}
-      >
-        <SelectTrigger className="w-48">
-          <SelectValue placeholder="Wybierz wartości..." />
-        </SelectTrigger>
-        <SelectContent>
-          {getEnumOptions(fieldConfig.field).map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>
-              {opt.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            className="w-48 justify-between font-normal"
+          >
+            <span className="truncate">
+              {selectedValues.length === 0
+                ? 'Wybierz wartości...'
+                : selectedValues.length === 1
+                ? options.find((o) => o.value === selectedValues[0])?.label
+                : `Wybrano ${selectedValues.length}`}
+            </span>
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-48 p-0" align="start">
+          <div className="max-h-60 overflow-auto p-1">
+            {options.map((opt) => {
+              const isSelected = selectedValues.includes(opt.value);
+              return (
+                <div
+                  key={opt.value}
+                  className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent"
+                  onClick={() => handleToggle(opt.value)}
+                >
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => handleToggle(opt.value)}
+                    className="pointer-events-none"
+                  />
+                  <span className="flex-1">{opt.label}</span>
+                  {isSelected && <Check className="h-4 w-4" />}
+                </div>
+              );
+            })}
+          </div>
+        </PopoverContent>
+      </Popover>
     );
   }
 

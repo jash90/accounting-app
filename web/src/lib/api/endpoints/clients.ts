@@ -4,7 +4,6 @@ import {
   UpdateClientDto,
   ClientFiltersDto,
   ClientResponseDto,
-  SetClientIconsDto,
   SetCustomFieldValuesDto,
   CreateClientFieldDefinitionDto,
   UpdateClientFieldDefinitionDto,
@@ -17,13 +16,14 @@ import {
   NotificationSettingsResponseDto,
   ChangeLogResponseDto,
 } from '@/types/dtos';
+import { PaginatedResponse } from '@/types/api';
 
 const BASE_URL = '/api/modules/clients';
 
 // Client API
 export const clientsApi = {
-  getAll: async (filters?: ClientFiltersDto): Promise<ClientResponseDto[]> => {
-    const { data } = await apiClient.get<ClientResponseDto[]>(BASE_URL, {
+  getAll: async (filters?: ClientFiltersDto): Promise<PaginatedResponse<ClientResponseDto>> => {
+    const { data } = await apiClient.get<PaginatedResponse<ClientResponseDto>>(BASE_URL, {
       params: filters,
     });
     return data;
@@ -50,12 +50,6 @@ export const clientsApi = {
 
   restore: async (id: string): Promise<ClientResponseDto> => {
     const { data } = await apiClient.post<ClientResponseDto>(`${BASE_URL}/${id}/restore`);
-    return data;
-  },
-
-  // Icons
-  setIcons: async (id: string, iconData: SetClientIconsDto): Promise<ClientResponseDto> => {
-    const { data } = await apiClient.put<ClientResponseDto>(`${BASE_URL}/${id}/icons`, iconData);
     return data;
   },
 
@@ -123,9 +117,16 @@ export const clientsApi = {
 // Field Definitions API
 const FIELD_DEFINITIONS_URL = '/api/modules/clients/field-definitions';
 
+export interface FieldDefinitionQueryDto {
+  page?: number;
+  limit?: number;
+}
+
 export const fieldDefinitionsApi = {
-  getAll: async (): Promise<ClientFieldDefinitionResponseDto[]> => {
-    const { data } = await apiClient.get<ClientFieldDefinitionResponseDto[]>(FIELD_DEFINITIONS_URL);
+  getAll: async (query?: FieldDefinitionQueryDto): Promise<PaginatedResponse<ClientFieldDefinitionResponseDto>> => {
+    const { data } = await apiClient.get<PaginatedResponse<ClientFieldDefinitionResponseDto>>(FIELD_DEFINITIONS_URL, {
+      params: query,
+    });
     return data;
   },
 
@@ -173,9 +174,16 @@ export const fieldDefinitionsApi = {
 // Icons API
 const ICONS_URL = '/api/modules/clients/icons';
 
+export interface IconQueryDto {
+  page?: number;
+  limit?: number;
+}
+
 export const clientIconsApi = {
-  getAll: async (): Promise<ClientIconResponseDto[]> => {
-    const { data } = await apiClient.get<ClientIconResponseDto[]>(ICONS_URL);
+  getAll: async (query?: IconQueryDto): Promise<PaginatedResponse<ClientIconResponseDto>> => {
+    const { data } = await apiClient.get<PaginatedResponse<ClientIconResponseDto>>(ICONS_URL, {
+      params: query,
+    });
     return data;
   },
 
@@ -226,6 +234,25 @@ export const clientIconsApi = {
 
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`${ICONS_URL}/${id}`);
+  },
+
+  getClientIcons: async (clientId: string): Promise<ClientIconResponseDto[]> => {
+    const { data } = await apiClient.get<ClientIconResponseDto[]>(`${ICONS_URL}/client/${clientId}`);
+    return data;
+  },
+
+  assignIcon: async (clientId: string, iconId: string): Promise<{ id: string; clientId: string; iconId: string; isAutoAssigned: boolean; createdAt: Date }> => {
+    const { data } = await apiClient.post(`${ICONS_URL}/assign`, { clientId, iconId });
+    return data;
+  },
+
+  unassignIcon: async (clientId: string, iconId: string): Promise<void> => {
+    await apiClient.delete(`${ICONS_URL}/unassign/${clientId}/${iconId}`);
+  },
+
+  getIconUrl: async (id: string): Promise<{ url: string }> => {
+    const { data } = await apiClient.get<{ url: string }>(`${ICONS_URL}/${id}/url`);
+    return data;
   },
 };
 

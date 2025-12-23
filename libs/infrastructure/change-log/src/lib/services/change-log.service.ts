@@ -198,8 +198,8 @@ export class ChangeLogService {
       .take(limit);
 
     if (companyId) {
-      // This would require a join with the entity table
-      // For now, we'll just return all changes for the entity type
+      // Filter by the company of the user who made the change to enforce tenant isolation
+      query.andWhere('user.companyId = :companyId', { companyId });
     }
 
     return query.getMany();

@@ -7,7 +7,16 @@ import { EncryptionService } from './encryption.service';
 const Imap = require('node-imap');
 
 // TLS validation - configurable via env, defaults to true in production
-const REJECT_UNAUTHORIZED = process.env.EMAIL_REJECT_UNAUTHORIZED !== 'false';
+const REJECT_UNAUTHORIZED = process.env['EMAIL_REJECT_UNAUTHORIZED'] !== 'false';
+
+// Helper function to extract text from AddressObject or AddressObject[]
+function getAddressText(address: { text?: string } | { text?: string }[] | undefined): string {
+  if (!address) return '';
+  if (Array.isArray(address)) {
+    return address.map(a => a.text || '').join(', ');
+  }
+  return address.text || '';
+}
 
 export interface SendEmailDto {
   to: string;
@@ -95,6 +104,31 @@ export class EmailService {
     return new Promise((resolve, reject) => {
       let timeoutHandle: NodeJS.Timeout;
       let imap: any;
+      let settled = false; // Prevent double resolve/reject
+
+      const settleReject = (error: Error | BadRequestException) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutHandle);
+        try {
+          imap?.end();
+        } catch {
+          // Ignore cleanup errors
+        }
+        reject(error instanceof BadRequestException ? error : new BadRequestException(`Błąd połączenia IMAP: ${error.message}`));
+      };
+
+      const settleResolve = (result: TestConnectionResult) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutHandle);
+        try {
+          imap?.end();
+        } catch {
+          // Ignore cleanup errors
+        }
+        resolve(result);
+      };
 
       try {
         imap = new Imap({
@@ -110,23 +144,15 @@ export class EmailService {
 
         // Set timeout for the entire operation
         timeoutHandle = setTimeout(() => {
-          try {
-            imap.end();
-          } catch {
-            // Ignore cleanup errors
-          }
-          reject(new BadRequestException('Błąd połączenia IMAP: Przekroczono limit czasu połączenia'));
+          settleReject(new BadRequestException('Błąd połączenia IMAP: Przekroczono limit czasu połączenia'));
         }, CONNECTION_TIMEOUT_MS);
 
         imap.once('ready', () => {
           imap.openBox('INBOX', true, (err: Error | null) => {
-            clearTimeout(timeoutHandle);
-            imap.end();
-
             if (err) {
-              reject(new BadRequestException(`Błąd połączenia IMAP: ${err.message}`));
+              settleReject(err);
             } else {
-              resolve({
+              settleResolve({
                 success: true,
                 message: 'Połączenie IMAP działa poprawnie',
               });
@@ -135,16 +161,12 @@ export class EmailService {
         });
 
         imap.once('error', (err: Error) => {
-          clearTimeout(timeoutHandle);
-          reject(new BadRequestException(`Błąd połączenia IMAP: ${err.message}`));
+          settleReject(err);
         });
 
         imap.connect();
       } catch (error) {
-        if (timeoutHandle) {
-          clearTimeout(timeoutHandle);
-        }
-        reject(new BadRequestException(`Błąd połączenia IMAP: ${error.message}`));
+        settleReject(error);
       }
     });
   }
@@ -256,6 +278,7 @@ export class EmailService {
       });
 
       const messages: EmailMessage[] = [];
+      const parsePromises: Promise<void>[] = [];
 
       imap.once('ready', () => {
         imap.openBox('INBOX', true, (err, box) => {
@@ -281,21 +304,22 @@ export class EmailService {
 
           fetch.on('message', (msg) => {
             msg.on('body', (stream) => {
-              simpleParser(stream, (err, parsed) => {
-                if (err) {
+              // Wrap simpleParser in a promise to track completion
+              const parsePromise = simpleParser(stream)
+                .then((parsed) => {
+                  messages.push({
+                    from: getAddressText(parsed.from),
+                    to: getAddressText(parsed.to),
+                    subject: parsed.subject || '',
+                    date: parsed.date || new Date(),
+                    text: parsed.text || '',
+                    html: parsed.html || undefined,
+                  });
+                })
+                .catch((err) => {
                   console.error('Error parsing email:', err);
-                  return;
-                }
-
-                messages.push({
-                  from: parsed.from?.text || '',
-                  to: parsed.to?.text || '',
-                  subject: parsed.subject || '',
-                  date: parsed.date || new Date(),
-                  text: parsed.text || '',
-                  html: parsed.html || '',
                 });
-              });
+              parsePromises.push(parsePromise);
             });
           });
 
@@ -305,10 +329,18 @@ export class EmailService {
           });
 
           fetch.once('end', () => {
-            imap.end();
-            // Sort by date, newest first
-            messages.sort((a, b) => b.date.getTime() - a.date.getTime());
-            resolve(messages);
+            // Wait for all parsing to complete before resolving
+            Promise.all(parsePromises)
+              .then(() => {
+                imap.end();
+                // Sort by date, newest first
+                messages.sort((a, b) => b.date.getTime() - a.date.getTime());
+                resolve(messages);
+              })
+              .catch((err) => {
+                imap.end();
+                reject(new BadRequestException(`Failed to parse emails: ${err.message}`));
+              });
           });
         });
       });
@@ -350,6 +382,7 @@ export class EmailService {
       });
 
       const messages: EmailMessage[] = [];
+      const parsePromises: Promise<void>[] = [];
 
       imap.once('ready', () => {
         imap.openBox('INBOX', true, (err, box) => {
@@ -375,21 +408,22 @@ export class EmailService {
 
           fetch.on('message', (msg) => {
             msg.on('body', (stream) => {
-              simpleParser(stream, (err, parsed) => {
-                if (err) {
+              // Wrap simpleParser in a promise to track completion
+              const parsePromise = simpleParser(stream)
+                .then((parsed) => {
+                  messages.push({
+                    from: getAddressText(parsed.from),
+                    to: getAddressText(parsed.to),
+                    subject: parsed.subject || '',
+                    date: parsed.date || new Date(),
+                    text: parsed.text || '',
+                    html: parsed.html || undefined,
+                  });
+                })
+                .catch((err) => {
                   console.error('Error parsing email:', err);
-                  return;
-                }
-
-                messages.push({
-                  from: parsed.from?.text || '',
-                  to: parsed.to?.text || '',
-                  subject: parsed.subject || '',
-                  date: parsed.date || new Date(),
-                  text: parsed.text || '',
-                  html: parsed.html || '',
                 });
-              });
+              parsePromises.push(parsePromise);
             });
           });
 
@@ -399,10 +433,18 @@ export class EmailService {
           });
 
           fetch.once('end', () => {
-            imap.end();
-            // Sort by date, newest first
-            messages.sort((a, b) => b.date.getTime() - a.date.getTime());
-            resolve(messages);
+            // Wait for all parsing to complete before resolving
+            Promise.all(parsePromises)
+              .then(() => {
+                imap.end();
+                // Sort by date, newest first
+                messages.sort((a, b) => b.date.getTime() - a.date.getTime());
+                resolve(messages);
+              })
+              .catch((err) => {
+                imap.end();
+                reject(new BadRequestException(`Failed to parse emails: ${err.message}`));
+              });
           });
         });
       });

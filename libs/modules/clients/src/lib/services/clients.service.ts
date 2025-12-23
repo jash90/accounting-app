@@ -1,20 +1,21 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   Client,
   User,
-  Company,
-  UserRole,
   EmploymentType,
   VatStatus,
   TaxScheme,
   ZusStatus,
   AmlGroup,
+  PaginatedResponseDto,
+  TenantService,
 } from '@accounting/common';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 import { ClientChangelogService } from './client-changelog.service';
 import { AutoAssignService } from './auto-assign.service';
+import { ClientNotFoundException } from '../exceptions';
 
 export interface CreateClientDto {
   name: string;
@@ -54,35 +55,41 @@ export interface ClientFilters {
   gtuCode?: string;
   receiveEmailCopy?: boolean;
   isActive?: boolean;
+  page?: number;
+  limit?: number;
 }
 
 @Injectable()
 export class ClientsService {
+  private readonly logger = new Logger(ClientsService.name);
+
   constructor(
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
-    @InjectRepository(Company)
-    private readonly companyRepository: Repository<Company>,
     private readonly changeLogService: ChangeLogService,
     private readonly clientChangelogService: ClientChangelogService,
     private readonly autoAssignService: AutoAssignService,
+    private readonly tenantService: TenantService,
   ) {}
 
-  private async getEffectiveCompanyId(user: User): Promise<string> {
-    if (user.role === UserRole.ADMIN) {
-      const systemCompany = await this.companyRepository.findOne({
-        where: { isSystemCompany: true },
-      });
-      if (!systemCompany) {
-        throw new ForbiddenException('System company not found for admin user');
-      }
-      return systemCompany.id;
-    }
-    return user.companyId;
+  /**
+   * Escape special characters in LIKE/ILIKE patterns to prevent SQL injection
+   */
+  private escapeLikePattern(pattern: string): string {
+    return pattern
+      .replace(/\\/g, '\\\\')
+      .replace(/%/g, '\\%')
+      .replace(/_/g, '\\_');
   }
 
-  async findAll(user: User, filters?: ClientFilters): Promise<Client[]> {
-    const companyId = await this.getEffectiveCompanyId(user);
+  async findAll(
+    user: User,
+    filters?: ClientFilters,
+  ): Promise<PaginatedResponseDto<Client>> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const page = filters?.page ?? 1;
+    const limit = filters?.limit ?? 20;
+    const skip = (page - 1) * limit;
 
     const queryBuilder = this.clientRepository
       .createQueryBuilder('client')
@@ -93,9 +100,10 @@ export class ClientsService {
       .where('client.companyId = :companyId', { companyId });
 
     if (filters?.search) {
+      const escapedSearch = this.escapeLikePattern(filters.search);
       queryBuilder.andWhere(
-        '(client.name ILIKE :search OR client.nip ILIKE :search OR client.email ILIKE :search)',
-        { search: `%${filters.search}%` },
+        "(client.name ILIKE :search ESCAPE '\\' OR client.nip ILIKE :search ESCAPE '\\' OR client.email ILIKE :search ESCAPE '\\')",
+        { search: `%${escapedSearch}%` },
       );
     }
 
@@ -149,11 +157,15 @@ export class ClientsService {
 
     queryBuilder.orderBy('client.name', 'ASC');
 
-    return queryBuilder.getMany();
+    // Apply pagination
+    queryBuilder.skip(skip).take(limit);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
+    return new PaginatedResponseDto(data, total, page, limit);
   }
 
   async findOne(id: string, user: User): Promise<Client> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     const client = await this.clientRepository.findOne({
       where: { id, companyId },
@@ -166,14 +178,14 @@ export class ClientsService {
     });
 
     if (!client) {
-      throw new NotFoundException(`Client with ID ${id} not found`);
+      throw new ClientNotFoundException(id, companyId);
     }
 
     return client;
   }
 
   async create(dto: CreateClientDto, user: User): Promise<Client> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     const client = this.clientRepository.create({
       ...dto,
@@ -183,8 +195,21 @@ export class ClientsService {
 
     const savedClient = await this.clientRepository.save(client);
 
-    // Evaluate and apply auto-assigned icons
-    await this.autoAssignService.evaluateAndAssign(savedClient);
+    // Evaluate and apply auto-assigned icons (non-critical side effect)
+    try {
+      await this.autoAssignService.evaluateAndAssign(savedClient);
+    } catch (error) {
+      // Log error but don't fail the client creation
+      this.logger.warn(
+        `Failed to auto-assign icons for client after creation`,
+        {
+          clientId: savedClient.id,
+          companyId: savedClient.companyId,
+          userId: user.id,
+          error: (error as Error).message,
+        },
+      );
+    }
 
     // Log change
     await this.changeLogService.logCreate(
@@ -209,8 +234,21 @@ export class ClientsService {
 
     const savedClient = await this.clientRepository.save(client);
 
-    // Re-evaluate and apply auto-assigned icons based on updated data
-    await this.autoAssignService.evaluateAndAssign(savedClient);
+    // Re-evaluate and apply auto-assigned icons based on updated data (non-critical side effect)
+    try {
+      await this.autoAssignService.evaluateAndAssign(savedClient);
+    } catch (error) {
+      // Log error but don't fail the client update
+      this.logger.warn(
+        `Failed to auto-assign icons for client after update`,
+        {
+          clientId: savedClient.id,
+          companyId: savedClient.companyId,
+          userId: user.id,
+          error: (error as Error).message,
+        },
+      );
+    }
 
     // Log change with diff
     await this.changeLogService.logUpdate(
@@ -258,14 +296,14 @@ export class ClientsService {
   }
 
   async restore(id: string, user: User): Promise<Client> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     const client = await this.clientRepository.findOne({
       where: { id, companyId, isActive: false },
     });
 
     if (!client) {
-      throw new NotFoundException(`Inactive client with ID ${id} not found`);
+      throw new ClientNotFoundException(id, companyId);
     }
 
     client.isActive = true;

@@ -7,6 +7,7 @@ import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { SeedersModule } from './seeders/seeders.module';
 import { SeederService } from './seeders/seeder.service';
+import { AllExceptionsFilter } from './common';
 
 // Parse CORS origins at module scope for O(1) lookups
 const allowedOrigins = new Set(
@@ -75,6 +76,9 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  // Global exception filter for consistent error responses
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   // Swagger configuration
   const config = new DocumentBuilder()

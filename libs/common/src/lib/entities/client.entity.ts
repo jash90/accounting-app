@@ -23,6 +23,13 @@ import { ClientIconAssignment } from './client-icon-assignment.entity';
 @Index(['companyId'])
 @Index(['nip'])
 @Index(['name'])
+@Index(['companyId', 'isActive']) // For filtering active clients per company
+@Index(['companyId', 'name']) // For search and ordering within company
+@Index(['employmentType']) // For employment type filtering
+@Index(['vatStatus']) // For VAT status filtering
+@Index(['taxScheme']) // For tax scheme filtering
+@Index(['zusStatus']) // For ZUS status filtering
+@Index(['email']) // For email search queries
 export class Client {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

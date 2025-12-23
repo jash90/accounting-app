@@ -7,6 +7,8 @@ import {
   OneToMany,
   JoinColumn,
   Index,
+  BeforeInsert,
+  BeforeUpdate,
 } from 'typeorm';
 import { Company } from './company.entity';
 import { User } from './user.entity';
@@ -83,4 +85,27 @@ export class ClientIcon {
 
   @CreateDateColumn()
   createdAt!: Date;
+
+  /**
+   * Validate state consistency based on iconType before insert/update
+   */
+  @BeforeInsert()
+  @BeforeUpdate()
+  validateIconTypeFields(): void {
+    if (this.iconType === IconType.CUSTOM) {
+      // Custom icons require file-related fields
+      if (!this.fileName || !this.filePath || !this.mimeType) {
+        throw new Error(
+          'Custom icons require fileName, filePath, and mimeType to be set'
+        );
+      }
+    } else if (this.iconType === IconType.LUCIDE || this.iconType === IconType.EMOJI) {
+      // Lucide and emoji icons require iconValue
+      if (!this.iconValue) {
+        throw new Error(
+          `${this.iconType} icons require iconValue to be set`
+        );
+      }
+    }
+  }
 }

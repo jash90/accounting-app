@@ -15,6 +15,9 @@ import { EmailSenderService } from './email-sender.service';
 import { EmailReaderService } from './email-reader.service';
 import { SmtpConfig, ImapConfig } from '../interfaces/email-config.interface';
 
+// TLS validation - secure by default, configurable via env
+const REJECT_UNAUTHORIZED = process.env['EMAIL_REJECT_UNAUTHORIZED'] !== 'false';
+
 /**
  * Service for managing email configurations for users and companies
  * Handles encryption/decryption of passwords and configuration persistence
@@ -199,7 +202,7 @@ export class EmailConfigurationService {
       user: config.imapUser,
       password: this.encryptionService.decrypt(config.imapPassword),
       tlsOptions: {
-        rejectUnauthorized: false,
+        rejectUnauthorized: REJECT_UNAUTHORIZED,
       },
     };
   }

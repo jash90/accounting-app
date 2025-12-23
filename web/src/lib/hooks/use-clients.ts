@@ -4,13 +4,14 @@ import {
   fieldDefinitionsApi,
   clientIconsApi,
   notificationSettingsApi,
+  FieldDefinitionQueryDto,
+  IconQueryDto,
 } from '../api/endpoints/clients';
 import { queryKeys } from '../api/query-client';
 import {
   CreateClientDto,
   UpdateClientDto,
   ClientFiltersDto,
-  SetClientIconsDto,
   SetCustomFieldValuesDto,
   CreateClientFieldDefinitionDto,
   UpdateClientFieldDefinitionDto,
@@ -19,6 +20,7 @@ import {
   CreateNotificationSettingsDto,
   UpdateNotificationSettingsDto,
 } from '@/types/dtos';
+import { ApiErrorResponse } from '@/types/api';
 import { useToast } from '@/components/ui/use-toast';
 
 // ============================================
@@ -53,7 +55,7 @@ export function useCreateClient() {
         description: 'Klient został utworzony',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się utworzyć klienta',
@@ -78,7 +80,7 @@ export function useUpdateClient() {
         description: 'Klient został zaktualizowany',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się zaktualizować klienta',
@@ -101,7 +103,7 @@ export function useDeleteClient() {
         description: 'Klient został usunięty',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się usunąć klienta',
@@ -124,7 +126,7 @@ export function useRestoreClient() {
         description: 'Klient został przywrócony',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się przywrócić klienta',
@@ -134,27 +136,61 @@ export function useRestoreClient() {
   });
 }
 
-export function useSetClientIcons() {
+export function useAssignClientIcon() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: SetClientIconsDto }) =>
-      clientsApi.setIcons(id, data),
+    mutationFn: ({ clientId, iconId }: { clientId: string; iconId: string }) =>
+      clientIconsApi.assignIcon(clientId, iconId),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(variables.clientId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.clientIcons.all });
       toast({
         title: 'Sukces',
-        description: 'Ikony klienta zostały zaktualizowane',
+        description: 'Ikona została przypisana do klienta',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować ikon',
+        description: error.response?.data?.message || 'Nie udało się przypisać ikony',
         variant: 'destructive',
       });
     },
+  });
+}
+
+export function useUnassignClientIcon() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ clientId, iconId }: { clientId: string; iconId: string }) =>
+      clientIconsApi.unassignIcon(clientId, iconId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(variables.clientId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.clientIcons.all });
+      toast({
+        title: 'Sukces',
+        description: 'Ikona została odłączona od klienta',
+      });
+    },
+    onError: (error: ApiErrorResponse) => {
+      toast({
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się odłączyć ikony',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useIconsForClient(clientId: string) {
+  return useQuery({
+    queryKey: queryKeys.clientIcons.byClient(clientId),
+    queryFn: () => clientIconsApi.getClientIcons(clientId),
+    enabled: !!clientId,
   });
 }
 
@@ -172,7 +208,7 @@ export function useSetClientCustomFields() {
         description: 'Pola niestandardowe zostały zaktualizowane',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się zaktualizować pól',
@@ -194,10 +230,10 @@ export function useClientChangelog(clientId: string) {
 // Field Definition Hooks
 // ============================================
 
-export function useFieldDefinitions() {
+export function useFieldDefinitions(query?: FieldDefinitionQueryDto) {
   return useQuery({
-    queryKey: queryKeys.clientFieldDefinitions.all,
-    queryFn: fieldDefinitionsApi.getAll,
+    queryKey: [...queryKeys.clientFieldDefinitions.all, query],
+    queryFn: () => fieldDefinitionsApi.getAll(query),
   });
 }
 
@@ -223,7 +259,7 @@ export function useCreateFieldDefinition() {
         description: 'Definicja pola została utworzona',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się utworzyć definicji pola',
@@ -250,7 +286,7 @@ export function useUpdateFieldDefinition() {
         description: 'Definicja pola została zaktualizowana',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się zaktualizować definicji pola',
@@ -273,7 +309,7 @@ export function useDeleteFieldDefinition() {
         description: 'Definicja pola została usunięta',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się usunąć definicji pola',
@@ -296,7 +332,7 @@ export function useReorderFieldDefinitions() {
         description: 'Kolejność pól została zaktualizowana',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się zmienić kolejności pól',
@@ -310,10 +346,10 @@ export function useReorderFieldDefinitions() {
 // Client Icon Hooks
 // ============================================
 
-export function useClientIcons() {
+export function useClientIcons(query?: IconQueryDto) {
   return useQuery({
-    queryKey: queryKeys.clientIcons.all,
-    queryFn: clientIconsApi.getAll,
+    queryKey: [...queryKeys.clientIcons.all, query],
+    queryFn: () => clientIconsApi.getAll(query),
   });
 }
 
@@ -339,7 +375,7 @@ export function useCreateClientIcon() {
         description: 'Ikona została utworzona',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się utworzyć ikony',
@@ -364,7 +400,7 @@ export function useUpdateClientIcon() {
         description: 'Ikona została zaktualizowana',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się zaktualizować ikony',
@@ -387,7 +423,7 @@ export function useDeleteClientIcon() {
         description: 'Ikona została usunięta',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się usunąć ikony',
@@ -422,7 +458,7 @@ export function useCreateNotificationSettings() {
         description: 'Ustawienia powiadomień zostały utworzone',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description:
@@ -447,7 +483,7 @@ export function useUpdateNotificationSettings() {
         description: 'Ustawienia powiadomień zostały zaktualizowane',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description:
@@ -471,7 +507,7 @@ export function useDeleteNotificationSettings() {
         description: 'Ustawienia powiadomień zostały usunięte',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description:

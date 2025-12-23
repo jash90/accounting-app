@@ -13,21 +13,21 @@ export class ManageModulePermissionDto {
     example: PermissionTargetType.EMPLOYEE,
   })
   @IsEnum(PermissionTargetType)
-  targetType: PermissionTargetType;
+  targetType!: PermissionTargetType;
 
   @ApiProperty({
     description: 'UUID of the target entity (company or employee)',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
   @IsUUID()
-  targetId: string;
+  targetId!: string;
 
   @ApiProperty({
     description: 'Module slug to grant/update/revoke access',
     example: 'simple-text',
   })
   @IsString()
-  moduleSlug: string;
+  moduleSlug!: string;
 
   @ApiPropertyOptional({
     description: 'Array of permissions (required for grant/update operations)',

@@ -23,11 +23,28 @@ export class S3StorageProvider implements StorageProvider {
     this.bucket = this.configService.get<string>('S3_BUCKET', 'accounting-uploads');
     this.region = this.configService.get<string>('S3_REGION', 'us-east-1');
 
+    const accessKeyId = this.configService.get<string>('S3_ACCESS_KEY', '');
+    const secretAccessKey = this.configService.get<string>('S3_SECRET_KEY', '');
+
+    // Validate credentials to prevent invalid S3 client initialization
+    if (!accessKeyId || !accessKeyId.trim()) {
+      throw new Error(
+        'S3 storage provider requires S3_ACCESS_KEY environment variable. ' +
+        'Please configure S3 credentials or use local storage provider instead.',
+      );
+    }
+    if (!secretAccessKey || !secretAccessKey.trim()) {
+      throw new Error(
+        'S3 storage provider requires S3_SECRET_KEY environment variable. ' +
+        'Please configure S3 credentials or use local storage provider instead.',
+      );
+    }
+
     this.s3Client = new S3Client({
       region: this.region,
       credentials: {
-        accessKeyId: this.configService.get<string>('S3_ACCESS_KEY', ''),
-        secretAccessKey: this.configService.get<string>('S3_SECRET_KEY', ''),
+        accessKeyId: accessKeyId.trim(),
+        secretAccessKey: secretAccessKey.trim(),
       },
     });
 

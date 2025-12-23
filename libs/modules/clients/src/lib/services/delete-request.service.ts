@@ -1,21 +1,23 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import {
   ClientDeleteRequest,
   Client,
   User,
-  Company,
   UserRole,
   DeleteRequestStatus,
+  TenantService,
 } from '@accounting/common';
 import { ClientsService } from './clients.service';
 import { ClientChangelogService } from './client-changelog.service';
+import {
+  ClientNotFoundException,
+  DeleteRequestNotFoundException,
+  DeleteRequestAlreadyProcessedException,
+  ClientException,
+  ClientErrorCode,
+} from '../exceptions';
 
 export interface CreateDeleteRequestDto {
   reason?: string;
@@ -32,32 +34,18 @@ export class DeleteRequestService {
     private readonly deleteRequestRepository: Repository<ClientDeleteRequest>,
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
-    @InjectRepository(Company)
-    private readonly companyRepository: Repository<Company>,
     private readonly clientsService: ClientsService,
     private readonly clientChangelogService: ClientChangelogService,
     private readonly dataSource: DataSource,
+    private readonly tenantService: TenantService,
   ) {}
-
-  private async getEffectiveCompanyId(user: User): Promise<string> {
-    if (user.role === UserRole.ADMIN) {
-      const systemCompany = await this.companyRepository.findOne({
-        where: { isSystemCompany: true },
-      });
-      if (!systemCompany) {
-        throw new ForbiddenException('System company not found for admin user');
-      }
-      return systemCompany.id;
-    }
-    return user.companyId;
-  }
 
   async createDeleteRequest(
     clientId: string,
     dto: CreateDeleteRequestDto,
     user: User,
   ): Promise<ClientDeleteRequest> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     // Verify client exists and belongs to company
     const client = await this.clientRepository.findOne({
@@ -65,7 +53,7 @@ export class DeleteRequestService {
     });
 
     if (!client) {
-      throw new NotFoundException(`Client with ID ${clientId} not found`);
+      throw new ClientNotFoundException(clientId, companyId);
     }
 
     // Check if there's already a pending request for this client
@@ -77,8 +65,9 @@ export class DeleteRequestService {
     });
 
     if (existingRequest) {
-      throw new BadRequestException(
-        'A delete request for this client is already pending',
+      throw new DeleteRequestAlreadyProcessedException(
+        existingRequest.id,
+        DeleteRequestStatus.PENDING,
       );
     }
 
@@ -94,7 +83,7 @@ export class DeleteRequestService {
   }
 
   async findAllPendingRequests(user: User): Promise<ClientDeleteRequest[]> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     return this.deleteRequestRepository.find({
       where: {
@@ -110,11 +99,11 @@ export class DeleteRequestService {
     user: User,
     status?: DeleteRequestStatus,
   ): Promise<ClientDeleteRequest[]> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     const whereClause: Record<string, unknown> = { companyId };
     if (status) {
-      whereClause.status = status;
+      whereClause['status'] = status;
     }
 
     return this.deleteRequestRepository.find({
@@ -125,7 +114,7 @@ export class DeleteRequestService {
   }
 
   async findRequestById(id: string, user: User): Promise<ClientDeleteRequest> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     const request = await this.deleteRequestRepository.findOne({
       where: { id, companyId },
@@ -133,7 +122,7 @@ export class DeleteRequestService {
     });
 
     if (!request) {
-      throw new NotFoundException(`Delete request with ID ${id} not found`);
+      throw new DeleteRequestNotFoundException(id, { companyId });
     }
 
     return request;
@@ -145,17 +134,23 @@ export class DeleteRequestService {
   ): Promise<{ message: string; deletedClient: Client }> {
     // Only Owner or Admin can approve
     if (user.role === UserRole.EMPLOYEE) {
-      throw new ForbiddenException(
+      throw new ClientException(
+        ClientErrorCode.PERMISSION_DENIED,
         'Only company owners and admins can approve delete requests',
+        {
+          userId: user.id,
+          additionalInfo: {
+            userRole: user.role,
+          },
+        },
+        HttpStatus.FORBIDDEN,
       );
     }
 
     const request = await this.findRequestById(id, user);
 
     if (request.status !== DeleteRequestStatus.PENDING) {
-      throw new BadRequestException(
-        `Cannot approve request with status: ${request.status}`,
-      );
+      throw new DeleteRequestAlreadyProcessedException(id, request.status);
     }
 
     // Get the client before deletion
@@ -164,7 +159,7 @@ export class DeleteRequestService {
     });
 
     if (!client) {
-      throw new NotFoundException('Client no longer exists');
+      throw new ClientNotFoundException(request.clientId);
     }
 
     // Clone client data before deletion for response
@@ -176,16 +171,25 @@ export class DeleteRequestService {
     await queryRunner.startTransaction();
 
     try {
-      // Delete the client first (if this fails, status won't be updated)
-      await this.clientsService.remove(request.clientId, user);
+      // Soft delete the client within the transaction
+      client.isActive = false;
+      client.updatedById = user.id;
+      await queryRunner.manager.save(client);
 
-      // Update request status
+      // Update request status within the same transaction
       request.status = DeleteRequestStatus.APPROVED;
       request.processedById = user.id;
       request.processedAt = new Date();
       await queryRunner.manager.save(request);
 
       await queryRunner.commitTransaction();
+
+      // Send notifications after transaction commits (non-critical)
+      try {
+        await this.clientChangelogService.notifyClientDeleted(client, user);
+      } catch {
+        // Notification failure should not affect the successful deletion
+      }
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -206,17 +210,23 @@ export class DeleteRequestService {
   ): Promise<ClientDeleteRequest> {
     // Only Owner or Admin can reject
     if (user.role === UserRole.EMPLOYEE) {
-      throw new ForbiddenException(
+      throw new ClientException(
+        ClientErrorCode.PERMISSION_DENIED,
         'Only company owners and admins can reject delete requests',
+        {
+          userId: user.id,
+          additionalInfo: {
+            userRole: user.role,
+          },
+        },
+        HttpStatus.FORBIDDEN,
       );
     }
 
     const request = await this.findRequestById(id, user);
 
     if (request.status !== DeleteRequestStatus.PENDING) {
-      throw new BadRequestException(
-        `Cannot reject request with status: ${request.status}`,
-      );
+      throw new DeleteRequestAlreadyProcessedException(id, request.status);
     }
 
     request.status = DeleteRequestStatus.REJECTED;
@@ -232,20 +242,28 @@ export class DeleteRequestService {
 
     // Only the requester can cancel their own request
     if (request.requestedById !== user.id && user.role === UserRole.EMPLOYEE) {
-      throw new ForbiddenException('You can only cancel your own requests');
+      throw new ClientException(
+        ClientErrorCode.PERMISSION_DENIED,
+        'You can only cancel your own requests',
+        {
+          userId: user.id,
+          additionalInfo: {
+            requestedById: request.requestedById,
+          },
+        },
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     if (request.status !== DeleteRequestStatus.PENDING) {
-      throw new BadRequestException(
-        `Cannot cancel request with status: ${request.status}`,
-      );
+      throw new DeleteRequestAlreadyProcessedException(id, request.status);
     }
 
     await this.deleteRequestRepository.remove(request);
   }
 
   async getMyRequests(user: User): Promise<ClientDeleteRequest[]> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     return this.deleteRequestRepository.find({
       where: {

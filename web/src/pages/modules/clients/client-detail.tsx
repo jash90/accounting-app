@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useClient, useUpdateClient, useSetClientIcons, useSetClientCustomFields } from '@/lib/hooks/use-clients';
+import { useClient, useUpdateClient, useSetClientCustomFields } from '@/lib/hooks/use-clients';
 import { useFieldDefinitions, useClientIcons } from '@/lib/hooks/use-clients';
 import { useAuthContext } from '@/contexts/auth-context';
 import { PageHeader } from '@/components/common/page-header';
@@ -23,35 +23,17 @@ import { useState } from 'react';
 import { ClientFormDialog } from '@/components/forms/client-form-dialog';
 import { ClientChangelog } from '@/components/clients/client-changelog';
 import { UpdateClientDto } from '@/types/dtos';
-import { EmploymentType, VatStatus, TaxScheme, ZusStatus, UserRole } from '@/types/enums';
-
-const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
-  [EmploymentType.DG]: 'DG',
-  [EmploymentType.DG_ETAT]: 'DG + Etat',
-  [EmploymentType.DG_AKCJONARIUSZ]: 'DG Akcjonariusz',
-  [EmploymentType.DG_HALF_TIME_BELOW_MIN]: 'DG 1/2 etatu poniżej min.',
-  [EmploymentType.DG_HALF_TIME_ABOVE_MIN]: 'DG 1/2 etatu powyżej min.',
-};
-
-const VAT_STATUS_LABELS: Record<VatStatus, string> = {
-  [VatStatus.VAT_MONTHLY]: 'VAT miesięczny',
-  [VatStatus.VAT_QUARTERLY]: 'VAT kwartalny',
-  [VatStatus.NO]: 'Nie',
-  [VatStatus.NO_WATCH_LIMIT]: 'Nie (obserwuj limit)',
-};
-
-const TAX_SCHEME_LABELS: Record<TaxScheme, string> = {
-  [TaxScheme.PIT_17]: 'PIT 17%',
-  [TaxScheme.PIT_19]: 'PIT 19%',
-  [TaxScheme.LUMP_SUM]: 'Ryczałt',
-  [TaxScheme.GENERAL]: 'Zasady ogólne',
-};
-
-const ZUS_STATUS_LABELS: Record<ZusStatus, string> = {
-  [ZusStatus.FULL]: 'Pełny',
-  [ZusStatus.PREFERENTIAL]: 'Preferencyjny',
-  [ZusStatus.NONE]: 'Brak',
-};
+import {
+  EmploymentType,
+  EmploymentTypeLabels,
+  VatStatus,
+  VatStatusLabels,
+  TaxScheme,
+  TaxSchemeLabels,
+  ZusStatus,
+  ZusStatusLabels,
+  UserRole,
+} from '@/types/enums';
 
 function formatDate(date?: Date | string | null): string {
   if (!date) return '-';
@@ -75,8 +57,10 @@ export default function ClientDetailPage() {
   // Guard against undefined id
   const clientId = id ?? '';
   const { data: client, isPending, error } = useClient(clientId);
-  const { data: fieldDefinitions = [] } = useFieldDefinitions();
-  const { data: icons = [] } = useClientIcons();
+  const { data: fieldDefinitionsResponse } = useFieldDefinitions();
+  const fieldDefinitions = fieldDefinitionsResponse?.data ?? [];
+  const { data: iconsResponse } = useClientIcons();
+  const icons = iconsResponse?.data ?? [];
   const updateClient = useUpdateClient();
   const setCustomFields = useSetClientCustomFields();
 
@@ -234,7 +218,7 @@ export default function ClientDetailPage() {
                   value={
                     client.employmentType ? (
                       <Badge variant="secondary">
-                        {EMPLOYMENT_TYPE_LABELS[client.employmentType]}
+                        {EmploymentTypeLabels[client.employmentType]}
                       </Badge>
                     ) : null
                   }
@@ -244,7 +228,7 @@ export default function ClientDetailPage() {
                   value={
                     client.vatStatus ? (
                       <Badge variant="default">
-                        {VAT_STATUS_LABELS[client.vatStatus]}
+                        {VatStatusLabels[client.vatStatus]}
                       </Badge>
                     ) : null
                   }
@@ -254,7 +238,7 @@ export default function ClientDetailPage() {
                   value={
                     client.taxScheme ? (
                       <Badge variant="secondary">
-                        {TAX_SCHEME_LABELS[client.taxScheme]}
+                        {TaxSchemeLabels[client.taxScheme]}
                       </Badge>
                     ) : null
                   }
@@ -264,7 +248,7 @@ export default function ClientDetailPage() {
                   value={
                     client.zusStatus ? (
                       <Badge variant="secondary">
-                        {ZUS_STATUS_LABELS[client.zusStatus]}
+                        {ZusStatusLabels[client.zusStatus]}
                       </Badge>
                     ) : null
                   }
@@ -418,14 +402,21 @@ export default function ClientDetailPage() {
               id: client.id,
               data: data as UpdateClientDto,
             }, {
-              onSuccess: () => {
+              onSuccess: async () => {
                 if (customFields && Object.keys(customFields.values).length > 0) {
-                  setCustomFields.mutate({
-                    id: client.id,
-                    data: customFields,
-                  });
+                  try {
+                    await setCustomFields.mutateAsync({
+                      id: client.id,
+                      data: customFields,
+                    });
+                  } catch {
+                    // Custom fields error handled by the hook's onError
+                  }
                 }
                 setEditOpen(false);
+              },
+              onError: () => {
+                // Error already handled by the mutation hook's toast
               },
             });
           }}

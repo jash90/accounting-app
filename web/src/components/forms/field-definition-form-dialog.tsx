@@ -110,8 +110,8 @@ export function FieldDefinitionFormDialog({
       delete submitData.enumValues;
     }
     onSubmit(submitData);
-    form.reset();
-    setEnumValue('');
+    // Don't reset here - let the parent component control the dialog state
+    // The form will reset when the dialog closes and reopens due to defaultValues
   };
 
   return (

@@ -363,8 +363,33 @@ export const updateClientIconSchema = z.object({
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().or(z.literal('')),
   iconType: z.enum(['lucide', 'custom', 'emoji']).optional(),
   iconValue: z.string().optional(),
+  file: z.instanceof(File)
+    .refine((file) => file.size <= 5 * 1024 * 1024, 'Rozmiar pliku nie może przekraczać 5MB')
+    .refine(
+      (file) => ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp'].includes(file.type),
+      'Dozwolone są tylko pliki PNG, JPEG, SVG i WebP'
+    )
+    .optional(),
   isActive: z.boolean().optional(),
   autoAssignCondition: autoAssignConditionSchema.optional().nullable(),
+}).superRefine((data, ctx) => {
+  // Only validate cross-field when iconType is being changed
+  if (data.iconType) {
+    if ((data.iconType === 'lucide' || data.iconType === 'emoji') && !data.iconValue) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Wartość ikony jest wymagana dla tego typu',
+        path: ['iconValue'],
+      });
+    }
+    if (data.iconType === 'custom' && !data.file) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Plik ikony jest wymagany dla typu niestandardowego',
+        path: ['file'],
+      });
+    }
+  }
 });
 
 export type UpdateClientIconFormData = z.infer<typeof updateClientIconSchema>;

@@ -32,3 +32,9 @@ web/.claude-flow/
 
 # Test result credentials (should never be committed)
 test-results/*.json
+
+# Development encryption key (auto-generated)
+.encryption-key.dev
+
+# Auto Claude data directory
+.auto-claude/

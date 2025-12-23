@@ -33,7 +33,17 @@ import {
   UpdateClientFormData,
 } from '@/lib/validation/schemas';
 import { ClientResponseDto, SetCustomFieldValuesDto } from '@/types/dtos';
-import { EmploymentType, VatStatus, TaxScheme, ZusStatus, CustomFieldType } from '@/types/enums';
+import {
+  EmploymentType,
+  EmploymentTypeLabels,
+  VatStatus,
+  VatStatusLabels,
+  TaxScheme,
+  TaxSchemeLabels,
+  ZusStatus,
+  ZusStatusLabels,
+  CustomFieldType,
+} from '@/types/enums';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useFieldDefinitions } from '@/lib/hooks/use-clients';
 import { ClientFieldDefinition } from '@/types/entities';
@@ -45,34 +55,6 @@ interface ClientFormDialogProps {
   onSubmit: (data: CreateClientFormData | UpdateClientFormData, customFields?: SetCustomFieldValuesDto) => void;
 }
 
-const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
-  [EmploymentType.DG]: 'DG',
-  [EmploymentType.DG_ETAT]: 'DG + Etat',
-  [EmploymentType.DG_AKCJONARIUSZ]: 'DG Akcjonariusz',
-  [EmploymentType.DG_HALF_TIME_BELOW_MIN]: 'DG 1/2 etatu poniżej min.',
-  [EmploymentType.DG_HALF_TIME_ABOVE_MIN]: 'DG 1/2 etatu powyżej min.',
-};
-
-const VAT_STATUS_LABELS: Record<VatStatus, string> = {
-  [VatStatus.VAT_MONTHLY]: 'VAT miesięczny',
-  [VatStatus.VAT_QUARTERLY]: 'VAT kwartalny',
-  [VatStatus.NO]: 'Nie',
-  [VatStatus.NO_WATCH_LIMIT]: 'Nie (obserwuj limit)',
-};
-
-const TAX_SCHEME_LABELS: Record<TaxScheme, string> = {
-  [TaxScheme.PIT_17]: 'PIT 17%',
-  [TaxScheme.PIT_19]: 'PIT 19%',
-  [TaxScheme.LUMP_SUM]: 'Ryczałt',
-  [TaxScheme.GENERAL]: 'Zasady ogólne',
-};
-
-const ZUS_STATUS_LABELS: Record<ZusStatus, string> = {
-  [ZusStatus.FULL]: 'Pełny',
-  [ZusStatus.PREFERENTIAL]: 'Preferencyjny',
-  [ZusStatus.NONE]: 'Brak',
-};
-
 export function ClientFormDialog({
   open,
   onOpenChange,
@@ -83,7 +65,8 @@ export function ClientFormDialog({
   const schema = isEditing ? updateClientSchema : createClientSchema;
 
   // Fetch field definitions
-  const { data: fieldDefinitions = [] } = useFieldDefinitions();
+  const { data: fieldDefinitionsResponse } = useFieldDefinitions();
+  const fieldDefinitions = fieldDefinitionsResponse?.data ?? [];
   const activeFieldDefinitions = fieldDefinitions.filter((fd) => fd.isActive);
 
   // Custom field values state
@@ -453,7 +436,7 @@ export function ClientFormDialog({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Object.entries(EMPLOYMENT_TYPE_LABELS).map(
+                            {Object.entries(EmploymentTypeLabels).map(
                               ([value, label]) => (
                                 <SelectItem key={value} value={value}>
                                   {label}
@@ -483,7 +466,7 @@ export function ClientFormDialog({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Object.entries(VAT_STATUS_LABELS).map(
+                            {Object.entries(VatStatusLabels).map(
                               ([value, label]) => (
                                 <SelectItem key={value} value={value}>
                                   {label}
@@ -513,7 +496,7 @@ export function ClientFormDialog({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Object.entries(TAX_SCHEME_LABELS).map(
+                            {Object.entries(TaxSchemeLabels).map(
                               ([value, label]) => (
                                 <SelectItem key={value} value={value}>
                                   {label}
@@ -543,7 +526,7 @@ export function ClientFormDialog({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Object.entries(ZUS_STATUS_LABELS).map(
+                            {Object.entries(ZusStatusLabels).map(
                               ([value, label]) => (
                                 <SelectItem key={value} value={value}>
                                   {label}

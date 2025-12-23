@@ -58,7 +58,8 @@ export class EmailSenderService {
       this.logger.log(`Email sent successfully: ${(info as { messageId?: string }).messageId}`);
       this.logger.debug(`Preview URL: ${nodemailer.getTestMessageUrl(info as nodemailer.SentMessageInfo)}`);
     } catch (error) {
-      this.logger.error(`Failed to send email: ${error.message}`, error.stack);
+      const err = error as Error;
+      this.logger.error(`Failed to send email: ${err.message}`, err.stack);
       throw error;
     }
   }
@@ -81,7 +82,8 @@ export class EmailSenderService {
       this.logger.log('SMTP connection verified successfully');
       return true;
     } catch (error) {
-      this.logger.error(`SMTP connection verification failed: ${error.message}`);
+      const err = error as Error;
+      this.logger.error(`SMTP connection verification failed: ${err.message}`);
       return false;
     }
   }

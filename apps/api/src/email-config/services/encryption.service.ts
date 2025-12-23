@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import {
   createCipheriv,
   createDecipheriv,
@@ -6,8 +6,13 @@ import {
   scrypt,
 } from 'crypto';
 import { promisify } from 'util';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const scryptAsync = promisify(scrypt);
+
+// Path for persisting dev encryption key
+const DEV_KEY_FILE = path.join(process.cwd(), '.encryption-key.dev');
 
 // Format: salt:iv:authTag:encryptedData (all hex-encoded)
 const ENCRYPTION_FORMAT_REGEX = /^[a-f0-9]{32}:[a-f0-9]{24}:[a-f0-9]{32}:[a-f0-9]+$/i;
@@ -17,7 +22,7 @@ const ENCRYPTION_FORMAT_REGEX = /^[a-f0-9]{32}:[a-f0-9]{24}:[a-f0-9]{32}:[a-f0-9
  * Uses AES-256-GCM authenticated encryption with random salt
  */
 @Injectable()
-export class EncryptionService {
+export class EncryptionService implements OnModuleInit {
   private readonly logger = new Logger(EncryptionService.name);
   private readonly algorithm = 'aes-256-gcm';
   private readonly secretKey: string;
@@ -36,17 +41,55 @@ export class EncryptionService {
       }
       this.secretKey = envKey;
     } else {
-      // Development: use env var if available, otherwise generate random key
+      // Development: use env var if available, otherwise use/create persistent file
       if (envKey && envKey.length >= 32) {
         this.secretKey = envKey;
       } else {
-        // Generate a random key for development
-        this.secretKey = randomBytes(32).toString('hex');
-        this.logger.warn(
-          'Using randomly generated encryption key for development. ' +
-            'Set ENCRYPTION_SECRET environment variable for persistence.'
-        );
+        this.secretKey = this.getOrCreateDevKey();
       }
+    }
+  }
+
+  onModuleInit() {
+    if (process.env.NODE_ENV !== 'production' && !process.env.ENCRYPTION_SECRET) {
+      this.logger.warn(
+        `Using development encryption key from ${DEV_KEY_FILE}. ` +
+          'Set ENCRYPTION_SECRET environment variable for production.'
+      );
+    }
+  }
+
+  /**
+   * Get or create a persistent development encryption key
+   * Ensures encrypted data survives application restarts in development
+   */
+  private getOrCreateDevKey(): string {
+    try {
+      // Try to read existing key
+      if (fs.existsSync(DEV_KEY_FILE)) {
+        const existingKey = fs.readFileSync(DEV_KEY_FILE, 'utf-8').trim();
+        if (existingKey.length >= 64) {
+          this.logger.debug('Loaded existing development encryption key');
+          return existingKey;
+        }
+      }
+
+      // Generate new key and persist it
+      const newKey = randomBytes(32).toString('hex');
+      fs.writeFileSync(DEV_KEY_FILE, newKey, { mode: 0o600 }); // Read/write only for owner
+      this.logger.log(
+        `Generated new development encryption key and saved to ${DEV_KEY_FILE}`
+      );
+      return newKey;
+    } catch (error) {
+      // Fallback: generate key without persistence (with loud warning)
+      const fallbackKey = randomBytes(32).toString('hex');
+      this.logger.error(
+        `Failed to persist development encryption key to ${DEV_KEY_FILE}. ` +
+          'Encrypted data will be LOST on restart! Error: ' +
+          (error instanceof Error ? error.message : String(error))
+      );
+      return fallbackKey;
     }
   }
 

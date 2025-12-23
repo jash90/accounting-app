@@ -16,6 +16,9 @@ export * from './lib/constants';
 // Types
 export * from './lib/types';
 
+// Decorators
+export * from './lib/decorators/sanitize.decorator';
+
 // Entities
 export * from './lib/entities/user.entity';
 export * from './lib/entities/company.entity';
@@ -42,5 +45,7 @@ export { AIProvider } from './lib/entities/ai-configuration.entity';
 export { AIMessageRole } from './lib/entities/ai-message.entity';
 export * from './lib/dto/responses';
 export * from './lib/dto/requests';
+export * from './lib/dto/pagination.dto';
 export * from './lib/services/encryption.service';
+export * from './lib/services/tenant.service';
 export * from './lib/common.module';

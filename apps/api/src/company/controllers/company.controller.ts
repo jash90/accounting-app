@@ -85,10 +85,15 @@ export class CompanyController {
     if (!user.companyId) {
       throw new Error('User is not associated with a company');
     }
+    // Build creator name safely handling null/undefined values
+    const creatorName = [user.firstName, user.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim() || 'Unknown User';
     return this.companyService.createEmployee(
       user.companyId,
       createEmployeeDto,
-      `${user.firstName} ${user.lastName}`,
+      creatorName,
     );
   }
 
