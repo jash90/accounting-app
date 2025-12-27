@@ -27,18 +27,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ClientResponseDto, CreateClientDto, UpdateClientDto, ClientFiltersDto, SetCustomFieldValuesDto } from '@/types/dtos';
+import { ClientResponseDto, CreateClientDto, UpdateClientDto, ClientFiltersDto } from '@/types/dtos';
 import { ClientFormDialog } from '@/components/forms/client-form-dialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { ClientFilters } from '@/components/clients/client-filters';
 import { IconBadgeList } from '@/components/clients/icon-badge';
 import { useAuthContext } from '@/contexts/auth-context';
 import {
-  EmploymentType,
   EmploymentTypeLabels,
-  VatStatus,
   VatStatusLabels,
-  TaxScheme,
   TaxSchemeLabels,
   UserRole,
 } from '@/types/enums';

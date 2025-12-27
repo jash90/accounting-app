@@ -9,7 +9,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ClientsDashboardPage() {
   const { user } = useAuthContext();
-  const { data: clients = [], isPending } = useClients();
+  const { data, isPending } = useClients();
+
+  // Extract clients array from paginated response
+  const clients = data?.data ?? [];
 
   // Calculate statistics
   const totalClients = clients.length;

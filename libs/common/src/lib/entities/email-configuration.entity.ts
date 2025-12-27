@@ -8,6 +8,7 @@ import {
   JoinColumn,
   Check,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { User } from './user.entity';
 import { Company } from './company.entity';
 
@@ -61,6 +62,7 @@ export class EmailConfiguration {
    * Use EncryptionService to encrypt before saving and decrypt after reading
    */
   @Column()
+  @Exclude()
   smtpPassword!: string;
 
   // IMAP Configuration
@@ -81,6 +83,7 @@ export class EmailConfiguration {
    * Use EncryptionService to encrypt before saving and decrypt after reading
    */
   @Column()
+  @Exclude()
   imapPassword!: string;
 
   // Optional metadata

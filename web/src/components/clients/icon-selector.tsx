@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils/cn';
 import { IconType } from '@/types/enums';
 import { IconTypeLabels } from '@/lib/constants/polish-labels';
@@ -60,20 +60,21 @@ const MAX_FILE_SIZE = 1024 * 1024; // 1MB
 export function IconSelector({ value, onChange, className }: IconSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [customEmoji, setCustomEmoji] = useState('');
-  const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
 
-  // Manage blob URL lifecycle to prevent memory leaks
-  useEffect(() => {
-    if (value.file) {
-      const url = URL.createObjectURL(value.file);
-      setFilePreviewUrl(url);
-      return () => {
-        URL.revokeObjectURL(url);
-      };
-    } else {
-      setFilePreviewUrl(null);
-    }
+  // Compute blob URL synchronously during render to avoid setState in effect
+  const filePreviewUrl = useMemo(() => {
+    if (!value.file) return null;
+    return URL.createObjectURL(value.file);
   }, [value.file]);
+
+  // Cleanup blob URLs when they change or on unmount
+  useEffect(() => {
+    return () => {
+      if (filePreviewUrl) {
+        URL.revokeObjectURL(filePreviewUrl);
+      }
+    };
+  }, [filePreviewUrl]);
 
   const handleIconTypeChange = useCallback(
     (type: string) => {

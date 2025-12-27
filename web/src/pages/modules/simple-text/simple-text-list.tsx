@@ -12,7 +12,6 @@ import { SimpleTextResponseDto, CreateSimpleTextDto, UpdateSimpleTextDto } from 
 import { SimpleTextFormDialog } from '@/components/forms/simple-text-form-dialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { useAuthContext } from '@/contexts/auth-context';
-import { ModulePermission } from '@/types/enums';
 
 const baseColumns: ColumnDef<SimpleTextResponseDto>[] = [
   {

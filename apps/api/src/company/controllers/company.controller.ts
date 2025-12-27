@@ -31,7 +31,7 @@ import { CreateEmployeeDto } from '../dto/create-employee.dto';
 import { UpdateEmployeeDto } from '../dto/update-employee.dto';
 import { UpdateCompanySettingsDto } from '../dto/update-company-settings.dto';
 import { CurrentUser, Roles, RolesGuard } from '@accounting/auth';
-import { User, UserRole, UserResponseDto, UserModulePermissionResponseDto } from '@accounting/common';
+import { User, UserRole, UserResponseDto } from '@accounting/common';
 import { OwnerOrAdminGuard } from '@accounting/rbac';
 
 @ApiTags('Company')
