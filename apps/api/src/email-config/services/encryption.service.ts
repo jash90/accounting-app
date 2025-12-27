@@ -169,7 +169,7 @@ export class EncryptionService implements OnModuleInit {
       ]);
 
       return decrypted.toString('utf8');
-    } catch (error) {
+    } catch (_error) {
       // Don't expose internal error details
       throw new Error('Decryption failed: data may be corrupted or tampered');
     }

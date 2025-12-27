@@ -2,7 +2,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useClient, useUpdateClient, useSetClientCustomFields } from '@/lib/hooks/use-clients';
 import { useFieldDefinitions, useClientIcons } from '@/lib/hooks/use-clients';
 import { useAuthContext } from '@/contexts/auth-context';
-import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,24 +13,17 @@ import {
   User,
   Building2,
   Calendar,
-  Mail,
-  Phone,
   FileText,
   Tags,
-  History,
 } from 'lucide-react';
 import { useState } from 'react';
 import { ClientFormDialog } from '@/components/forms/client-form-dialog';
 import { ClientChangelog } from '@/components/clients/client-changelog';
 import { UpdateClientDto } from '@/types/dtos';
 import {
-  EmploymentType,
   EmploymentTypeLabels,
-  VatStatus,
   VatStatusLabels,
-  TaxScheme,
   TaxSchemeLabels,
-  ZusStatus,
   ZusStatusLabels,
   UserRole,
 } from '@/types/enums';

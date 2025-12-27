@@ -87,13 +87,12 @@ export class AuthService {
       .where('LOWER(user.email) = LOWER(:email)', { email })
       .getOne();
 
-    if (!user) {
-      return null;
-    }
+    // Constant-time: always perform bcrypt comparison to prevent timing attacks
+    // Uses dummy hash when user doesn't exist to maintain consistent response time
+    const hashToCompare = user?.password || '$2b$10$dummyhashtopreventtimingattacks';
+    const isPasswordValid = await bcrypt.compare(password, hashToCompare);
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
+    if (!user || !isPasswordValid) {
       return null;
     }
 

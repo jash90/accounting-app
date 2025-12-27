@@ -170,7 +170,7 @@ export function ConditionBuilder({
         <div className="text-center py-8 border-2 border-dashed rounded-lg text-muted-foreground">
           <p>Brak warunków. Ikona będzie przypisywana tylko ręcznie.</p>
           <p className="text-sm mt-1">
-            Kliknij "Warunek" lub "Grupa", aby dodać automatyczne przypisywanie.
+            Kliknij &quot;Warunek&quot; lub &quot;Grupa&quot;, aby dodać automatyczne przypisywanie.
           </p>
         </div>
       )}

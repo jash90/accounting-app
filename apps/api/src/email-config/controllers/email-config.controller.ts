@@ -29,8 +29,7 @@ import {
 } from '@nestjs/swagger';
 import { EmailConfigService } from '../services/email-config.service';
 import { SmtpImapService } from '../services/smtp-imap.service';
-import { CreateEmailConfigDto } from '../dto/create-email-config.dto';
-import { UpdateEmailConfigDto } from '../dto/update-email-config.dto';
+import { CreateEmailConfigDto, UpdateEmailConfigDto } from '@accounting/email';
 import { SendEmailDto } from '../dto/send-email.dto';
 import { TestSmtpDto, TestImapDto, TestConnectionResultDto } from '../dto/test-connection.dto';
 import { CurrentUser, Roles, RolesGuard } from '@accounting/auth';
@@ -357,7 +356,7 @@ export class EmailConfigController {
   @ApiNotFoundResponse({ description: 'System Admin email configuration not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - ADMIN role required' })
-  getSystemAdminEmailConfig(@CurrentUser() user: User) {
+  getSystemAdminEmailConfig(@CurrentUser() _user: User) {
     return this.emailConfigService.getSystemAdminConfig();
   }
 
@@ -408,7 +407,7 @@ export class EmailConfigController {
   @ApiNotFoundResponse({ description: 'System Admin email configuration not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - ADMIN role required' })
-  async deleteSystemAdminEmailConfig(@CurrentUser() user: User) {
+  async deleteSystemAdminEmailConfig(@CurrentUser() _user: User) {
     await this.emailConfigService.deleteSystemAdminConfig();
   }
 

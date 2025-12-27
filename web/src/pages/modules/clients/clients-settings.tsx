@@ -36,7 +36,6 @@ import {
   Settings,
   Tags,
   Image,
-  Bell,
 } from 'lucide-react';
 import { FieldDefinitionFormDialog } from '@/components/forms/field-definition-form-dialog';
 import { ClientIconFormDialog } from '@/components/forms/client-icon-form-dialog';
@@ -47,7 +46,6 @@ import {
   ClientIconResponseDto,
   CreateClientFieldDefinitionDto,
   UpdateClientFieldDefinitionDto,
-  CreateClientIconDto,
   UpdateClientIconDto,
   NotificationSettingsFormData,
 } from '@/types/dtos';

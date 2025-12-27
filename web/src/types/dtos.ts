@@ -5,20 +5,13 @@ import {
   TaxScheme,
   ZusStatus,
   CustomFieldType,
-  ChangeAction,
   AutoAssignCondition,
   AmlGroup,
 } from './enums';
 import {
-  User,
-  Company,
-  Module,
-  SimpleText,
   Client,
   ClientFieldDefinition,
-  ClientCustomFieldValue,
   ClientIcon,
-  ClientIconAssignment,
   NotificationSettings,
   ChangeLog,
 } from './entities';

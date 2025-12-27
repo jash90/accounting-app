@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -34,13 +34,9 @@ import {
 } from '@/lib/validation/schemas';
 import { ClientResponseDto, SetCustomFieldValuesDto } from '@/types/dtos';
 import {
-  EmploymentType,
   EmploymentTypeLabels,
-  VatStatus,
   VatStatusLabels,
-  TaxScheme,
   TaxSchemeLabels,
-  ZusStatus,
   ZusStatusLabels,
   CustomFieldType,
 } from '@/types/enums';
@@ -119,36 +115,34 @@ export function ClientFormDialog({
     defaultValues: getDefaultValues(client),
   });
 
-  // Sync form and custom fields when dialog opens or client changes
-  useEffect(() => {
-    if (open) {
-      // Reset form with new values
-      form.reset(getDefaultValues(client));
+  // Helper to compute initial custom field values from client data
+  const getInitialCustomFieldValues = useCallback(
+    (clientData?: ClientResponseDto): Record<string, string> => {
+      if (!clientData?.customFieldValues) return {};
+      const values: Record<string, string> = {};
+      clientData.customFieldValues.forEach((cfv) => {
+        values[cfv.fieldDefinitionId] = cfv.value || '';
+      });
+      return values;
+    },
+    []
+  );
 
-      // Reset custom field values
-      if (client?.customFieldValues) {
-        const values: Record<string, string> = {};
-        client.customFieldValues.forEach((cfv) => {
-          values[cfv.fieldDefinitionId] = cfv.value || '';
-        });
-        setCustomFieldValues(values);
-      } else {
-        setCustomFieldValues({});
-      }
-    }
-  }, [open, client, form, getDefaultValues]);
-
-  // Reset form when dialog closes
+  // Handle dialog open/close - initialize or reset state based on transition
   const handleOpenChange = useCallback(
     (newOpen: boolean) => {
-      if (!newOpen) {
+      if (newOpen) {
+        // Initialize form and custom fields when dialog opens
+        form.reset(getDefaultValues(client));
+        setCustomFieldValues(getInitialCustomFieldValues(client));
+      } else {
         // Reset on close to prevent stale data
         form.reset(getDefaultValues(undefined));
         setCustomFieldValues({});
       }
       onOpenChange(newOpen);
     },
-    [form, getDefaultValues, onOpenChange]
+    [client, form, getDefaultValues, getInitialCustomFieldValues, onOpenChange]
   );
 
   const handleCustomFieldChange = (fieldId: string, value: string) => {

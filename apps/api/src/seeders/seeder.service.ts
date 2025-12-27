@@ -49,7 +49,7 @@ export class SeederService {
 
     // Seed data in correct order
     const admin = await this.seedAdmin();
-    const systemCompany = await this.seedSystemAdminCompany(admin);
+    const _systemCompany = await this.seedSystemAdminCompany(admin);
     const { companyA, ownerA, employeesA } = await this.seedCompanyA();
     const { companyB, ownerB, employeesB } = await this.seedCompanyB();
     const modules = await this.seedModules();
@@ -463,7 +463,7 @@ export class SeederService {
     companyB: Company,
     ownerA: User,
     ownerB: User,
-    employeesA: User[],
+    _employeesA: User[],
   ) {
     const textsA = [
       'First text for Company A',

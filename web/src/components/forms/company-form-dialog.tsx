@@ -105,7 +105,7 @@ export function CompanyFormDialog({ open, onOpenChange, company, onSubmit }: Com
                     </Select>
                     {!hasAvailableOwners && !ownersLoading && (
                       <p className="text-sm text-muted-foreground">
-                        First create a user with "Company Owner" role, then create a company for them.
+                        First create a user with &quot;Company Owner&quot; role, then create a company for them.
                       </p>
                     )}
                     <FormMessage />

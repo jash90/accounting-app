@@ -289,8 +289,8 @@ export function EmailConfigFormDialog({
                 <Alert className="border-amber-200 bg-amber-50">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-amber-800 text-sm">
-                    Some email providers require enabling SMTP access in your email account's user panel.
-                    If you encounter authentication errors, check the security settings in your email provider's panel.
+                    Some email providers require enabling SMTP access in your email account&apos;s user panel.
+                    If you encounter authentication errors, check the security settings in your email provider&apos;s panel.
                   </AlertDescription>
                 </Alert>
               )}
@@ -420,8 +420,8 @@ export function EmailConfigFormDialog({
                 <Alert className="border-amber-200 bg-amber-50">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-amber-800 text-sm">
-                    Some email providers require enabling IMAP access in your email account's user panel.
-                    If you encounter authentication errors, check the security settings in your email provider's panel.
+                    Some email providers require enabling IMAP access in your email account&apos;s user panel.
+                    If you encounter authentication errors, check the security settings in your email provider&apos;s panel.
                   </AlertDescription>
                 </Alert>
               )}

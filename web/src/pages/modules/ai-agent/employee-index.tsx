@@ -34,7 +34,7 @@ export default function EmployeeAIAgentDashboard() {
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
               Ask questions, get help with tasks, and leverage AI to boost your productivity.
-              The AI has access to your company's knowledge base for accurate, context-aware responses.
+              The AI has access to your company&apos;s knowledge base for accurate, context-aware responses.
             </p>
             <Link to="/modules/ai-agent/chat">
               <Button size="lg" variant="teal" className="w-full">

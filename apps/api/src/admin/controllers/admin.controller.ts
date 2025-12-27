@@ -33,11 +33,10 @@ import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { CreateCompanyDto } from '../dto/create-company.dto';
 import { UpdateCompanyDto } from '../dto/update-company.dto';
-import { Roles, CurrentUser } from '@accounting/auth';
+import { Roles } from '@accounting/auth';
 import { RolesGuard } from '@accounting/auth';
 import {
   UserRole,
-  User,
   UserResponseDto,
   CompanyResponseDto,
 } from '@accounting/common';

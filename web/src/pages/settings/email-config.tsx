@@ -121,7 +121,7 @@ export default function UserEmailConfigPage() {
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold text-apptax-navy">No Email Configuration</h3>
                 <p className="text-muted-foreground max-w-md">
-                  You haven't configured your email settings yet. Create a configuration to start sending and
+                  You haven&apos;t configured your email settings yet. Create a configuration to start sending and
                   receiving emails through the platform.
                 </p>
               </div>
