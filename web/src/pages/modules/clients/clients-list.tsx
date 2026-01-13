@@ -35,6 +35,7 @@ import { IconBadgeList } from '@/components/clients/icon-badge';
 import { useAuthContext } from '@/contexts/auth-context';
 import {
   EmploymentTypeLabels,
+  VatStatus,
   VatStatusLabels,
   TaxSchemeLabels,
   UserRole,
