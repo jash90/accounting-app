@@ -13,7 +13,7 @@ export class UpdateCompanyDto {
   isActive?: boolean;
 
   @ApiPropertyOptional({
-    example: 'notifications@company.com',
+    example: 'notifications@example.com',
     description: 'Email address used as sender for notification emails',
   })
   @IsOptional()

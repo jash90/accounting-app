@@ -150,12 +150,12 @@ npm run seed
 
 The seed script creates:
 - **Admin**: admin@system.com / Admin123!
-- **Company A Owner**: owner.a@company.com / Owner123!
+- **Company A Owner**: bartlomiej.zimny@onet.pl / Owner123!
 - **Company A Employees**:
-  - employee1.a@company.com / Employee123! (read + write permissions)
-  - employee2.a@company.com / Employee123! (read-only)
-- **Company B Owner**: owner.b@company.com / Owner123!
-- **Company B Employee**: employee1.b@company.com / Employee123! (full permissions)
+  - bartlomiej.zimny@interia.pl / Employee123! (read + write permissions)
+  - bartlomiej.zimny@interia.pl / Employee123! (read-only)
+- **Company B Owner**: bartlomiej.zimny@onet.pl / Owner123!
+- **Company B Employee**: bartlomiej.zimny@interia.pl / Employee123! (full permissions)
 
 ## 🧪 Running Tests
 

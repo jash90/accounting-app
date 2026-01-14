@@ -114,7 +114,7 @@ npm run dev
   - Temperature and Max Tokens
 - `/admin/modules/ai-agent/context` - Upload global RAG files (PDF/TXT/MD)
 
-### COMPANY OWNER (owner.a@company.com / Owner123!)
+### COMPANY OWNER (bartlomiej.zimny@onet.pl / Owner123!)
 **Available features:**
 - `/company/modules/ai-agent/chat` - Chat with AI
 - `/company/modules/ai-agent/token-usage` - Token statistics:
@@ -123,7 +123,7 @@ npm run dev
   - Number of conversations and messages
 - `/company/modules/ai-agent/context` - Manage RAG files for the company
 
-### EMPLOYEE (employee1.a@company.com / Employee123!)
+### EMPLOYEE (bartlomiej.zimny@interia.pl / Employee123!)
 **Available features:**
 - `/modules/ai-agent/chat` - Chat with AI (read and send messages only)
 - No access to statistics or file management

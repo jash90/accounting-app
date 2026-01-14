@@ -17,7 +17,7 @@ test.describe('RBAC Scenarios', () => {
 
   test('COMPANY_OWNER can manage employees', async ({ page }) => {
     await page.goto('http://localhost:4200/login');
-    await page.fill('[name="email"]', 'owner.a@company.com');
+    await page.fill('[name="email"]', 'bartlomiej.zimny@onet.pl');
     await page.fill('[name="password"]', 'Owner123!');
     await page.click('button[type="submit"]');
     
@@ -28,7 +28,7 @@ test.describe('RBAC Scenarios', () => {
 
   test('EMPLOYEE with read permission can view texts', async ({ page }) => {
     await page.goto('http://localhost:4200/login');
-    await page.fill('[name="email"]', 'employee1.a@company.com');
+    await page.fill('[name="email"]', 'bartlomiej.zimny@interia.pl');
     await page.fill('[name="password"]', 'Employee123!');
     await page.click('button[type="submit"]');
     
@@ -38,7 +38,7 @@ test.describe('RBAC Scenarios', () => {
 
   test('EMPLOYEE without write permission cannot create text', async ({ page }) => {
     await page.goto('http://localhost:4200/login');
-    await page.fill('[name="email"]', 'employee2.a@company.com'); // Only read permission
+    await page.fill('[name="email"]', 'bartlomiej.zimny@interia.pl'); // Only read permission
     await page.fill('[name="password"]', 'Employee123!');
     await page.click('button[type="submit"]');
     

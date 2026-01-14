@@ -24,7 +24,7 @@ describe('ConditionEvaluatorService', () => {
       id: 'test-client-id',
       name: 'Test Company Ltd',
       nip: '1234567890',
-      email: 'test@company.com',
+      email: 'bartlomiej.zimny@onet.pl',
       phone: '+48123456789',
       companySpecificity: 'Software Development',
       additionalInfo: 'Premium client with special requirements',

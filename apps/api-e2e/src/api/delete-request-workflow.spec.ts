@@ -57,7 +57,7 @@ describe('Delete Request Workflow E2E Tests', () => {
       const response = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          email: 'owner.a@company.com',
+          email: 'bartlomiej.zimny@onet.pl',
           password: 'Owner123!',
         })
         .expect(200);
@@ -70,7 +70,7 @@ describe('Delete Request Workflow E2E Tests', () => {
       const response = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          email: 'employee1.a@company.com',
+          email: 'bartlomiej.zimny@interia.pl',
           password: 'Employee123!',
         })
         .expect(200);

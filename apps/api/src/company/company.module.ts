@@ -4,11 +4,13 @@ import { User, Company } from '@accounting/common';
 import { CompanyController } from './controllers/company.controller';
 import { CompanyService } from './services/company.service';
 import { RBACModule } from '@accounting/rbac';
+import { EmailModule } from '@accounting/email';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Company]),
     RBACModule,
+    EmailModule,
   ],
   controllers: [CompanyController],
   providers: [CompanyService],

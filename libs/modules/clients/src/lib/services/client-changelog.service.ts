@@ -23,6 +23,7 @@ import {
   EmailConfigurationService,
   EmailSenderService,
   SmtpConfig,
+  ImapConfig,
 } from '@accounting/email';
 
 @Injectable()
@@ -44,13 +45,10 @@ export class ClientChangelogService {
     private readonly emailSenderService: EmailSenderService,
   ) {}
 
-  // Use __dirname for reliable path resolution in containers and monorepos
+  // Use process.cwd() for reliable path resolution in webpack bundles
   private readonly templatesDir = path.resolve(
-    __dirname,
-    '..',
-    '..',
-    '..',
-    '..',
+    process.cwd(),
+    'libs',
     'infrastructure',
     'email',
     'src',
@@ -106,17 +104,36 @@ export class ClientChangelogService {
   }
 
   async notifyClientCreated(client: Client, performedBy: User): Promise<void> {
+    // Debug logging for notification trigger
+    if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+      this.logger.debug('Client created notification triggered', {
+        clientId: client.id,
+        clientEmail: client.email ? `***@${client.email.split('@')[1]}` : null,
+        receiveEmailCopy: client.receiveEmailCopy,
+        companyId: client.companyId,
+        performedBy: performedBy.id,
+      });
+    }
+
     const company = await this.companyRepository.findOne({
       where: { id: client.companyId },
     });
 
-    // Get company's SMTP configuration
-    const smtpConfig =
-      await this.emailConfigService.getDecryptedSmtpConfigByCompanyId(
+    // Debug logging for company retrieval
+    if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+      this.logger.debug('Company retrieved for email notification', {
+        companyId: client.companyId,
+        companyName: company?.name,
+      });
+    }
+
+    // Get company's email configuration (SMTP + IMAP for save to Sent)
+    const emailConfig =
+      await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
         client.companyId,
       );
 
-    if (!smtpConfig) {
+    if (!emailConfig) {
       this.logger.warn(
         `No active email configuration for company. Skipping create notifications.`,
         {
@@ -128,9 +145,19 @@ export class ClientChangelogService {
       return;
     }
 
+    // Debug logging for email config retrieval
+    if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+      this.logger.debug('Email configuration retrieved', {
+        companyId: client.companyId,
+        smtpHost: emailConfig.smtp.host,
+        smtpUser: emailConfig.smtp.auth.user,
+        imapHost: emailConfig.imap.host,
+      });
+    }
+
     // 1. Send welcome email to client (if receiveEmailCopy is true and has email)
     if (client.email && client.receiveEmailCopy) {
-      await this.sendWelcomeEmailToClient(client, company, smtpConfig);
+      await this.sendWelcomeEmailToClient(client, company, emailConfig.smtp, emailConfig.imap);
     }
 
     // 2. Send notifications to company users using company SMTP
@@ -138,7 +165,8 @@ export class ClientChangelogService {
       client,
       company,
       performedBy,
-      smtpConfig,
+      emailConfig.smtp,
+      emailConfig.imap,
     );
   }
 
@@ -406,23 +434,25 @@ export class ClientChangelogService {
 
   /**
    * Send welcome email to client with all their data
+   * Saves copy to IMAP Sent folder
    */
   private async sendWelcomeEmailToClient(
     client: Client,
     company: Company | null,
     smtpConfig: SmtpConfig,
+    imapConfig: ImapConfig,
   ): Promise<void> {
     try {
       const html = await this.compileClientWelcomeTemplate(client, company);
 
-      await this.emailSenderService.sendEmail(smtpConfig, {
+      await this.emailSenderService.sendEmailAndSave(smtpConfig, imapConfig, {
         to: client.email!,
         subject: `Potwierdzenie rejestracji - ${company?.name || 'Biuro rachunkowe'}`,
         html,
       });
 
       this.logger.log(
-        `Welcome email sent to client`,
+        `Welcome email sent to client and saved to Sent folder`,
         {
           companyId: client.companyId,
           clientId: client.id,
@@ -447,18 +477,30 @@ export class ClientChangelogService {
 
   /**
    * Send notifications to company users using company SMTP
+   * Saves all emails to IMAP Sent folder
    */
   private async notifyCompanyUsersWithCompanySmtp(
     client: Client,
     company: Company | null,
     performedBy: User,
     smtpConfig: SmtpConfig,
+    imapConfig: ImapConfig,
   ): Promise<void> {
     const recipients = await this.getNotificationRecipients(
       client.companyId,
       'receiveOnCreate',
       performedBy.id,
     );
+
+    // Debug logging for recipient resolution
+    if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+      this.logger.debug('Notification recipients resolved', {
+        clientId: client.id,
+        recipientCount: recipients.length,
+        excludedUser: performedBy.id,
+        moduleSlug: 'clients',
+      });
+    }
 
     if (recipients.length === 0) {
       return;
@@ -479,9 +521,9 @@ export class ClientChangelogService {
         html,
       }));
 
-      await this.emailSenderService.sendBatchEmails(smtpConfig, messages);
+      await this.emailSenderService.sendBatchEmailsAndSave(smtpConfig, imapConfig, messages);
       this.logger.log(
-        `Create notifications sent to users for new client`,
+        `Create notifications sent to users for new client and saved to Sent folder`,
         {
           companyId: client.companyId,
           clientId: client.id,
@@ -549,10 +591,29 @@ export class ClientChangelogService {
   ): Promise<string> {
     const templatePath = path.join(this.templatesDir, `${templateName}.hbs`);
 
+    // Debug logging for template compilation start
+    if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+      this.logger.debug('Template compilation starting', {
+        templateName,
+        templatePath,
+        contextKeys: Object.keys(context),
+      });
+    }
+
     try {
       const templateContent = await fs.readFile(templatePath, 'utf-8');
       const template = handlebars.compile(templateContent);
-      return template(context);
+      const html = template(context);
+
+      // Debug logging for successful compilation
+      if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+        this.logger.debug('Template compiled successfully', {
+          templateName,
+          htmlLength: html.length,
+        });
+      }
+
+      return html;
     } catch (error) {
       this.logger.error(
         `Failed to compile template`,

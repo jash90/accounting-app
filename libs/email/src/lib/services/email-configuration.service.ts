@@ -42,6 +42,7 @@ export class EmailConfigurationService {
   async createUserConfig(
     userId: string,
     dto: CreateEmailConfigDto,
+    skipVerification = false,
   ): Promise<EmailConfigResponseDto> {
     // Check if user already has a configuration
     const existing = await this.emailConfigRepo.findOne({
@@ -54,8 +55,12 @@ export class EmailConfigurationService {
       );
     }
 
-    // Verify connection before saving
-    await this.verifyConfiguration(dto);
+    // Verify connection before saving (unless skipped for dev/test)
+    if (!skipVerification) {
+      await this.verifyConfiguration(dto);
+    } else {
+      this.logger.warn(`Skipping SMTP verification for user ${userId} (dev/test mode)`);
+    }
 
     // Create configuration with encrypted passwords
     const config = this.emailConfigRepo.create({
@@ -87,6 +92,7 @@ export class EmailConfigurationService {
   async createCompanyConfig(
     companyId: string,
     dto: CreateEmailConfigDto,
+    skipVerification = false,
   ): Promise<EmailConfigResponseDto> {
     // Check if company already has a configuration
     const existing = await this.emailConfigRepo.findOne({
@@ -99,8 +105,12 @@ export class EmailConfigurationService {
       );
     }
 
-    // Verify connection before saving
-    await this.verifyConfiguration(dto);
+    // Verify connection before saving (unless skipped for dev/test)
+    if (!skipVerification) {
+      await this.verifyConfiguration(dto);
+    } else {
+      this.logger.warn(`Skipping SMTP verification for company ${companyId} (dev/test mode)`);
+    }
 
     // Create configuration with encrypted passwords
     const config = this.emailConfigRepo.create({
@@ -451,5 +461,63 @@ export class EmailConfigurationService {
         pass: this.encryptionService.decrypt(config.smtpPassword),
       },
     };
+  }
+
+  /**
+   * Get both decrypted SMTP and IMAP configurations for sending with save
+   *
+   * This is a convenience method for the sendEmailAndSave functionality,
+   * which needs both SMTP (for sending) and IMAP (for saving to Sent folder).
+   *
+   * @param configId Email configuration ID
+   * @returns Object with both smtp and imap configurations
+   */
+  async getDecryptedEmailConfig(configId: string): Promise<{
+    smtp: SmtpConfig;
+    imap: ImapConfig;
+  }> {
+    const smtpConfig = await this.getDecryptedSmtpConfig(configId);
+    const imapConfig = await this.getDecryptedImapConfig(configId);
+
+    return { smtp: smtpConfig, imap: imapConfig };
+  }
+
+  /**
+   * Get both SMTP and IMAP configs by companyId for sending with save
+   *
+   * @param companyId Company ID
+   * @returns Object with smtp and imap configs, or null if no config found
+   */
+  async getDecryptedEmailConfigByCompanyId(companyId: string): Promise<{
+    smtp: SmtpConfig;
+    imap: ImapConfig;
+  } | null> {
+    const config = await this.emailConfigRepo.findOne({
+      where: { companyId },
+    });
+
+    if (!config || !config.isActive) {
+      return null;
+    }
+
+    const smtp: SmtpConfig = {
+      host: config.smtpHost,
+      port: config.smtpPort,
+      secure: config.smtpSecure,
+      auth: {
+        user: config.smtpUser,
+        pass: this.encryptionService.decrypt(config.smtpPassword),
+      },
+    };
+
+    const imap: ImapConfig = {
+      host: config.imapHost,
+      port: config.imapPort,
+      tls: config.imapTls,
+      user: config.imapUser,
+      password: this.encryptionService.decrypt(config.imapPassword),
+    };
+
+    return { smtp, imap };
   }
 }
