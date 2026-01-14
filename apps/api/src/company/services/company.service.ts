@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole, Company } from '@accounting/common';
 import { EmailService } from '@accounting/infrastructure/email';
+import { EmailSenderService, EmailConfigurationService } from '@accounting/email';
 import { CreateEmployeeDto } from '../dto/create-employee.dto';
 import { UpdateEmployeeDto } from '../dto/update-employee.dto';
 import { UpdateCompanySettingsDto } from '../dto/update-company-settings.dto';
@@ -18,6 +19,8 @@ export class CompanyService {
     @InjectRepository(Company)
     private companyRepository: Repository<Company>,
     private emailService: EmailService,
+    private emailSenderService: EmailSenderService,
+    private emailConfigService: EmailConfigurationService,
   ) {}
 
   // Employee Management
@@ -87,29 +90,69 @@ export class CompanyService {
         return;
       }
 
-      // Send notification to company owner
-      const recipients = company.owner?.email ? [company.owner.email] : [];
+      // Get company email configuration (SMTP + IMAP for save to Sent)
+      const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(companyId);
 
-      if (recipients.length === 0) {
-        this.logger.warn(`No recipients found for user creation notification`);
+      if (!emailConfig) {
+        this.logger.warn(`No email configuration for company. Skipping employee creation notifications.`);
         return;
       }
 
-      await this.emailService.sendUserCreatedNotification(
-        recipients,
+      // 1. Send notification to company owner
+      if (company.owner?.email) {
+        const ownerNotificationHtml = `
+          <h1>👤 Nowy pracownik dodany</h1>
+          <p>W firmie <strong>${company.name}</strong> został dodany nowy pracownik:</p>
+          <ul>
+            <li><strong>Imię i nazwisko:</strong> ${newUser.firstName} ${newUser.lastName}</li>
+            <li><strong>Email:</strong> ${newUser.email}</li>
+            <li><strong>Rola:</strong> ${newUser.role}</li>
+            <li><strong>Dodany przez:</strong> ${creatorName || 'System'}</li>
+          </ul>
+          <p>Pracownik został poinformowany i może teraz zalogować się do systemu.</p>
+        `;
+
+        await this.emailSenderService.sendEmailAndSave(
+          emailConfig.smtp,
+          emailConfig.imap,
+          {
+            to: company.owner.email,
+            subject: `Nowy pracownik: ${newUser.firstName} ${newUser.lastName}`,
+            html: ownerNotificationHtml,
+          },
+        );
+
+        this.logger.log(`Owner notification sent and saved to Sent`);
+      }
+
+      // 2. Send welcome email to new employee
+      const employeeWelcomeHtml = `
+        <h1>Witaj ${newUser.firstName} ${newUser.lastName}! 👋</h1>
+        <p>Zostałeś/aś dodany/a do firmy <strong>${company.name}</strong>.</p>
+        <h2>Twoje dane logowania:</h2>
+        <ul>
+          <li><strong>Email:</strong> ${newUser.email}</li>
+          <li><strong>Hasło:</strong> (ustalone podczas rejestracji)</li>
+        </ul>
+        <p>Możesz zalogować się tutaj: <a href="http://localhost:4200/login">http://localhost:4200/login</a></p>
+        <p>Pozdrawiamy,<br><strong>${company.name}</strong></p>
+      `;
+
+      await this.emailSenderService.sendEmailAndSave(
+        emailConfig.smtp,
+        emailConfig.imap,
         {
-          name: `${newUser.firstName} ${newUser.lastName}`,
-          email: newUser.email,
-          role: newUser.role,
-          companyName: company.name,
-          createdByName: creatorName || 'System',
+          to: newUser.email,
+          subject: `Witaj w ${company.name}!`,
+          html: employeeWelcomeHtml,
         },
-        company.notificationFromEmail,
       );
 
-      this.logger.log(`User creation notification sent for user ${newUser.id}`);
+      this.logger.log(`Employee welcome email sent and saved to Sent for user ${newUser.id}`);
+      this.logger.log(`All user creation notifications sent successfully (owner + employee)`);
     } catch (error) {
-      this.logger.error(`Failed to send user creation notification`, error);
+      const err = error as Error;
+      this.logger.error(`Failed to send user creation notification: ${err.message}`, err.stack);
       // Don't throw - email failure should not block user creation
     }
   }

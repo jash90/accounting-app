@@ -321,4 +321,107 @@ export class EmailReaderService {
 
     return names;
   }
+
+  /**
+   * Find Sent mailbox name (handles different server conventions)
+   *
+   * Different email providers use different names for the Sent folder:
+   * - Gmail: '[Gmail]/Sent Mail'
+   * - Outlook: 'Sent Items'
+   * - Standard: 'Sent'
+   * - Polish servers: 'Wysłane' or 'Sent'
+   *
+   * @param imapConfig IMAP configuration
+   * @returns Name of the Sent mailbox
+   */
+  async findSentMailbox(imapConfig: ImapConfig): Promise<string> {
+    try {
+      const boxes = await this.listMailboxes(imapConfig);
+
+      // Common Sent folder names (case-insensitive check)
+      const sentNames = [
+        'Sent',
+        'Sent Items',
+        'Sent Mail',
+        '[Gmail]/Sent Mail',
+        'Wysłane',
+        'INBOX.Sent',
+        'INBOX/Sent',
+      ];
+
+      for (const sentName of sentNames) {
+        const found = boxes.find(box => box.toLowerCase() === sentName.toLowerCase());
+        if (found) {
+          this.logger.log(`Found Sent mailbox: ${found}`);
+          return found;
+        }
+      }
+
+      // Fallback to 'Sent' if not found
+      this.logger.warn(`Sent mailbox not found, using default: 'Sent'`);
+      return 'Sent';
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Error finding Sent mailbox: ${err.message}`);
+      return 'Sent'; // Fallback
+    }
+  }
+
+  /**
+   * Append email to mailbox (e.g., save sent email to Sent folder)
+   *
+   * This is used after sending an email via SMTP to save a copy
+   * in the IMAP Sent folder so it appears in the email client.
+   *
+   * @param imapConfig IMAP configuration
+   * @param mailboxName Name of the mailbox (e.g., 'Sent')
+   * @param rawMessage Raw MIME message buffer
+   * @param flags IMAP flags to set (default: ['\\Seen'])
+   *
+   * @example
+   * ```typescript
+   * // After sending email via SMTP:
+   * const sentFolder = await this.findSentMailbox(imapConfig);
+   * await this.appendToMailbox(imapConfig, sentFolder, rawMessageBuffer, ['\\Seen']);
+   * ```
+   */
+  async appendToMailbox(
+    imapConfig: ImapConfig,
+    mailboxName: string,
+    rawMessage: Buffer,
+    flags: string[] = ['\\Seen'],
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const imap = this.createImapConnection(imapConfig);
+
+      imap.once('ready', () => {
+        imap.openBox(mailboxName, false, (err: Error) => {
+          if (err) {
+            imap.end();
+            this.logger.error(`Failed to open mailbox ${mailboxName}: ${err.message}`);
+            return reject(new Error(`Failed to open mailbox: ${err.message}`));
+          }
+
+          imap.append(rawMessage, { mailbox: mailboxName, flags }, (err: Error) => {
+            imap.end();
+
+            if (err) {
+              this.logger.error(`Failed to append to ${mailboxName}: ${err.message}`);
+              reject(new Error(`Failed to save to ${mailboxName}: ${err.message}`));
+            } else {
+              this.logger.log(`Successfully appended email to ${mailboxName}`);
+              resolve();
+            }
+          });
+        });
+      });
+
+      imap.once('error', (err: Error) => {
+        this.logger.error(`IMAP connection error during append: ${err.message}`);
+        reject(new Error(`IMAP connection failed: ${err.message}`));
+      });
+
+      imap.connect();
+    });
+  }
 }

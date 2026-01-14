@@ -103,38 +103,15 @@ export const SEEDED_DATA = {
     companyA: {
       name: 'Company A',
       owner: {
-        email: 'owner.a@company.com',
+        email: 'bartlomiej.zimny@onet.pl',
         password: 'Owner123!',
       },
       employees: [
         {
-          email: 'employee1.a@company.com',
+          email: 'bartlomiej.zimny@interia.pl',
           password: 'Employee123!',
           permissions: {
             'simple-text': { read: true, write: true, delete: false },
-          },
-        },
-        {
-          email: 'employee2.a@company.com',
-          password: 'Employee123!',
-          permissions: {
-            'simple-text': { read: true, write: false, delete: false },
-          },
-        },
-      ],
-    },
-    companyB: {
-      name: 'Company B',
-      owner: {
-        email: 'owner.b@company.com',
-        password: 'Owner123!',
-      },
-      employees: [
-        {
-          email: 'employee1.b@company.com',
-          password: 'Employee123!',
-          permissions: {
-            'simple-text': { read: true, write: true, delete: true },
           },
         },
       ],

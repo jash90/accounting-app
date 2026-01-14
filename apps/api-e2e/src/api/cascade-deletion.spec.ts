@@ -71,7 +71,7 @@ describe('/api/admin/companies (cascade deletion)', () => {
       // Step 3: Grant module permissions to employee as company owner
       // First get company owner token
       const ownerLoginResponse = await axios.post(`${apiUrl}/api/auth/login`, {
-        email: 'owner.a@company.com',
+        email: 'bartlomiej.zimny@onet.pl',
         password: 'ownerpassword',
       });
       const ownerToken = ownerLoginResponse.data.access_token;

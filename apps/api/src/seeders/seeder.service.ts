@@ -18,6 +18,7 @@ import {
   ZusStatus,
   CustomFieldType,
 } from '@accounting/common';
+import { EmailConfigurationService } from '@accounting/email';
 
 @Injectable()
 export class SeederService {
@@ -39,6 +40,7 @@ export class SeederService {
     @InjectRepository(ClientFieldDefinition)
     private fieldDefinitionRepository: Repository<ClientFieldDefinition>,
     private dataSource: DataSource,
+    private emailConfigService: EmailConfigurationService,
   ) {}
 
   async seed() {
@@ -51,21 +53,18 @@ export class SeederService {
     const admin = await this.seedAdmin();
     const _systemCompany = await this.seedSystemAdminCompany(admin);
     const { companyA, ownerA, employeesA } = await this.seedCompanyA();
-    const { companyB, ownerB, employeesB } = await this.seedCompanyB();
+    await this.seedEmailConfigurations(companyA, ownerA, employeesA);
     const modules = await this.seedModules();
-    await this.seedModuleAccess(companyA, companyB, modules);
-    await this.seedEmployeePermissions(employeesA, employeesB, modules);
-    await this.seedSimpleTexts(companyA, companyB, ownerA, ownerB, employeesA);
-    await this.seedClients(companyA, companyB, ownerA, ownerB);
+    await this.seedModuleAccess(companyA, modules);
+    await this.seedEmployeePermissions(employeesA, modules);
+    await this.seedSimpleTexts(companyA, ownerA, employeesA);
+    await this.seedClients(companyA, ownerA);
 
     console.log('Database seeding completed!');
     console.log('\nTest Users:');
     console.log('Admin: admin@system.com / Admin123!');
-    console.log('Company A Owner: owner.a@company.com / Owner123!');
-    console.log('Company A Employee 1: employee1.a@company.com / Employee123!');
-    console.log('Company A Employee 2: employee2.a@company.com / Employee123!');
-    console.log('Company B Owner: owner.b@company.com / Owner123!');
-    console.log('Company B Employee 1: employee1.b@company.com / Employee123!');
+    console.log('Company A Owner: bartlomiej.zimny@onet.pl / Owner123!');
+    console.log('Company A Employee: bartlomiej.zimny@interia.pl / Employee123!');
   }
 
   private async clearDatabase() {
@@ -111,7 +110,7 @@ export class SeederService {
   private async seedCompanyA() {
     const hashedPassword = await bcrypt.hash('Owner123!', 10);
     const ownerA = this.userRepository.create({
-      email: 'owner.a@company.com'.toLowerCase(),
+      email: 'bartlomiej.zimny@onet.pl'.toLowerCase(),
       password: hashedPassword,
       firstName: 'Owner',
       lastName: 'A',
@@ -132,7 +131,7 @@ export class SeederService {
 
     const employee1Password = await bcrypt.hash('Employee123!', 10);
     const employee1 = this.userRepository.create({
-      email: 'employee1.a@company.com'.toLowerCase(),
+      email: 'bartlomiej.zimny@interia.pl'.toLowerCase(),
       password: employee1Password,
       firstName: 'Employee',
       lastName: '1A',
@@ -142,63 +141,10 @@ export class SeederService {
     });
     const savedEmployee1 = await this.userRepository.save(employee1);
 
-    const employee2Password = await bcrypt.hash('Employee123!', 10);
-    const employee2 = this.userRepository.create({
-      email: 'employee2.a@company.com'.toLowerCase(),
-      password: employee2Password,
-      firstName: 'Employee',
-      lastName: '2A',
-      role: UserRole.EMPLOYEE,
-      companyId: savedCompanyA.id,
-      isActive: true,
-    });
-    const savedEmployee2 = await this.userRepository.save(employee2);
-
     return {
       companyA: savedCompanyA,
       ownerA: savedOwnerA,
-      employeesA: [savedEmployee1, savedEmployee2],
-    };
-  }
-
-  private async seedCompanyB() {
-    const hashedPassword = await bcrypt.hash('Owner123!', 10);
-    const ownerB = this.userRepository.create({
-      email: 'owner.b@company.com'.toLowerCase(),
-      password: hashedPassword,
-      firstName: 'Owner',
-      lastName: 'B',
-      role: UserRole.COMPANY_OWNER,
-      isActive: true,
-    });
-    const savedOwnerB = await this.userRepository.save(ownerB);
-
-    const companyB = this.companyRepository.create({
-      name: 'Consulting B',
-      ownerId: savedOwnerB.id,
-      isActive: true,
-    });
-    const savedCompanyB = await this.companyRepository.save(companyB);
-
-    savedOwnerB.companyId = savedCompanyB.id;
-    await this.userRepository.save(savedOwnerB);
-
-    const employee1Password = await bcrypt.hash('Employee123!', 10);
-    const employee1 = this.userRepository.create({
-      email: 'employee1.b@company.com'.toLowerCase(),
-      password: employee1Password,
-      firstName: 'Employee',
-      lastName: '1B',
-      role: UserRole.EMPLOYEE,
-      companyId: savedCompanyB.id,
-      isActive: true,
-    });
-    const savedEmployee1 = await this.userRepository.save(employee1);
-
-    return {
-      companyB: savedCompanyB,
-      ownerB: savedOwnerB,
-      employeesB: [savedEmployee1],
+      employeesA: [savedEmployee1],
     };
   }
 
@@ -235,7 +181,6 @@ export class SeederService {
 
   private async seedModuleAccess(
     companyA: Company,
-    companyB: Company,
     modules: ModuleEntity[],
   ) {
     // Company A: simple-text, ai-agent, clients
@@ -272,197 +217,66 @@ export class SeederService {
         }),
       );
     }
-
-    // Company B: simple-text, ai-agent, clients
-    if (simpleTextModule) {
-      await this.companyModuleAccessRepository.save(
-        this.companyModuleAccessRepository.create({
-          companyId: companyB.id,
-          moduleId: simpleTextModule.id,
-          isEnabled: true,
-        }),
-      );
-    }
-
-    if (aiAgentModule) {
-      await this.companyModuleAccessRepository.save(
-        this.companyModuleAccessRepository.create({
-          companyId: companyB.id,
-          moduleId: aiAgentModule.id,
-          isEnabled: true,
-        }),
-      );
-    }
-
-    if (clientsModule) {
-      await this.companyModuleAccessRepository.save(
-        this.companyModuleAccessRepository.create({
-          companyId: companyB.id,
-          moduleId: clientsModule.id,
-          isEnabled: true,
-        }),
-      );
-    }
   }
 
   private async seedEmployeePermissions(
     employeesA: User[],
-    employeesB: User[],
     modules: ModuleEntity[],
   ) {
     const simpleTextModule = modules.find((m) => m.slug === 'simple-text');
     const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
     const clientsModule = modules.find((m) => m.slug === 'clients');
 
+    // Employee 1A: read, write for all modules
+    const employee = employeesA[0];
+    if (!employee) return;
+
     if (simpleTextModule) {
-      // Employee 1A: read, write
-      if (employeesA[0]) {
-        await this.userModulePermissionRepository.save(
-          this.userModulePermissionRepository.create({
-            userId: employeesA[0].id,
-            moduleId: simpleTextModule.id,
-            permissions: ['read', 'write'],
-            grantedById: employeesA[0].companyId
-              ? (await this.companyRepository.findOne({ where: { id: employeesA[0].companyId } }))
-                  ?.ownerId || ''
-              : '',
-          }),
-        );
-      }
-
-      // Employee 2A: read
-      if (employeesA[1]) {
-        await this.userModulePermissionRepository.save(
-          this.userModulePermissionRepository.create({
-            userId: employeesA[1].id,
-            moduleId: simpleTextModule.id,
-            permissions: ['read'],
-            grantedById: employeesA[1].companyId
-              ? (await this.companyRepository.findOne({ where: { id: employeesA[1].companyId } }))
-                  ?.ownerId || ''
-              : '',
-          }),
-        );
-      }
-
-      // Employee 1B: read, write, delete
-      if (employeesB[0]) {
-        await this.userModulePermissionRepository.save(
-          this.userModulePermissionRepository.create({
-            userId: employeesB[0].id,
-            moduleId: simpleTextModule.id,
-            permissions: ['read', 'write', 'delete'],
-            grantedById: employeesB[0].companyId
-              ? (await this.companyRepository.findOne({ where: { id: employeesB[0].companyId } }))
-                  ?.ownerId || ''
-              : '',
-          }),
-        );
-      }
+      await this.userModulePermissionRepository.save(
+        this.userModulePermissionRepository.create({
+          userId: employee.id,
+          moduleId: simpleTextModule.id,
+          permissions: ['read', 'write'],
+          grantedById: employee.companyId
+            ? (await this.companyRepository.findOne({ where: { id: employee.companyId } }))
+                ?.ownerId || ''
+            : '',
+        }),
+      );
     }
 
-    // AI Agent Module Permissions
     if (aiAgentModule) {
-      // Employee 1A: read, write (can chat)
-      if (employeesA[0]) {
-        await this.userModulePermissionRepository.save(
-          this.userModulePermissionRepository.create({
-            userId: employeesA[0].id,
-            moduleId: aiAgentModule.id,
-            permissions: ['read', 'write'],
-            grantedById: employeesA[0].companyId
-              ? (await this.companyRepository.findOne({ where: { id: employeesA[0].companyId } }))
-                  ?.ownerId || ''
-              : '',
-          }),
-        );
-      }
-
-      // Employee 2A: read, write (can chat)
-      if (employeesA[1]) {
-        await this.userModulePermissionRepository.save(
-          this.userModulePermissionRepository.create({
-            userId: employeesA[1].id,
-            moduleId: aiAgentModule.id,
-            permissions: ['read', 'write'],
-            grantedById: employeesA[1].companyId
-              ? (await this.companyRepository.findOne({ where: { id: employeesA[1].companyId } }))
-                  ?.ownerId || ''
-              : '',
-          }),
-        );
-      }
-
-      // Employee 1B: read, write, delete (full access)
-      if (employeesB[0]) {
-        await this.userModulePermissionRepository.save(
-          this.userModulePermissionRepository.create({
-            userId: employeesB[0].id,
-            moduleId: aiAgentModule.id,
-            permissions: ['read', 'write', 'delete'],
-            grantedById: employeesB[0].companyId
-              ? (await this.companyRepository.findOne({ where: { id: employeesB[0].companyId } }))
-                  ?.ownerId || ''
-              : '',
-          }),
-        );
-      }
+      await this.userModulePermissionRepository.save(
+        this.userModulePermissionRepository.create({
+          userId: employee.id,
+          moduleId: aiAgentModule.id,
+          permissions: ['read', 'write'],
+          grantedById: employee.companyId
+            ? (await this.companyRepository.findOne({ where: { id: employee.companyId } }))
+                ?.ownerId || ''
+            : '',
+        }),
+      );
     }
 
-    // Clients Module Permissions
     if (clientsModule) {
-      // Employee 1A: read, write (can manage clients)
-      if (employeesA[0]) {
-        await this.userModulePermissionRepository.save(
-          this.userModulePermissionRepository.create({
-            userId: employeesA[0].id,
-            moduleId: clientsModule.id,
-            permissions: ['read', 'write'],
-            grantedById: employeesA[0].companyId
-              ? (await this.companyRepository.findOne({ where: { id: employeesA[0].companyId } }))
-                  ?.ownerId || ''
-              : '',
-          }),
-        );
-      }
-
-      // Employee 2A: read only
-      if (employeesA[1]) {
-        await this.userModulePermissionRepository.save(
-          this.userModulePermissionRepository.create({
-            userId: employeesA[1].id,
-            moduleId: clientsModule.id,
-            permissions: ['read'],
-            grantedById: employeesA[1].companyId
-              ? (await this.companyRepository.findOne({ where: { id: employeesA[1].companyId } }))
-                  ?.ownerId || ''
-              : '',
-          }),
-        );
-      }
-
-      // Employee 1B: read, write, delete (full access)
-      if (employeesB[0]) {
-        await this.userModulePermissionRepository.save(
-          this.userModulePermissionRepository.create({
-            userId: employeesB[0].id,
-            moduleId: clientsModule.id,
-            permissions: ['read', 'write', 'delete'],
-            grantedById: employeesB[0].companyId
-              ? (await this.companyRepository.findOne({ where: { id: employeesB[0].companyId } }))
-                  ?.ownerId || ''
-              : '',
-          }),
-        );
-      }
+      await this.userModulePermissionRepository.save(
+        this.userModulePermissionRepository.create({
+          userId: employee.id,
+          moduleId: clientsModule.id,
+          permissions: ['read', 'write'],
+          grantedById: employee.companyId
+            ? (await this.companyRepository.findOne({ where: { id: employee.companyId } }))
+                ?.ownerId || ''
+            : '',
+        }),
+      );
     }
   }
 
   private async seedSimpleTexts(
     companyA: Company,
-    companyB: Company,
     ownerA: User,
-    ownerB: User,
     _employeesA: User[],
   ) {
     const textsA = [
@@ -473,8 +287,6 @@ export class SeederService {
       'Fifth text for Company A',
     ];
 
-    const textsB = ['First text for Company B', 'Second text for Company B', 'Third text for Company B'];
-
     for (const text of textsA) {
       await this.simpleTextRepository.save(
         this.simpleTextRepository.create({
@@ -484,23 +296,11 @@ export class SeederService {
         }),
       );
     }
-
-    for (const text of textsB) {
-      await this.simpleTextRepository.save(
-        this.simpleTextRepository.create({
-          content: text,
-          companyId: companyB.id,
-          createdById: ownerB.id,
-        }),
-      );
-    }
   }
 
   private async seedClients(
     companyA: Company,
-    companyB: Company,
     ownerA: User,
-    ownerB: User,
   ) {
     console.log('Seeding clients...');
 
@@ -603,45 +403,62 @@ export class SeederService {
       await this.clientRepository.save(this.clientRepository.create(client));
     }
 
-    // Create clients for Company B
-    const clientsB = [
-      {
-        name: 'Global Trade Ltd.',
-        nip: '1111111111',
-        email: 'info@globaltrade.com',
-        phone: '+48 111 111 111',
-        companyStartDate: new Date('2018-03-10'),
-        cooperationStartDate: new Date('2023-06-01'),
-        companySpecificity: 'Handel międzynarodowy',
-        employmentType: EmploymentType.DG_AKCJONARIUSZ,
-        vatStatus: VatStatus.VAT_MONTHLY,
-        taxScheme: TaxScheme.PIT_17,
-        zusStatus: ZusStatus.FULL,
-        companyId: companyB.id,
-        createdById: ownerB.id,
-      },
-      {
-        name: 'Usługi Budowlane Nowak',
-        nip: '2222222222',
-        email: 'nowak@budowlane.pl',
-        phone: '+48 222 222 222',
-        companyStartDate: new Date('2015-07-15'),
-        cooperationStartDate: new Date('2022-02-28'),
-        companySpecificity: 'Roboty budowlane i remontowe',
-        gtuCode: 'GTU_10',
-        employmentType: EmploymentType.DG_HALF_TIME_ABOVE_MIN,
-        vatStatus: VatStatus.NO_WATCH_LIMIT,
-        taxScheme: TaxScheme.LUMP_SUM,
-        zusStatus: ZusStatus.PREFERENTIAL,
-        companyId: companyB.id,
-        createdById: ownerB.id,
-      },
-    ];
-
-    for (const client of clientsB) {
-      await this.clientRepository.save(this.clientRepository.create(client));
-    }
-
     console.log('✅ Clients seeded successfully');
+  }
+
+  private async seedEmailConfigurations(
+    companyA: Company,
+    ownerA: User,
+    employeesA: User[],
+  ) {
+    console.log('Seeding email configurations...');
+
+    // Onet configuration for owner
+    const onetConfig = {
+      smtpHost: 'smtp.poczta.onet.pl',
+      smtpPort: 465,
+      smtpSecure: true,
+      smtpUser: 'bartlomiej.zimny@onet.pl',
+      smtpPassword: 'jN%450ve*E0^aU7!Pk%9',
+      imapHost: 'imap.poczta.onet.pl',
+      imapPort: 993,
+      imapTls: true,
+      imapUser: 'bartlomiej.zimny@onet.pl',
+      imapPassword: 'jN%450ve*E0^aU7!Pk%9',
+      displayName: 'Company Owner Email (Onet)',
+    };
+
+    // Interia configuration for employee
+    const interiaConfig = {
+      smtpHost: 'poczta.interia.pl',
+      smtpPort: 465,
+      smtpSecure: true,
+      smtpUser: 'bartlomiej.zimny@interia.pl',
+      smtpPassword: 'ZnJaTbDJbJA2hFQyHPG!',
+      imapHost: 'poczta.interia.pl',
+      imapPort: 993,
+      imapTls: true,
+      imapUser: 'bartlomiej.zimny@interia.pl',
+      imapPassword: 'ZnJaTbDJbJA2hFQyHPG!',
+      displayName: 'Employee Email (Interia)',
+    };
+
+    try {
+      // Create email configuration for owner (Onet) - skip verification for seeder
+      await this.emailConfigService.createUserConfig(ownerA.id, onetConfig, true);
+      console.log(`✅ Email config created for Company A Owner`);
+
+      // Create email configuration for employee (Interia) - skip verification for seeder
+      if (employeesA[0]) {
+        await this.emailConfigService.createUserConfig(employeesA[0].id, interiaConfig, true);
+        console.log(`✅ Email config created for Company A Employee`);
+      }
+
+      console.log('✅ Email configurations seeded successfully');
+      console.log('⚠️  SMTP verification skipped for dev/test - verify credentials before sending emails');
+    } catch (error) {
+      console.error('❌ Error seeding email configurations:', error.message);
+      // Continue seeding even if email config fails (email config is optional)
+    }
   }
 }

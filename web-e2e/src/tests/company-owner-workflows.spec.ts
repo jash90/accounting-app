@@ -29,7 +29,7 @@ test.describe('Company Owner - Employee Management', () => {
     await employeesPage.goto();
     await employeesPage.searchEmployee('employee1.a');
 
-    await employeesPage.expectEmployeeInList('employee1.a@company.com');
+    await employeesPage.expectEmployeeInList('bartlomiej.zimny@interia.pl');
   });
 
   test('should update employee details', async ({ authenticatedCompanyOwnerPage }) => {
@@ -81,8 +81,8 @@ test.describe('Company Owner - Employee Management', () => {
     const emails = await employeesPage.getAllEmployeeEmails();
 
     for (const email of emails) {
-      // All emails should be from Company A (@company.com or employee*.a@company.com)
-      const isCompanyA = email.includes('.a@') || email.includes('owner.a@');
+      // All emails should be from Company A (real emails: Onet for owners, Interia for employees)
+      const isCompanyA = email.includes('onet.pl') || email.includes('interia.pl');
       expect(isCompanyA || email.includes('Company A')).toBe(true);
     }
   });
@@ -91,7 +91,7 @@ test.describe('Company Owner - Employee Management', () => {
     const employeesPage = new EmployeesListPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.goToEmployeePermissions('employee1.a@company.com');
+    await employeesPage.goToEmployeePermissions('bartlomiej.zimny@interia.pl');
 
     await expect(authenticatedCompanyOwnerPage).toHaveURL(/permissions/);
   });
@@ -102,7 +102,7 @@ test.describe('Company Owner - Employee Management', () => {
     await employeesPage.goto();
 
     // Should not see Company B employees
-    const hasCompanyBEmployee = await employeesPage.hasEmployee('employee1.b@company.com');
+    const hasCompanyBEmployee = await employeesPage.hasEmployee('bartlomiej.zimny@interia.pl');
     expect(hasCompanyBEmployee).toBe(false);
   });
 });
@@ -113,7 +113,7 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee1.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
     await permissionsPage.expectToBeOnPermissionsPage();
   });
@@ -123,7 +123,7 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee2.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
     await permissionsPage.grantReadPermission('simple-text');
     await permissionsPage.savePermissions();
@@ -136,7 +136,7 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee2.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
     await permissionsPage.grantWritePermission('simple-text');
     await permissionsPage.savePermissions();
@@ -149,7 +149,7 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee2.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
     await permissionsPage.grantDeletePermission('simple-text');
     await permissionsPage.savePermissions();
@@ -162,7 +162,7 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee1.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
     // Revoke read permission
     await permissionsPage.revokeReadPermission('simple-text');
@@ -176,7 +176,7 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee1.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
     await permissionsPage.revokeWritePermission('simple-text');
     await permissionsPage.savePermissions();
@@ -189,7 +189,7 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee1.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
     await permissionsPage.revokeDeletePermission('simple-text');
     await permissionsPage.savePermissions();
@@ -202,7 +202,7 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee2.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
     await permissionsPage.grantAllPermissions('simple-text');
     await permissionsPage.savePermissions();
@@ -219,7 +219,7 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee2.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
     // Try to grant write without read (should enforce read)
     await permissionsPage.revokeReadPermission('simple-text');
@@ -237,7 +237,7 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee2.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
     await permissionsPage.grantReadPermission('simple-text');
     await permissionsPage.savePermissions();

@@ -243,6 +243,7 @@ export class ChangeLogService {
       action,
       changes,
       changedById: user.id,
+      companyId: user.companyId,
     });
 
     const saved = await this.changeLogRepository.save(log);

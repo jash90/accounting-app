@@ -2036,7 +2036,7 @@ Authorization: Bearer <owner_token>
 # Login as company owner
 POST /auth/login
 {
-  "email": "owner@company.com",
+  "email": "bartlomiej.zimny@onet.pl",
   "password": "password123"
 }
 # Save access_token
@@ -2078,7 +2078,7 @@ Authorization: Bearer <owner_token>
 # Login as employee with read permission
 POST /auth/login
 {
-  "email": "employee@company.com",
+  "email": "bartlomiej.zimny@interia.pl",
   "password": "password123"
 }
 

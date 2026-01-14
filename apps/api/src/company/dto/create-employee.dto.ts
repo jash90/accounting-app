@@ -2,7 +2,7 @@ import { IsEmail, IsString, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateEmployeeDto {
-  @ApiProperty({ example: 'employee@company.com', description: 'Employee email address' })
+  @ApiProperty({ example: 'employee@example.com', description: 'Employee email address' })
   @IsEmail()
   email: string;
 

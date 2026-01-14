@@ -11,8 +11,8 @@ import { ModulesDashboardPage } from '../pages/employee/ModulesDashboardPage';
  * - Sidebar toggle functionality
  *
  * Test Data (from seeder):
- * - employee1.a@company.com: Has access to "Simple Text" and "AI Agent"
- * - employee2.a@company.com: Different permissions (Simple Text and AI Agent)
+ * - bartlomiej.zimny@interia.pl: Has access to "Simple Text" and "AI Agent"
+ * - bartlomiej.zimny@interia.pl: Different permissions (Simple Text and AI Agent)
  */
 
 test.describe('Employee Sidebar - Visibility', () => {
@@ -141,7 +141,7 @@ test.describe('Employee Sidebar - Permissions', () => {
     const dashboard = new ModulesDashboardPage(authenticatedEmployeePage);
     await dashboard.goto();
 
-    // employee1.a@company.com has read+write permissions for Simple Text
+    // bartlomiej.zimny@interia.pl has read+write permissions for Simple Text
     await dashboard.nav.expectModuleInSidebar('Simple Text');
 
     const modules = await dashboard.nav.getSidebarModules();
