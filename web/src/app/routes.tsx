@@ -43,6 +43,12 @@ const ClientsListPage = lazy(() => import('@/pages/modules/clients/clients-list'
 const ClientDetailPage = lazy(() => import('@/pages/modules/clients/client-detail'));
 const ClientsSettingsPage = lazy(() => import('@/pages/modules/clients/clients-settings'));
 
+// Email Client Pages
+const EmailClientIndex = lazy(() => import('@/pages/modules/email-client/index'));
+const EmailInboxPage = lazy(() => import('@/pages/modules/email-client/inbox'));
+const EmailComposePage = lazy(() => import('@/pages/modules/email-client/compose'));
+const EmailDraftsPage = lazy(() => import('@/pages/modules/email-client/drafts'));
+
 function PageLoader() {
   return (
     <div className="flex h-screen items-center justify-center">
