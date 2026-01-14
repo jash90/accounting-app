@@ -448,6 +448,38 @@ export default function Routes() {
             </Suspense>
           }
         />
+        <Route
+          path="email-client"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailClientIndex />
+            </Suspense>
+          }
+        />
+        <Route
+          path="email-client/inbox"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailInboxPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="email-client/compose"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailComposePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="email-client/drafts"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailDraftsPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       {/* Settings Routes - Accessible to all authenticated users */}
