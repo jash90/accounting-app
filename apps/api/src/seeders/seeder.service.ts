@@ -168,6 +168,12 @@ export class SeederService {
         description: 'Client management with custom fields, icons, and change tracking',
         isActive: true,
       },
+      {
+        name: 'Email Client',
+        slug: 'email-client',
+        description: 'Full email client with inbox, compose, drafts, and AI assistant',
+        isActive: true,
+      },
     ];
 
     const savedModules = [];
@@ -183,10 +189,11 @@ export class SeederService {
     companyA: Company,
     modules: ModuleEntity[],
   ) {
-    // Company A: simple-text, ai-agent, clients
+    // Company A: simple-text, ai-agent, clients, email-client
     const simpleTextModule = modules.find((m) => m.slug === 'simple-text');
     const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
     const clientsModule = modules.find((m) => m.slug === 'clients');
+    const emailClientModule = modules.find((m) => m.slug === 'email-client');
 
     if (simpleTextModule) {
       await this.companyModuleAccessRepository.save(
@@ -217,6 +224,16 @@ export class SeederService {
         }),
       );
     }
+
+    if (emailClientModule) {
+      await this.companyModuleAccessRepository.save(
+        this.companyModuleAccessRepository.create({
+          companyId: companyA.id,
+          moduleId: emailClientModule.id,
+          isEnabled: true,
+        }),
+      );
+    }
   }
 
   private async seedEmployeePermissions(
@@ -226,6 +243,7 @@ export class SeederService {
     const simpleTextModule = modules.find((m) => m.slug === 'simple-text');
     const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
     const clientsModule = modules.find((m) => m.slug === 'clients');
+    const emailClientModule = modules.find((m) => m.slug === 'email-client');
 
     // Employee 1A: read, write for all modules
     const employee = employeesA[0];
@@ -264,6 +282,20 @@ export class SeederService {
         this.userModulePermissionRepository.create({
           userId: employee.id,
           moduleId: clientsModule.id,
+          permissions: ['read', 'write'],
+          grantedById: employee.companyId
+            ? (await this.companyRepository.findOne({ where: { id: employee.companyId } }))
+                ?.ownerId || ''
+            : '',
+        }),
+      );
+    }
+
+    if (emailClientModule) {
+      await this.userModulePermissionRepository.save(
+        this.userModulePermissionRepository.create({
+          userId: employee.id,
+          moduleId: emailClientModule.id,
           permissions: ['read', 'write'],
           grantedById: employee.companyId
             ? (await this.companyRepository.findOne({ where: { id: employee.companyId } }))

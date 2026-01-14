@@ -26,6 +26,7 @@ export * from './lib/entities/module.entity';
 export * from './lib/entities/company-module-access.entity';
 export * from './lib/entities/user-module-permission.entity';
 export * from './lib/entities/simple-text.entity';
+export { EmailDraft } from '../../modules/email-client/src/lib/entities/email-draft.entity';
 export * from './lib/entities/ai-configuration.entity';
 export * from './lib/entities/ai-conversation.entity';
 export * from './lib/entities/ai-message.entity';
