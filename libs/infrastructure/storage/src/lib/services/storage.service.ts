@@ -32,6 +32,11 @@ export class StorageService {
     return this.provider.exists(path);
   }
 
+  async downloadFile(path: string): Promise<Buffer> {
+    this.logger.log(`Downloading file: ${path}`);
+    return this.provider.download(path);
+  }
+
   // Convenience methods for specific directories
   async uploadIcon(file: Express.Multer.File, companyId: string): Promise<StorageResult> {
     return this.uploadFile(file, `icons/${companyId}`);

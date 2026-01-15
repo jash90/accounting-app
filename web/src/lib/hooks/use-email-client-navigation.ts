@@ -1,0 +1,44 @@
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useMemo } from 'react';
+
+/**
+ * Hook to get the base path for email client routes.
+ * Handles both /company/modules/email-client and /modules/email-client paths.
+ */
+export function useEmailClientBasePath() {
+  const location = useLocation();
+
+  return useMemo(() => {
+    // Extract base path: /company/modules/email-client or /modules/email-client
+    const match = location.pathname.match(/^(\/company)?\/modules\/email-client/);
+    return match ? match[0] : '/modules/email-client';
+  }, [location.pathname]);
+}
+
+/**
+ * Hook providing navigation functions and path builders for email client.
+ * Automatically handles different route prefixes (company vs employee).
+ */
+export function useEmailClientNavigation() {
+  const basePath = useEmailClientBasePath();
+  const navigate = useNavigate();
+
+  return useMemo(() => ({
+    // Navigation functions
+    toInbox: () => navigate(`${basePath}/inbox`),
+    toCompose: (state?: object) => navigate(`${basePath}/compose`, { state }),
+    toComposeWithQuery: (query: string, options?: { replace?: boolean }) =>
+      navigate(`${basePath}/compose?${query}`, options),
+    toDrafts: () => navigate(`${basePath}/drafts`),
+    toMessage: (uid: number) => navigate(`${basePath}/message/${uid}`),
+
+    // Path getters for Link components
+    getMessagePath: (uid: number) => `${basePath}/message/${uid}`,
+    getComposePath: (query?: string) => query ? `${basePath}/compose?${query}` : `${basePath}/compose`,
+    getInboxPath: () => `${basePath}/inbox`,
+    getDraftsPath: () => `${basePath}/drafts`,
+
+    // Base path for custom usage
+    basePath,
+  }), [basePath, navigate]);
+}

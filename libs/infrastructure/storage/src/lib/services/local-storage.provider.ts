@@ -158,4 +158,25 @@ export class LocalStorageProvider implements StorageProvider {
       return false;
     }
   }
+
+  async download(filePath: string): Promise<Buffer> {
+    // Sanitize the filePath to prevent directory traversal
+    const fullPath = this.sanitizePath(filePath);
+
+    try {
+      await fsPromises.access(fullPath);
+      const buffer = await fsPromises.readFile(fullPath);
+      this.logger.log(`File downloaded: ${filePath}`);
+      return buffer;
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        throw new BadRequestException(`File not found: ${filePath}`);
+      }
+      this.logger.error(`Failed to download file: ${filePath}`, error);
+      throw error;
+    }
+  }
 }

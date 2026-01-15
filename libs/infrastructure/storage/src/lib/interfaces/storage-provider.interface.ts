@@ -1,6 +1,7 @@
 export interface StorageProvider {
   upload(file: Express.Multer.File, path: string): Promise<StorageResult>;
   delete(path: string): Promise<boolean>;
+  download(path: string): Promise<Buffer>;
   getUrl(path: string): Promise<string>;
   getSignedUrl(path: string, expiresIn?: number): Promise<string>;
   exists(path: string): Promise<boolean>;

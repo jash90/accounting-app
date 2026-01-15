@@ -63,6 +63,8 @@ import { SystemCompanyService } from './services/system-company.service';
     AIConversationService,
     TokenUsageService,
     TokenLimitService,
+    OpenAIProviderService,
+    OpenRouterProviderService,
   ],
 })
 export class AIAgentModule {}

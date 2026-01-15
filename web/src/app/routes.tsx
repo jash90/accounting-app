@@ -48,6 +48,7 @@ const EmailClientIndex = lazy(() => import('@/pages/modules/email-client/index')
 const EmailInboxPage = lazy(() => import('@/pages/modules/email-client/inbox'));
 const EmailComposePage = lazy(() => import('@/pages/modules/email-client/compose'));
 const EmailDraftsPage = lazy(() => import('@/pages/modules/email-client/drafts'));
+const EmailMessagePage = lazy(() => import('@/pages/modules/email-client/message'));
 
 function PageLoader() {
   return (
@@ -382,6 +383,47 @@ export default function Routes() {
             </Suspense>
           }
         />
+        {/* Email Client Routes for Company Owner */}
+        <Route
+          path="modules/email-client"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailClientIndex />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/email-client/inbox"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailInboxPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/email-client/compose"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailComposePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/email-client/drafts"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailDraftsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/email-client/message/:uid"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailMessagePage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -477,6 +519,14 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <EmailDraftsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="email-client/message/:uid"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailMessagePage />
             </Suspense>
           }
         />
