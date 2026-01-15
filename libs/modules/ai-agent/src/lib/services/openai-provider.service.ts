@@ -138,6 +138,18 @@ export class OpenAIProviderService extends AIProviderService {
             technicalDetails,
             HttpStatus.BAD_REQUEST, // Changed from UNAUTHORIZED to prevent frontend from interpreting as JWT auth failure
           );
+        case 402:
+          return new AIProviderError(
+            'Insufficient credits on OpenAI. Please add credits to your account.',
+            technicalDetails,
+            HttpStatus.PAYMENT_REQUIRED,
+          );
+        case 403:
+          return new AIProviderError(
+            'Access denied. The selected model may require special access permissions.',
+            technicalDetails,
+            HttpStatus.FORBIDDEN,
+          );
         case 429:
           return new AIProviderError(
             'AI service is temporarily overloaded. Please try again in a moment.',
@@ -160,8 +172,10 @@ export class OpenAIProviderService extends AIProviderService {
             HttpStatus.SERVICE_UNAVAILABLE,
           );
         default:
+          // Log unexpected status codes for debugging
+          this.logger.error(`Unexpected HTTP status ${error.status} from OpenAI API`);
           return new AIProviderError(
-            'An error occurred while processing your request.',
+            `AI service returned an unexpected error (status: ${error.status || 'unknown'}). Please try again.`,
             technicalDetails,
             HttpStatus.INTERNAL_SERVER_ERROR,
           );
