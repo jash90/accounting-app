@@ -10,9 +10,12 @@ import {
   Trash2,
   CheckCheck,
   Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
+import { EmailListSkeleton } from './components/email-inbox-skeleton';
 
 export default function EmailInbox() {
   const { data: emails, isLoading, refetch, isRefetching } = useInbox();
@@ -24,30 +27,47 @@ export default function EmailInbox() {
   // Selection state
   const [selectedUids, setSelectedUids] = useState<Set<number>>(new Set());
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  // Sort emails by date (newest first) and paginate
+  const sortedEmails = useMemo(() => {
+    if (!emails) return [];
+    return [...emails].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+  }, [emails]);
+
+  const totalPages = Math.ceil(sortedEmails.length / pageSize);
+  const paginatedEmails = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedEmails.slice(start, start + pageSize);
+  }, [sortedEmails, currentPage]);
+
   // Compute selection state
   const allSelected = useMemo(() => {
-    if (!emails || emails.length === 0) return false;
-    return emails.every((email) => selectedUids.has(email.uid));
-  }, [emails, selectedUids]);
+    if (sortedEmails.length === 0) return false;
+    return sortedEmails.every((email) => selectedUids.has(email.uid));
+  }, [sortedEmails, selectedUids]);
 
   const someSelected = useMemo(() => {
     return selectedUids.size > 0;
   }, [selectedUids]);
 
   const unreadSelectedCount = useMemo(() => {
-    if (!emails) return 0;
-    return emails.filter(
+    return sortedEmails.filter(
       (email) => selectedUids.has(email.uid) && !email.flags.includes('\\Seen')
     ).length;
-  }, [emails, selectedUids]);
+  }, [sortedEmails, selectedUids]);
 
   // Selection handlers
   const toggleSelectAll = () => {
-    if (!emails) return;
+    if (sortedEmails.length === 0) return;
     if (allSelected) {
       setSelectedUids(new Set());
     } else {
-      setSelectedUids(new Set(emails.map((e) => e.uid)));
+      setSelectedUids(new Set(sortedEmails.map((e) => e.uid)));
     }
   };
 
@@ -106,10 +126,6 @@ export default function EmailInbox() {
     setSelectedUids(new Set());
   };
 
-  if (isLoading) {
-    return <div className="p-8">Loading inbox...</div>;
-  }
-
   const isProcessing = markAsRead.isPending || deleteEmails.isPending;
 
   return (
@@ -124,17 +140,21 @@ export default function EmailInbox() {
         </div>
         <div className="flex gap-2">
           <Button
-            onClick={() => refetch()}
+            onClick={() => {
+              setCurrentPage(1);
+              refetch();
+            }}
             disabled={isRefetching}
             variant="outline"
             size="sm"
+            className="gap-2"
           >
             <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
           <Link to={emailNav.getComposePath()}>
-            <Button size="sm">
-              <Mail className="h-4 w-4 mr-2" />
+            <Button size="sm" className="gap-2">
+              <Mail className="h-4 w-4" />
               Compose
             </Button>
           </Link>
@@ -143,7 +163,7 @@ export default function EmailInbox() {
 
       {/* Bulk Actions Toolbar */}
       {someSelected && (
-        <div className="border-b bg-muted/50 p-3 flex items-center gap-4">
+        <div className="border-b bg-muted/50 px-4 h-12 flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Checkbox
               checked={allSelected}
@@ -197,8 +217,8 @@ export default function EmailInbox() {
       )}
 
       {/* Select All Row (when no selection) */}
-      {!someSelected && emails && emails.length > 0 && (
-        <div className="border-b px-4 py-2 flex items-center gap-2 bg-muted/30">
+      {!someSelected && sortedEmails.length > 0 && (
+        <div className="border-b px-4 h-12 flex items-center gap-2 bg-muted/30">
           <Checkbox
             checked={false}
             onCheckedChange={toggleSelectAll}
@@ -210,23 +230,24 @@ export default function EmailInbox() {
 
       {/* Email List */}
       <div className="flex-1 overflow-auto">
-        {!emails || emails.length === 0 ? (
+        {isLoading ? (
+          <EmailListSkeleton />
+        ) : sortedEmails.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground">
             <MailOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>No emails in inbox</p>
           </div>
         ) : (
           <div className="divide-y">
-            {emails.map((email) => {
+            {paginatedEmails.map((email) => {
               const isSelected = selectedUids.has(email.uid);
               const isUnread = !email.flags.includes('\\Seen');
 
               return (
                 <div
                   key={email.uid}
-                  className={`flex items-start gap-3 p-4 hover:bg-muted/50 transition-colors ${
-                    isSelected ? 'bg-muted/70' : ''
-                  }`}
+                  className={`flex items-start gap-3 p-4 hover:bg-muted/50 transition-colors ${isSelected ? 'bg-muted/70' : ''
+                    }`}
                 >
                   {/* Checkbox */}
                   <div
@@ -235,7 +256,7 @@ export default function EmailInbox() {
                   >
                     <Checkbox
                       checked={isSelected}
-                      onCheckedChange={() => {}}
+                      onCheckedChange={() => { }}
                       aria-label={`Select email from ${email.from[0]?.name || email.from[0]?.address}`}
                     />
                   </div>
@@ -249,9 +270,8 @@ export default function EmailInbox() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p
-                            className={`truncate ${
-                              isUnread ? 'font-bold' : 'font-semibold'
-                            }`}
+                            className={`truncate ${isUnread ? 'font-bold' : 'font-semibold'
+                              }`}
                           >
                             {email.from[0]?.name || email.from[0]?.address}
                           </p>
@@ -260,9 +280,8 @@ export default function EmailInbox() {
                           )}
                         </div>
                         <p
-                          className={`text-sm mt-1 truncate ${
-                            isUnread ? 'font-semibold' : 'font-medium'
-                          }`}
+                          className={`text-sm mt-1 truncate ${isUnread ? 'font-semibold' : 'font-medium'
+                            }`}
                         >
                           {email.subject || '(No subject)'}
                         </p>
@@ -281,6 +300,39 @@ export default function EmailInbox() {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {sortedEmails.length > 0 && (
+        <div className="border-t px-4 py-3 flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">
+            {(currentPage - 1) * pageSize + 1}-
+            {Math.min(currentPage * pageSize, sortedEmails.length)} z{' '}
+            {sortedEmails.length}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="gap-1"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+              className="gap-1"
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
