@@ -24,6 +24,7 @@
   },
   "private": true,
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
     "@aws-sdk/client-s3": "^3.940.0",
     "@aws-sdk/s3-request-presigner": "^3.940.0",
     "@casl/ability": "^6.7.3",
@@ -39,6 +40,7 @@
     "@nestjs/terminus": "^11.0.0",
     "@nestjs/throttler": "^6.4.0",
     "@nestjs/typeorm": "^11.0.0",
+    "@radix-ui/react-collapsible": "^1.1.12",
     "@tanstack/react-query": "^5.90.7",
     "@tanstack/react-table": "^8.21.3",
     "axios": "^1.13.2",

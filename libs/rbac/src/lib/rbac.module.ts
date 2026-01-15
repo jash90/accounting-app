@@ -8,6 +8,9 @@ import {
   UserModulePermission,
 } from '@accounting/common';
 import { RBACService } from './services/rbac.service';
+import { ModuleAccessGuard } from './guards/module-access.guard';
+import { PermissionGuard } from './guards/permission.guard';
+import { OwnerOrAdminGuard } from './guards/owner-or-admin.guard';
 
 @Module({
   imports: [
@@ -19,7 +22,7 @@ import { RBACService } from './services/rbac.service';
       UserModulePermission,
     ]),
   ],
-  providers: [RBACService],
-  exports: [RBACService],
+  providers: [RBACService, ModuleAccessGuard, PermissionGuard, OwnerOrAdminGuard],
+  exports: [RBACService, ModuleAccessGuard, PermissionGuard, OwnerOrAdminGuard],
 })
 export class RBACModule {}

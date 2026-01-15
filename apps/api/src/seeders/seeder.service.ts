@@ -440,51 +440,31 @@ export class SeederService {
 
   private async seedEmailConfigurations(
     companyA: Company,
-    ownerA: User,
-    employeesA: User[],
+    _ownerA: User,
+    _employeesA: User[],
   ) {
     console.log('Seeding email configurations...');
 
-    // Onet configuration for owner
-    const onetConfig = {
+    // Company-wide email configuration (used by Email Client module)
+    const companyEmailConfig = {
       smtpHost: 'smtp.poczta.onet.pl',
       smtpPort: 465,
       smtpSecure: true,
       smtpUser: 'bartlomiej.zimny@onet.pl',
-      smtpPassword: 'jN%450ve*E0^aU7!Pk%9',
+      smtpPassword: '%UsDZp!26mCkVzFE#*a6',
       imapHost: 'imap.poczta.onet.pl',
       imapPort: 993,
       imapTls: true,
       imapUser: 'bartlomiej.zimny@onet.pl',
-      imapPassword: 'jN%450ve*E0^aU7!Pk%9',
-      displayName: 'Company Owner Email (Onet)',
-    };
-
-    // Interia configuration for employee
-    const interiaConfig = {
-      smtpHost: 'poczta.interia.pl',
-      smtpPort: 465,
-      smtpSecure: true,
-      smtpUser: 'bartlomiej.zimny@interia.pl',
-      smtpPassword: 'ZnJaTbDJbJA2hFQyHPG!',
-      imapHost: 'poczta.interia.pl',
-      imapPort: 993,
-      imapTls: true,
-      imapUser: 'bartlomiej.zimny@interia.pl',
-      imapPassword: 'ZnJaTbDJbJA2hFQyHPG!',
-      displayName: 'Employee Email (Interia)',
+      imapPassword: '%UsDZp!26mCkVzFE#*a6',
+      displayName: 'Tech Startup A - Company Email',
     };
 
     try {
-      // Create email configuration for owner (Onet) - skip verification for seeder
-      await this.emailConfigService.createUserConfig(ownerA.id, onetConfig, true);
-      console.log(`✅ Email config created for Company A Owner`);
-
-      // Create email configuration for employee (Interia) - skip verification for seeder
-      if (employeesA[0]) {
-        await this.emailConfigService.createUserConfig(employeesA[0].id, interiaConfig, true);
-        console.log(`✅ Email config created for Company A Employee`);
-      }
+      // Create COMPANY email configuration (used by Email Client module)
+      // Email Client uses getDecryptedEmailConfigByCompanyId() which queries by companyId
+      await this.emailConfigService.createCompanyConfig(companyA.id, companyEmailConfig, true);
+      console.log(`✅ Company Email Config created for Tech Startup A (Onet)`);
 
       console.log('✅ Email configurations seeded successfully');
       console.log('⚠️  SMTP verification skipped for dev/test - verify credentials before sending emails');
