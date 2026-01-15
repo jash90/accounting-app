@@ -26,7 +26,7 @@ describe('LoginPage', () => {
     render(<LoginPage />, { wrapper: createWrapper() });
     expect(screen.getByLabelText('Email')).toBeInTheDocument();
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 
   // TODO: Fix form validation tests - these require investigating the actual validation error messages
@@ -34,7 +34,7 @@ describe('LoginPage', () => {
     render(<LoginPage />, { wrapper: createWrapper() });
 
     const emailInput = screen.getByLabelText('Email');
-    const submitButton = screen.getByRole('button', { name: /login/i });
+    const submitButton = screen.getByRole('button', { name: /sign in/i });
 
     fireEvent.change(emailInput, { target: { value: 'invalid-email' } });
     fireEvent.click(submitButton);
@@ -48,7 +48,7 @@ describe('LoginPage', () => {
     render(<LoginPage />, { wrapper: createWrapper() });
 
     const passwordInput = screen.getByLabelText('Password');
-    const submitButton = screen.getByRole('button', { name: /login/i });
+    const submitButton = screen.getByRole('button', { name: /sign in/i });
 
     fireEvent.change(passwordInput, { target: { value: 'short' } });
     fireEvent.click(submitButton);
