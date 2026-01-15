@@ -1,20 +1,20 @@
 import { useDrafts, useSendDraft } from '@/lib/hooks/use-email-client';
+import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 import { Button } from '@/components/ui/button';
-import { Send, Trash, Edit, Sparkles } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
+import { Send, Edit, Sparkles } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function EmailDrafts() {
   const { data: drafts, isLoading } = useDrafts();
   const sendDraft = useSendDraft();
-  const navigate = useNavigate();
+  const emailNav = useEmailClientNavigation();
   const { toast } = useToast();
 
   const handleSendDraft = async (draftId: string) => {
     try {
       await sendDraft.mutateAsync(draftId);
       toast({ title: 'Success', description: 'Draft sent successfully' });
-    } catch (error) {
+    } catch {
       toast({ title: 'Error', description: 'Failed to send draft', variant: 'destructive' });
     }
   };
@@ -41,7 +41,7 @@ export default function EmailDrafts() {
               variant="outline"
               size="sm"
               className="mt-4"
-              onClick={() => navigate('/modules/email-client/compose')}
+              onClick={() => emailNav.toCompose()}
             >
               Compose New Email
             </Button>
@@ -77,7 +77,7 @@ export default function EmailDrafts() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => navigate(`/modules/email-client/compose?draftId=${draft.id}`)}
+                      onClick={() => emailNav.toComposeWithQuery(`draftId=${draft.id}`)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>

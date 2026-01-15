@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -68,6 +69,18 @@ export class EmailMessagesController {
     return this.emailClientService.getFolder(user, folderName, {
       limit: limit ? parseInt(limit.toString()) : 50,
     });
+  }
+
+  @Get(':uid')
+  @ApiOperation({ summary: 'Fetch single email by UID' })
+  @ApiResponse({ status: 200, description: 'Email details with content' })
+  @ApiResponse({ status: 404, description: 'Email not found' })
+  @RequirePermission('email-client', 'read')
+  async getEmail(
+    @CurrentUser() user: User,
+    @Param('uid', ParseIntPipe) uid: number,
+  ) {
+    return this.emailClientService.getEmail(user, uid);
   }
 
   @Post('send')

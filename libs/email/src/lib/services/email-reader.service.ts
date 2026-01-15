@@ -80,28 +80,55 @@ export class EmailReaderService {
               struct: true,
             });
 
-            fetch.on('message', (msg: ImapTypes.ImapMessage, seqno: number) => {
-              msg.on('body', (stream: NodeJS.ReadableStream) => {
-                simpleParser(stream as unknown as Source, async (err: Error | null, parsed: ParsedMail) => {
-                  if (err) {
-                    this.logger.error(`Error parsing email: ${err.message}`);
-                    return;
-                  }
+            // Track message processing promises to wait for all to complete
+            const messagePromises: Promise<void>[] = [];
 
-                  const email = this.convertParsedMailToReceivedEmail(parsed, seqno);
-                  emails.push(email);
+            fetch.on('message', (msg: ImapTypes.ImapMessage, seqno: number) => {
+              // Create a promise for this message that waits for both attributes and body
+              const messagePromise = new Promise<void>((resolveMessage) => {
+                let messageAttrs: ImapTypes.ImapMessageAttributes | null = null;
+                let parsedEmail: ReceivedEmail | null = null;
+                let parseComplete = false;
+                let attrsComplete = false;
+
+                const tryComplete = () => {
+                  if (parseComplete && attrsComplete && parsedEmail) {
+                    // Both events completed - set UID and flags from attributes
+                    if (messageAttrs) {
+                      parsedEmail.uid = messageAttrs.uid;
+                      parsedEmail.flags = messageAttrs.flags;
+                    }
+                    emails.push(parsedEmail);
+                    resolveMessage();
+                  }
+                };
+
+                msg.once('attributes', (attrs: ImapTypes.ImapMessageAttributes) => {
+                  messageAttrs = attrs;
+                  attrsComplete = true;
+                  if (options.markAsSeen && !attrs.flags.includes('\\Seen')) {
+                    imap.addFlags(attrs.uid, '\\Seen', (err: Error | null) => {
+                      if (err) {
+                        this.logger.error(`Failed to mark email as seen: ${err.message}`);
+                      }
+                    });
+                  }
+                  tryComplete();
+                });
+
+                msg.on('body', (stream: NodeJS.ReadableStream) => {
+                  simpleParser(stream as unknown as Source, (err: Error | null, parsed: ParsedMail) => {
+                    if (err) {
+                      this.logger.error(`Error parsing email: ${err.message}`);
+                    } else {
+                      parsedEmail = this.convertParsedMailToReceivedEmail(parsed, seqno);
+                    }
+                    parseComplete = true;
+                    tryComplete();
+                  });
                 });
               });
-
-              msg.once('attributes', (attrs: ImapTypes.ImapMessageAttributes) => {
-                if (options.markAsSeen && !attrs.flags.includes('\\Seen')) {
-                  imap.addFlags(attrs.uid, '\\Seen', (err: Error | null) => {
-                    if (err) {
-                      this.logger.error(`Failed to mark email as seen: ${err.message}`);
-                    }
-                  });
-                }
-              });
+              messagePromises.push(messagePromise);
             });
 
             fetch.once('error', (err: Error) => {
@@ -111,8 +138,13 @@ export class EmailReaderService {
             });
 
             fetch.once('end', () => {
-              this.logger.log(`Fetched ${emails.length} emails`);
-              imap.end();
+              // Wait for all message processing to complete before ending connection
+              Promise.all(messagePromises).then(() => {
+                this.logger.log(`Fetched ${emails.length} emails`);
+                imap.end();
+                // Resolve directly - don't wait for 'end' event which may not fire reliably
+                resolve(emails);
+              });
             });
           });
         });
@@ -245,8 +277,8 @@ export class EmailReaderService {
       user: config.user,
       password: config.password,
       tlsOptions: config.tlsOptions || { rejectUnauthorized: REJECT_UNAUTHORIZED },
-      connTimeout: 10000,
-      authTimeout: 5000,
+      connTimeout: 30000,
+      authTimeout: 15000,
     });
   }
 

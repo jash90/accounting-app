@@ -132,4 +132,38 @@ export class S3StorageProvider implements StorageProvider {
       return false;
     }
   }
+
+  async download(key: string): Promise<Buffer> {
+    try {
+      const command = new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+      });
+
+      const response = await this.s3Client.send(command);
+
+      // Convert stream to buffer
+      const stream = response.Body;
+      if (!stream) {
+        throw new Error(`No content returned for key: ${key}`);
+      }
+
+      // Handle different response body types
+      if (stream instanceof Uint8Array) {
+        return Buffer.from(stream);
+      }
+
+      // For Node.js Readable streams
+      const chunks: Buffer[] = [];
+      for await (const chunk of stream as AsyncIterable<Uint8Array>) {
+        chunks.push(Buffer.from(chunk));
+      }
+
+      this.logger.log(`File downloaded from S3: ${key}`);
+      return Buffer.concat(chunks);
+    } catch (error) {
+      this.logger.error(`Failed to download file from S3: ${key}`, error);
+      throw error;
+    }
+  }
 }

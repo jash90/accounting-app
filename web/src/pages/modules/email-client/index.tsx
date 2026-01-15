@@ -1,6 +1,8 @@
 import { Navigate } from 'react-router-dom';
+import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 
 // Default redirect to inbox
 export default function EmailClientIndex() {
-  return <Navigate to="/modules/email-client/inbox" replace />;
+  const emailNav = useEmailClientNavigation();
+  return <Navigate to={emailNav.getInboxPath()} replace />;
 }

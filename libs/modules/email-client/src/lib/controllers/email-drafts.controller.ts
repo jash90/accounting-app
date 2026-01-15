@@ -19,7 +19,9 @@ import { ModuleAccessGuard, PermissionGuard, RequireModule, RequirePermission } 
 import { User } from '@accounting/common';
 import { EmailDraftService } from '../services/email-draft.service';
 import { EmailClientService } from '../services/email-client.service';
+import { EmailAiService } from '../services/email-ai.service';
 import { CreateDraftDto, UpdateDraftDto } from '../dto/create-draft.dto';
+import { EmailAiOptionsDto } from '../dto/email-ai-options.dto';
 
 @ApiTags('Email Client - Drafts')
 @ApiBearerAuth()
@@ -30,6 +32,7 @@ export class EmailDraftsController {
   constructor(
     private readonly draftService: EmailDraftService,
     private readonly emailClientService: EmailClientService,
+    private readonly aiService: EmailAiService,
   ) {}
 
   @Get()
@@ -54,6 +57,21 @@ export class EmailDraftsController {
   @RequirePermission('email-client', 'read')
   async findAiDrafts(@CurrentUser() user: User) {
     return this.draftService.findAiDrafts(user);
+  }
+
+  @Post('ai/generate-reply')
+  @ApiOperation({ summary: 'Generate AI reply draft for an email' })
+  @ApiResponse({ status: 201, description: 'AI draft generated' })
+  @RequirePermission('email-client', 'write')
+  async generateAiReply(
+    @CurrentUser() user: User,
+    @Body() dto: EmailAiOptionsDto,
+  ) {
+    // Fetch the original email from IMAP
+    const originalEmail = await this.emailClientService.getEmail(user, dto.messageUid);
+
+    // Generate AI reply draft using AI Agent module
+    return this.aiService.generateReplyDraft(user, originalEmail, dto);
   }
 
   @Get(':id')

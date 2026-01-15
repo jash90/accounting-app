@@ -20,15 +20,27 @@ export class EmailAttachmentService {
 
     const timestamp = Date.now();
     const sanitized = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const fileName = `${user.companyId}/email-attachments/${timestamp}-${sanitized}`;
+    const subPath = `${user.companyId}/email-attachments`;
 
-    await this.storageService.uploadFile(fileName, file.buffer, {
-      contentType: file.mimetype,
-      metadata: { userId: user.id, companyId: user.companyId, originalName: file.originalname },
-    });
+    // Reconstruct Express.Multer.File object with all required properties
+    const multerFile: Express.Multer.File = {
+      fieldname: 'file',
+      originalname: file.originalname,
+      encoding: file.encoding,
+      mimetype: file.mimetype,
+      buffer: file.buffer,
+      size: file.size,
+      stream: null as any,
+      destination: '',
+      filename: `${timestamp}-${sanitized}`,
+      path: '',
+    };
 
-    this.logger.log(`Attachment uploaded: ${fileName}`);
-    return fileName;
+    // Upload using correct StorageService signature
+    const result = await this.storageService.uploadFile(multerFile, subPath);
+
+    this.logger.log(`Attachment uploaded: ${result.path}`);
+    return result.path;
   }
 
   async downloadAttachment(user: User, filePath: string): Promise<{ buffer: Buffer; filename: string }> {
