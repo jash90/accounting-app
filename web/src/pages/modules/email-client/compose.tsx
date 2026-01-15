@@ -106,8 +106,6 @@ export default function EmailCompose() {
     try {
       const draft = await generateAiDraft.mutateAsync({
         messageUid,
-        tone: 'professional',
-        language: 'pl',
       });
 
       // Navigate to edit the newly created AI draft

@@ -26,6 +26,7 @@ import { PaginationQueryDto, PaginatedResponseDto } from '../dto/pagination.dto'
 import { AIConfigurationService } from './ai-configuration.service';
 import { OpenAIProviderService } from './openai-provider.service';
 import { OpenRouterProviderService } from './openrouter-provider.service';
+import { AIProviderError } from './ai-provider.interface';
 import { RAGService } from './rag.service';
 import { TokenLimitService } from './token-limit.service';
 import { TokenUsageService } from './token-usage.service';
@@ -279,10 +280,20 @@ export class AIConversationService {
         apiKey,
       );
     } catch (error) {
-      this.logger.error(
-        `AI provider call failed: ${error instanceof Error ? error.message : String(error)}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+      // Enhanced error logging for debugging
+      if (error instanceof AIProviderError) {
+        this.logger.error(
+          `AI provider call failed: ${error.message}`,
+        );
+        this.logger.error(
+          `AI provider technical details: ${error.technicalDetails}`,
+        );
+      } else {
+        this.logger.error(
+          `AI provider call failed: ${error instanceof Error ? error.message : String(error)}`,
+          error instanceof Error ? error.stack : undefined,
+        );
+      }
 
       // Re-throw HttpExceptions (already have proper status codes)
       if (error instanceof HttpException) {
@@ -554,6 +565,9 @@ export class AIConversationService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`sendMessageStream error: ${errorMessage}`);
+      if (error instanceof AIProviderError) {
+        this.logger.error(`AI provider technical details: ${error.technicalDetails}`);
+      }
       subject.next({ type: 'error', error: errorMessage });
       subject.complete();
     }
