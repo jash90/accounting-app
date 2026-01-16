@@ -1,3 +1,5 @@
 # Force npm as package manager (prevents auto-detection of pnpm)
 [phases.install]
 cmds = ["npm ci"]
+
+# Let railway.toml handle the build command
