@@ -117,10 +117,9 @@ export class EmailClientService {
       throw new BadRequestException('No email configuration for company');
     }
 
-    // Note: EmailReaderService currently doesn't support custom folder selection
-    // Default to INBOX - folder selection can be added later
     return this.withTimeout(
       this.emailReaderService.fetchEmails(emailConfig.imap, {
+        mailbox: folderName,
         limit: options.limit || 50,
         unseenOnly: options.unseenOnly,
       }),

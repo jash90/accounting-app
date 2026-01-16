@@ -30,13 +30,19 @@ export function useEmailClientNavigation() {
     toComposeWithQuery: (query: string, options?: { replace?: boolean }) =>
       navigate(`${basePath}/compose?${query}`, options),
     toDrafts: () => navigate(`${basePath}/drafts`),
+    toSent: () => navigate(`${basePath}/sent`),
+    toTrash: () => navigate(`${basePath}/trash`),
     toMessage: (uid: number) => navigate(`${basePath}/message/${uid}`),
+    toFolder: (folderName: string) => navigate(`${basePath}/folder/${encodeURIComponent(folderName)}`),
 
     // Path getters for Link components
     getMessagePath: (uid: number) => `${basePath}/message/${uid}`,
     getComposePath: (query?: string) => query ? `${basePath}/compose?${query}` : `${basePath}/compose`,
     getInboxPath: () => `${basePath}/inbox`,
     getDraftsPath: () => `${basePath}/drafts`,
+    getSentPath: () => `${basePath}/sent`,
+    getTrashPath: () => `${basePath}/trash`,
+    getFolderPath: (folderName: string) => `${basePath}/folder/${encodeURIComponent(folderName)}`,
 
     // Base path for custom usage
     basePath,

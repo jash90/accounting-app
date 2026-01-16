@@ -6,6 +6,7 @@ import { RBACModule } from '@accounting/rbac';
 import { AIAgentModule } from '@accounting/modules/ai-agent';
 import { EmailDraft } from './entities/email-draft.entity';
 import { EmailDraftService } from './services/email-draft.service';
+import { EmailDraftSyncService } from './services/email-draft-sync.service';
 import { EmailClientService } from './services/email-client.service';
 import { EmailAttachmentService } from './services/email-attachment.service';
 import { EmailAiService } from './services/email-ai.service';
@@ -28,12 +29,14 @@ import { EmailAttachmentsController } from './controllers/email-attachments.cont
   ],
   providers: [
     EmailDraftService,
+    EmailDraftSyncService,
     EmailClientService,
     EmailAttachmentService,
     EmailAiService,
   ],
   exports: [
     EmailDraftService,
+    EmailDraftSyncService,
     EmailClientService,
     EmailAttachmentService,
     EmailAiService,

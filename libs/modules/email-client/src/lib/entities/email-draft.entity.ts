@@ -77,6 +77,23 @@ export class EmailDraft {
     customInstructions?: string;
   };
 
+  // IMAP synchronization fields
+  @Column({ type: 'bigint', nullable: true })
+  imapUid?: number; // IMAP message UID in Drafts folder
+
+  @Column({ nullable: true })
+  imapMailbox?: string; // Name of the Drafts mailbox (varies by server)
+
+  @Column({ type: 'timestamp', nullable: true })
+  imapSyncedAt?: Date; // Last sync with IMAP server
+
+  @Column({
+    type: 'varchar',
+    length: 20,
+    default: 'local',
+  })
+  syncStatus!: 'local' | 'synced' | 'imap_only' | 'conflict';
+
   @CreateDateColumn()
   createdAt!: Date;
 
