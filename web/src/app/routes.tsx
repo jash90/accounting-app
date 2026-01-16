@@ -15,7 +15,6 @@ const CompaniesListPage = lazy(() => import('@/pages/admin/companies/companies-l
 const CompanyModulesPage = lazy(() => import('@/pages/admin/companies/company-modules'));
 const ModulesListPage = lazy(() => import('@/pages/admin/modules/modules-list'));
 const CompanyDashboard = lazy(() => import('@/pages/company/dashboard'));
-const CompanySettingsPage = lazy(() => import('@/pages/company/settings'));
 const EmployeesListPage = lazy(() => import('@/pages/company/employees/employees-list'));
 const EmployeePermissionsPage = lazy(() => import('@/pages/company/employees/employee-permissions'));
 const CompanyModulesListPage = lazy(() => import('@/pages/company/modules/modules-list'));
@@ -287,14 +286,6 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <EmployeePermissionsPage />
-            </Suspense>
-          }
-        />
-        <Route
-          path="settings"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <CompanySettingsPage />
             </Suspense>
           }
         />
