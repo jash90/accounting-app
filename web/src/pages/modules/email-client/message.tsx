@@ -1,5 +1,9 @@
 import { useParams, Link } from 'react-router-dom';
-import { useEmail, useMarkAsRead, useDeleteEmails } from '@/lib/hooks/use-email-client';
+import {
+  useEmail,
+  useMarkAsRead,
+  useDeleteEmails,
+} from '@/lib/hooks/use-email-client';
 import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -113,11 +117,7 @@ export default function EmailMessage() {
       {/* Header */}
       <div className="border-b p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => emailNav.toInbox()}
-          >
+          <Button variant="ghost" size="sm" onClick={() => emailNav.toInbox()}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-lg font-semibold truncate max-w-md">
@@ -153,36 +153,48 @@ export default function EmailMessage() {
 
       {/* Email Content */}
       <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-4xl mx-auto">
+        <div>
           {/* Email Headers */}
           <div className="space-y-3 mb-6">
             <div className="flex items-start gap-4">
-              <span className="text-sm text-muted-foreground w-16 shrink-0">From:</span>
+              <span className="text-sm text-muted-foreground w-16 shrink-0">
+                From:
+              </span>
               <span className="text-sm font-medium">
                 {email.from.map(formatEmailAddress).join(', ')}
               </span>
             </div>
             <div className="flex items-start gap-4">
-              <span className="text-sm text-muted-foreground w-16 shrink-0">To:</span>
+              <span className="text-sm text-muted-foreground w-16 shrink-0">
+                To:
+              </span>
               <span className="text-sm">
                 {email.to.map(formatEmailAddress).join(', ')}
               </span>
             </div>
             {email.cc && email.cc.length > 0 && (
               <div className="flex items-start gap-4">
-                <span className="text-sm text-muted-foreground w-16 shrink-0">CC:</span>
+                <span className="text-sm text-muted-foreground w-16 shrink-0">
+                  CC:
+                </span>
                 <span className="text-sm">
                   {email.cc.map(formatEmailAddress).join(', ')}
                 </span>
               </div>
             )}
             <div className="flex items-start gap-4">
-              <span className="text-sm text-muted-foreground w-16 shrink-0">Date:</span>
+              <span className="text-sm text-muted-foreground w-16 shrink-0">
+                Date:
+              </span>
               <span className="text-sm">{formatDate(email.date)}</span>
             </div>
             <div className="flex items-start gap-4">
-              <span className="text-sm text-muted-foreground w-16 shrink-0">Subject:</span>
-              <span className="text-sm font-medium">{email.subject || '(No subject)'}</span>
+              <span className="text-sm text-muted-foreground w-16 shrink-0">
+                Subject:
+              </span>
+              <span className="text-sm font-medium">
+                {email.subject || '(No subject)'}
+              </span>
             </div>
           </div>
 
@@ -194,7 +206,8 @@ export default function EmailMessage() {
                 <div className="flex items-center gap-2 mb-2">
                   <Paperclip className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">
-                    {email.attachments.length} Attachment{email.attachments.length > 1 ? 's' : ''}
+                    {email.attachments.length} Attachment
+                    {email.attachments.length > 1 ? 's' : ''}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">

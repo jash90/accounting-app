@@ -72,6 +72,9 @@ export function useSendEmail() {
       subject: string;
       text?: string;
       html?: string;
+      cc?: string[];
+      bcc?: string[];
+      attachments?: string[];
     }) => {
       const { data } = await apiClient.post('/api/modules/email-client/messages/send', emailData);
       return data;

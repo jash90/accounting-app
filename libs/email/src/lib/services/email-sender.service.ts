@@ -271,11 +271,18 @@ export class EmailSenderService {
     const rawMessage: Buffer = await mail.compile().build();
 
     // Step 2: Send via SMTP using raw message
+    // Build envelope recipients: TO + CC + BCC (all must be in RCPT TO)
+    const allRecipients = [
+      ...(Array.isArray(message.to) ? message.to : [message.to]),
+      ...(message.cc ? (Array.isArray(message.cc) ? message.cc : [message.cc]) : []),
+      ...(message.bcc ? (Array.isArray(message.bcc) ? message.bcc : [message.bcc]) : []),
+    ];
+
     const transporter = this.getOrCreateTransporter(smtpConfig);
     await transporter.sendMail({
       envelope: {
         from: message.from || smtpConfig.auth.user,
-        to: Array.isArray(message.to) ? message.to : [message.to],
+        to: allRecipients,
       },
       raw: rawMessage,
     });

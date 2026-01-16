@@ -396,13 +396,28 @@ export default function EmailCompose() {
           </div>
 
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <Label htmlFor="content">Wiadomość</Label>
-              {(aiStream.isStreaming || (locationState?.aiGenerate && !content)) && (
-                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
-                  <Sparkles className="h-3 w-3" />
-                  Generowanie AI...
-                </span>
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="content">Wiadomość</Label>
+                {(aiStream.isStreaming || (locationState?.aiGenerate && !content)) && (
+                  <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                    <Sparkles className="h-3 w-3" />
+                    Generowanie AI...
+                  </span>
+                )}
+              </div>
+
+              {/* AI Reply button when in reply mode */}
+              {locationState?.replyTo && !aiStream.isStreaming && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleGenerateAiReply(locationState.replyTo!.uid)}
+                  disabled={aiStream.isStreaming}
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Wygeneruj AI
+                </Button>
               )}
             </div>
             <div className="relative">

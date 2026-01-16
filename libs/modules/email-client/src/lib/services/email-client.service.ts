@@ -158,6 +158,7 @@ export class EmailClientService {
     html?: string;
     cc?: string | string[];
     bcc?: string | string[];
+    attachments?: Array<{ path: string; filename: string }>;
   }): Promise<void> {
     if (!user.companyId) {
       throw new BadRequestException('User must belong to a company');
