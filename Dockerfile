@@ -30,5 +30,5 @@ COPY --from=builder /app/dist/web ./dist
 EXPOSE 3000
 
 # Start command - serve static files
-# Use -p for port (newer serve syntax)
-CMD ["sh", "-c", "serve dist -p ${PORT:-3000} -s"]
+# serve v14+ syntax: --listen tcp://0.0.0.0:PORT
+CMD ["sh", "-c", "serve dist --listen tcp://0.0.0.0:${PORT:-3000} --single"]
