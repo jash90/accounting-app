@@ -1,11 +1,13 @@
+# Configuration for web (frontend) service - accounting
+# API service uses apps/api/railway.toml
+
 [build]
-builder = "dockerfile"
-dockerfilePath = "Dockerfile"
+builder = "nixpacks"
+buildCommand = "npm ci --legacy-peer-deps && npm run build:web"
 
 [deploy]
-# Run pre-compiled migrations then start API (wrapped in sh -c for shell builtins)
-startCommand = "sh -c 'cd dist/apps/api && node ../../../node_modules/typeorm/cli.js migration:run -d typeorm.prod.config.js && cd /app && node dist/apps/api/main.js'"
-healthcheckPath = "/api/health"
-healthcheckTimeout = 30000
+startCommand = "npx serve dist/web -l $PORT -s"
+healthcheckPath = "/"
+healthcheckTimeout = 10000
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3

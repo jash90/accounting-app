@@ -1,11 +1,15 @@
+# Nixpacks configuration for web (frontend) build
 # Force npm as package manager (not pnpm)
 providers = []
 
 [phases.setup]
-nixPkgs = ["nodejs"]
+nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = ["npm ci"]
+cmds = ["npm ci --legacy-peer-deps"]
+
+[phases.build]
+cmds = ["npm run build:web"]
 
 [start]
-cmd = "npm run db:migrate:prod && node dist/apps/api/main.js"
+cmd = "npx serve dist/web -l $PORT -s"
