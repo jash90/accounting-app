@@ -246,6 +246,71 @@ export default function Routes() {
             </Suspense>
           }
         />
+        {/* Email Client Routes for Admin */}
+        <Route
+          path="modules/email-client"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailClientIndex />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/email-client/inbox"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailInboxPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/email-client/compose"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailComposePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/email-client/drafts"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailDraftsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/email-client/sent"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailSentPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/email-client/trash"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailTrashPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/email-client/folder/:folderName"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailFolderPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/email-client/message/:uid"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailMessagePage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
