@@ -147,21 +147,21 @@ export class SeederService {
   private async seedModules() {
     const modules = [
       {
-        name: 'AI Agent',
+        name: 'Agent AI',
         slug: 'ai-agent',
-        description: 'AI-powered chat assistant with RAG and token management',
+        description: 'Asystent AI z czatem, RAG i zarządzaniem tokenami',
         isActive: true,
       },
       {
-        name: 'Clients',
+        name: 'Klienci',
         slug: 'clients',
-        description: 'Client management with custom fields, icons, and change tracking',
+        description: 'Zarządzanie klientami z polami własnymi, ikonami i śledzeniem zmian',
         isActive: true,
       },
       {
-        name: 'Email Client',
+        name: 'Klient Email',
         slug: 'email-client',
-        description: 'Full email client with inbox, compose, drafts, and AI assistant',
+        description: 'Pełny klient poczty z odbiorem, wysyłką, wersjami roboczymi i asystentem AI',
         isActive: true,
       },
     ];
