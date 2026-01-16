@@ -76,26 +76,26 @@ export default function LoginPage() {
 
           {/* Hero Text */}
           <h1 className="text-4xl font-extrabold text-white leading-tight mb-6 animate-fade-in-left delay-100">
-            AI-Powered Accounting Intelligence
+            Inteligentna Księgowość AI
           </h1>
           <p className="text-lg text-white/80 mb-8 animate-fade-in-left delay-200">
-            Combine traditional accounting reliability with innovative AI capabilities.
-            Transform how your accounting firm operates.
+            Połącz tradycyjną niezawodność księgowości z innowacyjnymi możliwościami AI.
+            Zmień sposób działania Twojego biura rachunkowego.
           </p>
 
           {/* Features */}
           <div className="space-y-4">
             <div className="flex items-center gap-3 animate-fade-in-left delay-300 group">
               <div className="w-2.5 h-2.5 rounded-full bg-apptax-teal animate-pulse-glow group-hover:scale-125 transition-transform" />
-              <span className="text-white/70 group-hover:text-white/90 transition-colors">Intelligent automation</span>
+              <span className="text-white/70 group-hover:text-white/90 transition-colors">Inteligentna automatyzacja</span>
             </div>
             <div className="flex items-center gap-3 animate-fade-in-left delay-400 group">
               <div className="w-2.5 h-2.5 rounded-full bg-apptax-teal animate-pulse-glow group-hover:scale-125 transition-transform" />
-              <span className="text-white/70 group-hover:text-white/90 transition-colors">Polish tax compliance</span>
+              <span className="text-white/70 group-hover:text-white/90 transition-colors">Zgodność z polskim prawem podatkowym</span>
             </div>
             <div className="flex items-center gap-3 animate-fade-in-left delay-500 group">
               <div className="w-2.5 h-2.5 rounded-full bg-apptax-teal animate-pulse-glow group-hover:scale-125 transition-transform" />
-              <span className="text-white/70 group-hover:text-white/90 transition-colors">Secure multi-tenant platform</span>
+              <span className="text-white/70 group-hover:text-white/90 transition-colors">Bezpieczna platforma wielodostępowa</span>
             </div>
           </div>
 
@@ -126,10 +126,10 @@ export default function LoginPage() {
             </div>
 
             <CardTitle className="text-2xl font-bold text-apptax-navy">
-              Welcome back
+              Witaj ponownie
             </CardTitle>
             <CardDescription className="text-muted-foreground">
-              Enter your credentials to access your account
+              Wprowadź dane logowania, aby uzyskać dostęp do konta
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
@@ -141,7 +141,7 @@ export default function LoginPage() {
               >
                 {(error as any)?.response?.data?.message ||
                  (error as any)?.message ||
-                 'Invalid credentials. Please try again.'}
+                 'Nieprawidłowe dane logowania. Spróbuj ponownie.'}
               </div>
             )}
             <Form {...form}>
@@ -173,11 +173,11 @@ export default function LoginPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem className="animate-fade-in-up delay-200">
-                      <FormLabel className="text-apptax-navy font-medium">Password</FormLabel>
+                      <FormLabel className="text-apptax-navy font-medium">Hasło</FormLabel>
                       <FormControl>
                         <Input
                           type="password"
-                          placeholder="Enter your password"
+                          placeholder="Wprowadź hasło"
                           className="h-12 rounded-xl border-2 border-gray-200 bg-white/80
                             focus:border-apptax-blue focus:ring-4 focus:ring-apptax-blue/10
                             hover:border-gray-300 transition-all duration-200
@@ -217,10 +217,10 @@ export default function LoginPage() {
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         />
                       </svg>
-                      Signing in...
+                      Logowanie...
                     </span>
                   ) : (
-                    'Sign in'
+                    'Zaloguj się'
                   )}
                 </Button>
               </form>
@@ -229,7 +229,7 @@ export default function LoginPage() {
             {/* Footer */}
             <div className="mt-8 pt-6 border-t border-gray-100 text-center animate-fade-in-up delay-400">
               <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5">
-                Powered by AI
+                Zasilane przez AI
                 <span className="inline-block w-2 h-2 rounded-full bg-apptax-teal animate-pulse-glow" />
               </p>
             </div>

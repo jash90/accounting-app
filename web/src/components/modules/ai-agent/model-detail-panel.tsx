@@ -15,7 +15,7 @@ interface ModelDetailPanelProps {
 }
 
 function formatCost(costPer1k: number): string {
-  if (costPer1k === 0) return 'Free';
+  if (costPer1k === 0) return 'Darmowy';
   if (costPer1k < 0.01) return `$${(costPer1k * 1000).toFixed(4)}/1M`;
   if (costPer1k < 1) return `$${costPer1k.toFixed(4)}/1K`;
   return `$${costPer1k.toFixed(2)}/1K`;
@@ -28,12 +28,12 @@ function formatContextWindow(tokens: number): string {
 }
 
 function getCostTier(costPer1kInput: number): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } {
-  if (costPer1kInput === 0) return { label: 'Free', variant: 'secondary' };
-  if (costPer1kInput < 0.5) return { label: 'Very Low', variant: 'secondary' };
-  if (costPer1kInput < 2) return { label: 'Low', variant: 'outline' };
-  if (costPer1kInput < 5) return { label: 'Medium', variant: 'default' };
-  if (costPer1kInput < 10) return { label: 'High', variant: 'destructive' };
-  return { label: 'Very High', variant: 'destructive' };
+  if (costPer1kInput === 0) return { label: 'Darmowy', variant: 'secondary' };
+  if (costPer1kInput < 0.5) return { label: 'Bardzo niski', variant: 'secondary' };
+  if (costPer1kInput < 2) return { label: 'Niski', variant: 'outline' };
+  if (costPer1kInput < 5) return { label: 'Średni', variant: 'default' };
+  if (costPer1kInput < 10) return { label: 'Wysoki', variant: 'destructive' };
+  return { label: 'Bardzo wysoki', variant: 'destructive' };
 }
 
 export function ModelDetailPanel({
@@ -49,7 +49,7 @@ export function ModelDetailPanel({
     return (
       <div className="w-2/5 border-l border-border p-6 flex items-center justify-center">
         <div className="text-center text-muted-foreground">
-          <p className="text-sm">Select a model to view details</p>
+          <p className="text-sm">Wybierz model, aby zobaczyć szczegóły</p>
         </div>
       </div>
     );
@@ -77,7 +77,7 @@ export function ModelDetailPanel({
                 ? 'text-yellow-500 hover:bg-yellow-500/10'
                 : 'text-muted-foreground hover:bg-muted'
             )}
-            title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            title={isFavorite ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}
           >
             <Star className={cn('w-5 h-5', isFavorite && 'fill-current')} />
           </button>
@@ -96,18 +96,18 @@ export function ModelDetailPanel({
         {/* Cost */}
         <div className="space-y-2">
           <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Pricing
+            Cennik
           </h4>
           <div className="flex items-center gap-2">
             <Badge variant={costTier.variant}>{costTier.label}</Badge>
           </div>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="p-2 rounded-md bg-muted/50">
-              <p className="text-xs text-muted-foreground">Input</p>
+              <p className="text-xs text-muted-foreground">Wejście</p>
               <p className="font-medium">{formatCost(model.costPer1kInput)}</p>
             </div>
             <div className="p-2 rounded-md bg-muted/50">
-              <p className="text-xs text-muted-foreground">Output</p>
+              <p className="text-xs text-muted-foreground">Wyjście</p>
               <p className="font-medium">{formatCost(model.costPer1kOutput)}</p>
             </div>
           </div>
@@ -116,16 +116,16 @@ export function ModelDetailPanel({
         {/* Context & Tokens */}
         <div className="space-y-2">
           <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Limits
+            Limity
           </h4>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="p-2 rounded-md bg-muted/50">
-              <p className="text-xs text-muted-foreground">Context Window</p>
-              <p className="font-medium">{formatContextWindow(model.contextWindow)} tokens</p>
+              <p className="text-xs text-muted-foreground">Okno kontekstu</p>
+              <p className="font-medium">{formatContextWindow(model.contextWindow)} tokenów</p>
             </div>
             <div className="p-2 rounded-md bg-muted/50">
-              <p className="text-xs text-muted-foreground">Max Output</p>
-              <p className="font-medium">{formatContextWindow(model.maxOutputTokens)} tokens</p>
+              <p className="text-xs text-muted-foreground">Maks. wyjście</p>
+              <p className="font-medium">{formatContextWindow(model.maxOutputTokens)} tokenów</p>
             </div>
           </div>
         </div>
@@ -133,7 +133,7 @@ export function ModelDetailPanel({
         {/* Capabilities */}
         <div className="space-y-2">
           <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Capabilities
+            Możliwości
           </h4>
           <div className="flex flex-wrap gap-2">
             <Badge
@@ -144,7 +144,7 @@ export function ModelDetailPanel({
               )}
             >
               <Eye className="w-3 h-3" />
-              Vision
+              Wizja
               {model.supportsVision && <Check className="w-3 h-3 ml-0.5" />}
             </Badge>
             <Badge
@@ -155,7 +155,7 @@ export function ModelDetailPanel({
               )}
             >
               <Wrench className="w-3 h-3" />
-              Tools
+              Narzędzia
               {model.supportsFunctionCalling && <Check className="w-3 h-3 ml-0.5" />}
             </Badge>
           </div>
@@ -164,7 +164,7 @@ export function ModelDetailPanel({
         {/* Model ID */}
         <div className="space-y-2">
           <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Model ID
+            ID modelu
           </h4>
           <code className="block text-xs bg-muted/50 p-2 rounded-md text-muted-foreground break-all">
             {model.id}
@@ -180,7 +180,7 @@ export function ModelDetailPanel({
           className="w-full bg-apptax-blue hover:bg-apptax-blue/90"
         >
           <Zap className="w-4 h-4 mr-2" />
-          Select Model
+          Wybierz model
         </Button>
         <Button
           type="button"
@@ -190,8 +190,8 @@ export function ModelDetailPanel({
           className="w-full"
         >
           <GitCompare className="w-4 h-4 mr-2" />
-          {isInComparison ? 'Remove from Compare' : 'Add to Compare'}
-          {!isInComparison && comparisonFull && ' (Max 3)'}
+          {isInComparison ? 'Usuń z porównania' : 'Dodaj do porównania'}
+          {!isInComparison && comparisonFull && ' (Maks. 3)'}
         </Button>
       </div>
     </div>

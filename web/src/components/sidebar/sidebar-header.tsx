@@ -32,7 +32,7 @@ export function SidebarHeader({ title }: SidebarHeaderProps) {
       <button
         onClick={toggle}
         className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-        aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+        aria-label={isOpen ? 'Zwiń pasek boczny' : 'Rozwiń pasek boczny'}
       >
         {isOpen ? (
           <PanelLeftClose className="h-5 w-5 text-white/70" />

@@ -46,15 +46,15 @@ type ContextFilter = 'all' | '8k' | '32k' | '128k' | '200k+';
 type ViewMode = 'browse' | 'compare';
 
 const COST_TIERS: Record<CostFilter, string> = {
-  all: 'All Prices',
-  free: 'Free',
+  all: 'Wszystkie ceny',
+  free: 'Darmowe',
   low: '< $0.5/1K',
   medium: '$0.5-5/1K',
   high: '> $5/1K',
 };
 
 const CONTEXT_TIERS: Record<ContextFilter, string> = {
-  all: 'All Sizes',
+  all: 'Wszystkie rozmiary',
   '8k': '≤ 8K',
   '32k': '≤ 32K',
   '128k': '≤ 128K',
@@ -320,17 +320,17 @@ export function ModelPickerModal({
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border flex-shrink-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-semibold">
-              Select AI Model
+              Wybierz model AI
             </DialogTitle>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">⌘K</kbd>
-              <span>Search</span>
+              <span>Szukaj</span>
               <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">⌘⇧F</kbd>
-              <span>Favorites</span>
+              <span>Ulubione</span>
               {comparisonModels.length > 0 && (
                 <>
                   <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">⌘⇧C</kbd>
-                  <span>Compare</span>
+                  <span>Porównaj</span>
                 </>
               )}
             </div>
@@ -396,7 +396,7 @@ export function ModelPickerModal({
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     id="model-search"
-                    placeholder="Search models..."
+                    placeholder="Szukaj modeli..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9 pr-9"
@@ -443,7 +443,7 @@ export function ModelPickerModal({
                     </SelectContent>
                   </Select>
                   <span className="text-xs text-muted-foreground ml-auto">
-                    {filteredCount} of {totalCount} models
+                    {filteredCount} z {totalCount} modeli
                   </span>
                 </div>
               </div>
@@ -457,7 +457,7 @@ export function ModelPickerModal({
                 ) : Object.keys(groupedModels).length === 0 ? (
                   <div className="flex items-center justify-center h-40">
                     <p className="text-sm text-muted-foreground">
-                      No models found matching your criteria
+                      Nie znaleziono modeli spełniających kryteria
                     </p>
                   </div>
                 ) : (
@@ -494,7 +494,7 @@ export function ModelPickerModal({
                               <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
                                 <span>
                                   {model.costPer1kInput === 0
-                                    ? 'Free'
+                                    ? 'Darmowy'
                                     : `$${model.costPer1kInput.toFixed(4)}/1K`}
                                 </span>
                                 <span>•</span>
@@ -507,7 +507,7 @@ export function ModelPickerModal({
                                 {model.supportsVision && (
                                   <>
                                     <span>•</span>
-                                    <span>Vision</span>
+                                    <span>Wizja</span>
                                   </>
                                 )}
                               </div>
@@ -540,7 +540,7 @@ export function ModelPickerModal({
           <div className="px-6 py-4 border-t border-border flex items-center justify-between bg-muted/30 flex-shrink-0">
             <div className="flex items-center gap-4">
               <span className="text-sm text-muted-foreground">
-                {filteredCount} models available
+                {filteredCount} dostępnych modeli
               </span>
               {comparisonModels.length > 0 && (
                 <Button
@@ -550,20 +550,20 @@ export function ModelPickerModal({
                   className="gap-2"
                 >
                   <GitCompare className="w-4 h-4" />
-                  Compare ({comparisonModels.length})
+                  Porównaj ({comparisonModels.length})
                 </Button>
               )}
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+                Anuluj
               </Button>
               <Button
                 onClick={handleSelectModel}
                 disabled={!selectedModel}
                 className="bg-apptax-blue hover:bg-apptax-blue/90"
               >
-                Select Model
+                Wybierz model
               </Button>
             </div>
           </div>

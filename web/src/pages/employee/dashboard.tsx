@@ -17,9 +17,9 @@ export default function EmployeeDashboard() {
     <div className="space-y-8">
       {/* Header Section */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-apptax-navy">Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-apptax-navy">Panel</h1>
         <p className="text-muted-foreground mt-2">
-          Your workspace overview and quick access to modules
+          Przegląd Twojego obszaru roboczego i szybki dostęp do modułów
         </p>
       </div>
 
@@ -29,12 +29,12 @@ export default function EmployeeDashboard() {
         <Card data-testid="available-modules-card">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Available Modules</CardTitle>
+              <CardTitle className="text-lg">Dostępne moduły</CardTitle>
               <div className="p-2 bg-apptax-soft-teal rounded-lg">
                 <Package className="h-5 w-5 text-apptax-teal" />
               </div>
             </div>
-            <CardDescription>Modules you have access to</CardDescription>
+            <CardDescription>Moduły, do których masz dostęp</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
@@ -50,12 +50,12 @@ export default function EmployeeDashboard() {
         <Card data-testid="team-members-card">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Team Members</CardTitle>
+              <CardTitle className="text-lg">Członkowie zespołu</CardTitle>
               <div className="p-2 bg-apptax-soft-teal rounded-lg">
                 <Users className="h-5 w-5 text-apptax-blue" />
               </div>
             </div>
-            <CardDescription>Total employees in your company</CardDescription>
+            <CardDescription>Łączna liczba pracowników w Twojej firmie</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-4xl font-bold text-apptax-blue">
@@ -70,15 +70,15 @@ export default function EmployeeDashboard() {
         <CardContent className="p-8">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-2xl font-bold mb-2">Welcome to AppTax</h2>
+              <h2 className="text-2xl font-bold mb-2">Witaj w AppTax</h2>
               <p className="text-white max-w-xl">
-                Access your assigned modules from the sidebar. Use AI-powered tools
-                to streamline your accounting tasks and improve productivity.
+                Dostęp do przypisanych modułów znajdziesz w menu bocznym. Korzystaj z narzędzi AI,
+                aby usprawnić zadania księgowe i poprawić produktywność.
               </p>
             </div>
             <div className="hidden md:flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-white ai-glow-lg" />
-              <span className="text-sm font-medium">AI-Powered</span>
+              <span className="text-sm font-medium">Zasilane przez AI</span>
             </div>
           </div>
         </CardContent>

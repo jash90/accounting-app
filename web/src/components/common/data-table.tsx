@@ -106,7 +106,7 @@ export function DataTable<TData, TValue>({
             <TableRow>
               <TableCell colSpan={columns.length} className="h-32 text-center">
                 <div className="flex flex-col items-center gap-2">
-                  <p className="text-muted-foreground">No results found</p>
+                  <p className="text-muted-foreground">Brak wyników</p>
                 </div>
               </TableCell>
             </TableRow>
@@ -117,20 +117,20 @@ export function DataTable<TData, TValue>({
       {enablePagination && data.length > 0 && (
         <div className="flex items-center justify-between px-2">
           <p className="text-sm text-muted-foreground">
-            Showing{' '}
+            Wyświetlanie{' '}
             <span className="font-medium text-apptax-navy">
               {table.getState().pagination.pageIndex * pageSize + 1}
             </span>{' '}
-            to{' '}
+            -{' '}
             <span className="font-medium text-apptax-navy">
               {Math.min(
                 (table.getState().pagination.pageIndex + 1) * pageSize,
                 data.length
               )}
             </span>{' '}
-            of{' '}
+            z{' '}
             <span className="font-medium text-apptax-navy">{data.length}</span>{' '}
-            results
+            wyników
           </p>
           <div className="flex gap-2">
             <Button
@@ -141,7 +141,7 @@ export function DataTable<TData, TValue>({
               className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50 hover:border-apptax-teal"
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous
+              Poprzednia
             </Button>
             <Button
               variant="outline"
@@ -150,7 +150,7 @@ export function DataTable<TData, TValue>({
               disabled={!table.getCanNextPage()}
               className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50 hover:border-apptax-teal"
             >
-              Next
+              Następna
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>

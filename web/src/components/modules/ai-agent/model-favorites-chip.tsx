@@ -50,7 +50,7 @@ export function ModelFavoritesChip({
             }
           }}
           className="ml-0.5 p-0.5 rounded-full hover:bg-muted-foreground/20 transition-colors cursor-pointer"
-          title="Remove from favorites"
+          title="Usuń z ulubionych"
         >
           <X className="w-3 h-3" />
         </span>

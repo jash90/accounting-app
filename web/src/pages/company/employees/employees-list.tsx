@@ -23,18 +23,18 @@ const columns: ColumnDef<UserDto>[] = [
   },
   {
     accessorKey: 'firstName',
-    header: 'First Name',
+    header: 'Imię',
   },
   {
     accessorKey: 'lastName',
-    header: 'Last Name',
+    header: 'Nazwisko',
   },
   {
     accessorKey: 'isActive',
     header: 'Status',
     cell: ({ row }) => (
       <Badge variant={row.original.isActive ? 'success' : 'muted'}>
-        {row.original.isActive ? 'Active' : 'Inactive'}
+        {row.original.isActive ? 'Aktywny' : 'Nieaktywny'}
       </Badge>
     ),
   },
@@ -55,7 +55,7 @@ export default function EmployeesListPage() {
     ...columns,
     {
       id: 'actions',
-      header: 'Actions',
+      header: 'Akcje',
       cell: ({ row }) => (
         <div className="flex gap-1">
           <Button
@@ -66,7 +66,7 @@ export default function EmployeesListPage() {
               e.stopPropagation();
               navigate(`/company/employees/${row.original.id}/permissions`);
             }}
-            title="Manage permissions"
+            title="Zarządzaj uprawnieniami"
           >
             <Key className="h-4 w-4 text-apptax-teal" />
           </Button>
@@ -78,7 +78,7 @@ export default function EmployeesListPage() {
               e.stopPropagation();
               setEditingEmployee(row.original);
             }}
-            title="Edit employee"
+            title="Edytuj pracownika"
           >
             <Edit className="h-4 w-4 text-apptax-blue" />
           </Button>
@@ -90,7 +90,7 @@ export default function EmployeesListPage() {
               e.stopPropagation();
               setDeletingEmployee(row.original);
             }}
-            title="Delete employee"
+            title="Usuń pracownika"
           >
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
@@ -102,8 +102,8 @@ export default function EmployeesListPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Employees"
-        description="Manage your company employees"
+        title="Pracownicy"
+        description="Zarządzaj pracownikami firmy"
         icon={<Users className="h-6 w-6" />}
         action={
           <Button
@@ -111,7 +111,7 @@ export default function EmployeesListPage() {
             className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
           >
             <UserPlus className="mr-2 h-4 w-4" />
-            Add Employee
+            Dodaj pracownika
           </Button>
         }
       />
@@ -147,8 +147,8 @@ export default function EmployeesListPage() {
         <ConfirmDialog
           open={!!deletingEmployee}
           onOpenChange={(open) => !open && setDeletingEmployee(null)}
-          title="Delete Employee"
-          description={`Are you sure you want to delete ${deletingEmployee.email}? This action cannot be undone.`}
+          title="Usuń pracownika"
+          description={`Czy na pewno chcesz usunąć ${deletingEmployee.email}? Tej akcji nie można cofnąć.`}
           variant="destructive"
           onConfirm={() => {
             deleteEmployee.mutate(deletingEmployee.id);

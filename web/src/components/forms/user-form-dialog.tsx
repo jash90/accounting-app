@@ -79,7 +79,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit User' : 'Create User'}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edytuj użytkownika' : 'Utwórz użytkownika'}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -91,7 +91,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="user@example.com" {...field} />
+                    <Input type="email" placeholder="uzytkownik@example.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -104,7 +104,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>Hasło</FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
@@ -119,9 +119,9 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
               name="firstName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>First Name</FormLabel>
+                  <FormLabel>Imię</FormLabel>
                   <FormControl>
-                    <Input placeholder="John" {...field} />
+                    <Input placeholder="Jan" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -133,9 +133,9 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
               name="lastName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Last Name</FormLabel>
+                  <FormLabel>Nazwisko</FormLabel>
                   <FormControl>
-                    <Input placeholder="Doe" {...field} />
+                    <Input placeholder="Kowalski" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -147,17 +147,17 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
               name="role"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Role</FormLabel>
+                  <FormLabel>Rola</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
+                        <SelectValue placeholder="Wybierz rolę" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
-                      <SelectItem value={UserRole.COMPANY_OWNER}>Company Owner</SelectItem>
-                      <SelectItem value={UserRole.EMPLOYEE}>Employee</SelectItem>
+                      <SelectItem value={UserRole.ADMIN}>Administrator</SelectItem>
+                      <SelectItem value={UserRole.COMPANY_OWNER}>Właściciel firmy</SelectItem>
+                      <SelectItem value={UserRole.EMPLOYEE}>Pracownik</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -172,12 +172,12 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
                 name="companyName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Company Name</FormLabel>
+                    <FormLabel>Nazwa firmy</FormLabel>
                     <FormControl>
-                      <Input placeholder="Acme Corporation" {...field} />
+                      <Input placeholder="Nazwa firmy Sp. z o.o." {...field} />
                     </FormControl>
                     <p className="text-sm text-muted-foreground">
-                      A company will be created automatically for this owner.
+                      Firma zostanie automatycznie utworzona dla tego właściciela.
                     </p>
                     <FormMessage />
                   </FormItem>
@@ -192,17 +192,17 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
                 name="companyId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Company</FormLabel>
+                    <FormLabel>Firma</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={companiesLoading ? "Loading companies..." : "Select a company"} />
+                          <SelectValue placeholder={companiesLoading ? "Ładowanie firm..." : "Wybierz firmę"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {companies.length === 0 && !companiesLoading && (
                           <SelectItem value="" disabled>
-                            No companies available. Create a company first.
+                            Brak dostępnych firm. Najpierw utwórz firmę.
                           </SelectItem>
                         )}
                         {companies.map((company) => (
@@ -220,10 +220,10 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-                Cancel
+                Anuluj
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {isEditing ? 'Update' : 'Create'}
+                {isEditing ? 'Zapisz' : 'Utwórz'}
               </Button>
             </div>
           </form>

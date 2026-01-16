@@ -16,20 +16,20 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog';
 const columns: ColumnDef<CompanyDto>[] = [
   {
     accessorKey: 'name',
-    header: 'Name',
+    header: 'Nazwa',
     cell: ({ row }) => (
       <div className="font-medium text-apptax-navy">{row.original.name}</div>
     ),
   },
   {
     accessorKey: 'owner',
-    header: 'Owner',
+    header: 'Właściciel',
     cell: ({ row }) => {
       const owner = row.original.owner;
       return owner ? (
         <span className="text-gray-600">{`${owner.firstName} ${owner.lastName}`}</span>
       ) : (
-        <span className="text-muted-foreground">N/A</span>
+        <span className="text-muted-foreground">Brak</span>
       );
     },
   },
@@ -38,7 +38,7 @@ const columns: ColumnDef<CompanyDto>[] = [
     header: 'Status',
     cell: ({ row }) => (
       <Badge variant={row.original.isActive ? 'success' : 'muted'}>
-        {row.original.isActive ? 'Active' : 'Inactive'}
+        {row.original.isActive ? 'Aktywna' : 'Nieaktywna'}
       </Badge>
     ),
   },
@@ -59,7 +59,7 @@ export default function CompaniesListPage() {
     ...columns,
     {
       id: 'actions',
-      header: 'Actions',
+      header: 'Akcje',
       cell: ({ row }) => (
         <div className="flex gap-1">
           <Button
@@ -70,7 +70,7 @@ export default function CompaniesListPage() {
               e.stopPropagation();
               navigate(`/admin/companies/${row.original.id}/modules`);
             }}
-            title="Manage modules"
+            title="Zarządzaj modułami"
           >
             <Package className="h-4 w-4 text-apptax-teal" />
           </Button>
@@ -82,7 +82,7 @@ export default function CompaniesListPage() {
               e.stopPropagation();
               setEditingCompany(row.original);
             }}
-            title="Edit company"
+            title="Edytuj firmę"
           >
             <Edit className="h-4 w-4 text-apptax-blue" />
           </Button>
@@ -94,7 +94,7 @@ export default function CompaniesListPage() {
               e.stopPropagation();
               setDeletingCompany(row.original);
             }}
-            title="Delete company"
+            title="Usuń firmę"
           >
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
@@ -106,8 +106,8 @@ export default function CompaniesListPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Companies"
-        description="Manage companies in the system"
+        title="Firmy"
+        description="Zarządzaj firmami w systemie"
         icon={<Building2 className="h-6 w-6" />}
         action={
           <Button
@@ -115,7 +115,7 @@ export default function CompaniesListPage() {
             className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
           >
             <Plus className="mr-2 h-4 w-4" />
-            Create Company
+            Utwórz firmę
           </Button>
         }
       />
@@ -151,8 +151,8 @@ export default function CompaniesListPage() {
         <ConfirmDialog
           open={!!deletingCompany}
           onOpenChange={(open) => !open && setDeletingCompany(null)}
-          title="Delete Company"
-          description={`Are you sure you want to delete ${deletingCompany.name}? This action cannot be undone.`}
+          title="Usuń firmę"
+          description={`Czy na pewno chcesz usunąć ${deletingCompany.name}? Tej akcji nie można cofnąć.`}
           variant="destructive"
           onConfirm={() => {
             deleteCompany.mutate(deletingCompany.id);

@@ -6,29 +6,29 @@ import { MessageSquare, Settings, FolderOpen, BarChart3, ArrowRight, Sparkles, C
 export default function AdminAIAgentDashboard() {
   const features = [
     {
-      title: 'AI Chat',
-      description: 'Start conversations with the AI assistant. Get intelligent responses based on your knowledge base.',
+      title: 'Czat AI',
+      description: 'Rozpocznij rozmowy z asystentem AI. Uzyskaj inteligentne odpowiedzi na podstawie bazy wiedzy.',
       icon: MessageSquare,
       href: '/admin/modules/ai-agent/chat',
       gradient: 'bg-apptax-ai-gradient',
     },
     {
-      title: 'AI Configuration',
-      description: 'Configure AI provider (OpenAI/OpenRouter), model, API keys, and system prompt.',
+      title: 'Konfiguracja AI',
+      description: 'Skonfiguruj dostawcę AI (OpenAI/OpenRouter), model, klucze API i prompt systemowy.',
       icon: Settings,
       href: '/admin/modules/ai-agent/configuration',
       gradient: 'bg-apptax-gradient',
     },
     {
-      title: 'Knowledge Base Files',
-      description: 'Upload and manage PDF, TXT, and MD files for RAG (Retrieval Augmented Generation).',
+      title: 'Pliki bazy wiedzy',
+      description: 'Prześlij i zarządzaj plikami PDF, TXT i MD dla RAG (Retrieval Augmented Generation).',
       icon: FolderOpen,
       href: '/admin/modules/ai-agent/context',
       gradient: 'bg-apptax-dark-gradient',
     },
     {
-      title: 'Token Usage',
-      description: 'View token consumption across all companies in the system.',
+      title: 'Zużycie tokenów',
+      description: 'Zobacz zużycie tokenów we wszystkich firmach w systemie.',
       icon: BarChart3,
       href: '/admin/modules/ai-agent/token-usage',
       gradient: 'bg-gradient-to-br from-apptax-teal to-apptax-navy',
@@ -39,11 +39,11 @@ export default function AdminAIAgentDashboard() {
     <div className="container mx-auto p-8 space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-apptax-navy flex items-center gap-3">
-          AI Agent Module
+          Moduł Agent AI
           <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow" />
         </h1>
         <p className="text-muted-foreground mt-1">
-          Intelligent AI assistant with RAG capabilities and token management
+          Inteligentny asystent AI z funkcjami RAG i zarządzaniem tokenami
         </p>
       </div>
 
@@ -67,7 +67,7 @@ export default function AdminAIAgentDashboard() {
               <CardContent>
                 <Link to={feature.href}>
                   <Button className="w-full group-hover:shadow-apptax-sm transition-shadow">
-                    Open
+                    Otwórz
                     <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
@@ -81,34 +81,34 @@ export default function AdminAIAgentDashboard() {
         <CardHeader>
           <CardTitle className="text-apptax-navy flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-apptax-teal" />
-            Quick Start Guide
+            Szybki start
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-start gap-3">
             <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-apptax-navy">1. Configure AI Provider</p>
+              <p className="font-medium text-apptax-navy">1. Skonfiguruj dostawcę AI</p>
               <p className="text-sm text-muted-foreground">
-                Set up your AI provider (OpenAI/OpenRouter) and model in Configuration
+                Ustaw dostawcę AI (OpenAI/OpenRouter) i model w Konfiguracji
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
             <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-apptax-navy">2. Upload Knowledge Base</p>
+              <p className="font-medium text-apptax-navy">2. Prześlij bazę wiedzy</p>
               <p className="text-sm text-muted-foreground">
-                Add PDF, TXT, or MD files to enhance AI responses with your content
+                Dodaj pliki PDF, TXT lub MD, aby wzbogacić odpowiedzi AI o Twoje treści
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
             <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-apptax-navy">3. Start Chatting</p>
+              <p className="font-medium text-apptax-navy">3. Rozpocznij czat</p>
               <p className="text-sm text-muted-foreground">
-                Begin conversations with context-aware AI responses
+                Zacznij rozmowy z odpowiedziami AI świadomymi kontekstu
               </p>
             </div>
           </div>

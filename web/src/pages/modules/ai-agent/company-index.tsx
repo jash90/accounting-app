@@ -6,22 +6,22 @@ import { MessageSquare, BarChart3, FolderOpen, ArrowRight, Sparkles, CheckCircle
 export default function CompanyAIAgentDashboard() {
   const features = [
     {
-      title: 'AI Chat',
-      description: 'Start conversations with the AI assistant. Get intelligent responses based on your company knowledge base.',
+      title: 'Czat AI',
+      description: 'Rozpocznij rozmowy z asystentem AI. Uzyskaj inteligentne odpowiedzi na podstawie bazy wiedzy firmy.',
       icon: MessageSquare,
       href: '/company/modules/ai-agent/chat',
       gradient: 'bg-apptax-ai-gradient',
     },
     {
-      title: 'Token Usage',
-      description: 'Monitor AI usage across your company. View statistics per user and track token consumption.',
+      title: 'Zużycie tokenów',
+      description: 'Monitoruj użycie AI w firmie. Przeglądaj statystyki użytkowników i śledź zużycie tokenów.',
       icon: BarChart3,
       href: '/company/modules/ai-agent/token-usage',
       gradient: 'bg-apptax-gradient',
     },
     {
-      title: 'Knowledge Base Files',
-      description: 'Upload and manage company-specific PDF, TXT, and MD files for enhanced AI responses.',
+      title: 'Pliki bazy wiedzy',
+      description: 'Prześlij i zarządzaj plikami PDF, TXT i MD specyficznymi dla firmy, aby ulepszyć odpowiedzi AI.',
       icon: FolderOpen,
       href: '/company/modules/ai-agent/context',
       gradient: 'bg-apptax-dark-gradient',
@@ -32,11 +32,11 @@ export default function CompanyAIAgentDashboard() {
     <div className="container mx-auto p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-apptax-navy flex items-center gap-3">
-          AI Agent Module
+          Moduł Agent AI
           <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow" />
         </h1>
         <p className="text-muted-foreground mt-1">
-          Intelligent AI assistant for your company
+          Inteligentny asystent AI dla Twojej firmy
         </p>
       </div>
 
@@ -57,7 +57,7 @@ export default function CompanyAIAgentDashboard() {
               <CardContent>
                 <Link to={feature.href}>
                   <Button className="w-full">
-                    Open
+                    Otwórz
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
@@ -71,34 +71,34 @@ export default function CompanyAIAgentDashboard() {
         <CardHeader>
           <CardTitle className="text-apptax-navy flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-apptax-teal" />
-            Features
+            Funkcje
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-start gap-3">
             <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-apptax-navy">Smart Conversations</p>
+              <p className="font-medium text-apptax-navy">Inteligentne rozmowy</p>
               <p className="text-sm text-muted-foreground">
-                AI learns from your uploaded documents
+                AI uczy się z przesłanych dokumentów
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
             <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-apptax-navy">Token Tracking</p>
+              <p className="font-medium text-apptax-navy">Śledzenie tokenów</p>
               <p className="text-sm text-muted-foreground">
-                Monitor usage and costs per employee
+                Monitoruj użycie i koszty per pracownik
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
             <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-apptax-navy">RAG Technology</p>
+              <p className="font-medium text-apptax-navy">Technologia RAG</p>
               <p className="text-sm text-muted-foreground">
-                AI answers based on your company files
+                AI odpowiada na podstawie plików firmy
               </p>
             </div>
           </div>

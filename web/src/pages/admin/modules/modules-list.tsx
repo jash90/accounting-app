@@ -15,7 +15,7 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog';
 const columns: ColumnDef<ModuleDto>[] = [
   {
     accessorKey: 'name',
-    header: 'Name',
+    header: 'Nazwa',
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
         <span className="font-medium text-apptax-navy">{row.original.name}</span>
@@ -36,7 +36,7 @@ const columns: ColumnDef<ModuleDto>[] = [
   },
   {
     accessorKey: 'description',
-    header: 'Description',
+    header: 'Opis',
     cell: ({ row }) => (
       <span className="text-apptax-navy/70 line-clamp-1">{row.original.description}</span>
     ),
@@ -46,7 +46,7 @@ const columns: ColumnDef<ModuleDto>[] = [
     header: 'Status',
     cell: ({ row }) => (
       <Badge variant={row.original.isActive ? 'success' : 'muted'}>
-        {row.original.isActive ? 'Active' : 'Inactive'}
+        {row.original.isActive ? 'Aktywny' : 'Nieaktywny'}
       </Badge>
     ),
   },
@@ -66,7 +66,7 @@ export default function ModulesListPage() {
     ...columns,
     {
       id: 'actions',
-      header: 'Actions',
+      header: 'Akcje',
       cell: ({ row }) => (
         <div className="flex gap-1">
           <Button
@@ -77,7 +77,7 @@ export default function ModulesListPage() {
               e.stopPropagation();
               setEditingModule(row.original);
             }}
-            title="Edit module"
+            title="Edytuj moduł"
           >
             <Edit className="h-4 w-4 text-apptax-blue" />
           </Button>
@@ -89,7 +89,7 @@ export default function ModulesListPage() {
               e.stopPropagation();
               setDeletingModule(row.original);
             }}
-            title="Delete module"
+            title="Usuń moduł"
           >
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
@@ -101,8 +101,8 @@ export default function ModulesListPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Modules"
-        description="Manage system modules"
+        title="Moduły"
+        description="Zarządzaj modułami systemu"
         icon={<Package className="h-6 w-6" />}
         action={
           <Button
@@ -110,7 +110,7 @@ export default function ModulesListPage() {
             className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
           >
             <Plus className="mr-2 h-4 w-4" />
-            Create Module
+            Utwórz moduł
           </Button>
         }
       />
@@ -146,8 +146,8 @@ export default function ModulesListPage() {
         <ConfirmDialog
           open={!!deletingModule}
           onOpenChange={(open) => !open && setDeletingModule(null)}
-          title="Delete Module"
-          description={`Are you sure you want to delete ${deletingModule.name}? This action cannot be undone.`}
+          title="Usuń moduł"
+          description={`Czy na pewno chcesz usunąć ${deletingModule.name}? Tej akcji nie można cofnąć.`}
           variant="destructive"
           onConfirm={() => {
             deleteModule.mutate(deletingModule.id);

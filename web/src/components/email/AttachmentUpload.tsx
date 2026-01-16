@@ -31,8 +31,8 @@ export function AttachmentUpload({
       for (const file of Array.from(files)) {
         if (file.size > maxFileSize) {
           toast({
-            title: 'Error',
-            description: `File "${file.name}" exceeds ${formatFileSize(maxFileSize)} limit`,
+            title: 'Błąd',
+            description: `Plik "${file.name}" przekracza limit ${formatFileSize(maxFileSize)}`,
             variant: 'destructive',
           });
           continue;
@@ -42,13 +42,13 @@ export function AttachmentUpload({
           const result = await onUpload(file);
           onAttachmentsChange([...attachments, result]);
           toast({
-            title: 'Success',
-            description: `"${file.name}" uploaded`,
+            title: 'Sukces',
+            description: `Przesłano "${file.name}"`,
           });
         } catch {
           toast({
-            title: 'Error',
-            description: `Failed to upload "${file.name}"`,
+            title: 'Błąd',
+            description: `Nie udało się przesłać "${file.name}"`,
             variant: 'destructive',
           });
         }
@@ -85,7 +85,7 @@ export function AttachmentUpload({
 
   return (
     <div className="space-y-3">
-      <Label>Attachments</Label>
+      <Label>Załączniki</Label>
 
       {/* Drag & Drop Zone */}
       <div
@@ -116,11 +116,11 @@ export function AttachmentUpload({
           )}
           <span className="text-sm text-muted-foreground">
             {isUploading
-              ? 'Uploading...'
-              : 'Drag and drop files here, or click to browse'}
+              ? 'Przesyłanie...'
+              : 'Przeciągnij i upuść pliki tutaj lub kliknij, aby przeglądać'}
           </span>
           <span className="text-xs text-muted-foreground">
-            Maximum file size: {formatFileSize(maxFileSize)}
+            Maksymalny rozmiar pliku: {formatFileSize(maxFileSize)}
           </span>
         </label>
       </div>

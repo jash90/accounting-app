@@ -58,7 +58,7 @@ export function CompanyFormDialog({ open, onOpenChange, company, onSubmit }: Com
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Company' : 'Create Company'}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edytuj firmę' : 'Utwórz firmę'}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -68,9 +68,9 @@ export function CompanyFormDialog({ open, onOpenChange, company, onSubmit }: Com
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Company Name</FormLabel>
+                  <FormLabel>Nazwa firmy</FormLabel>
                   <FormControl>
-                    <Input placeholder="Acme Corporation" {...field} />
+                    <Input placeholder="Nazwa firmy Sp. z o.o." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -83,17 +83,17 @@ export function CompanyFormDialog({ open, onOpenChange, company, onSubmit }: Com
                 name="ownerId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Owner</FormLabel>
+                    <FormLabel>Właściciel</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={ownersLoading ? "Loading owners..." : "Select an owner"} />
+                          <SelectValue placeholder={ownersLoading ? "Ładowanie właścicieli..." : "Wybierz właściciela"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {!hasAvailableOwners && !ownersLoading && (
                           <SelectItem value="" disabled>
-                            No available owners. Create a Company Owner user first.
+                            Brak dostępnych właścicieli. Najpierw utwórz użytkownika typu Właściciel firmy.
                           </SelectItem>
                         )}
                         {availableOwners?.map((owner) => (
@@ -105,7 +105,7 @@ export function CompanyFormDialog({ open, onOpenChange, company, onSubmit }: Com
                     </Select>
                     {!hasAvailableOwners && !ownersLoading && (
                       <p className="text-sm text-muted-foreground">
-                        First create a user with &quot;Company Owner&quot; role, then create a company for them.
+                        Najpierw utwórz użytkownika z rolą &quot;Właściciel firmy&quot;, a następnie utwórz dla niego firmę.
                       </p>
                     )}
                     <FormMessage />
@@ -116,10 +116,10 @@ export function CompanyFormDialog({ open, onOpenChange, company, onSubmit }: Com
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-                Cancel
+                Anuluj
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {isEditing ? 'Update' : 'Create'}
+                {isEditing ? 'Zapisz' : 'Utwórz'}
               </Button>
             </div>
           </form>

@@ -12,8 +12,8 @@ export default function CompanyModulesListPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Available Modules"
-        description="Modules enabled for your company"
+        title="Dostępne moduły"
+        description="Moduły włączone dla Twojej firmy"
         icon={<Package className="h-6 w-6" />}
       />
 
@@ -38,10 +38,10 @@ export default function CompanyModulesListPage() {
               <Package className="h-8 w-8 text-apptax-teal" />
             </div>
             <p className="text-apptax-navy font-medium">
-              No modules are currently enabled for your company.
+              Brak włączonych modułów dla Twojej firmy.
             </p>
             <p className="text-sm text-muted-foreground mt-1">
-              Contact an administrator to enable modules.
+              Skontaktuj się z administratorem, aby włączyć moduły.
             </p>
           </CardContent>
         </Card>
@@ -79,7 +79,7 @@ export default function CompanyModulesListPage() {
                       </CardTitle>
                     </div>
                     <Badge variant={module.isActive ? 'success' : 'muted'}>
-                      {module.isActive ? 'Active' : 'Inactive'}
+                      {module.isActive ? 'Aktywny' : 'Nieaktywny'}
                     </Badge>
                   </div>
                   <CardDescription className="mt-2">{module.description}</CardDescription>
@@ -90,7 +90,7 @@ export default function CompanyModulesListPage() {
                       {module.slug}
                     </code>
                     <span className="text-apptax-blue text-sm flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      Open module
+                      Otwórz moduł
                       <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                     </span>
                   </div>

@@ -30,14 +30,14 @@ export function useCreateCompany() {
       // Invalidate available owners as the selected owner is now assigned
       queryClient.invalidateQueries({ queryKey: ['available-owners'] });
       toast({
-        title: 'Success',
-        description: 'Company created successfully',
+        title: 'Sukces',
+        description: 'Firma została utworzona',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to create company',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się utworzyć firmy',
         variant: 'destructive',
       });
     },
@@ -55,14 +55,14 @@ export function useUpdateCompany() {
       queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.companies.detail(variables.id) });
       toast({
-        title: 'Success',
-        description: 'Company updated successfully',
+        title: 'Sukces',
+        description: 'Firma została zaktualizowana',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to update company',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się zaktualizować firmy',
         variant: 'destructive',
       });
     },
@@ -78,14 +78,14 @@ export function useDeleteCompany() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
       toast({
-        title: 'Success',
-        description: 'Company deleted successfully',
+        title: 'Sukces',
+        description: 'Firma została usunięta',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete company',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się usunąć firmy',
         variant: 'destructive',
       });
     },
@@ -111,14 +111,14 @@ export function useGrantModuleToCompany() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [...queryKeys.companies.detail(variables.companyId), 'modules'] });
       toast({
-        title: 'Success',
-        description: 'Module enabled successfully',
+        title: 'Sukces',
+        description: 'Moduł został włączony',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to enable module',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się włączyć modułu',
         variant: 'destructive',
       });
     },
@@ -137,14 +137,14 @@ export function useRevokeModuleFromCompany() {
       // Also invalidate employee permissions queries as they might have been cascaded
       queryClient.invalidateQueries({ queryKey: ['company', 'employees'] });
       toast({
-        title: 'Success',
-        description: 'Module access revoked. All employee permissions for this module have been removed.',
+        title: 'Sukces',
+        description: 'Dostęp do modułu został cofnięty. Wszystkie uprawnienia pracowników dla tego modułu zostały usunięte.',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to disable module',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się wyłączyć modułu',
         variant: 'destructive',
       });
     },

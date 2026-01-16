@@ -13,9 +13,9 @@ export default function AdminDashboard() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-apptax-navy">Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-apptax-navy">Panel Administratora</h1>
         <p className="text-muted-foreground mt-2">
-          Overview of system statistics and management
+          Przegląd statystyk systemowych i zarządzanie
         </p>
       </div>
 
@@ -24,12 +24,12 @@ export default function AdminDashboard() {
         <Card data-testid="users-card">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Total Users</CardTitle>
+              <CardTitle className="text-lg">Wszyscy użytkownicy</CardTitle>
               <div className="p-2 bg-apptax-soft-teal rounded-lg">
                 <Users className="h-5 w-5 text-apptax-blue" />
               </div>
             </div>
-            <CardDescription>All users in the system</CardDescription>
+            <CardDescription>Wszyscy użytkownicy w systemie</CardDescription>
           </CardHeader>
           <CardContent>
             <p data-testid="user-count" className="text-4xl font-bold text-apptax-blue">
@@ -41,12 +41,12 @@ export default function AdminDashboard() {
         <Card data-testid="companies-card">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Total Companies</CardTitle>
+              <CardTitle className="text-lg">Wszystkie firmy</CardTitle>
               <div className="p-2 bg-apptax-soft-teal rounded-lg">
                 <Building2 className="h-5 w-5 text-apptax-blue" />
               </div>
             </div>
-            <CardDescription>Registered companies</CardDescription>
+            <CardDescription>Zarejestrowane firmy</CardDescription>
           </CardHeader>
           <CardContent>
             <p data-testid="company-count" className="text-4xl font-bold text-apptax-blue">
@@ -58,12 +58,12 @@ export default function AdminDashboard() {
         <Card data-testid="modules-card">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Modules</CardTitle>
+              <CardTitle className="text-lg">Moduły</CardTitle>
               <div className="p-2 bg-apptax-soft-teal rounded-lg">
                 <Package className="h-5 w-5 text-apptax-teal" />
               </div>
             </div>
-            <CardDescription>Available modules</CardDescription>
+            <CardDescription>Dostępne moduły</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
@@ -81,16 +81,16 @@ export default function AdminDashboard() {
         <CardContent className="p-8">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-2xl font-bold mb-2">Welcome to AppTax Admin</h2>
+              <h2 className="text-2xl font-bold mb-2">Witaj w AppTax Admin</h2>
               <p className="text-white/80 max-w-xl">
-                Manage companies, users, and modules from this central dashboard.
-                Monitor system health and configure platform settings.
+                Zarządzaj firmami, użytkownikami i modułami z tego centralnego panelu.
+                Monitoruj stan systemu i konfiguruj ustawienia platformy.
               </p>
             </div>
             <div className="hidden md:block">
               <div className="flex items-center gap-2 text-apptax-teal">
                 <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow" />
-                <span className="text-sm font-medium">AI-Powered Platform</span>
+                <span className="text-sm font-medium">Platforma zasilana AI</span>
               </div>
             </div>
           </div>

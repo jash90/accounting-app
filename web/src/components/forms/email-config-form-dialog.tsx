@@ -188,22 +188,22 @@ export function EmailConfigFormDialog({
   const getTitle = () => {
     switch (type) {
       case 'company':
-        return 'Company Email Configuration';
+        return 'Konfiguracja email firmy';
       case 'system-admin':
-        return 'System Admin Email Configuration';
+        return 'Konfiguracja email administratora systemu';
       default:
-        return 'Personal Email Configuration';
+        return 'Konfiguracja osobistego email';
     }
   };
 
   const getDescription = () => {
     switch (type) {
       case 'company':
-        return 'Configure email settings for your company. This will be used for company-wide email communications.';
+        return 'Skonfiguruj ustawienia email dla swojej firmy. Będą używane do komunikacji email w całej firmie.';
       case 'system-admin':
-        return 'Configure shared email settings for all administrators. This will be used for system-wide email communications.';
+        return 'Skonfiguruj wspólne ustawienia email dla wszystkich administratorów. Będą używane do komunikacji systemowej.';
       default:
-        return 'Configure your personal email settings for sending and receiving emails.';
+        return 'Skonfiguruj swoje osobiste ustawienia email do wysyłania i odbierania wiadomości.';
     }
   };
 
@@ -216,7 +216,7 @@ export function EmailConfigFormDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
-            {isEditing ? `Edit ${title}` : `Create ${title}`}
+            {isEditing ? `Edytuj: ${title}` : `Utwórz: ${title}`}
           </DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
@@ -229,11 +229,11 @@ export function EmailConfigFormDialog({
               name="displayName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Display Name (Optional)</FormLabel>
+                  <FormLabel>Nazwa wyświetlana (opcjonalna)</FormLabel>
                   <FormControl>
-                    <Input placeholder="My Email Account" {...field} />
+                    <Input placeholder="Moje konto email" {...field} />
                   </FormControl>
-                  <FormDescription>A friendly name to identify this email configuration</FormDescription>
+                  <FormDescription>Przyjazna nazwa do identyfikacji tej konfiguracji email</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -243,7 +243,7 @@ export function EmailConfigFormDialog({
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Send className="h-4 w-4 text-apptax-blue" />
-                <h3 className="text-lg font-semibold text-apptax-navy">SMTP Configuration (Outgoing Mail)</h3>
+                <h3 className="text-lg font-semibold text-apptax-navy">Konfiguracja SMTP (poczta wychodząca)</h3>
               </div>
               <Separator />
 
@@ -253,7 +253,7 @@ export function EmailConfigFormDialog({
                   name="smtpHost"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>SMTP Host</FormLabel>
+                      <FormLabel>Host SMTP</FormLabel>
                       <FormControl>
                         <Input placeholder="mail.example.com" {...field} />
                       </FormControl>
@@ -267,7 +267,7 @@ export function EmailConfigFormDialog({
                   name="smtpPort"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>SMTP Port</FormLabel>
+                      <FormLabel>Port SMTP</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -289,8 +289,8 @@ export function EmailConfigFormDialog({
                 <Alert className="border-amber-200 bg-amber-50">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-amber-800 text-sm">
-                    Some email providers require enabling SMTP access in your email account&apos;s user panel.
-                    If you encounter authentication errors, check the security settings in your email provider&apos;s panel.
+                    Niektórzy dostawcy email wymagają włączenia dostępu SMTP w panelu użytkownika konta email.
+                    Jeśli napotkasz błędy uwierzytelniania, sprawdź ustawienia bezpieczeństwa w panelu dostawcy email.
                   </AlertDescription>
                 </Alert>
               )}
@@ -301,8 +301,8 @@ export function EmailConfigFormDialog({
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                     <div className="space-y-0.5">
-                      <FormLabel>Use SSL/TLS</FormLabel>
-                      <FormDescription>Enable secure connection (recommended for port 465)</FormDescription>
+                      <FormLabel>Użyj SSL/TLS</FormLabel>
+                      <FormDescription>Włącz bezpieczne połączenie (zalecane dla portu 465)</FormDescription>
                     </div>
                     <FormControl>
                       <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -316,7 +316,7 @@ export function EmailConfigFormDialog({
                 name="smtpUser"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>SMTP Username (Email)</FormLabel>
+                    <FormLabel>Nazwa użytkownika SMTP (Email)</FormLabel>
                     <FormControl>
                       <Input type="email" placeholder="user@example.com" {...field} />
                     </FormControl>
@@ -330,16 +330,16 @@ export function EmailConfigFormDialog({
                 name="smtpPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>SMTP Password</FormLabel>
+                    <FormLabel>Hasło SMTP</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder={isEditing ? '••••••••' : 'Enter password'}
+                        placeholder={isEditing ? '••••••••' : 'Wprowadź hasło'}
                         {...field}
                       />
                     </FormControl>
                     {isEditing && (
-                      <FormDescription>Leave empty to keep existing password</FormDescription>
+                      <FormDescription>Pozostaw puste, aby zachować obecne hasło</FormDescription>
                     )}
                     <FormMessage />
                   </FormItem>
@@ -358,12 +358,12 @@ export function EmailConfigFormDialog({
                   {isTestingSmtp ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Testing...
+                      Testowanie...
                     </>
                   ) : (
                     <>
                       <CheckCircle className="mr-2 h-4 w-4" />
-                      Test SMTP Connection
+                      Testuj połączenie SMTP
                     </>
                   )}
                 </Button>
@@ -374,7 +374,7 @@ export function EmailConfigFormDialog({
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Download className="h-4 w-4 text-apptax-teal" />
-                <h3 className="text-lg font-semibold text-apptax-navy">IMAP Configuration (Incoming Mail)</h3>
+                <h3 className="text-lg font-semibold text-apptax-navy">Konfiguracja IMAP (poczta przychodząca)</h3>
               </div>
               <Separator />
 
@@ -384,7 +384,7 @@ export function EmailConfigFormDialog({
                   name="imapHost"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>IMAP Host</FormLabel>
+                      <FormLabel>Host IMAP</FormLabel>
                       <FormControl>
                         <Input placeholder="mail.example.com" {...field} />
                       </FormControl>
@@ -398,7 +398,7 @@ export function EmailConfigFormDialog({
                   name="imapPort"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>IMAP Port</FormLabel>
+                      <FormLabel>Port IMAP</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -420,8 +420,8 @@ export function EmailConfigFormDialog({
                 <Alert className="border-amber-200 bg-amber-50">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-amber-800 text-sm">
-                    Some email providers require enabling IMAP access in your email account&apos;s user panel.
-                    If you encounter authentication errors, check the security settings in your email provider&apos;s panel.
+                    Niektórzy dostawcy email wymagają włączenia dostępu IMAP w panelu użytkownika konta email.
+                    Jeśli napotkasz błędy uwierzytelniania, sprawdź ustawienia bezpieczeństwa w panelu dostawcy email.
                   </AlertDescription>
                 </Alert>
               )}
@@ -432,8 +432,8 @@ export function EmailConfigFormDialog({
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                     <div className="space-y-0.5">
-                      <FormLabel>Use TLS</FormLabel>
-                      <FormDescription>Enable secure connection (recommended for port 993)</FormDescription>
+                      <FormLabel>Użyj TLS</FormLabel>
+                      <FormDescription>Włącz bezpieczne połączenie (zalecane dla portu 993)</FormDescription>
                     </div>
                     <FormControl>
                       <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -447,7 +447,7 @@ export function EmailConfigFormDialog({
                 name="imapUser"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>IMAP Username (Email)</FormLabel>
+                    <FormLabel>Nazwa użytkownika IMAP (Email)</FormLabel>
                     <FormControl>
                       <Input type="email" placeholder="user@example.com" {...field} />
                     </FormControl>
@@ -461,16 +461,16 @@ export function EmailConfigFormDialog({
                 name="imapPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>IMAP Password</FormLabel>
+                    <FormLabel>Hasło IMAP</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder={isEditing ? '••••••••' : 'Enter password'}
+                        placeholder={isEditing ? '••••••••' : 'Wprowadź hasło'}
                         {...field}
                       />
                     </FormControl>
                     {isEditing && (
-                      <FormDescription>Leave empty to keep existing password</FormDescription>
+                      <FormDescription>Pozostaw puste, aby zachować obecne hasło</FormDescription>
                     )}
                     <FormMessage />
                   </FormItem>
@@ -489,12 +489,12 @@ export function EmailConfigFormDialog({
                   {isTestingImap ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Testing...
+                      Testowanie...
                     </>
                   ) : (
                     <>
                       <CheckCircle className="mr-2 h-4 w-4" />
-                      Test IMAP Connection
+                      Testuj połączenie IMAP
                     </>
                   )}
                 </Button>
@@ -504,10 +504,10 @@ export function EmailConfigFormDialog({
             {/* Action Buttons */}
             <div className="flex justify-end gap-2 pt-4">
               <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-                Cancel
+                Anuluj
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {isEditing ? 'Update Configuration' : 'Create Configuration'}
+                {isEditing ? 'Zapisz konfigurację' : 'Utwórz konfigurację'}
               </Button>
             </div>
           </form>

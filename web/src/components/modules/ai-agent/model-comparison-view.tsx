@@ -12,7 +12,7 @@ interface ModelComparisonViewProps {
 }
 
 function formatCost(costPer1k: number): string {
-  if (costPer1k === 0) return 'Free';
+  if (costPer1k === 0) return 'Darmowy';
   if (costPer1k < 0.01) return `$${(costPer1k * 1000).toFixed(4)}/1M`;
   if (costPer1k < 1) return `$${costPer1k.toFixed(4)}/1K`;
   return `$${costPer1k.toFixed(2)}/1K`;
@@ -43,10 +43,10 @@ export function ModelComparisonView({
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-muted-foreground mb-4">No models selected for comparison</p>
+          <p className="text-muted-foreground mb-4">Nie wybrano modeli do porównania</p>
           <Button variant="outline" onClick={onBack}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Browse
+            Wróć do przeglądania
           </Button>
         </div>
       </div>
@@ -81,9 +81,9 @@ export function ModelComparisonView({
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={onBack}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
+            Wstecz
           </Button>
-          <h3 className="text-lg font-semibold">Compare Models ({models.length})</h3>
+          <h3 className="text-lg font-semibold">Porównaj modele ({models.length})</h3>
         </div>
       </div>
 
@@ -93,7 +93,7 @@ export function ModelComparisonView({
           <thead>
             <tr className="bg-muted/50 sticky top-0 z-10">
               <th className="py-3 px-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider border-r border-border w-[150px]">
-                Property
+                Właściwość
               </th>
               {models.map((model) => (
                 <th key={model.id} className="py-3 px-4 border-r border-border last:border-r-0 min-w-[200px]">
@@ -106,7 +106,7 @@ export function ModelComparisonView({
                       type="button"
                       onClick={() => onRemove(model.id)}
                       className="p-1 rounded hover:bg-muted transition-colors flex-shrink-0"
-                      title="Remove from comparison"
+                      title="Usuń z porównania"
                     >
                       <X className="w-4 h-4 text-muted-foreground" />
                     </button>
@@ -117,7 +117,7 @@ export function ModelComparisonView({
           </thead>
           <tbody className="divide-y divide-border">
             <ComparisonRow
-              label="Input Cost"
+              label="Koszt wejścia"
               values={models.map((m) => (
                 <span key={m.id} className={getCostTierColor(m.costPer1kInput)}>
                   {formatCost(m.costPer1kInput)}
@@ -126,7 +126,7 @@ export function ModelComparisonView({
               highlight
             />
             <ComparisonRow
-              label="Output Cost"
+              label="Koszt wyjścia"
               values={models.map((m) => (
                 <span key={m.id} className={getCostTierColor(m.costPer1kOutput)}>
                   {formatCost(m.costPer1kOutput)}
@@ -134,20 +134,20 @@ export function ModelComparisonView({
               ))}
             />
             <ComparisonRow
-              label="Context Window"
+              label="Okno kontekstu"
               values={models.map((m) => (
                 <span key={m.id} className="font-medium">{formatContextWindow(m.contextWindow)}</span>
               ))}
               highlight
             />
             <ComparisonRow
-              label="Max Output"
+              label="Maks. wyjście"
               values={models.map((m) => (
                 <span key={m.id}>{formatContextWindow(m.maxOutputTokens)}</span>
               ))}
             />
             <ComparisonRow
-              label="Vision"
+              label="Wizja"
               values={models.map((m) => (
                 m.supportsVision ? (
                   <Badge key={m.id} variant="default" className="gap-1">
@@ -163,7 +163,7 @@ export function ModelComparisonView({
               highlight
             />
             <ComparisonRow
-              label="Tools/Functions"
+              label="Narzędzia/Funkcje"
               values={models.map((m) => (
                 m.supportsFunctionCalling ? (
                   <Badge key={m.id} variant="default" className="gap-1">
@@ -178,7 +178,7 @@ export function ModelComparisonView({
               ))}
             />
             <ComparisonRow
-              label="Model ID"
+              label="ID modelu"
               values={models.map((m) => (
                 <code key={m.id} className="text-xs bg-muted px-1.5 py-0.5 rounded break-all">
                   {m.id}
@@ -196,7 +196,7 @@ export function ModelComparisonView({
                     className="w-full bg-apptax-blue hover:bg-apptax-blue/90"
                   >
                     <Zap className="w-4 h-4 mr-2" />
-                    Select
+                    Wybierz
                   </Button>
                 </td>
               ))}

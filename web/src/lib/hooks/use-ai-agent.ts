@@ -37,10 +37,10 @@ export function useCreateConversation() {
     mutationFn: (data: CreateConversationDto) => aiAgentApi.conversations.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.conversations.all });
-      toast.success('Conversation created successfully');
+      toast.success('Konwersacja została utworzona');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create conversation');
+      toast.error(error.response?.data?.message || 'Nie udało się utworzyć konwersacji');
     },
   });
 }
@@ -58,7 +58,7 @@ export function useSendMessage(conversationId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.company });
     },
     onError: (error: any) => {
-      const message = error.response?.data?.message || 'Failed to send message';
+      const message = error.response?.data?.message || 'Nie udało się wysłać wiadomości';
       toast.error(message);
     },
   });
@@ -76,7 +76,7 @@ export function useSendMessageStream(conversationId: string) {
 
   const sendMessage = useCallback(async (content: string) => {
     if (!conversationId) {
-      toast.error('No conversation selected');
+      toast.error('Nie wybrano konwersacji');
       return;
     }
 
@@ -111,7 +111,7 @@ export function useSendMessageStream(conversationId: string) {
       );
     } catch (error: any) {
       setIsStreaming(false);
-      const message = error.message || 'Failed to send message';
+      const message = error.message || 'Nie udało się wysłać wiadomości';
       toast.error(message);
     }
   }, [conversationId, queryClient]);
@@ -142,10 +142,10 @@ export function useDeleteConversation() {
     mutationFn: (id: string) => aiAgentApi.conversations.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.conversations.all });
-      toast.success('Conversation deleted successfully');
+      toast.success('Konwersacja została usunięta');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete conversation');
+      toast.error(error.response?.data?.message || 'Nie udało się usunąć konwersacji');
     },
   });
 }
@@ -169,10 +169,10 @@ export function useCreateAIConfiguration() {
     mutationFn: (data: CreateAIConfigurationDto) => aiAgentApi.configuration.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.configuration });
-      toast.success('AI configuration created successfully');
+      toast.success('Konfiguracja AI została utworzona');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create AI configuration');
+      toast.error(error.response?.data?.message || 'Nie udało się utworzyć konfiguracji AI');
     },
   });
 }
@@ -184,10 +184,10 @@ export function useUpdateAIConfiguration() {
     mutationFn: (data: UpdateAIConfigurationDto) => aiAgentApi.configuration.update(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.configuration });
-      toast.success('AI configuration updated successfully');
+      toast.success('Konfiguracja AI została zaktualizowana');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update AI configuration');
+      toast.error(error.response?.data?.message || 'Nie udało się zaktualizować konfiguracji AI');
     },
   });
 }
@@ -226,10 +226,10 @@ export function useResetApiKey() {
     mutationFn: () => aiAgentApi.configuration.resetApiKey(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.configuration });
-      toast.success('API key has been reset. Please configure a new API key to use AI features.');
+      toast.success('Klucz API został zresetowany. Skonfiguruj nowy klucz API, aby korzystać z funkcji AI.');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to reset API key');
+      toast.error(error.response?.data?.message || 'Nie udało się zresetować klucza API');
     },
   });
 }
@@ -296,10 +296,10 @@ export function useSetTokenLimit() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.aiAgent.tokenLimit.byTarget(variables.targetType, variables.targetId),
       });
-      toast.success('Token limit set successfully');
+      toast.success('Limit tokenów został ustawiony');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to set token limit');
+      toast.error(error.response?.data?.message || 'Nie udało się ustawić limitu tokenów');
     },
   });
 }
@@ -314,10 +314,10 @@ export function useDeleteTokenLimit() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.aiAgent.tokenLimit.byTarget(variables.targetType, variables.targetId),
       });
-      toast.success('Token limit removed successfully');
+      toast.success('Limit tokenów został usunięty');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to remove token limit');
+      toast.error(error.response?.data?.message || 'Nie udało się usunąć limitu tokenów');
     },
   });
 }
@@ -348,21 +348,21 @@ export function useUploadContextFile() {
     mutationFn: (file: File) => aiAgentApi.context.upload(file),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.context.all });
-      toast.success('File uploaded and processed successfully');
+      toast.success('Plik został przesłany i przetworzony');
     },
     onError: (error: any) => {
-      const message = error.response?.data?.message || 'Failed to upload file';
+      const message = error.response?.data?.message || 'Nie udało się przesłać pliku';
       const status = error.response?.status;
 
       // Provide more helpful error messages for common issues
       if (message.toLowerCase().includes('api key')) {
-        toast.error('AI Configuration Error: Invalid API key. Please contact administrator to update the AI configuration.');
+        toast.error('Błąd konfiguracji AI: Nieprawidłowy klucz API. Skontaktuj się z administratorem, aby zaktualizować konfigurację AI.');
       } else if (status === 413 || message.toLowerCase().includes('too large')) {
-        toast.error('File too large. Maximum file size is 10MB.');
+        toast.error('Plik jest za duży. Maksymalny rozmiar pliku to 10MB.');
       } else if (message.toLowerCase().includes('file type') || message.toLowerCase().includes('not allowed')) {
-        toast.error('Invalid file type. Only PDF, TXT, and MD files are allowed.');
+        toast.error('Nieprawidłowy typ pliku. Dozwolone są tylko pliki PDF, TXT i MD.');
       } else if (message.toLowerCase().includes('not found') && message.toLowerCase().includes('configuration')) {
-        toast.error('AI not configured. Please ask administrator to set up AI configuration first.');
+        toast.error('AI nie jest skonfigurowane. Poproś administratora o skonfigurowanie AI.');
       } else {
         toast.error(message);
       }
@@ -377,10 +377,10 @@ export function useDeleteContextFile() {
     mutationFn: (id: string) => aiAgentApi.context.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.context.all });
-      toast.success('File deleted successfully');
+      toast.success('Plik został usunięty');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete file');
+      toast.error(error.response?.data?.message || 'Nie udało się usunąć pliku');
     },
   });
 }

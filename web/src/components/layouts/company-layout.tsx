@@ -10,7 +10,7 @@ export default function CompanyLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-apptax-warm-gray">
-      <Sidebar title="Company" navItems={navItems} />
+      <Sidebar title="Firma" navItems={navItems} />
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">

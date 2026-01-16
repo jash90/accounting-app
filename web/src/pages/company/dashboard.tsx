@@ -11,9 +11,9 @@ export default function CompanyDashboard() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-apptax-navy">Company Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-apptax-navy">Panel Firmy</h1>
         <p className="text-muted-foreground mt-2">
-          Overview of your company and employees
+          Przegląd Twojej firmy i pracowników
         </p>
       </div>
 
@@ -22,12 +22,12 @@ export default function CompanyDashboard() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Employees</CardTitle>
+              <CardTitle className="text-lg">Pracownicy</CardTitle>
               <div className="p-2 bg-apptax-soft-teal rounded-lg">
                 <Users className="h-5 w-5 text-apptax-blue" />
               </div>
             </div>
-            <CardDescription>Total employees in your company</CardDescription>
+            <CardDescription>Łączna liczba pracowników w Twojej firmie</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-4xl font-bold text-apptax-blue">
@@ -39,12 +39,12 @@ export default function CompanyDashboard() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Available Modules</CardTitle>
+              <CardTitle className="text-lg">Dostępne moduły</CardTitle>
               <div className="p-2 bg-apptax-soft-teal rounded-lg">
                 <Package className="h-5 w-5 text-apptax-teal" />
               </div>
             </div>
-            <CardDescription>Modules enabled for your company</CardDescription>
+            <CardDescription>Moduły włączone dla Twojej firmy</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
@@ -62,16 +62,16 @@ export default function CompanyDashboard() {
         <CardContent className="p-8">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-2xl font-bold mb-2">Manage Your Company</h2>
+              <h2 className="text-2xl font-bold mb-2">Zarządzaj swoją firmą</h2>
               <p className="text-white/80 max-w-xl">
-                Add employees, configure permissions, and manage your company's modules
-                from this dashboard. Access AI-powered accounting tools to streamline operations.
+                Dodawaj pracowników, konfiguruj uprawnienia i zarządzaj modułami firmy
+                z tego panelu. Korzystaj z narzędzi księgowych wspieranych przez AI.
               </p>
             </div>
             <div className="hidden md:block">
               <div className="flex items-center gap-2 text-apptax-teal">
                 <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow" />
-                <span className="text-sm font-medium">AI-Powered</span>
+                <span className="text-sm font-medium">Zasilane przez AI</span>
               </div>
             </div>
           </div>
