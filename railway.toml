@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm ci && npm run build"
+# Build handled by nixpacks.toml phases
 
 [deploy]
 startCommand = "npm run db:migrate:prod && node dist/apps/api/main.js"

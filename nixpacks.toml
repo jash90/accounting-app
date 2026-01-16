@@ -1,5 +1,9 @@
-# Force npm as package manager (prevents auto-detection of pnpm)
+# Use Node 22 (project requires Node 20+)
+[phases.setup]
+nixPkgs = ["nodejs_22", "npm-10_x"]
+
 [phases.install]
 cmds = ["npm ci"]
 
-# Let railway.toml handle the build command
+[phases.build]
+cmds = ["npm run build"]
