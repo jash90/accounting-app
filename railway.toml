@@ -1,12 +1,11 @@
-# Configuration for web (frontend) service - accounting
-# API service uses apps/api/railway.toml
+# Web frontend service configuration
+# Railway requires this file at root level
 
 [build]
 builder = "dockerfile"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "Dockerfile.web"
 
 [deploy]
-startCommand = "sh -c 'http-server dist -p $PORT --spa'"
 healthcheckPath = "/"
 healthcheckTimeout = 10000
 restartPolicyType = "on_failure"
