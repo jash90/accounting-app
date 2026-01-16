@@ -196,7 +196,6 @@ export class ClientChangelogService {
     const recipients = await this.getNotificationRecipients(
       client.companyId,
       'receiveOnUpdate',
-      performedBy.id,
     );
 
     if (recipients.length === 0) {
@@ -278,7 +277,6 @@ export class ClientChangelogService {
     const recipients = await this.getNotificationRecipients(
       client.companyId,
       'receiveOnDelete',
-      performedBy.id,
     );
 
     if (recipients.length === 0) {
@@ -327,38 +325,54 @@ export class ClientChangelogService {
     }
   }
 
+  /**
+   * Returns users who should receive notifications.
+   *
+   * Logic:
+   * - Users WITHOUT settings → receive notifications (default enabled)
+   * - Users with [notificationType] = true → receive notifications
+   * - Users with [notificationType] = false → DO NOT receive notifications
+   * - User performing the action → excluded
+   */
   private async getNotificationRecipients(
     companyId: string,
     notificationType: 'receiveOnCreate' | 'receiveOnUpdate' | 'receiveOnDelete',
     excludeUserId?: string,
   ): Promise<User[]> {
-    // Get notification settings for this module, company, and notification type
-    // companyId filter ensures multi-tenant isolation
-    const settings = await this.notificationSettingsRepository.find({
-      where: {
-        companyId,
-        moduleSlug: this.moduleSlug,
-        [notificationType]: true,
-      },
-    });
+    const queryBuilder = this.userRepository
+      .createQueryBuilder('user')
+      .leftJoin(
+        NotificationSettings,
+        'settings',
+        'settings.userId = user.id AND settings.companyId = :companyId AND settings.moduleSlug = :moduleSlug',
+        { companyId, moduleSlug: this.moduleSlug },
+      )
+      .where('user.companyId = :companyId', { companyId })
+      .andWhere('user.isActive = :isActive', { isActive: true });
 
-    if (settings.length === 0) {
-      return [];
+    if (excludeUserId) {
+      queryBuilder.andWhere('user.id != :excludeUserId', { excludeUserId });
     }
 
-    const userIds = settings.map((s) => s.userId);
+    // No settings (NULL) = default enabled, OR explicitly enabled
+    queryBuilder.andWhere(
+      `(settings.id IS NULL OR settings.${notificationType} = :enabled)`,
+      { enabled: true },
+    );
 
-    // Get users from the same company with active status
-    const users = await this.userRepository.find({
-      where: {
-        id: In(userIds),
+    const users = await queryBuilder.getMany();
+
+    if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+      this.logger.debug('Notification recipients resolved with default-enabled logic', {
         companyId,
-        isActive: true,
-      },
-    });
+        notificationType,
+        excludeUserId,
+        recipientCount: users.length,
+        recipientIds: users.map(u => u.id),
+      });
+    }
 
-    // Exclude the user who performed the action (they don't need notification)
-    return users.filter((u) => u.id !== excludeUserId);
+    return users;
   }
 
   private calculateChanges(
@@ -489,7 +503,6 @@ export class ClientChangelogService {
     const recipients = await this.getNotificationRecipients(
       client.companyId,
       'receiveOnCreate',
-      performedBy.id,
     );
 
     // Debug logging for recipient resolution
@@ -497,7 +510,6 @@ export class ClientChangelogService {
       this.logger.debug('Notification recipients resolved', {
         clientId: client.id,
         recipientCount: recipients.length,
-        excludedUser: performedBy.id,
         moduleSlug: 'clients',
       });
     }

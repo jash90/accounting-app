@@ -94,6 +94,7 @@ export function ClientFormDialog({
           vatStatus: clientData.vatStatus,
           taxScheme: clientData.taxScheme,
           zusStatus: clientData.zusStatus,
+          receiveEmailCopy: clientData.receiveEmailCopy ?? true,
         };
       }
       return {
@@ -105,6 +106,7 @@ export function ClientFormDialog({
         additionalInfo: '',
         gtuCode: '',
         amlGroup: '',
+        receiveEmailCopy: true,
       };
     },
     []
@@ -346,6 +348,29 @@ export function ClientFormDialog({
                           <Input placeholder="+48 123 456 789" {...field} />
                         </FormControl>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="receiveEmailCopy"
+                    render={({ field }) => (
+                      <FormItem className="col-span-2 flex items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">
+                            Wyślij email powitalny do klienta
+                          </FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Klient otrzyma email z podsumowaniem wprowadzonych danych
+                          </p>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value ?? true}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
                       </FormItem>
                     )}
                   />
