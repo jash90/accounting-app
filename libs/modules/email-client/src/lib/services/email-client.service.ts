@@ -1,11 +1,13 @@
 import { Injectable, Logger, BadRequestException, RequestTimeoutException, InternalServerErrorException } from '@nestjs/common';
-import { User } from '@accounting/common';
+import { User, UserRole } from '@accounting/common';
 import {
   EmailReaderService,
   EmailSenderService,
   EmailConfigurationService,
   ReceivedEmail,
   FetchEmailsOptions,
+  SmtpConfig,
+  ImapConfig,
 } from '@accounting/email';
 
 /** Default timeout for IMAP operations in milliseconds */
@@ -77,20 +79,49 @@ export class EmailClientService {
   ) {}
 
   /**
-   * Fetch inbox emails (real-time from IMAP)
+   * Get email configuration for user based on their role
+   * - ADMIN users: use System Admin shared email configuration
+   * - Other users: use their company's email configuration
    */
-  async getInbox(user: User, options: Partial<FetchEmailsOptions> = {}): Promise<ReceivedEmail[]> {
+  private async getEmailConfigForUser(user: User): Promise<{
+    smtp: SmtpConfig;
+    imap: ImapConfig;
+  }> {
+    // For ADMIN users, use System Admin shared email configuration
+    if (user.role === UserRole.ADMIN) {
+      const emailConfig = await this.emailConfigService.getDecryptedSystemAdminEmailConfig();
+
+      if (!emailConfig) {
+        throw new BadRequestException(
+          'Brak konfiguracji email dla administratorów systemu. Skonfiguruj "Email System Admin" w ustawieniach.'
+        );
+      }
+
+      this.logger.log(`Using System Admin email config for admin user ${user.id}`);
+      return emailConfig;
+    }
+
+    // For non-ADMIN users, use company email configuration
     if (!user.companyId) {
-      throw new BadRequestException('User must belong to a company');
+      throw new BadRequestException('Użytkownik musi należeć do firmy');
     }
 
     const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(user.companyId);
 
     if (!emailConfig) {
-      throw new BadRequestException('No email configuration for company. Please configure company email first.');
+      throw new BadRequestException('Brak konfiguracji email dla firmy. Skonfiguruj email firmy.');
     }
 
-    this.logger.log(`Fetching inbox for company ${user.companyId}, user ${user.id}`);
+    return emailConfig;
+  }
+
+  /**
+   * Fetch inbox emails (real-time from IMAP)
+   */
+  async getInbox(user: User, options: Partial<FetchEmailsOptions> = {}): Promise<ReceivedEmail[]> {
+    const emailConfig = await this.getEmailConfigForUser(user);
+
+    this.logger.log(`Fetching inbox for user ${user.id} (role: ${user.role})`);
 
     const emails = await this.withTimeout(
       this.emailReaderService.fetchEmails(emailConfig.imap, {
@@ -107,15 +138,7 @@ export class EmailClientService {
    * Fetch emails from specific folder
    */
   async getFolder(user: User, folderName: string, options: Partial<FetchEmailsOptions> = {}): Promise<ReceivedEmail[]> {
-    if (!user.companyId) {
-      throw new BadRequestException('User must belong to a company');
-    }
-
-    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(user.companyId);
-
-    if (!emailConfig) {
-      throw new BadRequestException('No email configuration for company');
-    }
+    const emailConfig = await this.getEmailConfigForUser(user);
 
     return this.withTimeout(
       this.emailReaderService.fetchEmails(emailConfig.imap, {
@@ -131,15 +154,7 @@ export class EmailClientService {
    * List available mailboxes/folders
    */
   async listFolders(user: User): Promise<string[]> {
-    if (!user.companyId) {
-      throw new BadRequestException('User must belong to a company');
-    }
-
-    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(user.companyId);
-
-    if (!emailConfig) {
-      throw new BadRequestException('No email configuration for company');
-    }
+    const emailConfig = await this.getEmailConfigForUser(user);
 
     return this.withTimeout(
       this.emailReaderService.listMailboxes(emailConfig.imap),
@@ -159,17 +174,9 @@ export class EmailClientService {
     bcc?: string | string[];
     attachments?: Array<{ path: string; filename: string }>;
   }): Promise<void> {
-    if (!user.companyId) {
-      throw new BadRequestException('User must belong to a company');
-    }
+    const emailConfig = await this.getEmailConfigForUser(user);
 
-    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(user.companyId);
-
-    if (!emailConfig) {
-      throw new BadRequestException('No email configuration for company');
-    }
-
-    this.logger.log(`Sending email from company ${user.companyId}, user ${user.id}`);
+    this.logger.log(`Sending email from user ${user.id} (role: ${user.role})`);
 
     await this.withTimeout(
       this.emailSenderService.sendEmailAndSave(emailConfig.smtp, emailConfig.imap, message),
@@ -184,15 +191,7 @@ export class EmailClientService {
    * Mark email as read (IMAP operation)
    */
   async markAsRead(user: User, messageUids: number[]): Promise<void> {
-    if (!user.companyId) {
-      throw new BadRequestException('User must belong to a company');
-    }
-
-    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(user.companyId);
-
-    if (!emailConfig) {
-      throw new BadRequestException('No email configuration for company');
-    }
+    const emailConfig = await this.getEmailConfigForUser(user);
 
     await this.withTimeout(
       this.emailReaderService.markAsSeen(emailConfig.imap, messageUids),
@@ -205,15 +204,7 @@ export class EmailClientService {
    * Delete email (move to Trash via IMAP)
    */
   async deleteEmail(user: User, messageUids: number[]): Promise<void> {
-    if (!user.companyId) {
-      throw new BadRequestException('User must belong to a company');
-    }
-
-    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(user.companyId);
-
-    if (!emailConfig) {
-      throw new BadRequestException('No email configuration for company');
-    }
+    const emailConfig = await this.getEmailConfigForUser(user);
 
     await this.withTimeout(
       this.emailReaderService.deleteEmails(emailConfig.imap, messageUids),
@@ -226,17 +217,9 @@ export class EmailClientService {
    * Fetch single email by UID
    */
   async getEmail(user: User, uid: number): Promise<ReceivedEmail> {
-    if (!user.companyId) {
-      throw new BadRequestException('User must belong to a company');
-    }
+    const emailConfig = await this.getEmailConfigForUser(user);
 
-    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(user.companyId);
-
-    if (!emailConfig) {
-      throw new BadRequestException('No email configuration for company');
-    }
-
-    this.logger.log(`Fetching email UID ${uid} for company ${user.companyId}`);
+    this.logger.log(`Fetching email UID ${uid} for user ${user.id}`);
 
     const emails = await this.withTimeout(
       this.emailReaderService.fetchEmails(emailConfig.imap, {

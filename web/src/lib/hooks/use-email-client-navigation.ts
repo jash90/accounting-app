@@ -3,14 +3,14 @@ import { useMemo } from 'react';
 
 /**
  * Hook to get the base path for email client routes.
- * Handles both /company/modules/email-client and /modules/email-client paths.
+ * Handles /admin/modules/email-client, /company/modules/email-client and /modules/email-client paths.
  */
 export function useEmailClientBasePath() {
   const location = useLocation();
 
   return useMemo(() => {
-    // Extract base path: /company/modules/email-client or /modules/email-client
-    const match = location.pathname.match(/^(\/company)?\/modules\/email-client/);
+    // Extract base path: /admin/modules/email-client, /company/modules/email-client or /modules/email-client
+    const match = location.pathname.match(/^(\/admin|\/company)?\/modules\/email-client/);
     return match ? match[0] : '/modules/email-client';
   }, [location.pathname]);
 }
