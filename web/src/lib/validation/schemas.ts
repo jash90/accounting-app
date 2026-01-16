@@ -257,6 +257,7 @@ export const createClientSchema = z.object({
   vatStatus: z.enum(['VAT_MONTHLY', 'VAT_QUARTERLY', 'NO', 'NO_WATCH_LIMIT']).optional(),
   taxScheme: z.enum(['PIT_17', 'PIT_19', 'LUMP_SUM', 'GENERAL']).optional(),
   zusStatus: z.enum(['FULL', 'PREFERENTIAL', 'NONE']).optional(),
+  receiveEmailCopy: z.boolean().optional().default(true),
 });
 
 export type CreateClientFormData = z.infer<typeof createClientSchema>;
