@@ -492,7 +492,7 @@ export function useGenerateAiDraftStream() {
       setState(prev => ({
         ...prev,
         isStreaming: false,
-        error: (error as Error).message || 'Failed to generate AI reply',
+        error: (error as Error).message || 'Nie udało się wygenerować odpowiedzi AI',
       }));
     }
   }, [queryClient]);

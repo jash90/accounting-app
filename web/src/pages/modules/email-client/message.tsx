@@ -43,12 +43,12 @@ export default function EmailMessage() {
 
     try {
       await deleteEmails.mutateAsync([emailUid]);
-      toast({ title: 'Success', description: 'Email deleted' });
+      toast({ title: 'Sukces', description: 'Wiadomość usunięta' });
       emailNav.toInbox();
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to delete email',
+        title: 'Błąd',
+        description: 'Nie udało się usunąć wiadomości',
         variant: 'destructive',
       });
     }
@@ -82,11 +82,11 @@ export default function EmailMessage() {
     return (
       <div className="h-full flex flex-col items-center justify-center">
         <Mail className="h-12 w-12 mb-4 text-muted-foreground opacity-50" />
-        <p className="text-muted-foreground mb-4">Email not found</p>
+        <p className="text-muted-foreground mb-4">Nie znaleziono wiadomości</p>
         <Link to={emailNav.getInboxPath()}>
           <Button variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Inbox
+            Wróć do skrzynki
           </Button>
         </Link>
       </div>
@@ -121,18 +121,18 @@ export default function EmailMessage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-2xl font-bold">
-            {email.subject || '(No subject)'}
+            {email.subject || '(Brak tematu)'}
           </h1>
           {isUnread && (
             <Badge variant="secondary" className="ml-2">
-              Unread
+              Nieprzeczytana
             </Badge>
           )}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleReply}>
             <Reply className="h-4 w-4 mr-2" />
-            Reply
+            Odpowiedz
           </Button>
           <Button variant="outline" size="sm" onClick={handleAiReply}>
             <Sparkles className="h-4 w-4 mr-2" />
@@ -146,7 +146,7 @@ export default function EmailMessage() {
             className="text-destructive hover:text-destructive"
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            Delete
+            Usuń
           </Button>
         </div>
       </div>
@@ -158,7 +158,7 @@ export default function EmailMessage() {
           <div className="space-y-3 mb-6">
             <div className="flex items-start gap-4">
               <span className="text-sm text-muted-foreground w-16 shrink-0">
-                From:
+                Od:
               </span>
               <span className="text-sm font-medium">
                 {email.from.map(formatEmailAddress).join(', ')}
@@ -166,7 +166,7 @@ export default function EmailMessage() {
             </div>
             <div className="flex items-start gap-4">
               <span className="text-sm text-muted-foreground w-16 shrink-0">
-                To:
+                Do:
               </span>
               <span className="text-sm">
                 {email.to.map(formatEmailAddress).join(', ')}
@@ -175,7 +175,7 @@ export default function EmailMessage() {
             {email.cc && email.cc.length > 0 && (
               <div className="flex items-start gap-4">
                 <span className="text-sm text-muted-foreground w-16 shrink-0">
-                  CC:
+                  DW:
                 </span>
                 <span className="text-sm">
                   {email.cc.map(formatEmailAddress).join(', ')}
@@ -184,16 +184,16 @@ export default function EmailMessage() {
             )}
             <div className="flex items-start gap-4">
               <span className="text-sm text-muted-foreground w-16 shrink-0">
-                Date:
+                Data:
               </span>
               <span className="text-sm">{formatDate(email.date)}</span>
             </div>
             <div className="flex items-start gap-4">
               <span className="text-sm text-muted-foreground w-16 shrink-0">
-                Subject:
+                Temat:
               </span>
               <span className="text-sm font-medium">
-                {email.subject || '(No subject)'}
+                {email.subject || '(Brak tematu)'}
               </span>
             </div>
           </div>
@@ -206,8 +206,8 @@ export default function EmailMessage() {
                 <div className="flex items-center gap-2 mb-2">
                   <Paperclip className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">
-                    {email.attachments.length} Attachment
-                    {email.attachments.length > 1 ? 's' : ''}
+                    {email.attachments.length}{' '}
+                    {email.attachments.length === 1 ? 'Załącznik' : 'Załączniki'}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -217,7 +217,7 @@ export default function EmailMessage() {
                       variant="outline"
                       className="cursor-pointer hover:bg-muted"
                     >
-                      {attachment.filename || `Attachment ${index + 1}`}
+                      {attachment.filename || `Załącznik ${index + 1}`}
                       {attachment.size && (
                         <span className="ml-1 text-muted-foreground">
                           ({Math.round(attachment.size / 1024)}KB)
@@ -253,7 +253,7 @@ export default function EmailMessage() {
           <div className="mt-6 pt-4 border-t flex items-center gap-2 text-muted-foreground">
             <CheckCheck className="h-4 w-4" />
             <span className="text-xs">
-              {email.flags.includes('\\Seen') ? 'Read' : 'Marked as read'}
+              {email.flags.includes('\\Seen') ? 'Przeczytana' : 'Oznaczona jako przeczytana'}
             </span>
           </div>
         </div>

@@ -91,14 +91,14 @@ export default function EmailInbox() {
     try {
       await markAsRead.mutateAsync(Array.from(selectedUids));
       toast({
-        title: 'Success',
-        description: `${selectedUids.size} email(s) marked as read`,
+        title: 'Sukces',
+        description: `Oznaczono ${selectedUids.size} wiadomości jako przeczytane`,
       });
       setSelectedUids(new Set());
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to mark emails as read',
+        title: 'Błąd',
+        description: 'Nie udało się oznaczyć wiadomości jako przeczytane',
         variant: 'destructive',
       });
     }
@@ -110,14 +110,14 @@ export default function EmailInbox() {
     try {
       await deleteEmails.mutateAsync(Array.from(selectedUids));
       toast({
-        title: 'Success',
-        description: `${selectedUids.size} email(s) deleted`,
+        title: 'Sukces',
+        description: `Usunięto ${selectedUids.size} wiadomości`,
       });
       setSelectedUids(new Set());
     } catch {
       toast({
-        title: 'Error',
-        description: 'Failed to delete emails',
+        title: 'Błąd',
+        description: 'Nie udało się usunąć wiadomości',
         variant: 'destructive',
       });
     }
@@ -137,9 +137,9 @@ export default function EmailInbox() {
         {/* Header */}
         <div className="border-b p-4 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Email Inbox</h1>
+          <h1 className="text-2xl font-bold">Odebrane</h1>
           <p className="text-sm text-muted-foreground">
-            {emails?.length || 0} messages
+            {emails?.length || 0} wiadomości
           </p>
         </div>
         <div className="flex gap-2">
@@ -154,12 +154,12 @@ export default function EmailInbox() {
             className="gap-2"
           >
             <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
-            Refresh
+            Odśwież
           </Button>
           <Link to={emailNav.getComposePath()}>
             <Button size="sm" className="gap-2">
               <Mail className="h-4 w-4" />
-              Compose
+              Napisz
             </Button>
           </Link>
         </div>
@@ -175,7 +175,7 @@ export default function EmailInbox() {
               aria-label="Select all"
             />
             <span className="text-sm font-medium">
-              {selectedUids.size} selected
+              {selectedUids.size} zaznaczono
             </span>
           </div>
           <div className="flex gap-2">
@@ -191,7 +191,7 @@ export default function EmailInbox() {
                 ) : (
                   <CheckCheck className="h-4 w-4 mr-2" />
                 )}
-                Mark as Read
+                Oznacz jako przeczytane
               </Button>
             )}
             <Button
@@ -206,7 +206,7 @@ export default function EmailInbox() {
               ) : (
                 <Trash2 className="h-4 w-4 mr-2" />
               )}
-              Delete
+              Usuń
             </Button>
             <Button
               variant="ghost"
@@ -214,7 +214,7 @@ export default function EmailInbox() {
               onClick={clearSelection}
               disabled={isProcessing}
             >
-              Clear Selection
+              Wyczyść zaznaczenie
             </Button>
           </div>
         </div>
@@ -228,7 +228,7 @@ export default function EmailInbox() {
             onCheckedChange={toggleSelectAll}
             aria-label="Select all"
           />
-          <span className="text-sm text-muted-foreground">Select all</span>
+          <span className="text-sm text-muted-foreground">Zaznacz wszystkie</span>
         </div>
       )}
 
@@ -239,7 +239,7 @@ export default function EmailInbox() {
         ) : sortedEmails.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground">
             <MailOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No emails in inbox</p>
+            <p>Brak wiadomości w skrzynce odbiorczej</p>
           </div>
         ) : (
           <div className="divide-y">
@@ -287,7 +287,7 @@ export default function EmailInbox() {
                           className={`text-sm mt-1 truncate ${isUnread ? 'font-semibold' : 'font-medium'
                             }`}
                         >
-                          {email.subject || '(No subject)'}
+                          {email.subject || '(Brak tematu)'}
                         </p>
                         <p className="text-sm text-muted-foreground mt-1 truncate">
                           {email.text?.substring(0, 100)}...
