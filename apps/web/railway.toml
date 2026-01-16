@@ -1,8 +1,11 @@
 [build]
 builder = "dockerfile"
-dockerfilePath = "Dockerfile.web"
+# Relative from apps/web/ (root_directory)
+dockerfilePath = "../../Dockerfile.web"
 
 [deploy]
+# Empty startCommand to use Dockerfile CMD
+startCommand = ""
 healthcheckPath = "/"
 healthcheckTimeout = 10000
 restartPolicyType = "on_failure"
