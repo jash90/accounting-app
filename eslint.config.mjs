@@ -47,7 +47,7 @@ export default tseslint.config(
 
   // Frontend (React) files
   {
-    files: ['web/src/**/*.{ts,tsx}'],
+    files: ['apps/web/src/**/*.{ts,tsx}'],
     plugins: {
       react,
       'react-hooks': reactHooks,

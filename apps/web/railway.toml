@@ -3,7 +3,7 @@ builder = "nixpacks"
 buildCommand = "npm ci && npm run build:web"
 
 [deploy]
-startCommand = "npx serve dist/web -l $PORT -s"
+startCommand = "npx serve dist/apps/web -l $PORT -s"
 healthcheckPath = "/"
 healthcheckTimeout = 10000
 restartPolicyType = "on_failure"

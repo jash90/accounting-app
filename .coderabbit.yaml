@@ -40,7 +40,7 @@ reviews:
       instructions: |
         Ensure proper module boundaries, exports, and SOLID principles.
         Check for multi-tenant security.
-    - path: "web/**"
+    - path: "apps/web/**"
       instructions: |
         Review for React best practices, proper hooks usage,
         accessibility, and TypeScript types.
