@@ -62,6 +62,42 @@ export class EmailDraftsController {
     return this.draftService.findAiDrafts(user);
   }
 
+  @Post('sync')
+  @ApiOperation({ summary: 'Sync drafts with IMAP server' })
+  @ApiResponse({ status: 200, description: 'Sync results' })
+  @RequirePermission('email-client', 'write')
+  async syncDrafts(@CurrentUser() user: User) {
+    return this.draftService.syncWithImap(user);
+  }
+
+  @Get('conflicts')
+  @ApiOperation({ summary: 'Get drafts with sync conflicts' })
+  @ApiResponse({ status: 200, description: 'List of conflicted drafts' })
+  @RequirePermission('email-client', 'read')
+  async getConflicts(@CurrentUser() user: User) {
+    return this.draftService.findConflicts(user);
+  }
+
+  @Post(':id/resolve-conflict')
+  @ApiOperation({ summary: 'Resolve draft sync conflict' })
+  @ApiResponse({ status: 200, description: 'Resolved draft' })
+  @RequirePermission('email-client', 'write')
+  async resolveConflict(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body() dto: { resolution: 'keep_local' | 'keep_imap' },
+  ) {
+    return this.draftService.resolveConflict(user, id, dto.resolution);
+  }
+
+  @Delete('all')
+  @ApiOperation({ summary: 'Delete all drafts for company' })
+  @ApiResponse({ status: 200, description: 'All drafts deleted' })
+  @RequirePermission('email-client', 'write')
+  async removeAll(@CurrentUser() user: User) {
+    return this.draftService.removeAll(user);
+  }
+
   @Post('ai/generate-reply')
   @ApiOperation({ summary: 'Generate AI reply draft for an email' })
   @ApiResponse({ status: 201, description: 'AI draft generated' })
