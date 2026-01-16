@@ -59,8 +59,8 @@ export function UserMenu() {
           onClick={() => navigate('/settings/email-config')}
           className="cursor-pointer hover:bg-apptax-soft-teal"
         >
-          <Mail className="mr-2 h-4 w-4 text-apptax-teal" />
-          Email Settings
+          <Mail className="mr-2 h-4 w-4 text-apptax-navy" />
+          Konto email
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
