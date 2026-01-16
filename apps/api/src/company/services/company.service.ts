@@ -7,7 +7,6 @@ import { EmailService } from '@accounting/infrastructure/email';
 import { EmailSenderService, EmailConfigurationService } from '@accounting/email';
 import { CreateEmployeeDto } from '../dto/create-employee.dto';
 import { UpdateEmployeeDto } from '../dto/update-employee.dto';
-import { UpdateCompanySettingsDto } from '../dto/update-company-settings.dto';
 
 @Injectable()
 export class CompanyService {
@@ -181,46 +180,6 @@ export class CompanyService {
     const employee = await this.getEmployeeById(companyId, employeeId);
     employee.isActive = false;
     return this.userRepository.save(employee);
-  }
-
-  // Company Settings
-  async getCompanySettings(companyId: string) {
-    const company = await this.companyRepository.findOne({
-      where: { id: companyId },
-    });
-
-    if (!company) {
-      throw new NotFoundException('Company not found');
-    }
-
-    return {
-      id: company.id,
-      name: company.name,
-      notificationFromEmail: company.notificationFromEmail,
-    };
-  }
-
-  async updateCompanySettings(companyId: string, updateDto: UpdateCompanySettingsDto) {
-    const company = await this.companyRepository.findOne({
-      where: { id: companyId },
-    });
-
-    if (!company) {
-      throw new NotFoundException('Company not found');
-    }
-
-    if (updateDto.notificationFromEmail !== undefined) {
-      // Use nullish coalescing to preserve empty string as intentional clearing
-      company.notificationFromEmail = updateDto.notificationFromEmail ?? undefined;
-    }
-
-    await this.companyRepository.save(company);
-
-    return {
-      id: company.id,
-      name: company.name,
-      notificationFromEmail: company.notificationFromEmail,
-    };
   }
 
   async getCompanyById(companyId: string) {

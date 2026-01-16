@@ -29,7 +29,6 @@ import {
 import { CompanyService } from '../services/company.service';
 import { CreateEmployeeDto } from '../dto/create-employee.dto';
 import { UpdateEmployeeDto } from '../dto/update-employee.dto';
-import { UpdateCompanySettingsDto } from '../dto/update-company-settings.dto';
 import { CurrentUser, Roles, RolesGuard } from '@accounting/auth';
 import { User, UserRole, UserResponseDto } from '@accounting/common';
 import { OwnerOrAdminGuard } from '@accounting/rbac';
@@ -131,42 +130,6 @@ export class CompanyController {
       throw new BadRequestException('User is not associated with a company');
     }
     return this.companyService.deleteEmployee(user.companyId, id);
-  }
-
-  // Company Settings
-  @Get('settings')
-  @ApiOperation({
-    summary: 'Get company settings',
-    description: 'Retrieve notification and other settings for your company',
-  })
-  @ApiOkResponse({ description: 'Company settings retrieved successfully' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
-  @ApiForbiddenResponse({ description: 'Forbidden - Company owner role required' })
-  getCompanySettings(@CurrentUser() user: User) {
-    if (!user.companyId) {
-      throw new BadRequestException('User is not associated with a company');
-    }
-    return this.companyService.getCompanySettings(user.companyId);
-  }
-
-  @Patch('settings')
-  @ApiOperation({
-    summary: 'Update company settings',
-    description: 'Update notification settings for your company (e.g., notification sender email)',
-  })
-  @ApiBody({ type: UpdateCompanySettingsDto, description: 'Company settings update data' })
-  @ApiOkResponse({ description: 'Company settings updated successfully' })
-  @ApiBadRequestResponse({ description: 'Invalid input data' })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
-  @ApiForbiddenResponse({ description: 'Forbidden - Company owner role required' })
-  updateCompanySettings(
-    @CurrentUser() user: User,
-    @Body() updateCompanySettingsDto: UpdateCompanySettingsDto,
-  ) {
-    if (!user.companyId) {
-      throw new BadRequestException('User is not associated with a company');
-    }
-    return this.companyService.updateCompanySettings(user.companyId, updateCompanySettingsDto);
   }
 }
 

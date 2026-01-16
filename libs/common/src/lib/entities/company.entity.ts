@@ -75,9 +75,6 @@ export class Company {
   @Column({ default: true })
   isActive!: boolean;
 
-  @Column({ nullable: true })
-  notificationFromEmail?: string;
-
   @CreateDateColumn()
   createdAt!: Date;
 
