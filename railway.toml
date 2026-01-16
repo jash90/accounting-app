@@ -1,0 +1,10 @@
+[build]
+builder = "nixpacks"
+buildCommand = "npm ci && npm run build"
+
+[deploy]
+startCommand = "npm run db:migrate:prod && node dist/apps/api/main.js"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 30000
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
