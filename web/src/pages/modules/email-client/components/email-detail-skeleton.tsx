@@ -19,7 +19,7 @@ export function EmailDetailSkeleton() {
 
       {/* Email Content */}
       <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-4xl mx-auto">
+        <div>
           {/* Email Headers */}
           <div className="space-y-3 mb-6">
             <div className="flex items-start gap-4">

@@ -1,13 +1,23 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { User } from '@accounting/common';
 import { StorageService } from '@accounting/infrastructure/storage';
+import * as path from 'path';
 
 @Injectable()
 export class EmailAttachmentService {
   private readonly logger = new Logger(EmailAttachmentService.name);
   private readonly MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+  private readonly basePath: string;
 
-  constructor(private readonly storageService: StorageService) {}
+  constructor(
+    private readonly storageService: StorageService,
+    private readonly configService: ConfigService,
+  ) {
+    this.basePath = path.resolve(
+      this.configService.get<string>('STORAGE_LOCAL_PATH', './uploads')
+    );
+  }
 
   async uploadAttachment(user: User, file: Express.Multer.File): Promise<string> {
     if (!user.companyId) {
@@ -52,5 +62,13 @@ export class EmailAttachmentService {
     const filename = filePath.split('/').pop() || 'download';
 
     return { buffer, filename };
+  }
+
+  /**
+   * Get absolute path for a relative storage path.
+   * Used by nodemailer to attach files from local storage.
+   */
+  getAbsolutePath(relativePath: string): string {
+    return path.resolve(this.basePath, relativePath);
   }
 }

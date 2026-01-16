@@ -20,6 +20,7 @@ import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
 import { ModuleAccessGuard, PermissionGuard, RequireModule, RequirePermission } from '@accounting/rbac';
 import { User } from '@accounting/common';
 import { EmailClientService } from '../services/email-client.service';
+import { EmailAttachmentService } from '../services/email-attachment.service';
 
 /**
  * Email Messages Controller
@@ -32,7 +33,10 @@ import { EmailClientService } from '../services/email-client.service';
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('email-client')
 export class EmailMessagesController {
-  constructor(private readonly emailClientService: EmailClientService) {}
+  constructor(
+    private readonly emailClientService: EmailClientService,
+    private readonly attachmentService: EmailAttachmentService,
+  ) {}
 
   @Get('inbox')
   @ApiOperation({ summary: 'Fetch inbox emails (real-time from IMAP)' })
@@ -96,9 +100,19 @@ export class EmailMessagesController {
       html?: string;
       cc?: string | string[];
       bcc?: string | string[];
+      attachments?: string[];
     },
   ) {
-    await this.emailClientService.sendEmail(user, dto);
+    // Transform attachment paths to EmailAttachment objects with absolute paths
+    const attachments = dto.attachments?.map(relativePath => ({
+      path: this.attachmentService.getAbsolutePath(relativePath),
+      filename: relativePath.split('/').pop() || 'attachment',
+    }));
+
+    await this.emailClientService.sendEmail(user, {
+      ...dto,
+      attachments,
+    });
     return { success: true, message: 'Email sent and saved to Sent folder' };
   }
 
