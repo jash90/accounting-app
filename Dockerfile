@@ -15,6 +15,17 @@ COPY . .
 # Build the API
 RUN npm run build
 
+# Pre-compile migrations for production (since tsc won't be available at runtime)
+RUN npx tsc apps/api/typeorm.prod.config.ts apps/api/src/migrations/*.ts \
+    --outDir dist/apps/api \
+    --module commonjs \
+    --target ES2021 \
+    --esModuleInterop \
+    --experimentalDecorators \
+    --emitDecoratorMetadata \
+    --skipLibCheck \
+    --resolveJsonModule
+
 # Production stage
 FROM node:22-alpine AS production
 
@@ -26,11 +37,11 @@ COPY package*.json ./
 # Install production dependencies only
 RUN npm ci --omit=dev --legacy-peer-deps
 
-# Copy built application
+# Copy built application (includes pre-compiled migrations)
 COPY --from=builder /app/dist ./dist
 
 # Expose port
 EXPOSE 3000
 
-# Start command (migrations will be run via Railway's startCommand)
+# Start command
 CMD ["node", "dist/apps/api/main.js"]

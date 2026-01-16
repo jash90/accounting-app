@@ -3,7 +3,8 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "npm run db:migrate:prod && node dist/apps/api/main.js"
+# Run pre-compiled migrations (compiled during Docker build) then start API
+startCommand = "cd dist/apps/api && node ../../../node_modules/typeorm/cli.js migration:run -d typeorm.prod.config.js && cd /app && node dist/apps/api/main.js"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 30000
 restartPolicyType = "on_failure"
