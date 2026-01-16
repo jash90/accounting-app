@@ -1,4 +1,4 @@
-# Build stage
+# Build stage for web frontend
 FROM node:22-alpine AS builder
 
 WORKDIR /app
@@ -12,36 +12,22 @@ RUN npm ci --legacy-peer-deps
 # Copy source code
 COPY . .
 
-# Build the API
-RUN npm run build
+# Build the web frontend
+RUN npm run build:web
 
-# Pre-compile migrations for production (since tsc won't be available at runtime)
-RUN npx tsc apps/api/typeorm.prod.config.ts apps/api/src/migrations/*.ts \
-    --outDir dist/apps/api \
-    --module commonjs \
-    --target ES2021 \
-    --esModuleInterop \
-    --experimentalDecorators \
-    --emitDecoratorMetadata \
-    --skipLibCheck \
-    --resolveJsonModule
-
-# Production stage
+# Production stage - serve static files
 FROM node:22-alpine AS production
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Install serve globally for static file serving
+RUN npm install -g serve
 
-# Install production dependencies only
-RUN npm ci --omit=dev --legacy-peer-deps
+# Copy built static files
+COPY --from=builder /app/dist/web ./dist
 
-# Copy built application (includes pre-compiled migrations)
-COPY --from=builder /app/dist ./dist
-
-# Expose port
+# Expose port (Railway sets $PORT)
 EXPOSE 3000
 
-# Start command
-CMD ["node", "dist/apps/api/main.js"]
+# Start command - serve static files
+CMD ["sh", "-c", "serve dist -l ${PORT:-3000} -s"]
