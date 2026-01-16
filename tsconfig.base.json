@@ -32,7 +32,7 @@
       "@accounting/infrastructure/change-log": [
         "libs/infrastructure/change-log/src/index.ts"
       ],
-      "@/*": ["web/src/*"]
+      "@/*": ["apps/web/src/*"]
     }
   },
   "exclude": ["node_modules", "tmp"]

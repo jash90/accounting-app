@@ -12,4 +12,4 @@ cmds = ["npm ci --legacy-peer-deps"]
 cmds = ["npm run build:web"]
 
 [start]
-cmd = "npx serve dist/web -l $PORT -s"
+cmd = "npx serve dist/apps/web -l $PORT -s"

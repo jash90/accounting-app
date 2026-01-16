@@ -7,7 +7,7 @@ import path from 'path';
 
 export default defineConfig({
   root: __dirname,
-  cacheDir: '../node_modules/.vite/web',
+  cacheDir: '../../node_modules/.vite/web',
 
   server: {
     port: 4200,
@@ -39,7 +39,7 @@ export default defineConfig({
   },
 
   build: {
-    outDir: '../dist/web',
+    outDir: '../../dist/apps/web',
     emptyOutDir: true,
     reportCompressedSize: true,
     commonjsOptions: {
@@ -52,13 +52,13 @@ export default defineConfig({
     watch: false,
     globals: true,
     cache: {
-      dir: '../node_modules/.vitest',
+      dir: '../../node_modules/.vitest',
     },
     environment: 'jsdom',
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     reporters: ['default'],
     coverage: {
-      reportsDirectory: '../coverage/web',
+      reportsDirectory: '../../coverage/web',
       provider: 'v8' as const,
     },
     setupFiles: ['./src/test-setup.ts'], // Test setup with MSW

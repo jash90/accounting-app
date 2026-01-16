@@ -24,7 +24,7 @@ WORKDIR /app
 RUN npm install -g http-server
 
 # Copy built static files
-COPY --from=builder /app/dist/web ./dist
+COPY --from=builder /app/dist/apps/web ./dist
 
 # Expose port (Railway sets $PORT)
 EXPOSE 3000
