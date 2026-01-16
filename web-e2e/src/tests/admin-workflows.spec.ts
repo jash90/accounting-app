@@ -267,9 +267,9 @@ test.describe('Admin - Module Management', () => {
     const modulesPage = new ModulesListPage(authenticatedAdminPage);
 
     await modulesPage.goto();
-    await modulesPage.enableModule('simple-text', 'Company A');
+    await modulesPage.enableModule('ai-agent', 'Company A');
 
-    await modulesPage.expectModuleEnabled('simple-text', 'Company A');
+    await modulesPage.expectModuleEnabled('ai-agent', 'Company A');
   });
 
   test('should disable module for company', async ({ authenticatedAdminPage }) => {
@@ -278,12 +278,12 @@ test.describe('Admin - Module Management', () => {
     await modulesPage.goto();
 
     // First ensure it's enabled
-    await modulesPage.enableModule('simple-text', 'Company A');
+    await modulesPage.enableModule('ai-agent', 'Company A');
 
     // Then disable it
-    await modulesPage.disableModule('simple-text', 'Company A');
+    await modulesPage.disableModule('ai-agent', 'Company A');
 
-    await modulesPage.expectModuleDisabled('simple-text', 'Company A');
+    await modulesPage.expectModuleDisabled('ai-agent', 'Company A');
   });
 
   test('should filter modules by company', async ({ authenticatedAdminPage }) => {
@@ -302,10 +302,10 @@ test.describe('Admin - Module Management', () => {
 
     await modulesPage.goto();
 
-    const initialStatus = await modulesPage.isModuleEnabled('simple-text', 'Company A');
-    await modulesPage.toggleModule('simple-text', 'Company A');
+    const initialStatus = await modulesPage.isModuleEnabled('ai-agent', 'Company A');
+    await modulesPage.toggleModule('ai-agent', 'Company A');
 
-    const newStatus = await modulesPage.isModuleEnabled('simple-text', 'Company A');
+    const newStatus = await modulesPage.isModuleEnabled('ai-agent', 'Company A');
     expect(newStatus).toBe(!initialStatus);
   });
 
@@ -313,6 +313,6 @@ test.describe('Admin - Module Management', () => {
     const modulesPage = new ModulesListPage(authenticatedAdminPage);
 
     await modulesPage.goto();
-    await modulesPage.expectModuleInList('simple-text');
+    await modulesPage.expectModuleInList('ai-agent');
   });
 });

@@ -41,26 +41,12 @@ Comprehensive Playwright E2E test suite for the Accounting System with RBAC (Rol
 - ✅ Real-time permission updates
 - ✅ Multi-tenant employee isolation
 
-#### 4. Employee Workflow Tests (`employee-workflows.spec.ts`) - 16 tests
-- ✅ Modules dashboard navigation
-- ✅ Simple Text CRUD operations
-- ✅ Permission-based access control
-- ✅ Data isolation between companies
-- ✅ Search and pagination
-- ✅ Form validation
-- ✅ Read-only vs read-write access
-
-#### 5. Error Handling & Edge Cases (`error-handling.spec.ts`) - 30+ tests
-- ✅ Form validation (email, password, required fields)
-- ✅ API error handling (401, 403, 404, 500)
-- ✅ Network timeout and retry logic
-- ✅ Token expiration handling
-- ✅ Concurrent request handling
-- ✅ Empty states and large datasets
-- ✅ Special characters and XSS prevention
-- ✅ SQL injection prevention
-- ✅ Unicode character support
-- ✅ Browser navigation edge cases
+#### 4. Employee Sidebar Tests (`employee-sidebar.spec.ts`) - 15+ tests
+- ✅ Sidebar visibility and module display
+- ✅ Navigation to modules from sidebar
+- ✅ Permission-based module filtering
+- ✅ Sidebar collapse/expand functionality
+- ✅ Active link highlighting
 
 ## 🏗️ Architecture
 
@@ -90,9 +76,7 @@ web-e2e/src/
 │   │   ├── EmployeePermissionsPage.ts
 │   │   └── CompanyModulesListPage.ts
 │   └── employee/
-│       ├── ModulesDashboardPage.ts
-│       ├── SimpleTextListPage.ts
-│       └── SimpleTextFormPage.ts
+│       └── ModulesDashboardPage.ts
 ├── fixtures/
 │   ├── auth.fixtures.ts         # Authentication fixtures
 │   └── data.fixtures.ts         # Test data generators
@@ -104,8 +88,8 @@ web-e2e/src/
     ├── auth.spec.ts
     ├── admin-workflows.spec.ts
     ├── company-owner-workflows.spec.ts
-    ├── employee-workflows.spec.ts
-    └── error-handling.spec.ts
+    ├── employee-sidebar.spec.ts
+    └── rbac.spec.ts
 ```
 
 ### Design Patterns
@@ -363,8 +347,6 @@ const userData = TestDataFactory.createUserData('EMPLOYEE');
 const companyData = TestDataFactory.createCompanyData();
 // { name: 'Test Company 123', description: '...' }
 
-const textData = TestDataFactory.createSimpleTextData();
-// { title: 'Test Text 123', content: '...' }
 ```
 
 ### Creating a New Page Object

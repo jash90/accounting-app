@@ -19,7 +19,6 @@ const EmployeesListPage = lazy(() => import('@/pages/company/employees/employees
 const EmployeePermissionsPage = lazy(() => import('@/pages/company/employees/employee-permissions'));
 const CompanyModulesListPage = lazy(() => import('@/pages/company/modules/modules-list'));
 const EmployeeDashboard = lazy(() => import('@/pages/employee/dashboard'));
-const SimpleTextListPage = lazy(() => import('@/pages/modules/simple-text/simple-text-list'));
 
 // AI Agent Pages
 const AIAgentChatPage = lazy(() => import('@/pages/modules/ai-agent/chat'));
@@ -168,14 +167,6 @@ export default function Routes() {
           }
         />
         <Route
-          path="modules/simple-text"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <SimpleTextListPage />
-            </Suspense>
-          }
-        />
-        <Route
           path="modules/ai-agent"
           element={
             <Suspense fallback={<PageLoader />}>
@@ -294,14 +285,6 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <CompanyModulesListPage />
-            </Suspense>
-          }
-        />
-        <Route
-          path="modules/simple-text"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <SimpleTextListPage />
             </Suspense>
           }
         />
@@ -457,14 +440,6 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <EmployeeDashboard />
-            </Suspense>
-          }
-        />
-        <Route
-          path="simple-text"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <SimpleTextListPage />
             </Suspense>
           }
         />

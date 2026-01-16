@@ -114,20 +114,6 @@ export class APIHelper {
   }
 
   /**
-   * Create simple text via API
-   */
-  async createSimpleText(title: string, content: string): Promise<any> {
-    if (!this.apiContext) await this.init();
-
-    const response = await this.apiContext!.post('/api/modules/simple-text', {
-      headers: this.getAuthHeaders(),
-      data: { title, content },
-    });
-
-    return await response.json();
-  }
-
-  /**
    * Delete user via API
    */
   async deleteUser(userId: number): Promise<void> {
@@ -145,17 +131,6 @@ export class APIHelper {
     if (!this.apiContext) await this.init();
 
     await this.apiContext!.delete(`/api/admin/companies/${companyId}`, {
-      headers: this.getAuthHeaders(),
-    });
-  }
-
-  /**
-   * Delete simple text via API
-   */
-  async deleteSimpleText(textId: number): Promise<void> {
-    if (!this.apiContext) await this.init();
-
-    await this.apiContext!.delete(`/api/modules/simple-text/${textId}`, {
       headers: this.getAuthHeaders(),
     });
   }

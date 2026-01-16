@@ -132,19 +132,6 @@ export const grantModuleAccessSchema = z.object({
 
 export type GrantModuleAccessFormData = z.infer<typeof grantModuleAccessSchema>;
 
-// SimpleText Schemas
-export const createSimpleTextSchema = z.object({
-  content: z.string().min(1, 'Content is required').max(5000, 'Content must be less than 5000 characters'),
-});
-
-export type CreateSimpleTextFormData = z.infer<typeof createSimpleTextSchema>;
-
-export const updateSimpleTextSchema = z.object({
-  content: z.string().min(1).max(5000).optional(),
-});
-
-export type UpdateSimpleTextFormData = z.infer<typeof updateSimpleTextSchema>;
-
 // AI Agent Schemas
 
 // AI Configuration Schemas

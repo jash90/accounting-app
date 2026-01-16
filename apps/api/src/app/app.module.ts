@@ -15,7 +15,6 @@ import {
   Module as ModuleEntity,
   CompanyModuleAccess,
   UserModulePermission,
-  SimpleText,
   AIConfiguration,
   AIConversation,
   AIMessage,
@@ -37,7 +36,6 @@ import { AuthModule, JwtAuthGuard } from '@accounting/auth';
 import { AdminModule } from '../admin/admin.module';
 import { CompanyModule } from '../company/company.module';
 import { ModulesModule } from '../modules/modules.module';
-import { SimpleTextModule } from '@accounting/modules/simple-text';
 import { AIAgentModule } from '@accounting/modules/ai-agent';
 import { ClientsModule } from '@accounting/modules/clients';
 import { EmailClientModule } from '@accounting/modules/email-client';
@@ -76,7 +74,6 @@ import { ChangeLogModule } from '@accounting/infrastructure/change-log';
               ModuleEntity,
               CompanyModuleAccess,
               UserModulePermission,
-              SimpleText,
               AIConfiguration,
               AIConversation,
               AIMessage,
@@ -116,7 +113,6 @@ import { ChangeLogModule } from '@accounting/infrastructure/change-log';
             ModuleEntity,
             CompanyModuleAccess,
             UserModulePermission,
-            SimpleText,
             AIConfiguration,
             AIConversation,
             AIMessage,
@@ -144,7 +140,6 @@ import { ChangeLogModule } from '@accounting/infrastructure/change-log';
     AuthModule,
     AdminModule,
     CompanyModule,
-    SimpleTextModule,
     AIAgentModule,
     ClientsModule,
     EmailClientModule,

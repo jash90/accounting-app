@@ -60,7 +60,7 @@ export function ModuleFormDialog({ open, onOpenChange, module, onSubmit }: Modul
                 <FormItem>
                   <FormLabel>Module Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Simple Text" {...field} />
+                    <Input placeholder="AI Agent" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -74,7 +74,7 @@ export function ModuleFormDialog({ open, onOpenChange, module, onSubmit }: Modul
                 <FormItem>
                   <FormLabel>Slug</FormLabel>
                   <FormControl>
-                    <Input placeholder="simple-text" {...field} />
+                    <Input placeholder="ai-agent" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -88,7 +88,7 @@ export function ModuleFormDialog({ open, onOpenChange, module, onSubmit }: Modul
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Input placeholder="Basic text management module" {...field} />
+                    <Input placeholder="AI-powered agent for chat, RAG, and automation" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -6,7 +6,6 @@ import {
   Module as ModuleEntity,
   CompanyModuleAccess,
   UserModulePermission,
-  SimpleText,
   Client,
   ClientFieldDefinition,
 } from '@accounting/common';
@@ -21,7 +20,6 @@ import { SeederService } from './seeder.service';
       ModuleEntity,
       CompanyModuleAccess,
       UserModulePermission,
-      SimpleText,
       Client,
       ClientFieldDefinition,
     ]),

@@ -4,7 +4,7 @@ describe('/api/admin/companies (cascade deletion)', () => {
   let adminToken: string;
   let companyId: string;
   let employeeId: string;
-  const moduleSlug = 'simple-text';
+  const moduleSlug = 'ai-agent';
   const apiUrl = `http://localhost:3333`;
 
   beforeAll(async () => {

@@ -64,17 +64,6 @@ export interface UserModulePermission {
   createdAt: Date;
 }
 
-export interface SimpleText {
-  id: string;
-  companyId: string;
-  content: string;
-  createdById: string;
-  createdBy?: User;
-  company?: Company;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 // Client-related entities
 export interface Client {
   id: string;

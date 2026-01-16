@@ -9,19 +9,19 @@ export class ModuleResponseDto {
 
   @ApiProperty({
     description: 'Module name',
-    example: 'Simple Text Management',
+    example: 'AI Agent',
   })
   name!: string;
 
   @ApiProperty({
     description: 'Module URL-friendly slug',
-    example: 'simple-text',
+    example: 'ai-agent',
   })
   slug!: string;
 
   @ApiPropertyOptional({
     description: 'Module description',
-    example: 'A module for managing simple text documents',
+    example: 'AI-powered agent for chat, RAG, and automation',
     nullable: true,
   })
   description!: string | null;

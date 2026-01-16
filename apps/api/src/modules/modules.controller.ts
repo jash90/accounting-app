@@ -64,7 +64,7 @@ export class ModulesController {
     summary: 'Get module by ID or slug',
     description: 'Retrieve module details by UUID or slug. Access controlled by user role and permissions.'
   })
-  @ApiParam({ name: 'identifier', type: 'string', description: 'Module UUID or URL-friendly slug', example: 'simple-text or 550e8400-e29b-41d4-a716-446655440000' })
+  @ApiParam({ name: 'identifier', type: 'string', description: 'Module UUID or URL-friendly slug', example: 'ai-agent or 550e8400-e29b-41d4-a716-446655440000' })
   @ApiOkResponse({ description: 'Module details', type: ModuleResponseDto })
   @ApiNotFoundResponse({ description: 'Module not found or not accessible' })
   @ApiForbiddenResponse({ description: 'Forbidden - No access to this module' })

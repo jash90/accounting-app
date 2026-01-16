@@ -7,12 +7,12 @@ test.describe('RBAC Scenarios', () => {
     await page.fill('[name="password"]', 'Admin123!');
     await page.click('button[type="submit"]');
     
-    // Try to access simple-text module
-    await page.goto('http://localhost:4200/modules/simple-text');
+    // Try to access ai-agent module
+    await page.goto('http://localhost:4200/modules/ai-agent');
     
     // Should be redirected or see unauthorized message
     // This depends on backend implementation
-    await expect(page).not.toHaveURL(/\/modules\/simple-text/);
+    await expect(page).not.toHaveURL(/\/modules\/ai-agent/);
   });
 
   test('COMPANY_OWNER can manage employees', async ({ page }) => {
@@ -32,7 +32,7 @@ test.describe('RBAC Scenarios', () => {
     await page.fill('[name="password"]', 'Employee123!');
     await page.click('button[type="submit"]');
     
-    await page.goto('http://localhost:4200/modules/simple-text');
+    await page.goto('http://localhost:4200/modules/ai-agent');
     await expect(page.locator('text=Simple Text')).toBeVisible();
   });
 
@@ -42,7 +42,7 @@ test.describe('RBAC Scenarios', () => {
     await page.fill('[name="password"]', 'Employee123!');
     await page.click('button[type="submit"]');
     
-    await page.goto('http://localhost:4200/modules/simple-text');
+    await page.goto('http://localhost:4200/modules/ai-agent');
     
     // Create button should not be visible
     await expect(page.locator('text=Create Text')).not.toBeVisible();

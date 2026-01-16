@@ -100,7 +100,6 @@ async function bootstrap() {
     .addTag('Admin', 'Admin management endpoints')
     .addTag('Company', 'Company owner endpoints')
     .addTag('Modules', 'Module management and access control endpoints')
-    .addTag('simple-text', 'Simple Text module endpoints')
     .addTag('ai-agent', 'AI Agent module endpoints - Chat, RAG, Token Management')
     .addTag('Clients', 'Client management endpoints')
     .addTag('Client Field Definitions', 'Custom field definitions for clients')
