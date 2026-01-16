@@ -20,8 +20,8 @@ FROM node:22-alpine AS production
 
 WORKDIR /app
 
-# Install serve@13 (older version with simpler -l PORT syntax)
-RUN npm install -g serve@13
+# Install http-server globally (simpler port configuration)
+RUN npm install -g http-server
 
 # Copy built static files
 COPY --from=builder /app/dist/web ./dist
@@ -30,4 +30,5 @@ COPY --from=builder /app/dist/web ./dist
 EXPOSE 3000
 
 # Start command - serve static files with SPA mode
-CMD ["sh", "-c", "serve dist -s -p ${PORT:-3000}"]
+# http-server uses -p for port, --spa for single page app mode
+CMD ["sh", "-c", "http-server dist -p ${PORT:-3000} --spa"]
