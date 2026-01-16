@@ -31,4 +31,4 @@ EXPOSE 3000
 
 # Start command - serve static files with SPA mode
 # http-server uses -p for port, --spa for single page app mode
-CMD ["sh", "-c", "sed -i \"s|__API_BASE_URL__|${VITE_API_BASE_URL:-}|g\" dist/config.js && http-server dist -p ${PORT:-3000} --spa"]
+CMD ["sh", "-c", "sed -i \"s|__API_BASE_URL__|${API_BASE_URL:-}|g\" dist/config.js && http-server dist -p ${PORT:-3000} --spa"]

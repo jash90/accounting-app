@@ -12,7 +12,7 @@ declare global {
 
 /**
  * Get API base URL with runtime config support for Railway deployment.
- * Priority: Runtime config (Railway) > Build-time env var > empty string (relative paths)
+ * Priority: Runtime config (Railway) > Build-time env var (DEV only) > empty string (relative paths)
  */
 const getApiBaseUrl = (): string => {
   // Runtime config (injected by Railway at deploy time via sed)
@@ -23,8 +23,15 @@ const getApiBaseUrl = (): string => {
       return url;
     }
   }
-  // Build-time fallback (works for local dev)
-  return import.meta.env.VITE_API_BASE_URL || '';
+
+  // Build-time env var - ONLY for local development
+  if (import.meta.env.DEV) {
+    return import.meta.env.VITE_API_BASE_URL || '';
+  }
+
+  // Production without runtime config - use relative paths (assumes same domain or proxy)
+  console.warn('No API_BASE_URL configured, using relative paths');
+  return '';
 };
 
 const apiClient = axios.create({
