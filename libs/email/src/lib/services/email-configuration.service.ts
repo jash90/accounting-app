@@ -454,15 +454,22 @@ export class EmailConfigurationService {
       return null;
     }
 
-    return {
-      host: config.smtpHost,
-      port: config.smtpPort,
-      secure: config.smtpSecure,
-      auth: {
-        user: config.smtpUser,
-        pass: await this.encryptionService.decrypt(config.smtpPassword),
-      },
-    };
+    try {
+      return {
+        host: config.smtpHost,
+        port: config.smtpPort,
+        secure: config.smtpSecure,
+        auth: {
+          user: config.smtpUser,
+          pass: await this.encryptionService.decrypt(config.smtpPassword),
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to decrypt SMTP config for company ${companyId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      return null;
+    }
   }
 
   /**
@@ -502,25 +509,32 @@ export class EmailConfigurationService {
       return null;
     }
 
-    const smtp: SmtpConfig = {
-      host: config.smtpHost,
-      port: config.smtpPort,
-      secure: config.smtpSecure,
-      auth: {
-        user: config.smtpUser,
-        pass: await this.encryptionService.decrypt(config.smtpPassword),
-      },
-    };
+    try {
+      const smtp: SmtpConfig = {
+        host: config.smtpHost,
+        port: config.smtpPort,
+        secure: config.smtpSecure,
+        auth: {
+          user: config.smtpUser,
+          pass: await this.encryptionService.decrypt(config.smtpPassword),
+        },
+      };
 
-    const imap: ImapConfig = {
-      host: config.imapHost,
-      port: config.imapPort,
-      tls: config.imapTls,
-      user: config.imapUser,
-      password: await this.encryptionService.decrypt(config.imapPassword),
-    };
+      const imap: ImapConfig = {
+        host: config.imapHost,
+        port: config.imapPort,
+        tls: config.imapTls,
+        user: config.imapUser,
+        password: await this.encryptionService.decrypt(config.imapPassword),
+      };
 
-    return { smtp, imap };
+      return { smtp, imap };
+    } catch (error) {
+      this.logger.error(
+        `Failed to decrypt email config for company ${companyId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      return null;
+    }
   }
 
   // ========== SYSTEM ADMIN EMAIL CONFIGURATION ==========
@@ -561,24 +575,31 @@ export class EmailConfigurationService {
       return null;
     }
 
-    const smtp: SmtpConfig = {
-      host: config.smtpHost,
-      port: config.smtpPort,
-      secure: config.smtpSecure,
-      auth: {
-        user: config.smtpUser,
-        pass: await this.encryptionService.decrypt(config.smtpPassword),
-      },
-    };
+    try {
+      const smtp: SmtpConfig = {
+        host: config.smtpHost,
+        port: config.smtpPort,
+        secure: config.smtpSecure,
+        auth: {
+          user: config.smtpUser,
+          pass: await this.encryptionService.decrypt(config.smtpPassword),
+        },
+      };
 
-    const imap: ImapConfig = {
-      host: config.imapHost,
-      port: config.imapPort,
-      tls: config.imapTls,
-      user: config.imapUser,
-      password: await this.encryptionService.decrypt(config.imapPassword),
-    };
+      const imap: ImapConfig = {
+        host: config.imapHost,
+        port: config.imapPort,
+        tls: config.imapTls,
+        user: config.imapUser,
+        password: await this.encryptionService.decrypt(config.imapPassword),
+      };
 
-    return { smtp, imap };
+      return { smtp, imap };
+    } catch (error) {
+      this.logger.error(
+        `Failed to decrypt System Admin email config: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      return null;
+    }
   }
 }
