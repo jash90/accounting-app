@@ -50,12 +50,15 @@ export class EmailReaderService {
 
       imap.once('ready', () => {
         const mailbox = options.mailbox || 'INBOX';
+        this.logger.log(`[IMAP] Attempting to open mailbox: "${mailbox}"`);
 
         imap.openBox(mailbox, false, (err: Error | null, box: ImapTypes.Box) => {
           if (err) {
+            this.logger.error(`[IMAP] Failed to open mailbox "${mailbox}": ${err.message}`);
             imap.end();
             return reject(err);
           }
+          this.logger.log(`[IMAP] Opened mailbox: "${box.name}", total messages: ${box.messages.total}`);
 
           const searchCriteria = this.buildSearchCriteria(options);
 
@@ -459,5 +462,262 @@ export class EmailReaderService {
 
       imap.connect();
     });
+  }
+
+  /**
+   * Find Drafts mailbox name (handles different server conventions)
+   *
+   * Different email providers use different names for the Drafts folder:
+   * - Gmail: '[Gmail]/Drafts'
+   * - Outlook: 'Drafts'
+   * - Standard: 'Drafts'
+   * - Polish servers: 'Robocze' or 'Szkice'
+   * - German servers: 'Entwürfe'
+   *
+   * @param imapConfig IMAP configuration
+   * @returns Name of the Drafts mailbox
+   */
+  async findDraftsMailbox(imapConfig: ImapConfig): Promise<string> {
+    try {
+      const boxes = await this.listMailboxes(imapConfig);
+      this.logger.log(`Available mailboxes: ${boxes.join(', ')}`);
+
+      // Common Drafts folder names (case-insensitive check)
+      const draftNames = [
+        'Drafts',
+        'Draft',
+        '[Gmail]/Drafts',
+        '[Gmail]/Wersje robocze',  // Gmail Polish
+        'INBOX.Drafts',
+        'INBOX/Drafts',
+        'INBOX.Robocze',
+        'INBOX.Szkice',
+        'Robocze',      // Polish
+        'Szkice',       // Polish alternative
+        'Wersje robocze', // Polish Gmail-style
+        'Entwürfe',     // German
+        'Borradores',   // Spanish
+        'Brouillons',   // French
+        'Bozze',        // Italian
+        'Concepten',    // Dutch
+      ];
+
+      // First try exact match (case-insensitive)
+      for (const draftName of draftNames) {
+        const found = boxes.find(box => box.toLowerCase() === draftName.toLowerCase());
+        if (found) {
+          this.logger.log(`Found Drafts mailbox: ${found}`);
+          return found;
+        }
+      }
+
+      // Try partial match - look for folders containing 'draft', 'robocz', 'szkic'
+      const partialMatches = ['draft', 'robocz', 'szkic', 'bozz', 'brouillon', 'entwürf', 'borrador'];
+      for (const partial of partialMatches) {
+        const found = boxes.find(box => box.toLowerCase().includes(partial));
+        if (found) {
+          this.logger.log(`Found Drafts mailbox by partial match: ${found}`);
+          return found;
+        }
+      }
+
+      // Not found - try to create the folder
+      this.logger.warn(`Drafts mailbox not found in available folders. Attempting to create 'Drafts'...`);
+      try {
+        await this.createMailbox(imapConfig, 'Drafts');
+        this.logger.log(`Successfully created 'Drafts' mailbox`);
+        return 'Drafts';
+      } catch (createError) {
+        this.logger.error(`Failed to create Drafts folder: ${(createError as Error).message}`);
+        throw new Error(`Drafts folder not found and could not be created. Available folders: ${boxes.join(', ')}`);
+      }
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Error finding Drafts mailbox: ${err.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new mailbox on IMAP server
+   */
+  async createMailbox(imapConfig: ImapConfig, mailboxName: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const imap = this.createImapConnection(imapConfig);
+
+      imap.once('ready', () => {
+        imap.addBox(mailboxName, (err: Error) => {
+          imap.end();
+          if (err) {
+            this.logger.error(`Failed to create mailbox ${mailboxName}: ${err.message}`);
+            reject(new Error(`Failed to create mailbox: ${err.message}`));
+          } else {
+            this.logger.log(`Mailbox ${mailboxName} created successfully`);
+            resolve();
+          }
+        });
+      });
+
+      imap.once('error', (err: Error) => {
+        this.logger.error(`IMAP error creating mailbox: ${err.message}`);
+        reject(err);
+      });
+
+      imap.connect();
+    });
+  }
+
+  /**
+   * Append email to Drafts folder and return assigned UID
+   *
+   * @param imapConfig IMAP configuration
+   * @param rawMessage Raw MIME message buffer
+   * @returns Object containing assigned UID and mailbox name
+   */
+  async appendToDrafts(
+    imapConfig: ImapConfig,
+    rawMessage: Buffer,
+  ): Promise<{ uid: number; mailbox: string }> {
+    const draftsMailbox = await this.findDraftsMailbox(imapConfig);
+
+    return new Promise((resolve, reject) => {
+      const imap = this.createImapConnection(imapConfig);
+
+      imap.once('ready', () => {
+        imap.append(
+          rawMessage,
+          {
+            mailbox: draftsMailbox,
+            flags: ['\\Draft', '\\Seen'],
+          },
+          (err: Error) => {
+            if (err) {
+              imap.end();
+              this.logger.error(`Failed to append draft: ${err.message}`);
+              return reject(new Error(`Failed to save draft: ${err.message}`));
+            }
+
+            // Open box to get the UID of the appended message
+            imap.openBox(draftsMailbox, false, (err: Error, box: ImapTypes.Box) => {
+              if (err) {
+                imap.end();
+                return reject(err);
+              }
+
+              // Get the most recently added message (highest UID)
+              imap.search(['ALL'], (err: Error, results: number[]) => {
+                imap.end();
+                if (err || !results.length) {
+                  // Fallback: use UIDNEXT - 1 if available
+                  const estimatedUid = box.uidnext ? box.uidnext - 1 : 0;
+                  this.logger.log(`Draft appended, estimated UID: ${estimatedUid}`);
+                  return resolve({ uid: estimatedUid, mailbox: draftsMailbox });
+                }
+                const lastUid = Math.max(...results);
+                this.logger.log(`Draft appended with UID: ${lastUid}`);
+                resolve({ uid: lastUid, mailbox: draftsMailbox });
+              });
+            });
+          },
+        );
+      });
+
+      imap.once('error', (err: Error) => {
+        this.logger.error(`IMAP error during draft append: ${err.message}`);
+        reject(err);
+      });
+
+      imap.connect();
+    });
+  }
+
+  /**
+   * Fetch all drafts from IMAP Drafts folder
+   *
+   * @param imapConfig IMAP configuration
+   * @param options Fetch options (limit, etc.)
+   * @returns Array of draft emails with UIDs
+   */
+  async fetchDrafts(
+    imapConfig: ImapConfig,
+    options: FetchEmailsOptions = {},
+  ): Promise<ReceivedEmail[]> {
+    const draftsMailbox = await this.findDraftsMailbox(imapConfig);
+
+    return this.fetchEmails(imapConfig, {
+      ...options,
+      mailbox: draftsMailbox,
+    });
+  }
+
+  /**
+   * Delete draft from IMAP by UID
+   *
+   * @param imapConfig IMAP configuration
+   * @param uid Message UID to delete
+   * @param mailbox Mailbox name (optional, will find Drafts if not provided)
+   */
+  async deleteDraftFromImap(
+    imapConfig: ImapConfig,
+    uid: number,
+    mailbox?: string,
+  ): Promise<void> {
+    const draftsMailbox = mailbox || await this.findDraftsMailbox(imapConfig);
+
+    return new Promise((resolve, reject) => {
+      const imap = this.createImapConnection(imapConfig);
+
+      imap.once('ready', () => {
+        imap.openBox(draftsMailbox, false, (err: Error) => {
+          if (err) {
+            imap.end();
+            return reject(err);
+          }
+
+          imap.addFlags(uid, '\\Deleted', (err: Error) => {
+            if (err) {
+              imap.end();
+              return reject(err);
+            }
+
+            imap.expunge((err: Error) => {
+              imap.end();
+              if (err) return reject(err);
+              this.logger.log(`Draft UID ${uid} deleted from IMAP`);
+              resolve();
+            });
+          });
+        });
+      });
+
+      imap.once('error', reject);
+      imap.connect();
+    });
+  }
+
+  /**
+   * Update draft in IMAP (delete old, append new)
+   * IMAP doesn't support in-place updates, so we delete and re-append
+   *
+   * @param imapConfig IMAP configuration
+   * @param oldUid UID of existing draft to replace
+   * @param rawMessage New raw MIME message
+   * @returns New UID and mailbox name
+   */
+  async updateDraftInImap(
+    imapConfig: ImapConfig,
+    oldUid: number,
+    rawMessage: Buffer,
+  ): Promise<{ uid: number; mailbox: string }> {
+    // Delete old version first
+    try {
+      await this.deleteDraftFromImap(imapConfig, oldUid);
+    } catch (error) {
+      // Log but continue - draft might not exist
+      this.logger.warn(`Could not delete old draft UID ${oldUid}: ${(error as Error).message}`);
+    }
+
+    // Append new version
+    return this.appendToDrafts(imapConfig, rawMessage);
   }
 }

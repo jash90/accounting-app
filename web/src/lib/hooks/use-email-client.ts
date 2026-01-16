@@ -38,6 +38,19 @@ interface Draft {
   isAiGenerated: boolean;
   createdAt: Date;
   updatedAt: Date;
+  // IMAP sync fields
+  imapUid?: number;
+  imapMailbox?: string;
+  imapSyncedAt?: Date;
+  syncStatus: 'local' | 'synced' | 'imap_only' | 'conflict';
+}
+
+interface SyncResult {
+  synced: number;
+  imported: number;
+  conflicts: number;
+  deleted: number;
+  errors: string[];
 }
 
 export function useInbox(limit = 50, unseenOnly = false) {
@@ -508,4 +521,86 @@ export function useGenerateAiDraftStream() {
     stopStream,
     reset,
   };
+}
+
+/**
+ * Sync drafts with IMAP server
+ */
+export function useSyncDrafts() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post<SyncResult>('/api/modules/email-client/drafts/sync');
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['email-drafts'] });
+      queryClient.invalidateQueries({ queryKey: ['email-draft-conflicts'] });
+    },
+  });
+}
+
+/**
+ * Get drafts with sync conflicts
+ */
+export function useDraftConflicts() {
+  return useQuery({
+    queryKey: ['email-draft-conflicts'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<Draft[]>('/api/modules/email-client/drafts/conflicts');
+      return data;
+    },
+  });
+}
+
+/**
+ * Resolve a draft sync conflict
+ */
+export function useResolveConflict() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      draftId,
+      resolution,
+    }: {
+      draftId: string;
+      resolution: 'keep_local' | 'keep_imap';
+    }) => {
+      const { data } = await apiClient.post<Draft>(
+        `/api/modules/email-client/drafts/${draftId}/resolve-conflict`,
+        { resolution },
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['email-drafts'] });
+      queryClient.invalidateQueries({ queryKey: ['email-draft-conflicts'] });
+    },
+  });
+}
+
+interface DeleteAllResult {
+  deleted: number;
+  errors: string[];
+}
+
+/**
+ * Delete all drafts for company
+ */
+export function useDeleteAllDrafts() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.delete<DeleteAllResult>('/api/modules/email-client/drafts/all');
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['email-drafts'] });
+      queryClient.invalidateQueries({ queryKey: ['email-draft-conflicts'] });
+      queryClient.invalidateQueries({ queryKey: ['ai-drafts'] });
+    },
+  });
 }
