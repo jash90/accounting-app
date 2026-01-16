@@ -32,11 +32,9 @@ export function ModuleFormDialog({ open, onOpenChange, module, onSubmit }: Modul
 
   const form = useForm<CreateModuleFormData | UpdateModuleFormData>({
     resolver: zodResolver(schema),
-    defaultValues: module || {
-      name: '',
-      slug: '',
-      description: '',
-    },
+    defaultValues: module
+      ? { name: module.name, slug: module.slug, description: module.description }
+      : { name: '', slug: '', description: '' },
   });
 
   const handleSubmit = (data: CreateModuleFormData | UpdateModuleFormData) => {
