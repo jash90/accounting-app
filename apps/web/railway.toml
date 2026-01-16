@@ -1,6 +1,6 @@
 [build]
 builder = "dockerfile"
-# Relative from apps/web/ (root_directory)
+# Relative from apps/web/ (Railway rootDirectory setting)
 dockerfilePath = "../../Dockerfile.web"
 
 [deploy]
