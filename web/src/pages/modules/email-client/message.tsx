@@ -120,7 +120,7 @@ export default function EmailMessage() {
           <Button variant="ghost" size="sm" onClick={() => emailNav.toInbox()}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-lg font-semibold truncate max-w-md">
+          <h1 className="text-2xl font-bold">
             {email.subject || '(No subject)'}
           </h1>
           {isUnread && (
@@ -136,7 +136,7 @@ export default function EmailMessage() {
           </Button>
           <Button variant="outline" size="sm" onClick={handleAiReply}>
             <Sparkles className="h-4 w-4 mr-2" />
-            AI Reply
+            Wygeneruj AI
           </Button>
           <Button
             variant="outline"
