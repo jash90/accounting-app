@@ -7,6 +7,8 @@ import {
   Body,
   Param,
   UseGuards,
+  Res,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -14,6 +16,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { Response } from 'express';
 import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
 import { ModuleAccessGuard, PermissionGuard, RequireModule, RequirePermission } from '@accounting/rbac';
 import { User } from '@accounting/common';
@@ -72,6 +75,57 @@ export class EmailDraftsController {
 
     // Generate AI reply draft using AI Agent module
     return this.aiService.generateReplyDraft(user, originalEmail, dto);
+  }
+
+  @Post('ai/generate-reply-stream')
+  @ApiOperation({ summary: 'Generate AI reply draft with streaming (SSE)' })
+  @ApiResponse({ status: 200, description: 'SSE stream of AI draft generation' })
+  @RequirePermission('email-client', 'write')
+  async generateAiReplyStream(
+    @CurrentUser() user: User,
+    @Body() dto: EmailAiOptionsDto,
+    @Res() res: Response,
+  ) {
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+    res.flushHeaders();
+
+    try {
+      // Fetch the original email from IMAP
+      const originalEmail = await this.emailClientService.getEmail(user, dto.messageUid);
+
+      // Generate AI reply draft with streaming
+      const stream$ = this.aiService.generateReplyDraftStream(user, originalEmail, dto);
+
+      stream$.subscribe({
+        next: (chunk) => {
+          const eventType = chunk.type;
+          const data = JSON.stringify(chunk);
+          res.write(`event: ${eventType}\ndata: ${data}\n\n`);
+        },
+        error: (error) => {
+          const errorData = JSON.stringify({ type: 'error', error: error.message });
+          res.write(`event: error\ndata: ${errorData}\n\n`);
+          res.end();
+        },
+        complete: () => {
+          res.end();
+        },
+      });
+
+      // Handle client disconnect
+      res.on('close', () => {
+        // Client disconnected - stream will be cleaned up automatically
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorData = JSON.stringify({ type: 'error', error: errorMessage });
+      res.write(`event: error\ndata: ${errorData}\n\n`);
+      res.end();
+    }
   }
 
   @Get(':id')

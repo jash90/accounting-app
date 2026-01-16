@@ -342,6 +342,10 @@ export class EmailReaderService {
   private extractMailboxNames(boxes: ImapTypes.MailBoxes, prefix = ''): string[] {
     const names: string[] = [];
 
+    if (!boxes) {
+      return names;
+    }
+
     for (const [name, box] of Object.entries(boxes)) {
       const fullName = prefix ? `${prefix}/${name}` : name;
       names.push(fullName);

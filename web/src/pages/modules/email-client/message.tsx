@@ -12,10 +12,10 @@ import {
   CheckCheck,
   Paperclip,
   Sparkles,
-  Loader2,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useEffect } from 'react';
+import { EmailDetailSkeleton } from './components/email-detail-skeleton';
 
 export default function EmailMessage() {
   const { uid } = useParams<{ uid: string }>();
@@ -71,11 +71,7 @@ export default function EmailMessage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <EmailDetailSkeleton />;
   }
 
   if (error || !email) {

@@ -6,7 +6,7 @@ import {
   useCreateDraft,
   useDraft,
   useUpdateDraft,
-  useGenerateAiDraft,
+  useGenerateAiDraftStream,
   useUploadAttachment,
 } from '@/lib/hooks/use-email-client';
 import { Button } from '@/components/ui/button';
@@ -60,7 +60,7 @@ export default function EmailCompose() {
   const sendEmail = useSendEmail();
   const createDraft = useCreateDraft();
   const updateDraft = useUpdateDraft();
-  const generateAiDraft = useGenerateAiDraft();
+  const aiStream = useGenerateAiDraftStream();
   const uploadAttachment = useUploadAttachment();
   const { data: existingDraft, isLoading: isDraftLoading } = useDraft(draftId || undefined);
 
@@ -71,9 +71,35 @@ export default function EmailCompose() {
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
   const [showCcBcc, setShowCcBcc] = useState(false);
-  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [attachments, setAttachments] = useState<Array<{ path: string; filename: string; size: number }>>([]);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Sync streaming content to textarea
+  useEffect(() => {
+    if (aiStream.content) {
+      setContent(aiStream.content);
+    }
+  }, [aiStream.content]);
+
+  // Navigate to draft when streaming completes
+  useEffect(() => {
+    if (aiStream.draftId && !aiStream.isStreaming) {
+      emailNav.toComposeWithQuery(`draftId=${aiStream.draftId}`, { replace: true });
+      toast({ title: 'Sukces', description: 'Odpowiedź AI została wygenerowana' });
+      aiStream.reset();
+    }
+  }, [aiStream.draftId, aiStream.isStreaming]);
+
+  // Show error if streaming fails
+  useEffect(() => {
+    if (aiStream.error) {
+      toast({
+        title: 'Błąd',
+        description: aiStream.error,
+        variant: 'destructive',
+      });
+    }
+  }, [aiStream.error]);
 
   // Load draft data or reply state
   useEffect(() => {
@@ -101,25 +127,11 @@ export default function EmailCompose() {
     }
   }, [existingDraft, locationState]);
 
-  const handleGenerateAiReply = async (messageUid: number) => {
-    setIsGeneratingAi(true);
-    try {
-      const draft = await generateAiDraft.mutateAsync({
-        messageUid,
-      });
-
-      // Navigate to edit the newly created AI draft
-      emailNav.toComposeWithQuery(`draftId=${draft.id}`, { replace: true });
-      toast({ title: 'Success', description: 'AI draft generated' });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to generate AI reply',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsGeneratingAi(false);
-    }
+  const handleGenerateAiReply = (messageUid: number) => {
+    // Clear content first to show skeleton
+    setContent('');
+    // Start streaming - text will appear progressively in textarea
+    aiStream.startStream({ messageUid });
   };
 
   // Attachment handlers
@@ -256,13 +268,13 @@ export default function EmailCompose() {
     }
   };
 
-  if (isDraftLoading || isGeneratingAi) {
+  if (isDraftLoading) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
           <p className="mt-2 text-sm text-muted-foreground">
-            {isGeneratingAi ? 'Generating AI reply...' : 'Loading draft...'}
+            Ładowanie szkicu...
           </p>
         </div>
       </div>
@@ -384,15 +396,35 @@ export default function EmailCompose() {
           </div>
 
           <div>
-            <Label htmlFor="content">Message</Label>
-            <Textarea
-              id="content"
-              placeholder="Type your message here..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={15}
-              className="font-mono"
-            />
+            <div className="flex items-center gap-2 mb-1.5">
+              <Label htmlFor="content">Wiadomość</Label>
+              {(aiStream.isStreaming || (locationState?.aiGenerate && !content)) && (
+                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                  <Sparkles className="h-3 w-3" />
+                  Generowanie AI...
+                </span>
+              )}
+            </div>
+            <div className="relative">
+              {(aiStream.isStreaming || locationState?.aiGenerate) && !content && (
+                <div className="absolute inset-0 bg-background rounded-md border p-3 space-y-2 z-10">
+                  <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
+                  <div className="h-4 bg-muted rounded animate-pulse w-full" />
+                  <div className="h-4 bg-muted rounded animate-pulse w-5/6" />
+                  <div className="h-4 bg-muted rounded animate-pulse w-2/3" />
+                  <div className="h-4 bg-muted rounded animate-pulse w-4/5" />
+                </div>
+              )}
+              <Textarea
+                id="content"
+                placeholder="Wpisz treść wiadomości..."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                rows={15}
+                className={`font-mono ${(aiStream.isStreaming || locationState?.aiGenerate) ? 'border-purple-300 focus:border-purple-500' : ''}`}
+                disabled={aiStream.isStreaming || (locationState?.aiGenerate && !content)}
+              />
+            </div>
           </div>
 
           {/* Attachments Section */}
