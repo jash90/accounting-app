@@ -2,11 +2,11 @@
 # API service uses apps/api/railway.toml
 
 [build]
-builder = "nixpacks"
-buildCommand = "npm ci --legacy-peer-deps && npm run build:web"
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "npx serve dist/web -l $PORT -s"
+# startCommand is handled by Dockerfile CMD
 healthcheckPath = "/"
 healthcheckTimeout = 10000
 restartPolicyType = "on_failure"
