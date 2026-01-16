@@ -6,6 +6,7 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile.web"
 
 [deploy]
+startCommand = "http-server dist -p ${PORT:-3000} --spa"
 healthcheckPath = "/"
 healthcheckTimeout = 10000
 restartPolicyType = "on_failure"
