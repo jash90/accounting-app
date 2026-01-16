@@ -6,7 +6,7 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-# startCommand is handled by Dockerfile CMD
+startCommand = "serve dist -s -p $PORT"
 healthcheckPath = "/"
 healthcheckTimeout = 10000
 restartPolicyType = "on_failure"
