@@ -49,6 +49,9 @@ const EmailInboxPage = lazy(() => import('@/pages/modules/email-client/inbox'));
 const EmailComposePage = lazy(() => import('@/pages/modules/email-client/compose'));
 const EmailDraftsPage = lazy(() => import('@/pages/modules/email-client/drafts'));
 const EmailMessagePage = lazy(() => import('@/pages/modules/email-client/message'));
+const EmailSentPage = lazy(() => import('@/pages/modules/email-client/sent'));
+const EmailTrashPage = lazy(() => import('@/pages/modules/email-client/trash'));
+const EmailFolderPage = lazy(() => import('@/pages/modules/email-client/folder'));
 
 function PageLoader() {
   return (
@@ -417,6 +420,30 @@ export default function Routes() {
           }
         />
         <Route
+          path="modules/email-client/sent"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailSentPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/email-client/trash"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailTrashPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/email-client/folder/:folderName"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailFolderPage />
+            </Suspense>
+          }
+        />
+        <Route
           path="modules/email-client/message/:uid"
           element={
             <Suspense fallback={<PageLoader />}>
@@ -519,6 +546,30 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <EmailDraftsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="email-client/sent"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailSentPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="email-client/trash"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailTrashPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="email-client/folder/:folderName"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <EmailFolderPage />
             </Suspense>
           }
         />

@@ -16,6 +16,7 @@ import {
 import { Link } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { EmailListSkeleton } from './components/email-inbox-skeleton';
+import { EmailSidebar } from './components/email-sidebar';
 
 export default function EmailInbox() {
   const { data: emails, isLoading, refetch, isRefetching } = useInbox();
@@ -129,9 +130,12 @@ export default function EmailInbox() {
   const isProcessing = markAsRead.isPending || deleteEmails.isPending;
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="border-b p-4 flex items-center justify-between">
+    <div className="h-full flex">
+      <EmailSidebar />
+
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <div className="border-b p-4 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Email Inbox</h1>
           <p className="text-sm text-muted-foreground">
@@ -301,38 +305,39 @@ export default function EmailInbox() {
         )}
       </div>
 
-      {/* Pagination */}
-      {sortedEmails.length > 0 && (
-        <div className="border-t px-4 py-3 flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">
-            {(currentPage - 1) * pageSize + 1}-
-            {Math.min(currentPage * pageSize, sortedEmails.length)} z{' '}
-            {sortedEmails.length}
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="gap-1"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage >= totalPages}
-              className="gap-1"
-            >
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+        {/* Pagination */}
+        {sortedEmails.length > 0 && (
+          <div className="border-t px-4 py-3 flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              {(currentPage - 1) * pageSize + 1}-
+              {Math.min(currentPage * pageSize, sortedEmails.length)} z{' '}
+              {sortedEmails.length}
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="gap-1"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Poprzednia
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+                className="gap-1"
+              >
+                Następna
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
