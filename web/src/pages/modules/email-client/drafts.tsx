@@ -29,13 +29,13 @@ interface Draft {
 function SyncStatusIcon({ status }: { status: SyncStatus }) {
   switch (status) {
     case 'synced':
-      return <Cloud className="h-4 w-4 text-green-600" title="Synced with server" />;
+      return <Cloud className="h-4 w-4 text-green-600" title="Zsynchronizowano z serwerem" />;
     case 'local':
-      return <CloudOff className="h-4 w-4 text-gray-400" title="Local only" />;
+      return <CloudOff className="h-4 w-4 text-gray-400" title="Tylko lokalnie" />;
     case 'imap_only':
-      return <Cloud className="h-4 w-4 text-blue-500" title="Server only" />;
+      return <Cloud className="h-4 w-4 text-blue-500" title="Tylko na serwerze" />;
     case 'conflict':
-      return <AlertTriangle className="h-4 w-4 text-yellow-600" title="Sync conflict" />;
+      return <AlertTriangle className="h-4 w-4 text-yellow-600" title="Konflikt synchronizacji" />;
     default:
       return <CloudOff className="h-4 w-4 text-gray-400" />;
   }
@@ -58,9 +58,9 @@ export default function EmailDrafts() {
   const handleSendDraft = async (draftId: string) => {
     try {
       await sendDraft.mutateAsync(draftId);
-      toast({ title: 'Success', description: 'Draft sent successfully' });
+      toast({ title: 'Sukces', description: 'Szkic został wysłany' });
     } catch {
-      toast({ title: 'Error', description: 'Failed to send draft', variant: 'destructive' });
+      toast({ title: 'Błąd', description: 'Nie udało się wysłać szkicu', variant: 'destructive' });
     }
   };
 
@@ -68,11 +68,11 @@ export default function EmailDrafts() {
     try {
       const result = await syncDrafts.mutateAsync();
       toast({
-        title: 'Sync Complete',
-        description: `Synced: ${result.synced}, Imported: ${result.imported}, Conflicts: ${result.conflicts}`,
+        title: 'Synchronizacja zakończona',
+        description: `Zsynchronizowano: ${result.synced}, Zaimportowano: ${result.imported}, Konflikty: ${result.conflicts}`,
       });
     } catch {
-      toast({ title: 'Error', description: 'Failed to sync drafts', variant: 'destructive' });
+      toast({ title: 'Błąd', description: 'Nie udało się zsynchronizować szkiców', variant: 'destructive' });
     }
   };
 
@@ -84,11 +84,11 @@ export default function EmailDrafts() {
         draftId: selectedConflict.id,
         resolution,
       });
-      toast({ title: 'Success', description: 'Conflict resolved' });
+      toast({ title: 'Sukces', description: 'Konflikt rozwiązany' });
       setConflictDialogOpen(false);
       setSelectedConflict(null);
     } catch {
-      toast({ title: 'Error', description: 'Failed to resolve conflict', variant: 'destructive' });
+      toast({ title: 'Błąd', description: 'Nie udało się rozwiązać konfliktu', variant: 'destructive' });
     }
   };
 
@@ -101,17 +101,17 @@ export default function EmailDrafts() {
     try {
       const result = await deleteAllDrafts.mutateAsync();
       toast({
-        title: 'Success',
-        description: `Deleted ${result.deleted} drafts${result.errors.length > 0 ? ` (${result.errors.length} errors)` : ''}`,
+        title: 'Sukces',
+        description: `Usunięto ${result.deleted} szkiców${result.errors.length > 0 ? ` (${result.errors.length} błędów)` : ''}`,
       });
       setDeleteAllDialogOpen(false);
     } catch {
-      toast({ title: 'Error', description: 'Failed to delete drafts', variant: 'destructive' });
+      toast({ title: 'Błąd', description: 'Nie udało się usunąć szkiców', variant: 'destructive' });
     }
   };
 
   if (isLoading) {
-    return <div className="p-8">Loading drafts...</div>;
+    return <div className="p-8">Ładowanie szkiców...</div>;
   }
 
   const conflictCount = conflicts?.length || 0;
@@ -124,12 +124,12 @@ export default function EmailDrafts() {
         <div className="border-b p-4">
           <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Email Drafts</h1>
+            <h1 className="text-2xl font-bold">Szkice</h1>
             <p className="text-sm text-muted-foreground">
-              {drafts?.length || 0} saved drafts
+              {drafts?.length || 0} zapisanych szkiców
               {conflictCount > 0 && (
                 <span className="ml-2 text-yellow-600">
-                  ({conflictCount} conflict{conflictCount > 1 ? 's' : ''})
+                  ({conflictCount} {conflictCount === 1 ? 'konflikt' : 'konflikty'})
                 </span>
               )}
             </p>
@@ -146,7 +146,7 @@ export default function EmailDrafts() {
               ) : (
                 <RefreshCw className="h-4 w-4 mr-2" />
               )}
-              Sync with Server
+              Synchronizuj
             </Button>
             {drafts && drafts.length > 0 && (
               <Button
@@ -160,7 +160,7 @@ export default function EmailDrafts() {
                 ) : (
                   <Trash2 className="h-4 w-4 mr-2" />
                 )}
-                Delete All
+                Usuń wszystkie
               </Button>
             )}
           </div>
@@ -171,14 +171,14 @@ export default function EmailDrafts() {
         {!drafts || drafts.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground">
             <Edit className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No drafts saved</p>
+            <p>Brak zapisanych szkiców</p>
             <Button
               variant="outline"
               size="sm"
               className="mt-4"
               onClick={() => emailNav.toCompose()}
             >
-              Compose New Email
+              Napisz nową wiadomość
             </Button>
           </div>
         ) : (
@@ -190,7 +190,7 @@ export default function EmailDrafts() {
                     <div className="flex items-center gap-2">
                       <SyncStatusIcon status={draft.syncStatus} />
                       <p className="font-semibold truncate">
-                        To: {draft.to.join(', ')}
+                        Do: {draft.to.join(', ')}
                       </p>
                       {draft.isAiGenerated && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
@@ -206,18 +206,18 @@ export default function EmailDrafts() {
                           onClick={() => openConflictDialog(draft)}
                         >
                           <AlertTriangle className="h-3 w-3 mr-1" />
-                          Resolve
+                          Rozwiąż
                         </Button>
                       )}
                     </div>
                     <p className="font-medium text-sm mt-1 truncate">
-                      {draft.subject || '(No subject)'}
+                      {draft.subject || '(Brak tematu)'}
                     </p>
                     <p className="text-sm text-muted-foreground mt-1 truncate">
                       {draft.textContent.substring(0, 100)}...
                     </p>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Updated: {new Date(draft.updatedAt).toLocaleString('pl-PL')}
+                      Zaktualizowano: {new Date(draft.updatedAt).toLocaleString('pl-PL')}
                     </p>
                   </div>
                   <div className="flex gap-2 ml-4">
@@ -246,15 +246,15 @@ export default function EmailDrafts() {
       <Dialog open={conflictDialogOpen} onOpenChange={setConflictDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Resolve Sync Conflict</DialogTitle>
+            <DialogTitle>Rozwiąż konflikt synchronizacji</DialogTitle>
             <DialogDescription>
-              This draft has been modified both locally and on the server. Choose which version to keep.
+              Ten szkic został zmodyfikowany zarówno lokalnie, jak i na serwerze. Wybierz, którą wersję zachować.
             </DialogDescription>
           </DialogHeader>
           {selectedConflict && (
             <div className="py-4">
-              <p className="text-sm font-medium">Draft: {selectedConflict.subject || '(No subject)'}</p>
-              <p className="text-sm text-muted-foreground">To: {selectedConflict.to.join(', ')}</p>
+              <p className="text-sm font-medium">Szkic: {selectedConflict.subject || '(Brak tematu)'}</p>
+              <p className="text-sm text-muted-foreground">Do: {selectedConflict.to.join(', ')}</p>
             </div>
           )}
           <DialogFooter className="flex gap-2">
@@ -264,14 +264,14 @@ export default function EmailDrafts() {
               disabled={resolveConflict.isPending}
             >
               {resolveConflict.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Keep Server Version
+              Zachowaj wersję z serwera
             </Button>
             <Button
               onClick={() => handleResolveConflict('keep_local')}
               disabled={resolveConflict.isPending}
             >
               {resolveConflict.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Keep Local Version
+              Zachowaj wersję lokalną
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -280,10 +280,10 @@ export default function EmailDrafts() {
       <Dialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete All Drafts</DialogTitle>
+            <DialogTitle>Usuń wszystkie szkice</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete all {drafts?.length || 0} drafts? This action cannot be undone.
-              Drafts will be removed from both local storage and the email server.
+              Czy na pewno chcesz usunąć wszystkie {drafts?.length || 0} szkice? Tej akcji nie można cofnąć.
+              Szkice zostaną usunięte zarówno z lokalnej pamięci, jak i z serwera email.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2">
@@ -292,7 +292,7 @@ export default function EmailDrafts() {
               onClick={() => setDeleteAllDialogOpen(false)}
               disabled={deleteAllDrafts.isPending}
             >
-              Cancel
+              Anuluj
             </Button>
             <Button
               variant="destructive"
@@ -300,7 +300,7 @@ export default function EmailDrafts() {
               disabled={deleteAllDrafts.isPending}
             >
               {deleteAllDrafts.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Delete All Drafts
+              Usuń wszystkie szkice
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -143,8 +143,8 @@ export default function EmailCompose() {
     for (const file of Array.from(files)) {
       if (file.size > MAX_FILE_SIZE) {
         toast({
-          title: 'Error',
-          description: `File "${file.name}" exceeds 10MB limit`,
+          title: 'Błąd',
+          description: `Plik "${file.name}" przekracza limit 10MB`,
           variant: 'destructive',
         });
         continue;
@@ -154,13 +154,13 @@ export default function EmailCompose() {
         const result = await uploadAttachment.mutateAsync(file);
         setAttachments((prev) => [...prev, result]);
         toast({
-          title: 'Success',
-          description: `"${file.name}" uploaded`,
+          title: 'Sukces',
+          description: `Przesłano "${file.name}"`,
         });
       } catch (error) {
         toast({
-          title: 'Error',
-          description: `Failed to upload "${file.name}"`,
+          title: 'Błąd',
+          description: `Nie udało się przesłać "${file.name}"`,
           variant: 'destructive',
         });
       }
@@ -196,8 +196,8 @@ export default function EmailCompose() {
   const handleSend = async () => {
     if (!to || !subject) {
       toast({
-        title: 'Error',
-        description: 'To and Subject are required',
+        title: 'Błąd',
+        description: 'Pola Do i Temat są wymagane',
         variant: 'destructive',
       });
       return;
@@ -213,12 +213,12 @@ export default function EmailCompose() {
         ...(attachments.length > 0 && { attachments: attachments.map((a) => a.path) }),
       });
 
-      toast({ title: 'Success', description: 'Email sent successfully' });
+      toast({ title: 'Sukces', description: 'Wiadomość została wysłana' });
       emailNav.toInbox();
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to send email',
+        title: 'Błąd',
+        description: 'Nie udało się wysłać wiadomości',
         variant: 'destructive',
       });
     }
@@ -227,8 +227,8 @@ export default function EmailCompose() {
   const handleSaveDraft = async () => {
     if (!to) {
       toast({
-        title: 'Error',
-        description: 'To field is required',
+        title: 'Błąd',
+        description: 'Pole Do jest wymagane',
         variant: 'destructive',
       });
       return;
@@ -247,7 +247,7 @@ export default function EmailCompose() {
             textContent: content,
           },
         });
-        toast({ title: 'Success', description: 'Draft updated' });
+        toast({ title: 'Sukces', description: 'Szkic zaktualizowany' });
       } else {
         // Create new draft
         const newDraft = await createDraft.mutateAsync({
@@ -257,12 +257,12 @@ export default function EmailCompose() {
         });
         // Navigate to edit the new draft so subsequent saves are updates
         emailNav.toComposeWithQuery(`draftId=${newDraft.id}`, { replace: true });
-        toast({ title: 'Success', description: 'Draft saved' });
+        toast({ title: 'Sukces', description: 'Szkic zapisany' });
       }
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to save draft',
+        title: 'Błąd',
+        description: 'Nie udało się zapisać szkicu',
         variant: 'destructive',
       });
     }
@@ -297,18 +297,18 @@ export default function EmailCompose() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-2xl font-bold">
-            {draftId ? 'Edit Draft' : 'Compose Email'}
+            {draftId ? 'Edytuj szkic' : 'Nowa wiadomość'}
           </h1>
           {existingDraft?.isAiGenerated && (
             <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full flex items-center gap-1">
               <Sparkles className="h-3 w-3" />
-              AI Generated
+              Wygenerowane przez AI
             </span>
           )}
           {attachments.length > 0 && (
             <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full flex items-center gap-1">
               <Paperclip className="h-3 w-3" />
-              {attachments.length} attachment{attachments.length > 1 ? 's' : ''}
+              {attachments.length} {attachments.length === 1 ? 'załącznik' : 'załączniki'}
             </span>
           )}
         </div>
@@ -324,7 +324,7 @@ export default function EmailCompose() {
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}
-            {draftId ? 'Update Draft' : 'Save Draft'}
+            {draftId ? 'Zapisz zmiany' : 'Zapisz szkic'}
           </Button>
           {locationState?.replyTo && (
             <Button
@@ -347,7 +347,7 @@ export default function EmailCompose() {
             ) : (
               <Send className="h-4 w-4 mr-2" />
             )}
-            Send
+            Wyślij
           </Button>
         </div>
       </div>
@@ -355,15 +355,15 @@ export default function EmailCompose() {
       <div className="flex-1 p-6 overflow-auto">
         <div className="max-w-4xl mx-auto space-y-4">
           <div>
-            <Label htmlFor="to">To</Label>
+            <Label htmlFor="to">Do</Label>
             <Input
               id="to"
-              placeholder="recipient@example.com"
+              placeholder="adresat@example.com"
               value={to}
               onChange={(e) => setTo(e.target.value)}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Separate multiple emails with commas
+              Oddziel wiele adresów przecinkami
             </p>
           </div>
 
@@ -375,24 +375,24 @@ export default function EmailCompose() {
                 ) : (
                   <ChevronDown className="h-4 w-4 mr-1" />
                 )}
-                {showCcBcc ? 'Hide CC/BCC' : 'Add CC/BCC'}
+                {showCcBcc ? 'Ukryj DW/UDW' : 'Dodaj DW/UDW'}
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4 mt-2">
               <div>
-                <Label htmlFor="cc">CC</Label>
+                <Label htmlFor="cc">DW (Do wiadomości)</Label>
                 <Input
                   id="cc"
-                  placeholder="cc@example.com"
+                  placeholder="dw@example.com"
                   value={cc}
                   onChange={(e) => setCc(e.target.value)}
                 />
               </div>
               <div>
-                <Label htmlFor="bcc">BCC</Label>
+                <Label htmlFor="bcc">UDW (Ukryta kopia)</Label>
                 <Input
                   id="bcc"
-                  placeholder="bcc@example.com"
+                  placeholder="udw@example.com"
                   value={bcc}
                   onChange={(e) => setBcc(e.target.value)}
                 />
@@ -401,10 +401,10 @@ export default function EmailCompose() {
           </Collapsible>
 
           <div>
-            <Label htmlFor="subject">Subject</Label>
+            <Label htmlFor="subject">Temat</Label>
             <Input
               id="subject"
-              placeholder="Email subject"
+              placeholder="Temat wiadomości"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
             />
@@ -444,7 +444,7 @@ export default function EmailCompose() {
 
           {/* Attachments Section */}
           <div className="space-y-3">
-            <Label>Attachments</Label>
+            <Label>Załączniki</Label>
 
             {/* Drag & Drop Zone */}
             <div
@@ -475,11 +475,11 @@ export default function EmailCompose() {
                 )}
                 <span className="text-sm text-muted-foreground">
                   {isUploading
-                    ? 'Uploading...'
-                    : 'Drag and drop files here, or click to browse'}
+                    ? 'Przesyłanie...'
+                    : 'Przeciągnij i upuść pliki tutaj lub kliknij, aby przeglądać'}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  Maximum file size: 10MB
+                  Maksymalny rozmiar pliku: 10MB
                 </span>
               </label>
             </div>

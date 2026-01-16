@@ -64,11 +64,11 @@ export function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem className="cursor-pointer hover:bg-apptax-soft-teal">
           <User className="mr-2 h-4 w-4 text-apptax-navy" />
-          Profile
+          Profil
         </DropdownMenuItem>
         <DropdownMenuItem className="cursor-pointer hover:bg-apptax-soft-teal">
           <Settings className="mr-2 h-4 w-4 text-apptax-navy" />
-          Settings
+          Ustawienia
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => navigate('/settings/email-config')}
@@ -93,7 +93,7 @@ export function UserMenu() {
           className="text-destructive cursor-pointer focus:text-destructive focus:bg-destructive/10"
         >
           <LogOut className="mr-2 h-4 w-4" />
-          Logout
+          Wyloguj
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
