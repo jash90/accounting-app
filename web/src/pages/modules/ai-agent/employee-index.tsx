@@ -8,11 +8,11 @@ export default function EmployeeAIAgentDashboard() {
     <div className="container mx-auto p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-apptax-navy flex items-center gap-3">
-          AI Agent Module
+          Moduł Agent AI
           <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow" />
         </h1>
         <p className="text-muted-foreground mt-1">
-          Your intelligent AI assistant powered by advanced language models
+          Twój inteligentny asystent AI zasilany zaawansowanymi modelami językowymi
         </p>
       </div>
 
@@ -24,22 +24,22 @@ export default function EmployeeAIAgentDashboard() {
                 <MessageSquare className="h-8 w-8" />
               </div>
               <div>
-                <CardTitle className="text-xl text-apptax-navy">AI Chat</CardTitle>
+                <CardTitle className="text-xl text-apptax-navy">Czat AI</CardTitle>
                 <CardDescription className="text-base">
-                  Start conversations and get intelligent answers
+                  Rozpocznij rozmowy i uzyskaj inteligentne odpowiedzi
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Ask questions, get help with tasks, and leverage AI to boost your productivity.
-              The AI has access to your company&apos;s knowledge base for accurate, context-aware responses.
+              Zadawaj pytania, uzyskaj pomoc przy zadaniach i wykorzystaj AI do zwiększenia produktywności.
+              AI ma dostęp do bazy wiedzy Twojej firmy, zapewniając dokładne odpowiedzi świadome kontekstu.
             </p>
             <Link to="/modules/ai-agent/chat">
               <Button size="lg" variant="teal" className="w-full">
                 <Sparkles className="mr-2 h-5 w-5" />
-                Start Chatting
+                Rozpocznij czat
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
@@ -48,33 +48,33 @@ export default function EmployeeAIAgentDashboard() {
 
         <Card className="bg-apptax-warm-gray border-0">
           <CardHeader>
-            <CardTitle className="text-apptax-navy">Features</CardTitle>
+            <CardTitle className="text-apptax-navy">Funkcje</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-start gap-3">
               <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-medium text-apptax-navy">Smart Conversations</p>
+                <p className="font-medium text-apptax-navy">Inteligentne rozmowy</p>
                 <p className="text-sm text-muted-foreground">
-                  AI understands context from your company documents
+                  AI rozumie kontekst z dokumentów Twojej firmy
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-medium text-apptax-navy">Conversation History</p>
+                <p className="font-medium text-apptax-navy">Historia rozmów</p>
                 <p className="text-sm text-muted-foreground">
-                  Access all your past conversations anytime
+                  Dostęp do wszystkich poprzednich rozmów w każdej chwili
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-medium text-apptax-navy">Always Available</p>
+                <p className="font-medium text-apptax-navy">Zawsze dostępny</p>
                 <p className="text-sm text-muted-foreground">
-                  24/7 AI assistant ready to help
+                  Asystent AI gotowy do pomocy 24/7
                 </p>
               </div>
             </div>

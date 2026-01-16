@@ -3,21 +3,21 @@ import { UserRole } from '@/types/enums';
 
 // Auth Schemas
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  email: z.string().email('Nieprawidłowy adres email'),
+  password: z.string().min(8, 'Hasło musi mieć co najmniej 8 znaków'),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
 
 export const registerSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().email('Nieprawidłowy adres email'),
   password: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
+    .min(8, 'Hasło musi mieć co najmniej 8 znaków')
+    .regex(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
+    .regex(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
+    .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę'),
+  firstName: z.string().min(1, 'Imię jest wymagane'),
+  lastName: z.string().min(1, 'Nazwisko jest wymagane'),
   role: z.nativeEnum(UserRole),
   companyId: z.string().uuid().optional(),
 });
@@ -26,14 +26,14 @@ export type RegisterFormData = z.infer<typeof registerSchema>;
 
 // User Schemas
 export const createUserSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().email('Nieprawidłowy adres email'),
   password: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
+    .min(8, 'Hasło musi mieć co najmniej 8 znaków')
+    .regex(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
+    .regex(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
+    .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę'),
+  firstName: z.string().min(1, 'Imię jest wymagane'),
+  lastName: z.string().min(1, 'Nazwisko jest wymagane'),
   role: z.nativeEnum(UserRole),
   companyId: z.preprocess(
     (val) => (val === '' ? undefined : val),
@@ -45,7 +45,7 @@ export const createUserSchema = z.object({
   if (data.role === UserRole.EMPLOYEE && !data.companyId) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'Company is required for Employee role',
+      message: 'Firma jest wymagana dla roli Pracownik',
       path: ['companyId'],
     });
   }
@@ -53,7 +53,7 @@ export const createUserSchema = z.object({
   if (data.role === UserRole.COMPANY_OWNER && !data.companyName?.trim()) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'Company name is required for Company Owner role',
+      message: 'Nazwa firmy jest wymagana dla roli Właściciel firmy',
       path: ['companyName'],
     });
   }
@@ -62,7 +62,7 @@ export const createUserSchema = z.object({
 export type CreateUserFormData = z.infer<typeof createUserSchema>;
 
 export const updateUserSchema = z.object({
-  email: z.string().email('Invalid email address').optional(),
+  email: z.string().email('Nieprawidłowy adres email').optional(),
   firstName: z.string().min(1).optional(),
   lastName: z.string().min(1).optional(),
   role: z.nativeEnum(UserRole).optional(),
@@ -74,8 +74,8 @@ export type UpdateUserFormData = z.infer<typeof updateUserSchema>;
 
 // Company Schemas
 export const createCompanySchema = z.object({
-  name: z.string().min(1, 'Company name is required'),
-  ownerId: z.string().uuid('Invalid owner ID'),
+  name: z.string().min(1, 'Nazwa firmy jest wymagana'),
+  ownerId: z.string().uuid('Nieprawidłowy identyfikator właściciela'),
 });
 
 export type CreateCompanyFormData = z.infer<typeof createCompanySchema>;
@@ -89,11 +89,11 @@ export type UpdateCompanyFormData = z.infer<typeof updateCompanySchema>;
 
 // Module Schemas
 export const createModuleSchema = z.object({
-  name: z.string().min(1, 'Module name is required'),
+  name: z.string().min(1, 'Nazwa modułu jest wymagana'),
   slug: z.string()
-    .min(1, 'Slug is required')
-    .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
-  description: z.string().min(1, 'Description is required'),
+    .min(1, 'Identyfikator (slug) jest wymagany')
+    .regex(/^[a-z0-9-]+$/, 'Identyfikator może zawierać tylko małe litery, cyfry i myślniki'),
+  description: z.string().min(1, 'Opis jest wymagany'),
 });
 
 export type CreateModuleFormData = z.infer<typeof createModuleSchema>;
@@ -102,7 +102,7 @@ export const updateModuleSchema = z.object({
   name: z.string().min(1).optional(),
   slug: z.string()
     .min(1)
-    .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens')
+    .regex(/^[a-z0-9-]+$/, 'Identyfikator może zawierać tylko małe litery, cyfry i myślniki')
     .optional(),
   description: z.string().min(1).optional(),
   isActive: z.boolean().optional(),
@@ -112,22 +112,22 @@ export type UpdateModuleFormData = z.infer<typeof updateModuleSchema>;
 
 // Employee Schemas
 export const createEmployeeSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().email('Nieprawidłowy adres email'),
   password: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
+    .min(8, 'Hasło musi mieć co najmniej 8 znaków')
+    .regex(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
+    .regex(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
+    .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę'),
+  firstName: z.string().min(1, 'Imię jest wymagane'),
+  lastName: z.string().min(1, 'Nazwisko jest wymagane'),
 });
 
 export type CreateEmployeeFormData = z.infer<typeof createEmployeeSchema>;
 
 // Permission Schemas
 export const grantModuleAccessSchema = z.object({
-  moduleSlug: z.string().min(1, 'Module slug is required'),
-  permissions: z.array(z.enum(['read', 'write', 'delete'])).min(1, 'At least one permission is required'),
+  moduleSlug: z.string().min(1, 'Identyfikator modułu jest wymagany'),
+  permissions: z.array(z.enum(['read', 'write', 'delete'])).min(1, 'Wymagane jest co najmniej jedno uprawnienie'),
 });
 
 export type GrantModuleAccessFormData = z.infer<typeof grantModuleAccessSchema>;
@@ -136,9 +136,9 @@ export type GrantModuleAccessFormData = z.infer<typeof grantModuleAccessSchema>;
 
 // AI Configuration Schemas
 export const createAIConfigurationSchema = z.object({
-  provider: z.enum(['openai', 'openrouter'], { message: 'Provider is required' }),
-  model: z.string().min(1, 'Model is required'),
-  apiKey: z.string().min(1, 'API Key is required'),
+  provider: z.enum(['openai', 'openrouter'], { message: 'Dostawca jest wymagany' }),
+  model: z.string().min(1, 'Model jest wymagany'),
+  apiKey: z.string().min(1, 'Klucz API jest wymagany'),
   systemPrompt: z.string().optional(),
   temperature: z.number().min(0).max(2).optional(),
   maxTokens: z.number().int().min(1).max(128000).optional(),
@@ -175,18 +175,18 @@ export const createConversationSchema = z.object({
 export type CreateConversationFormData = z.infer<typeof createConversationSchema>;
 
 export const sendMessageSchema = z.object({
-  content: z.string().min(1, 'Message cannot be empty').max(10000, 'Message is too long'),
+  content: z.string().min(1, 'Wiadomość nie może być pusta').max(10000, 'Wiadomość jest za długa'),
 });
 
 export type SendMessageFormData = z.infer<typeof sendMessageSchema>;
 
 // Context/File Upload Schemas
 export const uploadContextFileSchema = z.object({
-  file: z.instanceof(File, { message: 'File is required' })
-    .refine((file) => file.size <= 10 * 1024 * 1024, 'File size must be less than 10MB')
+  file: z.instanceof(File, { message: 'Plik jest wymagany' })
+    .refine((file) => file.size <= 10 * 1024 * 1024, 'Rozmiar pliku musi być mniejszy niż 10MB')
     .refine(
       (file) => ['application/pdf', 'text/plain', 'text/markdown'].includes(file.type),
-      'Only PDF, TXT, and MD files are allowed'
+      'Dozwolone są tylko pliki PDF, TXT i MD'
     ),
 });
 
@@ -194,9 +194,9 @@ export type UploadContextFileFormData = z.infer<typeof uploadContextFileSchema>;
 
 // Token Limit Schemas
 export const setTokenLimitSchema = z.object({
-  targetType: z.enum(['company', 'user'], { message: 'Target type is required' }),
-  targetId: z.string().uuid('Invalid target ID'),
-  monthlyLimit: z.number().int().min(0, 'Monthly limit must be non-negative'),
+  targetType: z.enum(['company', 'user'], { message: 'Typ celu jest wymagany' }),
+  targetId: z.string().uuid('Nieprawidłowy identyfikator celu'),
+  monthlyLimit: z.number().int().min(0, 'Miesięczny limit musi być nieujemny'),
 });
 
 export type SetTokenLimitFormData = z.infer<typeof setTokenLimitSchema>;
@@ -204,17 +204,17 @@ export type SetTokenLimitFormData = z.infer<typeof setTokenLimitSchema>;
 // Email Configuration Schemas
 export const createEmailConfigSchema = z.object({
   // SMTP Configuration
-  smtpHost: z.string().min(3, 'SMTP host is required'),
-  smtpPort: z.number().int().min(1, 'Port must be at least 1').max(65535, 'Port must be at most 65535'),
+  smtpHost: z.string().min(3, 'Host SMTP jest wymagany'),
+  smtpPort: z.number().int().min(1, 'Port musi być co najmniej 1').max(65535, 'Port musi być maksymalnie 65535'),
   smtpSecure: z.boolean(),
-  smtpUser: z.string().email('Invalid email address'),
-  smtpPassword: z.string().min(1, 'SMTP password is required'),
+  smtpUser: z.string().email('Nieprawidłowy adres email'),
+  smtpPassword: z.string().min(1, 'Hasło SMTP jest wymagane'),
   // IMAP Configuration
-  imapHost: z.string().min(3, 'IMAP host is required'),
-  imapPort: z.number().int().min(1, 'Port must be at least 1').max(65535, 'Port must be at most 65535'),
+  imapHost: z.string().min(3, 'Host IMAP jest wymagany'),
+  imapPort: z.number().int().min(1, 'Port musi być co najmniej 1').max(65535, 'Port musi być maksymalnie 65535'),
   imapTls: z.boolean(),
-  imapUser: z.string().email('Invalid email address'),
-  imapPassword: z.string().min(1, 'IMAP password is required'),
+  imapUser: z.string().email('Nieprawidłowy adres email'),
+  imapPassword: z.string().min(1, 'Hasło IMAP jest wymagane'),
   // Optional metadata
   displayName: z.string().optional(),
 });

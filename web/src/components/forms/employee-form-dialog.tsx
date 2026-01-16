@@ -49,7 +49,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee, onSubmit }: E
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Employee' : 'Add Employee'}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edytuj pracownika' : 'Dodaj pracownika'}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -61,7 +61,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee, onSubmit }: E
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="employee@example.com" {...field} />
+                    <Input type="email" placeholder="pracownik@example.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -74,7 +74,7 @@ export function EmployeeFormDialog({ open, onOpenChange, employee, onSubmit }: E
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>Hasło</FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
@@ -89,9 +89,9 @@ export function EmployeeFormDialog({ open, onOpenChange, employee, onSubmit }: E
               name="firstName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>First Name</FormLabel>
+                  <FormLabel>Imię</FormLabel>
                   <FormControl>
-                    <Input placeholder="John" {...field} />
+                    <Input placeholder="Jan" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -103,9 +103,9 @@ export function EmployeeFormDialog({ open, onOpenChange, employee, onSubmit }: E
               name="lastName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Last Name</FormLabel>
+                  <FormLabel>Nazwisko</FormLabel>
                   <FormControl>
-                    <Input placeholder="Doe" {...field} />
+                    <Input placeholder="Kowalski" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -114,10 +114,10 @@ export function EmployeeFormDialog({ open, onOpenChange, employee, onSubmit }: E
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-                Cancel
+                Anuluj
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {isEditing ? 'Update' : 'Create'}
+                {isEditing ? 'Zapisz' : 'Dodaj'}
               </Button>
             </div>
           </form>

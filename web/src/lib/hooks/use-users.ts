@@ -32,14 +32,14 @@ export function useCreateUser() {
       // Invalidate companies in case a company was created with COMPANY_OWNER
       queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
       toast({
-        title: 'Success',
-        description: 'User created successfully',
+        title: 'Sukces',
+        description: 'Użytkownik został utworzony',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to create user',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się utworzyć użytkownika',
         variant: 'destructive',
       });
     },
@@ -57,14 +57,14 @@ export function useUpdateUser() {
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(variables.id) });
       toast({
-        title: 'Success',
-        description: 'User updated successfully',
+        title: 'Sukces',
+        description: 'Użytkownik został zaktualizowany',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to update user',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się zaktualizować użytkownika',
         variant: 'destructive',
       });
     },
@@ -80,14 +80,14 @@ export function useDeleteUser() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       toast({
-        title: 'Success',
-        description: 'User deleted successfully',
+        title: 'Sukces',
+        description: 'Użytkownik został usunięty',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete user',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się usunąć użytkownika',
         variant: 'destructive',
       });
     },

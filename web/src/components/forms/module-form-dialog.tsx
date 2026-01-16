@@ -48,7 +48,7 @@ export function ModuleFormDialog({ open, onOpenChange, module, onSubmit }: Modul
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit Module' : 'Create Module'}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edytuj moduł' : 'Utwórz moduł'}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -58,9 +58,9 @@ export function ModuleFormDialog({ open, onOpenChange, module, onSubmit }: Modul
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Module Name</FormLabel>
+                  <FormLabel>Nazwa modułu</FormLabel>
                   <FormControl>
-                    <Input placeholder="AI Agent" {...field} />
+                    <Input placeholder="Agent AI" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -72,7 +72,7 @@ export function ModuleFormDialog({ open, onOpenChange, module, onSubmit }: Modul
               name="slug"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Slug</FormLabel>
+                  <FormLabel>Identyfikator (slug)</FormLabel>
                   <FormControl>
                     <Input placeholder="ai-agent" {...field} />
                   </FormControl>
@@ -86,9 +86,9 @@ export function ModuleFormDialog({ open, onOpenChange, module, onSubmit }: Modul
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>Opis</FormLabel>
                   <FormControl>
-                    <Input placeholder="AI-powered agent for chat, RAG, and automation" {...field} />
+                    <Input placeholder="Agent AI do czatu, RAG i automatyzacji" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -97,10 +97,10 @@ export function ModuleFormDialog({ open, onOpenChange, module, onSubmit }: Modul
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-                Cancel
+                Anuluj
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {isEditing ? 'Update' : 'Create'}
+                {isEditing ? 'Zapisz' : 'Utwórz'}
               </Button>
             </div>
           </form>

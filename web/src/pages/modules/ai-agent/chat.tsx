@@ -59,7 +59,7 @@ export default function AIAgentChatPage() {
 
   const handleNewConversation = async () => {
     const result = await createConversation.mutateAsync({
-      title: `New Chat ${new Date().toLocaleString()}`,
+      title: `Nowy czat ${new Date().toLocaleString('pl-PL')}`,
     });
     setSelectedConversationId(result.id);
   };
@@ -98,7 +98,7 @@ export default function AIAgentChatPage() {
   };
 
   const handleDeleteConversation = async (id: string) => {
-    if (confirm('Are you sure you want to delete this conversation?')) {
+    if (confirm('Czy na pewno chcesz usunąć tę rozmowę?')) {
       await deleteConversation.mutateAsync(id);
       if (selectedConversationId === id) {
         setSelectedConversationId(null);
@@ -111,7 +111,7 @@ export default function AIAgentChatPage() {
       <div className="flex items-center justify-center h-full">
         <div className="flex items-center gap-3 text-apptax-navy">
           <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow animate-pulse" />
-          Loading...
+          Ładowanie...
         </div>
       </div>
     );
@@ -125,14 +125,14 @@ export default function AIAgentChatPage() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2" data-testid="conversations-title">
-                Conversations
+                Rozmowy
                 <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
               </CardTitle>
               <Button onClick={handleNewConversation} size="sm" variant="teal" disabled={createConversation.isPending} data-testid="new-chat-button">
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
-            <CardDescription>Your AI chat history</CardDescription>
+            <CardDescription>Historia Twoich rozmów z AI</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 overflow-hidden p-0">
             <ScrollArea className="h-full px-4">
@@ -179,13 +179,13 @@ export default function AIAgentChatPage() {
                       'text-xs mt-1',
                       selectedConversationId === conv.id ? 'text-white/70' : 'text-muted-foreground'
                     )}>
-                      {new Date(conv.createdAt).toLocaleDateString()}
+                      {new Date(conv.createdAt).toLocaleDateString('pl-PL')}
                     </p>
                   </div>
                 ))}
                 {conversations?.length === 0 && (
                   <p className="text-muted-foreground text-sm text-center py-8" data-testid="no-conversations">
-                    No conversations yet. Create one to get started!
+                    Brak rozmów. Utwórz nową, aby rozpocząć!
                   </p>
                 )}
               </div>
@@ -198,10 +198,10 @@ export default function AIAgentChatPage() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2" data-testid="ai-assistant-title">
               <Sparkles className="h-5 w-5 text-apptax-teal" />
-              AI Assistant
+              Asystent AI
             </CardTitle>
             <CardDescription>
-              {currentConversation ? currentConversation.title : 'Select or create a conversation'}
+              {currentConversation ? currentConversation.title : 'Wybierz lub utwórz rozmowę'}
             </CardDescription>
           </CardHeader>
           <Separator />
@@ -214,8 +214,8 @@ export default function AIAgentChatPage() {
                     <div className="w-16 h-16 rounded-full bg-apptax-ai-gradient flex items-center justify-center mx-auto mb-4">
                       <Bot className="h-8 w-8 text-white" />
                     </div>
-                    <p className="text-lg font-medium text-apptax-navy">Start a conversation</p>
-                    <p className="text-sm text-muted-foreground mt-1">Ask the AI assistant anything</p>
+                    <p className="text-lg font-medium text-apptax-navy">Rozpocznij rozmowę</p>
+                    <p className="text-sm text-muted-foreground mt-1">Zapytaj asystenta AI o cokolwiek</p>
                   </div>
                 </div>
               )}
@@ -249,7 +249,7 @@ export default function AIAgentChatPage() {
                         'text-xs mt-2',
                         msg.role === MessageRole.USER ? 'text-white/70' : 'text-apptax-navy/50'
                       )} data-testid="token-count">
-                        {new Date(msg.createdAt).toLocaleTimeString()} • {msg.totalTokens ?? 0} tokens
+                        {new Date(msg.createdAt).toLocaleTimeString('pl-PL')} • {msg.totalTokens ?? 0} tokenów
                       </p>
                     </div>
                     {msg.role === MessageRole.USER && (
@@ -269,7 +269,7 @@ export default function AIAgentChatPage() {
                       <p className="whitespace-pre-wrap text-apptax-navy">{streamingContent}</p>
                       <p className="text-xs mt-2 text-apptax-navy/50 flex items-center gap-2">
                         <span className="inline-block w-2 h-2 rounded-full bg-apptax-teal animate-pulse" />
-                        Streaming...
+                        Przesyłanie...
                       </p>
                     </div>
                   </div>
@@ -282,7 +282,7 @@ export default function AIAgentChatPage() {
                     <div className="bg-apptax-soft-teal rounded-xl px-4 py-3">
                       <p className="text-apptax-navy flex items-center gap-2">
                         <span className="inline-block w-2 h-2 rounded-full bg-apptax-teal animate-pulse" />
-                        Thinking...
+                        Myślę...
                       </p>
                     </div>
                   </div>
@@ -296,17 +296,17 @@ export default function AIAgentChatPage() {
                 <div className="flex items-center gap-4">
                   <span className="flex items-center gap-1">
                     <MessageSquare className="h-3 w-3" />
-                    {currentConversation.messages.length} messages
+                    {currentConversation.messages.length} wiadomości
                   </span>
                   <span className="flex items-center gap-1">
                     <Zap className="h-3 w-3" />
-                    {currentConversation.messages.reduce((sum, m) => sum + (m.totalTokens ?? 0), 0).toLocaleString()} tokens
+                    {currentConversation.messages.reduce((sum, m) => sum + (m.totalTokens ?? 0), 0).toLocaleString()} tokenów
                   </span>
                 </div>
                 {rateLimitHit && (
                   <span className="text-amber-600 flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
-                    Rate limit reached - please wait before sending more messages
+                    Osiągnięto limit - poczekaj przed wysłaniem kolejnych wiadomości
                   </span>
                 )}
               </div>
@@ -325,7 +325,7 @@ export default function AIAgentChatPage() {
                       void sendMessageIfReady();
                     }
                   }}
-                  placeholder="Type your message..."
+                  placeholder="Wpisz wiadomość..."
                   disabled={!selectedConversationId || isSending}
                   className="flex-1"
                   data-testid="message-input"

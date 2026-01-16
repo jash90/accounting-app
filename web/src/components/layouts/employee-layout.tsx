@@ -10,7 +10,7 @@ export default function EmployeeLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-apptax-warm-gray">
-      <Sidebar title="Modules" navItems={navItems} />
+      <Sidebar title="Moduły" navItems={navItems} />
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">

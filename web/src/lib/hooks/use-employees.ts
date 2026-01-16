@@ -28,14 +28,14 @@ export function useCreateEmployee() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.employees.all });
       toast({
-        title: 'Success',
-        description: 'Employee created successfully',
+        title: 'Sukces',
+        description: 'Pracownik został utworzony',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to create employee',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się utworzyć pracownika',
         variant: 'destructive',
       });
     },
@@ -53,14 +53,14 @@ export function useUpdateEmployee() {
       queryClient.invalidateQueries({ queryKey: queryKeys.employees.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.employees.detail(variables.id) });
       toast({
-        title: 'Success',
-        description: 'Employee updated successfully',
+        title: 'Sukces',
+        description: 'Pracownik został zaktualizowany',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to update employee',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się zaktualizować pracownika',
         variant: 'destructive',
       });
     },
@@ -76,14 +76,14 @@ export function useDeleteEmployee() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.employees.all });
       toast({
-        title: 'Success',
-        description: 'Employee deleted successfully',
+        title: 'Sukces',
+        description: 'Pracownik został usunięty',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete employee',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się usunąć pracownika',
         variant: 'destructive',
       });
     },

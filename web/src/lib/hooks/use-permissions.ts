@@ -117,12 +117,12 @@ export function useGrantModuleAccess() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.permissions.byEmployee(variables.employeeId) });
       toast({
-        title: 'Success',
-        description: 'Module access granted successfully',
+        title: 'Sukces',
+        description: 'Dostęp do modułu został przyznany',
       });
     },
     onError: (error: any) => {
-      let errorMessage = 'Failed to grant module access';
+      let errorMessage = 'Nie udało się przyznać dostępu do modułu';
 
       // Provide specific error messages based on the error
       if (error.response?.data?.message) {
@@ -130,14 +130,14 @@ export function useGrantModuleAccess() {
 
         // Check for specific error patterns
         if (errorMessage.includes('does not have access to this module')) {
-          errorMessage = 'Your company does not have access to this module. Please contact your administrator to enable this module for your company first.';
+          errorMessage = 'Twoja firma nie ma dostępu do tego modułu. Skontaktuj się z administratorem, aby najpierw włączyć ten moduł dla firmy.';
         } else if (errorMessage.includes('Module not found')) {
-          errorMessage = 'The selected module does not exist or is not active.';
+          errorMessage = 'Wybrany moduł nie istnieje lub jest nieaktywny.';
         }
       }
 
       toast({
-        title: 'Error',
+        title: 'Błąd',
         description: errorMessage,
         variant: 'destructive',
       });
@@ -155,14 +155,14 @@ export function useUpdateModulePermission() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.permissions.byEmployee(variables.employeeId) });
       toast({
-        title: 'Success',
-        description: 'Permissions updated successfully',
+        title: 'Sukces',
+        description: 'Uprawnienia zostały zaktualizowane',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to update permissions',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się zaktualizować uprawnień',
         variant: 'destructive',
       });
     },
@@ -179,14 +179,14 @@ export function useRevokeModuleAccess() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.permissions.byEmployee(variables.employeeId) });
       toast({
-        title: 'Success',
-        description: 'Module access revoked successfully',
+        title: 'Sukces',
+        description: 'Dostęp do modułu został cofnięty',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to revoke module access',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się cofnąć dostępu do modułu',
         variant: 'destructive',
       });
     },

@@ -10,7 +10,7 @@ export default function AdminLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-apptax-warm-gray">
-      <Sidebar title="Admin Panel" navItems={navItems} />
+      <Sidebar title="Panel Admina" navItems={navItems} />
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">

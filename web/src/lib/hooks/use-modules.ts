@@ -28,14 +28,14 @@ export function useCreateModule() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.modules.all });
       toast({
-        title: 'Success',
-        description: 'Module created successfully',
+        title: 'Sukces',
+        description: 'Moduł został utworzony',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to create module',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się utworzyć modułu',
         variant: 'destructive',
       });
     },
@@ -53,14 +53,14 @@ export function useUpdateModule() {
       queryClient.invalidateQueries({ queryKey: queryKeys.modules.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.modules.detail(variables.id) });
       toast({
-        title: 'Success',
-        description: 'Module updated successfully',
+        title: 'Sukces',
+        description: 'Moduł został zaktualizowany',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to update module',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się zaktualizować modułu',
         variant: 'destructive',
       });
     },
@@ -76,14 +76,14 @@ export function useDeleteModule() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.modules.all });
       toast({
-        title: 'Success',
-        description: 'Module deleted successfully',
+        title: 'Sukces',
+        description: 'Moduł został usunięty',
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to delete module',
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się usunąć modułu',
         variant: 'destructive',
       });
     },

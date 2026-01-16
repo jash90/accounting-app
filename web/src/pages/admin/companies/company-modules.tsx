@@ -56,13 +56,13 @@ export default function CompanyModulesPage() {
           <div className="w-16 h-16 rounded-full bg-apptax-soft-teal flex items-center justify-center mx-auto mb-4">
             <Building2 className="h-8 w-8 text-apptax-teal" />
           </div>
-          <h1 className="text-2xl font-bold mb-4 text-apptax-navy">Company Not Found</h1>
+          <h1 className="text-2xl font-bold mb-4 text-apptax-navy">Nie znaleziono firmy</h1>
           <Button
             onClick={() => navigate('/admin/companies')}
             className="bg-apptax-blue hover:bg-apptax-blue/90"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Companies
+            Wróć do firm
           </Button>
         </div>
       </div>
@@ -73,8 +73,8 @@ export default function CompanyModulesPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <PageHeader
-        title={`Modules - ${company.name}`}
-        description="Manage which modules are available for this company"
+        title={`Moduły - ${company.name}`}
+        description="Zarządzaj modułami dostępnymi dla tej firmy"
         icon={<Package className="h-6 w-6" />}
         action={
           <Button
@@ -83,7 +83,7 @@ export default function CompanyModulesPage() {
             className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50 hover:border-apptax-teal"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Companies
+            Wróć do firm
           </Button>
         }
       />
@@ -93,13 +93,13 @@ export default function CompanyModulesPage() {
         <CardHeader>
           <CardTitle className="text-apptax-navy flex items-center gap-2">
             <Building2 className="h-5 w-5 text-apptax-teal" />
-            Company Information
+            Informacje o firmie
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-2 text-sm">
             <div>
-              <span className="font-medium text-apptax-navy">Name:</span>{' '}
+              <span className="font-medium text-apptax-navy">Nazwa:</span>{' '}
               <span className="text-apptax-navy/70">{company.name}</span>
             </div>
           </div>
@@ -108,7 +108,7 @@ export default function CompanyModulesPage() {
 
       {/* Modules Grid */}
       <div>
-        <h2 className="text-2xl font-bold tracking-tight mb-4 text-apptax-navy">Available Modules</h2>
+        <h2 className="text-2xl font-bold tracking-tight mb-4 text-apptax-navy">Dostępne moduły</h2>
         <div className="grid gap-4 md:grid-cols-2">
           {allModules.map((module) => {
             const isEnabled = isModuleEnabled(module.id);
@@ -141,7 +141,7 @@ export default function CompanyModulesPage() {
                       </div>
                     </div>
                     <Badge variant={isEnabled ? 'success' : 'muted'}>
-                      {isEnabled ? 'Enabled' : 'Disabled'}
+                      {isEnabled ? 'Włączony' : 'Wyłączony'}
                     </Badge>
                   </div>
                   <CardDescription className="text-xs mt-2">
@@ -151,7 +151,7 @@ export default function CompanyModulesPage() {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">
-                      {isEnabled ? 'This module is available for the company' : 'Enable this module for the company'}
+                      {isEnabled ? 'Ten moduł jest dostępny dla firmy' : 'Włącz ten moduł dla firmy'}
                     </span>
                     <Switch
                       checked={isEnabled}
@@ -162,7 +162,7 @@ export default function CompanyModulesPage() {
                   </div>
                   {!module.isActive && (
                     <p className="text-xs text-destructive mt-2">
-                      This module is inactive in the system
+                      Ten moduł jest nieaktywny w systemie
                     </p>
                   )}
                 </CardContent>
@@ -178,7 +178,7 @@ export default function CompanyModulesPage() {
                 <div className="w-16 h-16 rounded-full bg-apptax-soft-teal flex items-center justify-center mx-auto mb-4">
                   <Package className="h-8 w-8 text-apptax-teal" />
                 </div>
-                <p>No modules available in the system</p>
+                <p>Brak dostępnych modułów w systemie</p>
               </div>
             </CardContent>
           </Card>

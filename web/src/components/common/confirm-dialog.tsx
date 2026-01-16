@@ -27,8 +27,8 @@ export function ConfirmDialog({
   title,
   description,
   onConfirm,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText = 'Potwierdź',
+  cancelText = 'Anuluj',
   variant = 'default',
   isLoading = false,
 }: ConfirmDialogProps) {
@@ -64,7 +64,7 @@ export function ConfirmDialog({
             }}
             disabled={isLoading}
           >
-            {isLoading ? 'Processing...' : confirmText}
+            {isLoading ? 'Przetwarzanie...' : confirmText}
           </Button>
         </DialogFooter>
       </DialogContent>

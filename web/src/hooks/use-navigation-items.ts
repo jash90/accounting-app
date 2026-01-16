@@ -20,10 +20,10 @@ export function useNavigationItems(user: UserDto | null): NavItem[] {
       case UserRole.ADMIN:
         // Admin base navigation
         baseItems.push(
-          { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-          { label: 'Users', href: '/admin/users', icon: Users },
-          { label: 'Companies', href: '/admin/companies', icon: Building2 },
-          { label: 'Modules', href: '/admin/modules', icon: Package },
+          { label: 'Pulpit', href: '/admin', icon: LayoutDashboard },
+          { label: 'Użytkownicy', href: '/admin/users', icon: Users },
+          { label: 'Firmy', href: '/admin/companies', icon: Building2 },
+          { label: 'Moduły', href: '/admin/modules', icon: Package },
         );
 
         // Add all modules for admin
@@ -43,9 +43,9 @@ export function useNavigationItems(user: UserDto | null): NavItem[] {
       case UserRole.COMPANY_OWNER:
         // Company owner base navigation
         baseItems.push(
-          { label: 'Dashboard', href: '/company', icon: LayoutDashboard },
-          { label: 'Employees', href: '/company/employees', icon: Users },
-          { label: 'Modules', href: '/company/modules', icon: Package },
+          { label: 'Pulpit', href: '/company', icon: LayoutDashboard },
+          { label: 'Pracownicy', href: '/company/employees', icon: Users },
+          { label: 'Moduły', href: '/company/modules', icon: Package },
         );
 
         // Add company modules for company owner
@@ -65,7 +65,7 @@ export function useNavigationItems(user: UserDto | null): NavItem[] {
       case UserRole.EMPLOYEE:
         // Employee base navigation
         baseItems.push(
-          { label: 'Dashboard', href: '/modules', icon: LayoutDashboard },
+          { label: 'Pulpit', href: '/modules', icon: LayoutDashboard },
         );
 
         // Add company modules for employee
