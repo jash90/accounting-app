@@ -11,7 +11,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useNavigate } from 'react-router-dom';
-import { User, LogOut, Settings, Mail } from 'lucide-react';
+import { User, LogOut, Settings, Mail, Building2 } from 'lucide-react';
+import { UserRole } from '@/types/enums';
 
 export function UserMenu() {
   const { user, logout } = useAuthContext();
@@ -20,6 +21,20 @@ export function UserMenu() {
   if (!user) return null;
 
   const initials = `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+
+  // Get company email config path based on user role (Admin and Company Owner only)
+  const getCompanyEmailConfigPath = () => {
+    switch (user.role) {
+      case UserRole.ADMIN:
+        return '/admin/email-config';
+      case UserRole.COMPANY_OWNER:
+        return '/company/email-config';
+      default:
+        return null;
+    }
+  };
+
+  const companyEmailConfigPath = getCompanyEmailConfigPath();
 
   return (
     <DropdownMenu>
@@ -62,6 +77,15 @@ export function UserMenu() {
           <Mail className="mr-2 h-4 w-4 text-apptax-navy" />
           Konto email
         </DropdownMenuItem>
+        {companyEmailConfigPath && (
+          <DropdownMenuItem
+            onClick={() => navigate(companyEmailConfigPath)}
+            className="cursor-pointer hover:bg-apptax-soft-teal"
+          >
+            <Building2 className="mr-2 h-4 w-4 text-apptax-navy" />
+            Konto firmowe email
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           data-testid="logout-button"
