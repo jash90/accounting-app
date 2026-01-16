@@ -158,34 +158,6 @@ export interface ManageModulePermissionDto {
   permissions?: string[];
 }
 
-// SimpleText DTOs
-export interface CreateSimpleTextDto {
-  content: string;
-}
-
-export interface UpdateSimpleTextDto {
-  content?: string;
-}
-
-export interface SimpleTextResponseDto {
-  id: string;
-  content: string;
-  companyId: string | null;
-  company: {
-    id: string;
-    name: string;
-    isSystemCompany: boolean;
-  } | null;
-  createdBy: {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-  };
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 // AI Agent DTOs
 
 // Enums

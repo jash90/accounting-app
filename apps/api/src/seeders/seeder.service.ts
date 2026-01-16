@@ -8,7 +8,6 @@ import {
   Module as ModuleEntity,
   CompanyModuleAccess,
   UserModulePermission,
-  SimpleText,
   UserRole,
   Client,
   ClientFieldDefinition,
@@ -33,8 +32,6 @@ export class SeederService {
     private companyModuleAccessRepository: Repository<CompanyModuleAccess>,
     @InjectRepository(UserModulePermission)
     private userModulePermissionRepository: Repository<UserModulePermission>,
-    @InjectRepository(SimpleText)
-    private simpleTextRepository: Repository<SimpleText>,
     @InjectRepository(Client)
     private clientRepository: Repository<Client>,
     @InjectRepository(ClientFieldDefinition)
@@ -57,7 +54,6 @@ export class SeederService {
     const modules = await this.seedModules();
     await this.seedModuleAccess(companyA, modules);
     await this.seedEmployeePermissions(employeesA, modules);
-    await this.seedSimpleTexts(companyA, ownerA, employeesA);
     await this.seedClients(companyA, ownerA);
 
     console.log('Database seeding completed!');
@@ -74,7 +70,7 @@ export class SeederService {
     await queryRunner.connect();
 
     try {
-      await queryRunner.query('TRUNCATE TABLE ai_messages, ai_conversations, ai_contexts, ai_configurations, token_usages, token_limits, simple_texts, user_module_permissions, company_module_access, modules, client_icon_assignments, client_icons, client_custom_field_values, client_field_definitions, notification_settings, change_logs, clients, users, companies RESTART IDENTITY CASCADE');
+      await queryRunner.query('TRUNCATE TABLE ai_messages, ai_conversations, ai_contexts, ai_configurations, token_usages, token_limits, user_module_permissions, company_module_access, modules, client_icon_assignments, client_icons, client_custom_field_values, client_field_definitions, notification_settings, change_logs, clients, users, companies RESTART IDENTITY CASCADE');
     } finally {
       await queryRunner.release();
     }
@@ -151,12 +147,6 @@ export class SeederService {
   private async seedModules() {
     const modules = [
       {
-        name: 'Simple Text',
-        slug: 'simple-text',
-        description: 'Basic text management',
-        isActive: true,
-      },
-      {
         name: 'AI Agent',
         slug: 'ai-agent',
         description: 'AI-powered chat assistant with RAG and token management',
@@ -189,21 +179,10 @@ export class SeederService {
     companyA: Company,
     modules: ModuleEntity[],
   ) {
-    // Company A: simple-text, ai-agent, clients, email-client
-    const simpleTextModule = modules.find((m) => m.slug === 'simple-text');
+    // Company A: ai-agent, clients, email-client
     const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
     const clientsModule = modules.find((m) => m.slug === 'clients');
     const emailClientModule = modules.find((m) => m.slug === 'email-client');
-
-    if (simpleTextModule) {
-      await this.companyModuleAccessRepository.save(
-        this.companyModuleAccessRepository.create({
-          companyId: companyA.id,
-          moduleId: simpleTextModule.id,
-          isEnabled: true,
-        }),
-      );
-    }
 
     if (aiAgentModule) {
       await this.companyModuleAccessRepository.save(
@@ -240,7 +219,6 @@ export class SeederService {
     employeesA: User[],
     modules: ModuleEntity[],
   ) {
-    const simpleTextModule = modules.find((m) => m.slug === 'simple-text');
     const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
     const clientsModule = modules.find((m) => m.slug === 'clients');
     const emailClientModule = modules.find((m) => m.slug === 'email-client');
@@ -248,20 +226,6 @@ export class SeederService {
     // Employee 1A: read, write for all modules
     const employee = employeesA[0];
     if (!employee) return;
-
-    if (simpleTextModule) {
-      await this.userModulePermissionRepository.save(
-        this.userModulePermissionRepository.create({
-          userId: employee.id,
-          moduleId: simpleTextModule.id,
-          permissions: ['read', 'write'],
-          grantedById: employee.companyId
-            ? (await this.companyRepository.findOne({ where: { id: employee.companyId } }))
-                ?.ownerId || ''
-            : '',
-        }),
-      );
-    }
 
     if (aiAgentModule) {
       await this.userModulePermissionRepository.save(
@@ -301,30 +265,6 @@ export class SeederService {
             ? (await this.companyRepository.findOne({ where: { id: employee.companyId } }))
                 ?.ownerId || ''
             : '',
-        }),
-      );
-    }
-  }
-
-  private async seedSimpleTexts(
-    companyA: Company,
-    ownerA: User,
-    _employeesA: User[],
-  ) {
-    const textsA = [
-      'First text for Company A',
-      'Second text for Company A',
-      'Third text for Company A',
-      'Fourth text for Company A',
-      'Fifth text for Company A',
-    ];
-
-    for (const text of textsA) {
-      await this.simpleTextRepository.save(
-        this.simpleTextRepository.create({
-          content: text,
-          companyId: companyA.id,
-          createdById: ownerA.id,
         }),
       );
     }

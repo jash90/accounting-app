@@ -24,7 +24,7 @@ export class ManageModulePermissionDto {
 
   @ApiProperty({
     description: 'Module slug to grant/update/revoke access',
-    example: 'simple-text',
+    example: 'ai-agent',
   })
   @IsString()
   moduleSlug!: string;

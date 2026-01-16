@@ -12,7 +12,6 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { CompanyModuleAccess } from './company-module-access.entity';
-import { SimpleText } from './simple-text.entity';
 import { AIConfiguration } from './ai-configuration.entity';
 import { AIConversation } from './ai-conversation.entity';
 import { AIContext } from './ai-context.entity';
@@ -44,9 +43,6 @@ export class Company {
 
   @OneToMany(() => CompanyModuleAccess, (access) => access.company)
   moduleAccesses!: CompanyModuleAccess[];
-
-  @OneToMany(() => SimpleText, (text) => text.company)
-  simpleTexts!: SimpleText[];
 
   @OneToMany(() => AIConfiguration, (config) => config.company)
   aiConfigurations!: AIConfiguration[];

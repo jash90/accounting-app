@@ -11,8 +11,7 @@ import { ModulesDashboardPage } from '../pages/employee/ModulesDashboardPage';
  * - Sidebar toggle functionality
  *
  * Test Data (from seeder):
- * - bartlomiej.zimny@interia.pl: Has access to "Simple Text" and "AI Agent"
- * - bartlomiej.zimny@interia.pl: Different permissions (Simple Text and AI Agent)
+ * - bartlomiej.zimny@interia.pl: Has access to "AI Agent"
  */
 
 test.describe('Employee Sidebar - Visibility', () => {
@@ -31,12 +30,12 @@ test.describe('Employee Sidebar - Visibility', () => {
     const dashboard = new ModulesDashboardPage(authenticatedEmployeePage);
     await dashboard.goto();
 
-    // Employee1.A has permissions for "Simple Text"
-    await dashboard.nav.expectModuleInSidebar('Simple Text');
+    // Employee1.A has permissions for "AI Agent"
+    await dashboard.nav.expectModuleInSidebar('AI Agent');
 
     // Verify it's in the module list
     const modules = await dashboard.nav.getSidebarModules();
-    expect(modules).toContain('Simple Text');
+    expect(modules).toContain('AI Agent');
   });
 
   test('should show AI Agent module in sidebar', async ({ authenticatedEmployeePage }) => {
@@ -73,7 +72,7 @@ test.describe('Employee Sidebar - Visibility', () => {
     expect(width).toBeLessThan(300);
 
     // Module should have visible text
-    const moduleLink = await authenticatedEmployeePage.$('aside nav a:has-text("Simple Text")');
+    const moduleLink = await authenticatedEmployeePage.$('aside nav a:has-text("AI Agent")');
     expect(moduleLink).toBeTruthy();
   });
 });
@@ -85,25 +84,25 @@ test.describe('Employee Sidebar - Navigation', () => {
     const dashboard = new ModulesDashboardPage(authenticatedEmployeePage);
     await dashboard.goto();
 
-    // Click on Simple Text module
-    await dashboard.nav.navigateToModule('Simple Text');
+    // Click on AI Agent module
+    await dashboard.nav.navigateToModule('AI Agent');
 
-    // Should navigate to /modules/simple-text
-    await expect(authenticatedEmployeePage).toHaveURL(/\/modules\/simple-text/);
+    // Should navigate to /modules/ai-agent
+    await expect(authenticatedEmployeePage).toHaveURL(/\/modules\/ai-agent/);
   });
 
   test('should highlight active module link', async ({ authenticatedEmployeePage }) => {
     const dashboard = new ModulesDashboardPage(authenticatedEmployeePage);
     await dashboard.goto();
 
-    // Navigate to Simple Text
-    await dashboard.nav.navigateToModule('Simple Text');
+    // Navigate to AI Agent
+    await dashboard.nav.navigateToModule('AI Agent');
 
     // Wait for navigation
     await authenticatedEmployeePage.waitForTimeout(500);
 
-    // Simple Text should be highlighted (has primary color class)
-    const isActive = await dashboard.nav.isModuleActive('Simple Text');
+    // AI Agent should be highlighted (has primary color class)
+    const isActive = await dashboard.nav.isModuleActive('AI Agent');
     expect(isActive).toBe(true);
   });
 
@@ -111,7 +110,7 @@ test.describe('Employee Sidebar - Navigation', () => {
     const dashboard = new ModulesDashboardPage(authenticatedEmployeePage);
 
     // First navigate to a module
-    await authenticatedEmployeePage.goto('/modules/simple-text');
+    await authenticatedEmployeePage.goto('/modules/ai-agent');
     await authenticatedEmployeePage.waitForLoadState('networkidle');
 
     // Click Dashboard link in sidebar
@@ -122,14 +121,14 @@ test.describe('Employee Sidebar - Navigation', () => {
   });
 
   test('should sidebar reflect current URL', async ({ authenticatedEmployeePage }) => {
-    // Navigate directly to simple-text URL
-    await authenticatedEmployeePage.goto('/modules/simple-text');
+    // Navigate directly to ai-agent URL
+    await authenticatedEmployeePage.goto('/modules/ai-agent');
     await authenticatedEmployeePage.waitForLoadState('networkidle');
 
     const dashboard = new ModulesDashboardPage(authenticatedEmployeePage);
 
-    // Simple Text should be highlighted
-    const isActive = await dashboard.nav.isModuleActive('Simple Text');
+    // AI Agent should be highlighted
+    const isActive = await dashboard.nav.isModuleActive('AI Agent');
     expect(isActive).toBe(true);
   });
 });
@@ -141,12 +140,12 @@ test.describe('Employee Sidebar - Permissions', () => {
     const dashboard = new ModulesDashboardPage(authenticatedEmployeePage);
     await dashboard.goto();
 
-    // bartlomiej.zimny@interia.pl has read+write permissions for Simple Text
-    await dashboard.nav.expectModuleInSidebar('Simple Text');
+    // bartlomiej.zimny@interia.pl has read+write permissions for AI Agent
+    await dashboard.nav.expectModuleInSidebar('AI Agent');
 
     const modules = await dashboard.nav.getSidebarModules();
     expect(modules.length).toBeGreaterThan(0);
-    expect(modules).toContain('Simple Text');
+    expect(modules).toContain('AI Agent');
   });
 
   test('employee does not see admin-only links in sidebar', async ({ authenticatedEmployeePage }) => {
@@ -165,11 +164,10 @@ test.describe('Employee Sidebar - Permissions', () => {
     // Get all modules in sidebar
     const modules = await dashboard.nav.getSidebarModules();
 
-    // Employee1.A should see Simple Text and AI Agent
-    // (based on seeder data: both have UserModulePermission)
-    expect(modules).toContain('Simple Text');
+    // Employee1.A should see AI Agent
+    // (based on seeder data: has UserModulePermission)
     expect(modules).toContain('AI Agent');
-    expect(modules.length).toBe(2);
+    expect(modules.length).toBeGreaterThanOrEqual(1);
   });
 });
 

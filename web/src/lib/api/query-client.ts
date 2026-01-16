@@ -36,10 +36,6 @@ export const queryKeys = {
   permissions: {
     byEmployee: (employeeId: string) => ['permissions', 'employee', employeeId] as const,
   },
-  simpleText: {
-    all: ['simple-text'] as const,
-    detail: (id: string) => ['simple-text', id] as const,
-  },
   aiAgent: {
     conversations: {
       all: ['ai-agent', 'conversations'] as const,

@@ -24,22 +24,6 @@ export class TestDataGenerator {
   }
 
   /**
-   * Generate unique simple text title
-   */
-  static generateSimpleTextTitle(): string {
-    this.counter++;
-    const timestamp = Date.now();
-    return `Test Text ${timestamp}-${this.counter}`;
-  }
-
-  /**
-   * Generate simple text content
-   */
-  static generateSimpleTextContent(): string {
-    return `This is test content generated at ${new Date().toISOString()}. Lorem ipsum dolor sit amet.`;
-  }
-
-  /**
    * Generate test password (meets requirements)
    */
   static generatePassword(): string {
@@ -76,23 +60,6 @@ export const TestDataFactory = {
     description: `Test company created at ${new Date().toISOString()}`,
   }),
 
-  /**
-   * Create test simple text data
-   */
-  createSimpleTextData: () => ({
-    title: TestDataGenerator.generateSimpleTextTitle(),
-    content: TestDataGenerator.generateSimpleTextContent(),
-  }),
-
-  /**
-   * Create multiple test simple texts
-   */
-  createMultipleSimpleTexts: (count: number) => {
-    return Array.from({ length: count }, () => ({
-      title: TestDataGenerator.generateSimpleTextTitle(),
-      content: TestDataGenerator.generateSimpleTextContent(),
-    }));
-  },
 };
 
 /**
@@ -110,9 +77,7 @@ export const SEEDED_DATA = {
         {
           email: 'bartlomiej.zimny@interia.pl',
           password: 'Employee123!',
-          permissions: {
-            'simple-text': { read: true, write: true, delete: false },
-          },
+          permissions: {},
         },
       ],
     },
@@ -122,7 +87,6 @@ export const SEEDED_DATA = {
     password: 'Admin123!',
   },
   modules: [
-    { name: 'simple-text', displayName: 'Simple Text' },
     { name: 'ai-agent', displayName: 'AI Agent' },
   ],
 };
