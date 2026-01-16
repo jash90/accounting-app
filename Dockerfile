@@ -30,4 +30,4 @@ COPY --from=builder /app/dist/web ./dist
 EXPOSE 3000
 
 # Start command - serve static files with SPA mode
-CMD ["sh", "-c", "serve dist -l ${PORT:-3000} -s"]
+CMD ["sh", "-c", "serve dist -s -p ${PORT:-3000}"]
