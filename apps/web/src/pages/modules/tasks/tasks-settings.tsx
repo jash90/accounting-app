@@ -1,0 +1,316 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTaskLabels, useCreateTaskLabel, useUpdateTaskLabel, useDeleteTaskLabel } from '@/lib/hooks/use-tasks';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import { PageHeader } from '@/components/common/page-header';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Settings,
+  ArrowLeft,
+  Plus,
+  Edit,
+  Trash2,
+  Tag,
+} from 'lucide-react';
+import { TaskLabelResponseDto, CreateTaskLabelDto, UpdateTaskLabelDto } from '@/types/dtos';
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { useAuthContext } from '@/contexts/auth-context';
+import { UserRole } from '@/types/enums';
+
+const DEFAULT_COLORS = [
+  '#ef4444', // red
+  '#f97316', // orange
+  '#eab308', // yellow
+  '#22c55e', // green
+  '#14b8a6', // teal
+  '#3b82f6', // blue
+  '#8b5cf6', // violet
+  '#ec4899', // pink
+  '#6b7280', // gray
+];
+
+export default function TasksSettingsPage() {
+  const { user } = useAuthContext();
+  const navigate = useNavigate();
+
+  const { hasWritePermission, hasDeletePermission } = useModulePermissions('tasks');
+
+  const getBasePath = () => {
+    switch (user?.role) {
+      case UserRole.ADMIN:
+        return '/admin/modules/tasks';
+      case UserRole.COMPANY_OWNER:
+        return '/company/modules/tasks';
+      default:
+        return '/modules/tasks';
+    }
+  };
+
+  const basePath = getBasePath();
+
+  const { data: labels, isPending } = useTaskLabels();
+  const createLabel = useCreateTaskLabel();
+  const updateLabel = useUpdateTaskLabel();
+  const deleteLabel = useDeleteTaskLabel();
+
+  const [labelDialogOpen, setLabelDialogOpen] = useState(false);
+  const [editingLabel, setEditingLabel] = useState<TaskLabelResponseDto | null>(null);
+  const [deletingLabel, setDeletingLabel] = useState<TaskLabelResponseDto | null>(null);
+
+  const [labelName, setLabelName] = useState('');
+  const [labelColor, setLabelColor] = useState(DEFAULT_COLORS[0]);
+
+  const handleOpenCreateDialog = () => {
+    setEditingLabel(null);
+    setLabelName('');
+    setLabelColor(DEFAULT_COLORS[0]);
+    setLabelDialogOpen(true);
+  };
+
+  const handleOpenEditDialog = (label: TaskLabelResponseDto) => {
+    setEditingLabel(label);
+    setLabelName(label.name);
+    setLabelColor(label.color);
+    setLabelDialogOpen(true);
+  };
+
+  const handleSaveLabel = async () => {
+    if (!labelName.trim()) return;
+
+    if (editingLabel) {
+      await updateLabel.mutateAsync({
+        id: editingLabel.id,
+        data: { name: labelName, color: labelColor } as UpdateTaskLabelDto,
+      });
+    } else {
+      await createLabel.mutateAsync({ name: labelName, color: labelColor } as CreateTaskLabelDto);
+    }
+
+    setLabelDialogOpen(false);
+    setLabelName('');
+    setLabelColor(DEFAULT_COLORS[0]);
+    setEditingLabel(null);
+  };
+
+  const handleDeleteLabel = async () => {
+    if (!deletingLabel) return;
+    await deleteLabel.mutateAsync(deletingLabel.id);
+    setDeletingLabel(null);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" onClick={() => navigate(basePath)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Powrót
+        </Button>
+      </div>
+
+      <PageHeader
+        title="Ustawienia zadań"
+        description="Zarządzaj etykietami i konfiguracją modułu zadań"
+        icon={<Settings className="h-6 w-6" />}
+      />
+
+      {/* Labels Management */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Tag className="h-5 w-5" />
+                Etykiety
+              </CardTitle>
+              <CardDescription>
+                Twórz i zarządzaj etykietami do kategoryzacji zadań
+              </CardDescription>
+            </div>
+            {hasWritePermission && (
+              <Button onClick={handleOpenCreateDialog}>
+                <Plus className="mr-2 h-4 w-4" />
+                Nowa etykieta
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isPending ? (
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : labels && labels.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Kolor</TableHead>
+                  <TableHead>Nazwa</TableHead>
+                  <TableHead className="text-right">Akcje</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {labels.map((label) => (
+                  <TableRow key={label.id}>
+                    <TableCell>
+                      <div
+                        className="w-6 h-6 rounded-full border"
+                        style={{ backgroundColor: label.color }}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">{label.name}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {hasWritePermission && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenEditDialog(label)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {hasDeletePermission && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => setDeletingLabel(label)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <Tag className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Brak etykiet</p>
+              <p className="text-sm">Utwórz pierwszą etykietę, aby kategoryzować zadania</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Label Create/Edit Dialog */}
+      <Dialog open={labelDialogOpen} onOpenChange={setLabelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingLabel ? 'Edytuj etykietę' : 'Nowa etykieta'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingLabel
+                ? 'Zmień nazwę lub kolor etykiety'
+                : 'Utwórz nową etykietę do kategoryzacji zadań'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="label-name">Nazwa</Label>
+              <Input
+                id="label-name"
+                value={labelName}
+                onChange={(e) => setLabelName(e.target.value)}
+                placeholder="np. Pilne, Bug, Feature..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Kolor</Label>
+              <div className="flex flex-wrap gap-2">
+                {DEFAULT_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    className={`w-8 h-8 rounded-full border-2 transition-all ${
+                      labelColor === color
+                        ? 'border-primary scale-110'
+                        : 'border-transparent hover:scale-105'
+                    }`}
+                    style={{ backgroundColor: color }}
+                    onClick={() => setLabelColor(color)}
+                  />
+                ))}
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <Label htmlFor="custom-color" className="text-sm">
+                  Własny:
+                </Label>
+                <Input
+                  id="custom-color"
+                  type="color"
+                  value={labelColor}
+                  onChange={(e) => setLabelColor(e.target.value)}
+                  className="w-12 h-8 p-0 border-0"
+                />
+                <span className="text-sm text-muted-foreground">{labelColor}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Podgląd:</span>
+              <span
+                className="px-2 py-1 rounded-full text-xs font-medium text-white"
+                style={{ backgroundColor: labelColor }}
+              >
+                {labelName || 'Etykieta'}
+              </span>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLabelDialogOpen(false)}>
+              Anuluj
+            </Button>
+            <Button
+              onClick={handleSaveLabel}
+              disabled={!labelName.trim() || createLabel.isPending || updateLabel.isPending}
+            >
+              {editingLabel ? 'Zapisz' : 'Utwórz'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      {deletingLabel && (
+        <ConfirmDialog
+          open={!!deletingLabel}
+          onOpenChange={(open) => !open && setDeletingLabel(null)}
+          title="Usuń etykietę"
+          description={`Czy na pewno chcesz usunąć etykietę "${deletingLabel.name}"? Ta akcja usunie etykietę ze wszystkich zadań.`}
+          variant="destructive"
+          onConfirm={handleDeleteLabel}
+          isLoading={deleteLabel.isPending}
+        />
+      )}
+    </div>
+  );
+}
