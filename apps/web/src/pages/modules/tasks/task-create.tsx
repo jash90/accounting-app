@@ -46,6 +46,7 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
+import { Combobox } from '@/components/ui/combobox';
 import { cn } from '@/lib/utils/cn';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -396,6 +397,61 @@ export default function TaskCreatePage() {
 
               <Card>
                 <CardHeader>
+                  <CardTitle>Przypisanie</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="assigneeId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Przypisany do</FormLabel>
+                        <FormControl>
+                          <Combobox
+                            options={assignees.map((assignee) => ({
+                              value: assignee.id,
+                              label: `${assignee.firstName} ${assignee.lastName}`,
+                            }))}
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Nieprzypisane"
+                            searchPlaceholder="Szukaj pracownika..."
+                            emptyText="Nie znaleziono pracownika"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="clientId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Klient</FormLabel>
+                        <FormControl>
+                          <Combobox
+                            options={clients.map((client) => ({
+                              value: client.id,
+                              label: client.name,
+                            }))}
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Brak klienta"
+                            searchPlaceholder="Szukaj klienta..."
+                            emptyText="Nie znaleziono klienta"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
                   <CardTitle>Estymacja</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -446,75 +502,6 @@ export default function TaskCreatePage() {
                             </Button>
                           ))}
                         </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Przypisanie</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="assigneeId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Przypisany do</FormLabel>
-                        <Select
-                          value={field.value || 'none'}
-                          onValueChange={(value) =>
-                            field.onChange(value === 'none' ? null : value)
-                          }
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Wybierz osobę" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">Nieprzypisane</SelectItem>
-                            {assignees.map((assignee) => (
-                              <SelectItem key={assignee.id} value={assignee.id}>
-                                {assignee.firstName} {assignee.lastName}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="clientId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Klient</FormLabel>
-                        <Select
-                          value={field.value || 'none'}
-                          onValueChange={(value) =>
-                            field.onChange(value === 'none' ? null : value)
-                          }
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Wybierz klienta" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">Brak klienta</SelectItem>
-                            {clients.map((client) => (
-                              <SelectItem key={client.id} value={client.id}>
-                                {client.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
