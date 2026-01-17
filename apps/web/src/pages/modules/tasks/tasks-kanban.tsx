@@ -117,43 +117,41 @@ export default function TasksKanbanPage() {
         title="Zadania"
         description="Zarządzaj zadaniami - widok Kanban"
         icon={<CheckSquare className="h-6 w-6" />}
-        action={
-          <div className="flex items-center gap-2">
-            {/* View switcher */}
-            <div className="flex items-center gap-1 border rounded-lg p-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(`${basePath}/list`)}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm" className="bg-accent">
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(`${basePath}/calendar`)}
-              >
-                <Calendar className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(`${basePath}/timeline`)}
-              >
-                <GanttChartSquare className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {hasWritePermission && (
-              <Button onClick={() => handleAddTask(TaskStatus.TODO)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Nowe zadanie
-              </Button>
-            )}
+        titleAction={
+          <div className="flex items-center gap-1 border rounded-lg p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`${basePath}/list`)}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" className="bg-accent">
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`${basePath}/calendar`)}
+            >
+              <Calendar className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`${basePath}/timeline`)}
+            >
+              <GanttChartSquare className="h-4 w-4" />
+            </Button>
           </div>
+        }
+        action={
+          hasWritePermission ? (
+            <Button onClick={() => handleAddTask(TaskStatus.TODO)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nowe zadanie
+            </Button>
+          ) : undefined
         }
       />
 

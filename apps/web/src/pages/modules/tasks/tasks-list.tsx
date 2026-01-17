@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   useTasks,
   useCreateTask,
@@ -60,6 +60,7 @@ import { pl } from 'date-fns/locale';
 export default function TasksListPage() {
   const { user } = useAuthContext();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { hasWritePermission, hasDeletePermission } = useModulePermissions('tasks');
 
@@ -89,6 +90,19 @@ export default function TasksListPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskResponseDto | null>(null);
   const [deletingTask, setDeletingTask] = useState<TaskResponseDto | null>(null);
+
+  // Handle taskId from URL (from calendar/timeline navigation)
+  useEffect(() => {
+    const taskId = searchParams.get('taskId');
+    if (taskId && tasks.length > 0) {
+      const task = tasks.find((t) => t.id === taskId);
+      if (task) {
+        setEditingTask(task);
+        // Clear the URL param after opening the modal
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, tasks, setSearchParams]);
 
   const handleFiltersChange = useCallback((newFilters: TaskFiltersDto) => {
     setFilters(newFilters);
@@ -281,43 +295,41 @@ export default function TasksListPage() {
         title="Zadania"
         description="Zarządzaj zadaniami - widok listy"
         icon={<CheckSquare className="h-6 w-6" />}
-        action={
-          <div className="flex items-center gap-2">
-            {/* View switcher */}
-            <div className="flex items-center gap-1 border rounded-lg p-1">
-              <Button variant="ghost" size="sm" className="bg-accent">
-                <List className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(`${basePath}/kanban`)}
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(`${basePath}/calendar`)}
-              >
-                <Calendar className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(`${basePath}/timeline`)}
-              >
-                <GanttChartSquare className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {hasWritePermission && (
-              <Button onClick={() => setCreateOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Nowe zadanie
-              </Button>
-            )}
+        titleAction={
+          <div className="flex items-center gap-1 border rounded-lg p-1">
+            <Button variant="ghost" size="sm" className="bg-accent">
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`${basePath}/kanban`)}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`${basePath}/calendar`)}
+            >
+              <Calendar className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`${basePath}/timeline`)}
+            >
+              <GanttChartSquare className="h-4 w-4" />
+            </Button>
           </div>
+        }
+        action={
+          hasWritePermission ? (
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nowe zadanie
+            </Button>
+          ) : undefined
         }
       />
 

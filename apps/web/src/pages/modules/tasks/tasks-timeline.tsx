@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTasks } from '@/lib/hooks/use-tasks';
+import { useTasks, useCreateTask } from '@/lib/hooks/use-tasks';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
@@ -22,13 +22,15 @@ import {
   GanttChartSquare,
   ChevronLeft,
   ChevronRight,
+  Plus,
 } from 'lucide-react';
-import { TaskResponseDto, TaskFiltersDto } from '@/types/dtos';
+import { TaskResponseDto, CreateTaskDto, TaskFiltersDto } from '@/types/dtos';
 import {
   TaskStatus,
   TaskStatusLabels,
   UserRole,
 } from '@/types/enums';
+import { TaskFormDialog } from '@/components/tasks';
 import { TaskStatusBadge } from '@/components/tasks';
 import { TaskFilters } from '@/components/tasks/task-filters';
 import { useAuthContext } from '@/contexts/auth-context';
@@ -55,7 +57,10 @@ export default function TasksTimelinePage() {
   const { user } = useAuthContext();
   const navigate = useNavigate();
 
-  const { hasWritePermission: _hasWritePermission } = useModulePermissions('tasks');
+  const { hasWritePermission } = useModulePermissions('tasks');
+
+  const createTask = useCreateTask();
+  const [createOpen, setCreateOpen] = useState(false);
 
   const getBasePath = () => {
     switch (user?.role) {
@@ -239,36 +244,41 @@ export default function TasksTimelinePage() {
         title="Zadania"
         description="Zarządzaj zadaniami - widok osi czasu"
         icon={<CheckSquare className="h-6 w-6" />}
-        action={
-          <div className="flex items-center gap-2">
-            {/* View switcher */}
-            <div className="flex items-center gap-1 border rounded-lg p-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(`${basePath}/list`)}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(`${basePath}/kanban`)}
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(`${basePath}/calendar`)}
-              >
-                <Calendar className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm" className="bg-accent">
-                <GanttChartSquare className="h-4 w-4" />
-              </Button>
-            </div>
+        titleAction={
+          <div className="flex items-center gap-1 border rounded-lg p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`${basePath}/list`)}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`${basePath}/kanban`)}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`${basePath}/calendar`)}
+            >
+              <Calendar className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" className="bg-accent">
+              <GanttChartSquare className="h-4 w-4" />
+            </Button>
           </div>
+        }
+        action={
+          hasWritePermission ? (
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nowe zadanie
+            </Button>
+          ) : undefined
         }
       />
 
@@ -410,6 +420,7 @@ export default function TasksTimelinePage() {
                               width: barStyle.width,
                               minWidth: '24px',
                             }}
+                            onClick={() => navigate(`${basePath}/list?taskId=${task.id}`)}
                           >
                             <div
                               className={cn(
@@ -454,6 +465,17 @@ export default function TasksTimelinePage() {
           </div>
         </CardContent>
       </Card>
+
+      {hasWritePermission && (
+        <TaskFormDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onSubmit={async (data) => {
+            await createTask.mutateAsync(data as CreateTaskDto);
+          }}
+          isLoading={createTask.isPending}
+        />
+      )}
     </div>
   );
 }

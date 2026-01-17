@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCalendarTasks } from '@/lib/hooks/use-tasks';
+import { useCalendarTasks, useCreateTask } from '@/lib/hooks/use-tasks';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
@@ -16,12 +16,14 @@ import {
   GanttChartSquare,
   ChevronLeft,
   ChevronRight,
+  Plus,
 } from 'lucide-react';
-import { CalendarTaskDto, TaskFiltersDto } from '@/types/dtos';
+import { CalendarTaskDto, CreateTaskDto, TaskFiltersDto } from '@/types/dtos';
 import {
   TaskPriority,
   UserRole,
 } from '@/types/enums';
+import { TaskFormDialog } from '@/components/tasks';
 import { TaskStatusBadge, TaskPriorityBadge } from '@/components/tasks';
 import { TaskFilters } from '@/components/tasks/task-filters';
 import { useAuthContext } from '@/contexts/auth-context';
@@ -33,7 +35,10 @@ export default function TasksCalendarPage() {
   const { user } = useAuthContext();
   const navigate = useNavigate();
 
-  const { hasWritePermission: _hasWritePermission } = useModulePermissions('tasks');
+  const { hasWritePermission } = useModulePermissions('tasks');
+
+  const createTask = useCreateTask();
+  const [createOpen, setCreateOpen] = useState(false);
 
   const getBasePath = () => {
     switch (user?.role) {
@@ -157,36 +162,41 @@ export default function TasksCalendarPage() {
         title="Zadania"
         description="Zarządzaj zadaniami - widok kalendarza"
         icon={<CheckSquare className="h-6 w-6" />}
-        action={
-          <div className="flex items-center gap-2">
-            {/* View switcher */}
-            <div className="flex items-center gap-1 border rounded-lg p-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(`${basePath}/list`)}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(`${basePath}/kanban`)}
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm" className="bg-accent">
-                <CalendarIcon className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(`${basePath}/timeline`)}
-              >
-                <GanttChartSquare className="h-4 w-4" />
-              </Button>
-            </div>
+        titleAction={
+          <div className="flex items-center gap-1 border rounded-lg p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`${basePath}/list`)}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`${basePath}/kanban`)}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" className="bg-accent">
+              <CalendarIcon className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`${basePath}/timeline`)}
+            >
+              <GanttChartSquare className="h-4 w-4" />
+            </Button>
           </div>
+        }
+        action={
+          hasWritePermission ? (
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nowe zadanie
+            </Button>
+          ) : undefined
         }
       />
 
@@ -293,7 +303,7 @@ export default function TasksCalendarPage() {
                       'p-3 rounded-lg border border-l-4 cursor-pointer hover:bg-muted/50 transition-colors',
                       getPriorityColor(task.priority)
                     )}
-                    onClick={() => navigate(`${basePath}/list`)}
+                    onClick={() => navigate(`${basePath}/list?taskId=${task.id}`)}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <span className="font-medium text-sm line-clamp-2">
@@ -337,6 +347,17 @@ export default function TasksCalendarPage() {
           </div>
         </CardContent>
       </Card>
+
+      {hasWritePermission && (
+        <TaskFormDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onSubmit={async (data) => {
+            await createTask.mutateAsync(data as CreateTaskDto);
+          }}
+          isLoading={createTask.isPending}
+        />
+      )}
     </div>
   );
 }
