@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -18,9 +18,12 @@ import {
   CustomFieldType,
 } from '@accounting/common';
 import { EmailConfigurationService } from '@accounting/email';
+import { ModuleDiscoveryService } from '@accounting/rbac';
 
 @Injectable()
 export class SeederService {
+  private readonly logger = new Logger(SeederService.name);
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -38,6 +41,7 @@ export class SeederService {
     private fieldDefinitionRepository: Repository<ClientFieldDefinition>,
     private dataSource: DataSource,
     private emailConfigService: EmailConfigurationService,
+    private moduleDiscoveryService: ModuleDiscoveryService,
   ) {}
 
   async seed() {
@@ -51,7 +55,19 @@ export class SeederService {
     const _systemCompany = await this.seedSystemAdminCompany(admin);
     const { companyA, ownerA, employeesA } = await this.seedCompanyA();
     await this.seedEmailConfigurations(companyA, ownerA, employeesA);
-    const modules = await this.seedModules();
+
+    // Use file-based module discovery instead of manual seeding
+    // ModuleDiscoveryService already synced modules to DB during app initialization
+    // We just need to wait for it to complete and then fetch modules from DB
+    this.logger.log('Using file-based module discovery...');
+    const modules = await this.getDiscoveredModulesFromDb();
+
+    if (modules.length === 0) {
+      this.logger.warn('No modules found! Make sure module.json files exist in libs/modules/*/');
+    } else {
+      this.logger.log(`Found ${modules.length} modules from discovery: ${modules.map(m => m.slug).join(', ')}`);
+    }
+
     await this.seedModuleAccess(companyA, modules);
     await this.seedEmployeePermissions(employeesA, modules);
     await this.seedClients(companyA, ownerA);
@@ -61,6 +77,23 @@ export class SeederService {
     console.log('Admin: admin@system.com / Admin123!');
     console.log('Company A Owner: bartlomiej.zimny@onet.pl / Owner123!');
     console.log('Company A Employee: bartlomiej.zimny@interia.pl / Employee123!');
+  }
+
+  /**
+   * Get modules from database that were discovered and synced by ModuleDiscoveryService
+   */
+  private async getDiscoveredModulesFromDb(): Promise<ModuleEntity[]> {
+    // Wait for discovery to complete if not already done
+    if (!this.moduleDiscoveryService.isDiscoveryComplete()) {
+      this.logger.log('Waiting for module discovery to complete...');
+      // Give discovery time to complete (it happens asynchronously on app init)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    // Get all active modules from database
+    return this.moduleRepository.find({
+      where: { isActive: true },
+    });
   }
 
   private async clearDatabase() {
@@ -144,36 +177,8 @@ export class SeederService {
     };
   }
 
-  private async seedModules() {
-    const modules = [
-      {
-        name: 'Agent AI',
-        slug: 'ai-agent',
-        description: 'Asystent AI z czatem, RAG i zarządzaniem tokenami',
-        isActive: true,
-      },
-      {
-        name: 'Klienci',
-        slug: 'clients',
-        description: 'Zarządzanie klientami z polami własnymi, ikonami i śledzeniem zmian',
-        isActive: true,
-      },
-      {
-        name: 'Klient Email',
-        slug: 'email-client',
-        description: 'Pełny klient poczty z odbiorem, wysyłką, wersjami roboczymi i asystentem AI',
-        isActive: true,
-      },
-    ];
-
-    const savedModules = [];
-    for (const module of modules) {
-      const saved = await this.moduleRepository.save(this.moduleRepository.create(module));
-      savedModules.push(saved);
-    }
-
-    return savedModules;
-  }
+  // seedModules() method removed - using file-based module discovery via ModuleDiscoveryService
+  // Modules are now auto-discovered from libs/modules/*/module.json files
 
   private async seedModuleAccess(
     companyA: Company,

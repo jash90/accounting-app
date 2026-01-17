@@ -216,4 +216,73 @@ export class ModulesController {
   cleanupOrphanedPermissions() {
     return this.modulesService.cleanupOrphanedPermissions();
   }
+
+  // ==================== Module Discovery Operations (Admin Only) ====================
+
+  @Get('discovery/discovered')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Get discovered modules from file system',
+    description: 'Returns modules discovered from libs/modules/*/module.json files'
+  })
+  @ApiOkResponse({ description: 'List of discovered modules with their configuration' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
+  getDiscoveredModules() {
+    return this.modulesService.getDiscoveredModules();
+  }
+
+  @Get('discovery/stats')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Get module discovery statistics',
+    description: 'Returns discovery statistics including module count and base path'
+  })
+  @ApiOkResponse({ description: 'Discovery statistics' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
+  getDiscoveryStats() {
+    return this.modulesService.getDiscoveryStats();
+  }
+
+  @Post('discovery/reload')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Reload modules from file system',
+    description: 'Re-discover modules from libs/modules/*/module.json and sync with database'
+  })
+  @ApiOkResponse({ description: 'Modules reloaded successfully - returns list of discovered modules' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
+  reloadModules() {
+    return this.modulesService.reloadModules();
+  }
+
+  @Get(':moduleSlug/permissions')
+  @Roles(UserRole.ADMIN, UserRole.COMPANY_OWNER)
+  @ApiOperation({
+    summary: 'Get available permissions for a module',
+    description: 'Returns the list of available permissions defined for a specific module'
+  })
+  @ApiParam({ name: 'moduleSlug', type: 'string', description: 'Module slug', example: 'ai-agent' })
+  @ApiOkResponse({ description: 'List of available permissions', type: [String] })
+  @ApiNotFoundResponse({ description: 'Module not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  getModulePermissions(@Param('moduleSlug') moduleSlug: string) {
+    return this.modulesService.getModulePermissions(moduleSlug);
+  }
+
+  @Get(':moduleSlug/permissions/default')
+  @Roles(UserRole.ADMIN, UserRole.COMPANY_OWNER)
+  @ApiOperation({
+    summary: 'Get default permissions for a module',
+    description: 'Returns the default permissions that are granted to new employees'
+  })
+  @ApiParam({ name: 'moduleSlug', type: 'string', description: 'Module slug', example: 'ai-agent' })
+  @ApiOkResponse({ description: 'List of default permissions', type: [String] })
+  @ApiNotFoundResponse({ description: 'Module not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  getDefaultModulePermissions(@Param('moduleSlug') moduleSlug: string) {
+    return this.modulesService.getDefaultModulePermissions(moduleSlug);
+  }
 }
