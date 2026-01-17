@@ -10,6 +10,7 @@ import {
   ClientFieldDefinition,
 } from '@accounting/common';
 import { EmailModule } from '@accounting/email';
+import { RBACModule } from '@accounting/rbac';
 import { SeederService } from './seeder.service';
 
 @Module({
@@ -24,6 +25,7 @@ import { SeederService } from './seeder.service';
       ClientFieldDefinition,
     ]),
     EmailModule,
+    RBACModule,
   ],
   providers: [SeederService],
   exports: [SeederService],
