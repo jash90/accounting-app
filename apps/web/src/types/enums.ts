@@ -132,3 +132,67 @@ export function isConditionGroup(
 ): condition is ConditionGroup {
   return 'logicalOperator' in condition && 'conditions' in condition;
 }
+
+// Task-related enums
+export enum TaskStatus {
+  BACKLOG = 'backlog',
+  TODO = 'todo',
+  IN_PROGRESS = 'in_progress',
+  IN_REVIEW = 'in_review',
+  DONE = 'done',
+  CANCELLED = 'cancelled',
+}
+
+export const TaskStatusLabels: Record<TaskStatus, string> = {
+  [TaskStatus.BACKLOG]: 'Backlog',
+  [TaskStatus.TODO]: 'Do zrobienia',
+  [TaskStatus.IN_PROGRESS]: 'W trakcie',
+  [TaskStatus.IN_REVIEW]: 'W przeglądzie',
+  [TaskStatus.DONE]: 'Ukończone',
+  [TaskStatus.CANCELLED]: 'Anulowane',
+};
+
+export const TaskStatusColors: Record<TaskStatus, string> = {
+  [TaskStatus.BACKLOG]: 'bg-slate-100 text-slate-700',
+  [TaskStatus.TODO]: 'bg-blue-100 text-blue-700',
+  [TaskStatus.IN_PROGRESS]: 'bg-yellow-100 text-yellow-700',
+  [TaskStatus.IN_REVIEW]: 'bg-purple-100 text-purple-700',
+  [TaskStatus.DONE]: 'bg-green-100 text-green-700',
+  [TaskStatus.CANCELLED]: 'bg-red-100 text-red-700',
+};
+
+export enum TaskPriority {
+  URGENT = 'urgent',
+  HIGH = 'high',
+  MEDIUM = 'medium',
+  LOW = 'low',
+  NONE = 'none',
+}
+
+export const TaskPriorityLabels: Record<TaskPriority, string> = {
+  [TaskPriority.URGENT]: 'Pilne',
+  [TaskPriority.HIGH]: 'Wysoki',
+  [TaskPriority.MEDIUM]: 'Średni',
+  [TaskPriority.LOW]: 'Niski',
+  [TaskPriority.NONE]: 'Brak',
+};
+
+export const TaskPriorityColors: Record<TaskPriority, string> = {
+  [TaskPriority.URGENT]: 'bg-red-100 text-red-700',
+  [TaskPriority.HIGH]: 'bg-orange-100 text-orange-700',
+  [TaskPriority.MEDIUM]: 'bg-yellow-100 text-yellow-700',
+  [TaskPriority.LOW]: 'bg-blue-100 text-blue-700',
+  [TaskPriority.NONE]: 'bg-slate-100 text-slate-700',
+};
+
+export enum TaskDependencyType {
+  BLOCKS = 'blocks',
+  BLOCKED_BY = 'blocked_by',
+  RELATES_TO = 'relates_to',
+}
+
+export const TaskDependencyTypeLabels: Record<TaskDependencyType, string> = {
+  [TaskDependencyType.BLOCKS]: 'Blokuje',
+  [TaskDependencyType.BLOCKED_BY]: 'Zablokowane przez',
+  [TaskDependencyType.RELATES_TO]: 'Powiązane z',
+};
