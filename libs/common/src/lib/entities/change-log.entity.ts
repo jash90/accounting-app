@@ -48,12 +48,12 @@ export class ChangeLog {
   @JoinColumn({ name: 'changedById' })
   changedBy!: User;
 
-  @Column()
-  companyId!: string;
+  @Column({ nullable: true })
+  companyId!: string | null;
 
-  @ManyToOne(() => Company, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Company, { onDelete: 'CASCADE', nullable: true })
   @JoinColumn({ name: 'companyId' })
-  company!: Company;
+  company!: Company | null;
 
   @CreateDateColumn()
   createdAt!: Date;
