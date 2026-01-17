@@ -89,5 +89,22 @@ export const queryKeys = {
     company: ['email-config', 'company'] as const,
     systemAdmin: ['email-config', 'system-admin'] as const,
   },
+  tasks: {
+    all: ['tasks'] as const,
+    list: (filters?: Record<string, unknown>) => ['tasks', 'list', filters] as const,
+    detail: (id: string) => ['tasks', id] as const,
+    kanban: (filters?: Record<string, unknown>) => ['tasks', 'kanban', filters] as const,
+    calendar: (params?: Record<string, unknown>) => ['tasks', 'calendar', params] as const,
+    subtasks: (taskId: string) => ['tasks', taskId, 'subtasks'] as const,
+    comments: (taskId: string) => ['tasks', taskId, 'comments'] as const,
+    dependencies: (taskId: string) => ['tasks', taskId, 'dependencies'] as const,
+    lookupAssignees: ['tasks', 'lookup', 'assignees'] as const,
+    lookupClients: ['tasks', 'lookup', 'clients'] as const,
+  },
+  taskLabels: {
+    all: ['task-labels'] as const,
+    detail: (id: string) => ['task-labels', id] as const,
+    byTask: (taskId: string) => ['task-labels', 'by-task', taskId] as const,
+  },
 };
 

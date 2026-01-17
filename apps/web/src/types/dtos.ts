@@ -7,6 +7,9 @@ import {
   CustomFieldType,
   AutoAssignCondition,
   AmlGroup,
+  TaskStatus,
+  TaskPriority,
+  TaskDependencyType,
 } from './enums';
 import {
   Client,
@@ -14,6 +17,11 @@ import {
   ClientIcon,
   NotificationSettings,
   ChangeLog,
+  Task,
+  TaskLabel,
+  TaskComment,
+  TaskDependency,
+  AcceptanceCriterion,
 } from './entities';
 
 // Re-export for external consumers
@@ -598,6 +606,143 @@ export interface ChangeLogResponseDto extends ChangeLog {
     email: string;
     firstName: string;
     lastName: string;
+  };
+}
+
+// Task DTOs
+export interface CreateTaskDto {
+  title: string;
+  description?: string;
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  dueDate?: Date | string;
+  startDate?: Date | string;
+  estimatedMinutes?: number;
+  storyPoints?: number;
+  acceptanceCriteria?: AcceptanceCriterion[];
+  clientId?: string;
+  assigneeId?: string;
+  parentTaskId?: string;
+  labelIds?: string[];
+}
+
+export interface UpdateTaskDto extends Partial<CreateTaskDto> {
+  isActive?: boolean;
+}
+
+export interface TaskFiltersDto {
+  search?: string;
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  assigneeId?: string;
+  clientId?: string;
+  dueDateFrom?: Date | string;
+  dueDateTo?: Date | string;
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'ASC' | 'DESC';
+}
+
+export interface ReorderTasksDto {
+  taskIds: string[];
+  status?: TaskStatus;
+}
+
+export interface BulkUpdateStatusDto {
+  taskIds: string[];
+  status: TaskStatus;
+}
+
+export interface TaskResponseDto extends Task {
+  createdBy?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  assignee?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  client?: {
+    id: string;
+    name: string;
+  };
+}
+
+export interface KanbanBoardDto {
+  [status: string]: TaskResponseDto[];
+}
+
+export interface CalendarTaskDto {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate: Date;
+  startDate?: Date;
+  assignee?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+// Task Label DTOs
+export interface CreateTaskLabelDto {
+  name: string;
+  color: string;
+  description?: string;
+}
+
+export interface UpdateTaskLabelDto extends Partial<CreateTaskLabelDto> {
+  isActive?: boolean;
+}
+
+export interface TaskLabelResponseDto extends TaskLabel {}
+
+export interface AssignLabelDto {
+  labelId: string;
+}
+
+// Task Comment DTOs
+export interface CreateTaskCommentDto {
+  content: string;
+}
+
+export interface UpdateTaskCommentDto {
+  content: string;
+}
+
+export interface TaskCommentResponseDto extends TaskComment {
+  author?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+// Task Dependency DTOs
+export interface CreateTaskDependencyDto {
+  dependsOnTaskId: string;
+  dependencyType: TaskDependencyType;
+}
+
+export interface TaskDependencyResponseDto extends TaskDependency {
+  task?: {
+    id: string;
+    title: string;
+    status: TaskStatus;
+  };
+  dependsOnTask?: {
+    id: string;
+    title: string;
+    status: TaskStatus;
   };
 }
 

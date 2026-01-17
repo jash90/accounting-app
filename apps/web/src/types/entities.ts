@@ -9,6 +9,9 @@ import {
   AmlGroup,
   IconType,
   AutoAssignCondition,
+  TaskStatus,
+  TaskPriority,
+  TaskDependencyType,
 } from './enums';
 
 export interface User {
@@ -182,5 +185,82 @@ export interface ChangeLog {
   userId: string;
   companyId: string;
   createdAt: Date;
+}
+
+// Task-related entities
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate?: Date;
+  startDate?: Date;
+  estimatedMinutes?: number;
+  storyPoints?: number;
+  acceptanceCriteria?: AcceptanceCriterion[];
+  sortOrder: number;
+  companyId: string;
+  clientId?: string;
+  client?: Client;
+  assigneeId?: string;
+  assignee?: User;
+  createdById: string;
+  createdBy?: User;
+  parentTaskId?: string;
+  parentTask?: Task;
+  subtasks?: Task[];
+  labels?: TaskLabelAssignment[];
+  dependencies?: TaskDependency[];
+  comments?: TaskComment[];
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AcceptanceCriterion {
+  id: string;
+  text: string;
+  isCompleted: boolean;
+}
+
+export interface TaskLabel {
+  id: string;
+  companyId: string;
+  name: string;
+  color: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TaskLabelAssignment {
+  id: string;
+  taskId: string;
+  labelId: string;
+  label?: TaskLabel;
+  createdAt: Date;
+}
+
+export interface TaskDependency {
+  id: string;
+  taskId: string;
+  task?: Task;
+  dependsOnTaskId: string;
+  dependsOnTask?: Task;
+  dependencyType: TaskDependencyType;
+  createdAt: Date;
+}
+
+export interface TaskComment {
+  id: string;
+  taskId: string;
+  authorId: string;
+  author?: User;
+  content: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
