@@ -1,0 +1,74 @@
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { parseISO } from 'date-fns';
+import { ArrowLeft, Calendar, List, CalendarDays } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/common/page-header';
+import { useAuthContext } from '@/contexts/auth-context';
+import { UserRole } from '@/types/enums';
+import { DailyTimesheet, TimerWidget } from '@/components/time-tracking';
+
+export default function TimeTrackingTimesheetDailyPage() {
+  const { user } = useAuthContext();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const dateParam = searchParams.get('date');
+  const initialDate = dateParam ? parseISO(dateParam) : undefined;
+
+  const getBasePath = () => {
+    switch (user?.role) {
+      case UserRole.ADMIN:
+        return '/admin/modules/time-tracking';
+      case UserRole.COMPANY_OWNER:
+        return '/company/modules/time-tracking';
+      default:
+        return '/modules/time-tracking';
+    }
+  };
+
+  const basePath = getBasePath();
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" onClick={() => navigate(basePath)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Powrót
+        </Button>
+      </div>
+
+      <PageHeader
+        title="Timesheet dzienny"
+        description="Widok dzienny z podsumowaniem czasu pracy"
+        icon={<Calendar className="h-6 w-6" />}
+        titleAction={
+          <div className="flex items-center gap-1 border rounded-lg p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`${basePath}/entries`)}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" className="bg-accent">
+              <Calendar className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`${basePath}/timesheet/weekly`)}
+            >
+              <CalendarDays className="h-4 w-4" />
+            </Button>
+          </div>
+        }
+      />
+
+      {/* Timer Widget */}
+      <TimerWidget compact />
+
+      {/* Daily Timesheet */}
+      <DailyTimesheet initialDate={initialDate} />
+    </div>
+  );
+}
