@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Potwierdzenie rejestracji</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 700px; margin: 0 auto; padding: 20px; background: #f3f4f6; }
+    .container { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; }
+    .header h1 { margin: 0 0 8px 0; font-size: 24px; }
+    .header p { margin: 0; opacity: 0.9; font-size: 14px; }
+    .content { padding: 30px; }
+    .section { margin-bottom: 25px; }
+    .section-title { font-size: 14px; font-weight: 700; color: #10b981; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb; }
+    .field { display: flex; margin-bottom: 10px; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+    .field:last-child { border-bottom: none; }
+    .label { flex: 0 0 180px; font-weight: 600; color: #6b7280; font-size: 13px; }
+    .value { flex: 1; font-size: 14px; color: #1f2937; }
+    .value.empty { color: #9ca3af; font-style: italic; }
+    .highlight-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 15px; margin-top: 20px; }
+    .highlight-box h3 { margin: 0 0 10px 0; color: #166534; font-size: 14px; }
+    .footer { background: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #e5e7eb; }
+    .footer p { margin: 0; font-size: 12px; color: #9ca3af; }
+    .company-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 12px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Potwierdzenie rejestracji</h1>
+      <p>Twoje dane zostały pomyślnie zarejestrowane w systemie</p>
+      <div class="company-badge">{{companyName}}</div>
+    </div>
+
+    <div class="content">
+      <!-- Dane podstawowe -->
+      <div class="section">
+        <div class="section-title">Dane podstawowe</div>
+        <div class="field">
+          <div class="label">Nazwa</div>
+          <div class="value">{{clientName}}</div>
+        </div>
+        <div class="field">
+          <div class="label">NIP</div>
+          <div class="value{{#unless clientNip}} empty{{/unless}}">{{#if clientNip}}{{clientNip}}{{else}}Nie podano{{/if}}</div>
+        </div>
+        <div class="field">
+          <div class="label">Email</div>
+          <div class="value{{#unless clientEmail}} empty{{/unless}}">{{#if clientEmail}}{{clientEmail}}{{else}}Nie podano{{/if}}</div>
+        </div>
+        <div class="field">
+          <div class="label">Telefon</div>
+          <div class="value{{#unless clientPhone}} empty{{/unless}}">{{#if clientPhone}}{{clientPhone}}{{else}}Nie podano{{/if}}</div>
+        </div>
+      </div>
+
+      <!-- Daty -->
+      <div class="section">
+        <div class="section-title">Daty</div>
+        <div class="field">
+          <div class="label">Data założenia firmy</div>
+          <div class="value{{#unless companyStartDate}} empty{{/unless}}">{{#if companyStartDate}}{{companyStartDate}}{{else}}Nie podano{{/if}}</div>
+        </div>
+        <div class="field">
+          <div class="label">Data rozpoczęcia współpracy</div>
+          <div class="value{{#unless cooperationStartDate}} empty{{/unless}}">{{#if cooperationStartDate}}{{cooperationStartDate}}{{else}}Nie podano{{/if}}</div>
+        </div>
+        {{#if suspensionDate}}
+        <div class="field">
+          <div class="label">Data zawieszenia</div>
+          <div class="value">{{suspensionDate}}</div>
+        </div>
+        {{/if}}
+      </div>
+
+      <!-- Status podatkowy -->
+      <div class="section">
+        <div class="section-title">Status podatkowy</div>
+        <div class="field">
+          <div class="label">Status VAT</div>
+          <div class="value{{#unless vatStatusLabel}} empty{{/unless}}">{{#if vatStatusLabel}}{{vatStatusLabel}}{{else}}Nie określono{{/if}}</div>
+        </div>
+        <div class="field">
+          <div class="label">Forma opodatkowania</div>
+          <div class="value{{#unless taxSchemeLabel}} empty{{/unless}}">{{#if taxSchemeLabel}}{{taxSchemeLabel}}{{else}}Nie określono{{/if}}</div>
+        </div>
+      </div>
+
+      <!-- Ubezpieczenia i zatrudnienie -->
+      <div class="section">
+        <div class="section-title">Ubezpieczenia i zatrudnienie</div>
+        <div class="field">
+          <div class="label">Status ZUS</div>
+          <div class="value{{#unless zusStatusLabel}} empty{{/unless}}">{{#if zusStatusLabel}}{{zusStatusLabel}}{{else}}Nie określono{{/if}}</div>
+        </div>
+        <div class="field">
+          <div class="label">Forma zatrudnienia</div>
+          <div class="value{{#unless employmentTypeLabel}} empty{{/unless}}">{{#if employmentTypeLabel}}{{employmentTypeLabel}}{{else}}Nie określono{{/if}}</div>
+        </div>
+      </div>
+
+      <!-- Zgodność i klasyfikacja -->
+      <div class="section">
+        <div class="section-title">Zgodność i klasyfikacja</div>
+        <div class="field">
+          <div class="label">Grupa ryzyka AML</div>
+          <div class="value{{#unless amlGroupLabel}} empty{{/unless}}">{{#if amlGroupLabel}}{{amlGroupLabel}}{{else}}Nie określono{{/if}}</div>
+        </div>
+        {{#if gtuCodes}}
+        <div class="field">
+          <div class="label">Kody GTU</div>
+          <div class="value">{{gtuCodes}}</div>
+        </div>
+        {{/if}}
+      </div>
+
+      <!-- Opis działalności -->
+      {{#if companySpecificity}}
+      <div class="section">
+        <div class="section-title">Specyfika firmy</div>
+        <div class="field">
+          <div class="label">Opis</div>
+          <div class="value">{{companySpecificity}}</div>
+        </div>
+      </div>
+      {{/if}}
+
+      {{#if additionalInfo}}
+      <div class="section">
+        <div class="section-title">Dodatkowe informacje</div>
+        <div class="field">
+          <div class="label">Notatki</div>
+          <div class="value">{{additionalInfo}}</div>
+        </div>
+      </div>
+      {{/if}}
+
+      <div class="highlight-box">
+        <h3>Kontakt</h3>
+        <p>W razie pytań lub konieczności aktualizacji danych, prosimy o kontakt z biurem <strong>{{companyName}}</strong>.</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Ta wiadomość została wygenerowana automatycznie w dniu {{createdAt}}.</p>
+      <p>Prosimy nie odpowiadać na tę wiadomość.</p>
+    </div>
+  </div>
+</body>
+</html>

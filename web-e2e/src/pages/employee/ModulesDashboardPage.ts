@@ -129,13 +129,6 @@ export class ModulesDashboardPage extends BasePage {
   }
 
   /**
-   * Navigate to Simple Text module
-   */
-  async goToSimpleText(): Promise<void> {
-    await this.accessModule('simple-text');
-  }
-
-  /**
    * Expect specific module count
    */
   async expectModuleCount(count: number): Promise<void> {

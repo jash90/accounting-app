@@ -1,16 +1,25 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { User, UserRole } from '@accounting/common';
+import { User, UserRole, Company } from '@accounting/common';
+import { EmailService } from '@accounting/infrastructure/email';
+import { EmailSenderService, EmailConfigurationService } from '@accounting/email';
 import { CreateEmployeeDto } from '../dto/create-employee.dto';
 import { UpdateEmployeeDto } from '../dto/update-employee.dto';
 
 @Injectable()
 export class CompanyService {
+  private readonly logger = new Logger(CompanyService.name);
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Company)
+    private companyRepository: Repository<Company>,
+    private emailService: EmailService,
+    private emailSenderService: EmailSenderService,
+    private emailConfigService: EmailConfigurationService,
   ) {}
 
   // Employee Management
@@ -33,7 +42,11 @@ export class CompanyService {
     return employee;
   }
 
-  async createEmployee(companyId: string, createEmployeeDto: CreateEmployeeDto) {
+  async createEmployee(
+    companyId: string,
+    createEmployeeDto: CreateEmployeeDto,
+    creatorName?: string,
+  ) {
     const existingUser = await this.userRepository.findOne({
       where: { email: createEmployeeDto.email },
     });
@@ -52,7 +65,95 @@ export class CompanyService {
       isActive: true,
     });
 
-    return this.userRepository.save(employee);
+    const savedEmployee = await this.userRepository.save(employee);
+
+    // Send notification email
+    await this.sendUserCreatedNotification(companyId, savedEmployee, creatorName);
+
+    return savedEmployee;
+  }
+
+  private async sendUserCreatedNotification(
+    companyId: string,
+    newUser: User,
+    creatorName?: string,
+  ) {
+    try {
+      const company = await this.companyRepository.findOne({
+        where: { id: companyId },
+        relations: ['owner'],
+      });
+
+      if (!company) {
+        this.logger.warn(`Company not found for notification: ${companyId}`);
+        return;
+      }
+
+      // Get company email configuration (SMTP + IMAP for save to Sent)
+      const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(companyId);
+
+      if (!emailConfig) {
+        this.logger.warn(`No email configuration for company. Skipping employee creation notifications.`);
+        return;
+      }
+
+      // 1. Send notification to company owner
+      if (company.owner?.email) {
+        const ownerNotificationHtml = `
+          <h1>👤 Nowy pracownik dodany</h1>
+          <p>W firmie <strong>${company.name}</strong> został dodany nowy pracownik:</p>
+          <ul>
+            <li><strong>Imię i nazwisko:</strong> ${newUser.firstName} ${newUser.lastName}</li>
+            <li><strong>Email:</strong> ${newUser.email}</li>
+            <li><strong>Rola:</strong> ${newUser.role}</li>
+            <li><strong>Dodany przez:</strong> ${creatorName || 'System'}</li>
+          </ul>
+          <p>Pracownik został poinformowany i może teraz zalogować się do systemu.</p>
+        `;
+
+        await this.emailSenderService.sendEmailAndSave(
+          emailConfig.smtp,
+          emailConfig.imap,
+          {
+            to: company.owner.email,
+            subject: `Nowy pracownik: ${newUser.firstName} ${newUser.lastName}`,
+            html: ownerNotificationHtml,
+          },
+        );
+
+        this.logger.log(`Owner notification sent and saved to Sent`);
+      }
+
+      // 2. Send welcome email to new employee
+      const employeeWelcomeHtml = `
+        <h1>Witaj ${newUser.firstName} ${newUser.lastName}! 👋</h1>
+        <p>Zostałeś/aś dodany/a do firmy <strong>${company.name}</strong>.</p>
+        <h2>Twoje dane logowania:</h2>
+        <ul>
+          <li><strong>Email:</strong> ${newUser.email}</li>
+          <li><strong>Hasło:</strong> (ustalone podczas rejestracji)</li>
+        </ul>
+        <p>Możesz zalogować się tutaj: <a href="http://localhost:4200/login">http://localhost:4200/login</a></p>
+        <p>Pozdrawiamy,<br><strong>${company.name}</strong></p>
+      `;
+
+      await this.emailSenderService.sendEmailAndSave(
+        emailConfig.smtp,
+        emailConfig.imap,
+        {
+          to: newUser.email,
+          subject: `Witaj w ${company.name}!`,
+          html: employeeWelcomeHtml,
+        },
+      );
+
+      this.logger.log(`Employee welcome email sent and saved to Sent for user ${newUser.id}`);
+      this.logger.log(`All user creation notifications sent successfully (owner + employee)`);
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Failed to send user creation notification: ${err.message}`, err.stack);
+      // Don't throw - email failure should not block user creation
+    }
   }
 
   async updateEmployee(companyId: string, employeeId: string, updateEmployeeDto: UpdateEmployeeDto) {
@@ -79,6 +180,18 @@ export class CompanyService {
     const employee = await this.getEmployeeById(companyId, employeeId);
     employee.isActive = false;
     return this.userRepository.save(employee);
+  }
+
+  async getCompanyById(companyId: string) {
+    const company = await this.companyRepository.findOne({
+      where: { id: companyId },
+    });
+
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    return company;
   }
 }
 

@@ -1,0 +1,17 @@
+{
+  "$schema": "../../../schemas/module.schema.json",
+  "slug": "ai-agent",
+  "name": "Agent AI",
+  "description": "Asystent AI z czatem, RAG i zarządzaniem tokenami",
+  "version": "1.0.0",
+  "isActive": true,
+  "permissions": ["read", "write", "delete", "manage"],
+  "defaultPermissions": ["read", "write"],
+  "icon": "bot",
+  "category": "ai",
+  "config": {
+    "maxTokensPerDay": 100000,
+    "supportedProviders": ["openai", "openrouter"],
+    "enableRAG": true
+  }
+}

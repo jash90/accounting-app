@@ -1,0 +1,8 @@
+{
+  "name": "infrastructure-change-log",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/infrastructure/change-log/src",
+  "projectType": "library",
+  "tags": ["scope:infrastructure"],
+  "targets": {}
+}

@@ -108,23 +108,11 @@ export const TEST_CREDENTIALS = {
     password: 'Admin123!',
   },
   companyOwner: {
-    email: 'owner.a@company.com',
+    email: 'bartlomiej.zimny@onet.pl',
     password: 'Owner123!',
   },
   employee: {
-    email: 'employee1.a@company.com',
-    password: 'Employee123!',
-  },
-  employee2: {
-    email: 'employee2.a@company.com',
-    password: 'Employee123!',
-  },
-  companyBOwner: {
-    email: 'owner.b@company.com',
-    password: 'Owner123!',
-  },
-  companyBEmployee: {
-    email: 'employee1.b@company.com',
+    email: 'bartlomiej.zimny@interia.pl',
     password: 'Employee123!',
   },
 };

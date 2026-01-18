@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nowy klient dodany</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #10b981; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+    .field { margin-bottom: 12px; }
+    .label { font-weight: 600; color: #6b7280; font-size: 12px; text-transform: uppercase; }
+    .value { font-size: 16px; margin-top: 4px; }
+    .footer { margin-top: 20px; font-size: 12px; color: #9ca3af; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 style="margin: 0;">✨ Nowy klient dodany</h1>
+  </div>
+  <div class="content">
+    <div class="field">
+      <div class="label">Nazwa klienta</div>
+      <div class="value">{{clientName}}</div>
+    </div>
+    <div class="field">
+      <div class="label">NIP</div>
+      <div class="value">{{clientNip}}</div>
+    </div>
+    <div class="field">
+      <div class="label">Firma</div>
+      <div class="value">{{companyName}}</div>
+    </div>
+    <div class="field">
+      <div class="label">Dodany przez</div>
+      <div class="value">{{createdByName}}</div>
+    </div>
+    <div class="field">
+      <div class="label">Data dodania</div>
+      <div class="value">{{createdAt}}</div>
+    </div>
+  </div>
+  <div class="footer">
+    Ta wiadomość została wygenerowana automatycznie przez system Accounting.
+  </div>
+</body>
+</html>

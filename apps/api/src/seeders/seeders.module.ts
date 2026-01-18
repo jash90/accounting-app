@@ -6,8 +6,11 @@ import {
   Module as ModuleEntity,
   CompanyModuleAccess,
   UserModulePermission,
-  SimpleText,
+  Client,
+  ClientFieldDefinition,
 } from '@accounting/common';
+import { EmailModule } from '@accounting/email';
+import { RBACModule } from '@accounting/rbac';
 import { SeederService } from './seeder.service';
 
 @Module({
@@ -18,11 +21,13 @@ import { SeederService } from './seeder.service';
       ModuleEntity,
       CompanyModuleAccess,
       UserModulePermission,
-      SimpleText,
+      Client,
+      ClientFieldDefinition,
     ]),
+    EmailModule,
+    RBACModule,
   ],
   providers: [SeederService],
   exports: [SeederService],
 })
 export class SeedersModule {}
-

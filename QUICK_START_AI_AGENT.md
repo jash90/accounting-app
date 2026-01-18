@@ -41,7 +41,7 @@ pnpm run dev
 - Configuration: `http://localhost:4200/admin/modules/ai-agent/configuration`
 - Context: `http://localhost:4200/admin/modules/ai-agent/context`
 
-### COMPANY_OWNER (owner.a@company.com / Owner123!)
+### COMPANY_OWNER (bartlomiej.zimny@onet.pl / Owner123!)
 
 **How to access AI Agent:**
 1. After logging in, click **"AI Agent"** in the sidebar
@@ -56,7 +56,7 @@ pnpm run dev
 - Token Usage: `http://localhost:4200/company/modules/ai-agent/token-usage`
 - Context: `http://localhost:4200/company/modules/ai-agent/context`
 
-### EMPLOYEE (employee1.a@company.com / Employee123!)
+### EMPLOYEE (bartlomiej.zimny@interia.pl / Employee123!)
 
 **How to access AI Agent:**
 1. After logging in, click **"AI Agent"** in the sidebar

@@ -7,13 +7,18 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { EmailConfiguration, EncryptionService } from '@accounting/common';
+import { EmailConfiguration, Company, EncryptionService } from '@accounting/common';
 import { CreateEmailConfigDto } from '../dto/create-email-config.dto';
 import { UpdateEmailConfigDto } from '../dto/update-email-config.dto';
 import { EmailConfigResponseDto } from '../dto/email-config-response.dto';
 import { EmailSenderService } from './email-sender.service';
 import { EmailReaderService } from './email-reader.service';
 import { SmtpConfig, ImapConfig } from '../interfaces/email-config.interface';
+
+// TLS validation - secure by default, configurable via env
+// TODO: Future enhancement - move to per-company EmailConfiguration entity
+// to support multi-tenant TLS settings (requires migration + entity update)
+const REJECT_UNAUTHORIZED = process.env['EMAIL_REJECT_UNAUTHORIZED'] !== 'false';
 
 /**
  * Service for managing email configurations for users and companies
@@ -26,6 +31,8 @@ export class EmailConfigurationService {
   constructor(
     @InjectRepository(EmailConfiguration)
     private readonly emailConfigRepo: Repository<EmailConfiguration>,
+    @InjectRepository(Company)
+    private readonly companyRepo: Repository<Company>,
     private readonly encryptionService: EncryptionService,
     private readonly emailSenderService: EmailSenderService,
     private readonly emailReaderService: EmailReaderService,
@@ -37,6 +44,7 @@ export class EmailConfigurationService {
   async createUserConfig(
     userId: string,
     dto: CreateEmailConfigDto,
+    skipVerification = false,
   ): Promise<EmailConfigResponseDto> {
     // Check if user already has a configuration
     const existing = await this.emailConfigRepo.findOne({
@@ -49,8 +57,12 @@ export class EmailConfigurationService {
       );
     }
 
-    // Verify connection before saving
-    await this.verifyConfiguration(dto);
+    // Verify connection before saving (unless skipped for dev/test)
+    if (!skipVerification) {
+      await this.verifyConfiguration(dto);
+    } else {
+      this.logger.warn(`Skipping SMTP verification for user ${userId} (dev/test mode)`);
+    }
 
     // Create configuration with encrypted passwords
     const config = this.emailConfigRepo.create({
@@ -60,12 +72,12 @@ export class EmailConfigurationService {
       smtpPort: dto.smtpPort,
       smtpSecure: dto.smtpSecure,
       smtpUser: dto.smtpUser,
-      smtpPassword: this.encryptionService.encrypt(dto.smtpPassword),
+      smtpPassword: await this.encryptionService.encrypt(dto.smtpPassword),
       imapHost: dto.imapHost,
       imapPort: dto.imapPort,
       imapTls: dto.imapTls,
       imapUser: dto.imapUser,
-      imapPassword: this.encryptionService.encrypt(dto.imapPassword),
+      imapPassword: await this.encryptionService.encrypt(dto.imapPassword),
       displayName: dto.displayName,
       isActive: true,
     });
@@ -82,6 +94,7 @@ export class EmailConfigurationService {
   async createCompanyConfig(
     companyId: string,
     dto: CreateEmailConfigDto,
+    skipVerification = false,
   ): Promise<EmailConfigResponseDto> {
     // Check if company already has a configuration
     const existing = await this.emailConfigRepo.findOne({
@@ -94,8 +107,12 @@ export class EmailConfigurationService {
       );
     }
 
-    // Verify connection before saving
-    await this.verifyConfiguration(dto);
+    // Verify connection before saving (unless skipped for dev/test)
+    if (!skipVerification) {
+      await this.verifyConfiguration(dto);
+    } else {
+      this.logger.warn(`Skipping SMTP verification for company ${companyId} (dev/test mode)`);
+    }
 
     // Create configuration with encrypted passwords
     const config = this.emailConfigRepo.create({
@@ -105,12 +122,12 @@ export class EmailConfigurationService {
       smtpPort: dto.smtpPort,
       smtpSecure: dto.smtpSecure,
       smtpUser: dto.smtpUser,
-      smtpPassword: this.encryptionService.encrypt(dto.smtpPassword),
+      smtpPassword: await this.encryptionService.encrypt(dto.smtpPassword),
       imapHost: dto.imapHost,
       imapPort: dto.imapPort,
       imapTls: dto.imapTls,
       imapUser: dto.imapUser,
-      imapPassword: this.encryptionService.encrypt(dto.imapPassword),
+      imapPassword: await this.encryptionService.encrypt(dto.imapPassword),
       displayName: dto.displayName,
       isActive: true,
     });
@@ -174,7 +191,7 @@ export class EmailConfigurationService {
       secure: config.smtpSecure,
       auth: {
         user: config.smtpUser,
-        pass: this.encryptionService.decrypt(config.smtpPassword),
+        pass: await this.encryptionService.decrypt(config.smtpPassword),
       },
     };
   }
@@ -197,9 +214,9 @@ export class EmailConfigurationService {
       port: config.imapPort,
       tls: config.imapTls,
       user: config.imapUser,
-      password: this.encryptionService.decrypt(config.imapPassword),
+      password: await this.encryptionService.decrypt(config.imapPassword),
       tlsOptions: {
-        rejectUnauthorized: false,
+        rejectUnauthorized: REJECT_UNAUTHORIZED,
       },
     };
   }
@@ -223,7 +240,7 @@ export class EmailConfigurationService {
 
     // Verify connection if credentials changed
     if (this.hasCredentialChanges(dto)) {
-      const mergedDto = this.mergeWithExisting(config, dto);
+      const mergedDto = await this.mergeWithExisting(config, dto);
       await this.verifyConfiguration(mergedDto);
     }
 
@@ -233,14 +250,14 @@ export class EmailConfigurationService {
     if (dto.smtpSecure !== undefined) config.smtpSecure = dto.smtpSecure;
     if (dto.smtpUser !== undefined) config.smtpUser = dto.smtpUser;
     if (dto.smtpPassword !== undefined) {
-      config.smtpPassword = this.encryptionService.encrypt(dto.smtpPassword);
+      config.smtpPassword = await this.encryptionService.encrypt(dto.smtpPassword);
     }
     if (dto.imapHost !== undefined) config.imapHost = dto.imapHost;
     if (dto.imapPort !== undefined) config.imapPort = dto.imapPort;
     if (dto.imapTls !== undefined) config.imapTls = dto.imapTls;
     if (dto.imapUser !== undefined) config.imapUser = dto.imapUser;
     if (dto.imapPassword !== undefined) {
-      config.imapPassword = this.encryptionService.encrypt(dto.imapPassword);
+      config.imapPassword = await this.encryptionService.encrypt(dto.imapPassword);
     }
     if (dto.displayName !== undefined) config.displayName = dto.displayName;
 
@@ -269,7 +286,7 @@ export class EmailConfigurationService {
 
     // Verify connection if credentials changed
     if (this.hasCredentialChanges(dto)) {
-      const mergedDto = this.mergeWithExisting(config, dto);
+      const mergedDto = await this.mergeWithExisting(config, dto);
       await this.verifyConfiguration(mergedDto);
     }
 
@@ -279,14 +296,14 @@ export class EmailConfigurationService {
     if (dto.smtpSecure !== undefined) config.smtpSecure = dto.smtpSecure;
     if (dto.smtpUser !== undefined) config.smtpUser = dto.smtpUser;
     if (dto.smtpPassword !== undefined) {
-      config.smtpPassword = this.encryptionService.encrypt(dto.smtpPassword);
+      config.smtpPassword = await this.encryptionService.encrypt(dto.smtpPassword);
     }
     if (dto.imapHost !== undefined) config.imapHost = dto.imapHost;
     if (dto.imapPort !== undefined) config.imapPort = dto.imapPort;
     if (dto.imapTls !== undefined) config.imapTls = dto.imapTls;
     if (dto.imapUser !== undefined) config.imapUser = dto.imapUser;
     if (dto.imapPassword !== undefined) {
-      config.imapPassword = this.encryptionService.encrypt(dto.imapPassword);
+      config.imapPassword = await this.encryptionService.encrypt(dto.imapPassword);
     }
     if (dto.displayName !== undefined) config.displayName = dto.displayName;
 
@@ -377,22 +394,212 @@ export class EmailConfigurationService {
   /**
    * Merge update DTO with existing configuration for validation
    */
-  private mergeWithExisting(
+  private async mergeWithExisting(
     config: EmailConfiguration,
     dto: UpdateEmailConfigDto,
-  ): CreateEmailConfigDto {
+  ): Promise<CreateEmailConfigDto> {
     return {
       smtpHost: dto.smtpHost ?? config.smtpHost,
       smtpPort: dto.smtpPort ?? config.smtpPort,
       smtpSecure: dto.smtpSecure ?? config.smtpSecure,
       smtpUser: dto.smtpUser ?? config.smtpUser,
-      smtpPassword: dto.smtpPassword ?? this.encryptionService.decrypt(config.smtpPassword),
+      smtpPassword: dto.smtpPassword ?? await this.encryptionService.decrypt(config.smtpPassword),
       imapHost: dto.imapHost ?? config.imapHost,
       imapPort: dto.imapPort ?? config.imapPort,
       imapTls: dto.imapTls ?? config.imapTls,
       imapUser: dto.imapUser ?? config.imapUser,
-      imapPassword: dto.imapPassword ?? this.encryptionService.decrypt(config.imapPassword),
+      imapPassword: dto.imapPassword ?? await this.encryptionService.decrypt(config.imapPassword),
       displayName: dto.displayName ?? config.displayName,
     };
+  }
+
+  /**
+   * Check if company has an active email configuration
+   * For internal use - does not expose sensitive data
+   */
+  async hasActiveCompanyConfig(companyId: string): Promise<boolean> {
+    const config = await this.emailConfigRepo.findOne({
+      where: { companyId, isActive: true },
+      select: ['id'],
+    });
+    return !!config;
+  }
+
+  /**
+   * Get company's email configuration by companyId (internal use only)
+   * Returns null if not found or not active
+   * WARNING: This method is for internal service use - never expose directly via API
+   * @internal
+   */
+  protected async findCompanyConfigInternal(companyId: string): Promise<EmailConfiguration | null> {
+    const config = await this.emailConfigRepo.findOne({
+      where: { companyId },
+    });
+    if (!config?.isActive) {
+      return null;
+    }
+    return config;
+  }
+
+  /**
+   * Get decrypted SMTP config for a company by companyId
+   * For internal use - sending emails from company address
+   */
+  async getDecryptedSmtpConfigByCompanyId(companyId: string): Promise<SmtpConfig | null> {
+    const config = await this.emailConfigRepo.findOne({
+      where: { companyId },
+    });
+
+    if (!config || !config.isActive) {
+      return null;
+    }
+
+    try {
+      return {
+        host: config.smtpHost,
+        port: config.smtpPort,
+        secure: config.smtpSecure,
+        auth: {
+          user: config.smtpUser,
+          pass: await this.encryptionService.decrypt(config.smtpPassword),
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to decrypt SMTP config for company ${companyId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Get both decrypted SMTP and IMAP configurations for sending with save
+   *
+   * This is a convenience method for the sendEmailAndSave functionality,
+   * which needs both SMTP (for sending) and IMAP (for saving to Sent folder).
+   *
+   * @param configId Email configuration ID
+   * @returns Object with both smtp and imap configurations
+   */
+  async getDecryptedEmailConfig(configId: string): Promise<{
+    smtp: SmtpConfig;
+    imap: ImapConfig;
+  }> {
+    const smtpConfig = await this.getDecryptedSmtpConfig(configId);
+    const imapConfig = await this.getDecryptedImapConfig(configId);
+
+    return { smtp: smtpConfig, imap: imapConfig };
+  }
+
+  /**
+   * Get both SMTP and IMAP configs by companyId for sending with save
+   *
+   * @param companyId Company ID
+   * @returns Object with smtp and imap configs, or null if no config found
+   */
+  async getDecryptedEmailConfigByCompanyId(companyId: string): Promise<{
+    smtp: SmtpConfig;
+    imap: ImapConfig;
+  } | null> {
+    const config = await this.emailConfigRepo.findOne({
+      where: { companyId },
+    });
+
+    if (!config || !config.isActive) {
+      return null;
+    }
+
+    try {
+      const smtp: SmtpConfig = {
+        host: config.smtpHost,
+        port: config.smtpPort,
+        secure: config.smtpSecure,
+        auth: {
+          user: config.smtpUser,
+          pass: await this.encryptionService.decrypt(config.smtpPassword),
+        },
+      };
+
+      const imap: ImapConfig = {
+        host: config.imapHost,
+        port: config.imapPort,
+        tls: config.imapTls,
+        user: config.imapUser,
+        password: await this.encryptionService.decrypt(config.imapPassword),
+      };
+
+      return { smtp, imap };
+    } catch (error) {
+      this.logger.error(
+        `Failed to decrypt email config for company ${companyId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      return null;
+    }
+  }
+
+  // ========== SYSTEM ADMIN EMAIL CONFIGURATION ==========
+
+  /**
+   * Get the System Admin company (isSystemCompany: true)
+   * Used for shared admin email configuration
+   */
+  private async getSystemAdminCompany(): Promise<Company> {
+    const systemCompany = await this.companyRepo.findOne({
+      where: { isSystemCompany: true },
+    });
+
+    if (!systemCompany) {
+      throw new NotFoundException('System Admin company not found. Please run migrations.');
+    }
+
+    return systemCompany;
+  }
+
+  /**
+   * Get decrypted System Admin email configuration
+   * This configuration is shared across all admin users
+   *
+   * @returns Object with smtp and imap configs, or null if no config found
+   */
+  async getDecryptedSystemAdminEmailConfig(): Promise<{
+    smtp: SmtpConfig;
+    imap: ImapConfig;
+  } | null> {
+    const systemCompany = await this.getSystemAdminCompany();
+
+    const config = await this.emailConfigRepo.findOne({
+      where: { companyId: systemCompany.id },
+    });
+
+    if (!config || !config.isActive) {
+      return null;
+    }
+
+    try {
+      const smtp: SmtpConfig = {
+        host: config.smtpHost,
+        port: config.smtpPort,
+        secure: config.smtpSecure,
+        auth: {
+          user: config.smtpUser,
+          pass: await this.encryptionService.decrypt(config.smtpPassword),
+        },
+      };
+
+      const imap: ImapConfig = {
+        host: config.imapHost,
+        port: config.imapPort,
+        tls: config.imapTls,
+        user: config.imapUser,
+        password: await this.encryptionService.decrypt(config.imapPassword),
+      };
+
+      return { smtp, imap };
+    } catch (error) {
+      this.logger.error(
+        `Failed to decrypt System Admin email config: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      return null;
+    }
   }
 }

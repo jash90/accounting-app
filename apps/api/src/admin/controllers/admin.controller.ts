@@ -11,6 +11,7 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -32,11 +33,10 @@ import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { CreateCompanyDto } from '../dto/create-company.dto';
 import { UpdateCompanyDto } from '../dto/update-company.dto';
-import { Roles, CurrentUser } from '@accounting/auth';
+import { Roles } from '@accounting/auth';
 import { RolesGuard } from '@accounting/auth';
 import {
   UserRole,
-  User,
   UserResponseDto,
   CompanyResponseDto,
 } from '@accounting/common';
@@ -71,6 +71,7 @@ export class AdminController {
   }
 
   @Post('users')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new user', description: 'Create a new user with specified email, role, and company assignment' })
   @ApiBody({ type: CreateUserDto, description: 'User creation data' })
@@ -97,6 +98,7 @@ export class AdminController {
   }
 
   @Delete('users/:id')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete user (soft delete)', description: 'Soft delete a user by setting isActive to false' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid', description: 'User unique identifier' })
@@ -152,6 +154,7 @@ export class AdminController {
   }
 
   @Post('companies')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new company', description: 'Create a new company with specified name and owner' })
   @ApiBody({ type: CreateCompanyDto, description: 'Company creation data' })

@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "pl"
+
+reviews:
+  # Enable auto-reviews on PRs to these branches
+  auto_review:
+    enabled: true
+    base_branches:
+      - master
+      - development
+
+  # Show review status in PR
+  review_status: true
+
+  # Request changes on issues found
+  request_changes_workflow: true
+
+  # High-level summary
+  high_level_summary: true
+
+  # Poem in review (disabled)
+  poem: false
+
+  # Path filters - what to review
+  path_filters:
+    - "!**/node_modules/**"
+    - "!**/dist/**"
+    - "!**/.nx/**"
+    - "!**/coverage/**"
+    - "!**/*.lock"
+    - "!**/package-lock.json"
+
+  # Path instructions - specific guidance for reviewers
+  path_instructions:
+    - path: "apps/api/**"
+      instructions: |
+        Review for NestJS best practices, proper use of guards,
+        multi-tenant isolation (companyId filtering), and TypeORM patterns.
+    - path: "libs/**"
+      instructions: |
+        Ensure proper module boundaries, exports, and SOLID principles.
+        Check for multi-tenant security.
+    - path: "apps/web/**"
+      instructions: |
+        Review for React best practices, proper hooks usage,
+        accessibility, and TypeScript types.
+
+chat:
+  # Enable chat with CodeRabbit
+  auto_reply: true
+
+# Early access features
+early_access: false

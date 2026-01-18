@@ -65,7 +65,7 @@ export interface EmailAttachment {
   /**
    * Attachment content (Buffer, Stream, or string)
    */
-  content?: Buffer | NodeJS.ReadableStream | string;
+  content?: Buffer | NodeJS.ReadableStream | string | undefined;
 
   /**
    * Path to file (alternative to content)

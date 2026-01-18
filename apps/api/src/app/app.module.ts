@@ -2,30 +2,54 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { TerminusModule } from '@nestjs/terminus';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { HealthController } from './health.controller';
 import {
   User,
   Company,
   Module as ModuleEntity,
   CompanyModuleAccess,
   UserModulePermission,
-  SimpleText,
   AIConfiguration,
   AIConversation,
   AIMessage,
   AIContext,
   TokenUsage,
   TokenLimit,
+  ChangeLog,
+  Client,
+  ClientFieldDefinition,
+  ClientCustomFieldValue,
+  ClientIcon,
+  ClientIconAssignment,
+  NotificationSettings,
+  ClientDeleteRequest,
   EmailConfiguration,
+  EmailDraft,
+  Task,
+  TaskLabel,
+  TaskLabelAssignment,
+  TaskDependency,
+  TaskComment,
 } from '@accounting/common';
 import { AuthModule, JwtAuthGuard } from '@accounting/auth';
 import { AdminModule } from '../admin/admin.module';
 import { CompanyModule } from '../company/company.module';
 import { ModulesModule } from '../modules/modules.module';
-import { SimpleTextModule } from '@accounting/modules/simple-text';
 import { AIAgentModule } from '@accounting/modules/ai-agent';
+import { ClientsModule } from '@accounting/modules/clients';
+import { EmailClientModule } from '@accounting/modules/email-client';
+import { TasksModule } from '@accounting/modules/tasks';
 import { SeedersModule } from '../seeders/seeders.module';
+import { EmailConfigModule } from '../email-config/email-config.module';
+import { EmailModule } from '@accounting/infrastructure/email';
+import { StorageModule } from '@accounting/infrastructure/storage';
+import { ChangeLogModule } from '@accounting/infrastructure/change-log';
 
 @Module({
   imports: [
@@ -33,6 +57,13 @@ import { SeedersModule } from '../seeders/seeders.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60000, // 1 minute
+        limit: 100, // 100 requests per minute (global limit for all endpoints)
+      },
+    ]),
     TypeOrmModule.forRootAsync({
       useFactory: () => {
         const isProduction = process.env.NODE_ENV === 'production';
@@ -49,14 +80,27 @@ import { SeedersModule } from '../seeders/seeders.module';
               ModuleEntity,
               CompanyModuleAccess,
               UserModulePermission,
-              SimpleText,
               AIConfiguration,
               AIConversation,
               AIMessage,
               AIContext,
               TokenUsage,
               TokenLimit,
+              ChangeLog,
+              Client,
+              ClientFieldDefinition,
+              ClientCustomFieldValue,
+              ClientIcon,
+              ClientIconAssignment,
+              NotificationSettings,
+              ClientDeleteRequest,
               EmailConfiguration,
+              EmailDraft,
+              Task,
+              TaskLabel,
+              TaskLabelAssignment,
+              TaskDependency,
+              TaskComment,
             ],
             synchronize: false, // Disabled - use migrations for schema changes
             logging: !isProduction,
@@ -80,14 +124,27 @@ import { SeedersModule } from '../seeders/seeders.module';
             ModuleEntity,
             CompanyModuleAccess,
             UserModulePermission,
-            SimpleText,
             AIConfiguration,
             AIConversation,
             AIMessage,
             AIContext,
             TokenUsage,
             TokenLimit,
+            ChangeLog,
+            Client,
+            ClientFieldDefinition,
+            ClientCustomFieldValue,
+            ClientIcon,
+            ClientIconAssignment,
+            NotificationSettings,
+            ClientDeleteRequest,
             EmailConfiguration,
+            EmailDraft,
+            Task,
+            TaskLabel,
+            TaskLabelAssignment,
+            TaskDependency,
+            TaskComment,
           ],
           synchronize: process.env.NODE_ENV !== 'production', // Auto-sync only in development
           logging: !isProduction,
@@ -99,17 +156,36 @@ import { SeedersModule } from '../seeders/seeders.module';
     AuthModule,
     AdminModule,
     CompanyModule,
-    SimpleTextModule,
     AIAgentModule,
+    ClientsModule,
+    EmailClientModule,
+    TasksModule,
     ModulesModule,
     SeedersModule,
+    EmailModule,
+    StorageModule.forRoot(),
+    ChangeLogModule,
+    EmailConfigModule,
+    TerminusModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+      serveStaticOptions: {
+        index: false,
+        fallthrough: false,
+      },
+    }),
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
   providers: [
     AppService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

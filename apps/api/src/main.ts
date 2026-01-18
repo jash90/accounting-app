@@ -7,6 +7,7 @@ import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { SeedersModule } from './seeders/seeders.module';
 import { SeederService } from './seeders/seeder.service';
+import { AllExceptionsFilter } from './common';
 
 // Parse CORS origins at module scope for O(1) lookups
 const allowedOrigins = new Set(
@@ -76,6 +77,9 @@ async function bootstrap() {
     }),
   );
 
+  // Global exception filter for consistent error responses
+  app.useGlobalFilters(new AllExceptionsFilter());
+
   // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('RBAC System API')
@@ -96,8 +100,11 @@ async function bootstrap() {
     .addTag('Admin', 'Admin management endpoints')
     .addTag('Company', 'Company owner endpoints')
     .addTag('Modules', 'Module management and access control endpoints')
-    .addTag('simple-text', 'Simple Text module endpoints')
     .addTag('ai-agent', 'AI Agent module endpoints - Chat, RAG, Token Management')
+    .addTag('Clients', 'Client management endpoints')
+    .addTag('Client Field Definitions', 'Custom field definitions for clients')
+    .addTag('Client Icons', 'Client icon management endpoints')
+    .addTag('Client Notification Settings', 'Client notification settings endpoints')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

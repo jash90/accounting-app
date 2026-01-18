@@ -1,0 +1,19 @@
+{
+  "$schema": "../../../schemas/module.schema.json",
+  "slug": "email-client",
+  "name": "Klient Email",
+  "description": "Pełny klient poczty z odbiorem, wysyłką, wersjami roboczymi i asystentem AI",
+  "version": "1.0.0",
+  "isActive": true,
+  "permissions": ["read", "write", "delete", "manage"],
+  "defaultPermissions": ["read", "write"],
+  "icon": "mail",
+  "category": "communication",
+  "dependencies": ["ai-agent"],
+  "config": {
+    "enableAIAssistant": true,
+    "enableDrafts": true,
+    "enableAttachments": true,
+    "maxAttachmentSize": 10485760
+  }
+}

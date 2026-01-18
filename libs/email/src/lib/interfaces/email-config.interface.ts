@@ -32,6 +32,13 @@ export interface SmtpConfig {
      */
     pass: string;
   };
+
+  /**
+   * TLS options for secure connection
+   */
+  tls?: {
+    rejectUnauthorized?: boolean;
+  };
 }
 
 /**

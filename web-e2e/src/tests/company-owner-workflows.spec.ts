@@ -29,7 +29,7 @@ test.describe('Company Owner - Employee Management', () => {
     await employeesPage.goto();
     await employeesPage.searchEmployee('employee1.a');
 
-    await employeesPage.expectEmployeeInList('employee1.a@company.com');
+    await employeesPage.expectEmployeeInList('bartlomiej.zimny@interia.pl');
   });
 
   test('should update employee details', async ({ authenticatedCompanyOwnerPage }) => {
@@ -81,8 +81,8 @@ test.describe('Company Owner - Employee Management', () => {
     const emails = await employeesPage.getAllEmployeeEmails();
 
     for (const email of emails) {
-      // All emails should be from Company A (@company.com or employee*.a@company.com)
-      const isCompanyA = email.includes('.a@') || email.includes('owner.a@');
+      // All emails should be from Company A (real emails: Onet for owners, Interia for employees)
+      const isCompanyA = email.includes('onet.pl') || email.includes('interia.pl');
       expect(isCompanyA || email.includes('Company A')).toBe(true);
     }
   });
@@ -91,7 +91,7 @@ test.describe('Company Owner - Employee Management', () => {
     const employeesPage = new EmployeesListPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.goToEmployeePermissions('employee1.a@company.com');
+    await employeesPage.goToEmployeePermissions('bartlomiej.zimny@interia.pl');
 
     await expect(authenticatedCompanyOwnerPage).toHaveURL(/permissions/);
   });
@@ -102,7 +102,7 @@ test.describe('Company Owner - Employee Management', () => {
     await employeesPage.goto();
 
     // Should not see Company B employees
-    const hasCompanyBEmployee = await employeesPage.hasEmployee('employee1.b@company.com');
+    const hasCompanyBEmployee = await employeesPage.hasEmployee('bartlomiej.zimny@interia.pl');
     expect(hasCompanyBEmployee).toBe(false);
   });
 });
@@ -113,7 +113,7 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee1.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
     await permissionsPage.expectToBeOnPermissionsPage();
   });
@@ -123,12 +123,12 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee2.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
-    await permissionsPage.grantReadPermission('simple-text');
+    await permissionsPage.grantReadPermission('ai-agent');
     await permissionsPage.savePermissions();
 
-    await permissionsPage.expectPermissions('simple-text', { read: true });
+    await permissionsPage.expectPermissions('ai-agent', { read: true });
   });
 
   test('should grant write permission', async ({ authenticatedCompanyOwnerPage }) => {
@@ -136,12 +136,12 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee2.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
-    await permissionsPage.grantWritePermission('simple-text');
+    await permissionsPage.grantWritePermission('ai-agent');
     await permissionsPage.savePermissions();
 
-    await permissionsPage.expectPermissions('simple-text', { write: true });
+    await permissionsPage.expectPermissions('ai-agent', { write: true });
   });
 
   test('should grant delete permission', async ({ authenticatedCompanyOwnerPage }) => {
@@ -149,12 +149,12 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee2.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
-    await permissionsPage.grantDeletePermission('simple-text');
+    await permissionsPage.grantDeletePermission('ai-agent');
     await permissionsPage.savePermissions();
 
-    await permissionsPage.expectPermissions('simple-text', { delete: true });
+    await permissionsPage.expectPermissions('ai-agent', { delete: true });
   });
 
   test('should revoke read permission', async ({ authenticatedCompanyOwnerPage }) => {
@@ -162,13 +162,13 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee1.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
     // Revoke read permission
-    await permissionsPage.revokeReadPermission('simple-text');
+    await permissionsPage.revokeReadPermission('ai-agent');
     await permissionsPage.savePermissions();
 
-    await permissionsPage.expectPermissions('simple-text', { read: false });
+    await permissionsPage.expectPermissions('ai-agent', { read: false });
   });
 
   test('should revoke write permission', async ({ authenticatedCompanyOwnerPage }) => {
@@ -176,12 +176,12 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee1.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
-    await permissionsPage.revokeWritePermission('simple-text');
+    await permissionsPage.revokeWritePermission('ai-agent');
     await permissionsPage.savePermissions();
 
-    await permissionsPage.expectPermissions('simple-text', { write: false });
+    await permissionsPage.expectPermissions('ai-agent', { write: false });
   });
 
   test('should revoke delete permission', async ({ authenticatedCompanyOwnerPage }) => {
@@ -189,12 +189,12 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee1.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
-    await permissionsPage.revokeDeletePermission('simple-text');
+    await permissionsPage.revokeDeletePermission('ai-agent');
     await permissionsPage.savePermissions();
 
-    await permissionsPage.expectPermissions('simple-text', { delete: false });
+    await permissionsPage.expectPermissions('ai-agent', { delete: false });
   });
 
   test('should grant bulk permissions', async ({ authenticatedCompanyOwnerPage }) => {
@@ -202,12 +202,12 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee2.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
-    await permissionsPage.grantAllPermissions('simple-text');
+    await permissionsPage.grantAllPermissions('ai-agent');
     await permissionsPage.savePermissions();
 
-    await permissionsPage.expectPermissions('simple-text', {
+    await permissionsPage.expectPermissions('ai-agent', {
       read: true,
       write: true,
       delete: true,
@@ -219,15 +219,15 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee2.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
     // Try to grant write without read (should enforce read)
-    await permissionsPage.revokeReadPermission('simple-text');
-    await permissionsPage.grantWritePermission('simple-text');
+    await permissionsPage.revokeReadPermission('ai-agent');
+    await permissionsPage.grantWritePermission('ai-agent');
     await permissionsPage.savePermissions();
 
     // Check if read was automatically granted
-    const hasRead = await permissionsPage.hasReadPermission('simple-text');
+    const hasRead = await permissionsPage.hasReadPermission('ai-agent');
     // Depending on business logic, read might be auto-granted
     expect(typeof hasRead).toBe('boolean');
   });
@@ -237,14 +237,14 @@ test.describe('Company Owner - Permission Management', () => {
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.clickManagePermissions('employee2.a@company.com');
+    await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
-    await permissionsPage.grantReadPermission('simple-text');
+    await permissionsPage.grantReadPermission('ai-agent');
     await permissionsPage.savePermissions();
 
     // Reload page and verify persistence
     await authenticatedCompanyOwnerPage.reload();
-    await permissionsPage.expectPermissions('simple-text', { read: true });
+    await permissionsPage.expectPermissions('ai-agent', { read: true });
   });
 });
 
@@ -260,7 +260,7 @@ test.describe('Company Owner - Company Modules', () => {
     const modulesPage = new CompanyModulesListPage(authenticatedCompanyOwnerPage);
 
     await modulesPage.goto();
-    await modulesPage.expectModuleVisible('simple-text');
+    await modulesPage.expectModuleVisible('ai-agent');
   });
 
   test('should not enable/disable modules (admin only)', async ({ authenticatedCompanyOwnerPage }) => {
@@ -270,16 +270,16 @@ test.describe('Company Owner - Company Modules', () => {
 
     // Company owner should view modules but not control enable/disable
     // That's admin functionality
-    await modulesPage.expectModuleVisible('simple-text');
+    await modulesPage.expectModuleVisible('ai-agent');
   });
 
   test('should access enabled module', async ({ authenticatedCompanyOwnerPage }) => {
     const modulesPage = new CompanyModulesListPage(authenticatedCompanyOwnerPage);
 
     await modulesPage.goto();
-    await modulesPage.accessModule('simple-text');
+    await modulesPage.accessModule('ai-agent');
 
-    await expect(authenticatedCompanyOwnerPage).toHaveURL(/simple-text/);
+    await expect(authenticatedCompanyOwnerPage).toHaveURL(/ai-agent/);
   });
 
   test('should only show enabled modules', async ({ authenticatedCompanyOwnerPage }) => {
@@ -288,7 +288,7 @@ test.describe('Company Owner - Company Modules', () => {
     await modulesPage.goto();
 
     // Company A should have Simple Text and AI Agent enabled
-    await modulesPage.expectModuleVisible('simple-text');
+    await modulesPage.expectModuleVisible('ai-agent');
     await modulesPage.expectModuleVisible('ai-agent');
   });
 

@@ -29,3 +29,17 @@ web-e2e/test-reports
 /apps/api/.claude-flow/
 web/.claude/
 web/.claude-flow/
+
+# Test result credentials (should never be committed)
+test-results/*.json
+
+# Development encryption key (auto-generated)
+.encryption-key.dev
+
+# Auto Claude data directory
+.auto-claude/
+
+# Telemetry and metrics files
+performance.json
+*.telemetry.json
+.vercel
