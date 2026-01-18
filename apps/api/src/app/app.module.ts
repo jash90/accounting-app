@@ -36,6 +36,8 @@ import {
   TaskLabelAssignment,
   TaskDependency,
   TaskComment,
+  TimeEntry,
+  TimeSettings,
 } from '@accounting/common';
 import { AuthModule, JwtAuthGuard } from '@accounting/auth';
 import { AdminModule } from '../admin/admin.module';
@@ -45,6 +47,7 @@ import { AIAgentModule } from '@accounting/modules/ai-agent';
 import { ClientsModule } from '@accounting/modules/clients';
 import { EmailClientModule } from '@accounting/modules/email-client';
 import { TasksModule } from '@accounting/modules/tasks';
+import { TimeTrackingModule } from '@accounting/modules/time-tracking';
 import { SeedersModule } from '../seeders/seeders.module';
 import { EmailConfigModule } from '../email-config/email-config.module';
 import { EmailModule } from '@accounting/infrastructure/email';
@@ -101,6 +104,8 @@ import { ChangeLogModule } from '@accounting/infrastructure/change-log';
               TaskLabelAssignment,
               TaskDependency,
               TaskComment,
+              TimeEntry,
+              TimeSettings,
             ],
             synchronize: false, // Disabled - use migrations for schema changes
             logging: !isProduction,
@@ -145,6 +150,8 @@ import { ChangeLogModule } from '@accounting/infrastructure/change-log';
             TaskLabelAssignment,
             TaskDependency,
             TaskComment,
+            TimeEntry,
+            TimeSettings,
           ],
           synchronize: process.env.NODE_ENV !== 'production', // Auto-sync only in development
           logging: !isProduction,
@@ -160,6 +167,7 @@ import { ChangeLogModule } from '@accounting/infrastructure/change-log';
     ClientsModule,
     EmailClientModule,
     TasksModule,
+    TimeTrackingModule,
     ModulesModule,
     SeedersModule,
     EmailModule,

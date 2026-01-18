@@ -25,6 +25,8 @@ import {
   TaskLabelAssignment,
   TaskDependency,
   TaskComment,
+  TimeEntry,
+  TimeSettings,
 } from '@accounting/common';
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -74,6 +76,8 @@ export default new DataSource({
     TaskLabelAssignment,
     TaskDependency,
     TaskComment,
+    TimeEntry,
+    TimeSettings,
   ],
   migrations: ['apps/api/src/migrations/*{.ts,.js}'],
   synchronize: false,
