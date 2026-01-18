@@ -279,6 +279,146 @@ export class TaskNotificationService {
   }
 
   /**
+   * Send notification when a task with clientId is completed (status changed to DONE)
+   */
+  async notifyTaskCompleted(task: Task, performedBy: User): Promise<void> {
+    // Only notify for tasks associated with a client
+    if (!task.clientId) {
+      return;
+    }
+
+    const smtpConfig = await this.emailConfigService.getDecryptedSmtpConfigByCompanyId(
+      task.companyId,
+    );
+
+    if (!smtpConfig) {
+      this.logger.warn('No active email configuration for company. Skipping task completed notifications.', {
+        companyId: task.companyId,
+        taskId: task.id,
+      });
+      return;
+    }
+
+    const recipients = await this.getNotificationRecipients(
+      task.companyId,
+      'receiveOnTaskCompleted',
+    );
+
+    if (recipients.length === 0) {
+      return;
+    }
+
+    const [company, client] = await Promise.all([
+      this.companyRepository.findOne({ where: { id: task.companyId } }),
+      this.clientRepository.findOne({ where: { id: task.clientId } }),
+    ]);
+
+    try {
+      const html = await this.compileTemplate('task-completed', {
+        taskTitle: task.title,
+        clientName: client?.name,
+        priorityLabel: TaskPriorityLabels[task.priority],
+        assigneeName: task.assignee
+          ? `${task.assignee.firstName} ${task.assignee.lastName}`
+          : null,
+        dueDate: this.formatDatePolish(task.dueDate),
+        companyName: company?.name || 'Nieznana firma',
+        performedByName: `${performedBy.firstName} ${performedBy.lastName}`,
+        completedAt: new Date().toLocaleString('pl-PL'),
+      });
+
+      const messages = recipients.map((recipient) => ({
+        to: recipient.email,
+        subject: `Zadanie zakończone: ${task.title}${client ? ` (${client.name})` : ''}`,
+        html,
+      }));
+
+      await this.emailSenderService.sendBatchEmails(smtpConfig, messages);
+      this.logger.log('Task completed notifications sent', {
+        companyId: task.companyId,
+        taskId: task.id,
+        recipientCount: recipients.length,
+      });
+    } catch (error) {
+      this.logger.error('Failed to send task completed notification', {
+        companyId: task.companyId,
+        taskId: task.id,
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  /**
+   * Send notification when a task with clientId becomes overdue
+   */
+  async notifyTaskOverdue(task: Task): Promise<void> {
+    // Only notify for tasks associated with a client
+    if (!task.clientId) {
+      return;
+    }
+
+    const smtpConfig = await this.emailConfigService.getDecryptedSmtpConfigByCompanyId(
+      task.companyId,
+    );
+
+    if (!smtpConfig) {
+      this.logger.warn('No active email configuration for company. Skipping task overdue notifications.', {
+        companyId: task.companyId,
+        taskId: task.id,
+      });
+      return;
+    }
+
+    const recipients = await this.getNotificationRecipients(
+      task.companyId,
+      'receiveOnTaskOverdue',
+    );
+
+    if (recipients.length === 0) {
+      return;
+    }
+
+    const [company, client] = await Promise.all([
+      this.companyRepository.findOne({ where: { id: task.companyId } }),
+      this.clientRepository.findOne({ where: { id: task.clientId } }),
+    ]);
+
+    try {
+      const html = await this.compileTemplate('task-overdue', {
+        taskTitle: task.title,
+        clientName: client?.name,
+        statusLabel: TaskStatusLabels[task.status],
+        priorityLabel: TaskPriorityLabels[task.priority],
+        assigneeName: task.assignee
+          ? `${task.assignee.firstName} ${task.assignee.lastName}`
+          : null,
+        dueDate: this.formatDatePolish(task.dueDate),
+        companyName: company?.name || 'Nieznana firma',
+        detectedAt: new Date().toLocaleString('pl-PL'),
+      });
+
+      const messages = recipients.map((recipient) => ({
+        to: recipient.email,
+        subject: `Zadanie przeterminowane: ${task.title}${client ? ` (${client.name})` : ''}`,
+        html,
+      }));
+
+      await this.emailSenderService.sendBatchEmails(smtpConfig, messages);
+      this.logger.log('Task overdue notifications sent', {
+        companyId: task.companyId,
+        taskId: task.id,
+        recipientCount: recipients.length,
+      });
+    } catch (error) {
+      this.logger.error('Failed to send task overdue notification', {
+        companyId: task.companyId,
+        taskId: task.id,
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  /**
    * Get users who should receive notifications
    * Users WITHOUT settings → receive notifications (default enabled)
    * Users with [notificationType] = true → receive notifications
@@ -286,7 +426,7 @@ export class TaskNotificationService {
    */
   private async getNotificationRecipients(
     companyId: string,
-    notificationType: 'receiveOnCreate' | 'receiveOnUpdate' | 'receiveOnDelete',
+    notificationType: 'receiveOnCreate' | 'receiveOnUpdate' | 'receiveOnDelete' | 'receiveOnTaskCompleted' | 'receiveOnTaskOverdue',
   ): Promise<User[]> {
     const queryBuilder = this.userRepository
       .createQueryBuilder('user')
