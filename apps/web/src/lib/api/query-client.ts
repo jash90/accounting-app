@@ -100,6 +100,7 @@ export const queryKeys = {
     dependencies: (taskId: string) => ['tasks', taskId, 'dependencies'] as const,
     lookupAssignees: ['tasks', 'lookup', 'assignees'] as const,
     lookupClients: ['tasks', 'lookup', 'clients'] as const,
+    clientStatistics: (clientId: string) => ['tasks', 'client-statistics', clientId] as const,
   },
   taskLabels: {
     all: ['task-labels'] as const,

@@ -7,6 +7,7 @@ import {
   TaskLabelQueryDto,
   TaskAssigneeDto,
   TaskClientDto,
+  ClientTaskStatisticsDto,
 } from '../api/endpoints/tasks';
 import { queryKeys } from '../api/query-client';
 import {
@@ -84,6 +85,14 @@ export function useTaskClients() {
   return useQuery({
     queryKey: queryKeys.tasks.lookupClients,
     queryFn: () => tasksApi.getClients(),
+  });
+}
+
+export function useClientTaskStatistics(clientId: string) {
+  return useQuery({
+    queryKey: queryKeys.tasks.clientStatistics(clientId),
+    queryFn: () => tasksApi.getClientStatistics(clientId),
+    enabled: !!clientId,
   });
 }
 
