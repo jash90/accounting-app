@@ -35,6 +35,15 @@ export interface TaskClientDto {
   name: string;
 }
 
+// Client task statistics
+export interface ClientTaskStatisticsDto {
+  clientId: string;
+  byStatus: Record<string, number>;
+  totalCount: number;
+  totalEstimatedMinutes: number;
+  totalStoryPoints: number;
+}
+
 // Tasks API
 export const tasksApi = {
   getAll: async (filters?: TaskFiltersDto): Promise<PaginatedResponse<TaskResponseDto>> => {
@@ -122,6 +131,14 @@ export const tasksApi = {
 
   getClients: async (): Promise<TaskClientDto[]> => {
     const { data } = await apiClient.get<TaskClientDto[]>(`${BASE_URL}/lookup/clients`);
+    return data;
+  },
+
+  // Client statistics
+  getClientStatistics: async (clientId: string): Promise<ClientTaskStatisticsDto> => {
+    const { data } = await apiClient.get<ClientTaskStatisticsDto>(
+      `${BASE_URL}/statistics/client/${clientId}`
+    );
     return data;
   },
 };

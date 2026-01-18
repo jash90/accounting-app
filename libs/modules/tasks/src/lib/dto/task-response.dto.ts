@@ -96,6 +96,26 @@ export class TaskDependencyResponseDto {
   @ApiProperty() createdAt!: Date;
 }
 
+export class ClientTaskStatisticsDto {
+  @ApiProperty({ description: 'Client ID' })
+  clientId!: string;
+
+  @ApiProperty({
+    description: 'Task counts grouped by status',
+    example: { backlog: 2, todo: 5, in_progress: 3, in_review: 1, done: 10 },
+  })
+  byStatus!: Record<TaskStatus, number>;
+
+  @ApiProperty({ description: 'Total number of tasks' })
+  totalCount!: number;
+
+  @ApiProperty({ description: 'Sum of estimated minutes for all tasks' })
+  totalEstimatedMinutes!: number;
+
+  @ApiProperty({ description: 'Sum of story points for all tasks' })
+  totalStoryPoints!: number;
+}
+
 export class SuccessMessageResponseDto {
   @ApiProperty() message!: string;
 }

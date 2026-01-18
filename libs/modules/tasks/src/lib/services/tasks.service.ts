@@ -20,7 +20,12 @@ import {
   ReorderTasksDto,
   BulkUpdateStatusDto,
 } from '../dto/task.dto';
-import { KanbanBoardResponseDto, KanbanColumnDto } from '../dto/task-response.dto';
+import {
+  KanbanBoardResponseDto,
+  KanbanColumnDto,
+  ClientTaskStatisticsDto,
+} from '../dto/task-response.dto';
+import { TaskNotificationService } from './task-notification.service';
 
 @Injectable()
 export class TasksService {
@@ -35,6 +40,7 @@ export class TasksService {
     private readonly labelAssignmentRepository: Repository<TaskLabelAssignment>,
     private readonly changeLogService: ChangeLogService,
     private readonly tenantService: TenantService,
+    private readonly taskNotificationService: TaskNotificationService,
   ) {}
 
   private escapeLikePattern(pattern: string): string {
@@ -262,6 +268,66 @@ export class TasksService {
     return tasks;
   }
 
+  async getClientTaskStatistics(
+    clientId: string,
+    user: User,
+  ): Promise<ClientTaskStatisticsDto> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+
+    // Verify client belongs to the company (multi-tenant isolation)
+    const clientExists = await this.taskRepository.manager.findOne('Client', {
+      where: { id: clientId, companyId },
+    });
+
+    if (!clientExists) {
+      throw new TaskNotFoundException(clientId, companyId);
+    }
+
+    // Get counts grouped by status
+    const statusCounts = await this.taskRepository
+      .createQueryBuilder('task')
+      .select('task.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .where('task.companyId = :companyId', { companyId })
+      .andWhere('task.clientId = :clientId', { clientId })
+      .andWhere('task.isActive = :isActive', { isActive: true })
+      .groupBy('task.status')
+      .getRawMany();
+
+    // Get totals for estimated minutes and story points
+    const totals = await this.taskRepository
+      .createQueryBuilder('task')
+      .select('COUNT(*)', 'totalCount')
+      .addSelect('COALESCE(SUM(task.estimatedMinutes), 0)', 'totalEstimatedMinutes')
+      .addSelect('COALESCE(SUM(task.storyPoints), 0)', 'totalStoryPoints')
+      .where('task.companyId = :companyId', { companyId })
+      .andWhere('task.clientId = :clientId', { clientId })
+      .andWhere('task.isActive = :isActive', { isActive: true })
+      .getRawOne();
+
+    // Build byStatus record with all statuses initialized to 0
+    const byStatus: Record<TaskStatus, number> = {
+      [TaskStatus.BACKLOG]: 0,
+      [TaskStatus.TODO]: 0,
+      [TaskStatus.IN_PROGRESS]: 0,
+      [TaskStatus.IN_REVIEW]: 0,
+      [TaskStatus.DONE]: 0,
+      [TaskStatus.CANCELLED]: 0,
+    };
+
+    for (const row of statusCounts) {
+      byStatus[row.status as TaskStatus] = parseInt(row.count, 10);
+    }
+
+    return {
+      clientId,
+      byStatus,
+      totalCount: parseInt(totals?.totalCount || '0', 10),
+      totalEstimatedMinutes: parseInt(totals?.totalEstimatedMinutes || '0', 10),
+      totalStoryPoints: parseInt(totals?.totalStoryPoints || '0', 10),
+    };
+  }
+
   async create(dto: CreateTaskDto, user: User): Promise<Task & { labels?: TaskLabel[] }> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
@@ -320,12 +386,27 @@ export class TasksService {
       user,
     );
 
+    // Send notification if task is associated with a client
+    if (savedTask.clientId) {
+      // Load task with relations for notification
+      const taskWithRelations = await this.findOne(savedTask.id, user);
+      this.taskNotificationService
+        .notifyTaskCreated(taskWithRelations, user)
+        .catch((error) => {
+          this.logger.error('Failed to send task created notification', {
+            taskId: savedTask.id,
+            error: (error as Error).message,
+          });
+        });
+    }
+
     return savedTask as Task & { labels?: TaskLabel[] };
   }
 
   async update(id: string, dto: UpdateTaskDto, user: User): Promise<Task & { labels?: TaskLabel[] }> {
     const task = await this.findOne(id, user);
     const oldValues = this.sanitizeTaskForLog(task);
+    const oldClientId = task.clientId;
 
     // Validate new parent if provided
     if (dto.parentTaskId !== undefined && dto.parentTaskId !== task.parentTaskId) {
@@ -383,6 +464,19 @@ export class TasksService {
       user,
     );
 
+    // Send notification if task is/was associated with a client
+    if (savedTask.clientId || oldClientId) {
+      const taskWithRelations = await this.findOne(savedTask.id, user);
+      this.taskNotificationService
+        .notifyTaskUpdated(taskWithRelations, oldValues, user, oldClientId)
+        .catch((error) => {
+          this.logger.error('Failed to send task updated notification', {
+            taskId: savedTask.id,
+            error: (error as Error).message,
+          });
+        });
+    }
+
     return this.findOne(id, user);
   }
 
@@ -395,6 +489,18 @@ export class TasksService {
     await this.taskRepository.save(task);
 
     await this.changeLogService.logDelete('Task', task.id, oldValues, user);
+
+    // Send notification if task was associated with a client
+    if (task.clientId) {
+      this.taskNotificationService
+        .notifyTaskDeleted(task, user)
+        .catch((error) => {
+          this.logger.error('Failed to send task deleted notification', {
+            taskId: task.id,
+            error: (error as Error).message,
+          });
+        });
+    }
   }
 
   async reorderTasks(dto: ReorderTasksDto, user: User): Promise<void> {

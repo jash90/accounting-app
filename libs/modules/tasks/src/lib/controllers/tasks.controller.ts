@@ -39,6 +39,7 @@ import {
   TaskResponseDto,
   PaginatedTasksResponseDto,
   KanbanBoardResponseDto,
+  ClientTaskStatisticsDto,
   SuccessMessageResponseDto,
   ErrorResponseDto,
 } from '../dto/task-response.dto';
@@ -49,6 +50,7 @@ import {
   TaskResponseDto,
   PaginatedTasksResponseDto,
   KanbanBoardResponseDto,
+  ClientTaskStatisticsDto,
   SuccessMessageResponseDto,
   ErrorResponseDto,
 )
@@ -97,6 +99,26 @@ export class TasksController {
     @Query('endDate') endDate: string,
   ) {
     return this.tasksService.getCalendarTasks(user, startDate, endDate);
+  }
+
+  @Get('statistics/client/:clientId')
+  @ApiOperation({
+    summary: 'Get task statistics for a client',
+    description: 'Retrieves aggregated task statistics for a specific client.',
+  })
+  @ApiParam({ name: 'clientId', type: 'string', format: 'uuid' })
+  @ApiResponse({
+    status: 200,
+    description: 'Client task statistics',
+    type: ClientTaskStatisticsDto,
+  })
+  @ApiResponse({ status: 404, description: 'Client not found', type: ErrorResponseDto })
+  @RequirePermission('tasks', 'read')
+  async getClientStatistics(
+    @Param('clientId', ParseUUIDPipe) clientId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.tasksService.getClientTaskStatistics(clientId, user);
   }
 
   @Get(':id')

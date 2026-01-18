@@ -15,10 +15,13 @@ import {
   Calendar,
   FileText,
   Tags,
+  CheckSquare,
 } from 'lucide-react';
 import { useState } from 'react';
 import { ClientFormDialog } from '@/components/forms/client-form-dialog';
 import { ClientChangelog } from '@/components/clients/client-changelog';
+import { ClientTasksList } from '@/components/clients/client-tasks-list';
+import { ClientTaskStatistics } from '@/components/clients/client-task-statistics';
 import { UpdateClientDto } from '@/types/dtos';
 import {
   EmploymentTypeLabels,
@@ -311,6 +314,9 @@ export default function ClientDetailPage() {
             </CardContent>
           </Card>
 
+          {/* Client Tasks */}
+          <ClientTasksList clientId={clientId} clientName={client.name} />
+
           {/* Custom Fields */}
           {customFieldValues.length > 0 && (
             <Card>
@@ -379,8 +385,11 @@ export default function ClientDetailPage() {
           )}
         </div>
 
-        <div id="changelog">
-          <ClientChangelog clientId={id} />
+        <div className="space-y-6">
+          <ClientTaskStatistics clientId={clientId} />
+          <div id="changelog">
+            <ClientChangelog clientId={id} />
+          </div>
         </div>
       </div>
 
