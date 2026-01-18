@@ -43,3 +43,4 @@ test-results/*.json
 performance.json
 *.telemetry.json
 .vercel
+test-results/
