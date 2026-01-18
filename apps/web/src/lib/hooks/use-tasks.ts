@@ -85,6 +85,8 @@ export function useTaskClients() {
   return useQuery({
     queryKey: queryKeys.tasks.lookupClients,
     queryFn: () => tasksApi.getClients(),
+    retry: false, // Don't retry on 403 (module not accessible)
+    throwOnError: false, // Don't throw on error, handle gracefully
   });
 }
 
