@@ -1,0 +1,312 @@
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { format } from 'date-fns';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  useCreateTimeEntry,
+  useUpdateTimeEntry,
+} from '@/lib/hooks/use-time-tracking';
+import { useTaskClients } from '@/lib/hooks/use-tasks';
+import { CreateTimeEntryDto, TimeEntryResponseDto } from '@/types/dtos';
+
+interface TimeEntryFormDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  entry?: TimeEntryResponseDto | null;
+}
+
+interface FormData {
+  description: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  clientId: string;
+  isBillable: boolean;
+  hourlyRate: string;
+  tags: string;
+}
+
+export function TimeEntryFormDialog({
+  open,
+  onOpenChange,
+  entry,
+}: TimeEntryFormDialogProps) {
+  const createEntry = useCreateTimeEntry();
+  const updateEntry = useUpdateTimeEntry();
+  const { data: clientsData } = useTaskClients();
+
+  const clients = clientsData || [];
+
+  const form = useForm<FormData>({
+    defaultValues: {
+      description: '',
+      date: format(new Date(), 'yyyy-MM-dd'),
+      startTime: format(new Date(), 'HH:mm'),
+      endTime: '',
+      clientId: '',
+      isBillable: true,
+      hourlyRate: '',
+      tags: '',
+    },
+  });
+
+  useEffect(() => {
+    if (entry) {
+      const startDate = new Date(entry.startTime);
+      form.reset({
+        description: entry.description || '',
+        date: format(startDate, 'yyyy-MM-dd'),
+        startTime: format(startDate, 'HH:mm'),
+        endTime: entry.endTime ? format(new Date(entry.endTime), 'HH:mm') : '',
+        clientId: entry.clientId || '',
+        isBillable: entry.isBillable,
+        hourlyRate: entry.hourlyRate?.toString() || '',
+        tags: entry.tags?.join(', ') || '',
+      });
+    } else {
+      form.reset({
+        description: '',
+        date: format(new Date(), 'yyyy-MM-dd'),
+        startTime: format(new Date(), 'HH:mm'),
+        endTime: '',
+        clientId: '',
+        isBillable: true,
+        hourlyRate: '',
+        tags: '',
+      });
+    }
+  }, [entry, form, open]);
+
+  const onSubmit = (data: FormData) => {
+    const startDateTime = new Date(`${data.date}T${data.startTime}`);
+    const endDateTime = data.endTime ? new Date(`${data.date}T${data.endTime}`) : undefined;
+
+    const entryData: CreateTimeEntryDto = {
+      description: data.description || undefined,
+      startTime: startDateTime.toISOString(),
+      endTime: endDateTime?.toISOString(),
+      clientId: data.clientId && data.clientId !== '__none__' ? data.clientId : undefined,
+      isBillable: data.isBillable,
+      hourlyRate: data.hourlyRate ? parseFloat(data.hourlyRate) : undefined,
+      tags: data.tags ? data.tags.split(',').map((t) => t.trim()).filter(Boolean) : undefined,
+    };
+
+    if (entry) {
+      updateEntry.mutate(
+        { id: entry.id, data: entryData },
+        {
+          onSuccess: () => {
+            onOpenChange(false);
+          },
+        }
+      );
+    } else {
+      createEntry.mutate(entryData, {
+        onSuccess: () => {
+          onOpenChange(false);
+        },
+      });
+    }
+  };
+
+  const isLoading = createEntry.isPending || updateEntry.isPending;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>
+            {entry ? 'Edytuj wpis czasu' : 'Nowy wpis czasu'}
+          </DialogTitle>
+          <DialogDescription>
+            {entry ? 'Zaktualizuj dane wpisu czasu.' : 'Dodaj nowy wpis czasu ręcznie.'}
+          </DialogDescription>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Opis</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Opisz wykonaną pracę..."
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="startTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Początek</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="endTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Koniec</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="clientId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Klient</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || '__none__'}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Wybierz klienta" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="__none__">Brak klienta</SelectItem>
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="hourlyRate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Stawka godzinowa (PLN)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="np. 150.00"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="tags"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tagi (oddzielone przecinkami)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="np. spotkanie, dev" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="isBillable"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0">
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormLabel className="cursor-pointer">
+                    Wpis rozliczalny
+                  </FormLabel>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                Anuluj
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? 'Zapisywanie...' : entry ? 'Zapisz zmiany' : 'Dodaj wpis'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
