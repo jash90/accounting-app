@@ -17,6 +17,107 @@ import {
   ChangeLogResponseDto,
 } from '@/types/dtos';
 import { PaginatedResponse } from '@/types/api';
+import {
+  EmploymentType,
+  VatStatus,
+  TaxScheme,
+  ZusStatus,
+} from '@/types/enums';
+
+// ============================================
+// Bulk Operations Types
+// ============================================
+
+export interface BulkDeleteClientsDto {
+  clientIds: string[];
+}
+
+export interface BulkRestoreClientsDto {
+  clientIds: string[];
+}
+
+export interface BulkEditClientsDto {
+  clientIds: string[];
+  employmentType?: EmploymentType;
+  vatStatus?: VatStatus;
+  taxScheme?: TaxScheme;
+  zusStatus?: ZusStatus;
+}
+
+export interface BulkOperationResultDto {
+  affected: number;
+  message: string;
+}
+
+// ============================================
+// Duplicate Detection Types
+// ============================================
+
+export interface CheckDuplicatesDto {
+  nip?: string;
+  email?: string;
+  excludeId?: string;
+}
+
+export interface DuplicateClientInfo {
+  id: string;
+  name: string;
+  nip?: string;
+  email?: string;
+  isActive: boolean;
+}
+
+export interface DuplicateCheckResultDto {
+  hasDuplicates: boolean;
+  byNip: DuplicateClientInfo[];
+  byEmail: DuplicateClientInfo[];
+}
+
+// ============================================
+// Statistics Types
+// ============================================
+
+export interface RecentClientDto {
+  id: string;
+  name: string;
+  nip?: string;
+  email?: string;
+  employmentType?: EmploymentType;
+  createdAt: string;
+}
+
+export interface RecentActivityDto {
+  id: string;
+  entityId: string;
+  action: string;
+  entityName: string;
+  changedByName?: string;
+  createdAt: string;
+}
+
+export interface ClientStatisticsDto {
+  total: number;
+  active: number;
+  inactive: number;
+  byEmploymentType: Record<EmploymentType, number>;
+  byVatStatus: Record<VatStatus, number>;
+  byTaxScheme: Record<TaxScheme, number>;
+  byZusStatus: Record<ZusStatus, number>;
+  addedThisMonth: number;
+  addedLast30Days: number;
+  recentlyAdded?: RecentClientDto[];
+  recentActivity?: RecentActivityDto[];
+}
+
+// ============================================
+// Import Types
+// ============================================
+
+export interface ImportResultDto {
+  imported: number;
+  updated: number;
+  errors: { row: number; field: string; message: string }[];
+}
 
 const BASE_URL = '/api/modules/clients';
 
@@ -111,6 +212,69 @@ export const clientsApi = {
         createdAt: new Date(log.createdAt),
       } as ChangeLogResponseDto;
     });
+  },
+
+  // Statistics
+  getStatistics: async (): Promise<ClientStatisticsDto> => {
+    const { data } = await apiClient.get<ClientStatisticsDto>(`${BASE_URL}/statistics`);
+    return data;
+  },
+
+  // Duplicate Detection
+  checkDuplicates: async (dto: CheckDuplicatesDto): Promise<DuplicateCheckResultDto> => {
+    const { data } = await apiClient.post<DuplicateCheckResultDto>(
+      `${BASE_URL}/check-duplicates`,
+      dto
+    );
+    return data;
+  },
+
+  // Bulk Operations
+  bulkDelete: async (dto: BulkDeleteClientsDto): Promise<BulkOperationResultDto> => {
+    const { data } = await apiClient.patch<BulkOperationResultDto>(
+      `${BASE_URL}/bulk/delete`,
+      dto
+    );
+    return data;
+  },
+
+  bulkRestore: async (dto: BulkRestoreClientsDto): Promise<BulkOperationResultDto> => {
+    const { data } = await apiClient.patch<BulkOperationResultDto>(
+      `${BASE_URL}/bulk/restore`,
+      dto
+    );
+    return data;
+  },
+
+  bulkEdit: async (dto: BulkEditClientsDto): Promise<BulkOperationResultDto> => {
+    const { data } = await apiClient.patch<BulkOperationResultDto>(
+      `${BASE_URL}/bulk/edit`,
+      dto
+    );
+    return data;
+  },
+
+  // Export/Import
+  exportCsv: async (filters?: ClientFiltersDto): Promise<Blob> => {
+    const { data } = await apiClient.get(`${BASE_URL}/export`, {
+      params: filters,
+      responseType: 'blob',
+    });
+    return data;
+  },
+
+  getImportTemplate: async (): Promise<Blob> => {
+    const { data } = await apiClient.get(`${BASE_URL}/import/template`, {
+      responseType: 'blob',
+    });
+    return data;
+  },
+
+  importCsv: async (file: File): Promise<ImportResultDto> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await apiClient.post<ImportResultDto>(`${BASE_URL}/import`, formData);
+    return data;
   },
 };
 

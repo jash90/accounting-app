@@ -68,6 +68,7 @@ export const queryKeys = {
     changelog: (clientId: string) => ['clients', clientId, 'changelog'] as const,
     icons: (clientId: string) => ['clients', clientId, 'icons'] as const,
     customFields: (clientId: string) => ['clients', clientId, 'custom-fields'] as const,
+    statistics: ['clients', 'statistics'] as const,
   },
   clientFieldDefinitions: {
     all: ['client-field-definitions'] as const,
@@ -88,6 +89,24 @@ export const queryKeys = {
     user: ['email-config', 'user'] as const,
     company: ['email-config', 'company'] as const,
     systemAdmin: ['email-config', 'system-admin'] as const,
+  },
+  tasks: {
+    all: ['tasks'] as const,
+    list: (filters?: Record<string, unknown>) => ['tasks', 'list', filters] as const,
+    detail: (id: string) => ['tasks', id] as const,
+    kanban: (filters?: Record<string, unknown>) => ['tasks', 'kanban', filters] as const,
+    calendar: (params?: Record<string, unknown>) => ['tasks', 'calendar', params] as const,
+    subtasks: (taskId: string) => ['tasks', taskId, 'subtasks'] as const,
+    comments: (taskId: string) => ['tasks', taskId, 'comments'] as const,
+    dependencies: (taskId: string) => ['tasks', taskId, 'dependencies'] as const,
+    lookupAssignees: ['tasks', 'lookup', 'assignees'] as const,
+    lookupClients: ['tasks', 'lookup', 'clients'] as const,
+    clientStatistics: (clientId: string) => ['tasks', 'client-statistics', clientId] as const,
+  },
+  taskLabels: {
+    all: ['task-labels'] as const,
+    detail: (id: string) => ['task-labels', id] as const,
+    byTask: (taskId: string) => ['task-labels', 'by-task', taskId] as const,
   },
 };
 

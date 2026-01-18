@@ -6,6 +6,10 @@ import {
   notificationSettingsApi,
   FieldDefinitionQueryDto,
   IconQueryDto,
+  BulkDeleteClientsDto,
+  BulkRestoreClientsDto,
+  BulkEditClientsDto,
+  CheckDuplicatesDto,
 } from '../api/endpoints/clients';
 import { queryKeys } from '../api/query-client';
 import {
@@ -223,6 +227,194 @@ export function useClientChangelog(clientId: string) {
     queryKey: queryKeys.clients.changelog(clientId),
     queryFn: () => clientsApi.getChangelog(clientId),
     enabled: !!clientId,
+  });
+}
+
+// ============================================
+// Statistics Hook
+// ============================================
+
+export function useClientStatistics() {
+  return useQuery({
+    queryKey: queryKeys.clients.statistics,
+    queryFn: () => clientsApi.getStatistics(),
+  });
+}
+
+// ============================================
+// Duplicate Detection Hook
+// ============================================
+
+export function useCheckDuplicates() {
+  return useMutation({
+    mutationFn: (dto: CheckDuplicatesDto) => clientsApi.checkDuplicates(dto),
+  });
+}
+
+// ============================================
+// Bulk Operations Hooks
+// ============================================
+
+export function useBulkDeleteClients() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (dto: BulkDeleteClientsDto) => clientsApi.bulkDelete(dto),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.statistics });
+      toast({
+        title: 'Sukces',
+        description: `Usunięto ${result.affected} klientów`,
+      });
+    },
+    onError: (error: ApiErrorResponse) => {
+      toast({
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się usunąć klientów',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useBulkRestoreClients() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (dto: BulkRestoreClientsDto) => clientsApi.bulkRestore(dto),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.statistics });
+      toast({
+        title: 'Sukces',
+        description: `Przywrócono ${result.affected} klientów`,
+      });
+    },
+    onError: (error: ApiErrorResponse) => {
+      toast({
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się przywrócić klientów',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useBulkEditClients() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (dto: BulkEditClientsDto) => clientsApi.bulkEdit(dto),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+      toast({
+        title: 'Sukces',
+        description: `Zaktualizowano ${result.affected} klientów`,
+      });
+    },
+    onError: (error: ApiErrorResponse) => {
+      toast({
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się zaktualizować klientów',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+// ============================================
+// Export/Import Hooks
+// ============================================
+
+export function useExportClients() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (filters?: ClientFiltersDto) => clientsApi.exportCsv(filters),
+    onSuccess: (blob) => {
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `klienci-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Sukces',
+        description: 'Plik CSV został pobrany',
+      });
+    },
+    onError: (error: ApiErrorResponse) => {
+      toast({
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się wyeksportować danych',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useDownloadImportTemplate() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: () => clientsApi.getImportTemplate(),
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'szablon-importu-klientow.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Sukces',
+        description: 'Szablon CSV został pobrany',
+      });
+    },
+    onError: (error: ApiErrorResponse) => {
+      toast({
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się pobrać szablonu',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useImportClients() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (file: File) => clientsApi.importCsv(file),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.statistics });
+
+      const hasErrors = result.errors.length > 0;
+      toast({
+        title: hasErrors ? 'Import zakończony z błędami' : 'Sukces',
+        description: `Zaimportowano: ${result.imported}, zaktualizowano: ${result.updated}${hasErrors ? `, błędów: ${result.errors.length}` : ''}`,
+        variant: hasErrors ? 'default' : 'default',
+      });
+    },
+    onError: (error: ApiErrorResponse) => {
+      toast({
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się zaimportować danych',
+        variant: 'destructive',
+      });
+    },
   });
 }
 
