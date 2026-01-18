@@ -68,6 +68,7 @@ export const queryKeys = {
     changelog: (clientId: string) => ['clients', clientId, 'changelog'] as const,
     icons: (clientId: string) => ['clients', clientId, 'icons'] as const,
     customFields: (clientId: string) => ['clients', clientId, 'custom-fields'] as const,
+    statistics: ['clients', 'statistics'] as const,
   },
   clientFieldDefinitions: {
     all: ['client-field-definitions'] as const,
