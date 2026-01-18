@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import {
   Client,
   User,
@@ -16,6 +16,12 @@ import { ChangeLogService } from '@accounting/infrastructure/change-log';
 import { ClientChangelogService } from './client-changelog.service';
 import { AutoAssignService } from './auto-assign.service';
 import { ClientNotFoundException } from '../exceptions';
+import {
+  BulkDeleteClientsDto,
+  BulkRestoreClientsDto,
+  BulkEditClientsDto,
+  BulkOperationResultDto,
+} from '../dto/bulk-operations.dto';
 
 export interface CreateClientDto {
   name: string;
@@ -343,6 +349,148 @@ export class ClientsService {
     );
 
     return savedClient;
+  }
+
+  /**
+   * Bulk delete (soft delete) multiple clients.
+   */
+  async bulkDelete(dto: BulkDeleteClientsDto, user: User): Promise<BulkOperationResultDto> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+
+    // Get clients that belong to this company and are active
+    const clients = await this.clientRepository.find({
+      where: {
+        id: In(dto.clientIds),
+        companyId,
+        isActive: true,
+      },
+    });
+
+    if (clients.length === 0) {
+      return { affected: 0, requested: dto.clientIds.length };
+    }
+
+    // Soft delete each client and log the change
+    for (const client of clients) {
+      const oldValues = this.sanitizeClientForLog(client);
+      client.isActive = false;
+      client.updatedById = user.id;
+      await this.clientRepository.save(client);
+
+      await this.changeLogService.logDelete('Client', client.id, oldValues, user);
+      await this.clientChangelogService.notifyClientDeleted(client, user);
+    }
+
+    this.logger.log(`Bulk deleted ${clients.length} clients`, {
+      companyId,
+      userId: user.id,
+      clientIds: clients.map((c) => c.id),
+    });
+
+    return { affected: clients.length, requested: dto.clientIds.length };
+  }
+
+  /**
+   * Bulk restore multiple deleted clients.
+   */
+  async bulkRestore(dto: BulkRestoreClientsDto, user: User): Promise<BulkOperationResultDto> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+
+    // Get clients that belong to this company and are inactive
+    const clients = await this.clientRepository.find({
+      where: {
+        id: In(dto.clientIds),
+        companyId,
+        isActive: false,
+      },
+    });
+
+    if (clients.length === 0) {
+      return { affected: 0, requested: dto.clientIds.length };
+    }
+
+    // Restore each client and log the change
+    for (const client of clients) {
+      const oldValues = this.sanitizeClientForLog(client);
+      client.isActive = true;
+      client.updatedById = user.id;
+      await this.clientRepository.save(client);
+
+      await this.changeLogService.logUpdate(
+        'Client',
+        client.id,
+        oldValues,
+        this.sanitizeClientForLog(client),
+        user,
+      );
+    }
+
+    this.logger.log(`Bulk restored ${clients.length} clients`, {
+      companyId,
+      userId: user.id,
+      clientIds: clients.map((c) => c.id),
+    });
+
+    return { affected: clients.length, requested: dto.clientIds.length };
+  }
+
+  /**
+   * Bulk edit multiple clients with the same values.
+   */
+  async bulkEdit(dto: BulkEditClientsDto, user: User): Promise<BulkOperationResultDto> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+
+    // Get clients that belong to this company
+    const clients = await this.clientRepository.find({
+      where: {
+        id: In(dto.clientIds),
+        companyId,
+        isActive: true,
+      },
+    });
+
+    if (clients.length === 0) {
+      return { affected: 0, requested: dto.clientIds.length };
+    }
+
+    // Build update payload from non-undefined values
+    const updatePayload: Partial<Client> = {};
+    if (dto.employmentType !== undefined) updatePayload.employmentType = dto.employmentType;
+    if (dto.vatStatus !== undefined) updatePayload.vatStatus = dto.vatStatus;
+    if (dto.taxScheme !== undefined) updatePayload.taxScheme = dto.taxScheme;
+    if (dto.zusStatus !== undefined) updatePayload.zusStatus = dto.zusStatus;
+    if (dto.receiveEmailCopy !== undefined) updatePayload.receiveEmailCopy = dto.receiveEmailCopy;
+
+    if (Object.keys(updatePayload).length === 0) {
+      return { affected: 0, requested: dto.clientIds.length };
+    }
+
+    // Update each client and log the change
+    for (const client of clients) {
+      const oldValues = this.sanitizeClientForLog(client);
+      Object.assign(client, updatePayload);
+      client.updatedById = user.id;
+      await this.clientRepository.save(client);
+
+      await this.changeLogService.logUpdate(
+        'Client',
+        client.id,
+        oldValues,
+        this.sanitizeClientForLog(client),
+        user,
+      );
+
+      await this.clientChangelogService.notifyClientUpdated(client, oldValues, user);
+    }
+
+    this.logger.log(`Bulk edited ${clients.length} clients`, {
+      companyId,
+      userId: user.id,
+      clientIds: clients.map((c) => c.id),
+      changes: updatePayload,
+    });
+
+    return { affected: clients.length, requested: dto.clientIds.length };
   }
 
   private sanitizeClientForLog(client: Client): Record<string, unknown> {

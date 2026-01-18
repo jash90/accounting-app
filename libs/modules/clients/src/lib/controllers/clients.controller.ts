@@ -10,7 +10,12 @@ import {
   Query,
   UseGuards,
   ParseUUIDPipe,
+  Res,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -36,12 +41,27 @@ import {
   DeleteRequestService,
   CreateDeleteRequestDto,
 } from '../services/delete-request.service';
+import { DuplicateDetectionService } from '../services/duplicate-detection.service';
+import { ClientStatisticsService } from '../services/statistics.service';
+import { ClientExportService } from '../services/export.service';
 import {
   CreateClientDto,
   UpdateClientDto,
   ClientFiltersDto,
   SetCustomFieldValuesDto,
 } from '../dto/client.dto';
+import {
+  BulkDeleteClientsDto,
+  BulkRestoreClientsDto,
+  BulkEditClientsDto,
+  BulkOperationResultDto,
+  CheckDuplicatesDto,
+  DuplicateCheckResultDto,
+} from '../dto/bulk-operations.dto';
+import {
+  ClientStatisticsDto,
+  ClientStatisticsWithRecentDto,
+} from '../dto/statistics.dto';
 import {
   ClientResponseDto,
   PaginatedClientsResponseDto,
@@ -70,6 +90,10 @@ import {
   DeleteRequestResponseDto,
   CustomFieldValueResponseDto,
   ErrorResponseDto,
+  BulkOperationResultDto,
+  DuplicateCheckResultDto,
+  ClientStatisticsDto,
+  ClientStatisticsWithRecentDto,
 )
 @Controller('modules/clients')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
@@ -80,6 +104,9 @@ export class ClientsController {
     private readonly customFieldsService: CustomFieldsService,
     private readonly clientChangelogService: ClientChangelogService,
     private readonly deleteRequestService: DeleteRequestService,
+    private readonly duplicateDetectionService: DuplicateDetectionService,
+    private readonly statisticsService: ClientStatisticsService,
+    private readonly exportService: ClientExportService,
   ) {}
 
   /**
@@ -145,6 +172,273 @@ export class ClientsController {
     @Query() pagination: PaginationQueryDto,
   ) {
     return this.clientChangelogService.getCompanyChangelog(user, pagination);
+  }
+
+  /**
+   * Get client statistics for the company.
+   */
+  @Get('statistics')
+  @ApiOperation({
+    summary: 'Get client statistics',
+    description:
+      'Retrieves comprehensive statistics about clients in the company including ' +
+      'totals, counts by status types, and recently added clients.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Client statistics',
+    type: ClientStatisticsWithRecentDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+    type: ErrorResponseDto,
+  })
+  @RequirePermission('clients', 'read')
+  async getStatistics(@CurrentUser() user: User) {
+    return this.statisticsService.getStatisticsWithRecent(user);
+  }
+
+  /**
+   * Check for duplicate clients.
+   */
+  @Post('check-duplicates')
+  @ApiOperation({
+    summary: 'Check for duplicate clients',
+    description:
+      'Checks if clients with matching NIP or email already exist in the company. ' +
+      'Use before creating or updating clients to warn users about potential duplicates.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Duplicate check result',
+    type: DuplicateCheckResultDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+    type: ErrorResponseDto,
+  })
+  @RequirePermission('clients', 'read')
+  async checkDuplicates(
+    @Body() dto: CheckDuplicatesDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.duplicateDetectionService.checkDuplicates(
+      user,
+      dto.nip,
+      dto.email,
+      dto.excludeId,
+    );
+  }
+
+  /**
+   * Bulk delete multiple clients.
+   */
+  @Patch('bulk/delete')
+  @ApiOperation({
+    summary: 'Bulk delete clients',
+    description:
+      'Soft deletes multiple clients at once. Limited to Company Owners and Admins. ' +
+      'Maximum 100 clients can be deleted in a single operation.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Bulk operation result',
+    type: BulkOperationResultDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Only Company Owners and Admins can bulk delete',
+    type: ErrorResponseDto,
+  })
+  @UseGuards(OwnerOrAdminGuard)
+  @OwnerOrAdmin()
+  @RequirePermission('clients', 'delete')
+  async bulkDelete(
+    @Body() dto: BulkDeleteClientsDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.clientsService.bulkDelete(dto, user);
+  }
+
+  /**
+   * Bulk restore multiple clients.
+   */
+  @Patch('bulk/restore')
+  @ApiOperation({
+    summary: 'Bulk restore clients',
+    description:
+      'Restores multiple soft-deleted clients at once. ' +
+      'Maximum 100 clients can be restored in a single operation.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Bulk operation result',
+    type: BulkOperationResultDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - User lacks write permission',
+    type: ErrorResponseDto,
+  })
+  @RequirePermission('clients', 'write')
+  async bulkRestore(
+    @Body() dto: BulkRestoreClientsDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.clientsService.bulkRestore(dto, user);
+  }
+
+  /**
+   * Bulk edit multiple clients.
+   */
+  @Patch('bulk/edit')
+  @ApiOperation({
+    summary: 'Bulk edit clients',
+    description:
+      'Updates multiple clients with the same values at once. ' +
+      'Only provided fields will be updated. Maximum 100 clients per operation.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Bulk operation result',
+    type: BulkOperationResultDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - User lacks write permission',
+    type: ErrorResponseDto,
+  })
+  @RequirePermission('clients', 'write')
+  async bulkEdit(
+    @Body() dto: BulkEditClientsDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.clientsService.bulkEdit(dto, user);
+  }
+
+  /**
+   * Export clients to CSV.
+   */
+  @Get('export')
+  @ApiOperation({
+    summary: 'Export clients to CSV',
+    description:
+      'Exports all clients matching the current filters to a CSV file. ' +
+      'The CSV file can be used as a backup or for importing into other systems.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'CSV file download',
+    content: {
+      'text/csv': {
+        schema: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+    type: ErrorResponseDto,
+  })
+  @RequirePermission('clients', 'read')
+  async exportToCsv(
+    @Query() filters: ClientFiltersDto,
+    @CurrentUser() user: User,
+    @Res() res: Response,
+  ) {
+    const csvBuffer = await this.exportService.exportToCsv(filters, user);
+    const filename = `clients-export-${new Date().toISOString().split('T')[0]}.csv`;
+
+    res.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
+    res.send(csvBuffer);
+  }
+
+  /**
+   * Get CSV import template.
+   */
+  @Get('import/template')
+  @ApiOperation({
+    summary: 'Get CSV import template',
+    description:
+      'Downloads a CSV template with headers and an example row. ' +
+      'Use this template as a guide for formatting import data.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'CSV template file download',
+    content: {
+      'text/csv': {
+        schema: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @RequirePermission('clients', 'read')
+  async getImportTemplate(@Res() res: Response) {
+    const template = this.exportService.getTemplate();
+
+    res.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': 'attachment; filename="clients-import-template.csv"',
+    });
+    res.send(template);
+  }
+
+  /**
+   * Import clients from CSV.
+   */
+  @Post('import')
+  @ApiOperation({
+    summary: 'Import clients from CSV',
+    description:
+      'Imports clients from a CSV file. Clients with matching NIP will be updated, ' +
+      'new clients will be created. The file must follow the template format.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Import result with counts of imported, updated, and errors',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid CSV format or data',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+    type: ErrorResponseDto,
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  @RequirePermission('clients', 'write')
+  async importFromCsv(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: User,
+  ) {
+    if (!file) {
+      throw new Error('Plik jest wymagany');
+    }
+
+    const content = file.buffer.toString('utf-8');
+    return this.exportService.importFromCsv(content, user);
   }
 
   /**

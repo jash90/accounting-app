@@ -20,6 +20,11 @@ import {
   NotificationSettings,
   ClientDeleteRequest,
   EmailConfiguration,
+  Task,
+  TaskLabel,
+  TaskLabelAssignment,
+  TaskDependency,
+  TaskComment,
 } from '@accounting/common';
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -64,6 +69,11 @@ export default new DataSource({
     ClientIconAssignment,
     NotificationSettings,
     ClientDeleteRequest,
+    Task,
+    TaskLabel,
+    TaskLabelAssignment,
+    TaskDependency,
+    TaskComment,
   ],
   migrations: ['apps/api/src/migrations/*{.ts,.js}'],
   synchronize: false,

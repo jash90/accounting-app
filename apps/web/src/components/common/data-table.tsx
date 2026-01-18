@@ -6,8 +6,9 @@ import {
   getPaginationRowModel,
   SortingState,
   ColumnDef,
+  RowSelectionState,
 } from '@tanstack/react-table';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -17,6 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -28,6 +30,10 @@ interface DataTableProps<TData, TValue> {
   enableSorting?: boolean;
   enablePagination?: boolean;
   pageSize?: number;
+  selectable?: boolean;
+  selectedRows?: TData[];
+  onSelectionChange?: (selectedRows: TData[]) => void;
+  getRowId?: (row: TData) => string;
 }
 
 export function DataTable<TData, TValue>({
@@ -38,24 +44,93 @@ export function DataTable<TData, TValue>({
   enableSorting = true,
   enablePagination = true,
   pageSize = 20,
+  selectable = false,
+  selectedRows = [],
+  onSelectionChange,
+  getRowId,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
+  // Sync external selectedRows with internal selection state
+  useEffect(() => {
+    if (!selectable || !getRowId) return;
+
+    const newSelection: RowSelectionState = {};
+    selectedRows.forEach((row) => {
+      const rowIndex = data.findIndex((d) => getRowId(d) === getRowId(row));
+      if (rowIndex !== -1) {
+        newSelection[rowIndex] = true;
+      }
+    });
+    setRowSelection(newSelection);
+  }, [selectedRows, data, selectable, getRowId]);
+
+  // Build columns with selection column if selectable
+  const allColumns: ColumnDef<TData, TValue>[] = selectable
+    ? [
+        {
+          id: 'select',
+          header: ({ table }) => (
+            <Checkbox
+              checked={
+                table.getIsAllPageRowsSelected() ||
+                (table.getIsSomePageRowsSelected() && 'indeterminate')
+              }
+              onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+              aria-label="Zaznacz wszystko"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ),
+          cell: ({ row }) => (
+            <Checkbox
+              checked={row.getIsSelected()}
+              onCheckedChange={(value) => row.toggleSelected(!!value)}
+              aria-label="Zaznacz wiersz"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ),
+          enableSorting: false,
+          enableHiding: false,
+        } as ColumnDef<TData, TValue>,
+        ...columns,
+      ]
+    : columns;
 
   const table = useReactTable({
     data,
-    columns,
+    columns: allColumns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: enableSorting ? getSortedRowModel() : undefined,
     getPaginationRowModel: enablePagination ? getPaginationRowModel() : undefined,
     onSortingChange: setSorting,
+    onRowSelectionChange: (updaterOrValue) => {
+      const newSelection = typeof updaterOrValue === 'function'
+        ? updaterOrValue(rowSelection)
+        : updaterOrValue;
+
+      setRowSelection(newSelection);
+
+      // Call onSelectionChange with the actual row data
+      if (onSelectionChange) {
+        const selectedRowData = Object.keys(newSelection)
+          .filter((key) => newSelection[key])
+          .map((key) => data[parseInt(key, 10)])
+          .filter(Boolean);
+        onSelectionChange(selectedRowData);
+      }
+    },
     state: {
       sorting,
+      rowSelection: selectable ? rowSelection : {},
     },
+    enableRowSelection: selectable,
     initialState: {
       pagination: {
         pageSize,
       },
     },
+    getRowId: getRowId ? (row) => getRowId(row) : undefined,
   });
 
   if (isLoading) {
@@ -68,8 +143,17 @@ export function DataTable<TData, TValue>({
     );
   }
 
+  const selectedCount = Object.values(rowSelection).filter(Boolean).length;
+
   return (
     <div className="space-y-4">
+      {selectable && selectedCount > 0 && (
+        <div className="px-4 py-2 bg-apptax-soft-teal/20 rounded-lg">
+          <p className="text-sm text-apptax-navy">
+            Zaznaczono <span className="font-semibold">{selectedCount}</span> {selectedCount === 1 ? 'element' : selectedCount < 5 ? 'elementy' : 'elementów'}
+          </p>
+        </div>
+      )}
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -93,7 +177,8 @@ export function DataTable<TData, TValue>({
               <TableRow
                 key={row.id}
                 onClick={() => onRowClick?.(row.original)}
-                className={`hover:bg-apptax-soft-teal/30 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+                data-state={row.getIsSelected() && 'selected'}
+                className={`hover:bg-apptax-soft-teal/30 transition-colors ${onRowClick ? 'cursor-pointer' : ''} ${row.getIsSelected() ? 'bg-apptax-soft-teal/20' : ''}`}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
@@ -104,7 +189,7 @@ export function DataTable<TData, TValue>({
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={columns.length} className="h-32 text-center">
+              <TableCell colSpan={allColumns.length} className="h-32 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <p className="text-muted-foreground">Brak wyników</p>
                 </div>

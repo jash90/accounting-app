@@ -51,6 +51,15 @@ const EmailSentPage = lazy(() => import('@/pages/modules/email-client/sent'));
 const EmailTrashPage = lazy(() => import('@/pages/modules/email-client/trash'));
 const EmailFolderPage = lazy(() => import('@/pages/modules/email-client/folder'));
 
+// Tasks Pages
+const TasksDashboardPage = lazy(() => import('@/pages/modules/tasks/tasks-dashboard'));
+const TasksListPage = lazy(() => import('@/pages/modules/tasks/tasks-list'));
+const TasksKanbanPage = lazy(() => import('@/pages/modules/tasks/tasks-kanban'));
+const TasksCalendarPage = lazy(() => import('@/pages/modules/tasks/tasks-calendar'));
+const TasksTimelinePage = lazy(() => import('@/pages/modules/tasks/tasks-timeline'));
+const TasksSettingsPage = lazy(() => import('@/pages/modules/tasks/tasks-settings'));
+const TaskCreatePage = lazy(() => import('@/pages/modules/tasks/task-create'));
+
 function PageLoader() {
   return (
     <div className="flex h-screen items-center justify-center">
@@ -311,6 +320,63 @@ export default function Routes() {
             </Suspense>
           }
         />
+        {/* Tasks Routes for Admin */}
+        <Route
+          path="modules/tasks"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TasksDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/tasks/list"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TasksListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/tasks/kanban"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TasksKanbanPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/tasks/calendar"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TasksCalendarPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/tasks/timeline"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TasksTimelinePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/tasks/settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TasksSettingsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/tasks/create"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TaskCreatePage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -490,6 +556,63 @@ export default function Routes() {
             </Suspense>
           }
         />
+        {/* Tasks Routes for Company Owner */}
+        <Route
+          path="modules/tasks"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TasksDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/tasks/list"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TasksListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/tasks/kanban"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TasksKanbanPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/tasks/calendar"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TasksCalendarPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/tasks/timeline"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TasksTimelinePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/tasks/settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TasksSettingsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/tasks/create"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TaskCreatePage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -609,6 +732,63 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <EmailMessagePage />
+            </Suspense>
+          }
+        />
+        {/* Tasks Routes for Employee */}
+        <Route
+          path="tasks"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TasksDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="tasks/list"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TasksListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="tasks/kanban"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TasksKanbanPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="tasks/calendar"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TasksCalendarPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="tasks/timeline"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TasksTimelinePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="tasks/settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TasksSettingsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="tasks/create"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TaskCreatePage />
             </Suspense>
           }
         />

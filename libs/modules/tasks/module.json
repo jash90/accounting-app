@@ -1,0 +1,19 @@
+{
+  "$schema": "../../../schemas/module.schema.json",
+  "slug": "tasks",
+  "name": "Zadania",
+  "description": "Zarządzanie zadaniami z widokiem Kanban, listą i kalendarzem",
+  "version": "1.0.0",
+  "isActive": true,
+  "permissions": ["read", "write", "delete", "manage"],
+  "defaultPermissions": ["read", "write"],
+  "icon": "check-square",
+  "category": "productivity",
+  "config": {
+    "enableSubtasks": true,
+    "enableLabels": true,
+    "enableComments": true,
+    "enableDependencies": true,
+    "enableTimeEstimates": true
+  }
+}

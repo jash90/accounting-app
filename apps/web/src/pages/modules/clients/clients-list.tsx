@@ -1,8 +1,22 @@
 import { useState, useMemo, useCallback } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import { useNavigate } from 'react-router-dom';
-import { useClients, useDeleteClient, useRestoreClient, useSetClientCustomFields } from '@/lib/hooks/use-clients';
-import { useCreateClient, useUpdateClient } from '@/lib/hooks/use-clients';
+import {
+  useClients,
+  useDeleteClient,
+  useRestoreClient,
+  useSetClientCustomFields,
+  useCreateClient,
+  useUpdateClient,
+  useClientStatistics,
+  useCheckDuplicates,
+  useBulkDeleteClients,
+  useBulkRestoreClients,
+  useBulkEditClients,
+  useExportClients,
+  useImportClients,
+  useDownloadImportTemplate,
+} from '@/lib/hooks/use-clients';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import { PageHeader } from '@/components/common/page-header';
 import { DataTable } from '@/components/common/data-table';
@@ -19,6 +33,9 @@ import {
   MoreHorizontal,
   History,
   ArrowLeft,
+  Download,
+  Upload,
+  BarChart3,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -32,6 +49,11 @@ import { ClientFormDialog } from '@/components/forms/client-form-dialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { ClientFilters } from '@/components/clients/client-filters';
 import { IconBadgeList } from '@/components/clients/icon-badge';
+import { BulkActionsToolbar, BulkEditChanges } from '@/components/clients/bulk-actions-toolbar';
+import { ExportImportDialog } from '@/components/clients/export-import-dialog';
+import { DuplicateWarningDialog } from '@/components/clients/duplicate-warning-dialog';
+import { StatisticsDashboard } from '@/components/clients/statistics-dashboard';
+import { DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
 import { useAuthContext } from '@/contexts/auth-context';
 import {
   EmploymentTypeLabels,
@@ -65,20 +87,119 @@ export default function ClientsListPage() {
   const [filters, setFilters] = useState<ClientFiltersDto>({});
   const { data: clientsResponse, isPending } = useClients(filters);
   const clients = clientsResponse?.data ?? [];
+  const { data: statistics, isLoading: statisticsLoading } = useClientStatistics();
   const createClient = useCreateClient();
   const updateClient = useUpdateClient();
   const deleteClient = useDeleteClient();
   const restoreClient = useRestoreClient();
   const setCustomFields = useSetClientCustomFields();
+  const checkDuplicates = useCheckDuplicates();
+  const bulkDelete = useBulkDeleteClients();
+  const bulkRestore = useBulkRestoreClients();
+  const bulkEdit = useBulkEditClients();
+  const exportClients = useExportClients();
+  const importClients = useImportClients();
+  const downloadTemplate = useDownloadImportTemplate();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientResponseDto | null>(null);
   const [deletingClient, setDeletingClient] = useState<ClientResponseDto | null>(null);
   const [restoringClient, setRestoringClient] = useState<ClientResponseDto | null>(null);
+  const [selectedClients, setSelectedClients] = useState<ClientResponseDto[]>([]);
+  const [showStatistics, setShowStatistics] = useState(true);
+  const [exportImportOpen, setExportImportOpen] = useState(false);
+  const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
+  const [duplicateCheckResult, setDuplicateCheckResult] = useState<DuplicateCheckResultDto | null>(null);
+  const [pendingCreateData, setPendingCreateData] = useState<{ data: CreateClientDto; customFields?: { values: Record<string, unknown> } } | null>(null);
 
   const handleFiltersChange = useCallback((newFilters: ClientFiltersDto) => {
     setFilters(newFilters);
   }, []);
+
+  const handleBulkDelete = useCallback((clientIds: string[]) => {
+    bulkDelete.mutate({ clientIds }, {
+      onSuccess: () => setSelectedClients([]),
+    });
+  }, [bulkDelete]);
+
+  const handleBulkRestore = useCallback((clientIds: string[]) => {
+    bulkRestore.mutate({ clientIds }, {
+      onSuccess: () => setSelectedClients([]),
+    });
+  }, [bulkRestore]);
+
+  const handleBulkEdit = useCallback((clientIds: string[], changes: BulkEditChanges) => {
+    bulkEdit.mutate({ clientIds, ...changes }, {
+      onSuccess: () => setSelectedClients([]),
+    });
+  }, [bulkEdit]);
+
+  const handleExport = useCallback(async () => {
+    await exportClients.mutateAsync(filters);
+  }, [exportClients, filters]);
+
+  const handleImport = useCallback(async (file: File) => {
+    const result = await importClients.mutateAsync(file);
+    return result;
+  }, [importClients]);
+
+  const handleDownloadTemplate = useCallback(async () => {
+    await downloadTemplate.mutateAsync();
+  }, [downloadTemplate]);
+
+  const handleCreateWithDuplicateCheck = useCallback(async (data: CreateClientDto, customFields?: { values: Record<string, unknown> }) => {
+    // Check for duplicates first
+    if (data.nip || data.email) {
+      const result = await checkDuplicates.mutateAsync({
+        nip: data.nip,
+        email: data.email,
+      });
+
+      if (result.hasDuplicates) {
+        setDuplicateCheckResult(result);
+        setPendingCreateData({ data, customFields });
+        setDuplicateWarningOpen(true);
+        return;
+      }
+    }
+
+    // No duplicates, proceed with creation
+    await createClientAndClose(data, customFields);
+  }, [checkDuplicates]);
+
+  const createClientAndClose = async (data: CreateClientDto, customFields?: { values: Record<string, unknown> }) => {
+    const newClient = await createClient.mutateAsync(data);
+    if (customFields && Object.keys(customFields.values).length > 0) {
+      await setCustomFields.mutateAsync({
+        id: newClient.id,
+        data: customFields,
+      });
+    }
+    setCreateOpen(false);
+  };
+
+  const handleProceedWithDuplicate = useCallback(async () => {
+    if (!pendingCreateData) return;
+
+    try {
+      await createClientAndClose(pendingCreateData.data, pendingCreateData.customFields);
+      setDuplicateWarningOpen(false);
+      setDuplicateCheckResult(null);
+      setPendingCreateData(null);
+    } catch {
+      // Error handled by mutation
+    }
+  }, [pendingCreateData]);
+
+  const handleCancelDuplicate = useCallback(() => {
+    setDuplicateWarningOpen(false);
+    setDuplicateCheckResult(null);
+    setPendingCreateData(null);
+  }, []);
+
+  const handleClientClick = useCallback((clientId: string) => {
+    navigate(`${basePath}/${clientId}`);
+  }, [navigate, basePath]);
 
   const columns: ColumnDef<ClientResponseDto>[] = useMemo(
     () => [
@@ -260,19 +381,59 @@ export default function ClientsListPage() {
         description="Zarządzaj listą klientów biura rachunkowego"
         icon={<Users className="h-6 w-6" />}
         action={
-          hasWritePermission && (
+          <div className="flex items-center gap-2">
             <Button
-              onClick={() => setCreateOpen(true)}
-              className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowStatistics(!showStatistics)}
             >
-              <Plus className="mr-2 h-4 w-4" />
-              Dodaj klienta
+              <BarChart3 className="mr-2 h-4 w-4" />
+              {showStatistics ? 'Ukryj statystyki' : 'Statystyki'}
             </Button>
-          )
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setExportImportOpen(true)}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export / Import
+            </Button>
+            {hasWritePermission && (
+              <Button
+                onClick={() => setCreateOpen(true)}
+                className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Dodaj klienta
+              </Button>
+            )}
+          </div>
         }
       />
 
+      {showStatistics && (
+        <StatisticsDashboard
+          statistics={statistics}
+          isLoading={statisticsLoading}
+          onClientClick={handleClientClick}
+        />
+      )}
+
       <ClientFilters filters={filters} onFiltersChange={handleFiltersChange} />
+
+      {selectedClients.length > 0 && (
+        <BulkActionsToolbar
+          selectedClients={selectedClients}
+          onClearSelection={() => setSelectedClients([])}
+          onBulkDelete={handleBulkDelete}
+          onBulkRestore={handleBulkRestore}
+          onBulkEdit={handleBulkEdit}
+          isDeleting={bulkDelete.isPending}
+          isRestoring={bulkRestore.isPending}
+          isEditing={bulkEdit.isPending}
+          canDelete={hasDeletePermission}
+        />
+      )}
 
       <Card className="border-apptax-soft-teal/30">
         <CardContent className="p-0">
@@ -281,6 +442,10 @@ export default function ClientsListPage() {
             data={clients}
             isLoading={isPending}
             onRowClick={(client) => navigate(`${basePath}/${client.id}`)}
+            selectable
+            selectedRows={selectedClients}
+            onSelectionChange={setSelectedClients}
+            getRowId={(row) => row.id}
           />
         </CardContent>
       </Card>
@@ -292,14 +457,7 @@ export default function ClientsListPage() {
             onOpenChange={setCreateOpen}
             onSubmit={async (data, customFields) => {
               try {
-                const newClient = await createClient.mutateAsync(data as CreateClientDto);
-                if (customFields && Object.keys(customFields.values).length > 0) {
-                  await setCustomFields.mutateAsync({
-                    id: newClient.id,
-                    data: customFields,
-                  });
-                }
-                setCreateOpen(false);
+                await handleCreateWithDuplicateCheck(data as CreateClientDto, customFields);
               } catch {
                 // Error is handled by mutation's onError callback
                 // Dialog stays open so user can retry
@@ -365,6 +523,29 @@ export default function ClientsListPage() {
             });
           }}
           isLoading={restoreClient.isPending}
+        />
+      )}
+
+      <ExportImportDialog
+        open={exportImportOpen}
+        onOpenChange={setExportImportOpen}
+        onExport={handleExport}
+        onImport={handleImport}
+        onDownloadTemplate={handleDownloadTemplate}
+        isExporting={exportClients.isPending}
+        isImporting={importClients.isPending}
+      />
+
+      {duplicateCheckResult && (
+        <DuplicateWarningDialog
+          open={duplicateWarningOpen}
+          onOpenChange={setDuplicateWarningOpen}
+          byNip={duplicateCheckResult.byNip}
+          byEmail={duplicateCheckResult.byEmail}
+          onProceed={handleProceedWithDuplicate}
+          onCancel={handleCancelDuplicate}
+          onViewClient={handleClientClick}
+          isPending={createClient.isPending}
         />
       )}
     </div>

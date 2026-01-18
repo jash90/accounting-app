@@ -24,6 +24,9 @@ import { NotificationSettingsService } from './services/notification-settings.se
 import { ConditionEvaluatorService } from './services/condition-evaluator.service';
 import { AutoAssignService } from './services/auto-assign.service';
 import { DeleteRequestService } from './services/delete-request.service';
+import { DuplicateDetectionService } from './services/duplicate-detection.service';
+import { ClientStatisticsService } from './services/statistics.service';
+import { ClientExportService } from './services/export.service';
 import { ClientsController } from './controllers/clients.controller';
 import { FieldDefinitionsController } from './controllers/field-definitions.controller';
 import { IconsController } from './controllers/icons.controller';
@@ -66,6 +69,9 @@ import { DeleteRequestsController } from './controllers/delete-requests.controll
     ConditionEvaluatorService,
     AutoAssignService,
     DeleteRequestService,
+    DuplicateDetectionService,
+    ClientStatisticsService,
+    ClientExportService,
   ],
   exports: [
     ClientsService,
@@ -76,6 +82,9 @@ import { DeleteRequestsController } from './controllers/delete-requests.controll
     ConditionEvaluatorService,
     AutoAssignService,
     DeleteRequestService,
+    DuplicateDetectionService,
+    ClientStatisticsService,
+    ClientExportService,
   ],
 })
 export class ClientsModule {}

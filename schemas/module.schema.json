@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "https://accounting.app/schemas/module.json",
+  "title": "Module Configuration",
+  "description": "Schema for file-based module definition in the accounting app",
+  "type": "object",
+  "required": ["slug", "name", "version", "permissions"],
+  "properties": {
+    "slug": {
+      "type": "string",
+      "description": "Unique identifier for the module, must match directory name",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "minLength": 2,
+      "maxLength": 50
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable display name for the module",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of the module functionality",
+      "maxLength": 500
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version of the module",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "isActive": {
+      "type": "boolean",
+      "description": "Whether the module is enabled by default",
+      "default": true
+    },
+    "permissions": {
+      "type": "array",
+      "description": "Available permissions for this module",
+      "items": {
+        "type": "string",
+        "enum": ["read", "write", "delete", "manage", "admin"]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "defaultPermissions": {
+      "type": "array",
+      "description": "Default permissions granted to new employees",
+      "items": {
+        "type": "string",
+        "enum": ["read", "write", "delete", "manage", "admin"]
+      },
+      "uniqueItems": true
+    },
+    "icon": {
+      "type": "string",
+      "description": "Icon identifier for UI display (e.g., lucide icon name)",
+      "maxLength": 50
+    },
+    "category": {
+      "type": "string",
+      "description": "Module category for grouping in UI",
+      "enum": ["ai", "crm", "communication", "finance", "hr", "utilities", "other"]
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "List of module slugs this module depends on",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*$"
+      },
+      "uniqueItems": true
+    },
+    "config": {
+      "type": "object",
+      "description": "Module-specific configuration options",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
