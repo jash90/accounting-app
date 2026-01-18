@@ -1,14 +1,16 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from '@accounting/common';
+import { User, Company } from '@accounting/common';
 import { CompanyController } from './controllers/company.controller';
 import { CompanyService } from './services/company.service';
 import { RBACModule } from '@accounting/rbac';
+import { EmailModule } from '@accounting/email';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, Company]),
     RBACModule,
+    EmailModule,
   ],
   controllers: [CompanyController],
   providers: [CompanyService],

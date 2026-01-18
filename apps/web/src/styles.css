@@ -1,0 +1,488 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+/* Self-hosted Inter font */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/fonts/Inter-Light.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/Inter-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/Inter-Medium.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/Inter-SemiBold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/Inter-Bold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/Inter-ExtraBold.woff2') format('woff2');
+}
+
+@layer base {
+  :root {
+    /* AppTax Brand Colors (HSL equivalents) */
+    --apptax-blue: 209 90% 40%;      /* #0A66C2 */
+    --apptax-navy: 214 52% 25%;       /* #1E3A5F */
+    --apptax-teal: 170 100% 37%;      /* #00BFA6 */
+    --apptax-light-blue: 212 64% 57%; /* #4A90D9 */
+    --apptax-soft-teal: 170 53% 92%;  /* #E0F7F4 */
+    --apptax-warm-gray: 0 0% 96%;     /* #F5F5F5 */
+
+    /* Semantic Theme Colors */
+    --background: 0 0% 100%;
+    --foreground: 230 44% 11%;        /* #1A1A2E - dark text */
+
+    --card: 0 0% 100%;
+    --card-foreground: 230 44% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 230 44% 11%;
+
+    --primary: 209 90% 40%;           /* AppTax Blue */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 214 52% 25%;         /* Professional Navy */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 96%;                /* Warm Gray */
+    --muted-foreground: 215 14% 46%;  /* Medium Gray #6B7280 */
+
+    --accent: 170 53% 92%;            /* Soft Teal */
+    --accent-foreground: 214 52% 25%;
+
+    --destructive: 0 84% 60%;         /* Error Red #EF4444 */
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 160 84% 39%;           /* Success Green #10B981 */
+    --success-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;            /* Light Gray #E5E7EB */
+    --input: 220 13% 91%;
+    --ring: 209 90% 40%;              /* AppTax Blue */
+
+    --radius: 0.5rem;
+
+    /* Chart Colors - AppTax themed */
+    --chart-1: 209 90% 40%;           /* AppTax Blue */
+    --chart-2: 170 100% 37%;          /* Innovation Teal */
+    --chart-3: 214 52% 25%;           /* Professional Navy */
+    --chart-4: 212 64% 57%;           /* Light Blue */
+    --chart-5: 170 53% 92%;           /* Soft Teal */
+  }
+
+  .dark {
+    --background: 214 52% 10%;        /* Dark navy background */
+    --foreground: 0 0% 98%;
+
+    --card: 214 52% 15%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 214 52% 15%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 212 64% 57%;           /* Light Blue for contrast */
+    --primary-foreground: 214 52% 10%;
+
+    --secondary: 214 32% 25%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 214 32% 20%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 170 100% 37%;           /* Innovation Teal */
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 98%;
+
+    --success: 160 60% 35%;
+    --success-foreground: 0 0% 98%;
+
+    --border: 214 32% 25%;
+    --input: 214 32% 25%;
+    --ring: 170 100% 37%;
+
+    --chart-1: 212 64% 57%;
+    --chart-2: 170 100% 50%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  html {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* AppTax Custom Utilities */
+@layer utilities {
+  /* AI Indicator Glow Effect */
+  .ai-glow {
+    box-shadow: 0 0 8px rgba(0, 191, 166, 0.5);
+  }
+
+  .ai-glow-lg {
+    box-shadow: 0 0 16px rgba(0, 191, 166, 0.4);
+  }
+
+  /* Text Gradient */
+  .text-gradient-apptax {
+    background: linear-gradient(135deg, #0A66C2 0%, #1E3A5F 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-ai {
+    background: linear-gradient(135deg, #00BFA6 0%, #0A66C2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* WCAG AA compliant AI gradient with overlay for text contrast
+     Original teal #00BFA6 has 2.3:1 contrast with white - fails WCAG AA
+     This overlay ensures minimum 4.5:1 contrast ratio for body text */
+  .bg-apptax-ai-gradient-accessible {
+    position: relative;
+    background: linear-gradient(135deg, #00BFA6 0%, #0A66C2 100%);
+  }
+
+  .bg-apptax-ai-gradient-accessible::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.15) 100%);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .bg-apptax-ai-gradient-accessible > * {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+/* Shadcn/UI Accordion Animations */
+@keyframes accordion-down {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+/* Tailwind Animate Replacements */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes slide-in-from-top {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes slide-in-from-bottom {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes slide-in-from-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slide-in-from-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slide-out-to-top {
+  from { transform: translateY(0); }
+  to { transform: translateY(-100%); }
+}
+
+@keyframes slide-out-to-bottom {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+@keyframes slide-out-to-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+
+@keyframes slide-out-to-right {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+@keyframes zoom-in {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes zoom-out {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(0.95); opacity: 0; }
+}
+
+@keyframes spin-in {
+  from { transform: rotate(-180deg) scale(0); opacity: 0; }
+  to { transform: rotate(0) scale(1); opacity: 1; }
+}
+
+/* Animation Keyframes */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(15px, -15px);
+  }
+}
+
+@keyframes floatReverse {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-10px, 10px);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(0, 191, 166, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 191, 166, 0.8);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Animation Utility Classes */
+@layer utilities {
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+    opacity: 0;
+  }
+
+  .animate-fade-in-left {
+    animation: fadeInLeft 0.6s ease-out forwards;
+    opacity: 0;
+  }
+
+  .animate-fade-in-right {
+    animation: fadeInRight 0.6s ease-out forwards;
+    opacity: 0;
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-float-reverse {
+    animation: floatReverse 8s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  /* Animation Delays */
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
+  .delay-500 { animation-delay: 500ms; }
+  .delay-600 { animation-delay: 600ms; }
+  .delay-700 { animation-delay: 700ms; }
+
+  /* Shadcn/UI Accordion Animations */
+  .animate-accordion-down {
+    animation: accordion-down 0.2s ease-out;
+  }
+  .animate-accordion-up {
+    animation: accordion-up 0.2s ease-out;
+  }
+
+  /* Tailwind Animate Replacements */
+  .animate-in {
+    animation-duration: 150ms;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    animation-fill-mode: forwards;
+  }
+  .animate-out {
+    animation-duration: 150ms;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    animation-fill-mode: forwards;
+  }
+  .fade-in { animation-name: fade-in; }
+  .fade-out { animation-name: fade-out; }
+  .fade-in-0 { --tw-enter-opacity: 0; }
+  .fade-in-50 { --tw-enter-opacity: 0.5; }
+  .fade-in-100 { --tw-enter-opacity: 1; }
+  .fade-out-0 { --tw-exit-opacity: 0; }
+  .fade-out-50 { --tw-exit-opacity: 0.5; }
+  .fade-out-100 { --tw-exit-opacity: 1; }
+  .slide-in-from-top { animation-name: slide-in-from-top; }
+  .slide-in-from-top-2 { animation-name: slide-in-from-top; }
+  .slide-in-from-bottom { animation-name: slide-in-from-bottom; }
+  .slide-in-from-bottom-2 { animation-name: slide-in-from-bottom; }
+  .slide-in-from-left { animation-name: slide-in-from-left; }
+  .slide-in-from-left-2 { animation-name: slide-in-from-left; }
+  .slide-in-from-right { animation-name: slide-in-from-right; }
+  .slide-in-from-right-2 { animation-name: slide-in-from-right; }
+  .slide-out-to-top { animation-name: slide-out-to-top; }
+  .slide-out-to-bottom { animation-name: slide-out-to-bottom; }
+  .slide-out-to-left { animation-name: slide-out-to-left; }
+  .slide-out-to-right { animation-name: slide-out-to-right; }
+  .zoom-in { animation-name: zoom-in; }
+  .zoom-in-95 { animation-name: zoom-in; }
+  .zoom-out { animation-name: zoom-out; }
+  .zoom-out-95 { animation-name: zoom-out; }
+  .spin-in { animation-name: spin-in; }
+  .duration-200 { animation-duration: 200ms; }
+  .duration-300 { animation-duration: 300ms; }
+  .duration-500 { animation-duration: 500ms; }
+
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-in-up,
+    .animate-fade-in-left,
+    .animate-fade-in-right,
+    .animate-accordion-down,
+    .animate-accordion-up,
+    .animate-in,
+    .animate-out {
+      animation: none;
+      opacity: 1;
+    }
+
+    .animate-float,
+    .animate-float-reverse,
+    .animate-pulse-glow,
+    .animate-shimmer {
+      animation: none;
+    }
+  }
+}

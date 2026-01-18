@@ -574,24 +574,24 @@ SimpleTextResponseDto {
 // 2. Firma A
 Company: 'Tech Startup A'
 Owner: {
-  email: 'owner.a@company.com',
+  email: 'bartlomiej.zimny@onet.pl',
   password: 'Owner123!',
   role: UserRole.COMPANY_OWNER
 }
 Employees: [
-  { email: 'employee1.a@company.com', password: 'Employee123!' },
-  { email: 'employee2.a@company.com', password: 'Employee123!' }
+  { email: 'bartlomiej.zimny@interia.pl', password: 'Employee123!' },
+  { email: 'bartlomiej.zimny@interia.pl', password: 'Employee123!' }
 ]
 
 // 3. Firma B
 Company: 'Consulting B'
 Owner: {
-  email: 'owner.b@company.com',
+  email: 'bartlomiej.zimny@onet.pl',
   password: 'Owner123!',
   role: UserRole.COMPANY_OWNER
 }
 Employees: [
-  { email: 'employee1.b@company.com', password: 'Employee123!' }
+  { email: 'bartlomiej.zimny@interia.pl', password: 'Employee123!' }
 ]
 
 // 4. Moduły

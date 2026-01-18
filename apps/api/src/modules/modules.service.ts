@@ -4,6 +4,7 @@ import {
   ConflictException,
   ForbiddenException,
   BadRequestException,
+  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager } from 'typeorm';
@@ -17,7 +18,7 @@ import {
   ManageModulePermissionDto,
   PermissionTargetType,
 } from '@accounting/common';
-import { RBACService } from '@accounting/rbac';
+import { RBACService, ModuleDiscoveryService, DiscoveredModule } from '@accounting/rbac';
 import { CreateModuleDto, UpdateModuleDto, GrantModuleAccessDto } from './dto';
 
 @Injectable()
@@ -34,6 +35,8 @@ export class ModulesService {
     @InjectRepository(Company)
     private companyRepository: Repository<Company>,
     private rbacService: RBACService,
+    @Optional()
+    private moduleDiscoveryService?: ModuleDiscoveryService,
   ) {}
 
   // ==================== Module CRUD Operations ====================
@@ -598,5 +601,63 @@ export class ModulesService {
     }
 
     return manager.save(UserModulePermission, permission);
+  }
+
+  // ==================== Module Discovery Methods ====================
+
+  /**
+   * Get discovered modules from file system
+   * Returns modules discovered from libs/modules/{module-name}/module.json files
+   */
+  getDiscoveredModules(): DiscoveredModule[] {
+    if (!this.moduleDiscoveryService) {
+      return [];
+    }
+    return this.moduleDiscoveryService.getAllModules();
+  }
+
+  /**
+   * Get discovery statistics
+   */
+  getDiscoveryStats(): {
+    discoveredCount: number;
+    modulesList: string[];
+    modulesBasePath: string;
+    isDiscoveryComplete: boolean;
+  } | null {
+    if (!this.moduleDiscoveryService) {
+      return null;
+    }
+
+    const stats = this.moduleDiscoveryService.getDiscoveryStats();
+    return {
+      ...stats,
+      isDiscoveryComplete: this.moduleDiscoveryService.isDiscoveryComplete(),
+    };
+  }
+
+  /**
+   * Reload modules from file system
+   * Triggers re-discovery and database sync
+   */
+  async reloadModules(): Promise<DiscoveredModule[]> {
+    if (!this.moduleDiscoveryService) {
+      throw new BadRequestException('Module discovery service is not available');
+    }
+    return this.moduleDiscoveryService.reloadModules();
+  }
+
+  /**
+   * Get available permissions for a module
+   */
+  async getModulePermissions(moduleSlug: string): Promise<string[]> {
+    return this.rbacService.getModulePermissions(moduleSlug);
+  }
+
+  /**
+   * Get default permissions for a module
+   */
+  async getDefaultModulePermissions(moduleSlug: string): Promise<string[]> {
+    return this.rbacService.getDefaultModulePermissions(moduleSlug);
   }
 }

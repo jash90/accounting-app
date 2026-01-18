@@ -8,18 +8,22 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { User } from './user.entity';
 import { CompanyModuleAccess } from './company-module-access.entity';
-import { SimpleText } from './simple-text.entity';
 import { AIConfiguration } from './ai-configuration.entity';
 import { AIConversation } from './ai-conversation.entity';
 import { AIContext } from './ai-context.entity';
 import { TokenUsage } from './token-usage.entity';
 import { TokenLimit } from './token-limit.entity';
 import { EmailConfiguration } from './email-configuration.entity';
+import { Client } from './client.entity';
 
 @Entity('companies')
+@Index(['ownerId']) // For owner's companies queries
+@Index(['isSystemCompany']) // For system company lookups
+@Index(['isActive']) // For active company queries
 export class Company {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -40,9 +44,6 @@ export class Company {
   @OneToMany(() => CompanyModuleAccess, (access) => access.company)
   moduleAccesses!: CompanyModuleAccess[];
 
-  @OneToMany(() => SimpleText, (text) => text.company)
-  simpleTexts!: SimpleText[];
-
   @OneToMany(() => AIConfiguration, (config) => config.company)
   aiConfigurations!: AIConfiguration[];
 
@@ -60,6 +61,9 @@ export class Company {
 
   @OneToOne(() => EmailConfiguration, (config) => config.company, { nullable: true })
   emailConfig?: EmailConfiguration | null;
+
+  @OneToMany(() => Client, (client) => client.company)
+  clients!: Client[];
 
   @Column({ default: false })
   isSystemCompany!: boolean;

@@ -150,16 +150,16 @@ test.describe('RBAC Enforcement Tests', () => {
   });
 
   test('Company Owner should access employee module routes', async ({ authenticatedCompanyOwnerPage }) => {
-    await authenticatedCompanyOwnerPage.goto('/modules/simple-text');
+    await authenticatedCompanyOwnerPage.goto('/modules/ai-agent');
 
     // Company owners should have access to modules
-    await expect(authenticatedCompanyOwnerPage).toHaveURL(/\/modules\/simple-text/);
+    await expect(authenticatedCompanyOwnerPage).toHaveURL(/\/modules\/ai-agent/);
   });
 
   test('Employee should access granted module routes', async ({ authenticatedEmployeePage }) => {
-    await authenticatedEmployeePage.goto('/modules/simple-text');
+    await authenticatedEmployeePage.goto('/modules/ai-agent');
 
-    await expect(authenticatedEmployeePage).toHaveURL(/\/modules\/simple-text/);
+    await expect(authenticatedEmployeePage).toHaveURL(/\/modules\/ai-agent/);
   });
 
   test('Employee should not access admin routes', async ({ authenticatedEmployeePage }) => {
@@ -253,7 +253,7 @@ test.describe('Multi-tenant Isolation', () => {
     );
 
     // Navigate to simple text module
-    await page.goto('/modules/simple-text');
+    await page.goto('/modules/ai-agent');
     await page.waitForLoadState('networkidle');
 
     // Wait for content to load
@@ -277,7 +277,7 @@ test.describe('Multi-tenant Isolation', () => {
     );
 
     // Navigate to simple text module
-    await page.goto('/modules/simple-text');
+    await page.goto('/modules/ai-agent');
     await page.waitForLoadState('networkidle');
 
     // Wait for content to load

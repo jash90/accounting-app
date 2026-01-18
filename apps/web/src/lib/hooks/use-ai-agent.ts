@@ -1,0 +1,386 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useCallback, useRef } from 'react';
+import { aiAgentApi } from '../api/endpoints/ai-agent';
+import { queryKeys } from '../api/query-client';
+import {
+  CreateConversationDto,
+  SendMessageDto,
+  CreateAIConfigurationDto,
+  UpdateAIConfigurationDto,
+  SetTokenLimitDto,
+} from '@/types/dtos';
+import { toast } from 'sonner';
+
+// ============================================================================
+// Conversation Hooks
+// ============================================================================
+
+export function useConversations() {
+  return useQuery({
+    queryKey: queryKeys.aiAgent.conversations.all,
+    queryFn: aiAgentApi.conversations.getAll,
+  });
+}
+
+export function useConversation(id: string) {
+  return useQuery({
+    queryKey: queryKeys.aiAgent.conversations.detail(id),
+    queryFn: () => aiAgentApi.conversations.getById(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateConversationDto) => aiAgentApi.conversations.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.conversations.all });
+      toast.success('Konwersacja została utworzona');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Nie udało się utworzyć konwersacji');
+    },
+  });
+}
+
+export function useSendMessage(conversationId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: SendMessageDto) => aiAgentApi.conversations.sendMessage(conversationId, data),
+    onSuccess: () => {
+      // Invalidate both conversation detail and token usage
+      queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.conversations.detail(conversationId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.me });
+      queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.myDetailed });
+      queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.company });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Nie udało się wysłać wiadomości';
+      toast.error(message);
+    },
+  });
+}
+
+/**
+ * Hook for sending messages with streaming response.
+ * Provides real-time content updates as the AI generates its response.
+ */
+export function useSendMessageStream(conversationId: string) {
+  const queryClient = useQueryClient();
+  const [streamingContent, setStreamingContent] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const sendMessage = useCallback(async (content: string) => {
+    if (!conversationId) {
+      toast.error('Nie wybrano konwersacji');
+      return;
+    }
+
+    setIsStreaming(true);
+    setStreamingContent('');
+    abortControllerRef.current = new AbortController();
+
+    try {
+      await aiAgentApi.conversations.sendMessageStream(
+        conversationId,
+        { content },
+        // onChunk - called for each content piece
+        (chunk) => {
+          setStreamingContent((prev) => prev + chunk);
+        },
+        // onDone - called when streaming completes
+        () => {
+          setIsStreaming(false);
+          // Invalidate queries to refresh data with final message
+          queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.conversations.detail(conversationId) });
+          queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.me });
+          queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.myDetailed });
+          queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.company });
+        },
+        // onError - called if streaming fails
+        (error) => {
+          setIsStreaming(false);
+          toast.error(error);
+        },
+        // signal - for cancellation
+        abortControllerRef.current?.signal,
+      );
+    } catch (error: any) {
+      setIsStreaming(false);
+      const message = error.message || 'Nie udało się wysłać wiadomości';
+      toast.error(message);
+    }
+  }, [conversationId, queryClient]);
+
+  const cancelStream = useCallback(() => {
+    abortControllerRef.current?.abort();
+    setIsStreaming(false);
+  }, []);
+
+  const resetStream = useCallback(() => {
+    setStreamingContent('');
+    setIsStreaming(false);
+  }, []);
+
+  return {
+    sendMessage,
+    streamingContent,
+    isStreaming,
+    cancelStream,
+    resetStream,
+  };
+}
+
+export function useDeleteConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => aiAgentApi.conversations.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.conversations.all });
+      toast.success('Konwersacja została usunięta');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Nie udało się usunąć konwersacji');
+    },
+  });
+}
+
+// ============================================================================
+// AI Configuration Hooks
+// ============================================================================
+
+export function useAIConfiguration() {
+  return useQuery({
+    queryKey: queryKeys.aiAgent.configuration,
+    queryFn: aiAgentApi.configuration.get,
+    retry: false, // Don't retry if no configuration exists
+  });
+}
+
+export function useCreateAIConfiguration() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateAIConfigurationDto) => aiAgentApi.configuration.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.configuration });
+      toast.success('Konfiguracja AI została utworzona');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Nie udało się utworzyć konfiguracji AI');
+    },
+  });
+}
+
+export function useUpdateAIConfiguration() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: UpdateAIConfigurationDto) => aiAgentApi.configuration.update(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.configuration });
+      toast.success('Konfiguracja AI została zaktualizowana');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Nie udało się zaktualizować konfiguracji AI');
+    },
+  });
+}
+
+export function useOpenRouterModels() {
+  return useQuery({
+    queryKey: queryKeys.aiAgent.models,
+    queryFn: aiAgentApi.configuration.getModels,
+    staleTime: 60 * 60 * 1000, // 1 hour - models don't change often
+    gcTime: 2 * 60 * 60 * 1000, // 2 hours
+  });
+}
+
+export function useOpenAIModels() {
+  return useQuery({
+    queryKey: queryKeys.aiAgent.openaiModels,
+    queryFn: aiAgentApi.configuration.getOpenAIModels,
+    staleTime: 60 * 60 * 1000, // 1 hour - models don't change often
+    gcTime: 2 * 60 * 60 * 1000, // 2 hours
+  });
+}
+
+export function useOpenAIEmbeddingModels() {
+  return useQuery({
+    queryKey: queryKeys.aiAgent.openaiEmbeddingModels,
+    queryFn: aiAgentApi.configuration.getOpenAIEmbeddingModels,
+    staleTime: 60 * 60 * 1000, // 1 hour - models don't change often
+    gcTime: 2 * 60 * 60 * 1000, // 2 hours
+  });
+}
+
+export function useResetApiKey() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => aiAgentApi.configuration.resetApiKey(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.configuration });
+      toast.success('Klucz API został zresetowany. Skonfiguruj nowy klucz API, aby korzystać z funkcji AI.');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Nie udało się zresetować klucza API');
+    },
+  });
+}
+
+// ============================================================================
+// Token Usage Hooks
+// ============================================================================
+
+export function useMyTokenUsageSummary() {
+  return useQuery({
+    queryKey: queryKeys.aiAgent.tokenUsage.me,
+    queryFn: aiAgentApi.tokenUsage.getMySummary,
+  });
+}
+
+export function useMyTokenUsageDetailed() {
+  return useQuery({
+    queryKey: queryKeys.aiAgent.tokenUsage.myDetailed,
+    queryFn: aiAgentApi.tokenUsage.getMyUsage,
+  });
+}
+
+export function useCompanyTokenUsage() {
+  return useQuery({
+    queryKey: queryKeys.aiAgent.tokenUsage.company,
+    queryFn: aiAgentApi.tokenUsage.getCompanyUsage,
+  });
+}
+
+export function useAllCompaniesTokenUsage() {
+  return useQuery({
+    queryKey: queryKeys.aiAgent.tokenUsage.allCompanies,
+    queryFn: aiAgentApi.tokenUsage.getAllCompaniesUsage,
+  });
+}
+
+export function useCompanyTokenUsageById(companyId: string) {
+  return useQuery({
+    queryKey: queryKeys.aiAgent.tokenUsage.companyById(companyId),
+    queryFn: () => aiAgentApi.tokenUsage.getCompanyUsageById(companyId),
+    enabled: !!companyId,
+  });
+}
+
+// ============================================================================
+// Token Limit Hooks
+// ============================================================================
+
+export function useTokenLimit(targetType: 'company' | 'user', targetId: string) {
+  return useQuery({
+    queryKey: queryKeys.aiAgent.tokenLimit.byTarget(targetType, targetId),
+    queryFn: () => aiAgentApi.tokenLimit.get(targetType, targetId),
+    enabled: !!targetId,
+    retry: false, // Don't retry if no limit exists
+  });
+}
+
+export function useSetTokenLimit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: SetTokenLimitDto) => aiAgentApi.tokenLimit.set(data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.aiAgent.tokenLimit.byTarget(variables.targetType, variables.targetId),
+      });
+      toast.success('Limit tokenów został ustawiony');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Nie udało się ustawić limitu tokenów');
+    },
+  });
+}
+
+export function useDeleteTokenLimit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ targetType, targetId }: { targetType: 'company' | 'user'; targetId: string }) =>
+      aiAgentApi.tokenLimit.delete(targetType, targetId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.aiAgent.tokenLimit.byTarget(variables.targetType, variables.targetId),
+      });
+      toast.success('Limit tokenów został usunięty');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Nie udało się usunąć limitu tokenów');
+    },
+  });
+}
+
+// ============================================================================
+// Context/RAG Hooks
+// ============================================================================
+
+export function useContextFiles() {
+  return useQuery({
+    queryKey: queryKeys.aiAgent.context.all,
+    queryFn: aiAgentApi.context.getAll,
+  });
+}
+
+export function useContextFile(id: string | null) {
+  return useQuery({
+    queryKey: queryKeys.aiAgent.context.detail(id!),
+    queryFn: () => aiAgentApi.context.getOne(id!),
+    enabled: !!id,
+  });
+}
+
+export function useUploadContextFile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => aiAgentApi.context.upload(file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.context.all });
+      toast.success('Plik został przesłany i przetworzony');
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Nie udało się przesłać pliku';
+      const status = error.response?.status;
+
+      // Provide more helpful error messages for common issues
+      if (message.toLowerCase().includes('api key')) {
+        toast.error('Błąd konfiguracji AI: Nieprawidłowy klucz API. Skontaktuj się z administratorem, aby zaktualizować konfigurację AI.');
+      } else if (status === 413 || message.toLowerCase().includes('too large')) {
+        toast.error('Plik jest za duży. Maksymalny rozmiar pliku to 10MB.');
+      } else if (message.toLowerCase().includes('file type') || message.toLowerCase().includes('not allowed')) {
+        toast.error('Nieprawidłowy typ pliku. Dozwolone są tylko pliki PDF, TXT i MD.');
+      } else if (message.toLowerCase().includes('not found') && message.toLowerCase().includes('configuration')) {
+        toast.error('AI nie jest skonfigurowane. Poproś administratora o skonfigurowanie AI.');
+      } else {
+        toast.error(message);
+      }
+    },
+  });
+}
+
+export function useDeleteContextFile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => aiAgentApi.context.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.context.all });
+      toast.success('Plik został usunięty');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Nie udało się usunąć pliku');
+    },
+  });
+}

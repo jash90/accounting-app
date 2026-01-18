@@ -6,10 +6,10 @@ import { Type } from 'class-transformer';
  */
 export class SendEmailDto {
   @IsEmail({}, { each: true })
-  to: string | string[];
+  to!: string | string[];
 
   @IsString()
-  subject: string;
+  subject!: string;
 
   @IsString()
   @IsOptional()
@@ -41,7 +41,7 @@ export class SendEmailDto {
  */
 export class EmailAttachmentDto {
   @IsString()
-  filename: string;
+  filename!: string;
 
   @IsString()
   @IsOptional()

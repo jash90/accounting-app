@@ -1,0 +1,9 @@
+# Ignore during Railway build
+.nx/cache
+dist
+node_modules
+*.md
+.git
+.github
+web-e2e
+apps/api-e2e

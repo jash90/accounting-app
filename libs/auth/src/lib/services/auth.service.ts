@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -7,6 +7,7 @@ import { User, UserRole, Company } from '@accounting/common';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
 import { AuthResponseDto, UserDto } from '../dto/auth-response.dto';
+import { ACCESS_JWT_SERVICE, REFRESH_JWT_SERVICE } from '../constants/jwt.constants';
 
 @Injectable()
 export class AuthService {
@@ -15,7 +16,10 @@ export class AuthService {
     private userRepository: Repository<User>,
     @InjectRepository(Company)
     private companyRepository: Repository<Company>,
-    private jwtService: JwtService,
+    @Inject(ACCESS_JWT_SERVICE)
+    private accessJwtService: JwtService,
+    @Inject(REFRESH_JWT_SERVICE)
+    private refreshJwtService: JwtService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
@@ -78,48 +82,27 @@ export class AuthService {
   }
 
   async validateUser(email: string, password: string): Promise<User | null> {
-    console.log('🔍 [AUTH DEBUG] validateUser called with:', {
-      email,
-      passwordLength: password?.length,
-      passwordPreview: password?.substring(0, 5) + '***'
-    });
-
     const user = await this.userRepository
       .createQueryBuilder('user')
       .where('LOWER(user.email) = LOWER(:email)', { email })
       .getOne();
 
-    console.log('👤 [AUTH DEBUG] User found:', user ? {
-      id: user.id,
-      email: user.email,
-      isActive: user.isActive,
-      role: user.role,
-      hasPassword: !!user.password,
-      passwordHashPreview: user.password?.substring(0, 10) + '...'
-    } : 'null - USER NOT FOUND');
+    // Constant-time: always perform bcrypt comparison to prevent timing attacks
+    // Uses dummy hash when user doesn't exist to maintain consistent response time
+    const hashToCompare = user?.password || '$2b$10$dummyhashtopreventtimingattacks';
+    const isPasswordValid = await bcrypt.compare(password, hashToCompare);
 
-    if (!user) {
-      console.log('❌ [AUTH DEBUG] Returning null - user not found');
+    if (!user || !isPasswordValid) {
       return null;
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    console.log('🔐 [AUTH DEBUG] Password comparison result:', isPasswordValid);
-
-    if (!isPasswordValid) {
-      console.log('❌ [AUTH DEBUG] Returning null - invalid password');
-      return null;
-    }
-
-    console.log('✅ [AUTH DEBUG] User validated successfully');
     return user;
   }
 
   async refreshToken(refreshToken: string): Promise<AuthResponseDto> {
     try {
-      const payload = this.jwtService.verify(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET || 'refresh-secret',
-      });
+      // Verify refresh token using the refresh JWT service with the correct secret
+      const payload = this.refreshJwtService.verify(refreshToken);
 
       const user = await this.userRepository.findOne({
         where: { id: payload.sub },
@@ -143,11 +126,11 @@ export class AuthService {
       companyId: user.companyId,
     };
 
-    const accessToken = this.jwtService.sign(payload);
+    // Generate access token with shorter expiration (15m)
+    const accessToken = this.accessJwtService.sign(payload);
 
-    // Note: Using same secret for refresh token for simplicity
-    // In production, consider using a separate JwtService instance configured with refresh secret
-    const refreshToken = this.jwtService.sign(payload);
+    // Generate refresh token with longer expiration (7d) and different secret
+    const refreshToken = this.refreshJwtService.sign(payload);
 
     return {
       access_token: accessToken,

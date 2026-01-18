@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, Optional, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import {
@@ -9,9 +9,23 @@ import {
   UserModulePermission,
   UserRole,
 } from '@accounting/common';
+import { ModuleDiscoveryService } from './module-discovery.service';
 
 @Injectable()
 export class RBACService {
+  private readonly logger = new Logger(RBACService.name);
+
+  /**
+   * In-memory cache for module lookups
+   * Key: slug, Value: { module, timestamp }
+   */
+  private moduleCache = new Map<string, { module: Module; timestamp: number }>();
+
+  /**
+   * Cache TTL in milliseconds (5 minutes)
+   */
+  private readonly cacheTTL = 5 * 60 * 1000;
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -23,6 +37,8 @@ export class RBACService {
     private companyModuleAccessRepository: Repository<CompanyModuleAccess>,
     @InjectRepository(UserModulePermission)
     private userModulePermissionRepository: Repository<UserModulePermission>,
+    @Optional()
+    private moduleDiscoveryService?: ModuleDiscoveryService,
   ) {}
 
   async canAccessModule(userId: string, moduleSlug: string): Promise<boolean> {
@@ -437,6 +453,141 @@ export class RBACService {
     });
 
     return !!companyAccess;
+  }
+
+  // ==================== Module Discovery Integration ====================
+
+  /**
+   * Get module by slug with caching
+   * Uses in-memory cache first, then falls back to database
+   */
+  async getModuleBySlug(moduleSlug: string): Promise<Module | null> {
+    // Check in-memory cache first
+    const cached = this.moduleCache.get(moduleSlug);
+    const now = Date.now();
+
+    if (cached && (now - cached.timestamp) < this.cacheTTL) {
+      return cached.module;
+    }
+
+    // Check if discovery service has the module (fast check without DB)
+    if (this.moduleDiscoveryService?.moduleExists(moduleSlug)) {
+      // Module exists in file system, fetch from DB for full entity
+      const module = await this.moduleRepository.findOne({
+        where: { slug: moduleSlug },
+      });
+
+      if (module) {
+        this.moduleCache.set(moduleSlug, { module, timestamp: now });
+        return module;
+      }
+    }
+
+    // Fallback to direct DB lookup
+    const module = await this.moduleRepository.findOne({
+      where: { slug: moduleSlug },
+    });
+
+    if (module) {
+      this.moduleCache.set(moduleSlug, { module, timestamp: now });
+    }
+
+    return module;
+  }
+
+  /**
+   * Clear the module cache
+   * Useful when modules are updated
+   */
+  clearModuleCache(): void {
+    this.moduleCache.clear();
+    this.logger.debug('Module cache cleared');
+  }
+
+  /**
+   * Invalidate a specific module from cache
+   */
+  invalidateModuleCache(moduleSlug: string): void {
+    this.moduleCache.delete(moduleSlug);
+    this.logger.debug(`Cache invalidated for module: ${moduleSlug}`);
+  }
+
+  /**
+   * Get available permissions for a module from discovery service
+   * Falls back to checking the module's permissions column in DB
+   */
+  async getModulePermissions(moduleSlug: string): Promise<string[]> {
+    // Try discovery service first
+    if (this.moduleDiscoveryService) {
+      const permissions = this.moduleDiscoveryService.getModulePermissions(moduleSlug);
+      if (permissions) {
+        return permissions;
+      }
+    }
+
+    // Fallback to database
+    const module = await this.getModuleBySlug(moduleSlug);
+    if (module?.permissions) {
+      return module.permissions;
+    }
+
+    // Default permissions if none found
+    return ['read', 'write', 'delete', 'manage'];
+  }
+
+  /**
+   * Get default permissions for a module
+   */
+  async getDefaultModulePermissions(moduleSlug: string): Promise<string[]> {
+    // Try discovery service first
+    if (this.moduleDiscoveryService) {
+      const permissions = this.moduleDiscoveryService.getDefaultPermissions(moduleSlug);
+      if (permissions) {
+        return permissions;
+      }
+    }
+
+    // Fallback to database
+    const module = await this.getModuleBySlug(moduleSlug);
+    if (module?.defaultPermissions) {
+      return module.defaultPermissions;
+    }
+
+    // Default to read if none found
+    return ['read'];
+  }
+
+  /**
+   * Verify that a module exists (either in file system or database)
+   */
+  async moduleExists(moduleSlug: string): Promise<boolean> {
+    // Fast check through discovery service
+    if (this.moduleDiscoveryService?.moduleExists(moduleSlug)) {
+      return true;
+    }
+
+    // Fallback to database check
+    const module = await this.getModuleBySlug(moduleSlug);
+    return module !== null && module.isActive;
+  }
+
+  /**
+   * Get discovery service statistics
+   */
+  getDiscoveryStats(): {
+    discoveredCount: number;
+    modulesList: string[];
+    cacheSize: number;
+  } | null {
+    if (!this.moduleDiscoveryService) {
+      return null;
+    }
+
+    const stats = this.moduleDiscoveryService.getDiscoveryStats();
+    return {
+      ...stats,
+      cacheSize: this.moduleCache.size,
+    };
   }
 }
 

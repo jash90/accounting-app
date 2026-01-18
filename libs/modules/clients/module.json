@@ -1,0 +1,18 @@
+{
+  "$schema": "../../../schemas/module.schema.json",
+  "slug": "clients",
+  "name": "Klienci",
+  "description": "Zarządzanie klientami z polami własnymi, ikonami i śledzeniem zmian",
+  "version": "1.0.0",
+  "isActive": true,
+  "permissions": ["read", "write", "delete", "manage"],
+  "defaultPermissions": ["read", "write"],
+  "icon": "users",
+  "category": "crm",
+  "config": {
+    "enableCustomFields": true,
+    "enableIcons": true,
+    "enableChangeLog": true,
+    "maxClientsPerCompany": 10000
+  }
+}

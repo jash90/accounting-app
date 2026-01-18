@@ -3,13 +3,28 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { EmailSenderService } from './services/email-sender.service';
 import { EmailReaderService } from './services/email-reader.service';
 import { EmailConfigurationService } from './services/email-configuration.service';
+import { EmailAutodiscoveryService } from './services/email-autodiscovery.service';
+import { DiscoveryCacheService } from './services/discovery-cache.service';
+import { ProviderLookupService } from './services/provider-lookup.service';
+import { DnsDiscoveryService } from './services/dns-discovery.service';
 import { EmailConfigurationController } from './controllers/email-configuration.controller';
-import { EmailConfiguration, CommonModule } from '@accounting/common';
+import { EmailConfiguration, Company, CommonModule } from '@accounting/common';
 import { AuthModule } from '@accounting/auth';
-import { RbacModule } from '@accounting/rbac';
+import { RBACModule } from '@accounting/rbac';
 
 /**
  * Email Module providing SMTP and IMAP functionality
+ *
+ * Services:
+ * - EmailSenderService: Send emails via SMTP
+ * - EmailReaderService: Read emails via IMAP
+ * - EmailConfigurationService: Manage email configurations
+ * - EmailAutodiscoveryService: Auto-discover email server settings
+ *
+ * Supporting Services (internal):
+ * - DiscoveryCacheService: Cache autodiscovery results
+ * - ProviderLookupService: Lookup known email providers
+ * - DnsDiscoveryService: DNS-based email server discovery
  *
  * @example
  * ```typescript
@@ -22,13 +37,28 @@ import { RbacModule } from '@accounting/rbac';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([EmailConfiguration]),
+    TypeOrmModule.forFeature([EmailConfiguration, Company]),
     CommonModule,
     AuthModule,
-    RbacModule,
+    RBACModule,
   ],
   controllers: [EmailConfigurationController],
-  providers: [EmailSenderService, EmailReaderService, EmailConfigurationService],
-  exports: [EmailSenderService, EmailReaderService, EmailConfigurationService],
+  providers: [
+    // Core email services
+    EmailSenderService,
+    EmailReaderService,
+    EmailConfigurationService,
+    EmailAutodiscoveryService,
+    // Autodiscovery supporting services
+    DiscoveryCacheService,
+    ProviderLookupService,
+    DnsDiscoveryService,
+  ],
+  exports: [
+    EmailSenderService,
+    EmailReaderService,
+    EmailConfigurationService,
+    EmailAutodiscoveryService,
+  ],
 })
 export class EmailModule {}

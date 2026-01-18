@@ -11,3 +11,4 @@ export * from './lib/decorators/public.decorator';
 export * from './lib/decorators/roles.decorator';
 export * from './lib/decorators/current-user.decorator';
 export * from './lib/strategies/jwt.strategy';
+export * from './lib/constants/jwt.constants';

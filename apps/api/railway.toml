@@ -1,9 +1,10 @@
 [build]
-builder = "nixpacks"
-buildCommand = "pnpm install --frozen-lockfile && pnpm run build && pnpm run db:migrate:prod && if [ \"$RUN_SEED\" = \"true\" ]; then pnpm run seed:prod; fi"
+builder = "dockerfile"
+dockerfilePath = "Dockerfile.api"
 
 [deploy]
-startCommand = "node dist/apps/api/main.js"
+# Run pre-compiled migrations then start API
+startCommand = "sh -c 'cd dist/apps/api && node ../../../node_modules/typeorm/cli.js migration:run -d typeorm.prod.config.js && cd /app && node dist/apps/api/main.js'"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 30000
 restartPolicyType = "on_failure"

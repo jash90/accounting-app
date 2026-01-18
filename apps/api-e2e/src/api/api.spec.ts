@@ -40,7 +40,7 @@ describe('RBAC E2E Tests', () => {
       const response = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          email: 'owner.a@company.com',
+          email: 'bartlomiej.zimny@onet.pl',
           password: 'Owner123!',
         })
         .expect(200);
@@ -53,7 +53,7 @@ describe('RBAC E2E Tests', () => {
       const response = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          email: 'employee1.a@company.com',
+          email: 'bartlomiej.zimny@interia.pl',
           password: 'Employee123!',
         })
         .expect(200);
@@ -75,7 +75,7 @@ describe('RBAC E2E Tests', () => {
 
     it('ADMIN cannot access business module data', async () => {
       await request(app.getHttpServer())
-        .get('/modules/simple-text')
+        .get('/modules/ai-agent')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(403);
     });
@@ -102,7 +102,7 @@ describe('RBAC E2E Tests', () => {
         const employeeId = employeesResponse.body[0].id;
 
         await request(app.getHttpServer())
-          .post(`/company/employees/${employeeId}/modules/simple-text`)
+          .post(`/company/employees/${employeeId}/modules/ai-agent`)
           .set('Authorization', `Bearer ${ownerAToken}`)
           .send({ permissions: ['read', 'write'] })
           .expect(201);
@@ -113,14 +113,14 @@ describe('RBAC E2E Tests', () => {
   describe('Employee Endpoints', () => {
     it('EMPLOYEE with read permission can view texts', async () => {
       await request(app.getHttpServer())
-        .get('/modules/simple-text')
+        .get('/modules/ai-agent')
         .set('Authorization', `Bearer ${employee1AToken}`)
         .expect(200);
     });
 
     it('EMPLOYEE can only see own company data', async () => {
       const response = await request(app.getHttpServer())
-        .get('/modules/simple-text')
+        .get('/modules/ai-agent')
         .set('Authorization', `Bearer ${employee1AToken}`)
         .expect(200);
 

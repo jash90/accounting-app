@@ -100,7 +100,7 @@ export class LoginPage extends BasePage {
   /**
    * Login as company owner
    */
-  async loginAsCompanyOwner(email = 'owner.a@company.com', password = 'Owner123!'): Promise<void> {
+  async loginAsCompanyOwner(email = 'bartlomiej.zimny@onet.pl', password = 'Owner123!'): Promise<void> {
     await this.goto();
     await this.loginAndWaitForRedirect(email, password, '/company');
   }
@@ -108,7 +108,7 @@ export class LoginPage extends BasePage {
   /**
    * Login as employee
    */
-  async loginAsEmployee(email = 'employee1.a@company.com', password = 'Employee123!'): Promise<void> {
+  async loginAsEmployee(email = 'bartlomiej.zimny@interia.pl', password = 'Employee123!'): Promise<void> {
     await this.goto();
     await this.loginAndWaitForRedirect(email, password, '/modules');
   }
