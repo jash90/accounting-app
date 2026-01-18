@@ -746,3 +746,200 @@ export interface TaskDependencyResponseDto extends TaskDependency {
   };
 }
 
+// =============================================
+// Time Tracking DTOs
+// =============================================
+
+import {
+  TimeEntry,
+  TimeSettings,
+} from './entities';
+import {
+  TimeEntryStatus,
+  TimeRoundingMethod,
+} from './enums';
+
+// Time Entry DTOs
+export interface CreateTimeEntryDto {
+  description?: string;
+  startTime: Date | string;
+  endTime?: Date | string;
+  durationMinutes?: number;
+  isBillable?: boolean;
+  hourlyRate?: number;
+  currency?: string;
+  tags?: string[];
+  clientId?: string;
+  taskId?: string;
+}
+
+export interface UpdateTimeEntryDto extends Partial<CreateTimeEntryDto> {}
+
+export interface TimeEntryFiltersDto {
+  search?: string;
+  status?: TimeEntryStatus;
+  isBillable?: boolean;
+  clientId?: string;
+  taskId?: string;
+  userId?: string;
+  startDate?: Date | string;
+  endDate?: Date | string;
+  isRunning?: boolean;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'ASC' | 'DESC';
+}
+
+export interface TimeEntryResponseDto extends TimeEntry {
+  user?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  client?: {
+    id: string;
+    name: string;
+  };
+  task?: {
+    id: string;
+    title: string;
+  };
+  createdBy?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  approvedBy?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+// Timer DTOs
+export interface StartTimerDto {
+  description?: string;
+  clientId?: string;
+  taskId?: string;
+  isBillable?: boolean;
+  tags?: string[];
+}
+
+export interface StopTimerDto {
+  description?: string;
+  isBillable?: boolean;
+}
+
+export interface UpdateTimerDto {
+  description?: string;
+  clientId?: string;
+  taskId?: string;
+  isBillable?: boolean;
+  tags?: string[];
+}
+
+// Approval DTOs
+export interface SubmitTimeEntryDto {}
+
+export interface ApproveTimeEntryDto {}
+
+export interface RejectTimeEntryDto {
+  rejectionNote: string;
+}
+
+// Time Settings DTOs
+export interface UpdateTimeSettingsDto {
+  roundingMethod?: TimeRoundingMethod;
+  roundingIntervalMinutes?: number;
+  defaultHourlyRate?: number;
+  defaultCurrency?: string;
+  requireApproval?: boolean;
+  allowOverlappingEntries?: boolean;
+  workingHoursPerDay?: number;
+  workingHoursPerWeek?: number;
+  weekStartDay?: number;
+  allowTimerMode?: boolean;
+  allowManualEntry?: boolean;
+  autoStopTimerAfterMinutes?: number;
+  minimumEntryMinutes?: number;
+  maximumEntryMinutes?: number;
+  enableDailyReminder?: boolean;
+  dailyReminderTime?: string;
+  lockEntriesAfterDays?: number;
+}
+
+export interface TimeSettingsResponseDto extends TimeSettings {
+  updatedBy?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+// Timesheet DTOs
+export interface TimesheetSummary {
+  totalMinutes: number;
+  billableMinutes: number;
+  nonBillableMinutes: number;
+  totalAmount: number;
+  entriesCount: number;
+}
+
+export interface TimesheetDayDto {
+  date: string;
+  entries: TimeEntryResponseDto[];
+  totalMinutes: number;
+  billableMinutes: number;
+  totalAmount: number;
+}
+
+export interface DailyTimesheetDto {
+  date: string;
+  entries: TimeEntryResponseDto[];
+  summary: TimesheetSummary;
+}
+
+export interface WeeklyTimesheetDto {
+  weekStart: string;
+  weekEnd: string;
+  days: TimesheetDayDto[];
+  summary: TimesheetSummary;
+}
+
+// Report DTOs
+export interface TimeSummaryReportDto {
+  periodStart: string;
+  periodEnd: string;
+  totalMinutes: number;
+  billableMinutes: number;
+  nonBillableMinutes: number;
+  totalAmount: number;
+  entryCount: number;
+  byClient?: {
+    clientId: string;
+    clientName: string;
+    totalMinutes: number;
+    totalAmount: number;
+  }[];
+  byUser?: {
+    userId: string;
+    userName: string;
+    totalMinutes: number;
+    totalAmount: number;
+  }[];
+}
+
+export interface TimeByClientReportDto {
+  clientId: string;
+  clientName: string;
+  totalMinutes: number;
+  billableMinutes: number;
+  totalAmount: number;
+  entryCount: number;
+}
+
