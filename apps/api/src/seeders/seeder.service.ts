@@ -184,10 +184,12 @@ export class SeederService {
     companyA: Company,
     modules: ModuleEntity[],
   ) {
-    // Company A: ai-agent, clients, email-client
+    // Company A: ai-agent, clients, email-client, tasks, time-tracking
     const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
     const clientsModule = modules.find((m) => m.slug === 'clients');
     const emailClientModule = modules.find((m) => m.slug === 'email-client');
+    const tasksModule = modules.find((m) => m.slug === 'tasks');
+    const timeTrackingModule = modules.find((m) => m.slug === 'time-tracking');
 
     if (aiAgentModule) {
       await this.companyModuleAccessRepository.save(
@@ -214,6 +216,26 @@ export class SeederService {
         this.companyModuleAccessRepository.create({
           companyId: companyA.id,
           moduleId: emailClientModule.id,
+          isEnabled: true,
+        }),
+      );
+    }
+
+    if (tasksModule) {
+      await this.companyModuleAccessRepository.save(
+        this.companyModuleAccessRepository.create({
+          companyId: companyA.id,
+          moduleId: tasksModule.id,
+          isEnabled: true,
+        }),
+      );
+    }
+
+    if (timeTrackingModule) {
+      await this.companyModuleAccessRepository.save(
+        this.companyModuleAccessRepository.create({
+          companyId: companyA.id,
+          moduleId: timeTrackingModule.id,
           isEnabled: true,
         }),
       );
@@ -227,10 +249,17 @@ export class SeederService {
     const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
     const clientsModule = modules.find((m) => m.slug === 'clients');
     const emailClientModule = modules.find((m) => m.slug === 'email-client');
+    const tasksModule = modules.find((m) => m.slug === 'tasks');
+    const timeTrackingModule = modules.find((m) => m.slug === 'time-tracking');
 
     // Employee 1A: read, write for all modules
     const employee = employeesA[0];
     if (!employee) return;
+
+    const grantedById = employee.companyId
+      ? (await this.companyRepository.findOne({ where: { id: employee.companyId } }))
+          ?.ownerId || ''
+      : '';
 
     if (aiAgentModule) {
       await this.userModulePermissionRepository.save(
@@ -238,10 +267,7 @@ export class SeederService {
           userId: employee.id,
           moduleId: aiAgentModule.id,
           permissions: ['read', 'write'],
-          grantedById: employee.companyId
-            ? (await this.companyRepository.findOne({ where: { id: employee.companyId } }))
-                ?.ownerId || ''
-            : '',
+          grantedById,
         }),
       );
     }
@@ -252,10 +278,7 @@ export class SeederService {
           userId: employee.id,
           moduleId: clientsModule.id,
           permissions: ['read', 'write'],
-          grantedById: employee.companyId
-            ? (await this.companyRepository.findOne({ where: { id: employee.companyId } }))
-                ?.ownerId || ''
-            : '',
+          grantedById,
         }),
       );
     }
@@ -266,10 +289,29 @@ export class SeederService {
           userId: employee.id,
           moduleId: emailClientModule.id,
           permissions: ['read', 'write'],
-          grantedById: employee.companyId
-            ? (await this.companyRepository.findOne({ where: { id: employee.companyId } }))
-                ?.ownerId || ''
-            : '',
+          grantedById,
+        }),
+      );
+    }
+
+    if (tasksModule) {
+      await this.userModulePermissionRepository.save(
+        this.userModulePermissionRepository.create({
+          userId: employee.id,
+          moduleId: tasksModule.id,
+          permissions: ['read', 'write'],
+          grantedById,
+        }),
+      );
+    }
+
+    if (timeTrackingModule) {
+      await this.userModulePermissionRepository.save(
+        this.userModulePermissionRepository.create({
+          userId: employee.id,
+          moduleId: timeTrackingModule.id,
+          permissions: ['read', 'write'],
+          grantedById,
         }),
       );
     }
