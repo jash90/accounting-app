@@ -50,6 +50,12 @@ export class NotificationSettings {
   @Column({ default: true })
   receiveOnDelete!: boolean;
 
+  @Column({ default: true })
+  receiveOnTaskCompleted!: boolean;
+
+  @Column({ default: true })
+  receiveOnTaskOverdue!: boolean;
+
   @Column({ default: false })
   isAdminCopy!: boolean;
 
