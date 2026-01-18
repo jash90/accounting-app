@@ -12,6 +12,8 @@ import {
   TaskStatus,
   TaskPriority,
   TaskDependencyType,
+  TimeEntryStatus,
+  TimeRoundingMethod,
 } from './enums';
 
 export interface User {
@@ -260,6 +262,66 @@ export interface TaskComment {
   author?: User;
   content: string;
   isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Time Tracking entities
+export interface TimeEntry {
+  id: string;
+  description?: string;
+  startTime: Date;
+  endTime?: Date;
+  durationMinutes?: number;
+  isRunning: boolean;
+  isBillable: boolean;
+  hourlyRate?: number;
+  totalAmount?: number;
+  currency: string;
+  status: TimeEntryStatus;
+  rejectionNote?: string;
+  tags?: string[];
+  companyId: string;
+  userId: string;
+  user?: User;
+  clientId?: string;
+  client?: Client;
+  taskId?: string;
+  task?: Task;
+  approvedById?: string;
+  approvedBy?: User;
+  approvedAt?: Date;
+  submittedAt?: Date;
+  billedAt?: Date;
+  createdById: string;
+  createdBy?: User;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TimeSettings {
+  id: string;
+  companyId: string;
+  roundingMethod: TimeRoundingMethod;
+  roundingIntervalMinutes: number;
+  defaultHourlyRate?: number;
+  defaultCurrency: string;
+  requireApproval: boolean;
+  allowOverlappingEntries: boolean;
+  workingHoursPerDay: number;
+  workingHoursPerWeek: number;
+  weekStartDay: number;
+  allowTimerMode: boolean;
+  allowManualEntry: boolean;
+  autoStopTimerAfterMinutes: number;
+  minimumEntryMinutes: number;
+  maximumEntryMinutes: number;
+  enableDailyReminder: boolean;
+  dailyReminderTime?: string;
+  lockEntriesAfterDays: number;
+  updatedById?: string;
+  updatedBy?: User;
   createdAt: Date;
   updatedAt: Date;
 }
