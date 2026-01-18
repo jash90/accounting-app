@@ -1,0 +1,23 @@
+{
+  "$schema": "../../../schemas/module.schema.json",
+  "slug": "time-tracking",
+  "name": "Logowanie czasu",
+  "description": "Moduł do logowania czasu pracy z timerem, raportami i integracją z klientami i zadaniami",
+  "version": "1.0.0",
+  "isActive": true,
+  "permissions": ["read", "write", "delete", "manage"],
+  "defaultPermissions": ["read", "write"],
+  "icon": "clock",
+  "category": "productivity",
+  "config": {
+    "enableTimer": true,
+    "enableManualEntry": true,
+    "enableProjects": true,
+    "enableBillable": true,
+    "enableApprovalWorkflow": true,
+    "enableReports": true,
+    "enableExport": true,
+    "enableTimeRounding": true,
+    "defaultRoundingInterval": 15
+  }
+}
