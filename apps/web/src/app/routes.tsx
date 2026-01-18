@@ -60,6 +60,14 @@ const TasksTimelinePage = lazy(() => import('@/pages/modules/tasks/tasks-timelin
 const TasksSettingsPage = lazy(() => import('@/pages/modules/tasks/tasks-settings'));
 const TaskCreatePage = lazy(() => import('@/pages/modules/tasks/task-create'));
 
+// Time Tracking Pages
+const TimeTrackingDashboardPage = lazy(() => import('@/pages/modules/time-tracking/time-tracking-dashboard'));
+const TimeTrackingEntriesPage = lazy(() => import('@/pages/modules/time-tracking/time-tracking-entries'));
+const TimeTrackingTimesheetDailyPage = lazy(() => import('@/pages/modules/time-tracking/time-tracking-timesheet-daily'));
+const TimeTrackingTimesheetWeeklyPage = lazy(() => import('@/pages/modules/time-tracking/time-tracking-timesheet-weekly'));
+const TimeTrackingReportsPage = lazy(() => import('@/pages/modules/time-tracking/time-tracking-reports'));
+const TimeTrackingSettingsPage = lazy(() => import('@/pages/modules/time-tracking/time-tracking-settings'));
+
 function PageLoader() {
   return (
     <div className="flex h-screen items-center justify-center">
@@ -377,6 +385,55 @@ export default function Routes() {
             </Suspense>
           }
         />
+        {/* Time Tracking Routes for Admin */}
+        <Route
+          path="modules/time-tracking"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/entries"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingEntriesPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/timesheet/daily"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingTimesheetDailyPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/timesheet/weekly"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingTimesheetWeeklyPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/reports"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingReportsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingSettingsPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -613,6 +670,55 @@ export default function Routes() {
             </Suspense>
           }
         />
+        {/* Time Tracking Routes for Company Owner */}
+        <Route
+          path="modules/time-tracking"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/entries"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingEntriesPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/timesheet/daily"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingTimesheetDailyPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/timesheet/weekly"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingTimesheetWeeklyPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/reports"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingReportsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingSettingsPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -789,6 +895,55 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <TaskCreatePage />
+            </Suspense>
+          }
+        />
+        {/* Time Tracking Routes for Employee */}
+        <Route
+          path="time-tracking"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="time-tracking/entries"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingEntriesPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="time-tracking/timesheet/daily"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingTimesheetDailyPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="time-tracking/timesheet/weekly"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingTimesheetWeeklyPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="time-tracking/reports"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingReportsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="time-tracking/settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingSettingsPage />
             </Suspense>
           }
         />
