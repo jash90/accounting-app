@@ -108,5 +108,24 @@ export const queryKeys = {
     detail: (id: string) => ['task-labels', id] as const,
     byTask: (taskId: string) => ['task-labels', 'by-task', taskId] as const,
   },
+  timeTracking: {
+    entries: {
+      all: ['time-entries'] as const,
+      list: (filters?: Record<string, unknown>) => ['time-entries', 'list', filters] as const,
+      detail: (id: string) => ['time-entries', id] as const,
+    },
+    timer: {
+      active: ['time-entries', 'timer', 'active'] as const,
+    },
+    settings: ['time-settings'] as const,
+    timesheet: {
+      daily: (date: string) => ['timesheet', 'daily', date] as const,
+      weekly: (date: string) => ['timesheet', 'weekly', date] as const,
+    },
+    reports: {
+      summary: (params?: Record<string, unknown>) => ['time-reports', 'summary', params] as const,
+      byClient: (params?: Record<string, unknown>) => ['time-reports', 'by-client', params] as const,
+    },
+  },
 };
 
