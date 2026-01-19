@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole, Company } from '@accounting/common';
@@ -11,6 +12,7 @@ import { UpdateEmployeeDto } from '../dto/update-employee.dto';
 @Injectable()
 export class CompanyService {
   private readonly logger = new Logger(CompanyService.name);
+  private readonly frontendUrl: string;
 
   constructor(
     @InjectRepository(User)
@@ -20,7 +22,13 @@ export class CompanyService {
     private emailService: EmailService,
     private emailSenderService: EmailSenderService,
     private emailConfigService: EmailConfigurationService,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    // Use FRONTEND_URL env var, fallback to CORS_ORIGINS first value, or localhost
+    this.frontendUrl = this.configService.get<string>('FRONTEND_URL')
+      || this.configService.get<string>('CORS_ORIGINS')?.split(',')[0]
+      || 'http://localhost:4200';
+  }
 
   // Employee Management
   async getEmployees(companyId: string) {
@@ -133,7 +141,7 @@ export class CompanyService {
           <li><strong>Email:</strong> ${newUser.email}</li>
           <li><strong>Hasło:</strong> (ustalone podczas rejestracji)</li>
         </ul>
-        <p>Możesz zalogować się tutaj: <a href="http://localhost:4200/login">http://localhost:4200/login</a></p>
+        <p>Możesz zalogować się tutaj: <a href="${this.frontendUrl}/login">${this.frontendUrl}/login</a></p>
         <p>Pozdrawiamy,<br><strong>${company.name}</strong></p>
       `;
 

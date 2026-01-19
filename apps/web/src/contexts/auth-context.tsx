@@ -21,26 +21,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(tokenStorage.getAccessToken());
   const { login: loginMutation, register: registerMutation, logout: logoutMutation } = useAuth();
 
-  // Monitor localStorage for token changes
+  // Monitor token changes using event-based system (no polling)
   useEffect(() => {
     const checkToken = () => {
       const currentToken = tokenStorage.getAccessToken();
       setToken(currentToken);
     };
 
-    // Check immediately
+    // Check immediately on mount
     checkToken();
 
-    // Set up interval to check for token changes
-    const interval = setInterval(checkToken, 500);
+    // Subscribe to token changes (both same-tab and cross-tab events)
+    const unsubscribe = tokenStorage.onTokenChange(checkToken);
 
-    // Listen for storage events (from other tabs)
-    window.addEventListener('storage', checkToken);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('storage', checkToken);
-    };
+    return unsubscribe;
   }, []);
 
   const { data: currentUser, isPending: isLoadingUser, error: queryError } = useQuery({

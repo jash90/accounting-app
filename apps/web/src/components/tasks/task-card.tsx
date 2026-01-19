@@ -37,14 +37,26 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
     const isOverdue =
       task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
 
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        onClick();
+      }
+    };
+
     return (
       <Card
         ref={ref}
         onClick={onClick}
+        onKeyDown={handleKeyDown}
+        tabIndex={onClick ? 0 : undefined}
+        role={onClick ? 'button' : undefined}
+        aria-label={`Zadanie: ${task.title}${isOverdue ? ' - po terminie' : ''}`}
         className={cn(
           'cursor-pointer hover:shadow-md transition-shadow',
           isDragging && 'opacity-50 shadow-lg',
           isOverdue && 'border-red-300',
+          onClick && 'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
           className
         )}
       >
@@ -172,9 +184,12 @@ export function SortableTaskCard({ id, ...props }: SortableTaskCardProps) {
       <div
         {...attributes}
         {...listeners}
-        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing p-1 text-muted-foreground hover:text-foreground transition-opacity"
+        aria-label="Przeciągnij zadanie"
+        role="button"
+        tabIndex={0}
+        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-grab active:cursor-grabbing p-1 text-muted-foreground hover:text-foreground transition-opacity focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 rounded"
       >
-        <GripVertical size={16} />
+        <GripVertical size={16} aria-hidden="true" />
       </div>
       <TaskCard {...props} isDragging={isDragging} />
     </div>
