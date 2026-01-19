@@ -5563,6 +5563,62 @@ Every module must have a `module.json` file in its root directory. This file def
 
 ---
 
+### Module Icon Requirements
+
+Every module **MUST** have a unique icon defined in its `module.json` file. Icons are displayed in:
+- Sidebar navigation
+- Module list pages (admin and company views)
+- Module cards and tables
+
+**Icon Format**: Use lucide-react icon names in **kebab-case** format.
+
+**Available Icons** (supported in `apps/web/src/lib/utils/module-icons.tsx`):
+
+| Icon Name | Description | Use Case |
+|-----------|-------------|----------|
+| `package` | Default/fallback | Generic module |
+| `users` | People/users | CRM, contacts, employees |
+| `check-square` | Checkbox | Tasks, todos, approvals |
+| `bot` | Robot | AI modules |
+| `mail` | Envelope | Email, messaging |
+| `clock` | Clock | Time tracking, scheduling |
+| `file-text` | Document | Documents, notes |
+| `calculator` | Calculator | Finance, calculations |
+| `calendar` | Calendar | Scheduling, events |
+| `settings` | Gear | Configuration, settings |
+| `briefcase` | Briefcase | Business, projects |
+| `bar-chart-3` | Chart | Analytics, reports |
+| `credit-card` | Credit card | Payments, billing |
+| `folder-open` | Open folder | Files, storage |
+
+**Current Module Icons**:
+
+| Module | Slug | Icon |
+|--------|------|------|
+| Zadania | `tasks` | `check-square` |
+| Klienci | `clients` | `users` |
+| Agent AI | `ai-agent` | `bot` |
+| Klient Email | `email-client` | `mail` |
+| Logowanie czasu | `time-tracking` | `clock` |
+
+**Adding a New Icon**:
+
+If your module needs an icon not in the list above, add it to the icon mapper:
+
+```typescript
+// apps/web/src/lib/utils/module-icons.tsx
+import { NewIcon } from 'lucide-react';
+
+const iconMap: Record<string, LucideIcon> = {
+  // ... existing icons
+  'new-icon': NewIcon,
+};
+```
+
+Browse available icons at: https://lucide.dev/icons/
+
+---
+
 ### Exception Handling Pattern
 
 Production modules use a three-tier exception handling architecture with error codes.
