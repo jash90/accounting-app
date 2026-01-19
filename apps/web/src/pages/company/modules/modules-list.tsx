@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/common/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Package, ArrowRight } from 'lucide-react';
+import { getModuleIcon } from '@/lib/utils/module-icons';
 
 export default function CompanyModulesListPage() {
   const navigate = useNavigate();
@@ -49,6 +50,7 @@ export default function CompanyModulesListPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {modules.map((module) => {
             const isAiModule = module.slug === 'ai-agent';
+            const ModuleIcon = getModuleIcon(module.icon);
             return (
               <Card
                 key={module.id}
@@ -69,7 +71,7 @@ export default function CompanyModulesListPage() {
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                         isAiModule ? 'bg-apptax-ai-gradient ai-glow' : 'bg-apptax-gradient'
                       }`}>
-                        <Package className="h-5 w-5 text-white" />
+                        <ModuleIcon className="h-5 w-5 text-white" />
                       </div>
                       <CardTitle className="text-lg flex items-center gap-2 text-apptax-navy">
                         {module.name}

@@ -11,19 +11,29 @@ import { Plus, Edit, Trash2, Package } from 'lucide-react';
 import { ModuleDto } from '@/types/dtos';
 import { ModuleFormDialog } from '@/components/forms/module-form-dialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { getModuleIcon } from '@/lib/utils/module-icons';
 
 const columns: ColumnDef<ModuleDto>[] = [
   {
     accessorKey: 'name',
     header: 'Nazwa',
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <span className="font-medium text-apptax-navy">{row.original.name}</span>
-        {row.original.slug === 'ai-agent' && (
-          <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
-        )}
-      </div>
-    ),
+    cell: ({ row }) => {
+      const ModuleIcon = getModuleIcon(row.original.icon);
+      const isAiModule = row.original.slug === 'ai-agent';
+      return (
+        <div className="flex items-center gap-3">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+            isAiModule ? 'bg-apptax-ai-gradient ai-glow' : 'bg-apptax-gradient'
+          }`}>
+            <ModuleIcon className="h-4 w-4 text-white" />
+          </div>
+          <span className="font-medium text-apptax-navy">{row.original.name}</span>
+          {isAiModule && (
+            <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
+          )}
+        </div>
+      );
+    },
   },
   {
     accessorKey: 'slug',

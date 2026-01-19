@@ -113,6 +113,7 @@ export interface ModuleDto {
   slug: string;
   description: string;
   isActive: boolean;
+  icon: string | null;
   createdAt: Date;
 }
 

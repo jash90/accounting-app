@@ -5,6 +5,7 @@ import { UserRole } from '@/types/enums';
 import { useModules } from '@/lib/hooks/use-modules';
 import { useCompanyModules } from '@/lib/hooks/use-permissions';
 import { NavItem } from '@/components/sidebar';
+import { getModuleIcon } from '@/lib/utils/module-icons';
 
 export function useNavigationItems(user: UserDto | null): NavItem[] {
   // Fetch modules based on user role
@@ -33,7 +34,7 @@ export function useNavigationItems(user: UserDto | null): NavItem[] {
               baseItems.push({
                 label: module.name,
                 href: `/admin/modules/${module.slug}`,
-                icon: Package,
+                icon: getModuleIcon(module.icon),
               });
             }
           });
@@ -55,7 +56,7 @@ export function useNavigationItems(user: UserDto | null): NavItem[] {
               baseItems.push({
                 label: module.name,
                 href: `/company/modules/${module.slug}`,
-                icon: Package,
+                icon: getModuleIcon(module.icon),
               });
             }
           });
@@ -75,7 +76,7 @@ export function useNavigationItems(user: UserDto | null): NavItem[] {
               baseItems.push({
                 label: module.name,
                 href: `/modules/${module.slug}`,
-                icon: Package,
+                icon: getModuleIcon(module.icon),
               });
             }
           });
