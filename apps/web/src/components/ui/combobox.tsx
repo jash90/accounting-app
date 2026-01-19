@@ -8,7 +8,6 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 export interface ComboboxOption {
   value: string;
@@ -89,7 +88,11 @@ export function Combobox({
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+      <PopoverContent
+        className="p-0 min-w-0"
+        align="start"
+        style={{ width: 'var(--radix-popover-trigger-width)' }}
+      >
         <div className="p-2 border-b">
           <Input
             placeholder={searchPlaceholder}
@@ -99,7 +102,7 @@ export function Combobox({
             autoFocus
           />
         </div>
-        <ScrollArea className="max-h-[200px]">
+        <div className="max-h-[200px] overflow-y-auto">
           {filteredOptions.length === 0 ? (
             <div className="py-6 text-center text-sm text-muted-foreground">
               {emptyText}
@@ -111,7 +114,7 @@ export function Combobox({
                   key={option.value}
                   onClick={() => handleSelect(option.value)}
                   className={cn(
-                    'relative flex w-full cursor-pointer select-none items-center rounded-sm py-2 px-3 text-sm outline-none transition-colors',
+                    'relative flex w-full cursor-pointer select-none items-start rounded-sm py-2 px-3 text-sm outline-none transition-colors',
                     'hover:bg-accent hover:text-accent-foreground',
                     'focus:bg-accent focus:text-accent-foreground',
                     value === option.value && 'bg-accent/50'
@@ -119,16 +122,23 @@ export function Combobox({
                 >
                   <Check
                     className={cn(
-                      'mr-2 h-4 w-4 shrink-0',
+                      'mr-2 h-4 w-4 shrink-0 mt-0.5',
                       value === option.value ? 'opacity-100' : 'opacity-0'
                     )}
                   />
-                  <span className="truncate">{option.label}</span>
+                  <span className="flex-1 whitespace-normal break-words text-left">
+                    {option.label.includes(' - ')
+                      ? option.label.split(' - ').slice(1).join(' - ')
+                      : option.label}
+                  </span>
+                  <span className="ml-2 shrink-0 font-mono text-xs text-muted-foreground">
+                    {option.value}
+                  </span>
                 </button>
               ))}
             </div>
           )}
-        </ScrollArea>
+        </div>
       </PopoverContent>
     </Popover>
   );

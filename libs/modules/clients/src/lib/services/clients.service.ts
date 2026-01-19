@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import {
@@ -11,6 +11,7 @@ import {
   AmlGroup,
   PaginatedResponseDto,
   TenantService,
+  isValidPkdCode,
 } from '@accounting/common';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 import { ClientChangelogService } from './client-changelog.service';
@@ -37,6 +38,8 @@ export interface CreateClientDto {
   gtuCode?: string;
   // New array field for multiple GTU codes
   gtuCodes?: string[];
+  // PKD code (Polska Klasyfikacja Działalności)
+  pkdCode?: string;
   // Legacy field (kept for backward compatibility)
   amlGroup?: string;
   // New enum field for AML group
@@ -65,6 +68,7 @@ export interface ClientFilters {
   zusStatus?: ZusStatus;
   amlGroupEnum?: AmlGroup;
   gtuCode?: string;
+  pkdCode?: string;
   receiveEmailCopy?: boolean;
   isActive?: boolean;
   cooperationStartDateFrom?: string;
@@ -160,6 +164,12 @@ export class ClientsService {
       });
     }
 
+    if (filters?.pkdCode) {
+      queryBuilder.andWhere('client.pkdCode = :pkdCode', {
+        pkdCode: filters.pkdCode,
+      });
+    }
+
     if (filters?.receiveEmailCopy !== undefined) {
       queryBuilder.andWhere('client.receiveEmailCopy = :receiveEmailCopy', {
         receiveEmailCopy: filters.receiveEmailCopy,
@@ -233,6 +243,11 @@ export class ClientsService {
   async create(dto: CreateClientDto, user: User): Promise<Client> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
+    // Validate PKD code if provided
+    if (dto.pkdCode && !isValidPkdCode(dto.pkdCode)) {
+      throw new BadRequestException(`Nieprawidłowy kod PKD: ${dto.pkdCode}`);
+    }
+
     const client = this.clientRepository.create({
       ...dto,
       companyId,
@@ -273,6 +288,12 @@ export class ClientsService {
 
   async update(id: string, dto: UpdateClientDto, user: User): Promise<Client> {
     const client = await this.findOne(id, user);
+
+    // Validate PKD code if provided
+    if (dto.pkdCode && !isValidPkdCode(dto.pkdCode)) {
+      throw new BadRequestException(`Nieprawidłowy kod PKD: ${dto.pkdCode}`);
+    }
+
     const oldValues = this.sanitizeClientForLog(client);
 
     Object.assign(client, dto);
@@ -664,6 +685,7 @@ export class ClientsService {
       amlGroup: client.amlGroup,
       // New fields
       gtuCodes: client.gtuCodes,
+      pkdCode: client.pkdCode,
       amlGroupEnum: client.amlGroupEnum,
       receiveEmailCopy: client.receiveEmailCopy,
       employmentType: client.employmentType,

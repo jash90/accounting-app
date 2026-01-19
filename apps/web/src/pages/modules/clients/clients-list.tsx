@@ -55,7 +55,7 @@ import { DuplicateWarningDialog } from '@/components/clients/duplicate-warning-d
 import { StatisticsDashboard } from '@/components/clients/statistics-dashboard';
 import { ClientGrid } from '@/components/clients/client-grid';
 import { ViewModeToggle } from '@/components/common/view-mode-toggle';
-import { ColumnVisibilityDropdown } from '@/components/common/column-visibility-dropdown';
+import { ColumnVisibilityModal } from '@/components/common/column-visibility-modal';
 import { useTablePreferences, ColumnConfig } from '@/lib/hooks/use-table-preferences';
 import { DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
 import { useAuthContext } from '@/contexts/auth-context';
@@ -64,8 +64,12 @@ import {
   VatStatus,
   VatStatusLabels,
   TaxSchemeLabels,
+  ZusStatusLabels,
   UserRole,
 } from '@/types/enums';
+import { AmlGroupLabels } from '@/lib/constants/polish-labels';
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
 
 export default function ClientsListPage() {
   const { user } = useAuthContext();
@@ -94,29 +98,70 @@ export default function ClientsListPage() {
 
   // Column configuration for table preferences (including custom fields)
   const columnConfig: ColumnConfig[] = useMemo(() => {
-    const staticColumns: ColumnConfig[] = [
+    const basicColumns: ColumnConfig[] = [
       { id: 'name', label: 'Nazwa', alwaysVisible: true },
       { id: 'icons', label: 'Ikony', defaultVisible: true },
       { id: 'nip', label: 'NIP', defaultVisible: true },
+      { id: 'email', label: 'Email', defaultVisible: true },
+      { id: 'phone', label: 'Telefon', defaultVisible: false },
+    ];
+
+    const businessColumns: ColumnConfig[] = [
       { id: 'employmentType', label: 'Zatrudnienie', defaultVisible: true },
       { id: 'vatStatus', label: 'VAT', defaultVisible: true },
       { id: 'taxScheme', label: 'Opodatkowanie', defaultVisible: true },
-      { id: 'email', label: 'Email', defaultVisible: true },
+      { id: 'zusStatus', label: 'ZUS', defaultVisible: false },
+      { id: 'amlGroup', label: 'Grupa AML', defaultVisible: false },
+      { id: 'pkdCode', label: 'Kod PKD', defaultVisible: false },
+      { id: 'gtuCode', label: 'Kod GTU', defaultVisible: false },
+    ];
+
+    const dateColumns: ColumnConfig[] = [
+      { id: 'cooperationStartDate', label: 'Data współpracy', defaultVisible: false },
+      { id: 'companyStartDate', label: 'Data założenia firmy', defaultVisible: false },
+      { id: 'createdAt', label: 'Data utworzenia', defaultVisible: false },
     ];
 
     // Add custom field columns
     const customFieldColumns: ColumnConfig[] = fieldDefinitions.map((field) => ({
       id: `customField_${field.id}`,
       label: field.label,
-      defaultVisible: false, // Custom fields hidden by default
+      defaultVisible: false,
     }));
 
     return [
-      ...staticColumns,
+      ...basicColumns,
+      ...businessColumns,
+      ...dateColumns,
       ...customFieldColumns,
       { id: 'actions', label: 'Akcje', alwaysVisible: true },
     ];
   }, [fieldDefinitions]);
+
+  // Column groups for modal
+  const columnGroups = useMemo(() => {
+    const basicColumns = columnConfig.filter((c) =>
+      ['name', 'icons', 'nip', 'email', 'phone'].includes(c.id)
+    );
+    const businessColumns = columnConfig.filter((c) =>
+      ['employmentType', 'vatStatus', 'taxScheme', 'zusStatus', 'amlGroup', 'pkdCode', 'gtuCode'].includes(c.id)
+    );
+    const dateColumns = columnConfig.filter((c) =>
+      ['cooperationStartDate', 'companyStartDate', 'createdAt'].includes(c.id)
+    );
+    const customColumns = columnConfig.filter((c) => c.id.startsWith('customField_'));
+    const actionColumns = columnConfig.filter((c) => c.id === 'actions');
+
+    return [
+      { key: 'basic', label: 'Podstawowe', columns: basicColumns },
+      { key: 'business', label: 'Dane biznesowe', columns: businessColumns },
+      { key: 'dates', label: 'Daty', columns: dateColumns },
+      ...(customColumns.length > 0
+        ? [{ key: 'custom', label: 'Pola niestandardowe', columns: customColumns }]
+        : []),
+      { key: 'actions', label: 'Inne', columns: actionColumns },
+    ];
+  }, [columnConfig]);
 
   const {
     viewMode,
@@ -337,6 +382,103 @@ export default function ClientsListPage() {
           </span>
         ),
       },
+      {
+        id: 'phone',
+        header: 'Telefon',
+        cell: ({ row }) => (
+          <span className="text-apptax-navy/70 text-sm">
+            {row.original.phone || '-'}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'zusStatus',
+        header: 'ZUS',
+        cell: ({ row }) => {
+          const status = row.original.zusStatus;
+          return status ? (
+            <Badge variant="secondary" className="text-xs">
+              {ZusStatusLabels[status]}
+            </Badge>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          );
+        },
+      },
+      {
+        id: 'amlGroup',
+        header: 'Grupa AML',
+        cell: ({ row }) => {
+          const group = row.original.amlGroupEnum;
+          return group ? (
+            <Badge variant="outline" className="text-xs">
+              {AmlGroupLabels[group]}
+            </Badge>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          );
+        },
+      },
+      {
+        id: 'pkdCode',
+        header: 'Kod PKD',
+        cell: ({ row }) => (
+          <span className="text-sm font-mono">
+            {row.original.pkdCode || '-'}
+          </span>
+        ),
+      },
+      {
+        id: 'gtuCode',
+        header: 'Kod GTU',
+        cell: ({ row }) => (
+          <span className="text-sm font-mono">
+            {row.original.gtuCode || '-'}
+          </span>
+        ),
+      },
+      {
+        id: 'cooperationStartDate',
+        header: 'Data współpracy',
+        cell: ({ row }) => {
+          const date = row.original.cooperationStartDate;
+          return date ? (
+            <span className="text-sm">
+              {format(new Date(date), 'dd.MM.yyyy', { locale: pl })}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          );
+        },
+      },
+      {
+        id: 'companyStartDate',
+        header: 'Data założenia firmy',
+        cell: ({ row }) => {
+          const date = row.original.companyStartDate;
+          return date ? (
+            <span className="text-sm">
+              {format(new Date(date), 'dd.MM.yyyy', { locale: pl })}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          );
+        },
+      },
+      {
+        id: 'createdAt',
+        header: 'Data utworzenia',
+        cell: ({ row }) => {
+          const date = row.original.createdAt;
+          return date ? (
+            <span className="text-sm text-muted-foreground">
+              {format(new Date(date), 'dd.MM.yyyy', { locale: pl })}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          );
+        },
+      },
       // Custom field columns
       ...fieldDefinitions.map((field) => ({
         id: `customField_${field.id}`,
@@ -458,11 +600,12 @@ export default function ClientsListPage() {
               viewMode={viewMode}
               onViewModeChange={setViewMode}
             />
-            <ColumnVisibilityDropdown
+            <ColumnVisibilityModal
               columns={columnConfig}
               visibleColumns={visibleColumns}
               onToggleColumn={toggleColumn}
               onResetToDefaults={resetToDefaults}
+              groups={columnGroups}
             />
             <Button
               variant="outline"

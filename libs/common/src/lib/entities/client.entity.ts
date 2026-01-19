@@ -69,6 +69,10 @@ export class Client {
   @Column({ type: 'text', array: true, nullable: true })
   gtuCodes?: string[];
 
+  // Main PKD code (Polska Klasyfikacja Działalności)
+  @Column({ nullable: true, length: 10 })
+  pkdCode?: string;
+
   // Legacy amlGroup string (kept for backward compatibility)
   @Column({ nullable: true })
   amlGroup?: string;

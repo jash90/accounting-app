@@ -511,6 +511,7 @@ export interface CreateClientDto {
   additionalInfo?: string;
   gtuCode?: string;
   gtuCodes?: string[];
+  pkdCode?: string;
   amlGroup?: string;
   amlGroupEnum?: AmlGroup;
   receiveEmailCopy?: boolean;
@@ -536,6 +537,7 @@ export interface ClientFiltersDto {
   zusStatus?: ZusStatus;
   amlGroupEnum?: AmlGroup;
   gtuCode?: string;
+  pkdCode?: string;
   receiveEmailCopy?: boolean;
   isActive?: boolean;
   cooperationStartDateFrom?: string;

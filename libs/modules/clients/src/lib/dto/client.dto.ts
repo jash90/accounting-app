@@ -89,6 +89,13 @@ export class CreateClientDto {
   @MaxLength(10)
   gtuCode?: string;
 
+  @ApiPropertyOptional({ description: 'PKD code (Polska Klasyfikacja Działalności)' })
+  @IsOptional()
+  @Sanitize()
+  @IsString()
+  @MaxLength(10)
+  pkdCode?: string;
+
   @ApiPropertyOptional({ description: 'AML group' })
   @IsOptional()
   @Sanitize()
@@ -163,6 +170,13 @@ export class ClientFiltersDto {
   @IsString()
   @MaxLength(10)
   gtuCode?: string;
+
+  @ApiPropertyOptional({ description: 'PKD code filter' })
+  @IsOptional()
+  @Sanitize()
+  @IsString()
+  @MaxLength(10)
+  pkdCode?: string;
 
   @ApiPropertyOptional({ description: 'Filter by email copy preference' })
   @IsOptional()

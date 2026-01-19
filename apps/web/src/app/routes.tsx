@@ -40,6 +40,7 @@ const ClientsDashboardPage = lazy(() => import('@/pages/modules/clients/clients-
 const ClientsListPage = lazy(() => import('@/pages/modules/clients/clients-list'));
 const ClientDetailPage = lazy(() => import('@/pages/modules/clients/client-detail'));
 const ClientsSettingsPage = lazy(() => import('@/pages/modules/clients/clients-settings'));
+const ClientCreatePage = lazy(() => import('@/pages/modules/clients/client-create'));
 
 // Email Client Pages
 const EmailClientIndex = lazy(() => import('@/pages/modules/email-client/index'));
@@ -244,6 +245,14 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <ClientsSettingsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/clients/create"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientCreatePage />
             </Suspense>
           }
         />
@@ -533,6 +542,14 @@ export default function Routes() {
           }
         />
         <Route
+          path="modules/clients/create"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientCreatePage />
+            </Suspense>
+          }
+        />
+        <Route
           path="modules/clients/:id"
           element={
             <Suspense fallback={<PageLoader />}>
@@ -766,6 +783,14 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <ClientsListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="clients/create"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientCreatePage />
             </Suspense>
           }
         />

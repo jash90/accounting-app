@@ -86,6 +86,8 @@ export interface Client {
   gtuCode?: string;
   // New array field for multiple GTU codes
   gtuCodes?: string[];
+  // PKD code (Polska Klasyfikacja Działalności)
+  pkdCode?: string;
   // Legacy field (kept for backward compatibility)
   amlGroup?: string;
   // New enum field for AML group

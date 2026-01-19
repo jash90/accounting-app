@@ -101,6 +101,11 @@ export const GTU_CODES = [
 
 export type GtuCode = typeof GTU_CODES[number]['code'];
 
+// PKD 2025 - Polska Klasyfikacja Działalności (657 kodów na poziomie klasy)
+// Re-export from dedicated PKD codes file
+export { PKD_CODES, PKD_SECTIONS, getPkdCodesBySection } from './pkd-codes';
+export type { PkdCode, PkdSection } from './pkd-codes';
+
 // Client field labels for condition builder
 export const ClientFieldLabels: Record<string, string> = {
   name: 'Nazwa klienta',
@@ -113,6 +118,7 @@ export const ClientFieldLabels: Record<string, string> = {
   companySpecificity: 'Specyfika firmy',
   additionalInfo: 'Dodatkowe informacje',
   gtuCodes: 'Kody GTU',
+  pkdCode: 'Główny kod PKD',
   amlGroupEnum: 'Grupa AML',
   receiveEmailCopy: 'Otrzymuje kopię email',
   employmentType: 'Forma zatrudnienia',

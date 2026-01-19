@@ -47,8 +47,9 @@ import {
   ZusStatusLabels,
   AmlGroup,
 } from '@/types/enums';
-import { AmlGroupLabels, GTU_CODES } from '@/lib/constants/polish-labels';
+import { AmlGroupLabels, GTU_CODES, PKD_CODES, PKD_SECTIONS } from '@/lib/constants/polish-labels';
 import { Combobox } from '@/components/ui/combobox';
+import { GroupedCombobox } from '@/components/ui/grouped-combobox';
 import { ClientFiltersDto, CustomFieldFilter } from '@/types/dtos';
 import { cn } from '@/lib/utils/cn';
 import { ClientCustomFilters } from './client-custom-filters';
@@ -61,6 +62,7 @@ interface ClientFiltersProps {
 const SEARCH_DEBOUNCE_MS = 300;
 
 export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) {
+  const [filtersOpen, setFiltersOpen] = useState(true);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [customFieldFilters, setCustomFieldFilters] = useState<CustomFieldFilter[]>(
     filters.customFieldFilters || []
@@ -76,7 +78,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
       zusStatus: filters.zusStatus,
       amlGroupEnum: filters.amlGroupEnum,
       gtuCode: filters.gtuCode,
-      receiveEmailCopy: filters.receiveEmailCopy,
+      pkdCode: filters.pkdCode,
       isActive: filters.isActive,
       cooperationStartDateFrom: filters.cooperationStartDateFrom,
       cooperationStartDateTo: filters.cooperationStartDateTo,
@@ -100,7 +102,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
     if (value.zusStatus) cleanedFilters.zusStatus = value.zusStatus as ZusStatus;
     if (value.amlGroupEnum) cleanedFilters.amlGroupEnum = value.amlGroupEnum as AmlGroup;
     if (value.gtuCode) cleanedFilters.gtuCode = value.gtuCode;
-    if (value.receiveEmailCopy !== undefined) cleanedFilters.receiveEmailCopy = value.receiveEmailCopy;
+    if (value.pkdCode) cleanedFilters.pkdCode = value.pkdCode;
     if (value.isActive !== undefined) cleanedFilters.isActive = value.isActive;
     if (value.cooperationStartDateFrom) cleanedFilters.cooperationStartDateFrom = value.cooperationStartDateFrom;
     if (value.cooperationStartDateTo) cleanedFilters.cooperationStartDateTo = value.cooperationStartDateTo;
@@ -167,7 +169,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
       zusStatus: undefined,
       amlGroupEnum: undefined,
       gtuCode: undefined,
-      receiveEmailCopy: undefined,
+      pkdCode: undefined,
       isActive: undefined,
       cooperationStartDateFrom: undefined,
       cooperationStartDateTo: undefined,
@@ -186,7 +188,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
     filters.zusStatus ||
     filters.amlGroupEnum ||
     filters.gtuCode ||
-    filters.receiveEmailCopy !== undefined ||
+    filters.pkdCode ||
     filters.cooperationStartDateFrom ||
     filters.cooperationStartDateTo ||
     filters.companyStartDateFrom ||
@@ -197,7 +199,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
   const hasAdvancedFilters =
     filters.amlGroupEnum ||
     filters.gtuCode ||
-    filters.receiveEmailCopy !== undefined ||
+    filters.pkdCode ||
     filters.cooperationStartDateFrom ||
     filters.cooperationStartDateTo ||
     filters.companyStartDateFrom ||
@@ -205,27 +207,39 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
 
   return (
     <Card className="border-apptax-soft-teal/30">
-      <CardContent className="p-4">
-        <Form {...form}>
-          <form className="space-y-4">
-            <div className="flex items-center gap-2 mb-4">
+      <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <CardContent className="p-4">
+          <CollapsibleTrigger asChild>
+            <div className="flex items-center gap-2 cursor-pointer select-none">
               <Filter className="h-4 w-4 text-apptax-blue" />
               <span className="font-medium text-apptax-navy">Filtry</span>
               {hasActiveFilters && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClearFilters}
-                  className="ml-auto text-xs"
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  Wyczyść
-                </Button>
+                <span className="bg-apptax-blue text-white text-xs px-1.5 py-0.5 rounded">
+                  Aktywne
+                </span>
               )}
+              <ChevronDown className={cn('h-4 w-4 ml-auto transition-transform', filtersOpen && 'rotate-180')} />
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
+          </CollapsibleTrigger>
+          {hasActiveFilters && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleClearFilters();
+              }}
+              className="ml-auto text-xs mt-2"
+            >
+              <X className="h-3 w-3 mr-1" />
+              Wyczyść filtry
+            </Button>
+          )}
+          <CollapsibleContent>
+            <Form {...form}>
+              <form className="space-y-4 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
               <FormField
                 control={form.control}
                 name="search"
@@ -587,6 +601,36 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
                     )}
                   />
 
+                  {/* PKD Code */}
+                  <FormField
+                    control={form.control}
+                    name="pkdCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Kod PKD</FormLabel>
+                        <FormControl>
+                          <GroupedCombobox
+                            options={PKD_CODES.map((pkd) => ({
+                              value: pkd.code,
+                              label: pkd.label,
+                              group: pkd.section,
+                            }))}
+                            groups={Object.entries(PKD_SECTIONS).map(([key, label]) => ({
+                              key,
+                              label,
+                            }))}
+                            value={field.value || null}
+                            onChange={(value) => field.onChange(value || undefined)}
+                            placeholder="Wszystkie"
+                            searchPlaceholder="Szukaj kodu PKD..."
+                            emptyText="Nie znaleziono kodu"
+                            formatDisplayValue={(option) => option.value}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
                   {/* GTU Code */}
                   <FormField
                     control={form.control}
@@ -611,45 +655,20 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
                     )}
                   />
 
-                  {/* Receive Email Copy */}
-                  <FormField
-                    control={form.control}
-                    name="receiveEmailCopy"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel className="text-xs">Kopia email</FormLabel>
-                        <Select
-                          onValueChange={(value) =>
-                            field.onChange(value === '_all' ? undefined : value === 'true')
-                          }
-                          value={field.value === undefined ? '_all' : field.value ? 'true' : 'false'}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Wszystkie" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="_all">Wszystkie</SelectItem>
-                            <SelectItem value="true">Tak</SelectItem>
-                            <SelectItem value="false">Nie</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
                 </div>
               </CollapsibleContent>
             </Collapsible>
 
-            {/* Custom Field Filters Section */}
-            <ClientCustomFilters
-              filters={customFieldFilters}
-              onFiltersChange={handleCustomFieldFiltersChange}
-            />
-          </form>
-        </Form>
-      </CardContent>
+                {/* Custom Field Filters Section */}
+                <ClientCustomFilters
+                  filters={customFieldFilters}
+                  onFiltersChange={handleCustomFieldFiltersChange}
+                />
+              </form>
+            </Form>
+          </CollapsibleContent>
+        </CardContent>
+      </Collapsible>
     </Card>
   );
 }
