@@ -82,7 +82,8 @@ export enum ChangeAction {
 
 export enum AmlGroup {
   LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
+  STANDARD = 'STANDARD',
+  ELEVATED = 'ELEVATED',
   HIGH = 'HIGH',
 }
 

@@ -13,6 +13,7 @@ import {
   Min,
   Max,
   Matches,
+  IsDateString,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
@@ -21,6 +22,7 @@ import {
   VatStatus,
   TaxScheme,
   ZusStatus,
+  AmlGroup,
   Sanitize,
   SanitizeWithFormatting,
 } from '@accounting/common';
@@ -150,6 +152,28 @@ export class ClientFiltersDto {
   @IsEnum(ZusStatus)
   zusStatus?: ZusStatus;
 
+  @ApiPropertyOptional({ enum: AmlGroup, description: 'AML Group filter' })
+  @IsOptional()
+  @IsEnum(AmlGroup)
+  amlGroupEnum?: AmlGroup;
+
+  @ApiPropertyOptional({ description: 'GTU code filter' })
+  @IsOptional()
+  @Sanitize()
+  @IsString()
+  @MaxLength(10)
+  gtuCode?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by email copy preference' })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return value;
+  })
+  receiveEmailCopy?: boolean;
+
   @ApiPropertyOptional({ description: 'Filter by active status' })
   @IsOptional()
   @IsBoolean()
@@ -159,6 +183,26 @@ export class ClientFiltersDto {
     return value;
   })
   isActive?: boolean;
+
+  @ApiPropertyOptional({ description: 'Cooperation start date from (ISO date string)' })
+  @IsOptional()
+  @IsDateString()
+  cooperationStartDateFrom?: string;
+
+  @ApiPropertyOptional({ description: 'Cooperation start date to (ISO date string)' })
+  @IsOptional()
+  @IsDateString()
+  cooperationStartDateTo?: string;
+
+  @ApiPropertyOptional({ description: 'Company start date from (ISO date string)' })
+  @IsOptional()
+  @IsDateString()
+  companyStartDateFrom?: string;
+
+  @ApiPropertyOptional({ description: 'Company start date to (ISO date string)' })
+  @IsOptional()
+  @IsDateString()
+  companyStartDateTo?: string;
 
   @ApiPropertyOptional({
     description: 'Page number (1-based)',

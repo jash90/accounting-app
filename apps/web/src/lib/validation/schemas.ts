@@ -266,13 +266,27 @@ export const updateClientSchema = createClientSchema.partial();
 
 export type UpdateClientFormData = z.infer<typeof updateClientSchema>;
 
+export const customFieldFilterSchema = z.object({
+  fieldId: z.string().min(1),
+  operator: z.string().min(1),
+  value: z.union([z.string(), z.array(z.string())]),
+});
+
 export const clientFiltersSchema = z.object({
   search: z.string().optional(),
   employmentType: z.enum(['DG', 'DG_ETAT', 'DG_AKCJONARIUSZ', 'DG_HALF_TIME_BELOW_MIN', 'DG_HALF_TIME_ABOVE_MIN']).optional(),
   vatStatus: z.enum(['VAT_MONTHLY', 'VAT_QUARTERLY', 'NO', 'NO_WATCH_LIMIT']).optional(),
   taxScheme: z.enum(['PIT_17', 'PIT_19', 'LUMP_SUM', 'GENERAL']).optional(),
   zusStatus: z.enum(['FULL', 'PREFERENTIAL', 'NONE']).optional(),
+  amlGroupEnum: z.enum(['LOW', 'STANDARD', 'ELEVATED', 'HIGH']).optional(),
+  gtuCode: z.string().optional(),
+  receiveEmailCopy: z.boolean().optional(),
   isActive: z.boolean().optional(),
+  cooperationStartDateFrom: z.string().optional(),
+  cooperationStartDateTo: z.string().optional(),
+  companyStartDateFrom: z.string().optional(),
+  companyStartDateTo: z.string().optional(),
+  customFieldFilters: z.array(customFieldFilterSchema).optional(),
 });
 
 export type ClientFiltersFormData = z.infer<typeof clientFiltersSchema>;

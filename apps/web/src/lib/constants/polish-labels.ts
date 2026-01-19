@@ -44,7 +44,8 @@ export const ZusStatusLabels: Record<ZusStatus, string> = {
 // AML Group Labels
 export const AmlGroupLabels: Record<AmlGroup, string> = {
   [AmlGroup.LOW]: 'Niskie ryzyko',
-  [AmlGroup.MEDIUM]: 'Średnie ryzyko',
+  [AmlGroup.STANDARD]: 'Standardowe ryzyko',
+  [AmlGroup.ELEVATED]: 'Podwyższone ryzyko',
   [AmlGroup.HIGH]: 'Wysokie ryzyko',
 };
 
@@ -83,19 +84,19 @@ export const ConditionOperatorLabels: Record<ConditionOperator, string> = {
 
 // GTU Codes with Polish Labels
 export const GTU_CODES = [
-  { code: 'GTU_01', label: 'GTU_01 - Dostawa napojów alkoholowych' },
-  { code: 'GTU_02', label: 'GTU_02 - Dostawa towarów, o których mowa w art. 103 ust. 5aa' },
-  { code: 'GTU_03', label: 'GTU_03 - Dostawa oleju opałowego' },
-  { code: 'GTU_04', label: 'GTU_04 - Dostawa wyrobów tytoniowych' },
-  { code: 'GTU_05', label: 'GTU_05 - Dostawa odpadów' },
-  { code: 'GTU_06', label: 'GTU_06 - Dostawa urządzeń elektronicznych' },
-  { code: 'GTU_07', label: 'GTU_07 - Dostawa pojazdów oraz części samochodowych' },
-  { code: 'GTU_08', label: 'GTU_08 - Dostawa metali szlachetnych i nieszlachetnych' },
-  { code: 'GTU_09', label: 'GTU_09 - Dostawa leków oraz wyrobów medycznych' },
-  { code: 'GTU_10', label: 'GTU_10 - Dostawa budynków, budowli i gruntów' },
-  { code: 'GTU_11', label: 'GTU_11 - Świadczenie usług w zakresie przenoszenia uprawnień do emisji gazów cieplarnianych' },
-  { code: 'GTU_12', label: 'GTU_12 - Świadczenie usług o charakterze niematerialnym' },
-  { code: 'GTU_13', label: 'GTU_13 - Świadczenie usług transportowych i gospodarki magazynowej' },
+  { code: 'GTU_01', label: 'GTU_01 - Napoje alkoholowe' },
+  { code: 'GTU_02', label: 'GTU_02 - Paliwa i oleje napędowe' },
+  { code: 'GTU_03', label: 'GTU_03 - Oleje opałowe i smary' },
+  { code: 'GTU_04', label: 'GTU_04 - Wyroby tytoniowe, susz, płyny do e-papierosów' },
+  { code: 'GTU_05', label: 'GTU_05 - Odpady (złom, surowce wtórne)' },
+  { code: 'GTU_06', label: 'GTU_06 - Urządzenia elektroniczne (telefony, laptopy, konsole)' },
+  { code: 'GTU_07', label: 'GTU_07 - Pojazdy i części samochodowe' },
+  { code: 'GTU_08', label: 'GTU_08 - Metale szlachetne i jubilerstwo' },
+  { code: 'GTU_09', label: 'GTU_09 - Leki i wyroby medyczne' },
+  { code: 'GTU_10', label: 'GTU_10 - Budynki, budowle i grunty' },
+  { code: 'GTU_11', label: 'GTU_11 - Przenoszenie uprawnień do emisji gazów cieplarnianych' },
+  { code: 'GTU_12', label: 'GTU_12 - Usługi niematerialne (doradcze, księgowe, prawne, marketingowe)' },
+  { code: 'GTU_13', label: 'GTU_13 - Usługi transportowe i magazynowe' },
 ] as const;
 
 export type GtuCode = typeof GTU_CODES[number]['code'];
