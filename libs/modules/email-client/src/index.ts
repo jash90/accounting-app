@@ -1,8 +1,17 @@
+// Module
 export * from './lib/email-client.module';
-export * from './lib/entities/email-draft.entity';
-export * from './lib/services/email-draft.service';
-export * from './lib/services/email-client.service';
-export * from './lib/services/email-attachment.service';
-export * from './lib/services/email-ai.service';
-export * from './lib/dto/create-draft.dto';
-export * from './lib/dto/email-ai-options.dto';
+
+// Exceptions
+export * from './lib/exceptions';
+
+// Entities
+export * from './lib/entities';
+
+// Services
+export * from './lib/services';
+
+// Controllers
+export * from './lib/controllers';
+
+// DTOs
+export * from './lib/dto';
