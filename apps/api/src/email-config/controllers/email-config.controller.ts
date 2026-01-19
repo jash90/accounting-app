@@ -8,7 +8,6 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
-  ForbiddenException,
   Query,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
@@ -34,7 +33,7 @@ import { SendEmailDto } from '../dto/send-email.dto';
 import { TestSmtpDto, TestImapDto, TestConnectionResultDto } from '../dto/test-connection.dto';
 import { CurrentUser, Roles, RolesGuard } from '@accounting/auth';
 import { User, UserRole, EmailConfiguration } from '@accounting/common';
-import { OwnerOrAdminGuard } from '@accounting/rbac';
+import { OwnerOrAdminGuard, RequireCompany, RequireCompanyGuard } from '@accounting/rbac';
 
 @ApiTags('Email Configuration')
 @ApiBearerAuth('JWT-auth')
@@ -177,8 +176,9 @@ export class EmailConfigController {
   // ========== COMPANY EMAIL CONFIGURATION ENDPOINTS ==========
 
   @Get('company')
-  @UseGuards(RolesGuard, OwnerOrAdminGuard)
+  @UseGuards(RolesGuard, OwnerOrAdminGuard, RequireCompanyGuard)
   @Roles(UserRole.COMPANY_OWNER)
+  @RequireCompany()
   @ApiOperation({
     summary: 'Get company email configuration',
     description: 'Retrieve the email configuration for the company (COMPANY_OWNER only)',
@@ -188,16 +188,14 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER role required' })
   getCompanyEmailConfig(@CurrentUser() user: User) {
-    if (!user.companyId) {
-      throw new ForbiddenException('User is not associated with a company');
-    }
     return this.emailConfigService.getCompanyConfig(user.companyId);
   }
 
   @Post('company')
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(RolesGuard, OwnerOrAdminGuard)
+  @UseGuards(RolesGuard, OwnerOrAdminGuard, RequireCompanyGuard)
   @Roles(UserRole.COMPANY_OWNER)
+  @RequireCompany()
   @ApiOperation({
     summary: 'Create company email configuration',
     description: 'Create a new email configuration for the company (COMPANY_OWNER only)',
@@ -209,15 +207,13 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER role required' })
   createCompanyEmailConfig(@CurrentUser() user: User, @Body() createDto: CreateEmailConfigDto) {
-    if (!user.companyId) {
-      throw new ForbiddenException('User is not associated with a company');
-    }
     return this.emailConfigService.createCompanyConfig(user.companyId, createDto);
   }
 
   @Put('company')
-  @UseGuards(RolesGuard, OwnerOrAdminGuard)
+  @UseGuards(RolesGuard, OwnerOrAdminGuard, RequireCompanyGuard)
   @Roles(UserRole.COMPANY_OWNER)
+  @RequireCompany()
   @ApiOperation({
     summary: 'Update company email configuration',
     description: 'Update the email configuration for the company (COMPANY_OWNER only)',
@@ -229,16 +225,14 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER role required' })
   updateCompanyEmailConfig(@CurrentUser() user: User, @Body() updateDto: UpdateEmailConfigDto) {
-    if (!user.companyId) {
-      throw new ForbiddenException('User is not associated with a company');
-    }
     return this.emailConfigService.updateCompanyConfig(user.companyId, updateDto);
   }
 
   @Delete('company')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(RolesGuard, OwnerOrAdminGuard)
+  @UseGuards(RolesGuard, OwnerOrAdminGuard, RequireCompanyGuard)
   @Roles(UserRole.COMPANY_OWNER)
+  @RequireCompany()
   @ApiOperation({
     summary: 'Delete company email configuration',
     description: 'Delete the email configuration for the company (COMPANY_OWNER only)',
@@ -248,16 +242,14 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER role required' })
   async deleteCompanyEmailConfig(@CurrentUser() user: User) {
-    if (!user.companyId) {
-      throw new ForbiddenException('User is not associated with a company');
-    }
     await this.emailConfigService.deleteCompanyConfig(user.companyId);
   }
 
   @Post('company/send')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(RolesGuard, OwnerOrAdminGuard)
+  @UseGuards(RolesGuard, OwnerOrAdminGuard, RequireCompanyGuard)
   @Roles(UserRole.COMPANY_OWNER)
+  @RequireCompany()
   @ApiOperation({
     summary: 'Send email using company email configuration',
     description: 'Send an email using the company\'s SMTP configuration (COMPANY_OWNER only)',
@@ -269,15 +261,13 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER role required' })
   async sendCompanyEmail(@CurrentUser() user: User, @Body() sendDto: SendEmailDto) {
-    if (!user.companyId) {
-      throw new ForbiddenException('User is not associated with a company');
-    }
     await this.smtpImapService.sendCompanyEmail(user.companyId, sendDto);
   }
 
   @Get('company/inbox')
-  @UseGuards(RolesGuard, OwnerOrAdminGuard)
+  @UseGuards(RolesGuard, OwnerOrAdminGuard, RequireCompanyGuard)
   @Roles(UserRole.COMPANY_OWNER)
+  @RequireCompany()
   @ApiOperation({
     summary: 'Check company inbox',
     description: 'Retrieve recent emails from the company\'s inbox using IMAP (COMPANY_OWNER only)',
@@ -295,9 +285,6 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER role required' })
   async checkCompanyInbox(@CurrentUser() user: User, @Query('limit') limit?: number) {
-    if (!user.companyId) {
-      throw new ForbiddenException('User is not associated with a company');
-    }
     return this.smtpImapService.checkCompanyInbox(user.companyId, limit || 10);
   }
 
@@ -305,8 +292,9 @@ export class EmailConfigController {
 
   @Post('test/company/smtp')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(RolesGuard, OwnerOrAdminGuard)
+  @UseGuards(RolesGuard, OwnerOrAdminGuard, RequireCompanyGuard)
   @Roles(UserRole.COMPANY_OWNER)
+  @RequireCompany()
   @ApiOperation({
     summary: 'Test company SMTP connection',
     description: 'Test SMTP connection for company without sending an email (COMPANY_OWNER only)',
@@ -317,16 +305,14 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER role required' })
   async testCompanySmtp(@CurrentUser() user: User, @Body() testDto: TestSmtpDto) {
-    if (!user.companyId) {
-      throw new ForbiddenException('User is not associated with a company');
-    }
     return this.smtpImapService.testSmtpConnection(testDto);
   }
 
   @Post('test/company/imap')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(RolesGuard, OwnerOrAdminGuard)
+  @UseGuards(RolesGuard, OwnerOrAdminGuard, RequireCompanyGuard)
   @Roles(UserRole.COMPANY_OWNER)
+  @RequireCompany()
   @ApiOperation({
     summary: 'Test company IMAP connection',
     description: 'Test IMAP connection for company without fetching emails (COMPANY_OWNER only)',
@@ -337,9 +323,6 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER role required' })
   async testCompanyImap(@CurrentUser() user: User, @Body() testDto: TestImapDto) {
-    if (!user.companyId) {
-      throw new ForbiddenException('User is not associated with a company');
-    }
     return this.smtpImapService.testImapConnection(testDto);
   }
 

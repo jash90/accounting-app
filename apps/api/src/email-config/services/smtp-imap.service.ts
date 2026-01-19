@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, HttpException } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { simpleParser } from 'mailparser';
 import { EmailConfigService } from './email-config.service';
@@ -208,8 +208,9 @@ export class SmtpImapService {
         html: dto.html,
       });
     } catch (error) {
-      if (error.message?.includes('not found')) {
-        throw error; // Re-throw NotFoundException
+      // Re-throw NestJS HTTP exceptions (NotFoundException, etc.) as-is
+      if (error instanceof HttpException) {
+        throw error;
       }
       throw new BadRequestException(`Failed to send email: ${error.message}`);
     }
@@ -252,8 +253,9 @@ export class SmtpImapService {
         html: dto.html,
       });
     } catch (error) {
-      if (error.message?.includes('not found')) {
-        throw error; // Re-throw NotFoundException
+      // Re-throw NestJS HTTP exceptions (NotFoundException, etc.) as-is
+      if (error instanceof HttpException) {
+        throw error;
       }
       throw new BadRequestException(`Failed to send company email: ${error.message}`);
     }
