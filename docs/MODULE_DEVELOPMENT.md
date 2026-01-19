@@ -23,7 +23,20 @@
     - [Accessibility Best Practices](#accessibility-best-practices)
     - [Environment Configuration](#environment-configuration)
     - [Error Handling Patterns](#error-handling-patterns)
-15. [Advanced Module Example (AI Agent)](#advanced-module-example-ai-agent)
+15. [Module Configuration & Patterns](#module-configuration--patterns)
+    - [module.json Configuration File](#modulejson-configuration-file)
+    - [Exception Handling Pattern](#exception-handling-pattern)
+    - [Controller Route Ordering](#controller-route-ordering)
+    - [Module Dependencies](#module-dependencies)
+    - [TenantService for Multi-Tenancy](#tenantservice-for-multi-tenancy)
+    - [Barrel Exports Pattern](#barrel-exports-pattern)
+    - [EncryptionService (AES-256-GCM)](#encryptionservice-aes-256-gcm)
+16. [Frontend Module Patterns](#frontend-module-patterns)
+    - [Dashboard Page Pattern](#dashboard-page-pattern)
+    - [Dynamic Navigation Hook](#dynamic-navigation-hook)
+    - [Polish Localization](#polish-localization)
+    - [Role-Based Path Helper](#role-based-path-helper)
+17. [Advanced Module Example (AI Agent)](#advanced-module-example-ai-agent)
     - [Complex Multi-Entity Architecture](#complex-multi-entity-architecture)
     - [Sensitive Data Encryption](#sensitive-data-encryption)
     - [Provider Abstraction Pattern](#provider-abstraction-pattern)
@@ -241,7 +254,7 @@ nx generate @nx/node:library ai-agent --directory=libs/modules/ai-agent
 | Entities | 1 entity | 6 entities |
 | Controllers | 1 controller | 3 controllers |
 | Services | 1 service | 8 services |
-| Encryption | None | AES-256-CBC for API keys |
+| Encryption | None | AES-256-GCM for API keys |
 | File Upload | None | PDF/TXT with validation |
 | Vector Search | None | pgvector embeddings |
 | Rate Limiting | None | Token-based limits |
@@ -4873,7 +4886,7 @@ This is expected behavior. ADMIN role cannot access business data directly. Use 
 For modules handling API keys, credentials, or other sensitive data:
 
 ✅ **DO**:
-- **Encrypt at rest**: Use AES-256-CBC with random IV for API keys
+- **Encrypt at rest**: Use AES-256-GCM with random salt and IV for API keys
 - **Validate encryption key**: Check environment variable exists at startup (`OnModuleInit`)
 - **Use `hasApiKey` pattern**: Return boolean instead of actual key in responses
 - **Use `@Exclude()`**: Prevent sensitive fields from serialization
@@ -5394,7 +5407,7 @@ Before considering your module complete, verify all steps:
 For modules with complex features like AI Agent, add these additional checks:
 
 - [ ] **Sensitive Data Handling**
-  - [ ] API keys encrypted with AES-256-CBC
+  - [ ] API keys encrypted with AES-256-GCM
   - [ ] Encryption key loaded from environment variable
   - [ ] Encryption key existence validated at startup (`OnModuleInit`)
   - [ ] API keys never exposed in responses (use `hasApiKey` pattern)
@@ -5443,6 +5456,972 @@ For modules with complex features like AI Agent, add these additional checks:
   - [ ] Encryption keys are 32+ characters
   - [ ] Sensitive env vars not committed to repo
   - [ ] Startup validation for required env vars
+
+---
+
+## Module Configuration & Patterns
+
+This section covers essential configuration patterns used by all production modules.
+
+### module.json Configuration File
+
+Every module must have a `module.json` file in its root directory. This file defines metadata, permissions, and feature flags.
+
+**File Location**: `libs/modules/{module-name}/module.json`
+
+**Schema Reference**: `schemas/module.schema.json`
+
+```json
+{
+  "$schema": "../../../schemas/module.schema.json",
+  "slug": "time-tracking",
+  "name": "Logowanie czasu",
+  "description": "Moduł do logowania czasu pracy z timerem, raportami i integracją z klientami i zadaniami",
+  "version": "1.0.0",
+  "isActive": true,
+  "permissions": ["read", "write", "delete", "manage"],
+  "defaultPermissions": ["read", "write"],
+  "icon": "clock",
+  "category": "productivity",
+  "dependencies": ["ai-agent"],
+  "config": {
+    "enableTimer": true,
+    "enableManualEntry": true,
+    "enableProjects": true,
+    "enableBillable": true,
+    "enableApprovalWorkflow": true,
+    "enableReports": true,
+    "enableExport": true,
+    "enableTimeRounding": true,
+    "defaultRoundingInterval": 15
+  }
+}
+```
+
+**Configuration Fields**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `$schema` | string | ✅ | Path to JSON schema for validation |
+| `slug` | string | ✅ | URL-friendly identifier (e.g., `time-tracking`) |
+| `name` | string | ✅ | Display name in Polish (e.g., `Logowanie czasu`) |
+| `description` | string | ✅ | Description in Polish |
+| `version` | string | ✅ | Semantic version (e.g., `1.0.0`) |
+| `isActive` | boolean | ✅ | Whether module is enabled by default |
+| `permissions` | string[] | ✅ | Available permissions: `read`, `write`, `delete`, `manage` |
+| `defaultPermissions` | string[] | ✅ | Permissions granted by default |
+| `icon` | string | ✅ | Lucide icon name (e.g., `clock`, `users`, `mail`) |
+| `category` | string | ✅ | Category: `ai`, `crm`, `communication`, `productivity` |
+| `dependencies` | string[] | ❌ | Slugs of required modules |
+| `config` | object | ❌ | Module-specific feature flags |
+
+**Example module.json files from existing modules**:
+
+```json
+// libs/modules/ai-agent/module.json
+{
+  "slug": "ai-agent",
+  "name": "Agent AI",
+  "category": "ai",
+  "icon": "bot",
+  "config": {
+    "maxTokensPerDay": 100000,
+    "supportedProviders": ["openai", "openrouter"],
+    "enableRAG": true
+  }
+}
+
+// libs/modules/clients/module.json
+{
+  "slug": "clients",
+  "name": "Klienci",
+  "category": "crm",
+  "icon": "users",
+  "config": {
+    "enableCustomFields": true,
+    "enableIcons": true,
+    "enableChangeLog": true,
+    "maxClientsPerCompany": 10000
+  }
+}
+
+// libs/modules/email-client/module.json
+{
+  "slug": "email-client",
+  "name": "Klient Email",
+  "category": "communication",
+  "icon": "mail",
+  "dependencies": ["ai-agent"],
+  "config": {
+    "enableAIAssistant": true,
+    "enableDrafts": true,
+    "enableAttachments": true,
+    "maxAttachmentSize": 10485760
+  }
+}
+```
+
+---
+
+### Exception Handling Pattern
+
+Production modules use a three-tier exception handling architecture with error codes.
+
+**Structure**:
+```
+libs/modules/{module}/src/lib/exceptions/
+├── error-codes.enum.ts      # Centralized error codes
+├── {module}.exception.ts    # Base exception class + domain exceptions
+├── index.ts                 # Barrel exports
+```
+
+**Step 1: Define Error Codes**
+
+Create file: `libs/modules/{module}/src/lib/exceptions/error-codes.enum.ts`
+
+```typescript
+/**
+ * Centralized error codes for module
+ * Format: [ENTITY]_[NUMBER]
+ */
+export enum ClientErrorCode {
+  // Client errors (CLIENT_00X)
+  CLIENT_NOT_FOUND = 'CLIENT_001',
+  CLIENT_ALREADY_EXISTS = 'CLIENT_002',
+  CLIENT_DELETE_FAILED = 'CLIENT_003',
+  CLIENT_UPDATE_FAILED = 'CLIENT_004',
+  CLIENT_BATCH_OPERATION_FAILED = 'CLIENT_005',
+
+  // Icon errors (ICON_00X)
+  ICON_NOT_FOUND = 'ICON_001',
+  ICON_UPLOAD_FAILED = 'ICON_002',
+  ICON_INVALID_TYPE = 'ICON_003',
+
+  // Authorization errors
+  PERMISSION_DENIED = 'PERMISSION_DENIED',
+  UNAUTHORIZED = 'UNAUTHORIZED',
+
+  // System errors
+  INTERNAL_ERROR = 'INTERNAL_ERROR',
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
+}
+```
+
+**Step 2: Create Base Exception Class**
+
+Create file: `libs/modules/{module}/src/lib/exceptions/{module}.exception.ts`
+
+```typescript
+import { HttpException, HttpStatus } from '@nestjs/common';
+import { ClientErrorCode } from './error-codes.enum';
+
+export interface ClientExceptionContext {
+  clientId?: string;
+  companyId?: string;
+  userId?: string;
+  operationStage?: string;
+  additionalInfo?: Record<string, unknown>;
+}
+
+/**
+ * Base exception class for all module errors
+ * Provides structured error responses with error codes and context
+ */
+export class ClientException extends HttpException {
+  constructor(
+    public readonly errorCode: ClientErrorCode,
+    message: string,
+    public readonly context?: ClientExceptionContext,
+    statusCode: HttpStatus = HttpStatus.BAD_REQUEST,
+  ) {
+    super(
+      {
+        statusCode,
+        message,
+        errorCode,
+        context,
+        timestamp: new Date().toISOString(),
+      },
+      statusCode,
+    );
+  }
+}
+
+/**
+ * Client not found exception
+ * Use when client doesn't exist or belongs to different company
+ */
+export class ClientNotFoundException extends ClientException {
+  constructor(clientId: string, companyId?: string) {
+    super(
+      ClientErrorCode.CLIENT_NOT_FOUND,
+      `Client with ID ${clientId} not found`,
+      { clientId, companyId },
+      HttpStatus.NOT_FOUND,
+    );
+  }
+}
+
+/**
+ * Batch operation exception with detailed failure info
+ * Use when some items in batch fail
+ */
+export class ClientBatchOperationException extends ClientException {
+  constructor(
+    failedItems: Array<{ id: string; error: string }>,
+    context?: ClientExceptionContext,
+  ) {
+    super(
+      ClientErrorCode.CLIENT_BATCH_OPERATION_FAILED,
+      `Batch operation failed for ${failedItems.length} item(s)`,
+      { ...context, additionalInfo: { failedItems } },
+      HttpStatus.MULTI_STATUS,
+    );
+  }
+}
+```
+
+**Step 3: Create Barrel Export**
+
+Create file: `libs/modules/{module}/src/lib/exceptions/index.ts`
+
+```typescript
+export * from './error-codes.enum';
+export * from './client.exception';
+// Add other exception files as needed
+```
+
+**Usage in Services**:
+
+```typescript
+import { ClientNotFoundException } from '../exceptions';
+
+async findOne(id: string, companyId: string): Promise<Client> {
+  const client = await this.clientRepository.findOne({
+    where: { id, companyId },
+  });
+
+  if (!client) {
+    throw new ClientNotFoundException(id, companyId);
+  }
+
+  return client;
+}
+```
+
+---
+
+### Controller Route Ordering
+
+**IMPORTANT**: NestJS processes routes in the order controllers are registered. Specific routes must be registered BEFORE generic `/:id` routes.
+
+**Module Registration Order**:
+
+```typescript
+// libs/modules/tasks/src/lib/tasks.module.ts
+@Module({
+  controllers: [
+    // More specific routes must be registered before generic /:id routes
+    TasksLookupController,    // Handles: /tasks/lookups/*
+    TaskLabelsController,     // Handles: /tasks/labels/*
+    TaskCommentsController,   // Handles: /tasks/:taskId/comments/*
+    TaskDependenciesController, // Handles: /tasks/:taskId/dependencies/*
+    TasksController,          // Handles: /tasks/:id (MUST BE LAST)
+  ],
+  // ...
+})
+export class TasksModule {}
+```
+
+**Why This Matters**:
+
+Without proper ordering:
+- Request to `/tasks/lookups` might match `/:id` route first
+- `lookups` would be interpreted as a task ID
+- Results in "Task not found" errors for valid lookup requests
+
+**Lookup Controller Pattern**:
+
+```typescript
+// libs/modules/tasks/src/lib/controllers/tasks-lookup.controller.ts
+@ApiTags('Tasks')
+@Controller('tasks/lookups')
+@UseGuards(JwtAuthGuard, ModuleAccessGuard)
+@RequireModule('tasks')
+export class TasksLookupController {
+  @Get('statuses')
+  @ApiOperation({ summary: 'Get available task statuses' })
+  getStatuses(): TaskStatus[] {
+    return Object.values(TaskStatus);
+  }
+
+  @Get('priorities')
+  @ApiOperation({ summary: 'Get available task priorities' })
+  getPriorities(): TaskPriority[] {
+    return Object.values(TaskPriority);
+  }
+
+  @Get('assignees')
+  @ApiOperation({ summary: 'Get available assignees for current company' })
+  async getAssignees(@CurrentUser() user: User): Promise<UserBasicInfo[]> {
+    return this.tasksService.getAvailableAssignees(user);
+  }
+}
+```
+
+---
+
+### Module Dependencies
+
+Modules can declare dependencies on other modules using the `dependencies` field in `module.json`.
+
+**Declaring Dependencies**:
+
+```json
+// libs/modules/email-client/module.json
+{
+  "slug": "email-client",
+  "name": "Klient Email",
+  "dependencies": ["ai-agent"]
+}
+```
+
+**Importing Dependent Modules**:
+
+```typescript
+// libs/modules/email-client/src/lib/email-client.module.ts
+import { AIAgentModule } from '@accounting/modules/ai-agent';
+
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([EmailDraft]),
+    EmailModule,
+    StorageModule,
+    RBACModule,
+    AIAgentModule,  // Import dependent module
+  ],
+  // ...
+})
+export class EmailClientModule {}
+```
+
+**Using Dependent Services**:
+
+```typescript
+// libs/modules/email-client/src/lib/services/email-ai.service.ts
+import { AIConversationService } from '@accounting/modules/ai-agent';
+
+@Injectable()
+export class EmailAiService {
+  constructor(
+    private readonly aiConversationService: AIConversationService,
+  ) {}
+
+  async generateEmailDraft(prompt: string, user: User): Promise<string> {
+    const response = await this.aiConversationService.sendMessage({
+      message: prompt,
+      user,
+    });
+    return response.content;
+  }
+}
+```
+
+---
+
+### TenantService for Multi-Tenancy
+
+The `TenantService` from `@accounting/common` provides centralized logic for determining the effective company ID based on user role.
+
+**Service Location**: `libs/common/src/lib/services/tenant.service.ts`
+
+```typescript
+import { Injectable, ForbiddenException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Company } from '../entities/company.entity';
+import { User } from '../entities/user.entity';
+import { UserRole } from '../enums/user-role.enum';
+
+@Injectable()
+export class TenantService {
+  constructor(
+    @InjectRepository(Company)
+    private readonly companyRepository: Repository<Company>,
+  ) {}
+
+  /**
+   * Gets the effective company ID for multi-tenant operations.
+   * - For ADMIN users: Returns the system company ID
+   * - For other users: Returns their assigned company ID
+   */
+  async getEffectiveCompanyId(user: User): Promise<string> {
+    if (user.role === UserRole.ADMIN) {
+      const systemCompany = await this.companyRepository.findOne({
+        where: { isSystemCompany: true },
+      });
+      if (!systemCompany) {
+        throw new ForbiddenException('System company not found for admin user');
+      }
+      return systemCompany.id;
+    }
+    if (!user.companyId) {
+      throw new ForbiddenException('User is not assigned to any company');
+    }
+    return user.companyId;
+  }
+}
+```
+
+**Usage in Services**:
+
+```typescript
+import { TenantService } from '@accounting/common';
+
+@Injectable()
+export class TasksService {
+  constructor(
+    private readonly tenantService: TenantService,
+    @InjectRepository(Task)
+    private readonly taskRepository: Repository<Task>,
+  ) {}
+
+  async findAll(user: User): Promise<Task[]> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+
+    return this.taskRepository.find({
+      where: { companyId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+}
+```
+
+**Alternative: Manual System Company Lookup**
+
+For simple cases, you can still use manual lookup:
+
+```typescript
+private async getSystemCompany(): Promise<Company> {
+  const systemCompany = await this.companyRepository.findOne({
+    where: { isSystemCompany: true },
+  });
+  if (!systemCompany) {
+    throw new ForbiddenException('System company not found');
+  }
+  return systemCompany;
+}
+```
+
+---
+
+### Barrel Exports Pattern
+
+All modules use barrel exports (index.ts files) to simplify imports and maintain clean module boundaries.
+
+**Module-Level Export** (`libs/modules/{module}/src/index.ts`):
+
+```typescript
+// Export module class
+export * from './lib/{module}.module';
+
+// Export services (for inter-module dependencies)
+export * from './lib/services';
+
+// Export DTOs (for shared types)
+export * from './lib/dto';
+
+// Export exceptions (for error handling)
+export * from './lib/exceptions';
+```
+
+**Directory-Level Exports**:
+
+```typescript
+// libs/modules/tasks/src/lib/dto/index.ts
+export * from './task.dto';
+export * from './task-label.dto';
+export * from './task-comment.dto';
+export * from './task-dependency.dto';
+export * from './task-response.dto';
+
+// libs/modules/tasks/src/lib/controllers/index.ts
+export * from './tasks.controller';
+export * from './tasks-lookup.controller';
+export * from './task-labels.controller';
+export * from './task-comments.controller';
+export * from './task-dependencies.controller';
+
+// libs/modules/tasks/src/lib/exceptions/index.ts
+export * from './error-codes.enum';
+export * from './task.exception';
+
+// libs/modules/tasks/src/lib/services/index.ts
+export * from './tasks.service';
+export * from './task-labels.service';
+export * from './task-comments.service';
+export * from './task-dependencies.service';
+```
+
+**Import Pattern**:
+
+```typescript
+// Clean imports from module boundary
+import { TasksModule, TasksService } from '@accounting/modules/tasks';
+import { CreateTaskDto, TaskResponseDto } from '@accounting/modules/tasks';
+import { TaskNotFoundException } from '@accounting/modules/tasks';
+```
+
+---
+
+### EncryptionService (AES-256-GCM)
+
+The `EncryptionService` from `@accounting/common` provides authenticated encryption for sensitive data using AES-256-GCM.
+
+**Service Location**: `libs/common/src/lib/services/encryption.service.ts`
+
+**Key Features**:
+- **Algorithm**: AES-256-GCM (authenticated encryption)
+- **Format**: `salt:iv:authTag:encryptedData` (all hex-encoded)
+- **Key Derivation**: scrypt with random salt
+- **Development**: Persists key to `.encryption-key.dev` file
+- **Production**: Requires `ENCRYPTION_SECRET` environment variable (≥32 characters)
+
+**Usage Example**:
+
+```typescript
+import { EncryptionService } from '@accounting/common';
+
+@Injectable()
+export class AIConfigurationService {
+  constructor(
+    private readonly encryptionService: EncryptionService,
+    @InjectRepository(AIConfiguration)
+    private readonly configRepository: Repository<AIConfiguration>,
+  ) {}
+
+  async saveApiKey(configId: string, apiKey: string): Promise<void> {
+    // Encrypt the API key before saving
+    const encryptedKey = await this.encryptionService.encrypt(apiKey);
+
+    await this.configRepository.update(configId, {
+      encryptedApiKey: encryptedKey,
+    });
+  }
+
+  async getApiKey(configId: string): Promise<string> {
+    const config = await this.configRepository.findOneOrFail({
+      where: { id: configId },
+    });
+
+    // Decrypt the API key when needed
+    return this.encryptionService.decrypt(config.encryptedApiKey);
+  }
+
+  async hasApiKey(configId: string): Promise<boolean> {
+    const config = await this.configRepository.findOne({
+      where: { id: configId },
+    });
+
+    return config?.encryptedApiKey
+      ? this.encryptionService.isEncryptedFormat(config.encryptedApiKey)
+      : false;
+  }
+}
+```
+
+**Environment Configuration**:
+
+```env
+# .env (production)
+ENCRYPTION_SECRET=your-very-secure-encryption-key-at-least-32-chars
+
+# Development: Key auto-generated and persisted to .encryption-key.dev
+```
+
+**Best Practices**:
+
+✅ **DO**:
+- Use `hasApiKey` pattern in responses (never expose actual key)
+- Use `@Exclude()` decorator on encrypted fields in entities
+- Validate encryption configuration at startup
+
+❌ **DON'T**:
+- Return encrypted values in API responses
+- Log decrypted sensitive data
+- Commit `.encryption-key.dev` to version control
+
+---
+
+## Frontend Module Patterns
+
+### Dashboard Page Pattern
+
+Each module has a dashboard page that serves as the entry point with statistics, view options, and settings access.
+
+**File Location**: `apps/web/src/pages/modules/{module}/{module}-dashboard.tsx`
+
+**Pattern Structure**:
+
+```typescript
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  CheckSquare, List, LayoutGrid, Calendar, GanttChartSquare,
+  Settings, ArrowRight, Clock, AlertCircle, CheckCircle2,
+} from 'lucide-react';
+import { useAuthContext } from '@/contexts/auth-context';
+import { useTasks } from '@/lib/hooks/use-tasks';
+import { UserRole, TaskStatus } from '@/types/enums';
+
+export default function TasksDashboardPage() {
+  const { user } = useAuthContext();
+  const { data, isPending } = useTasks();
+
+  // Extract data from paginated response
+  const tasks = data?.data ?? [];
+
+  // Calculate statistics
+  const totalTasks = tasks.length;
+  const inProgressTasks = tasks.filter((t) => t.status === TaskStatus.IN_PROGRESS).length;
+  const overdueTasks = tasks.filter(
+    (t) => t.dueDate && new Date(t.dueDate) < new Date() &&
+           t.status !== TaskStatus.DONE && t.status !== TaskStatus.CANCELLED
+  ).length;
+  const completedTasks = tasks.filter((t) => t.status === TaskStatus.DONE).length;
+
+  // Role-based path helper
+  const getBasePath = () => {
+    switch (user?.role) {
+      case UserRole.ADMIN: return '/admin/modules/tasks';
+      case UserRole.COMPANY_OWNER: return '/company/modules/tasks';
+      default: return '/modules/tasks';
+    }
+  };
+
+  const basePath = getBasePath();
+
+  // View options with Polish labels
+  const views = [
+    {
+      title: 'Lista zadań',
+      description: 'Przeglądaj wszystkie zadania w formie tabeli',
+      icon: List,
+      href: `${basePath}/list`,
+      gradient: 'bg-apptax-gradient',
+    },
+    {
+      title: 'Tablica Kanban',
+      description: 'Zarządzaj zadaniami metodą przeciągnij i upuść',
+      icon: LayoutGrid,
+      href: `${basePath}/kanban`,
+      gradient: 'bg-apptax-dark-gradient',
+    },
+    {
+      title: 'Kalendarz',
+      description: 'Wyświetl zadania w widoku kalendarza',
+      icon: Calendar,
+      href: `${basePath}/calendar`,
+      gradient: 'bg-gradient-to-br from-purple-500 to-pink-500',
+    },
+  ];
+
+  // Settings only for admin/owner
+  const showSettings = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER;
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header with Polish title */}
+      <div>
+        <h1 className="text-3xl font-bold text-apptax-navy flex items-center gap-3">
+          Moduł Zadania
+          <div className="w-3 h-3 rounded-full bg-apptax-teal" />
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Zarządzanie zadaniami z wieloma widokami
+        </p>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        {/* Total tasks */}
+        <Card className="border-apptax-soft-teal/30">
+          <CardHeader className="pb-2">
+            <CardDescription>Wszystkie zadania</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-apptax-gradient text-white">
+                <CheckSquare className="h-5 w-5" />
+              </div>
+              <span className="text-3xl font-bold text-apptax-navy">{totalTasks}</span>
+            </div>
+          </CardContent>
+        </Card>
+        {/* Additional stat cards... */}
+      </div>
+
+      {/* View Cards */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {views.map((view) => (
+          <Card key={view.title} className="hover:shadow-apptax-md transition-all">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className={`p-3 rounded-xl ${view.gradient} text-white`}>
+                  <view.icon className="h-6 w-6" />
+                </div>
+                <CardTitle>{view.title}</CardTitle>
+              </div>
+              <CardDescription>{view.description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link to={view.href}>
+                <Button className="w-full bg-apptax-blue hover:bg-apptax-blue/90">
+                  Otwórz
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Settings Card (admin/owner only) */}
+      {showSettings && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-xl bg-gray-700 text-white">
+                <Settings className="h-6 w-6" />
+              </div>
+              <CardTitle>Ustawienia modułu</CardTitle>
+            </div>
+            <CardDescription>
+              Zarządzaj etykietami, domyślnymi ustawieniami i powiadomieniami
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link to={`${basePath}/settings`}>
+              <Button variant="outline" className="w-full">
+                Otwórz ustawienia
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+### Dynamic Navigation Hook
+
+The navigation is built dynamically from the API using the `useNavigationItems` hook.
+
+**File Location**: `apps/web/src/hooks/use-navigation-items.ts`
+
+```typescript
+import { useMemo } from 'react';
+import { LayoutDashboard, Users, Building2, Package } from 'lucide-react';
+import { UserDto } from '@/types/dtos';
+import { UserRole } from '@/types/enums';
+import { useModules } from '@/lib/hooks/use-modules';
+import { useCompanyModules } from '@/lib/hooks/use-permissions';
+import { NavItem } from '@/components/sidebar';
+
+export function useNavigationItems(user: UserDto | null): NavItem[] {
+  // Fetch modules based on user role
+  const { data: allModules } = useModules();
+  const { data: companyModules } = useCompanyModules();
+
+  return useMemo(() => {
+    if (!user) return [];
+
+    const baseItems: NavItem[] = [];
+
+    switch (user.role) {
+      case UserRole.ADMIN:
+        // Admin base navigation
+        baseItems.push(
+          { label: 'Pulpit', href: '/admin', icon: LayoutDashboard },
+          { label: 'Użytkownicy', href: '/admin/users', icon: Users },
+          { label: 'Firmy', href: '/admin/companies', icon: Building2 },
+          { label: 'Moduły', href: '/admin/modules', icon: Package },
+        );
+
+        // Add all modules for admin
+        if (allModules) {
+          allModules.forEach((module) => {
+            if (module.isActive) {
+              baseItems.push({
+                label: module.name, // Polish name from module.json
+                href: `/admin/modules/${module.slug}`,
+                icon: Package,
+              });
+            }
+          });
+        }
+        break;
+
+      case UserRole.COMPANY_OWNER:
+        // Company owner base navigation
+        baseItems.push(
+          { label: 'Pulpit', href: '/company', icon: LayoutDashboard },
+          { label: 'Pracownicy', href: '/company/employees', icon: Users },
+          { label: 'Moduły', href: '/company/modules', icon: Package },
+        );
+
+        // Add company modules for company owner
+        if (companyModules) {
+          companyModules.forEach((module) => {
+            if (module.isActive) {
+              baseItems.push({
+                label: module.name,
+                href: `/company/modules/${module.slug}`,
+                icon: Package,
+              });
+            }
+          });
+        }
+        break;
+
+      case UserRole.EMPLOYEE:
+        // Employee base navigation
+        baseItems.push(
+          { label: 'Pulpit', href: '/modules', icon: LayoutDashboard },
+        );
+
+        // Add company modules for employee
+        if (companyModules) {
+          companyModules.forEach((module) => {
+            if (module.isActive) {
+              baseItems.push({
+                label: module.name,
+                href: `/modules/${module.slug}`,
+                icon: Package,
+              });
+            }
+          });
+        }
+        break;
+    }
+
+    return baseItems;
+  }, [user, allModules, companyModules]);
+}
+```
+
+---
+
+### Polish Localization
+
+All user-facing text must be in Polish. Use the constants file for reusable labels.
+
+**File Location**: `apps/web/src/lib/constants/polish-labels.ts`
+
+```typescript
+import { TaskStatus, TaskPriority, CustomFieldType } from '@/types/enums';
+
+// Task Status Labels
+export const TaskStatusLabels: Record<TaskStatus, string> = {
+  [TaskStatus.TODO]: 'Do zrobienia',
+  [TaskStatus.IN_PROGRESS]: 'W trakcie',
+  [TaskStatus.DONE]: 'Ukończone',
+  [TaskStatus.CANCELLED]: 'Anulowane',
+};
+
+// Task Priority Labels
+export const TaskPriorityLabels: Record<TaskPriority, string> = {
+  [TaskPriority.LOW]: 'Niski',
+  [TaskPriority.MEDIUM]: 'Średni',
+  [TaskPriority.HIGH]: 'Wysoki',
+  [TaskPriority.URGENT]: 'Pilny',
+};
+
+// Custom Field Type Labels
+export const CustomFieldTypeLabels: Record<CustomFieldType, string> = {
+  [CustomFieldType.TEXT]: 'Tekst',
+  [CustomFieldType.NUMBER]: 'Liczba',
+  [CustomFieldType.DATE]: 'Data',
+  [CustomFieldType.BOOLEAN]: 'Tak/Nie',
+  [CustomFieldType.ENUM]: 'Lista wyboru',
+};
+
+// Common UI Labels
+export const CommonLabels = {
+  actions: 'Akcje',
+  save: 'Zapisz',
+  cancel: 'Anuluj',
+  delete: 'Usuń',
+  edit: 'Edytuj',
+  create: 'Utwórz',
+  search: 'Szukaj',
+  filter: 'Filtruj',
+  loading: 'Ładowanie...',
+  noResults: 'Brak wyników',
+  confirmDelete: 'Czy na pewno chcesz usunąć?',
+};
+```
+
+**Toast Messages in Polish**:
+
+```typescript
+import { toast } from '@/hooks/use-toast';
+
+// Success messages
+toast({
+  title: 'Sukces',
+  description: 'Zadanie zostało utworzone',
+});
+
+// Error messages
+toast({
+  title: 'Błąd',
+  description: 'Nie udało się utworzyć zadania',
+  variant: 'destructive',
+});
+
+// With error context
+onError: (error: ApiErrorResponse) => {
+  toast({
+    title: 'Błąd',
+    description: error.response?.data?.message || 'Wystąpił nieoczekiwany błąd',
+    variant: 'destructive',
+  });
+}
+```
+
+---
+
+### Role-Based Path Helper
+
+Use the `getBasePath` helper in all module pages to generate correct URLs based on user role.
+
+```typescript
+import { useAuthContext } from '@/contexts/auth-context';
+import { UserRole } from '@/types/enums';
+
+export function useModuleBasePath(moduleSlug: string): string {
+  const { user } = useAuthContext();
+
+  switch (user?.role) {
+    case UserRole.ADMIN:
+      return `/admin/modules/${moduleSlug}`;
+    case UserRole.COMPANY_OWNER:
+      return `/company/modules/${moduleSlug}`;
+    default:
+      return `/modules/${moduleSlug}`;
+  }
+}
+
+// Usage in components
+const basePath = useModuleBasePath('tasks');
+// Navigate to: basePath + '/list', basePath + '/kanban', etc.
+```
 
 ---
 
