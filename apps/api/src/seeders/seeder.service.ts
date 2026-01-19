@@ -50,6 +50,11 @@ export class SeederService {
     // Clear existing data
     await this.clearDatabase();
 
+    // Re-sync modules after clearing database
+    // (ModuleDiscoveryService synced during app init, but clearDatabase() truncated the table)
+    this.logger.log('Re-syncing modules after database clear...');
+    await this.moduleDiscoveryService.reloadModules();
+
     // Seed data in correct order
     const admin = await this.seedAdmin();
     const _systemCompany = await this.seedSystemAdminCompany(admin);
@@ -57,8 +62,7 @@ export class SeederService {
     await this.seedEmailConfigurations(companyA, ownerA, employeesA);
 
     // Use file-based module discovery instead of manual seeding
-    // ModuleDiscoveryService already synced modules to DB during app initialization
-    // We just need to wait for it to complete and then fetch modules from DB
+    // Modules are now synced in the database after reloadModules()
     this.logger.log('Using file-based module discovery...');
     const modules = await this.getDiscoveredModulesFromDb();
 
@@ -438,12 +442,12 @@ export class SeederService {
       smtpPort: 465,
       smtpSecure: true,
       smtpUser: 'bartlomiej.zimny@onet.pl',
-      smtpPassword: '%UsDZp!26mCkVzFE#*a6',
+      smtpPassword: 'jN%450ve*E0^aU7!Pk%9',
       imapHost: 'imap.poczta.onet.pl',
       imapPort: 993,
       imapTls: true,
       imapUser: 'bartlomiej.zimny@onet.pl',
-      imapPassword: '%UsDZp!26mCkVzFE#*a6',
+      imapPassword: 'jN%450ve*E0^aU7!Pk%9',
       displayName: 'Tech Startup A - Company Email',
     };
 
