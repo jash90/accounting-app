@@ -16,6 +16,7 @@ import {
   useExportClients,
   useImportClients,
   useDownloadImportTemplate,
+  useFieldDefinitions,
 } from '@/lib/hooks/use-clients';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import { PageHeader } from '@/components/common/page-header';
@@ -34,7 +35,6 @@ import {
   History,
   ArrowLeft,
   Download,
-  Upload,
   BarChart3,
 } from 'lucide-react';
 import {
@@ -53,6 +53,10 @@ import { BulkActionsToolbar, BulkEditChanges } from '@/components/clients/bulk-a
 import { ExportImportDialog } from '@/components/clients/export-import-dialog';
 import { DuplicateWarningDialog } from '@/components/clients/duplicate-warning-dialog';
 import { StatisticsDashboard } from '@/components/clients/statistics-dashboard';
+import { ClientGrid } from '@/components/clients/client-grid';
+import { ViewModeToggle } from '@/components/common/view-mode-toggle';
+import { ColumnVisibilityDropdown } from '@/components/common/column-visibility-dropdown';
+import { useTablePreferences, ColumnConfig } from '@/lib/hooks/use-table-preferences';
 import { DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
 import { useAuthContext } from '@/contexts/auth-context';
 import {
@@ -84,6 +88,44 @@ export default function ClientsListPage() {
 
   const basePath = getBasePath();
 
+  // Fetch custom field definitions
+  const { data: fieldDefinitionsResponse } = useFieldDefinitions({ isActive: true });
+  const fieldDefinitions = fieldDefinitionsResponse?.data ?? [];
+
+  // Column configuration for table preferences (including custom fields)
+  const columnConfig: ColumnConfig[] = useMemo(() => {
+    const staticColumns: ColumnConfig[] = [
+      { id: 'name', label: 'Nazwa', alwaysVisible: true },
+      { id: 'icons', label: 'Ikony', defaultVisible: true },
+      { id: 'nip', label: 'NIP', defaultVisible: true },
+      { id: 'employmentType', label: 'Zatrudnienie', defaultVisible: true },
+      { id: 'vatStatus', label: 'VAT', defaultVisible: true },
+      { id: 'taxScheme', label: 'Opodatkowanie', defaultVisible: true },
+      { id: 'email', label: 'Email', defaultVisible: true },
+    ];
+
+    // Add custom field columns
+    const customFieldColumns: ColumnConfig[] = fieldDefinitions.map((field) => ({
+      id: `customField_${field.id}`,
+      label: field.label,
+      defaultVisible: false, // Custom fields hidden by default
+    }));
+
+    return [
+      ...staticColumns,
+      ...customFieldColumns,
+      { id: 'actions', label: 'Akcje', alwaysVisible: true },
+    ];
+  }, [fieldDefinitions]);
+
+  const {
+    viewMode,
+    visibleColumns,
+    setViewMode,
+    toggleColumn,
+    resetToDefaults,
+  } = useTablePreferences('clients-list', columnConfig);
+
   const [filters, setFilters] = useState<ClientFiltersDto>({});
   const { data: clientsResponse, isPending } = useClients(filters);
   const clients = clientsResponse?.data ?? [];
@@ -106,7 +148,7 @@ export default function ClientsListPage() {
   const [deletingClient, setDeletingClient] = useState<ClientResponseDto | null>(null);
   const [restoringClient, setRestoringClient] = useState<ClientResponseDto | null>(null);
   const [selectedClients, setSelectedClients] = useState<ClientResponseDto[]>([]);
-  const [showStatistics, setShowStatistics] = useState(true);
+  const [showStatistics, setShowStatistics] = useState(false);
   const [exportImportOpen, setExportImportOpen] = useState(false);
   const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
   const [duplicateCheckResult, setDuplicateCheckResult] = useState<DuplicateCheckResultDto | null>(null);
@@ -295,6 +337,36 @@ export default function ClientsListPage() {
           </span>
         ),
       },
+      // Custom field columns
+      ...fieldDefinitions.map((field) => ({
+        id: `customField_${field.id}`,
+        header: field.label,
+        cell: ({ row }: { row: { original: ClientResponseDto } }) => {
+          const customFieldValue = row.original.customFieldValues?.find(
+            (cfv) => cfv.fieldDefinitionId === field.id
+          );
+          const value = customFieldValue?.value;
+
+          if (!value) {
+            return <span className="text-muted-foreground">-</span>;
+          }
+
+          // Format based on field type
+          if (field.fieldType === 'BOOLEAN') {
+            return <span>{value === 'true' ? 'Tak' : 'Nie'}</span>;
+          }
+
+          if (field.fieldType === 'DATE') {
+            try {
+              return <span className="text-sm">{new Date(value).toLocaleDateString('pl-PL')}</span>;
+            } catch {
+              return <span className="text-sm">{value}</span>;
+            }
+          }
+
+          return <span className="text-sm truncate max-w-[150px] block">{value}</span>;
+        },
+      })),
       {
         id: 'actions',
         header: 'Akcje',
@@ -364,7 +436,7 @@ export default function ClientsListPage() {
         },
       },
     ],
-    [navigate, hasWritePermission, hasDeletePermission, basePath]
+    [navigate, hasWritePermission, hasDeletePermission, basePath, fieldDefinitions]
   );
 
   return (
@@ -382,6 +454,16 @@ export default function ClientsListPage() {
         icon={<Users className="h-6 w-6" />}
         action={
           <div className="flex items-center gap-2">
+            <ViewModeToggle
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+            />
+            <ColumnVisibilityDropdown
+              columns={columnConfig}
+              visibleColumns={visibleColumns}
+              onToggleColumn={toggleColumn}
+              onResetToDefaults={resetToDefaults}
+            />
             <Button
               variant="outline"
               size="sm"
@@ -437,16 +519,34 @@ export default function ClientsListPage() {
 
       <Card className="border-apptax-soft-teal/30">
         <CardContent className="p-0">
-          <DataTable
-            columns={columns}
-            data={clients}
-            isLoading={isPending}
-            onRowClick={(client) => navigate(`${basePath}/${client.id}`)}
-            selectable
-            selectedRows={selectedClients}
-            onSelectionChange={setSelectedClients}
-            getRowId={(row) => row.id}
-          />
+          {viewMode === 'table' ? (
+            <DataTable
+              columns={columns}
+              data={clients}
+              isLoading={isPending}
+              onRowClick={(client) => navigate(`${basePath}/${client.id}`)}
+              selectable
+              selectedRows={selectedClients}
+              onSelectionChange={setSelectedClients}
+              getRowId={(row) => row.id}
+              columnVisibility={visibleColumns}
+            />
+          ) : (
+            <ClientGrid
+              clients={clients}
+              basePath={basePath}
+              isLoading={isPending}
+              selectedClients={selectedClients}
+              onSelectionChange={setSelectedClients}
+              onEditClient={hasWritePermission ? setEditingClient : undefined}
+              onDeleteClient={hasDeletePermission ? setDeletingClient : undefined}
+              onRestoreClient={hasWritePermission ? setRestoringClient : undefined}
+              hasWritePermission={hasWritePermission}
+              hasDeletePermission={hasDeletePermission}
+              fieldDefinitions={fieldDefinitions}
+              visibleColumns={visibleColumns}
+            />
+          )}
         </CardContent>
       </Card>
 
