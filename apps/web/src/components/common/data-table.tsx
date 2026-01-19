@@ -7,6 +7,7 @@ import {
   SortingState,
   ColumnDef,
   RowSelectionState,
+  VisibilityState,
 } from '@tanstack/react-table';
 import { useState, useEffect } from 'react';
 import {
@@ -34,6 +35,7 @@ interface DataTableProps<TData, TValue> {
   selectedRows?: TData[];
   onSelectionChange?: (selectedRows: TData[]) => void;
   getRowId?: (row: TData) => string;
+  columnVisibility?: string[];
 }
 
 export function DataTable<TData, TValue>({
@@ -48,9 +50,26 @@ export function DataTable<TData, TValue>({
   selectedRows = [],
   onSelectionChange,
   getRowId,
+  columnVisibility: visibleColumnIds,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+  // Sync columnVisibility from props
+  useEffect(() => {
+    if (visibleColumnIds) {
+      const newVisibility: VisibilityState = {};
+      // Hide columns not in the visibleColumnIds list
+      columns.forEach((col) => {
+        const colId = 'accessorKey' in col ? String(col.accessorKey) : col.id;
+        if (colId) {
+          newVisibility[colId] = visibleColumnIds.includes(colId);
+        }
+      });
+      setColumnVisibility(newVisibility);
+    }
+  }, [visibleColumnIds, columns]);
 
   // Sync external selectedRows with internal selection state
   useEffect(() => {
@@ -123,7 +142,9 @@ export function DataTable<TData, TValue>({
     state: {
       sorting,
       rowSelection: selectable ? rowSelection : {},
+      columnVisibility: visibleColumnIds ? columnVisibility : {},
     },
+    onColumnVisibilityChange: setColumnVisibility,
     enableRowSelection: selectable,
     initialState: {
       pagination: {
