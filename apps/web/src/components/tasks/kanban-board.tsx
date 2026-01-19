@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   DndContext,
   DragEndEvent,
@@ -48,7 +48,7 @@ export function KanbanBoard({
   const [localData, setLocalData] = useState<KanbanBoardDto>(data);
 
   // Update local data when prop changes
-  useMemo(() => {
+  useEffect(() => {
     setLocalData(data);
   }, [data]);
 

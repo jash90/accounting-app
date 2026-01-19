@@ -53,7 +53,9 @@ export function useCreateClient() {
   return useMutation({
     mutationFn: (clientData: CreateClientDto) => clientsApi.create(clientData),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+      // Invalidate list views and statistics
+      queryClient.invalidateQueries({ queryKey: ['clients', 'list'], exact: false });
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.statistics });
       toast({
         title: 'Sukces',
         description: 'Klient został utworzony',
@@ -77,8 +79,9 @@ export function useUpdateClient() {
     mutationFn: ({ id, data }: { id: string; data: UpdateClientDto }) =>
       clientsApi.update(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+      // Invalidate specific client and list views
       queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: ['clients', 'list'], exact: false });
       toast({
         title: 'Sukces',
         description: 'Klient został zaktualizowany',
@@ -100,8 +103,11 @@ export function useDeleteClient() {
 
   return useMutation({
     mutationFn: (id: string) => clientsApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+    onSuccess: (_, deletedId) => {
+      // Remove from cache and invalidate list views
+      queryClient.removeQueries({ queryKey: queryKeys.clients.detail(deletedId) });
+      queryClient.invalidateQueries({ queryKey: ['clients', 'list'], exact: false });
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.statistics });
       toast({
         title: 'Sukces',
         description: 'Klient został usunięty',
@@ -123,8 +129,11 @@ export function useRestoreClient() {
 
   return useMutation({
     mutationFn: (id: string) => clientsApi.restore(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+    onSuccess: (_, restoredId) => {
+      // Invalidate restored client and list views
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(restoredId) });
+      queryClient.invalidateQueries({ queryKey: ['clients', 'list'], exact: false });
+      queryClient.invalidateQueries({ queryKey: queryKeys.clients.statistics });
       toast({
         title: 'Sukces',
         description: 'Klient został przywrócony',
@@ -261,8 +270,13 @@ export function useBulkDeleteClients() {
 
   return useMutation({
     mutationFn: (dto: BulkDeleteClientsDto) => clientsApi.bulkDelete(dto),
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+    onSuccess: (result, variables) => {
+      // Remove deleted clients from cache
+      variables.ids.forEach((id) => {
+        queryClient.removeQueries({ queryKey: queryKeys.clients.detail(id) });
+      });
+      // Invalidate list views and statistics
+      queryClient.invalidateQueries({ queryKey: ['clients', 'list'], exact: false });
       queryClient.invalidateQueries({ queryKey: queryKeys.clients.statistics });
       toast({
         title: 'Sukces',
@@ -285,8 +299,13 @@ export function useBulkRestoreClients() {
 
   return useMutation({
     mutationFn: (dto: BulkRestoreClientsDto) => clientsApi.bulkRestore(dto),
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+    onSuccess: (result, variables) => {
+      // Invalidate restored clients
+      variables.ids.forEach((id) => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(id) });
+      });
+      // Invalidate list views and statistics
+      queryClient.invalidateQueries({ queryKey: ['clients', 'list'], exact: false });
       queryClient.invalidateQueries({ queryKey: queryKeys.clients.statistics });
       toast({
         title: 'Sukces',
@@ -309,8 +328,13 @@ export function useBulkEditClients() {
 
   return useMutation({
     mutationFn: (dto: BulkEditClientsDto) => clientsApi.bulkEdit(dto),
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+    onSuccess: (result, variables) => {
+      // Invalidate edited clients
+      variables.ids.forEach((id) => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(id) });
+      });
+      // Invalidate list views
+      queryClient.invalidateQueries({ queryKey: ['clients', 'list'], exact: false });
       toast({
         title: 'Sukces',
         description: `Zaktualizowano ${result.affected} klientów`,

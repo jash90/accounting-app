@@ -56,8 +56,9 @@ export function KanbanColumn({
             size="icon"
             className="h-6 w-6"
             onClick={() => onAddTask(status)}
+            aria-label={`Dodaj zadanie do kolumny ${TaskStatusLabels[status]}`}
           >
-            <Plus size={14} />
+            <Plus size={14} aria-hidden="true" />
           </Button>
         )}
       </div>
