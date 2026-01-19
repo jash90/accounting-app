@@ -49,6 +49,9 @@ export class EmailReaderService {
       const emails: ReceivedEmail[] = [];
 
       imap.once('ready', () => {
+        // Send client identification for anti-bot protection (Onet, WP, Interia)
+        this.sendClientIdentification(imap);
+
         const mailbox = options.mailbox || 'INBOX';
         this.logger.log(`[IMAP] Attempting to open mailbox: "${mailbox}"`);
 
@@ -175,6 +178,7 @@ export class EmailReaderService {
       const imap = this.createImapConnection(imapConfig);
 
       imap.once('ready', () => {
+        this.sendClientIdentification(imap);
         imap.getBoxes((err: Error | null, boxes: ImapTypes.MailBoxes) => {
           imap.end();
 
@@ -204,6 +208,7 @@ export class EmailReaderService {
       const imap = this.createImapConnection(imapConfig);
 
       imap.once('ready', () => {
+        this.sendClientIdentification(imap);
         imap.openBox('INBOX', false, (err: Error | null) => {
           if (err) {
             imap.end();
@@ -239,6 +244,7 @@ export class EmailReaderService {
       const imap = this.createImapConnection(imapConfig);
 
       imap.once('ready', () => {
+        this.sendClientIdentification(imap);
         imap.openBox('INBOX', false, (err: Error | null) => {
           if (err) {
             imap.end();
@@ -283,6 +289,32 @@ export class EmailReaderService {
       connTimeout: 30000,
       authTimeout: 15000,
     });
+  }
+
+  /**
+   * Send IMAP ID command to identify client to server
+   * Important for Polish providers like Onet, WP, Interia that have anti-bot measures
+   */
+  private sendClientIdentification(imap: InstanceType<typeof Imap>): void {
+    try {
+      if (imap.serverSupports('ID')) {
+        imap.id({
+          name: 'AccountingEmailClient',
+          version: '1.0.0',
+          vendor: 'Accounting System',
+          'support-url': 'https://accounting.local',
+        }, (err: Error | null, serverInfo: Record<string, string> | null) => {
+          if (err) {
+            this.logger.debug(`[IMAP] ID command failed (non-critical): ${err.message}`);
+          } else if (serverInfo) {
+            this.logger.debug(`[IMAP] Server ID: ${JSON.stringify(serverInfo)}`);
+          }
+        });
+      }
+    } catch {
+      // ID command is optional - don't fail if not supported
+      this.logger.debug('[IMAP] Server does not support ID command');
+    }
   }
 
   /**
@@ -434,6 +466,7 @@ export class EmailReaderService {
       const imap = this.createImapConnection(imapConfig);
 
       imap.once('ready', () => {
+        this.sendClientIdentification(imap);
         imap.openBox(mailboxName, false, (err: Error) => {
           if (err) {
             imap.end();
@@ -546,6 +579,7 @@ export class EmailReaderService {
       const imap = this.createImapConnection(imapConfig);
 
       imap.once('ready', () => {
+        this.sendClientIdentification(imap);
         imap.addBox(mailboxName, (err: Error) => {
           imap.end();
           if (err) {
@@ -584,6 +618,7 @@ export class EmailReaderService {
       const imap = this.createImapConnection(imapConfig);
 
       imap.once('ready', () => {
+        this.sendClientIdentification(imap);
         imap.append(
           rawMessage,
           {
@@ -668,6 +703,7 @@ export class EmailReaderService {
       const imap = this.createImapConnection(imapConfig);
 
       imap.once('ready', () => {
+        this.sendClientIdentification(imap);
         imap.openBox(draftsMailbox, false, (err: Error) => {
           if (err) {
             imap.end();
