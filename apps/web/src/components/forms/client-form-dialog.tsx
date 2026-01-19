@@ -1,6 +1,9 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthContext } from '@/contexts/auth-context';
+import { UserRole } from '@/types/enums';
 import {
   Dialog,
   DialogContent,
@@ -41,8 +44,10 @@ import {
   AmlGroup,
   CustomFieldType,
 } from '@/types/enums';
-import { AmlGroupLabels, GTU_CODES } from '@/lib/constants/polish-labels';
+import { Maximize2 } from 'lucide-react';
+import { AmlGroupLabels, GTU_CODES, PKD_CODES, PKD_SECTIONS } from '@/lib/constants/polish-labels';
 import { Combobox } from '@/components/ui/combobox';
+import { GroupedCombobox } from '@/components/ui/grouped-combobox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useFieldDefinitions } from '@/lib/hooks/use-clients';
 import { ClientFieldDefinition } from '@/types/entities';
@@ -60,8 +65,26 @@ export function ClientFormDialog({
   client,
   onSubmit,
 }: ClientFormDialogProps) {
+  const navigate = useNavigate();
+  const { user } = useAuthContext();
   const isEditing = !!client;
   const schema = isEditing ? updateClientSchema : createClientSchema;
+
+  const getCreatePath = () => {
+    switch (user?.role) {
+      case UserRole.ADMIN:
+        return '/admin/modules/clients/create';
+      case UserRole.COMPANY_OWNER:
+        return '/company/modules/clients/create';
+      default:
+        return '/modules/clients/create';
+    }
+  };
+
+  const handleMaximize = () => {
+    onOpenChange(false);
+    navigate(getCreatePath());
+  };
 
   // Fetch field definitions
   const { data: fieldDefinitionsResponse } = useFieldDefinitions();
@@ -92,6 +115,7 @@ export function ClientFormDialog({
           companySpecificity: clientData.companySpecificity || '',
           additionalInfo: clientData.additionalInfo || '',
           gtuCode: clientData.gtuCode || '',
+          pkdCode: clientData.pkdCode || '',
           amlGroup: clientData.amlGroup || '',
           employmentType: clientData.employmentType,
           vatStatus: clientData.vatStatus,
@@ -108,6 +132,7 @@ export function ClientFormDialog({
         companySpecificity: '',
         additionalInfo: '',
         gtuCode: '',
+        pkdCode: '',
         amlGroup: '',
         receiveEmailCopy: true,
       };
@@ -277,9 +302,23 @@ export function ClientFormDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? 'Edytuj klienta' : 'Dodaj klienta'}
-          </DialogTitle>
+          <div className="flex items-center gap-2">
+            <DialogTitle>
+              {isEditing ? 'Edytuj klienta' : 'Dodaj klienta'}
+            </DialogTitle>
+            {!isEditing && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7"
+                onClick={handleMaximize}
+              >
+                <Maximize2 className="mr-1.5 h-3.5 w-3.5" />
+                Maksymalizuj
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
         <ScrollArea className="max-h-[70vh] pr-4">
@@ -610,6 +649,35 @@ export function ClientFormDialog({
                 </h3>
 
                 <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="pkdCode"
+                    render={({ field }) => (
+                      <FormItem className="col-span-2">
+                        <FormLabel>Główny kod PKD</FormLabel>
+                        <FormControl>
+                          <GroupedCombobox
+                            options={PKD_CODES.map((pkd) => ({
+                              value: pkd.code,
+                              label: pkd.label,
+                              group: pkd.section,
+                            }))}
+                            groups={Object.entries(PKD_SECTIONS).map(([key, label]) => ({
+                              key,
+                              label,
+                            }))}
+                            value={field.value || null}
+                            onChange={(value) => field.onChange(value || '')}
+                            placeholder="Wybierz kod PKD"
+                            searchPlaceholder="Szukaj kodu PKD..."
+                            emptyText="Nie znaleziono kodu"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <FormField
                     control={form.control}
                     name="gtuCode"
