@@ -51,6 +51,12 @@ export interface CreateClientDto {
 
 export interface UpdateClientDto extends Partial<CreateClientDto> {}
 
+export interface CustomFieldFilter {
+  fieldId: string;
+  operator: string;
+  value: string | string[];
+}
+
 export interface ClientFilters {
   search?: string;
   employmentType?: EmploymentType;
@@ -61,6 +67,11 @@ export interface ClientFilters {
   gtuCode?: string;
   receiveEmailCopy?: boolean;
   isActive?: boolean;
+  cooperationStartDateFrom?: string;
+  cooperationStartDateTo?: string;
+  companyStartDateFrom?: string;
+  companyStartDateTo?: string;
+  customFieldFilters?: CustomFieldFilter[];
   page?: number;
   limit?: number;
 }
@@ -159,6 +170,35 @@ export class ClientsService {
       queryBuilder.andWhere('client.isActive = :isActive', {
         isActive: filters.isActive,
       });
+    }
+
+    // Date range filters for cooperationStartDate
+    if (filters?.cooperationStartDateFrom) {
+      queryBuilder.andWhere('client.cooperationStartDate >= :cooperationStartDateFrom', {
+        cooperationStartDateFrom: filters.cooperationStartDateFrom,
+      });
+    }
+    if (filters?.cooperationStartDateTo) {
+      queryBuilder.andWhere('client.cooperationStartDate <= :cooperationStartDateTo', {
+        cooperationStartDateTo: filters.cooperationStartDateTo,
+      });
+    }
+
+    // Date range filters for companyStartDate
+    if (filters?.companyStartDateFrom) {
+      queryBuilder.andWhere('client.companyStartDate >= :companyStartDateFrom', {
+        companyStartDateFrom: filters.companyStartDateFrom,
+      });
+    }
+    if (filters?.companyStartDateTo) {
+      queryBuilder.andWhere('client.companyStartDate <= :companyStartDateTo', {
+        companyStartDateTo: filters.companyStartDateTo,
+      });
+    }
+
+    // Apply custom field filters
+    if (filters?.customFieldFilters && filters.customFieldFilters.length > 0) {
+      this.applyCustomFieldFilters(queryBuilder, filters.customFieldFilters);
     }
 
     queryBuilder.orderBy('client.name', 'ASC');
@@ -491,6 +531,121 @@ export class ClientsService {
     });
 
     return { affected: clients.length, requested: dto.clientIds.length };
+  }
+
+  /**
+   * Apply custom field filters to the query builder.
+   * Supports operators: eq, contains, gt, gte, lt, lte, in, contains_any
+   *
+   * Special handling for BOOLEAN eq:false - also matches clients without the field set (NULL).
+   */
+  private applyCustomFieldFilters(
+    queryBuilder: ReturnType<typeof this.clientRepository.createQueryBuilder>,
+    customFieldFilters: CustomFieldFilter[],
+  ): void {
+    customFieldFilters.forEach((filter, index) => {
+      const alias = `cfv_${index}`;
+      const fdAlias = `fd_${index}`;
+      const { fieldId, operator, value } = filter;
+
+      // Special handling for BOOLEAN eq:false - use LEFT JOIN to include clients without the field
+      const isBooleanFalseFilter = operator === 'eq' && String(value).toLowerCase() === 'false';
+
+      if (isBooleanFalseFilter) {
+        // Use LEFT JOIN for BOOLEAN false filter to include NULL values
+        queryBuilder.leftJoin(
+          'client_custom_field_values',
+          alias,
+          `${alias}.clientId = client.id AND ${alias}.fieldDefinitionId = :fieldId_${index}`,
+          { [`fieldId_${index}`]: fieldId },
+        );
+
+        // Match clients with value = 'false' OR no value set (NULL)
+        queryBuilder.andWhere(
+          `(${alias}.value = :value_${index} OR ${alias}.value IS NULL)`,
+          { [`value_${index}`]: 'false' },
+        );
+        return; // Skip the rest of the switch for this filter
+      }
+
+      // Join the custom field values table for this specific filter
+      queryBuilder.innerJoin(
+        'client_custom_field_values',
+        alias,
+        `${alias}.clientId = client.id AND ${alias}.fieldDefinitionId = :fieldId_${index}`,
+        { [`fieldId_${index}`]: fieldId },
+      );
+
+      // Join field definition to get the field type
+      queryBuilder.innerJoin(
+        'client_field_definitions',
+        fdAlias,
+        `${fdAlias}.id = ${alias}.fieldDefinitionId`,
+      );
+
+      // Apply the appropriate filter based on the operator
+      switch (operator) {
+        case 'eq':
+          queryBuilder.andWhere(`${alias}.value = :value_${index}`, {
+            [`value_${index}`]: String(value),
+          });
+          break;
+
+        case 'contains':
+          queryBuilder.andWhere(`${alias}.value ILIKE :value_${index}`, {
+            [`value_${index}`]: `%${this.escapeLikePattern(String(value))}%`,
+          });
+          break;
+
+        case 'gt':
+          // For numeric comparison, cast to numeric
+          queryBuilder.andWhere(`CAST(${alias}.value AS DECIMAL) > :value_${index}`, {
+            [`value_${index}`]: parseFloat(String(value)),
+          });
+          break;
+
+        case 'gte':
+          queryBuilder.andWhere(`CAST(${alias}.value AS DECIMAL) >= :value_${index}`, {
+            [`value_${index}`]: parseFloat(String(value)),
+          });
+          break;
+
+        case 'lt':
+          queryBuilder.andWhere(`CAST(${alias}.value AS DECIMAL) < :value_${index}`, {
+            [`value_${index}`]: parseFloat(String(value)),
+          });
+          break;
+
+        case 'lte':
+          queryBuilder.andWhere(`CAST(${alias}.value AS DECIMAL) <= :value_${index}`, {
+            [`value_${index}`]: parseFloat(String(value)),
+          });
+          break;
+
+        case 'in':
+          // For ENUM type - check if value is in the list
+          const inValues = Array.isArray(value) ? value : String(value).split(',');
+          queryBuilder.andWhere(`${alias}.value IN (:...values_${index})`, {
+            [`values_${index}`]: inValues,
+          });
+          break;
+
+        case 'contains_any':
+          // For MULTISELECT - check if any of the values match
+          const anyValues = Array.isArray(value) ? value : String(value).split(',');
+          const conditions = anyValues.map((v, i) => `${alias}.value ILIKE :anyValue_${index}_${i}`);
+          queryBuilder.andWhere(`(${conditions.join(' OR ')})`,
+            anyValues.reduce((acc, v, i) => ({
+              ...acc,
+              [`anyValue_${index}_${i}`]: `%${this.escapeLikePattern(String(v))}%`,
+            }), {}),
+          );
+          break;
+
+        default:
+          this.logger.warn(`Unknown custom field filter operator: ${operator}`);
+      }
+    });
   }
 
   private sanitizeClientForLog(client: Client): Record<string, unknown> {

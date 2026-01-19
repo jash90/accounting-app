@@ -13,7 +13,11 @@ import {
   Res,
   UseInterceptors,
   UploadedFile,
+  Req,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import {
@@ -136,8 +140,61 @@ export class ClientsController {
     type: ErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
-  async findAll(@CurrentUser() user: User, @Query() filters: ClientFiltersDto) {
-    return this.clientsService.findAll(user, filters);
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: false }))
+  async findAll(
+    @CurrentUser() user: User,
+    @Query() filters: ClientFiltersDto,
+    @Req() req: Request,
+  ) {
+    // Parse custom field filters from query params with customField_ prefix
+    const customFieldFilters = this.parseCustomFieldFilters(req.query);
+
+    return this.clientsService.findAll(user, {
+      ...filters,
+      customFieldFilters,
+    });
+  }
+
+  /**
+   * Parse custom field filters from query params.
+   * Format: customField_[UUID]=operator:value
+   * Examples:
+   *   customField_abc123=contains:Jan
+   *   customField_def456=gte:100
+   *   customField_ghi789=eq:true
+   *   customField_jkl012=in:VALUE1,VALUE2
+   */
+  private parseCustomFieldFilters(
+    query: Record<string, unknown>,
+  ): { fieldId: string; operator: string; value: string | string[] }[] {
+    const customFieldFilters: { fieldId: string; operator: string; value: string | string[] }[] = [];
+    const prefix = 'customField_';
+
+    for (const [key, rawValue] of Object.entries(query)) {
+      if (key.startsWith(prefix) && typeof rawValue === 'string') {
+        const fieldId = key.substring(prefix.length);
+        const colonIndex = rawValue.indexOf(':');
+
+        if (colonIndex > 0) {
+          const operator = rawValue.substring(0, colonIndex);
+          const value = rawValue.substring(colonIndex + 1);
+
+          // For 'in' and 'contains_any' operators, split by comma
+          const parsedValue =
+            operator === 'in' || operator === 'contains_any'
+              ? value.split(',').map((v) => v.trim())
+              : value;
+
+          customFieldFilters.push({
+            fieldId,
+            operator,
+            value: parsedValue,
+          });
+        }
+      }
+    }
+
+    return customFieldFilters;
   }
 
   /**

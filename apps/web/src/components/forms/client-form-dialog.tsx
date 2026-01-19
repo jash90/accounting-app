@@ -38,8 +38,11 @@ import {
   VatStatusLabels,
   TaxSchemeLabels,
   ZusStatusLabels,
+  AmlGroup,
   CustomFieldType,
 } from '@/types/enums';
+import { AmlGroupLabels, GTU_CODES } from '@/lib/constants/polish-labels';
+import { Combobox } from '@/components/ui/combobox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useFieldDefinitions } from '@/lib/hooks/use-clients';
 import { ClientFieldDefinition } from '@/types/entities';
@@ -614,7 +617,17 @@ export function ClientFormDialog({
                       <FormItem>
                         <FormLabel>Kod GTU</FormLabel>
                         <FormControl>
-                          <Input placeholder="np. GTU_01" {...field} />
+                          <Combobox
+                            options={GTU_CODES.map((gtu) => ({
+                              value: gtu.code,
+                              label: gtu.label,
+                            }))}
+                            value={field.value || null}
+                            onChange={(value) => field.onChange(value || '')}
+                            placeholder="Wybierz kod GTU"
+                            searchPlaceholder="Szukaj kodu GTU..."
+                            emptyText="Nie znaleziono kodu"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -627,9 +640,23 @@ export function ClientFormDialog({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Grupa AML</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Grupa ryzyka" {...field} />
-                        </FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || ''}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Wybierz grupę ryzyka" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Object.values(AmlGroup).map((group) => (
+                              <SelectItem key={group} value={group}>
+                                {AmlGroupLabels[group]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}

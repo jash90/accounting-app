@@ -121,11 +121,32 @@ export interface ImportResultDto {
 
 const BASE_URL = '/api/modules/clients';
 
+// Helper function to convert custom field filters to query params
+function buildCustomFieldParams(filters?: ClientFiltersDto): Record<string, string | undefined> {
+  if (!filters) return {};
+
+  const { customFieldFilters, ...rest } = filters;
+  const params: Record<string, string | undefined> = { ...rest } as Record<string, string | undefined>;
+
+  // Convert customFieldFilters to customField_[fieldId]=operator:value format
+  if (customFieldFilters && customFieldFilters.length > 0) {
+    customFieldFilters.forEach((filter) => {
+      const value = Array.isArray(filter.value)
+        ? filter.value.join(',')
+        : filter.value;
+      params[`customField_${filter.fieldId}`] = `${filter.operator}:${value}`;
+    });
+  }
+
+  return params;
+}
+
 // Client API
 export const clientsApi = {
   getAll: async (filters?: ClientFiltersDto): Promise<PaginatedResponse<ClientResponseDto>> => {
+    const params = buildCustomFieldParams(filters);
     const { data } = await apiClient.get<PaginatedResponse<ClientResponseDto>>(BASE_URL, {
-      params: filters,
+      params,
     });
     return data;
   },
@@ -256,8 +277,9 @@ export const clientsApi = {
 
   // Export/Import
   exportCsv: async (filters?: ClientFiltersDto): Promise<Blob> => {
+    const params = buildCustomFieldParams(filters);
     const { data } = await apiClient.get(`${BASE_URL}/export`, {
-      params: filters,
+      params,
       responseType: 'blob',
     });
     return data;

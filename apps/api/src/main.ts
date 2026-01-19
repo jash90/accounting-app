@@ -69,10 +69,12 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Global validation pipe
+  // Note: forbidNonWhitelisted is set to false to allow dynamic query params
+  // like customField_* filters in the clients module
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false,
       transform: true,
     }),
   );

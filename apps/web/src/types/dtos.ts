@@ -522,13 +522,27 @@ export interface CreateClientDto {
 
 export interface UpdateClientDto extends Partial<CreateClientDto> {}
 
+export interface CustomFieldFilter {
+  fieldId: string;
+  operator: string;
+  value: string | string[];
+}
+
 export interface ClientFiltersDto {
   search?: string;
   employmentType?: EmploymentType;
   vatStatus?: VatStatus;
   taxScheme?: TaxScheme;
   zusStatus?: ZusStatus;
+  amlGroupEnum?: AmlGroup;
+  gtuCode?: string;
+  receiveEmailCopy?: boolean;
   isActive?: boolean;
+  cooperationStartDateFrom?: string;
+  cooperationStartDateTo?: string;
+  companyStartDateFrom?: string;
+  companyStartDateTo?: string;
+  customFieldFilters?: CustomFieldFilter[];
 }
 
 export interface SetCustomFieldValuesDto {
