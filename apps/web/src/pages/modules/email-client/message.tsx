@@ -1,4 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import {
   useEmail,
   useMarkAsRead,
@@ -36,6 +37,7 @@ export default function EmailMessage() {
     if (email && emailUid && !email.flags.includes('\\Seen')) {
       markAsRead.mutate([emailUid]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- markAsRead is stable from React Query
   }, [email, emailUid]);
 
   const handleDelete = async () => {
@@ -58,7 +60,7 @@ export default function EmailMessage() {
     // Navigate to compose with reply info in state
     emailNav.toCompose({
       replyTo: email,
-      to: email?.from[0]?.address,
+      to: email?.from?.[0]?.address || '',
       subject: `Re: ${email?.subject || ''}`,
     });
   };
@@ -67,7 +69,7 @@ export default function EmailMessage() {
     // Navigate to compose with AI reply request
     emailNav.toCompose({
       replyTo: email,
-      to: email?.from[0]?.address,
+      to: email?.from?.[0]?.address || '',
       subject: `Re: ${email?.subject || ''}`,
       aiGenerate: true,
       messageUid: emailUid,
@@ -235,11 +237,10 @@ export default function EmailMessage() {
           {/* Email Body */}
           <div className="prose prose-sm max-w-none dark:prose-invert">
             {email.html ? (
-              // HTML content - render safely
-              // Note: In production, use DOMPurify to sanitize HTML
+              // HTML content - sanitized with DOMPurify to prevent XSS attacks
               <div
                 className="email-html-content"
-                dangerouslySetInnerHTML={{ __html: email.html }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(email.html) }}
               />
             ) : (
               // Plain text content

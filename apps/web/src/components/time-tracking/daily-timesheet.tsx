@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { format, addDays, subDays, startOfDay, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
@@ -18,6 +18,10 @@ import { TimeEntryStatusBadge } from './time-entry-status-badge';
 import { TimeEntryFormDialog } from './time-entry-form-dialog';
 import { TimeEntryResponseDto } from '@/types/dtos';
 import { cn } from '@/lib/utils/cn';
+import { formatDuration } from '@/lib/utils/time';
+
+// Constants
+const SKELETON_ITEM_COUNT = 3;
 
 interface DailyTimesheetProps {
   className?: string;
@@ -25,21 +29,20 @@ interface DailyTimesheetProps {
   onEntryClick?: (entry: TimeEntryResponseDto) => void;
 }
 
-function formatDuration(minutes: number): string {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hours}:${mins.toString().padStart(2, '0')}`;
-}
-
 function formatTime(date: Date | string): string {
   const d = typeof date === 'string' ? parseISO(date) : date;
   return format(d, 'HH:mm');
 }
 
+// Discriminated union for dialog state to prevent impossible states
+type DialogState =
+  | { mode: 'closed' }
+  | { mode: 'create' }
+  | { mode: 'edit'; entry: TimeEntryResponseDto };
+
 export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTimesheetProps) {
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(initialDate ?? new Date()));
-  const [editEntry, setEditEntry] = useState<TimeEntryResponseDto | null>(null);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [dialogState, setDialogState] = useState<DialogState>({ mode: 'closed' });
 
   const dateString = format(selectedDate, 'yyyy-MM-dd');
   const { data: timesheet, isPending, error } = useDailyTimesheet(dateString);
@@ -69,7 +72,7 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
+            {Array.from({ length: SKELETON_ITEM_COUNT }).map((_, i) => (
               <Skeleton key={i} className="h-20" />
             ))}
           </div>
@@ -168,29 +171,32 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCreateDialogOpen(true)}
+                onClick={() => setDialogState({ mode: 'create' })}
               >
                 <Plus className="h-4 w-4 mr-1" />
                 Dodaj wpis
               </Button>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2" role="list" aria-label="Wpisy czasu z dnia">
               {entries.map((entry) => (
-                <div
+                <button
+                  type="button"
                   key={entry.id}
                   onClick={() => {
                     if (onEntryClick) {
                       onEntryClick(entry);
                     } else {
-                      setEditEntry(entry);
+                      setDialogState({ mode: 'edit', entry });
                     }
                   }}
                   className={cn(
-                    'flex items-center justify-between p-3 rounded-lg border cursor-pointer',
+                    'w-full flex items-center justify-between p-3 rounded-lg border text-left',
                     'hover:bg-muted/50 transition-colors',
+                    'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
                     entry.isRunning && 'border-green-300 bg-green-50/50'
                   )}
+                  aria-label={`Wpis: ${entry.description || 'Bez opisu'}${entry.isRunning ? ' - w trakcie' : ''}`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="text-center min-w-[80px]">
@@ -208,6 +214,8 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
                           <div
                             className="w-3 h-3 rounded-full"
                             style={{ backgroundColor: entry.project.color }}
+                            role="img"
+                            aria-label={`Kolor projektu: ${entry.project.name}`}
                           />
                         )}
                         <span className="font-medium text-sm">
@@ -246,13 +254,13 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
                       )}
                     </div>
                   </div>
-                </div>
+                </button>
               ))}
 
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setCreateDialogOpen(true)}
+                onClick={() => setDialogState({ mode: 'create' })}
                 className="w-full mt-2"
               >
                 <Plus className="h-4 w-4 mr-1" />
@@ -264,14 +272,13 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
       </Card>
 
       <TimeEntryFormDialog
-        open={createDialogOpen || !!editEntry}
+        open={dialogState.mode !== 'closed'}
         onOpenChange={(open) => {
           if (!open) {
-            setCreateDialogOpen(false);
-            setEditEntry(null);
+            setDialogState({ mode: 'closed' });
           }
         }}
-        entry={editEntry}
+        entry={dialogState.mode === 'edit' ? dialogState.entry : null}
       />
     </>
   );

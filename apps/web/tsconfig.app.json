@@ -12,9 +12,9 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
+    "baseUrl": "../..",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["apps/web/src/*"]
     },
     "types": [
       "node",

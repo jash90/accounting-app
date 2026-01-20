@@ -4,6 +4,9 @@ import {
   IsOptional,
   IsEnum,
   IsBoolean,
+  IsString,
+  MaxLength,
+  Matches,
   ArrayMinSize,
   ArrayMaxSize,
 } from 'class-validator';
@@ -13,6 +16,8 @@ import {
   VatStatus,
   TaxScheme,
   ZusStatus,
+  PKD_CODE_REGEX,
+  PKD_CODE_VALIDATION_MESSAGE,
 } from '@accounting/common';
 
 export class BulkDeleteClientsDto {
@@ -77,6 +82,16 @@ export class BulkEditClientsDto {
   @IsOptional()
   @IsBoolean()
   receiveEmailCopy?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'PKD code (Polska Klasyfikacja Działalności) to set',
+    example: '62.01.Z',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  @Matches(PKD_CODE_REGEX, { message: PKD_CODE_VALIDATION_MESSAGE })
+  pkdCode?: string;
 }
 
 export class BulkOperationResultDto {
@@ -85,6 +100,12 @@ export class BulkOperationResultDto {
 
   @ApiProperty({ description: 'Number of records requested to be affected' })
   requested!: number;
+
+  @ApiPropertyOptional({
+    description: 'Unique identifier for this bulk operation, used for audit trail correlation',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  bulkOperationId?: string;
 }
 
 export class CheckDuplicatesDto {

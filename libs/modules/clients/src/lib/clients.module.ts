@@ -11,8 +11,8 @@ import {
   User,
   ChangeLog,
   ClientDeleteRequest,
-  CommonModule,
 } from '@accounting/common';
+import { CommonModule } from '@accounting/common/backend';
 import { RBACModule } from '@accounting/rbac';
 import { StorageModule } from '@accounting/infrastructure/storage';
 import { EmailModule } from '@accounting/email';

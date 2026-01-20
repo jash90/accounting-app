@@ -11,12 +11,12 @@ import {
   User,
   UserRole,
   DeleteRequestStatus,
-  TenantService,
   EmploymentType,
   VatStatus,
   TaxScheme,
   ZusStatus,
 } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
 import {
   ClientNotFoundException,
   DeleteRequestNotFoundException,

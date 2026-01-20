@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -39,6 +40,7 @@ export function ExportImportDialog({
   isExporting = false,
   isImporting = false,
 }: ExportImportDialogProps) {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'export' | 'import'>('export');
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -67,7 +69,11 @@ export function ExportImportDialog({
 
   const handleFileSelect = (file: File) => {
     if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-      alert('Proszę wybrać plik CSV');
+      toast({
+        title: 'Nieprawidłowy format pliku',
+        description: 'Proszę wybrać plik CSV',
+        variant: 'destructive',
+      });
       return;
     }
     setSelectedFile(file);
@@ -144,9 +150,11 @@ export function ExportImportDialog({
                 >
                   <input
                     ref={fileInputRef}
+                    id="csv-file-upload"
                     type="file"
                     accept=".csv,text/csv"
                     className="hidden"
+                    aria-label="Wybierz plik CSV do importu"
                     onChange={(e) => {
                       if (e.target.files?.[0]) {
                         handleFileSelect(e.target.files[0]);
@@ -251,7 +259,7 @@ export function ExportImportDialog({
                     <ul className="text-sm text-muted-foreground space-y-1">
                       {importResult.errors.map((error, index) => (
                         <li key={index}>
-                          Wiersz {error.row}, pole "{error.field}": {error.message}
+                          Wiersz {error.row}, pole &quot;{error.field}&quot;: {error.message}
                         </li>
                       ))}
                     </ul>

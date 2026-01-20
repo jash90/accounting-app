@@ -7,9 +7,43 @@ import {
   Max,
   IsEnum,
   IsBoolean,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
+  ValidationArguments,
+  Validate,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+// Maximum allowed date range in days to prevent excessive queries
+const MAX_DATE_RANGE_DAYS = 366;
+
+/**
+ * Custom validator to ensure date range is valid:
+ * - startDate must be before endDate
+ * - Range cannot exceed MAX_DATE_RANGE_DAYS
+ */
+@ValidatorConstraint({ name: 'isValidDateRange', async: false })
+class IsValidDateRangeConstraint implements ValidatorConstraintInterface {
+  validate(_: unknown, args: ValidationArguments): boolean {
+    const obj = args.object as { startDate?: string; endDate?: string };
+    if (!obj.startDate || !obj.endDate) return true;
+
+    const start = new Date(obj.startDate);
+    const end = new Date(obj.endDate);
+
+    // startDate must be before endDate
+    if (start >= end) return false;
+
+    // Check range doesn't exceed maximum
+    const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    return diffDays <= MAX_DATE_RANGE_DAYS;
+  }
+
+  defaultMessage(): string {
+    return `Data początkowa musi być wcześniejsza niż końcowa, zakres max ${MAX_DATE_RANGE_DAYS} dni`;
+  }
+}
 
 export enum TimesheetGroupBy {
   DAY = 'day',
@@ -63,6 +97,7 @@ export class MonthlyTimesheetDto {
 export class ReportFiltersDto {
   @ApiProperty({ description: 'Start date for report (ISO 8601)', example: '2026-01-01' })
   @IsDateString()
+  @Validate(IsValidDateRangeConstraint)
   startDate!: string;
 
   @ApiProperty({ description: 'End date for report (ISO 8601)', example: '2026-01-31' })

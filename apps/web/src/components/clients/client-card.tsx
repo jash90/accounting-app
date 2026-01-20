@@ -1,3 +1,4 @@
+import { memo, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Eye,
@@ -47,7 +48,7 @@ interface ClientCardProps {
   visibleColumns?: string[];
 }
 
-export function ClientCard({
+export const ClientCard = memo(function ClientCard({
   client,
   basePath,
   isSelected = false,
@@ -62,50 +63,60 @@ export function ClientCard({
 }: ClientCardProps) {
   const navigate = useNavigate();
 
-  // Filter custom fields that are visible
-  const visibleCustomFields = fieldDefinitions.filter((field) =>
-    visibleColumns.includes(`customField_${field.id}`)
+  // Filter custom fields that are visible - memoized to prevent recalculation
+  const visibleCustomFields = useMemo(
+    () => fieldDefinitions.filter((field) => visibleColumns.includes(`customField_${field.id}`)),
+    [fieldDefinitions, visibleColumns],
   );
 
-  // Get custom field value by definition id
-  const getCustomFieldValue = (fieldId: string): string | undefined => {
-    const cfv = client.customFieldValues?.find((v) => v.fieldDefinitionId === fieldId);
-    return cfv?.value;
-  };
+  // Get custom field value by definition id - memoized callback
+  const getCustomFieldValue = useCallback(
+    (fieldId: string): string | undefined => {
+      const cfv = client.customFieldValues?.find((v) => v.fieldDefinitionId === fieldId);
+      return cfv?.value;
+    },
+    [client.customFieldValues],
+  );
 
-  // Format custom field value based on type
-  const formatCustomFieldValue = (field: ClientFieldDefinition): string => {
-    const value = getCustomFieldValue(field.id);
-    if (!value) return '-';
+  // Format custom field value based on type - memoized callback
+  const formatCustomFieldValue = useCallback(
+    (field: ClientFieldDefinition): string => {
+      const value = getCustomFieldValue(field.id);
+      if (!value) return '-';
 
-    switch (field.fieldType) {
-      case CustomFieldType.BOOLEAN:
-        return value === 'true' ? 'Tak' : 'Nie';
-      case CustomFieldType.DATE:
-        try {
-          return new Date(value).toLocaleDateString('pl-PL');
-        } catch {
+      switch (field.fieldType) {
+        case CustomFieldType.BOOLEAN:
+          return value === 'true' ? 'Tak' : 'Nie';
+        case CustomFieldType.DATE:
+          try {
+            return new Date(value).toLocaleDateString('pl-PL');
+          } catch {
+            return value;
+          }
+        default:
           return value;
-        }
-      default:
-        return value;
-    }
-  };
+      }
+    },
+    [getCustomFieldValue],
+  );
 
   const icons = client.iconAssignments
     ?.map((assignment) => assignment.icon)
     .filter((icon): icon is NonNullable<typeof icon> => icon !== undefined && icon !== null) || [];
 
-  const handleCardClick = (e: React.MouseEvent) => {
-    // Don't navigate if clicking on checkbox or dropdown
-    if (
-      (e.target as HTMLElement).closest('[data-checkbox]') ||
-      (e.target as HTMLElement).closest('[data-dropdown]')
-    ) {
-      return;
-    }
-    navigate(`${basePath}/${client.id}`);
-  };
+  const handleCardClick = useCallback(
+    (e: React.MouseEvent) => {
+      // Don't navigate if clicking on checkbox or dropdown
+      if (
+        (e.target as HTMLElement).closest('[data-checkbox]') ||
+        (e.target as HTMLElement).closest('[data-dropdown]')
+      ) {
+        return;
+      }
+      navigate(`${basePath}/${client.id}`);
+    },
+    [navigate, basePath, client.id]
+  );
 
   return (
     <Card
@@ -284,4 +295,4 @@ export function ClientCard({
       </CardContent>
     </Card>
   );
-}
+});

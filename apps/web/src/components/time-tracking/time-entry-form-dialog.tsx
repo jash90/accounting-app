@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { format } from 'date-fns';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { format, parseISO, parse } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -35,21 +37,36 @@ import {
 import { useTaskClients } from '@/lib/hooks/use-tasks';
 import { CreateTimeEntryDto, TimeEntryResponseDto } from '@/types/dtos';
 
+/**
+ * Zod validation schema for time entry form.
+ * Provides client-side validation for time entries.
+ */
+const timeEntryFormSchema = z.object({
+  description: z.string().max(255, 'Opis może mieć maksymalnie 255 znaków').optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Nieprawidłowy format daty'),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Nieprawidłowy format czasu'),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Nieprawidłowy format czasu').optional().or(z.literal('')),
+  clientId: z.string().optional(),
+  isBillable: z.boolean(),
+  hourlyRate: z.string().optional().refine(
+    (val) => !val || !isNaN(parseFloat(val)),
+    { message: 'Stawka musi być liczbą' }
+  ),
+  tags: z.string().max(500, 'Tagi mogą mieć maksymalnie 500 znaków').optional(),
+}).refine(
+  (data) => {
+    if (!data.endTime) return true;
+    return data.startTime < data.endTime;
+  },
+  { message: 'Czas zakończenia musi być późniejszy niż czas rozpoczęcia', path: ['endTime'] }
+);
+
+type FormData = z.infer<typeof timeEntryFormSchema>;
+
 interface TimeEntryFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   entry?: TimeEntryResponseDto | null;
-}
-
-interface FormData {
-  description: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  clientId: string;
-  isBillable: boolean;
-  hourlyRate: string;
-  tags: string;
 }
 
 export function TimeEntryFormDialog({
@@ -64,6 +81,7 @@ export function TimeEntryFormDialog({
   const clients = clientsData || [];
 
   const form = useForm<FormData>({
+    resolver: zodResolver(timeEntryFormSchema),
     defaultValues: {
       description: '',
       date: format(new Date(), 'yyyy-MM-dd'),
@@ -76,21 +94,26 @@ export function TimeEntryFormDialog({
     },
   });
 
+  // Extract reset to satisfy exhaustive-deps (reset is stable from react-hook-form)
+  const { reset } = form;
+
   useEffect(() => {
     if (entry) {
-      const startDate = new Date(entry.startTime);
-      form.reset({
+      // Use parseISO for consistent timezone-safe date parsing from ISO strings
+      const startDate = parseISO(entry.startTime);
+      const endDate = entry.endTime ? parseISO(entry.endTime) : null;
+      reset({
         description: entry.description || '',
         date: format(startDate, 'yyyy-MM-dd'),
         startTime: format(startDate, 'HH:mm'),
-        endTime: entry.endTime ? format(new Date(entry.endTime), 'HH:mm') : '',
+        endTime: endDate ? format(endDate, 'HH:mm') : '',
         clientId: entry.clientId || '',
         isBillable: entry.isBillable,
         hourlyRate: entry.hourlyRate?.toString() || '',
         tags: entry.tags?.join(', ') || '',
       });
     } else {
-      form.reset({
+      reset({
         description: '',
         date: format(new Date(), 'yyyy-MM-dd'),
         startTime: format(new Date(), 'HH:mm'),
@@ -101,11 +124,14 @@ export function TimeEntryFormDialog({
         tags: '',
       });
     }
-  }, [entry, form, open]);
+  }, [entry, open, reset]);
 
   const onSubmit = (data: FormData) => {
-    const startDateTime = new Date(`${data.date}T${data.startTime}`);
-    const endDateTime = data.endTime ? new Date(`${data.date}T${data.endTime}`) : undefined;
+    // Use date-fns parse for consistent timezone handling across DST boundaries
+    const startDateTime = parse(`${data.date} ${data.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
+    const endDateTime = data.endTime
+      ? parse(`${data.date} ${data.endTime}`, 'yyyy-MM-dd HH:mm', new Date())
+      : undefined;
 
     const entryData: CreateTimeEntryDto = {
       description: data.description || undefined,

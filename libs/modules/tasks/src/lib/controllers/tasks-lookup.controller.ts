@@ -18,7 +18,8 @@ import {
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
-import { User, Client, UserRole, TenantService } from '@accounting/common';
+import { User, Client, UserRole } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
 
 interface AssigneeDto {
   id: string;

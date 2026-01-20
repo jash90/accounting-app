@@ -20,6 +20,10 @@ import {
 import { ApiErrorResponse } from '@/types/api';
 import { useToast } from '@/components/ui/use-toast';
 
+// Named constants for timer intervals and timeouts
+// Sync timer state with server periodically to keep elapsed time accurate on multiple devices/tabs
+const TIMER_REFETCH_INTERVAL_MS = 10000; // 10 seconds
+
 // ============================================
 // Time Entry Hooks
 // ============================================
@@ -195,7 +199,8 @@ export function useActiveTimer() {
   return useQuery({
     queryKey: queryKeys.timeTracking.timer.active,
     queryFn: () => timerApi.getActive(),
-    refetchInterval: 60000, // Refetch every minute to update elapsed time
+    refetchInterval: TIMER_REFETCH_INTERVAL_MS, // Sync timer state with server for cross-device/tab consistency
+    refetchIntervalInBackground: false, // Don't poll when tab is not visible to save resources
   });
 }
 
@@ -249,15 +254,19 @@ export function useStopTimer() {
 
 export function useUpdateTimer() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: (dto: UpdateTimerDto) => timerApi.update(dto),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.timer.active });
     },
-    onError: (error: ApiErrorResponse) => {
-      // Silently fail for timer updates
-      console.error('Timer update failed:', error.response?.data?.message);
+    onError: () => {
+      toast({
+        title: 'Ostrzeżenie',
+        description: 'Nie udało się zapisać zmian timera. Zmiany mogą nie zostać zapisane.',
+        variant: 'destructive',
+      });
     },
   });
 }
@@ -378,20 +387,27 @@ export function useExportTimeReport() {
       clientId?: string;
     }) => timeReportsApi.export(params),
     onSuccess: (blob, variables) => {
-      // Create download link
+      // Create download link with proper cleanup to prevent memory leaks
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `time-report-${variables.startDate}-${variables.endDate}.${variables.format === 'excel' ? 'xlsx' : 'csv'}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
 
-      toast({
-        title: 'Sukces',
-        description: 'Raport został wyeksportowany',
-      });
+      try {
+        a.href = url;
+        a.download = `time-report-${variables.startDate}-${variables.endDate}.${variables.format === 'excel' ? 'xlsx' : 'csv'}`;
+        document.body.appendChild(a);
+        a.click();
+
+        toast({
+          title: 'Sukces',
+          description: 'Raport został wyeksportowany',
+        });
+      } finally {
+        // Always clean up the blob URL and DOM element to prevent memory leaks
+        window.URL.revokeObjectURL(url);
+        if (a.parentNode) {
+          document.body.removeChild(a);
+        }
+      }
     },
     onError: (error: ApiErrorResponse) => {
       toast({

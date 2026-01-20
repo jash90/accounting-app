@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorBoundary } from '@/components/common/error-boundary';
 import { ClientIcon } from '@/types/entities';
 import {
   ArrowLeft,
@@ -15,7 +16,7 @@ import {
   Calendar,
   FileText,
   Tags,
-  CheckSquare,
+  AlertTriangle,
 } from 'lucide-react';
 import { useState } from 'react';
 import { ClientFormDialog } from '@/components/forms/client-form-dialog';
@@ -45,7 +46,41 @@ function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+/**
+ * Error fallback component for ClientDetailPage
+ */
+function ClientDetailErrorFallback() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+      <AlertTriangle className="h-16 w-16 text-destructive" />
+      <h2 className="text-xl font-semibold">Wystąpił błąd</h2>
+      <p className="text-muted-foreground text-center max-w-md">
+        Nie udało się załadować szczegółów klienta. Proszę odświeżyć stronę lub spróbować później.
+      </p>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Powrót
+        </Button>
+        <Button onClick={() => window.location.reload()}>
+          Odśwież stronę
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function ClientDetailPage() {
+  return (
+    <ErrorBoundary fallback={<ClientDetailErrorFallback />}>
+      <ClientDetailContent />
+    </ErrorBoundary>
+  );
+}
+
+function ClientDetailContent() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
@@ -410,14 +445,16 @@ export default function ClientDetailPage() {
                       id: client.id,
                       data: customFields,
                     });
-                  } catch {
-                    // Custom fields error handled by the hook's onError
+                  } catch (error) {
+                    console.error('Failed to update client custom fields:', error);
+                    // Error notification handled by mutation's onError
                   }
                 }
                 setEditOpen(false);
               },
-              onError: () => {
-                // Error already handled by the mutation hook's toast
+              onError: (error) => {
+                console.error('Failed to update client:', error);
+                // Error notification handled by mutation's onError
               },
             });
           }}

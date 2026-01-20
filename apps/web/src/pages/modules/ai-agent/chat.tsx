@@ -7,6 +7,16 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   useConversations,
   useConversation,
   useCreateConversation,
@@ -19,10 +29,12 @@ import { cn } from '@/lib/utils/cn';
 import { MessageRole } from '@/types/dtos';
 
 export default function AIAgentChatPage() {
-  const navigate = useNavigate();
+  const _navigate = useNavigate();
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [rateLimitHit, setRateLimitHit] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: conversations, isLoading: conversationsLoading } = useConversations();
@@ -97,13 +109,20 @@ export default function AIAgentChatPage() {
     await sendMessageIfReady();
   };
 
-  const handleDeleteConversation = async (id: string) => {
-    if (confirm('Czy na pewno chcesz usunąć tę rozmowę?')) {
-      await deleteConversation.mutateAsync(id);
-      if (selectedConversationId === id) {
+  const handleDeleteConversation = (id: string) => {
+    setConversationToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteConversation = async () => {
+    if (conversationToDelete) {
+      await deleteConversation.mutateAsync(conversationToDelete);
+      if (selectedConversationId === conversationToDelete) {
         setSelectedConversationId(null);
       }
     }
+    setDeleteDialogOpen(false);
+    setConversationToDelete(null);
   };
 
   if (conversationsLoading) {
@@ -343,6 +362,29 @@ export default function AIAgentChatPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Usuń rozmowę</AlertDialogTitle>
+            <AlertDialogDescription>
+              Czy na pewno chcesz usunąć tę rozmowę? Ta operacja jest nieodwracalna.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConversationToDelete(null)}>
+              Anuluj
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteConversation}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Usuń
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

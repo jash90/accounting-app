@@ -16,6 +16,10 @@ import {
   Req,
   UsePipes,
   ValidationPipe,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
+  BadRequestException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -53,6 +57,8 @@ import {
   UpdateClientDto,
   ClientFiltersDto,
   SetCustomFieldValuesDto,
+  CustomFieldFilterDto,
+  CustomFieldFilterOperator,
 } from '../dto/client.dto';
 import {
   BulkDeleteClientsDto,
@@ -114,6 +120,48 @@ export class ClientsController {
   ) {}
 
   /**
+   * Search PKD codes server-side (lazy loading).
+   * Avoids loading all ~659 codes at app startup.
+   */
+  @Get('pkd-codes/search')
+  @ApiOperation({
+    summary: 'Search PKD codes',
+    description:
+      'Searches PKD (Polish Classification of Activities) codes server-side. ' +
+      'Returns matching codes based on search term and optional section filter. ' +
+      'Use this for lazy-loading PKD codes in the client form instead of loading all codes upfront.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of matching PKD codes',
+  })
+  @RequirePermission('clients', 'read')
+  searchPkdCodes(
+    @Query('search') search?: string,
+    @Query('section') section?: string,
+    @Query('limit') limit?: number,
+  ) {
+    return this.clientsService.searchPkdCodes(search, section, limit ?? 50);
+  }
+
+  /**
+   * Get PKD sections for dropdown.
+   */
+  @Get('pkd-codes/sections')
+  @ApiOperation({
+    summary: 'Get PKD sections',
+    description: 'Returns all PKD sections (A-V) for section filter dropdown.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Object mapping section codes to labels',
+  })
+  @RequirePermission('clients', 'read')
+  getPkdSections() {
+    return this.clientsService.getPkdSections();
+  }
+
+  /**
    * Get all clients for the current user's company with optional filtering and pagination.
    */
   @Get()
@@ -166,9 +214,10 @@ export class ClientsController {
    */
   private parseCustomFieldFilters(
     query: Record<string, unknown>,
-  ): { fieldId: string; operator: string; value: string | string[] }[] {
-    const customFieldFilters: { fieldId: string; operator: string; value: string | string[] }[] = [];
+  ): CustomFieldFilterDto[] {
+    const customFieldFilters: CustomFieldFilterDto[] = [];
     const prefix = 'customField_';
+    const validOperators = Object.values(CustomFieldFilterOperator);
 
     for (const [key, rawValue] of Object.entries(query)) {
       if (key.startsWith(prefix) && typeof rawValue === 'string') {
@@ -179,15 +228,20 @@ export class ClientsController {
           const operator = rawValue.substring(0, colonIndex);
           const value = rawValue.substring(colonIndex + 1);
 
+          // Skip invalid operators - validation will handle the error later
+          if (!validOperators.includes(operator as CustomFieldFilterOperator)) {
+            continue;
+          }
+
           // For 'in' and 'contains_any' operators, split by comma
           const parsedValue =
-            operator === 'in' || operator === 'contains_any'
+            operator === CustomFieldFilterOperator.IN || operator === CustomFieldFilterOperator.CONTAINS_ANY
               ? value.split(',').map((v) => v.trim())
               : value;
 
           customFieldFilters.push({
             fieldId,
-            operator,
+            operator: operator as CustomFieldFilterOperator,
             value: parsedValue,
           });
         }
@@ -468,7 +522,8 @@ export class ClientsController {
     summary: 'Import clients from CSV',
     description:
       'Imports clients from a CSV file. Clients with matching NIP will be updated, ' +
-      'new clients will be created. The file must follow the template format.',
+      'new clients will be created. The file must follow the template format. ' +
+      'Maximum file size: 5MB.',
   })
   @ApiResponse({
     status: 200,
@@ -476,7 +531,7 @@ export class ClientsController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad Request - Invalid CSV format or data',
+    description: 'Bad Request - Invalid CSV format, data, or file too large',
     type: ErrorResponseDto,
   })
   @ApiResponse({
@@ -487,11 +542,23 @@ export class ClientsController {
   @UseInterceptors(FileInterceptor('file'))
   @RequirePermission('clients', 'write')
   async importFromCsv(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          // 5MB limit
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          // Only accept CSV files (text/csv or application/vnd.ms-excel for older clients)
+          new FileTypeValidator({ fileType: /^(text\/csv|application\/vnd\.ms-excel|text\/plain)$/ }),
+        ],
+        fileIsRequired: true,
+        errorHttpStatusCode: 400,
+      }),
+    )
+    file: Express.Multer.File,
     @CurrentUser() user: User,
   ) {
     if (!file) {
-      throw new Error('Plik jest wymagany');
+      throw new BadRequestException('Plik jest wymagany');
     }
 
     const content = file.buffer.toString('utf-8');

@@ -10,8 +10,8 @@ import {
   User,
   Client,
   NotificationSettings,
-  CommonModule,
 } from '@accounting/common';
+import { CommonModule } from '@accounting/common/backend';
 import { RBACModule } from '@accounting/rbac';
 import { EmailModule } from '@accounting/email';
 import { TasksService } from './services/tasks.service';

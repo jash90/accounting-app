@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { ModuleDiscoveryService, ModuleConfig, DiscoveredModule } from '@accounting/rbac';
+import { ModuleDiscoveryService, ModuleConfig } from '@accounting/rbac';
 import { Module, ModuleSource } from '@accounting/common';
 import * as fs from 'fs';
 
@@ -11,7 +10,6 @@ const mockFs = fs as jest.Mocked<typeof fs>;
 
 describe('ModuleDiscoveryService', () => {
   let service: ModuleDiscoveryService;
-  let moduleRepository: Repository<Module>;
 
   const mockModuleRepository = {
     findOne: jest.fn(),
@@ -46,7 +44,6 @@ describe('ModuleDiscoveryService', () => {
     }).compile();
 
     service = module.get<ModuleDiscoveryService>(ModuleDiscoveryService);
-    moduleRepository = module.get<Repository<Module>>(getRepositoryToken(Module));
   });
 
   describe('discoverModules', () => {
@@ -329,6 +326,68 @@ describe('ModuleDiscoveryService', () => {
 
       await service.reloadModules();
       expect(service.getAllModules().length).toBe(2);
+    });
+  });
+
+  describe('concurrent discoverModules', () => {
+    it('should handle concurrent discovery calls without race conditions', async () => {
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readdirSync.mockReturnValue([
+        { name: 'module-a', isDirectory: () => true },
+        { name: 'module-b', isDirectory: () => true },
+      ] as any);
+      mockFs.readFileSync.mockImplementation((filePath: string) => {
+        if (typeof filePath === 'string' && filePath.includes('module-a')) {
+          return JSON.stringify({ ...mockModuleConfig, slug: 'module-a', name: 'Module A' });
+        }
+        return JSON.stringify({ ...mockModuleConfig, slug: 'module-b', name: 'Module B' });
+      });
+
+      // Call discoverModules multiple times concurrently
+      const results = await Promise.all([
+        service.discoverModules(),
+        service.discoverModules(),
+        service.discoverModules(),
+      ]);
+
+      // All calls should return the same result
+      expect(results[0]).toEqual(results[1]);
+      expect(results[1]).toEqual(results[2]);
+      expect(results[0].length).toBe(2);
+
+      // Cache should be consistent
+      const modules = service.getAllModules();
+      expect(modules.length).toBe(2);
+    });
+
+    it('should handle concurrent sync operations gracefully', async () => {
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readdirSync.mockReturnValue([
+        { name: 'test-module', isDirectory: () => true },
+      ] as any);
+      mockFs.readFileSync.mockReturnValue(JSON.stringify(mockModuleConfig));
+      mockModuleRepository.findOne.mockResolvedValue(null);
+      mockModuleRepository.create.mockReturnValue({
+        ...mockModuleConfig,
+        source: ModuleSource.FILE,
+      });
+      mockModuleRepository.save.mockResolvedValue({
+        id: '123',
+        ...mockModuleConfig,
+        source: ModuleSource.FILE,
+      });
+
+      await service.discoverModules();
+
+      // Call syncWithDatabase multiple times concurrently
+      await Promise.all([
+        service.syncWithDatabase(),
+        service.syncWithDatabase(),
+        service.syncWithDatabase(),
+      ]);
+
+      // Should complete without errors
+      expect(service.getAllModules().length).toBe(1);
     });
   });
 

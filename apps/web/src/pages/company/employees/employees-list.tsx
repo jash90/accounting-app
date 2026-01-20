@@ -7,7 +7,7 @@ import { DataTable } from '@/components/common/data-table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Edit, Trash2, Key, Users, UserPlus } from 'lucide-react';
+import { Edit, Trash2, Key, Users, UserPlus } from 'lucide-react';
 import { UserDto } from '@/types/dtos';
 import { EmployeeFormDialog } from '@/components/forms/employee-form-dialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
@@ -125,9 +125,13 @@ export default function EmployeesListPage() {
       <EmployeeFormDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        onSubmit={(data) => {
-          createEmployee.mutate(data);
-          setCreateOpen(false);
+        onSubmit={async (data) => {
+          try {
+            await createEmployee.mutateAsync(data);
+            setCreateOpen(false);
+          } catch {
+            // Error handled by mutation's onError
+          }
         }}
       />
 
@@ -136,9 +140,13 @@ export default function EmployeesListPage() {
           open={!!editingEmployee}
           onOpenChange={(open) => !open && setEditingEmployee(null)}
           employee={editingEmployee}
-          onSubmit={(data) => {
-            updateEmployee.mutate({ id: editingEmployee.id, data });
-            setEditingEmployee(null);
+          onSubmit={async (data) => {
+            try {
+              await updateEmployee.mutateAsync({ id: editingEmployee.id, data });
+              setEditingEmployee(null);
+            } catch {
+              // Error handled by mutation's onError
+            }
           }}
         />
       )}

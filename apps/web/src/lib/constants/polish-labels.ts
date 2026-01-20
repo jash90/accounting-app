@@ -102,9 +102,26 @@ export const GTU_CODES = [
 export type GtuCode = typeof GTU_CODES[number]['code'];
 
 // PKD 2025 - Polska Klasyfikacja Działalności (657 kodów na poziomie klasy)
-// Re-export from dedicated PKD codes file
-export { PKD_CODES, PKD_SECTIONS, getPkdCodesBySection } from './pkd-codes';
-export type { PkdCode, PkdSection } from './pkd-codes';
+// Import from shared constants library (browser-safe, no Node.js dependencies)
+import {
+  getPkdCodesForFrontend,
+  getPkdSectionsForFrontend,
+  getPkdClassesBySection as _getPkdClassesBySection,
+  type PkdCodeOption,
+} from '@accounting/common';
+
+// Re-export with backwards-compatible names and proper types
+export const PKD_CODES: PkdCodeOption[] = getPkdCodesForFrontend();
+export const PKD_SECTIONS: Record<string, string> = getPkdSectionsForFrontend();
+
+// Re-export types
+export type PkdCode = PkdCodeOption;
+export type PkdSection = string;
+
+// Backwards-compatible helper function
+export function getPkdCodesBySection(section: string): PkdCodeOption[] {
+  return PKD_CODES.filter((code) => code.section === section);
+}
 
 // Client field labels for condition builder
 export const ClientFieldLabels: Record<string, string> = {

@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   ConflictException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -15,6 +16,7 @@ import * as crypto from 'crypto';
 
 @Injectable()
 export class AIConfigurationService {
+  private readonly logger = new Logger(AIConfigurationService.name);
   private readonly ENCRYPTION_KEY: string;
   private readonly ALGORITHM = 'aes-256-cbc';
 
@@ -74,7 +76,9 @@ export class AIConfigurationService {
       decrypted += decipher.final('utf8');
       return decrypted;
     } catch (error) {
-      console.error('API key decryption failed:', error instanceof Error ? error.message : error);
+      this.logger.error(
+        `API key decryption failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw new BadRequestException(
         'Failed to decrypt API key. The key may be corrupted. Please reconfigure the API key in settings.',
       );

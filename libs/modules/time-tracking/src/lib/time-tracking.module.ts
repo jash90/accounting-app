@@ -7,8 +7,8 @@ import {
   User,
   Client,
   Task,
-  CommonModule,
 } from '@accounting/common';
+import { CommonModule } from '@accounting/common/backend';
 import { RBACModule } from '@accounting/rbac';
 import { TimeEntriesService } from './services/time-entries.service';
 import { TimeSettingsService } from './services/time-settings.service';

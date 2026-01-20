@@ -24,6 +24,7 @@ import { TimeEntryStatus } from '../enums/time-entry-status.enum';
 @Index(['companyId', 'isBillable'])
 @Index(['companyId', 'userId', 'startTime'])
 @Index(['userId', 'startTime', 'endTime']) // For overlap detection
+@Index(['userId', 'companyId', 'isRunning', 'isActive']) // For timer lookups
 export class TimeEntry {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -134,6 +135,20 @@ export class TimeEntry {
 
   @Column({ default: true })
   isActive!: boolean;
+
+  // Entry locking for approved/billed entries
+  @Column({ default: false })
+  isLocked!: boolean;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  lockedAt?: Date;
+
+  @Column({ nullable: true })
+  lockedById?: string;
+
+  @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'lockedById' })
+  lockedBy?: User;
 
   @CreateDateColumn()
   createdAt!: Date;

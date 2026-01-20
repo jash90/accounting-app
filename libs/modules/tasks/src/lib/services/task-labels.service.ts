@@ -4,8 +4,8 @@ import { Repository } from 'typeorm';
 import {
   TaskLabel,
   User,
-  TenantService,
 } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
 import {
   TaskLabelNotFoundException,
   TaskLabelAlreadyExistsException,

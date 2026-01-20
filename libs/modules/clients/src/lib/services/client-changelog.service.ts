@@ -326,6 +326,175 @@ export class ClientChangelogService {
   }
 
   /**
+   * Batch notify about multiple deleted clients in a single operation.
+   * Groups all clients into one email per recipient.
+   */
+  async notifyBulkClientsDeleted(clients: Client[], performedBy: User): Promise<void> {
+    if (clients.length === 0) {
+      return;
+    }
+
+    // All clients should belong to same company (bulk operation constraint)
+    const companyId = clients[0].companyId;
+
+    const smtpConfig =
+      await this.emailConfigService.getDecryptedSmtpConfigByCompanyId(companyId);
+
+    if (!smtpConfig) {
+      this.logger.warn(
+        `No active email configuration for company. Skipping bulk delete notifications.`,
+        {
+          companyId,
+          clientCount: clients.length,
+          notificationType: 'bulk_delete',
+        },
+      );
+      return;
+    }
+
+    const recipients = await this.getNotificationRecipients(companyId, 'receiveOnDelete');
+
+    if (recipients.length === 0) {
+      return;
+    }
+
+    const company = await this.companyRepository.findOne({
+      where: { id: companyId },
+    });
+
+    try {
+      const html = await this.compileTemplate('clients-bulk-deleted', {
+        clients: clients.map((c) => ({ name: c.name, nip: c.nip || 'Nie podano' })),
+        clientCount: clients.length,
+        companyName: company?.name || 'Nieznana firma',
+        deletedByName: `${performedBy.firstName} ${performedBy.lastName}`,
+        deletedAt: new Date().toLocaleString('pl-PL'),
+      });
+
+      const messages = recipients.map((recipient) => ({
+        to: recipient.email,
+        subject: `Usunięto ${clients.length} klientów`,
+        html,
+      }));
+
+      await this.emailSenderService.sendBatchEmails(smtpConfig, messages);
+      this.logger.log(
+        `Bulk delete notifications sent to users`,
+        {
+          companyId,
+          clientCount: clients.length,
+          recipientCount: recipients.length,
+        },
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send bulk client deleted notification`,
+        {
+          companyId,
+          clientCount: clients.length,
+          error: (error as Error).message,
+          errorName: (error as Error).name,
+          stack: (error as Error).stack,
+        },
+      );
+    }
+  }
+
+  /**
+   * Batch notify about multiple updated clients in a single operation.
+   * Groups all clients into one email per recipient.
+   */
+  async notifyBulkClientsUpdated(
+    updates: Array<{ client: Client; oldValues: Record<string, unknown> }>,
+    performedBy: User,
+  ): Promise<void> {
+    if (updates.length === 0) {
+      return;
+    }
+
+    // All clients should belong to same company (bulk operation constraint)
+    const companyId = updates[0].client.companyId;
+
+    const smtpConfig =
+      await this.emailConfigService.getDecryptedSmtpConfigByCompanyId(companyId);
+
+    if (!smtpConfig) {
+      this.logger.warn(
+        `No active email configuration for company. Skipping bulk update notifications.`,
+        {
+          companyId,
+          clientCount: updates.length,
+          notificationType: 'bulk_update',
+        },
+      );
+      return;
+    }
+
+    const recipients = await this.getNotificationRecipients(companyId, 'receiveOnUpdate');
+
+    if (recipients.length === 0) {
+      return;
+    }
+
+    // Calculate changes for each client
+    const clientsWithChanges = updates
+      .map(({ client, oldValues }) => {
+        const changes = this.calculateChanges(oldValues, client);
+        if (changes.length === 0) return null;
+        return {
+          name: client.name,
+          changes: changes.map((change) => this.changeLogService.formatChange(change)),
+        };
+      })
+      .filter((c): c is NonNullable<typeof c> => c !== null);
+
+    if (clientsWithChanges.length === 0) {
+      return;
+    }
+
+    const company = await this.companyRepository.findOne({
+      where: { id: companyId },
+    });
+
+    try {
+      const html = await this.compileTemplate('clients-bulk-updated', {
+        clients: clientsWithChanges,
+        clientCount: clientsWithChanges.length,
+        companyName: company?.name || 'Nieznana firma',
+        updatedByName: `${performedBy.firstName} ${performedBy.lastName}`,
+        updatedAt: new Date().toLocaleString('pl-PL'),
+      });
+
+      const messages = recipients.map((recipient) => ({
+        to: recipient.email,
+        subject: `Zaktualizowano ${clientsWithChanges.length} klientów`,
+        html,
+      }));
+
+      await this.emailSenderService.sendBatchEmails(smtpConfig, messages);
+      this.logger.log(
+        `Bulk update notifications sent to users`,
+        {
+          companyId,
+          clientCount: clientsWithChanges.length,
+          recipientCount: recipients.length,
+        },
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send bulk client updated notification`,
+        {
+          companyId,
+          clientCount: updates.length,
+          error: (error as Error).message,
+          errorName: (error as Error).name,
+          stack: (error as Error).stack,
+        },
+      );
+    }
+  }
+
+  /**
    * Returns users who should receive notifications.
    *
    * Logic:

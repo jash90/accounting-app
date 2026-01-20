@@ -30,7 +30,8 @@ export * from './lib/entities/company.entity';
 export * from './lib/entities/module.entity';
 export * from './lib/entities/company-module-access.entity';
 export * from './lib/entities/user-module-permission.entity';
-export { EmailDraft } from '../../modules/email-client/src/lib/entities/email-draft.entity';
+// NOTE: EmailDraft is NOT exported from common to maintain proper module boundaries.
+// Import directly from '@accounting/modules/email-client' where needed.
 export * from './lib/entities/ai-configuration.entity';
 export * from './lib/entities/ai-conversation.entity';
 export * from './lib/entities/ai-message.entity';
@@ -58,6 +59,15 @@ export { AIMessageRole } from './lib/entities/ai-message.entity';
 export * from './lib/dto/responses';
 export * from './lib/dto/requests';
 export * from './lib/dto/pagination.dto';
-export * from './lib/services/encryption.service';
-export * from './lib/services/tenant.service';
-export * from './lib/common.module';
+// NOTE: EncryptionService is NOT exported from the barrel file because it uses
+// Node.js-specific modules (crypto, fs, util.promisify) that don't work in browsers.
+// Import directly from './lib/services/encryption.service' in backend code where needed.
+
+// NOTE: TenantService and CommonModule are NOT exported from the barrel file because
+// they use NestJS decorators and TypeORM which pull in Node.js dependencies at bundle time.
+// Import directly in backend code:
+//   import { TenantService } from '@accounting/common/lib/services/tenant.service';
+//   import { CommonModule } from '@accounting/common/lib/common.module';
+
+// Re-export TenantService type for type-only imports in frontend if needed
+export type { TenantService } from './lib/services/tenant.service';

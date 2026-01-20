@@ -24,23 +24,40 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useWeeklyTimesheet } from '@/lib/hooks/use-time-tracking';
 import { TimesheetDayDto } from '@/types/dtos';
 import { cn } from '@/lib/utils/cn';
+import { formatDuration } from '@/lib/utils/time';
+
+/**
+ * Polish pluralization for "wpis" (entry).
+ * Polish has complex plural rules:
+ * - 1: wpis (singular)
+ * - 2-4, 22-24, 32-34, etc.: wpisy
+ * - 0, 5-21, 25-31, etc.: wpisów
+ */
+function pluralizeEntries(count: number): string {
+  if (count === 1) return 'wpis';
+  const lastTwo = count % 100;
+  const lastOne = count % 10;
+  if (lastTwo >= 12 && lastTwo <= 14) return 'wpisów';
+  if (lastOne >= 2 && lastOne <= 4) return 'wpisy';
+  return 'wpisów';
+}
 
 interface WeeklyTimesheetProps {
   className?: string;
   onDayClick?: (date: Date) => void;
 }
 
-function formatDuration(minutes: number): string {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hours}:${mins.toString().padStart(2, '0')}`;
-}
-
 export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps) {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
 
-  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+  const weekStart = useMemo(
+    () => startOfWeek(selectedDate, { weekStartsOn: 1 }),
+    [selectedDate]
+  );
+  const weekEnd = useMemo(
+    () => endOfWeek(selectedDate, { weekStartsOn: 1 }),
+    [selectedDate]
+  );
   const dateString = format(weekStart, 'yyyy-MM-dd');
 
   const { data: timesheet, isPending, error } = useWeeklyTimesheet(dateString);
@@ -181,11 +198,20 @@ export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps)
             return (
               <Card
                 key={day.toISOString()}
+                tabIndex={onDayClick ? 0 : undefined}
+                role={onDayClick ? 'button' : undefined}
+                aria-label={onDayClick ? `Wybierz ${format(day, 'd MMMM yyyy', { locale: pl })}` : undefined}
                 onClick={() => onDayClick?.(day)}
+                onKeyDown={(e) => {
+                  if (onDayClick && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    onDayClick(day);
+                  }
+                }}
                 className={cn(
                   'cursor-pointer transition-all hover:shadow-md',
                   isToday && 'ring-2 ring-primary',
-                  onDayClick && 'hover:border-primary'
+                  onDayClick && 'hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
                 )}
               >
                 <CardContent className="p-3">
@@ -212,8 +238,7 @@ export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps)
                       </div>
                       <div className="flex flex-wrap gap-1 justify-center">
                         <Badge variant="secondary" className="text-xs">
-                          {dayData.entries.length} wpis
-                          {dayData.entries.length !== 1 && 'ów'}
+                          {dayData.entries.length} {pluralizeEntries(dayData.entries.length)}
                         </Badge>
                         {dayData.billableMinutes > 0 && (
                           <Badge variant="outline" className="text-xs">

@@ -1,4 +1,4 @@
-/* eslint-disable */
+ 
 export default {
   displayName: 'api',
   preset: '../../jest.preset.js',
@@ -29,6 +29,7 @@ export default {
     '<rootDir>/../../libs/**/*.spec.ts',
   ],
   moduleNameMapper: {
+    '^@accounting/common/backend$': '<rootDir>/../../libs/common/src/backend.ts',
     '^@accounting/(.*)$': '<rootDir>/../../libs/$1/src/index.ts',
   },
   transformIgnorePatterns: [

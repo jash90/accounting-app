@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/common/page-header';
 import { DataTable } from '@/components/common/data-table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Users, UserPlus } from 'lucide-react';
+import { Edit, Trash2, Users, UserPlus } from 'lucide-react';
 import { UserDto, UserRole } from '@/types/dtos';
 import { UserFormDialog } from '@/components/forms/user-form-dialog';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
@@ -49,7 +49,7 @@ const columns: ColumnDef<UserDto>[] = [
   {
     id: 'actions',
     header: 'Akcje',
-    cell: ({ row }) => {
+    cell: ({ row: _row }) => {
       // Actions will be handled by the parent component
       return null;
     },
@@ -128,9 +128,13 @@ export default function UsersListPage() {
       <UserFormDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        onSubmit={(data) => {
-          createUser.mutate(data);
-          setCreateOpen(false);
+        onSubmit={async (data) => {
+          try {
+            await createUser.mutateAsync(data);
+            setCreateOpen(false);
+          } catch {
+            // Error handled by mutation's onError
+          }
         }}
       />
 
@@ -139,9 +143,13 @@ export default function UsersListPage() {
           open={!!editingUser}
           onOpenChange={(open) => !open && setEditingUser(null)}
           user={editingUser}
-          onSubmit={(data) => {
-            updateUser.mutate({ id: editingUser.id, data });
-            setEditingUser(null);
+          onSubmit={async (data) => {
+            try {
+              await updateUser.mutateAsync({ id: editingUser.id, data });
+              setEditingUser(null);
+            } catch {
+              // Error handled by mutation's onError
+            }
           }}
         />
       )}

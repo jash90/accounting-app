@@ -129,6 +129,91 @@ export class ChangeLogService {
   }
 
   /**
+   * Batch log multiple delete operations in a single database call.
+   * Returns array of created change logs.
+   */
+  async logBulkDelete(
+    entityType: string,
+    entries: Array<{ entityId: string; data: Record<string, unknown> }>,
+    user: User,
+  ): Promise<ChangeLog[]> {
+    if (entries.length === 0) {
+      return [];
+    }
+
+    const logs = entries.map((entry) => {
+      const changes: ChangeDetail[] = Object.entries(entry.data).map(([field, value]) => ({
+        field,
+        oldValue: value,
+        newValue: null,
+      }));
+
+      return this.changeLogRepository.create({
+        entityType,
+        entityId: entry.entityId,
+        action: ChangeAction.DELETE,
+        changes,
+        changedById: user.id,
+        companyId: user.companyId,
+      });
+    });
+
+    const saved = await this.changeLogRepository.save(logs);
+
+    this.logger.log(
+      `Bulk change logged: DELETE ${entityType} (${entries.length} entities) by user:${user.id}`,
+    );
+
+    return saved;
+  }
+
+  /**
+   * Batch log multiple update operations in a single database call.
+   * Returns array of created change logs (only for entries with actual changes).
+   */
+  async logBulkUpdate(
+    entityType: string,
+    entries: Array<{ entityId: string; oldData: Record<string, unknown>; newData: Record<string, unknown> }>,
+    user: User,
+  ): Promise<ChangeLog[]> {
+    if (entries.length === 0) {
+      return [];
+    }
+
+    const logsToCreate: ChangeLog[] = [];
+
+    for (const entry of entries) {
+      const changes = this.calculateChanges(entry.oldData, entry.newData);
+
+      if (changes.length > 0) {
+        logsToCreate.push(
+          this.changeLogRepository.create({
+            entityType,
+            entityId: entry.entityId,
+            action: ChangeAction.UPDATE,
+            changes,
+            changedById: user.id,
+            companyId: user.companyId,
+          }),
+        );
+      }
+    }
+
+    if (logsToCreate.length === 0) {
+      this.logger.debug(`No changes detected for bulk update of ${entityType}`);
+      return [];
+    }
+
+    const saved = await this.changeLogRepository.save(logsToCreate);
+
+    this.logger.log(
+      `Bulk change logged: UPDATE ${entityType} (${logsToCreate.length} entities with changes) by user:${user.id}`,
+    );
+
+    return saved;
+  }
+
+  /**
    * Check if a field name contains sensitive data that should be redacted
    */
   private isSensitiveField(fieldName: string): boolean {

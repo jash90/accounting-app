@@ -4,7 +4,7 @@ import { UserRole } from '@/types/enums';
 // Auth Schemas
 export const loginSchema = z.object({
   email: z.string().email('Nieprawidłowy adres email'),
-  password: z.string().min(8, 'Hasło musi mieć co najmniej 8 znaków'),
+  password: z.string().min(12, 'Hasło musi mieć co najmniej 12 znaków'),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
@@ -12,10 +12,11 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 export const registerSchema = z.object({
   email: z.string().email('Nieprawidłowy adres email'),
   password: z.string()
-    .min(8, 'Hasło musi mieć co najmniej 8 znaków')
+    .min(12, 'Hasło musi mieć co najmniej 12 znaków')
     .regex(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
     .regex(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
-    .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę'),
+    .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę')
+    .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Hasło musi zawierać znak specjalny'),
   firstName: z.string().min(1, 'Imię jest wymagane'),
   lastName: z.string().min(1, 'Nazwisko jest wymagane'),
   role: z.nativeEnum(UserRole),
@@ -28,10 +29,11 @@ export type RegisterFormData = z.infer<typeof registerSchema>;
 export const createUserSchema = z.object({
   email: z.string().email('Nieprawidłowy adres email'),
   password: z.string()
-    .min(8, 'Hasło musi mieć co najmniej 8 znaków')
+    .min(12, 'Hasło musi mieć co najmniej 12 znaków')
     .regex(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
     .regex(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
-    .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę'),
+    .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę')
+    .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Hasło musi zawierać znak specjalny'),
   firstName: z.string().min(1, 'Imię jest wymagane'),
   lastName: z.string().min(1, 'Nazwisko jest wymagane'),
   role: z.nativeEnum(UserRole),
@@ -114,10 +116,11 @@ export type UpdateModuleFormData = z.infer<typeof updateModuleSchema>;
 export const createEmployeeSchema = z.object({
   email: z.string().email('Nieprawidłowy adres email'),
   password: z.string()
-    .min(8, 'Hasło musi mieć co najmniej 8 znaków')
+    .min(12, 'Hasło musi mieć co najmniej 12 znaków')
     .regex(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
     .regex(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
-    .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę'),
+    .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę')
+    .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Hasło musi zawierać znak specjalny'),
   firstName: z.string().min(1, 'Imię jest wymagane'),
   lastName: z.string().min(1, 'Nazwisko jest wymagane'),
 });
@@ -240,10 +243,28 @@ export const updateEmailConfigSchema = z.object({
 
 export type UpdateEmailConfigFormData = z.infer<typeof updateEmailConfigSchema>;
 
+// PKD code validation - must be in format XX.XX or XX.XX.X (e.g., 62.01 or 62.01.Z)
+const pkdCodeSchema = z.string().max(10).optional().refine(
+  (val) => !val || /^\d{2}\.\d{2}(\.[A-Z])?$/.test(val),
+  { message: 'Kod PKD musi być w formacie XX.XX lub XX.XX.X (np. 62.01 lub 62.01.Z)' }
+);
+
+// GTU code validation - must be in format GTU_XX (e.g., GTU_01)
+const gtuCodeSchema = z.string().max(10).optional().refine(
+  (val) => !val || /^GTU_\d{2}$/.test(val),
+  { message: 'Kod GTU musi być w formacie GTU_XX (np. GTU_01)' }
+);
+
+// NIP validation - must be exactly 10 digits
+const nipSchema = z.string().optional().refine(
+  (val) => !val || /^\d{10}$/.test(val),
+  { message: 'NIP musi składać się z dokładnie 10 cyfr' }
+);
+
 // Client Schemas
 export const createClientSchema = z.object({
   name: z.string().min(1, 'Nazwa klienta jest wymagana').max(255),
-  nip: z.string().max(20).optional(),
+  nip: nipSchema,
   email: z.string().email('Nieprawidłowy adres email').optional().or(z.literal('')),
   phone: z.string().max(20).optional(),
   companyStartDate: z.date().optional().nullable(),
@@ -251,8 +272,8 @@ export const createClientSchema = z.object({
   suspensionDate: z.date().optional().nullable(),
   companySpecificity: z.string().optional(),
   additionalInfo: z.string().optional(),
-  gtuCode: z.string().max(10).optional(),
-  pkdCode: z.string().max(10).optional(),
+  gtuCode: gtuCodeSchema,
+  pkdCode: pkdCodeSchema,
   amlGroup: z.string().max(50).optional(),
   employmentType: z.enum(['DG', 'DG_ETAT', 'DG_AKCJONARIUSZ', 'DG_HALF_TIME_BELOW_MIN', 'DG_HALF_TIME_ABOVE_MIN']).optional(),
   vatStatus: z.enum(['VAT_MONTHLY', 'VAT_QUARTERLY', 'NO', 'NO_WATCH_LIMIT']).optional(),

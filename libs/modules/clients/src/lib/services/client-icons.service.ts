@@ -11,8 +11,8 @@ import {
   User,
   IconType,
   PaginatedResponseDto,
-  TenantService,
 } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
 import { StorageService } from '@accounting/infrastructure/storage';
 import { AutoAssignService } from './auto-assign.service';
 import {

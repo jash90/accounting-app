@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Play, Square, Trash2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,7 @@ import {
 } from '@/lib/hooks/use-time-tracking';
 import { useTaskClients } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
+import { formatDurationSeconds } from '@/lib/utils/time';
 
 interface TimerWidgetProps {
   className?: string;
@@ -43,11 +44,28 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
 
   const clients = clientsData || [];
 
-  // Calculate elapsed time
+  // Ref to track component mount state to prevent memory leaks
+  const mountedRef = useRef(true);
+
+  // Track mount state
   useEffect(() => {
-    if (activeTimer?.isRunning && activeTimer?.startTime) {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Extract only the properties needed for the interval effect to avoid unnecessary re-runs
+  const timerIsRunning = activeTimer?.isRunning ?? false;
+  const timerStartTime = activeTimer?.startTime;
+
+  // Calculate elapsed time with unmount race condition guard
+  useEffect(() => {
+    if (timerIsRunning && timerStartTime) {
       const updateElapsed = () => {
-        const start = new Date(activeTimer.startTime).getTime();
+        // Guard against unmount race conditions
+        if (!mountedRef.current) return;
+        const start = new Date(timerStartTime).getTime();
         const now = Date.now();
         setElapsedSeconds(Math.floor((now - start) / 1000));
       };
@@ -56,9 +74,11 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
       const interval = setInterval(updateElapsed, 1000);
       return () => clearInterval(interval);
     } else {
-      setElapsedSeconds(0);
+      if (mountedRef.current) {
+        setElapsedSeconds(0);
+      }
     }
-  }, [activeTimer?.isRunning, activeTimer?.startTime]);
+  }, [timerIsRunning, timerStartTime]);
 
   // Sync form state with active timer
   useEffect(() => {
@@ -66,49 +86,104 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
       setDescription(activeTimer.description || '');
       setClientId(activeTimer.clientId || '');
       setIsBillable(activeTimer.isBillable);
+    } else {
+      // Reset form state when timer becomes inactive/null
+      setDescription('');
+      setClientId('');
+      setIsBillable(true);
     }
   }, [activeTimer]);
 
-  const formattedTime = useMemo(() => {
-    const hours = Math.floor(elapsedSeconds / 3600);
-    const minutes = Math.floor((elapsedSeconds % 3600) / 60);
-    const seconds = elapsedSeconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  }, [elapsedSeconds]);
+  const formattedTime = formatDurationSeconds(elapsedSeconds);
 
-  const handleStart = () => {
+  const handleStart = useCallback(() => {
     startTimer.mutate({
       description: description || undefined,
       clientId: clientId || undefined,
       isBillable,
     });
-  };
+  }, [startTimer, description, clientId, isBillable]);
 
-  const handleStop = () => {
-    stopTimer.mutate({
-      description: description || undefined,
-    });
-    setDescription('');
-    setClientId('');
-    setIsBillable(true);
-  };
+  const handleStop = useCallback(() => {
+    stopTimer.mutate(
+      { description: description || undefined },
+      {
+        onSuccess: () => {
+          // Only clear form state on successful stop
+          setDescription('');
+          setClientId('');
+          setIsBillable(true);
+        },
+        // On error, keep the current state so user can retry
+      }
+    );
+  }, [stopTimer, description]);
 
-  const handleDiscard = () => {
+  const handleDiscard = useCallback(() => {
     discardTimer.mutate();
     setDescription('');
     setClientId('');
     setIsBillable(true);
-  };
+  }, [discardTimer]);
 
-  const handleDescriptionBlur = () => {
+  const handleDescriptionBlur = useCallback(() => {
     if (activeTimer?.isRunning && description !== activeTimer.description) {
-      updateTimer.mutate({
-        description: description || undefined,
-        clientId: clientId || undefined,
-        isBillable,
-      });
+      updateTimer.mutate(
+        {
+          description: description || undefined,
+          clientId: clientId || undefined,
+          isBillable,
+        },
+        {
+          onError: () => {
+            // Restore the original description on error
+            setDescription(activeTimer.description || '');
+          },
+        }
+      );
     }
-  };
+  }, [activeTimer, description, clientId, isBillable, updateTimer]);
+
+  const handleClientChange = useCallback((value: string) => {
+    const actualValue = value === '__none__' ? '' : value;
+    const previousClientId = clientId;
+    setClientId(actualValue);
+    if (activeTimer?.isRunning) {
+      updateTimer.mutate(
+        {
+          description: description || undefined,
+          clientId: actualValue || undefined,
+          isBillable,
+        },
+        {
+          onError: () => {
+            // Restore the original client on error
+            setClientId(previousClientId);
+          },
+        }
+      );
+    }
+  }, [activeTimer?.isRunning, clientId, description, isBillable, updateTimer]);
+
+  const handleBillableChange = useCallback((checked: boolean) => {
+    const previousBillable = isBillable;
+    setIsBillable(checked);
+    if (activeTimer?.isRunning) {
+      updateTimer.mutate(
+        {
+          description: description || undefined,
+          clientId: clientId || undefined,
+          isBillable: checked,
+        },
+        {
+          onError: () => {
+            // Restore the original billable state on error
+            setIsBillable(previousBillable);
+          },
+        }
+      );
+    }
+  }, [activeTimer?.isRunning, description, clientId, isBillable, updateTimer]);
 
   if (isLoading) {
     return (
@@ -129,11 +204,20 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
       <Card className={cn('w-full', className)}>
         <CardContent className="p-3">
           <div className="flex items-center gap-3">
-            <div className={cn(
-              'text-xl font-mono font-semibold tabular-nums',
-              isRunning && 'text-green-600'
-            )}>
+            <div
+              className={cn(
+                'text-xl font-mono font-semibold tabular-nums flex items-center gap-2',
+                isRunning && 'text-green-600'
+              )}
+              aria-live="polite"
+              aria-atomic="true"
+            >
               {formattedTime}
+              {isRunning && (
+                <span className="text-xs font-normal bg-green-100 text-green-700 px-1.5 py-0.5 rounded" aria-label="Timer aktywny">
+                  Aktywny
+                </span>
+              )}
             </div>
             <Input
               placeholder="Co robisz?"
@@ -150,6 +234,7 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
                   variant="destructive"
                   onClick={handleStop}
                   disabled={stopTimer.isPending}
+                  aria-label="Zatrzymaj timer"
                 >
                   <Square className="h-4 w-4" />
                 </Button>
@@ -158,6 +243,7 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
                   variant="ghost"
                   onClick={handleDiscard}
                   disabled={discardTimer.isPending}
+                  aria-label="Odrzuć timer"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -168,6 +254,7 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
                 onClick={handleStart}
                 disabled={startTimer.isPending}
                 className="bg-green-600 hover:bg-green-700"
+                aria-label="Rozpocznij timer"
               >
                 <Play className="h-4 w-4" />
               </Button>
@@ -182,11 +269,22 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
     <Card className={cn('w-full', className)}>
       <CardContent className="p-4 space-y-4">
         <div className="flex items-center gap-4">
-          <div className={cn(
-            'text-3xl font-mono font-semibold tabular-nums min-w-[140px]',
-            isRunning && 'text-green-600'
-          )}>
-            {formattedTime}
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                'text-3xl font-mono font-semibold tabular-nums min-w-[140px]',
+                isRunning && 'text-green-600'
+              )}
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {formattedTime}
+            </div>
+            {isRunning && (
+              <span className="text-xs font-medium bg-green-100 text-green-700 px-2 py-1 rounded" aria-label="Timer aktywny">
+                Aktywny
+              </span>
+            )}
           </div>
           <Input
             placeholder="Nad czym pracujesz?"
@@ -202,6 +300,7 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
                 variant="destructive"
                 onClick={handleStop}
                 disabled={stopTimer.isPending}
+                aria-label="Zatrzymaj timer"
               >
                 <Square className="h-4 w-4 mr-2" />
                 Stop
@@ -210,6 +309,7 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
                 variant="ghost"
                 onClick={handleDiscard}
                 disabled={discardTimer.isPending}
+                aria-label="Odrzuć timer"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -219,6 +319,7 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
               onClick={handleStart}
               disabled={startTimer.isPending}
               className="bg-green-600 hover:bg-green-700"
+              aria-label="Rozpocznij timer"
             >
               <Play className="h-4 w-4 mr-2" />
               Start
@@ -230,17 +331,7 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
           <div className="flex-1 min-w-[200px]">
             <Select
               value={clientId || '__none__'}
-              onValueChange={(value) => {
-                const actualValue = value === '__none__' ? '' : value;
-                setClientId(actualValue);
-                if (isRunning) {
-                  updateTimer.mutate({
-                    description: description || undefined,
-                    clientId: actualValue || undefined,
-                    isBillable,
-                  });
-                }
-              }}
+              onValueChange={handleClientChange}
               disabled={startTimer.isPending || stopTimer.isPending}
             >
               <SelectTrigger>
@@ -261,16 +352,7 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
             <Switch
               id="billable"
               checked={isBillable}
-              onCheckedChange={(checked) => {
-                setIsBillable(checked);
-                if (isRunning) {
-                  updateTimer.mutate({
-                    description: description || undefined,
-                    clientId: clientId || undefined,
-                    isBillable: checked,
-                  });
-                }
-              }}
+              onCheckedChange={handleBillableChange}
               disabled={startTimer.isPending || stopTimer.isPending}
             />
             <Label htmlFor="billable" className="text-sm">

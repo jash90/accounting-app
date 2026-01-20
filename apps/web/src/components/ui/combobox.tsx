@@ -12,6 +12,12 @@ import { Input } from '@/components/ui/input';
 export interface ComboboxOption {
   value: string;
   label: string;
+  /**
+   * Optional display label shown in the dropdown list.
+   * If not provided, falls back to label parsing logic.
+   * Use this to avoid fragile string splitting on ' - '.
+   */
+  displayLabel?: string;
 }
 
 interface ComboboxProps {
@@ -37,6 +43,7 @@ export function Combobox({
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
+  const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
 
   const selectedOption = options.find((option) => option.value === value);
 
@@ -48,16 +55,52 @@ export function Combobox({
     );
   }, [options, search]);
 
+  // Reset highlighted index when filtered options change
+  React.useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [filteredOptions.length]);
+
   const handleSelect = (optionValue: string) => {
     onChange(optionValue === value ? null : optionValue);
     setOpen(false);
     setSearch('');
+    setHighlightedIndex(-1);
   };
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
     onChange(null);
     setSearch('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!open) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex((prev) =>
+          prev < filteredOptions.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex((prev) =>
+          prev > 0 ? prev - 1 : filteredOptions.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < filteredOptions.length) {
+          handleSelect(filteredOptions[highlightedIndex].value);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setOpen(false);
+        setHighlightedIndex(-1);
+        break;
+    }
   };
 
   return (
@@ -79,12 +122,24 @@ export function Combobox({
           </span>
           <div className="flex items-center gap-1 ml-2 shrink-0">
             {selectedOption && (
-              <X
-                className="h-4 w-4 opacity-50 hover:opacity-100"
+              <button
+                type="button"
+                aria-label="Wyczyść wybór"
                 onClick={handleClear}
-              />
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onChange(null);
+                    setSearch('');
+                  }
+                }}
+                className="rounded-sm hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+              >
+                <X className="h-4 w-4 opacity-50 hover:opacity-100" aria-hidden="true" />
+              </button>
             )}
-            <ChevronsUpDown className="h-4 w-4 opacity-50" />
+            <ChevronsUpDown className="h-4 w-4 opacity-50" aria-hidden="true" />
           </div>
         </Button>
       </PopoverTrigger>
@@ -98,8 +153,12 @@ export function Combobox({
             placeholder={searchPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={handleKeyDown}
             className="h-9"
             autoFocus
+            aria-activedescendant={
+              highlightedIndex >= 0 ? `combobox-option-${highlightedIndex}` : undefined
+            }
           />
         </div>
         <div className="max-h-[200px] overflow-y-auto">
@@ -108,16 +167,20 @@ export function Combobox({
               {emptyText}
             </div>
           ) : (
-            <div className="p-1">
-              {filteredOptions.map((option) => (
+            <div className="p-1" role="listbox" aria-label={placeholder}>
+              {filteredOptions.map((option, index) => (
                 <button
                   key={option.value}
+                  id={`combobox-option-${index}`}
+                  role="option"
+                  aria-selected={value === option.value}
                   onClick={() => handleSelect(option.value)}
                   className={cn(
                     'relative flex w-full cursor-pointer select-none items-start rounded-sm py-2 px-3 text-sm outline-none transition-colors',
                     'hover:bg-accent hover:text-accent-foreground',
                     'focus:bg-accent focus:text-accent-foreground',
-                    value === option.value && 'bg-accent/50'
+                    value === option.value && 'bg-accent/50',
+                    highlightedIndex === index && 'bg-accent text-accent-foreground'
                   )}
                 >
                   <Check
@@ -127,9 +190,10 @@ export function Combobox({
                     )}
                   />
                   <span className="flex-1 whitespace-normal break-words text-left">
-                    {option.label.includes(' - ')
-                      ? option.label.split(' - ').slice(1).join(' - ')
-                      : option.label}
+                    {option.displayLabel ??
+                      (option.label.includes(' - ')
+                        ? option.label.split(' - ').slice(1).join(' - ')
+                        : option.label)}
                   </span>
                   <span className="ml-2 shrink-0 font-mono text-xs text-muted-foreground">
                     {option.value}

@@ -11,8 +11,8 @@ import {
   User,
   CustomFieldType,
   PaginatedResponseDto,
-  TenantService,
 } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
 import {
   ClientNotFoundException,
   FieldNotFoundException,
@@ -191,6 +191,64 @@ export class CustomFieldsService {
       { fieldDefinitionId: id },
       { isActive: false },
     );
+  }
+
+  /**
+   * Hard deletes a field definition and all associated values.
+   * Use with caution - this permanently removes data and cannot be undone.
+   *
+   * @param id - Field definition ID to delete
+   * @param user - User performing the operation
+   * @throws FieldNotFoundException if definition doesn't exist or doesn't belong to company
+   */
+  async hardDeleteDefinition(id: string, user: User): Promise<void> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+
+    // Verify definition exists and belongs to company (including soft-deleted)
+    const definition = await this.fieldDefinitionRepository.findOne({
+      where: { id, companyId },
+    });
+
+    if (!definition) {
+      throw new FieldNotFoundException(id, companyId);
+    }
+
+    // Use a transaction to ensure atomicity
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // First, delete all associated field values (cascading cleanup)
+      await queryRunner.manager.delete(ClientCustomFieldValue, {
+        fieldDefinitionId: id,
+      });
+
+      // Then delete the definition itself
+      await queryRunner.manager.delete(ClientFieldDefinition, {
+        id,
+        companyId,
+      });
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new ClientException(
+        ClientErrorCode.CLIENT_BATCH_OPERATION_FAILED,
+        'Failed to hard delete field definition',
+        {
+          clientId: id, // Using clientId field for the definition ID
+          companyId,
+          operationStage: 'hardDeleteDefinition',
+          additionalInfo: {
+            error: (error as Error).message,
+            definitionId: id,
+          },
+        },
+      );
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   // Custom Field Values

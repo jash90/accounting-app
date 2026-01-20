@@ -1,13 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, DataSource } from 'typeorm';
 import {
   TimeEntry,
   TimeEntryStatus,
   User,
   UserRole,
-  TenantService,
 } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
 import { TimeCalculationService } from './time-calculation.service';
 import { TimeSettingsService } from './time-settings.service';
 import {
@@ -77,10 +77,27 @@ export class TimesheetService {
     private readonly calculationService: TimeCalculationService,
     private readonly settingsService: TimeSettingsService,
     private readonly tenantService: TenantService,
+    private readonly dataSource: DataSource,
   ) {}
 
   private canViewAllEntries(user: User): boolean {
     return user.role === UserRole.ADMIN || user.role === UserRole.COMPANY_OWNER;
+  }
+
+  /**
+   * Validates that a user belongs to the specified company.
+   * Throws NotFoundException if user doesn't exist or doesn't belong to company.
+   */
+  private async validateUserBelongsToCompany(
+    userId: string,
+    companyId: string,
+  ): Promise<void> {
+    const targetUser = await this.dataSource.getRepository(User).findOne({
+      where: { id: userId, companyId, isActive: true },
+    });
+    if (!targetUser) {
+      throw new NotFoundException('Użytkownik nie należy do tej firmy');
+    }
   }
 
   async getDailyTimesheet(
@@ -94,6 +111,8 @@ export class TimesheetService {
     // Determine which user's data to fetch
     let targetUserId = user.id;
     if (dto.userId && this.canViewAllEntries(user)) {
+      // Validate that the requested user belongs to this company (IDOR protection)
+      await this.validateUserBelongsToCompany(dto.userId, companyId);
       targetUserId = dto.userId;
     }
 
@@ -132,6 +151,8 @@ export class TimesheetService {
     // Determine which user's data to fetch
     let targetUserId = user.id;
     if (dto.userId && this.canViewAllEntries(user)) {
+      // Validate that the requested user belongs to this company (IDOR protection)
+      await this.validateUserBelongsToCompany(dto.userId, companyId);
       targetUserId = dto.userId;
     }
 
@@ -193,11 +214,9 @@ export class TimesheetService {
     const endDate = new Date(dto.endDate);
     endDate.setHours(23, 59, 59, 999);
 
-    const queryBuilder = this.entryRepository
+    // Build base query with filters
+    const baseQueryBuilder = this.entryRepository
       .createQueryBuilder('entry')
-      .leftJoinAndSelect('entry.client', 'client')
-      .leftJoinAndSelect('entry.task', 'task')
-      .leftJoinAndSelect('entry.user', 'user')
       .where('entry.companyId = :companyId', { companyId })
       .andWhere('entry.startTime >= :startDate', { startDate })
       .andWhere('entry.startTime <= :endDate', { endDate })
@@ -205,35 +224,69 @@ export class TimesheetService {
 
     // Apply filters
     if (!this.canViewAllEntries(user)) {
-      queryBuilder.andWhere('entry.userId = :userId', { userId: user.id });
+      baseQueryBuilder.andWhere('entry.userId = :userId', { userId: user.id });
     } else if (dto.userId) {
-      queryBuilder.andWhere('entry.userId = :userId', { userId: dto.userId });
+      // Validate that the requested user belongs to this company (IDOR protection)
+      await this.validateUserBelongsToCompany(dto.userId, companyId);
+      baseQueryBuilder.andWhere('entry.userId = :userId', { userId: dto.userId });
     }
 
     if (dto.clientId) {
-      queryBuilder.andWhere('entry.clientId = :clientId', { clientId: dto.clientId });
+      baseQueryBuilder.andWhere('entry.clientId = :clientId', { clientId: dto.clientId });
     }
     if (dto.taskId) {
-      queryBuilder.andWhere('entry.taskId = :taskId', { taskId: dto.taskId });
+      baseQueryBuilder.andWhere('entry.taskId = :taskId', { taskId: dto.taskId });
     }
     if (dto.isBillable !== undefined) {
-      queryBuilder.andWhere('entry.isBillable = :isBillable', { isBillable: dto.isBillable });
+      baseQueryBuilder.andWhere('entry.isBillable = :isBillable', { isBillable: dto.isBillable });
     }
 
-    const entries = await queryBuilder.orderBy('entry.startTime', 'ASC').getMany();
+    // Use database-level aggregation for summary to avoid loading all entries into memory
+    const summaryResult = await baseQueryBuilder
+      .clone()
+      .select('COUNT(*)', 'entriesCount')
+      .addSelect('COALESCE(SUM(entry.durationMinutes), 0)', 'totalMinutes')
+      .addSelect('COALESCE(SUM(CASE WHEN entry.isBillable = true THEN entry.durationMinutes ELSE 0 END), 0)', 'billableMinutes')
+      .addSelect('COALESCE(SUM(CASE WHEN entry.isBillable = true THEN entry.totalAmount ELSE 0 END), 0)', 'totalAmount')
+      .getRawOne();
 
-    const summary = this.calculateSummary(entries);
+    const entriesCount = parseInt(summaryResult?.entriesCount ?? '0', 10);
+    const totalMinutes = parseInt(summaryResult?.totalMinutes ?? '0', 10);
+    const billableMinutes = parseInt(summaryResult?.billableMinutes ?? '0', 10);
+    const totalAmount = parseFloat(summaryResult?.totalAmount ?? '0');
 
-    // Group data if requested
+    // Group data if requested - requires loading entries with safety limit
     let groupedData: GroupedReportData[] | undefined;
     if (dto.groupBy) {
+      // Safety limit to prevent OOM on very large datasets
+      const MAX_ENTRIES_FOR_GROUPING = 1000;
+
+      const entries = await baseQueryBuilder
+        .clone()
+        .leftJoinAndSelect('entry.client', 'client')
+        .leftJoinAndSelect('entry.task', 'task')
+        .orderBy('entry.startTime', 'ASC')
+        .take(MAX_ENTRIES_FOR_GROUPING)
+        .getMany();
+
       groupedData = this.groupEntries(entries, dto.groupBy);
+
+      // Log warning if results were truncated
+      if (entries.length === MAX_ENTRIES_FOR_GROUPING && entriesCount > MAX_ENTRIES_FOR_GROUPING) {
+        this.logger.warn(
+          `Report grouping truncated: ${entriesCount} total entries, only first ${MAX_ENTRIES_FOR_GROUPING} grouped`,
+        );
+      }
     }
 
     return {
       startDate: dto.startDate,
       endDate: dto.endDate,
-      ...summary,
+      totalMinutes,
+      billableMinutes,
+      nonBillableMinutes: totalMinutes - billableMinutes,
+      totalAmount,
+      entriesCount,
       groupedData,
     };
   }
