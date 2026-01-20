@@ -7,15 +7,16 @@ export enum TimeTrackingErrorCode {
   TIME_ENTRY_OVERLAP = 'TIME_ENTRY_OVERLAP',
   TIME_ENTRY_LOCKED = 'TIME_ENTRY_LOCKED',
   TIME_ENTRY_INVALID_STATUS = 'TIME_ENTRY_INVALID_STATUS',
+  TIME_ENTRY_UNLOCK_NOT_AUTHORIZED = 'TIME_ENTRY_UNLOCK_NOT_AUTHORIZED',
 }
 
 export class TimeEntryNotFoundException extends HttpException {
-  constructor(id: string) {
+  constructor() {
     super(
       {
         statusCode: HttpStatus.NOT_FOUND,
         error: TimeTrackingErrorCode.TIME_ENTRY_NOT_FOUND,
-        message: `Wpis czasu o ID ${id} nie został znaleziony`,
+        message: 'Wpis czasu nie został znaleziony lub nie masz do niego dostępu',
       },
       HttpStatus.NOT_FOUND,
     );
@@ -83,6 +84,19 @@ export class TimeEntryInvalidStatusException extends HttpException {
         message: `Nie można zmienić statusu z "${currentStatus}" na "${targetStatus}".`,
       },
       HttpStatus.BAD_REQUEST,
+    );
+  }
+}
+
+export class TimeEntryUnlockNotAuthorizedException extends HttpException {
+  constructor() {
+    super(
+      {
+        statusCode: HttpStatus.FORBIDDEN,
+        error: TimeTrackingErrorCode.TIME_ENTRY_UNLOCK_NOT_AUTHORIZED,
+        message: 'Nie masz uprawnień do odblokowania wpisu czasu.',
+      },
+      HttpStatus.FORBIDDEN,
     );
   }
 }

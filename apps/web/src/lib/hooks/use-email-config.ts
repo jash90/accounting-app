@@ -3,6 +3,7 @@ import { emailConfigApi } from '../api/endpoints/email-config';
 import { queryKeys } from '../api/query-client';
 import { CreateEmailConfigDto, UpdateEmailConfigDto, TestSmtpDto, TestImapDto } from '@/types/dtos';
 import { useToast } from '@/components/ui/use-toast';
+import { ApiErrorResponse } from '@/types/api';
 
 // User Email Configuration Hooks
 
@@ -10,7 +11,7 @@ export function useUserEmailConfig() {
   return useQuery({
     queryKey: queryKeys.emailConfig.user,
     queryFn: emailConfigApi.getUserConfig,
-    retry: (failureCount, error: any) => {
+    retry: (failureCount, error: ApiErrorResponse) => {
       // Don't retry on 404 (no config exists yet)
       if (error?.response?.status === 404) {
         return false;
@@ -33,7 +34,7 @@ export function useCreateUserEmailConfig() {
         description: 'Konfiguracja email została utworzona',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się utworzyć konfiguracji email',
@@ -56,7 +57,7 @@ export function useUpdateUserEmailConfig() {
         description: 'Konfiguracja email została zaktualizowana',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się zaktualizować konfiguracji email',
@@ -79,7 +80,7 @@ export function useDeleteUserEmailConfig() {
         description: 'Konfiguracja email została usunięta',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się usunąć konfiguracji email',
@@ -95,7 +96,7 @@ export function useCompanyEmailConfig() {
   return useQuery({
     queryKey: queryKeys.emailConfig.company,
     queryFn: emailConfigApi.getCompanyConfig,
-    retry: (failureCount, error: any) => {
+    retry: (failureCount, error: ApiErrorResponse) => {
       // Don't retry on 404 (no config exists yet)
       if (error?.response?.status === 404) {
         return false;
@@ -119,7 +120,7 @@ export function useCreateCompanyEmailConfig() {
         description: 'Konfiguracja email firmy została utworzona',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description:
@@ -144,7 +145,7 @@ export function useUpdateCompanyEmailConfig() {
         description: 'Konfiguracja email firmy została zaktualizowana',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description:
@@ -168,7 +169,7 @@ export function useDeleteCompanyEmailConfig() {
         description: 'Konfiguracja email firmy została usunięta',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description:
@@ -192,7 +193,7 @@ export function useTestSmtp() {
         description: result.message,
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd testu SMTP',
         description: error.response?.data?.message || 'Nie udało się połączyć z serwerem SMTP',
@@ -213,7 +214,7 @@ export function useTestImap() {
         description: result.message,
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd testu IMAP',
         description: error.response?.data?.message || 'Nie udało się połączyć z serwerem IMAP',
@@ -234,7 +235,7 @@ export function useTestCompanySmtp() {
         description: result.message,
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd testu SMTP',
         description: error.response?.data?.message || 'Nie udało się połączyć z serwerem SMTP',
@@ -255,7 +256,7 @@ export function useTestCompanyImap() {
         description: result.message,
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd testu IMAP',
         description: error.response?.data?.message || 'Nie udało się połączyć z serwerem IMAP',
@@ -271,7 +272,7 @@ export function useSystemAdminEmailConfig() {
   return useQuery({
     queryKey: queryKeys.emailConfig.systemAdmin,
     queryFn: emailConfigApi.getSystemAdminConfig,
-    retry: (failureCount, error: any) => {
+    retry: (failureCount, error: ApiErrorResponse) => {
       // Don't retry on 404 (no config exists yet)
       if (error?.response?.status === 404) {
         return false;
@@ -295,7 +296,7 @@ export function useCreateSystemAdminEmailConfig() {
         description: 'Konfiguracja email System Admin została utworzona',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description:
@@ -320,7 +321,7 @@ export function useUpdateSystemAdminEmailConfig() {
         description: 'Konfiguracja email System Admin została zaktualizowana',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description:
@@ -344,7 +345,7 @@ export function useDeleteSystemAdminEmailConfig() {
         description: 'Konfiguracja email System Admin została usunięta',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description:
@@ -368,7 +369,7 @@ export function useTestSystemAdminSmtp() {
         description: result.message,
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd testu SMTP',
         description: error.response?.data?.message || 'Nie udało się połączyć z serwerem SMTP',
@@ -389,7 +390,7 @@ export function useTestSystemAdminImap() {
         description: result.message,
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd testu IMAP',
         description: error.response?.data?.message || 'Nie udało się połączyć z serwerem IMAP',

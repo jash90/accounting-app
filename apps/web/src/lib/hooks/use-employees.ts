@@ -3,6 +3,7 @@ import { employeesApi } from '../api/endpoints/employees';
 import { queryKeys } from '../api/query-client';
 import { CreateEmployeeDto, UpdateEmployeeDto } from '@/types/dtos';
 import { useToast } from '@/components/ui/use-toast';
+import { ApiErrorResponse } from '@/types/api';
 
 export function useEmployees() {
   return useQuery({
@@ -32,7 +33,7 @@ export function useCreateEmployee() {
         description: 'Pracownik został utworzony',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się utworzyć pracownika',
@@ -57,7 +58,7 @@ export function useUpdateEmployee() {
         description: 'Pracownik został zaktualizowany',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się zaktualizować pracownika',
@@ -80,7 +81,7 @@ export function useDeleteEmployee() {
         description: 'Pracownik został usunięty',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się usunąć pracownika',

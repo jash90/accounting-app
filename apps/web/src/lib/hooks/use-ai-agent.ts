@@ -10,6 +10,7 @@ import {
   SetTokenLimitDto,
 } from '@/types/dtos';
 import { toast } from 'sonner';
+import { ApiErrorResponse } from '@/types/api';
 
 // ============================================================================
 // Conversation Hooks
@@ -39,7 +40,7 @@ export function useCreateConversation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.conversations.all });
       toast.success('Konwersacja została utworzona');
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast.error(error.response?.data?.message || 'Nie udało się utworzyć konwersacji');
     },
   });
@@ -57,7 +58,7 @@ export function useSendMessage(conversationId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.myDetailed });
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.company });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       const message = error.response?.data?.message || 'Nie udało się wysłać wiadomości';
       toast.error(message);
     },
@@ -144,7 +145,7 @@ export function useDeleteConversation() {
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.conversations.all });
       toast.success('Konwersacja została usunięta');
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast.error(error.response?.data?.message || 'Nie udało się usunąć konwersacji');
     },
   });
@@ -171,7 +172,7 @@ export function useCreateAIConfiguration() {
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.configuration });
       toast.success('Konfiguracja AI została utworzona');
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast.error(error.response?.data?.message || 'Nie udało się utworzyć konfiguracji AI');
     },
   });
@@ -186,7 +187,7 @@ export function useUpdateAIConfiguration() {
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.configuration });
       toast.success('Konfiguracja AI została zaktualizowana');
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast.error(error.response?.data?.message || 'Nie udało się zaktualizować konfiguracji AI');
     },
   });
@@ -228,7 +229,7 @@ export function useResetApiKey() {
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.configuration });
       toast.success('Klucz API został zresetowany. Skonfiguruj nowy klucz API, aby korzystać z funkcji AI.');
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast.error(error.response?.data?.message || 'Nie udało się zresetować klucza API');
     },
   });
@@ -298,7 +299,7 @@ export function useSetTokenLimit() {
       });
       toast.success('Limit tokenów został ustawiony');
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast.error(error.response?.data?.message || 'Nie udało się ustawić limitu tokenów');
     },
   });
@@ -316,7 +317,7 @@ export function useDeleteTokenLimit() {
       });
       toast.success('Limit tokenów został usunięty');
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast.error(error.response?.data?.message || 'Nie udało się usunąć limitu tokenów');
     },
   });
@@ -350,7 +351,7 @@ export function useUploadContextFile() {
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.context.all });
       toast.success('Plik został przesłany i przetworzony');
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       const message = error.response?.data?.message || 'Nie udało się przesłać pliku';
       const status = error.response?.status;
 
@@ -379,7 +380,7 @@ export function useDeleteContextFile() {
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.context.all });
       toast.success('Plik został usunięty');
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast.error(error.response?.data?.message || 'Nie udało się usunąć pliku');
     },
   });

@@ -6,10 +6,15 @@ import {
   IsUUID,
   IsInt,
   IsArray,
+  ArrayMaxSize,
+  ArrayMinSize,
   MaxLength,
   Min,
+  Max,
   IsDateString,
   IsNumber,
+  IsNotEmpty,
+  Matches,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
@@ -32,10 +37,11 @@ export class CreateTimeEntryDto {
   @IsDateString()
   endTime?: string;
 
-  @ApiPropertyOptional({ description: 'Duration in minutes (optional if endTime provided)', minimum: 0 })
+  @ApiPropertyOptional({ description: 'Duration in minutes (optional if endTime provided)', minimum: 0, maximum: 1440 })
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(1440, { message: 'Duration cannot exceed 24 hours (1440 minutes)' })
   durationMinutes?: number;
 
   @ApiPropertyOptional({ description: 'Is this entry billable', default: true })
@@ -43,22 +49,26 @@ export class CreateTimeEntryDto {
   @IsBoolean()
   isBillable?: boolean;
 
-  @ApiPropertyOptional({ description: 'Hourly rate for billing', minimum: 0 })
+  @ApiPropertyOptional({ description: 'Hourly rate for billing', minimum: 0, maximum: 10000 })
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
+  @Max(10000, { message: 'Hourly rate cannot exceed 10000' })
   hourlyRate?: number;
 
   @ApiPropertyOptional({ description: 'Currency code (ISO 4217)', default: 'PLN', maxLength: 3 })
   @IsOptional()
   @IsString()
-  @MaxLength(3)
+  @Matches(/^[A-Z]{3}$/, { message: 'Currency must be a valid 3-letter ISO 4217 code (e.g., PLN, USD, EUR)' })
   currency?: string;
 
   @ApiPropertyOptional({ description: 'Tags for categorization', type: [String] })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(10, { message: 'Maximum 10 tags allowed' })
+  @Transform(({ value }) => value?.map((t: string) => t.trim()).filter((t: string) => t.length > 0))
   @IsString({ each: true })
+  @MaxLength(50, { each: true, message: 'Each tag must be max 50 characters' })
   tags?: string[];
 
   @ApiPropertyOptional({ description: 'Associated client ID' })
@@ -143,29 +153,20 @@ export class TimeEntryFiltersDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
   limit?: number = 20;
 }
 
-export class SubmitTimeEntryDto {
-  @ApiPropertyOptional({ description: 'Optional note when submitting' })
-  @IsOptional()
-  @Sanitize()
-  @IsString()
-  @MaxLength(500)
-  note?: string;
-}
+// SubmitTimeEntryDto and ApproveTimeEntryDto are intentionally empty classes.
+// They exist to provide extensibility points for future features like submission/approval notes.
+// The API endpoints accept these DTOs even though they currently have no properties.
+export class SubmitTimeEntryDto {}
 
-export class ApproveTimeEntryDto {
-  @ApiPropertyOptional({ description: 'Optional note when approving' })
-  @IsOptional()
-  @Sanitize()
-  @IsString()
-  @MaxLength(500)
-  note?: string;
-}
+export class ApproveTimeEntryDto {}
 
 export class RejectTimeEntryDto {
   @ApiProperty({ description: 'Reason for rejection', maxLength: 500 })
+  @IsNotEmpty({ message: 'Powód odrzucenia jest wymagany' })
   @Sanitize()
   @IsString()
   @MaxLength(500)
@@ -173,15 +174,19 @@ export class RejectTimeEntryDto {
 }
 
 export class BulkApproveDto {
-  @ApiProperty({ description: 'Time entry IDs to approve', type: [String] })
+  @ApiProperty({ description: 'Time entry IDs to approve (max 100)', type: [String] })
   @IsArray()
+  @ArrayMinSize(1, { message: 'At least one entry ID is required' })
+  @ArrayMaxSize(100, { message: 'Cannot process more than 100 entries at once' })
   @IsUUID('4', { each: true })
   entryIds!: string[];
 }
 
 export class BulkRejectDto {
-  @ApiProperty({ description: 'Time entry IDs to reject', type: [String] })
+  @ApiProperty({ description: 'Time entry IDs to reject (max 100)', type: [String] })
   @IsArray()
+  @ArrayMinSize(1, { message: 'At least one entry ID is required' })
+  @ArrayMaxSize(100, { message: 'Cannot process more than 100 entries at once' })
   @IsUUID('4', { each: true })
   entryIds!: string[];
 
@@ -190,4 +195,22 @@ export class BulkRejectDto {
   @IsString()
   @MaxLength(500)
   rejectionNote!: string;
+}
+
+export class LockTimeEntryDto {
+  @ApiPropertyOptional({ description: 'Optional reason for locking', maxLength: 500 })
+  @IsOptional()
+  @Sanitize()
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
+}
+
+export class UnlockTimeEntryDto {
+  @ApiPropertyOptional({ description: 'Optional reason for unlocking', maxLength: 500 })
+  @IsOptional()
+  @Sanitize()
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
 }
