@@ -76,7 +76,11 @@ export function TimeEntriesList({
   const handleDelete = useCallback(() => {
     if (deleteEntry) {
       deleteEntryMutation.mutate(deleteEntry.id, {
-        onSettled: () => setDeleteEntry(null),
+        onSuccess: () => setDeleteEntry(null),
+        onError: () => {
+          // Keep dialog open on error so user can see error state or retry
+          // Error toast is handled by the mutation's global error handler
+        },
       });
     }
   }, [deleteEntry, deleteEntryMutation]);

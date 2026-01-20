@@ -45,6 +45,8 @@ export class AddRunningTimerUniqueIndex1768950000000 implements MigrationInterfa
         // Using system user UUID placeholder since migration runs without user context
         const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
         for (const entry of entriesToStop) {
+          // Capture stopTime once to ensure consistency between audit log and update
+          const stopTime = new Date().toISOString();
           await queryRunner.query(`
             INSERT INTO "change_logs" ("id", "entityType", "entityId", "action", "changes", "companyId", "changedById", "createdAt")
             VALUES (
@@ -62,7 +64,7 @@ export class AddRunningTimerUniqueIndex1768950000000 implements MigrationInterfa
             JSON.stringify([
               { field: '_migrationNote', newValue: 'Auto-stopped: duplicate running timer detected during migration AddRunningTimerUniqueIndex' },
               { field: 'isRunning', oldValue: true, newValue: false },
-              { field: 'endTime', oldValue: null, newValue: new Date().toISOString() },
+              { field: 'endTime', oldValue: null, newValue: stopTime },
             ]),
             dup.companyId,
             SYSTEM_USER_ID,

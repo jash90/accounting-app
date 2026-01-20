@@ -300,23 +300,23 @@ describe('TimeCalculationService', () => {
       const date = new Date('2024-01-15T14:30:45.123Z');
       const { startOfDay, endOfDay } = service.getDayBounds(date);
 
-      expect(startOfDay.getHours()).toBe(0);
-      expect(startOfDay.getMinutes()).toBe(0);
-      expect(startOfDay.getSeconds()).toBe(0);
-      expect(startOfDay.getMilliseconds()).toBe(0);
+      expect(startOfDay.getUTCHours()).toBe(0);
+      expect(startOfDay.getUTCMinutes()).toBe(0);
+      expect(startOfDay.getUTCSeconds()).toBe(0);
+      expect(startOfDay.getUTCMilliseconds()).toBe(0);
 
-      expect(endOfDay.getHours()).toBe(23);
-      expect(endOfDay.getMinutes()).toBe(59);
-      expect(endOfDay.getSeconds()).toBe(59);
-      expect(endOfDay.getMilliseconds()).toBe(999);
+      expect(endOfDay.getUTCHours()).toBe(23);
+      expect(endOfDay.getUTCMinutes()).toBe(59);
+      expect(endOfDay.getUTCSeconds()).toBe(59);
+      expect(endOfDay.getUTCMilliseconds()).toBe(999);
     });
 
     it('should preserve the date', () => {
       const date = new Date('2024-01-15T14:30:45.123Z');
       const { startOfDay, endOfDay } = service.getDayBounds(date);
 
-      expect(startOfDay.getDate()).toBe(date.getDate());
-      expect(endOfDay.getDate()).toBe(date.getDate());
+      expect(startOfDay.getUTCDate()).toBe(date.getUTCDate());
+      expect(endOfDay.getUTCDate()).toBe(date.getUTCDate());
     });
   });
 

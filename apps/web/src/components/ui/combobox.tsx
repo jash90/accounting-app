@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useId } from 'react';
 import { Check, ChevronsUpDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,7 @@ export function Combobox({
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
   const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
+  const instanceId = useId();
 
   const selectedOption = options.find((option) => option.value === value);
 
@@ -105,44 +107,46 @@ export function Combobox({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          disabled={disabled}
-          className={cn(
-            'w-full justify-between font-normal',
-            !selectedOption && 'text-muted-foreground',
-            className
-          )}
-        >
-          <span className="truncate">
-            {selectedOption ? selectedOption.label : placeholder}
-          </span>
-          <div className="flex items-center gap-1 ml-2 shrink-0">
-            {selectedOption && (
-              <button
-                type="button"
-                aria-label="Wyczyść wybór"
-                onClick={handleClear}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onChange(null);
-                    setSearch('');
-                  }
-                }}
-                className="rounded-sm hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
-              >
-                <X className="h-4 w-4 opacity-50 hover:opacity-100" aria-hidden="true" />
-              </button>
+      <div className="relative">
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            disabled={disabled}
+            className={cn(
+              'w-full justify-between font-normal pr-14',
+              !selectedOption && 'text-muted-foreground',
+              className
             )}
-            <ChevronsUpDown className="h-4 w-4 opacity-50" aria-hidden="true" />
-          </div>
-        </Button>
-      </PopoverTrigger>
+          >
+            <span className="truncate">
+              {selectedOption ? selectedOption.label : placeholder}
+            </span>
+            <ChevronsUpDown className="h-4 w-4 opacity-50 absolute right-3" aria-hidden="true" />
+          </Button>
+        </PopoverTrigger>
+        {/* Clear button outside the trigger to avoid nested interactive elements */}
+        {selectedOption && (
+          <button
+            type="button"
+            aria-label="Wyczyść wybór"
+            onClick={handleClear}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                onChange(null);
+                setSearch('');
+              }
+            }}
+            disabled={disabled}
+            className="absolute right-8 top-1/2 -translate-y-1/2 rounded-sm hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 disabled:opacity-50"
+          >
+            <X className="h-4 w-4 opacity-50 hover:opacity-100" aria-hidden="true" />
+          </button>
+        )}
+      </div>
       <PopoverContent
         className="p-0 min-w-0"
         align="start"
@@ -157,7 +161,7 @@ export function Combobox({
             className="h-9"
             autoFocus
             aria-activedescendant={
-              highlightedIndex >= 0 ? `combobox-option-${highlightedIndex}` : undefined
+              highlightedIndex >= 0 ? `${instanceId}-option-${highlightedIndex}` : undefined
             }
           />
         </div>
@@ -171,7 +175,7 @@ export function Combobox({
               {filteredOptions.map((option, index) => (
                 <button
                   key={option.value}
-                  id={`combobox-option-${index}`}
+                  id={`${instanceId}-option-${index}`}
                   role="option"
                   aria-selected={value === option.value}
                   onClick={() => handleSelect(option.value)}

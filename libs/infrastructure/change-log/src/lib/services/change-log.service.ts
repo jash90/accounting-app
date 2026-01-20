@@ -142,11 +142,21 @@ export class ChangeLogService {
     }
 
     const logs = entries.map((entry) => {
-      const changes: ChangeDetail[] = Object.entries(entry.data).map(([field, value]) => ({
-        field,
-        oldValue: value,
-        newValue: null,
-      }));
+      const changes: ChangeDetail[] = Object.entries(entry.data).map(([field, value]) => {
+        // Apply sensitive field redaction for bulk delete logs
+        if (this.isSensitiveField(field)) {
+          return {
+            field,
+            oldValue: value != null ? REDACTED_VALUE : null,
+            newValue: null,
+          };
+        }
+        return {
+          field,
+          oldValue: this.sanitizeValue(value),
+          newValue: null,
+        };
+      });
 
       return this.changeLogRepository.create({
         entityType,

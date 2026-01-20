@@ -131,11 +131,15 @@ export function DateFormField<
             <Input
               type="date"
               value={formatDateValue(field.value)}
-              onChange={(e) =>
-                field.onChange(
-                  e.target.value ? new Date(e.target.value) : undefined
-                )
-              }
+              onChange={(e) => {
+                if (!e.target.value) {
+                  field.onChange(undefined);
+                  return;
+                }
+                // Parse as local date to avoid timezone issues
+                const [year, month, day] = e.target.value.split('-').map(Number);
+                field.onChange(new Date(year, month - 1, day));
+              }}
             />
           </FormControl>
           <FormMessage />

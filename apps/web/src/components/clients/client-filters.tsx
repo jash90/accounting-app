@@ -62,6 +62,11 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
     filters.customFieldFilters || []
   );
 
+  // Sync customFieldFilters when filters prop changes
+  useEffect(() => {
+    setCustomFieldFilters(filters.customFieldFilters || []);
+  }, [filters.customFieldFilters]);
+
   // Use server-side PKD search instead of static 657 codes
   const {
     options: pkdOptions,

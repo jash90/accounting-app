@@ -113,6 +113,8 @@ export class ClientsPage extends BasePage {
         const listItem = this.page.locator(`[role="listbox"] >> text=${pkdCode}`);
         if (await listItem.isVisible()) {
           await listItem.click();
+        } else {
+          throw new Error(`PKD code "${pkdCode}" not found in dropdown. Neither option nor listbox item is visible.`);
         }
       }
     }
@@ -218,10 +220,13 @@ export class ClientsPage extends BasePage {
     const row = this.getClientRow(name);
     await row.getByRole('button', { name: /usuń|delete/i }).click();
 
-    // Confirm deletion
+    // Confirm deletion - use waitFor to avoid race condition
     const confirmButton = this.page.getByRole('button', { name: /potwierdź|confirm|tak|yes/i });
-    if (await confirmButton.isVisible()) {
+    try {
+      await confirmButton.waitFor({ state: 'visible', timeout: 5000 });
       await confirmButton.click();
+    } catch {
+      // Confirmation dialog did not appear - deletion may proceed without confirmation
     }
     await this.page.waitForLoadState('networkidle');
   }

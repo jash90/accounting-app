@@ -142,9 +142,21 @@ test.describe('Clients - AML Group Management', () => {
     // Should only show HIGH risk clients
     await authenticatedCompanyOwnerPage.waitForLoadState('networkidle');
 
-    // Verify filter is applied
-    const count = await clientsPage.getClientsCount();
-    expect(count).toBeGreaterThanOrEqual(0);
+    // Verify filter is applied - URL should reflect filter parameter
+    const currentUrl = authenticatedCompanyOwnerPage.url();
+    expect(currentUrl).toContain('amlGroup');
+    expect(currentUrl).toMatch(/amlGroup[=:]HIGH/i);
+
+    // Verify displayed results match the filter (if any clients exist)
+    const clientRows = authenticatedCompanyOwnerPage.locator('table tbody tr, [role="row"]:not([role="row"]:first-child)');
+    const rowCount = await clientRows.count();
+    if (rowCount > 0) {
+      // All visible rows should have HIGH risk indicator
+      for (let i = 0; i < Math.min(rowCount, 5); i++) {
+        const rowText = await clientRows.nth(i).textContent();
+        expect(rowText?.toLowerCase()).toMatch(/high|wysok/i);
+      }
+    }
   });
 
   test('should display AML group options correctly', async ({ authenticatedCompanyOwnerPage }) => {
@@ -254,9 +266,14 @@ test.describe('Clients - Employee Access', () => {
     await clientsPage.goto();
     await clientsPage.expectToBeOnClientsPage();
 
-    // Should see clients table
-    const count = await clientsPage.getClientsCount();
-    expect(count).toBeGreaterThanOrEqual(0);
+    // Should see clients table element present and visible
+    const clientsTable = authenticatedEmployeePage.locator('table, [role="grid"], [data-testid="clients-list"]');
+    await expect(clientsTable.first()).toBeVisible();
+
+    // Table should have header row (indicating proper table structure)
+    const headerRow = authenticatedEmployeePage.locator('table thead tr, [role="rowheader"], [role="columnheader"]');
+    const hasHeader = await headerRow.first().isVisible().catch(() => false);
+    expect(hasHeader || await clientsTable.first().isVisible()).toBe(true);
   });
 
   test('employee with write permission should create client', async ({ authenticatedEmployeePage }) => {

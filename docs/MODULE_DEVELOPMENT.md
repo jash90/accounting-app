@@ -6375,51 +6375,45 @@ export function useNavigationItems(user: UserDto | null): NavItem[] {
 
 ### Polish Localization
 
-All user-facing text must be in Polish. Use the constants file for reusable labels.
+All user-facing text must be in Polish. Use the existing constants file for reusable labels.
 
 **File Location**: `apps/web/src/lib/constants/polish-labels.ts`
 
-```typescript
-import { TaskStatus, TaskPriority, CustomFieldType } from '@/types/enums';
+This file contains all Polish labels used throughout the application. Key exports include:
 
-// Task Status Labels
+```typescript
+// Available label constants (see actual file for complete definitions):
+import {
+  EmploymentTypeLabels,    // DG, DG+Etat, etc.
+  VatStatusLabels,         // VAT miesięczny, kwartalny, etc.
+  TaxSchemeLabels,         // PIT 17%, 19%, Ryczałt, etc.
+  ZusStatusLabels,         // Pełny ZUS, preferencyjny, etc.
+  AmlGroupLabels,          // Niskie/Standardowe/Podwyższone/Wysokie ryzyko
+  CustomFieldTypeLabels,   // Tekst, Liczba, Data, Tak/Nie, Lista wyboru
+  ConditionOperatorLabels, // równe, różne od, zawiera, etc.
+  ClientFieldLabels,       // Nazwa klienta, NIP, Email, etc.
+  GTU_CODES,               // GTU codes with Polish descriptions
+  PKD_CODES,               // PKD classification codes
+} from '@/lib/constants/polish-labels';
+
+// Example usage in a component:
+import { AmlGroupLabels } from '@/lib/constants/polish-labels';
+import { AmlGroup } from '@/types/enums';
+
+// Display Polish label for AML group
+<span>{AmlGroupLabels[client.amlGroupEnum]}</span>
+// Output: "Wysokie ryzyko" for AmlGroup.HIGH
+```
+
+For module-specific labels, follow the same pattern by adding new label constants to `polish-labels.ts`:
+
+```typescript
+// Example: Adding labels for a new module
 export const TaskStatusLabels: Record<TaskStatus, string> = {
   [TaskStatus.TODO]: 'Do zrobienia',
   [TaskStatus.IN_PROGRESS]: 'W trakcie',
   [TaskStatus.DONE]: 'Ukończone',
   [TaskStatus.CANCELLED]: 'Anulowane',
-};
-
-// Task Priority Labels
-export const TaskPriorityLabels: Record<TaskPriority, string> = {
-  [TaskPriority.LOW]: 'Niski',
-  [TaskPriority.MEDIUM]: 'Średni',
-  [TaskPriority.HIGH]: 'Wysoki',
-  [TaskPriority.URGENT]: 'Pilny',
-};
-
-// Custom Field Type Labels
-export const CustomFieldTypeLabels: Record<CustomFieldType, string> = {
-  [CustomFieldType.TEXT]: 'Tekst',
-  [CustomFieldType.NUMBER]: 'Liczba',
-  [CustomFieldType.DATE]: 'Data',
-  [CustomFieldType.BOOLEAN]: 'Tak/Nie',
-  [CustomFieldType.ENUM]: 'Lista wyboru',
-};
-
-// Common UI Labels
-export const CommonLabels = {
-  actions: 'Akcje',
-  save: 'Zapisz',
-  cancel: 'Anuluj',
-  delete: 'Usuń',
-  edit: 'Edytuj',
-  create: 'Utwórz',
-  search: 'Szukaj',
-  filter: 'Filtruj',
-  loading: 'Ładowanie...',
-  noResults: 'Brak wyników',
-  confirmDelete: 'Czy na pewno chcesz usunąć?',
 };
 ```
 

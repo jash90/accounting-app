@@ -337,6 +337,14 @@ export class ClientChangelogService {
     // All clients should belong to same company (bulk operation constraint)
     const companyId = clients[0].companyId;
 
+    // Validate multi-tenant constraint: all clients must belong to the same company
+    const invalidClient = clients.find((c) => c.companyId !== companyId);
+    if (invalidClient) {
+      throw new ForbiddenException(
+        `Multi-tenant violation: Client ${invalidClient.id} belongs to company ${invalidClient.companyId}, expected ${companyId}`
+      );
+    }
+
     const smtpConfig =
       await this.emailConfigService.getDecryptedSmtpConfigByCompanyId(companyId);
 
@@ -414,6 +422,14 @@ export class ClientChangelogService {
 
     // All clients should belong to same company (bulk operation constraint)
     const companyId = updates[0].client.companyId;
+
+    // Validate multi-tenant constraint: all clients must belong to the same company
+    const invalidUpdate = updates.find((u) => u.client.companyId !== companyId);
+    if (invalidUpdate) {
+      throw new ForbiddenException(
+        `Multi-tenant violation: Client ${invalidUpdate.client.id} belongs to company ${invalidUpdate.client.companyId}, expected ${companyId}`
+      );
+    }
 
     const smtpConfig =
       await this.emailConfigService.getDecryptedSmtpConfigByCompanyId(companyId);

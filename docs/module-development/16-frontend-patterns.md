@@ -374,23 +374,23 @@ const basePath = useModuleBasePath('tasks');
 
 ## Conclusion
 
-Congratulations! You've successfully created a new business module with:
+Congratulations! You've learned the key frontend patterns for building module interfaces:
 
-- Multi-tenant data isolation
-- RBAC integration
-- Complete CRUD operations
-- Database migration
-- Comprehensive validation
-- Swagger documentation
-- Security best practices
+- Role-based navigation with `useModuleBasePath`
+- Permission-aware UI components
+- React Query integration for data fetching
+- Form handling with React Hook Form
+- Polish language labels and localization
+- shadcn/ui component usage
+- Module routing patterns
 
 ### Next Steps
 
-1. **Add more features**: Search, filtering, pagination
-2. **Optimize performance**: Add indexes, caching
-3. **Write tests**: Unit tests, E2E tests
-4. **Monitor**: Add logging, metrics
-5. **Document**: Update README, API docs
+1. **Add interactive features**: Drag-and-drop, real-time updates, optimistic UI
+2. **Improve accessibility**: ARIA labels, keyboard navigation, screen reader support
+3. **Write tests**: Component unit tests with Vitest, E2E tests with Playwright
+4. **Optimize performance**: Lazy loading, code splitting, memoization
+5. **Add animations**: Framer Motion for smooth transitions
 
 ---
 

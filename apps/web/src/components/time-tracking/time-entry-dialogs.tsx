@@ -78,6 +78,8 @@ export function TimeEntryRejectDialog({
         </AlertDialogHeader>
         <div className="py-4">
           <Input
+            id="rejection-note"
+            aria-label="Powód odrzucenia"
             placeholder="Powód odrzucenia..."
             value={rejectionNote}
             onChange={(e) => onRejectionNoteChange(e.target.value)}

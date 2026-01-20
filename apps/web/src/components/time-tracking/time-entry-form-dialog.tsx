@@ -150,12 +150,18 @@ export function TimeEntryFormDialog({
           onSuccess: () => {
             onOpenChange(false);
           },
+          onError: (error) => {
+            console.error('Failed to update time entry:', error);
+          },
         }
       );
     } else {
       createEntry.mutate(entryData, {
         onSuccess: () => {
           onOpenChange(false);
+        },
+        onError: (error) => {
+          console.error('Failed to create time entry:', error);
         },
       });
     }

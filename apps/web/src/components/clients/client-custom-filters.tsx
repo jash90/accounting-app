@@ -261,7 +261,7 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {currentValue && typeof currentValue === 'string'
+                  {currentValue && typeof currentValue === 'string' && !isNaN(Date.parse(currentValue))
                     ? format(new Date(currentValue), 'dd.MM.yyyy', { locale: pl })
                     : 'Wybierz datę'}
                 </Button>
@@ -269,7 +269,7 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={currentValue && typeof currentValue === 'string' ? new Date(currentValue) : undefined}
+                  selected={currentValue && typeof currentValue === 'string' && !isNaN(Date.parse(currentValue)) ? new Date(currentValue) : undefined}
                   onSelect={(date) =>
                     handleValueChange(date ? format(date, 'yyyy-MM-dd') : '')
                   }

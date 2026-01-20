@@ -165,7 +165,7 @@ export class AIConversation {
 
 ## Sensitive Data Encryption (AES-256-GCM)
 
-When storing API keys, credentials, or other sensitive data, use encryption at rest.
+When storing API keys, credentials, or other sensitive data, use encryption at rest with authenticated encryption (GCM mode).
 
 ### Encryption Service Pattern
 
@@ -177,7 +177,7 @@ import * as crypto from 'crypto';
 
 @Injectable()
 export class AIConfigurationService implements OnModuleInit {
-  private readonly ALGORITHM = 'aes-256-cbc';
+  private readonly ALGORITHM = 'aes-256-gcm';
   private ENCRYPTION_KEY: Buffer;
 
   onModuleInit() {
@@ -188,16 +188,17 @@ export class AIConfigurationService implements OnModuleInit {
         'AI_ENCRYPTION_KEY environment variable is required for secure API key storage',
       );
     }
-    // Key must be 32 bytes for AES-256
-    this.ENCRYPTION_KEY = Buffer.from(key.padEnd(32, '0').slice(0, 32));
+    // Derive a proper 32-byte key using PBKDF2
+    const salt = process.env.AI_ENCRYPTION_SALT || 'default-salt-change-in-prod';
+    this.ENCRYPTION_KEY = crypto.pbkdf2Sync(key, salt, 100000, 32, 'sha256');
   }
 
   /**
-   * Encrypt API key with random IV
-   * Format: iv:encryptedData (hex encoded)
+   * Encrypt API key with random IV and authentication tag
+   * Format: iv:authTag:encryptedData (hex encoded)
    */
   private encryptApiKey(apiKey: string): string {
-    const iv = crypto.randomBytes(16);
+    const iv = crypto.randomBytes(12); // GCM recommended IV size is 12 bytes
     const cipher = crypto.createCipheriv(
       this.ALGORITHM,
       this.ENCRYPTION_KEY,
@@ -205,7 +206,8 @@ export class AIConfigurationService implements OnModuleInit {
     );
     let encrypted = cipher.update(apiKey, 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    return `${iv.toString('hex')}:${encrypted}`;
+    const authTag = cipher.getAuthTag();
+    return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
   }
 
   /**

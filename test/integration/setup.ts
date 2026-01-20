@@ -75,6 +75,12 @@ export class TestDataFactory {
   /**
    * Creates a test user in the database.
    */
+  private counter = 0;
+
+  private generateUniqueId(prefix: string): string {
+    return `${prefix}-${Date.now()}-${++this.counter}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
   async createUser(overrides: Partial<{
     id: string;
     email: string;
@@ -84,14 +90,15 @@ export class TestDataFactory {
     companyId: string;
   }> = {}) {
     const userRepo = this.dataSource.getRepository('User');
+    const uniqueId = this.generateUniqueId('user');
     const user = userRepo.create({
-      id: overrides.id || `user-${Date.now()}`,
-      email: overrides.email || `test-${Date.now()}@example.com`,
+      id: overrides.id || uniqueId,
+      email: overrides.email || `test-${uniqueId}@example.com`,
       firstName: overrides.firstName || 'Test',
       lastName: overrides.lastName || 'User',
       password: 'hashed-password',
       role: overrides.role || 'EMPLOYEE',
-      companyId: overrides.companyId || `company-${Date.now()}`,
+      companyId: overrides.companyId || this.generateUniqueId('company'),
       isActive: true,
     });
     return userRepo.save(user);
@@ -107,9 +114,9 @@ export class TestDataFactory {
   }> = {}) {
     const companyRepo = this.dataSource.getRepository('Company');
     const company = companyRepo.create({
-      id: overrides.id || `company-${Date.now()}`,
+      id: overrides.id || this.generateUniqueId('company'),
       name: overrides.name || 'Test Company',
-      ownerId: overrides.ownerId || `owner-${Date.now()}`,
+      ownerId: overrides.ownerId || this.generateUniqueId('owner'),
       isActive: true,
     });
     return companyRepo.save(company);
@@ -127,9 +134,15 @@ export class TestDataFactory {
     endTime: Date | null;
     isRunning: boolean;
   }> = {}) {
+    if (!overrides.userId) {
+      throw new Error('createTimeEntry requires userId to be provided');
+    }
+    if (!overrides.companyId) {
+      throw new Error('createTimeEntry requires companyId to be provided');
+    }
     const timeEntryRepo = this.dataSource.getRepository('TimeEntry');
     const entry = timeEntryRepo.create({
-      id: overrides.id || `entry-${Date.now()}`,
+      id: overrides.id || this.generateUniqueId('entry'),
       userId: overrides.userId,
       companyId: overrides.companyId,
       description: overrides.description || 'Test entry',

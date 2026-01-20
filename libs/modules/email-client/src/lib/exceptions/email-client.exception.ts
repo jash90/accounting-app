@@ -147,7 +147,9 @@ export class EmailAttachmentException extends EmailClientException {
         ? HttpStatus.NOT_FOUND
         : errorCode === EmailClientErrorCode.ATTACHMENT_TOO_LARGE
           ? HttpStatus.PAYLOAD_TOO_LARGE
-          : HttpStatus.BAD_REQUEST;
+          : errorCode === EmailClientErrorCode.ATTACHMENT_UPLOAD_FAILED
+            ? HttpStatus.INTERNAL_SERVER_ERROR
+            : HttpStatus.BAD_REQUEST;
     super(errorCode, details, statusCode);
   }
 }

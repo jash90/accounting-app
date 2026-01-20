@@ -58,8 +58,8 @@ Every module must have a `module.json` file in its root directory. This file def
 
 ### Example module.json Files
 
+**AI Agent Module** (`libs/modules/ai-agent/module.json`):
 ```json
-// libs/modules/ai-agent/module.json
 {
   "slug": "ai-agent",
   "name": "Agent AI",
@@ -71,8 +71,10 @@ Every module must have a `module.json` file in its root directory. This file def
     "enableRAG": true
   }
 }
+```
 
-// libs/modules/clients/module.json
+**Clients Module** (`libs/modules/clients/module.json`):
+```json
 {
   "slug": "clients",
   "name": "Klienci",
@@ -85,8 +87,10 @@ Every module must have a `module.json` file in its root directory. This file def
     "maxClientsPerCompany": 10000
   }
 }
+```
 
-// libs/modules/email-client/module.json
+**Email Client Module** (`libs/modules/email-client/module.json`):
+```json
 {
   "slug": "email-client",
   "name": "Klient Email",

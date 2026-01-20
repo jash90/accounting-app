@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
@@ -42,6 +43,34 @@ export function TimeEntryRow({
   onApprove,
   onReject,
 }: TimeEntryRowProps) {
+  // State for real-time running timer display
+  const [elapsedTime, setElapsedTime] = useState<string>('');
+
+  // Update elapsed time every second for running timers
+  useEffect(() => {
+    if (!entry.isRunning) {
+      setElapsedTime('');
+      return;
+    }
+
+    const updateElapsedTime = () => {
+      setElapsedTime(
+        formatDistanceToNow(new Date(entry.startTime), {
+          locale: pl,
+          includeSeconds: true,
+        })
+      );
+    };
+
+    // Initial update
+    updateElapsedTime();
+
+    // Update every second for smooth real-time display
+    const intervalId = setInterval(updateElapsedTime, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [entry.isRunning, entry.startTime]);
+
   return (
     <div
       role="listitem"
@@ -89,11 +118,8 @@ export function TimeEntryRow({
         <div className="text-right">
           <div className="font-mono font-semibold text-sm">
             {entry.isRunning ? (
-              <span className="text-green-600">
-                {formatDistanceToNow(new Date(entry.startTime), {
-                  locale: pl,
-                  includeSeconds: true,
-                })}
+              <span className="text-green-600" aria-live="polite" aria-atomic="true">
+                {elapsedTime}
               </span>
             ) : (
               formatDuration(entry.durationMinutes)

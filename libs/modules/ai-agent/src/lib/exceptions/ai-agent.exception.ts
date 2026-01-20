@@ -2,6 +2,54 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { AIAgentErrorCode, AIAgentErrorMessages } from './error-codes.enum';
 
 /**
+ * Sensitive keys that should be redacted from error details
+ */
+const SENSITIVE_KEYS = [
+  'apiKey',
+  'api_key',
+  'key',
+  'secret',
+  'password',
+  'token',
+  'authorization',
+  'auth',
+  'credential',
+  'private',
+];
+
+/**
+ * Sanitize details object to prevent leaking sensitive information
+ */
+function sanitizeDetails(
+  details: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  if (!details) return undefined;
+
+  const sanitized: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(details)) {
+    const lowerKey = key.toLowerCase();
+
+    // Check if key contains any sensitive patterns
+    const isSensitive = SENSITIVE_KEYS.some(
+      (sensitiveKey) =>
+        lowerKey.includes(sensitiveKey) || lowerKey === sensitiveKey,
+    );
+
+    if (isSensitive) {
+      sanitized[key] = '[REDACTED]';
+    } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      // Recursively sanitize nested objects
+      sanitized[key] = sanitizeDetails(value as Record<string, unknown>);
+    } else {
+      sanitized[key] = value;
+    }
+  }
+
+  return sanitized;
+}
+
+/**
  * Base exception for AI Agent module errors
  */
 export class AIAgentException extends HttpException {
@@ -11,12 +59,14 @@ export class AIAgentException extends HttpException {
     statusCode: HttpStatus = HttpStatus.BAD_REQUEST
   ) {
     const message = AIAgentErrorMessages[errorCode];
+    // Sanitize details to prevent leaking sensitive information in error responses
+    const sanitizedDetails = sanitizeDetails(details);
     super(
       {
         statusCode,
         error: errorCode,
         message,
-        details,
+        details: sanitizedDetails,
         timestamp: new Date().toISOString(),
       },
       statusCode

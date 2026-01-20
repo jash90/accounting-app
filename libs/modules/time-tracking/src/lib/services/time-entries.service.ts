@@ -222,7 +222,7 @@ export class TimeEntriesService {
 
     // Calculate total amount
     let totalAmount: number | undefined;
-    if (durationMinutes && hourlyRate && dto.isBillable !== false) {
+    if (durationMinutes !== undefined && durationMinutes !== null && hourlyRate !== undefined && hourlyRate !== null && dto.isBillable !== false) {
       totalAmount = this.calculationService.calculateTotalAmount(durationMinutes, hourlyRate);
     }
 
@@ -694,6 +694,9 @@ export class TimeEntriesService {
         status: TimeEntryStatus.APPROVED,
         approvedById: user.id,
         approvedAt: new Date(),
+        isLocked: true,
+        lockedAt: new Date(),
+        lockedById: user.id,
       },
     );
 
@@ -794,8 +797,8 @@ export class TimeEntriesService {
     const oldValues = this.sanitizeForLog(entry);
 
     entry.isLocked = false;
-    entry.lockedAt = undefined;
-    entry.lockedById = undefined;
+    entry.lockedAt = null as unknown as undefined;
+    entry.lockedById = null as unknown as undefined;
 
     const savedEntry = await this.entryRepository.save(entry);
 

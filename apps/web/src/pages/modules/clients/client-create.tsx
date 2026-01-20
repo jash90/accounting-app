@@ -184,30 +184,38 @@ function ClientCreateForm() {
       return;
     }
 
-    // Clean up empty strings to undefined
-    const cleanedData = Object.fromEntries(
-      Object.entries(data).map(([key, value]) => [
-        key,
-        value === '' ? undefined : value,
-      ])
-    );
-
-    // Prepare custom field values
-    const customFieldsData: SetCustomFieldValuesDto = {
-      values: Object.fromEntries(
-        Object.entries(customFieldValues).map(([key, value]) => [
+    try {
+      // Clean up empty strings to undefined
+      const cleanedData = Object.fromEntries(
+        Object.entries(data).map(([key, value]) => [
           key,
-          value === '' ? null : value,
+          value === '' ? undefined : value,
         ])
-      ),
-    };
+      );
 
-    const hasCustomFieldValues = Object.values(customFieldsData.values).some(v => v !== null);
+      // Prepare custom field values
+      const customFieldsData: SetCustomFieldValuesDto = {
+        values: Object.fromEntries(
+          Object.entries(customFieldValues).map(([key, value]) => [
+            key,
+            value === '' ? null : value,
+          ])
+        ),
+      };
 
-    await handleCreateWithDuplicateCheck(
-      cleanedData as CreateClientDto,
-      hasCustomFieldValues ? customFieldsData : undefined
-    );
+      const hasCustomFieldValues = Object.values(customFieldsData.values).some(v => v !== null);
+
+      await handleCreateWithDuplicateCheck(
+        cleanedData as CreateClientDto,
+        hasCustomFieldValues ? customFieldsData : undefined
+      );
+    } catch (error) {
+      toast({
+        title: 'Błąd podczas tworzenia klienta',
+        description: error instanceof Error ? error.message : 'Wystąpił nieoczekiwany błąd',
+        variant: 'destructive',
+      });
+    }
   };
 
   const renderCustomField = (definition: typeof activeFieldDefinitions[0]) => {

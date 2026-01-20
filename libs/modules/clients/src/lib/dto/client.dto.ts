@@ -212,12 +212,17 @@ export class CustomFieldFilterDto {
     oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
   })
   @Transform(({ value }) => {
-    // Sanitize value to prevent XSS - strip HTML tags and dangerous characters
+    // Sanitize value to prevent XSS - strip HTML tags and encode dangerous characters
+    // Note: & is a valid business character (e.g., "Smith & Sons") so we preserve it
     const sanitizeString = (str: string): string => {
       if (typeof str !== 'string') return str;
       return str
         .replace(/<[^>]*>/g, '') // Remove HTML tags
-        .replace(/[<>'"&]/g, '') // Remove dangerous characters
+        .replace(/[<>'"]/g, (char) => {
+          // HTML encode dangerous characters (except &)
+          const entities: Record<string, string> = { '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' };
+          return entities[char] || char;
+        })
         .trim();
     };
     if (Array.isArray(value)) {

@@ -53,7 +53,8 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
         role={onClick ? 'button' : undefined}
         aria-label={`Zadanie: ${task.title}${isOverdue ? ' - po terminie' : ''}`}
         className={cn(
-          'cursor-pointer hover:shadow-md transition-shadow',
+          'hover:shadow-md transition-shadow',
+          onClick && 'cursor-pointer',
           isDragging && 'opacity-50 shadow-lg',
           isOverdue && 'border-red-300',
           onClick && 'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',

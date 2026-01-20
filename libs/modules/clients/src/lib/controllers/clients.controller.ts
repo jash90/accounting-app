@@ -218,10 +218,17 @@ export class ClientsController {
     const customFieldFilters: CustomFieldFilterDto[] = [];
     const prefix = 'customField_';
     const validOperators = Object.values(CustomFieldFilterOperator);
+    // UUID v4 pattern for validation
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
     for (const [key, rawValue] of Object.entries(query)) {
       if (key.startsWith(prefix) && typeof rawValue === 'string') {
         const fieldId = key.substring(prefix.length);
+
+        // Validate fieldId is a valid UUID to prevent malformed queries
+        if (!uuidRegex.test(fieldId)) {
+          continue;
+        }
         const colonIndex = rawValue.indexOf(':');
 
         if (colonIndex > 0) {

@@ -108,10 +108,10 @@ export class TimeCalculationService {
    * Get start and end of a day
    */
   getDayBounds(date: Date): { startOfDay: Date; endOfDay: Date } {
-    const startOfDay = new Date(date);
+    const startOfDay = new Date(date.getTime());
     startOfDay.setHours(0, 0, 0, 0);
 
-    const endOfDay = new Date(date);
+    const endOfDay = new Date(date.getTime());
     endOfDay.setHours(23, 59, 59, 999);
 
     return { startOfDay, endOfDay };
@@ -124,14 +124,14 @@ export class TimeCalculationService {
     date: Date,
     weekStartDay: number = 1,
   ): { startOfWeek: Date; endOfWeek: Date } {
-    const startOfWeek = new Date(date);
+    const startOfWeek = new Date(date.getTime());
     const dayOfWeek = startOfWeek.getDay();
     const diff = dayOfWeek - weekStartDay;
     const daysToSubtract = diff >= 0 ? diff : diff + 7;
     startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
     startOfWeek.setHours(0, 0, 0, 0);
 
-    const endOfWeek = new Date(startOfWeek);
+    const endOfWeek = new Date(startOfWeek.getTime());
     endOfWeek.setDate(endOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
 

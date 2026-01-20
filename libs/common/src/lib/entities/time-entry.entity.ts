@@ -129,7 +129,7 @@ export class TimeEntry {
   @Column()
   createdById!: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'createdById' })
   createdBy!: User;
 

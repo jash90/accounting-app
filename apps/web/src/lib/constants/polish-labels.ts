@@ -106,7 +106,6 @@ export type GtuCode = typeof GTU_CODES[number]['code'];
 import {
   getPkdCodesForFrontend,
   getPkdSectionsForFrontend,
-  getPkdClassesBySection as _getPkdClassesBySection,
   type PkdCodeOption,
 } from '@accounting/common';
 
