@@ -35,17 +35,17 @@ export class UpdateAmlGroupEnum1768800000000 implements MigrationInterface {
       // Add new values to the enum type
       console.log('[UpdateAmlGroupEnum] Adding STANDARD enum value...');
       await queryRunner.query(`
-        ALTER TYPE "clients_amlgroupenum_enum" ADD VALUE IF NOT EXISTS 'STANDARD';
+        ALTER TYPE "clients_amlgroup_enum" ADD VALUE IF NOT EXISTS 'STANDARD';
       `);
       console.log('[UpdateAmlGroupEnum] Adding ELEVATED enum value...');
       await queryRunner.query(`
-        ALTER TYPE "clients_amlgroupenum_enum" ADD VALUE IF NOT EXISTS 'ELEVATED';
+        ALTER TYPE "clients_amlgroup_enum" ADD VALUE IF NOT EXISTS 'ELEVATED';
       `);
 
       // Verify enum values were added
       const enumValues = await queryRunner.query(`
         SELECT enumlabel FROM pg_enum
-        WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'clients_amlgroupenum_enum');
+        WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'clients_amlgroup_enum');
       `);
       console.log('[UpdateAmlGroupEnum] Current enum values:', enumValues?.map((e: { enumlabel: string }) => e.enumlabel).join(', '));
 
@@ -85,13 +85,13 @@ export class UpdateAmlGroupEnum1768800000000 implements MigrationInterface {
             ALTER TABLE "clients" ALTER COLUMN "amlGroupEnum" TYPE VARCHAR(20) USING "amlGroupEnum"::text;
           `);
           await queryRunner.query(`
-            DROP TYPE IF EXISTS "clients_amlgroupenum_enum";
+            DROP TYPE IF EXISTS "clients_amlgroup_enum";
           `);
           await queryRunner.query(`
-            CREATE TYPE "clients_amlgroupenum_enum" AS ENUM('LOW', 'STANDARD', 'ELEVATED', 'HIGH');
+            CREATE TYPE "clients_amlgroup_enum" AS ENUM('LOW', 'STANDARD', 'ELEVATED', 'HIGH');
           `);
           await queryRunner.query(`
-            ALTER TABLE "clients" ALTER COLUMN "amlGroupEnum" TYPE "clients_amlgroupenum_enum" USING "amlGroupEnum_temp"::"clients_amlgroupenum_enum";
+            ALTER TABLE "clients" ALTER COLUMN "amlGroupEnum" TYPE "clients_amlgroup_enum" USING "amlGroupEnum_temp"::"clients_amlgroup_enum";
           `);
 
           // Verify migration
@@ -183,19 +183,19 @@ export class UpdateAmlGroupEnum1768800000000 implements MigrationInterface {
           ALTER TABLE "clients" ALTER COLUMN "amlGroupEnum" TYPE VARCHAR(20) USING "amlGroupEnum"::text;
         `);
         await queryRunner.query(`
-          DROP TYPE IF EXISTS "clients_amlgroupenum_enum";
+          DROP TYPE IF EXISTS "clients_amlgroup_enum";
         `);
         await queryRunner.query(`
-          CREATE TYPE "clients_amlgroupenum_enum" AS ENUM('LOW', 'MEDIUM', 'HIGH');
+          CREATE TYPE "clients_amlgroup_enum" AS ENUM('LOW', 'MEDIUM', 'HIGH');
         `);
         await queryRunner.query(`
-          ALTER TABLE "clients" ALTER COLUMN "amlGroupEnum" TYPE "clients_amlgroupenum_enum" USING "amlGroupEnum_temp"::"clients_amlgroupenum_enum";
+          ALTER TABLE "clients" ALTER COLUMN "amlGroupEnum" TYPE "clients_amlgroup_enum" USING "amlGroupEnum_temp"::"clients_amlgroup_enum";
         `);
 
         // Verify enum values after rollback
         const enumValues = await queryRunner.query(`
           SELECT enumlabel FROM pg_enum
-          WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'clients_amlgroupenum_enum');
+          WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'clients_amlgroup_enum');
         `);
         console.log('[UpdateAmlGroupEnum] Restored enum values:', enumValues?.map((e: { enumlabel: string }) => e.enumlabel).join(', '));
 
