@@ -3,6 +3,7 @@ import { companiesApi } from '../api/endpoints/companies';
 import { queryKeys } from '../api/query-client';
 import { CreateCompanyDto, UpdateCompanyDto } from '@/types/dtos';
 import { useToast } from '@/components/ui/use-toast';
+import { ApiErrorResponse } from '@/types/api';
 
 export function useCompanies() {
   return useQuery({
@@ -34,7 +35,7 @@ export function useCreateCompany() {
         description: 'Firma została utworzona',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się utworzyć firmy',
@@ -59,7 +60,7 @@ export function useUpdateCompany() {
         description: 'Firma została zaktualizowana',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się zaktualizować firmy',
@@ -82,7 +83,7 @@ export function useDeleteCompany() {
         description: 'Firma została usunięta',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się usunąć firmy',
@@ -115,7 +116,7 @@ export function useGrantModuleToCompany() {
         description: 'Moduł został włączony',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się włączyć modułu',
@@ -141,7 +142,7 @@ export function useRevokeModuleFromCompany() {
         description: 'Dostęp do modułu został cofnięty. Wszystkie uprawnienia pracowników dla tego modułu zostały usunięte.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się wyłączyć modułu',

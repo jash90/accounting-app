@@ -1,8 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import {
   Form,
   FormControl,
@@ -20,18 +18,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar } from '@/components/ui/calendar';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { Search, X, Filter, ChevronDown, CalendarIcon } from 'lucide-react';
+import { Search, X, Filter, ChevronDown } from 'lucide-react';
 import {
   clientFiltersSchema,
   ClientFiltersFormData,
@@ -47,7 +40,8 @@ import {
   ZusStatusLabels,
   AmlGroup,
 } from '@/types/enums';
-import { AmlGroupLabels, GTU_CODES, PKD_CODES, PKD_SECTIONS } from '@/lib/constants/polish-labels';
+import { AmlGroupLabels, GTU_CODES } from '@/lib/constants/polish-labels';
+import { usePkdSearch } from '@/lib/hooks/use-pkd-search';
 import { Combobox } from '@/components/ui/combobox';
 import { GroupedCombobox } from '@/components/ui/grouped-combobox';
 import { ClientFiltersDto, CustomFieldFilter } from '@/types/dtos';
@@ -67,6 +61,14 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
   const [customFieldFilters, setCustomFieldFilters] = useState<CustomFieldFilter[]>(
     filters.customFieldFilters || []
   );
+
+  // Use server-side PKD search instead of static 657 codes
+  const {
+    options: pkdOptions,
+    groups: pkdGroups,
+    setSearch: setPkdSearch,
+    isLoading: isPkdLoading,
+  } = usePkdSearch();
 
   const form = useForm<ClientFiltersFormData>({
     resolver: zodResolver(clientFiltersSchema),
@@ -91,6 +93,20 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
   const [debouncedSearch, setDebouncedSearch] = useState(filters.search || '');
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Ref to track customFieldFilters without triggering effect re-subscription
+  const customFieldFiltersRef = useRef(customFieldFilters);
+  customFieldFiltersRef.current = customFieldFilters;
+
+  // Memoize GTU options for the filter combobox
+  const gtuOptions = useMemo(
+    () =>
+      GTU_CODES.map((gtu) => ({
+        value: gtu.code,
+        label: gtu.label,
+      })),
+    []
+  );
+
   // Build filters object from form values
   const buildFilters = useCallback((value: Partial<ClientFiltersFormData>, searchValue: string, customFilters: CustomFieldFilter[]): ClientFiltersDto => {
     const cleanedFilters: ClientFiltersDto = {};
@@ -113,6 +129,12 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
     return cleanedFilters;
   }, []);
 
+  // Use ref for debouncedSearch to avoid stale closure in form.watch callback
+  const debouncedSearchRef = useRef(debouncedSearch);
+  useEffect(() => {
+    debouncedSearchRef.current = debouncedSearch;
+  }, [debouncedSearch]);
+
   // Watch form changes and update filters with debounced search
   useEffect(() => {
     const subscription = form.watch((value) => {
@@ -123,18 +145,18 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
         clearTimeout(searchTimeoutRef.current);
       }
 
-      // Check if only search changed
-      const searchChanged = currentSearch !== debouncedSearch;
+      // Check if only search changed (using ref to avoid stale closure)
+      const searchChanged = currentSearch !== debouncedSearchRef.current;
 
       if (searchChanged) {
         // Debounce search changes
         searchTimeoutRef.current = setTimeout(() => {
           setDebouncedSearch(currentSearch);
-          onFiltersChange(buildFilters(value, currentSearch, customFieldFilters));
+          onFiltersChange(buildFilters(value, currentSearch, customFieldFiltersRef.current));
         }, SEARCH_DEBOUNCE_MS);
       } else {
         // Immediate update for non-search filters
-        onFiltersChange(buildFilters(value, debouncedSearch, customFieldFilters));
+        onFiltersChange(buildFilters(value, debouncedSearchRef.current, customFieldFiltersRef.current));
       }
     });
 
@@ -144,7 +166,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [form, onFiltersChange, debouncedSearch, buildFilters, customFieldFilters]);
+  }, [form, onFiltersChange, buildFilters]);
 
   const handleCustomFieldFiltersChange = useCallback(
     (newCustomFilters: CustomFieldFilter[]) => {
@@ -180,30 +202,40 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
     onFiltersChange({});
   }, [form, onFiltersChange]);
 
-  const hasActiveFilters =
-    filters.search ||
-    filters.employmentType ||
-    filters.vatStatus ||
-    filters.taxScheme ||
-    filters.zusStatus ||
-    filters.amlGroupEnum ||
-    filters.gtuCode ||
-    filters.pkdCode ||
-    filters.cooperationStartDateFrom ||
-    filters.cooperationStartDateTo ||
-    filters.companyStartDateFrom ||
-    filters.companyStartDateTo ||
-    filters.isActive !== undefined ||
-    customFieldFilters.length > 0;
+  const hasActiveFilters = useMemo(
+    () =>
+      Boolean(
+        filters.search ||
+        filters.employmentType ||
+        filters.vatStatus ||
+        filters.taxScheme ||
+        filters.zusStatus ||
+        filters.amlGroupEnum ||
+        filters.gtuCode ||
+        filters.pkdCode ||
+        filters.cooperationStartDateFrom ||
+        filters.cooperationStartDateTo ||
+        filters.companyStartDateFrom ||
+        filters.companyStartDateTo ||
+        filters.isActive !== undefined ||
+        customFieldFilters.length > 0
+      ),
+    [filters, customFieldFilters.length]
+  );
 
-  const hasAdvancedFilters =
-    filters.amlGroupEnum ||
-    filters.gtuCode ||
-    filters.pkdCode ||
-    filters.cooperationStartDateFrom ||
-    filters.cooperationStartDateTo ||
-    filters.companyStartDateFrom ||
-    filters.companyStartDateTo;
+  const hasAdvancedFilters = useMemo(
+    () =>
+      Boolean(
+        filters.amlGroupEnum ||
+        filters.gtuCode ||
+        filters.pkdCode ||
+        filters.cooperationStartDateFrom ||
+        filters.cooperationStartDateTo ||
+        filters.companyStartDateFrom ||
+        filters.companyStartDateTo
+      ),
+    [filters.amlGroupEnum, filters.gtuCode, filters.pkdCode, filters.cooperationStartDateFrom, filters.cooperationStartDateTo, filters.companyStartDateFrom, filters.companyStartDateTo]
+  );
 
   return (
     <Card className="border-apptax-soft-teal/30">
@@ -439,134 +471,70 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
               <CollapsibleContent className="pt-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Date Range: Cooperation Start Date */}
-                  <div className="space-y-2">
-                    <FormLabel className="text-xs">Data współpracy od</FormLabel>
-                    <FormField
-                      control={form.control}
-                      name="cooperationStartDateFrom"
-                      render={({ field }) => (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                'w-full justify-start text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {field.value ? format(new Date(field.value), 'dd.MM.yyyy', { locale: pl }) : 'Wybierz datę'}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value ? new Date(field.value) : undefined}
-                              onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : undefined)}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="cooperationStartDateFrom"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Data współpracy od</FormLabel>
+                        <FormControl>
+                          <DatePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
 
-                  <div className="space-y-2">
-                    <FormLabel className="text-xs">Data współpracy do</FormLabel>
-                    <FormField
-                      control={form.control}
-                      name="cooperationStartDateTo"
-                      render={({ field }) => (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                'w-full justify-start text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {field.value ? format(new Date(field.value), 'dd.MM.yyyy', { locale: pl }) : 'Wybierz datę'}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value ? new Date(field.value) : undefined}
-                              onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : undefined)}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="cooperationStartDateTo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Data współpracy do</FormLabel>
+                        <FormControl>
+                          <DatePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
 
                   {/* Date Range: Company Start Date */}
-                  <div className="space-y-2">
-                    <FormLabel className="text-xs">Data założenia firmy od</FormLabel>
-                    <FormField
-                      control={form.control}
-                      name="companyStartDateFrom"
-                      render={({ field }) => (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                'w-full justify-start text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {field.value ? format(new Date(field.value), 'dd.MM.yyyy', { locale: pl }) : 'Wybierz datę'}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value ? new Date(field.value) : undefined}
-                              onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : undefined)}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="companyStartDateFrom"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Data założenia firmy od</FormLabel>
+                        <FormControl>
+                          <DatePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
 
-                  <div className="space-y-2">
-                    <FormLabel className="text-xs">Data założenia firmy do</FormLabel>
-                    <FormField
-                      control={form.control}
-                      name="companyStartDateTo"
-                      render={({ field }) => (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                'w-full justify-start text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {field.value ? format(new Date(field.value), 'dd.MM.yyyy', { locale: pl }) : 'Wybierz datę'}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value ? new Date(field.value) : undefined}
-                              onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : undefined)}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="companyStartDateTo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Data założenia firmy do</FormLabel>
+                        <FormControl>
+                          <DatePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
 
                   {/* AML Group */}
                   <FormField
@@ -610,17 +578,12 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
                         <FormLabel className="text-xs">Kod PKD</FormLabel>
                         <FormControl>
                           <GroupedCombobox
-                            options={PKD_CODES.map((pkd) => ({
-                              value: pkd.code,
-                              label: pkd.label,
-                              group: pkd.section,
-                            }))}
-                            groups={Object.entries(PKD_SECTIONS).map(([key, label]) => ({
-                              key,
-                              label,
-                            }))}
+                            options={pkdOptions}
+                            groups={pkdGroups}
                             value={field.value || null}
                             onChange={(value) => field.onChange(value || undefined)}
+                            onSearchChange={setPkdSearch}
+                            isLoading={isPkdLoading}
                             placeholder="Wszystkie"
                             searchPlaceholder="Szukaj kodu PKD..."
                             emptyText="Nie znaleziono kodu"
@@ -640,10 +603,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
                         <FormLabel className="text-xs">Kod GTU</FormLabel>
                         <FormControl>
                           <Combobox
-                            options={GTU_CODES.map((gtu) => ({
-                              value: gtu.code,
-                              label: gtu.label,
-                            }))}
+                            options={gtuOptions}
                             value={field.value || null}
                             onChange={(value) => field.onChange(value || undefined)}
                             placeholder="Wszystkie"

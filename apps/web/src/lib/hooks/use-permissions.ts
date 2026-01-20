@@ -6,6 +6,7 @@ import { GrantModuleAccessDto, UpdateModulePermissionDto } from '@/types/dtos';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthContext } from '@/contexts/auth-context';
 import { UserRole } from '@/types/enums';
+import { ApiErrorResponse } from '@/types/api';
 
 /**
  * Permission constants matching backend RBAC system
@@ -121,7 +122,7 @@ export function useGrantModuleAccess() {
         description: 'Dostęp do modułu został przyznany',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       let errorMessage = 'Nie udało się przyznać dostępu do modułu';
 
       // Provide specific error messages based on the error
@@ -159,7 +160,7 @@ export function useUpdateModulePermission() {
         description: 'Uprawnienia zostały zaktualizowane',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się zaktualizować uprawnień',
@@ -183,7 +184,7 @@ export function useRevokeModuleAccess() {
         description: 'Dostęp do modułu został cofnięty',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się cofnąć dostępu do modułu',

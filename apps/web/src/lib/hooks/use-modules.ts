@@ -3,6 +3,7 @@ import { modulesApi } from '../api/endpoints/modules';
 import { queryKeys } from '../api/query-client';
 import { CreateModuleDto, UpdateModuleDto } from '@/types/dtos';
 import { useToast } from '@/components/ui/use-toast';
+import { ApiErrorResponse } from '@/types/api';
 
 export function useModules() {
   return useQuery({
@@ -32,7 +33,7 @@ export function useCreateModule() {
         description: 'Moduł został utworzony',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się utworzyć modułu',
@@ -57,7 +58,7 @@ export function useUpdateModule() {
         description: 'Moduł został zaktualizowany',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się zaktualizować modułu',
@@ -80,7 +81,7 @@ export function useDeleteModule() {
         description: 'Moduł został usunięty',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się usunąć modułu',
