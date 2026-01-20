@@ -61,8 +61,9 @@ export function DataTable<TData, TValue>({
     if (visibleColumnIds) {
       const newVisibility: VisibilityState = {};
       // Hide columns not in the visibleColumnIds list
+      // Prefer col.id over col.accessorKey for consistent column identification
       columns.forEach((col) => {
-        const colId = 'accessorKey' in col ? String(col.accessorKey) : col.id;
+        const colId = col.id || ('accessorKey' in col ? String(col.accessorKey) : undefined);
         if (colId) {
           newVisibility[colId] = visibleColumnIds.includes(colId);
         }
