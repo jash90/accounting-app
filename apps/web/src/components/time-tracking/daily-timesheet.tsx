@@ -110,8 +110,8 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
             Timesheet dzienny
           </CardTitle>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigateDay('prev')}>
-              <ChevronLeft className="h-4 w-4" />
+            <Button variant="ghost" size="sm" onClick={() => navigateDay('prev')} aria-label="Poprzedni dzień">
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             </Button>
             <Button
               variant={isToday ? 'default' : 'outline'}
@@ -121,8 +121,8 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
             >
               {format(selectedDate, 'EEEE, d MMMM', { locale: pl })}
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigateDay('next')}>
-              <ChevronRight className="h-4 w-4" />
+            <Button variant="ghost" size="sm" onClick={() => navigateDay('next')} aria-label="Następny dzień">
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         </CardHeader>

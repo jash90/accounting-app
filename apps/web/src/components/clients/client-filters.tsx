@@ -242,16 +242,20 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
       <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
         <CardContent className="p-4">
           <CollapsibleTrigger asChild>
-            <div className="flex items-center gap-2 cursor-pointer select-none">
-              <Filter className="h-4 w-4 text-apptax-blue" />
+            <button
+              type="button"
+              className="flex items-center gap-2 cursor-pointer select-none w-full text-left"
+              aria-expanded={filtersOpen}
+            >
+              <Filter className="h-4 w-4 text-apptax-blue" aria-hidden="true" />
               <span className="font-medium text-apptax-navy">Filtry</span>
               {hasActiveFilters && (
                 <span className="bg-apptax-blue text-white text-xs px-1.5 py-0.5 rounded">
                   Aktywne
                 </span>
               )}
-              <ChevronDown className={cn('h-4 w-4 ml-auto transition-transform', filtersOpen && 'rotate-180')} />
-            </div>
+              <ChevronDown className={cn('h-4 w-4 ml-auto transition-transform', filtersOpen && 'rotate-180')} aria-hidden="true" />
+            </button>
           </CollapsibleTrigger>
           {hasActiveFilters && (
             <Button

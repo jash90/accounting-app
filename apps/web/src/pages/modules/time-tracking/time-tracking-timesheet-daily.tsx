@@ -42,23 +42,25 @@ export default function TimeTrackingTimesheetDailyPage() {
         description="Widok dzienny z podsumowaniem czasu pracy"
         icon={<Calendar className="h-6 w-6" />}
         titleAction={
-          <div className="flex items-center gap-1 border rounded-lg p-1">
+          <div className="flex items-center gap-1 border rounded-lg p-1" role="group" aria-label="Widok timesheet">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate(`${basePath}/entries`)}
+              aria-label="Lista wpisów"
             >
-              <List className="h-4 w-4" />
+              <List className="h-4 w-4" aria-hidden="true" />
             </Button>
-            <Button variant="ghost" size="sm" className="bg-accent">
-              <Calendar className="h-4 w-4" />
+            <Button variant="ghost" size="sm" className="bg-accent" aria-label="Widok dzienny" aria-current="page">
+              <Calendar className="h-4 w-4" aria-hidden="true" />
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate(`${basePath}/timesheet/weekly`)}
+              aria-label="Widok tygodniowy"
             >
-              <CalendarDays className="h-4 w-4" />
+              <CalendarDays className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         }

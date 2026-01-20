@@ -236,7 +236,7 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
                   disabled={stopTimer.isPending}
                   aria-label="Zatrzymaj timer"
                 >
-                  <Square className="h-4 w-4" />
+                  <Square className="h-4 w-4" aria-hidden="true" />
                 </Button>
                 <Button
                   size="sm"
@@ -245,7 +245,7 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
                   disabled={discardTimer.isPending}
                   aria-label="Odrzuć timer"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
             ) : (
@@ -256,7 +256,7 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
                 className="bg-green-600 hover:bg-green-700"
                 aria-label="Rozpocznij timer"
               >
-                <Play className="h-4 w-4" />
+                <Play className="h-4 w-4" aria-hidden="true" />
               </Button>
             )}
           </div>
@@ -302,7 +302,7 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
                 disabled={stopTimer.isPending}
                 aria-label="Zatrzymaj timer"
               >
-                <Square className="h-4 w-4 mr-2" />
+                <Square className="h-4 w-4 mr-2" aria-hidden="true" />
                 Stop
               </Button>
               <Button
@@ -311,7 +311,7 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
                 disabled={discardTimer.isPending}
                 aria-label="Odrzuć timer"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
           ) : (
@@ -321,7 +321,7 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
               className="bg-green-600 hover:bg-green-700"
               aria-label="Rozpocznij timer"
             >
-              <Play className="h-4 w-4 mr-2" />
+              <Play className="h-4 w-4 mr-2" aria-hidden="true" />
               Start
             </Button>
           )}
