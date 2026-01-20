@@ -5,9 +5,6 @@ import {
   taskCommentsApi,
   taskDependenciesApi,
   TaskLabelQueryDto,
-  TaskAssigneeDto,
-  TaskClientDto,
-  ClientTaskStatisticsDto,
 } from '../api/endpoints/tasks';
 import { queryKeys } from '../api/query-client';
 import {
@@ -18,7 +15,6 @@ import {
   BulkUpdateStatusDto,
   CreateTaskLabelDto,
   UpdateTaskLabelDto,
-  AssignLabelDto,
   CreateTaskCommentDto,
   UpdateTaskCommentDto,
   CreateTaskDependencyDto,
@@ -424,7 +420,7 @@ export function useUpdateTaskComment() {
   return useMutation({
     mutationFn: ({
       commentId,
-      taskId,
+      taskId: _taskId,
       data,
     }: {
       commentId: string;
@@ -453,7 +449,7 @@ export function useDeleteTaskComment() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ commentId, taskId }: { commentId: string; taskId: string }) =>
+    mutationFn: ({ commentId, taskId: _taskId }: { commentId: string; taskId: string }) =>
       taskCommentsApi.delete(commentId),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.comments(variables.taskId) });
@@ -536,7 +532,7 @@ export function useDeleteTaskDependency() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ dependencyId, taskId }: { dependencyId: string; taskId: string }) =>
+    mutationFn: ({ dependencyId, taskId: _taskId }: { dependencyId: string; taskId: string }) =>
       taskDependenciesApi.delete(dependencyId),
     onSuccess: (_, variables) => {
       // Invalidate dependencies for the task

@@ -30,6 +30,7 @@ import { ClientIconAssignment } from './client-icon-assignment.entity';
 @Index(['taxScheme']) // For tax scheme filtering
 @Index(['zusStatus']) // For ZUS status filtering
 @Index(['email']) // For email search queries
+@Index(['pkdCode']) // For PKD code filtering
 export class Client {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, HttpException } from '@nestjs/common';
+import { Injectable, BadRequestException, HttpException } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { simpleParser } from 'mailparser';
 import { EmailConfigService } from './email-config.service';
@@ -6,8 +6,38 @@ import { EncryptionService } from './encryption.service';
 
 const Imap = require('node-imap');
 
-// TLS validation - configurable via env, defaults to true in production
+// TLS validation - configurable via env, defaults to true
 const REJECT_UNAUTHORIZED = process.env['EMAIL_REJECT_UNAUTHORIZED'] !== 'false';
+
+// CRITICAL: Enforce TLS validation in production environment
+if (process.env.NODE_ENV === 'production' && !REJECT_UNAUTHORIZED) {
+  throw new Error(
+    'SECURITY ERROR: EMAIL_REJECT_UNAUTHORIZED cannot be disabled in production environment. ' +
+    'This setting allows man-in-the-middle attacks. Remove the EMAIL_REJECT_UNAUTHORIZED=false ' +
+    'environment variable or set it to true for production deployments.'
+  );
+}
+
+// Security warning when TLS validation is disabled (non-production only)
+if (!REJECT_UNAUTHORIZED) {
+  console.warn('⚠️  EMAIL_REJECT_UNAUTHORIZED is disabled. TLS certificate validation is OFF. This should only be used in development/testing environments.');
+}
+
+/**
+ * Error message sanitization map - prevents leaking internal details
+ */
+const EMAIL_ERROR_MAP: Record<string, string> = {
+  ECONNREFUSED: 'Nie można połączyć się z serwerem email',
+  ETIMEDOUT: 'Przekroczono limit czasu połączenia',
+  EAUTH: 'Błąd uwierzytelniania - sprawdź dane logowania',
+  ESOCKET: 'Błąd połączenia sieciowego',
+  ENOTFOUND: 'Nie znaleziono serwera email',
+  ECONNRESET: 'Połączenie zostało przerwane',
+  EHOSTUNREACH: 'Serwer email jest nieosiągalny',
+  CERT_HAS_EXPIRED: 'Certyfikat serwera wygasł',
+  UNABLE_TO_VERIFY_LEAF_SIGNATURE: 'Nie można zweryfikować certyfikatu serwera',
+  SELF_SIGNED_CERT_IN_CHAIN: 'Serwer używa niezaufanego certyfikatu',
+};
 
 // Helper function to extract text from AddressObject or AddressObject[]
 function getAddressText(address: { text?: string } | { text?: string }[] | undefined): string {
@@ -69,6 +99,24 @@ export class SmtpImapService {
   ) {}
 
   /**
+   * Sanitizes email-related error messages to prevent leaking internal details
+   * Maps known error codes to user-friendly Polish messages
+   */
+  private sanitizeEmailError(error: Error, operation: string): string {
+    const errorCode = (error as NodeJS.ErrnoException).code;
+
+    if (errorCode && EMAIL_ERROR_MAP[errorCode]) {
+      return EMAIL_ERROR_MAP[errorCode];
+    }
+
+    // For unknown errors, return generic message without exposing internals
+    // Log the actual error for debugging (but don't expose to user)
+    console.error(`[SmtpImapService] ${operation} error:`, error.message);
+
+    return `Błąd ${operation}: Spróbuj ponownie później`;
+  }
+
+  /**
    * Test SMTP connection without sending an email
    * Uses nodemailer's verify() method to validate credentials
    */
@@ -82,6 +130,9 @@ export class SmtpImapService {
           user: dto.smtpUser,
           pass: dto.smtpPassword,
         },
+        tls: {
+          rejectUnauthorized: REJECT_UNAUTHORIZED,
+        },
         connectionTimeout: CONNECTION_TIMEOUT_MS,
       });
 
@@ -92,7 +143,7 @@ export class SmtpImapService {
         message: 'Połączenie SMTP działa poprawnie',
       };
     } catch (error) {
-      throw new BadRequestException(`Błąd połączenia SMTP: ${error.message}`);
+      throw new BadRequestException(this.sanitizeEmailError(error, 'SMTP'));
     }
   }
 
@@ -212,7 +263,7 @@ export class SmtpImapService {
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new BadRequestException(`Failed to send email: ${error.message}`);
+      throw new BadRequestException(this.sanitizeEmailError(error, 'wysyłania emaila'));
     }
   }
 
@@ -257,7 +308,7 @@ export class SmtpImapService {
       if (error instanceof HttpException) {
         throw error;
       }
-      throw new BadRequestException(`Failed to send company email: ${error.message}`);
+      throw new BadRequestException(this.sanitizeEmailError(error, 'wysyłania emaila firmowego'));
     }
   }
 
@@ -292,7 +343,7 @@ export class SmtpImapService {
         imap.openBox('INBOX', true, (err, box) => {
           if (err) {
             imap.end();
-            return reject(new BadRequestException(`Failed to open inbox: ${err.message}`));
+            return reject(new BadRequestException(this.sanitizeEmailError(err, 'otwierania skrzynki')));
           }
 
           // Calculate fetch range (get last N messages)
@@ -333,7 +384,7 @@ export class SmtpImapService {
 
           fetch.once('error', (err) => {
             imap.end();
-            reject(new BadRequestException(`Failed to fetch emails: ${err.message}`));
+            reject(new BadRequestException(this.sanitizeEmailError(err, 'pobierania wiadomości')));
           });
 
           fetch.once('end', () => {
@@ -347,14 +398,15 @@ export class SmtpImapService {
               })
               .catch((err) => {
                 imap.end();
-                reject(new BadRequestException(`Failed to parse emails: ${err.message}`));
+                reject(new BadRequestException(this.sanitizeEmailError(err, 'parsowania wiadomości')));
               });
           });
         });
       });
 
       imap.once('error', (err) => {
-        reject(new BadRequestException(`IMAP connection error: ${err.message}`));
+        imap.end();
+        reject(new BadRequestException(this.sanitizeEmailError(err, 'połączenia IMAP')));
       });
 
       imap.once('end', () => {
@@ -396,7 +448,7 @@ export class SmtpImapService {
         imap.openBox('INBOX', true, (err, box) => {
           if (err) {
             imap.end();
-            return reject(new BadRequestException(`Failed to open inbox: ${err.message}`));
+            return reject(new BadRequestException(this.sanitizeEmailError(err, 'otwierania skrzynki')));
           }
 
           // Calculate fetch range (get last N messages)
@@ -437,7 +489,7 @@ export class SmtpImapService {
 
           fetch.once('error', (err) => {
             imap.end();
-            reject(new BadRequestException(`Failed to fetch emails: ${err.message}`));
+            reject(new BadRequestException(this.sanitizeEmailError(err, 'pobierania wiadomości')));
           });
 
           fetch.once('end', () => {
@@ -451,14 +503,15 @@ export class SmtpImapService {
               })
               .catch((err) => {
                 imap.end();
-                reject(new BadRequestException(`Failed to parse emails: ${err.message}`));
+                reject(new BadRequestException(this.sanitizeEmailError(err, 'parsowania wiadomości')));
               });
           });
         });
       });
 
       imap.once('error', (err) => {
-        reject(new BadRequestException(`IMAP connection error: ${err.message}`));
+        imap.end();
+        reject(new BadRequestException(this.sanitizeEmailError(err, 'połączenia IMAP')));
       });
 
       imap.once('end', () => {

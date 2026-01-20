@@ -14,6 +14,10 @@ import {
   Max,
   Matches,
   IsDateString,
+  ValidateNested,
+  registerDecorator,
+  ValidationOptions,
+  ValidationArguments,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
@@ -25,6 +29,8 @@ import {
   AmlGroup,
   Sanitize,
   SanitizeWithFormatting,
+  PKD_CODE_REGEX,
+  PKD_CODE_VALIDATION_MESSAGE,
 } from '@accounting/common';
 
 export class CreateClientDto {
@@ -82,26 +88,33 @@ export class CreateClientDto {
   @IsString()
   additionalInfo?: string;
 
-  @ApiPropertyOptional({ description: 'GTU code' })
+  @ApiPropertyOptional({ description: 'GTU code (e.g., GTU_01)', example: 'GTU_01' })
   @IsOptional()
   @Sanitize()
   @IsString()
   @MaxLength(10)
+  @Matches(/^GTU_\d{2}$/, { message: 'Kod GTU musi być w formacie GTU_XX (np. GTU_01)' })
   gtuCode?: string;
 
-  @ApiPropertyOptional({ description: 'PKD code (Polska Klasyfikacja Działalności)' })
+  @ApiPropertyOptional({ description: 'PKD code (e.g., 62.01.Z)', example: '62.01.Z' })
   @IsOptional()
   @Sanitize()
   @IsString()
   @MaxLength(10)
+  @Matches(PKD_CODE_REGEX, { message: PKD_CODE_VALIDATION_MESSAGE })
   pkdCode?: string;
 
-  @ApiPropertyOptional({ description: 'AML group' })
+  @ApiPropertyOptional({ description: 'AML group (legacy string field)' })
   @IsOptional()
   @Sanitize()
   @IsString()
   @MaxLength(50)
   amlGroup?: string;
+
+  @ApiPropertyOptional({ enum: AmlGroup, description: 'AML group (enum)' })
+  @IsOptional()
+  @IsEnum(AmlGroup)
+  amlGroupEnum?: AmlGroup;
 
   @ApiPropertyOptional({ enum: EmploymentType, description: 'Employment type' })
   @IsOptional()
@@ -130,6 +143,96 @@ export class CreateClientDto {
 }
 
 export class UpdateClientDto extends PartialType(CreateClientDto) {}
+
+/**
+ * Valid operators for custom field filtering.
+ * These operators determine how the field value is compared.
+ */
+export enum CustomFieldFilterOperator {
+  /** Exact equality match */
+  EQUALS = 'eq',
+  /** Case-insensitive substring match */
+  CONTAINS = 'contains',
+  /** Greater than (for numbers and dates) */
+  GREATER_THAN = 'gt',
+  /** Greater than or equal (for numbers and dates) */
+  GREATER_THAN_OR_EQUAL = 'gte',
+  /** Less than (for numbers and dates) */
+  LESS_THAN = 'lt',
+  /** Less than or equal (for numbers and dates) */
+  LESS_THAN_OR_EQUAL = 'lte',
+  /** Value in list (for ENUM type) */
+  IN = 'in',
+  /** Any value matches (for MULTISELECT type) */
+  CONTAINS_ANY = 'contains_any',
+}
+
+/**
+ * Custom validator to sanitize string or array of strings
+ */
+function SanitizeFilterValue(validationOptions?: ValidationOptions) {
+  return function (object: object, propertyName: string) {
+    registerDecorator({
+      name: 'sanitizeFilterValue',
+      target: object.constructor,
+      propertyName: propertyName,
+      options: validationOptions,
+      validator: {
+        validate() {
+          // Validation always passes - transformation is done by Transform decorator
+          return true;
+        },
+      },
+    });
+  };
+}
+
+/**
+ * DTO for custom field filters used in client queries.
+ * Validates fieldId, operator, and value.
+ */
+export class CustomFieldFilterDto {
+  @ApiProperty({ description: 'Field definition ID' })
+  @IsString()
+  @IsUUID('4', { message: 'Nieprawidłowy format ID pola' })
+  fieldId!: string;
+
+  @ApiProperty({
+    enum: CustomFieldFilterOperator,
+    description: 'Filter operator',
+    example: CustomFieldFilterOperator.EQUALS,
+  })
+  @IsEnum(CustomFieldFilterOperator, {
+    message: `Operator musi być jednym z: ${Object.values(CustomFieldFilterOperator).join(', ')}`,
+  })
+  operator!: CustomFieldFilterOperator;
+
+  @ApiProperty({
+    description: 'Filter value (string or array for IN/CONTAINS_ANY operators)',
+    oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
+  })
+  @Transform(({ value }) => {
+    // Sanitize value to prevent XSS - strip HTML tags and dangerous characters
+    const sanitizeString = (str: string): string => {
+      if (typeof str !== 'string') return str;
+      return str
+        .replace(/<[^>]*>/g, '') // Remove HTML tags
+        .replace(/[<>'"&]/g, '') // Remove dangerous characters
+        .trim();
+    };
+    if (Array.isArray(value)) {
+      return value.map(v => typeof v === 'string' ? sanitizeString(v) : v);
+    }
+    return typeof value === 'string' ? sanitizeString(value) : value;
+  })
+  @SanitizeFilterValue()
+  value!: string | string[];
+}
+
+/**
+ * @deprecated Use CustomFieldFilterDto instead. Kept for backwards compatibility.
+ */
+export type CustomFieldFilter = CustomFieldFilterDto;
 
 export class ClientFiltersDto {
   @ApiPropertyOptional({ description: 'Search query', maxLength: 100 })
@@ -164,18 +267,20 @@ export class ClientFiltersDto {
   @IsEnum(AmlGroup)
   amlGroupEnum?: AmlGroup;
 
-  @ApiPropertyOptional({ description: 'GTU code filter' })
+  @ApiPropertyOptional({ description: 'GTU code filter (e.g., GTU_01)', example: 'GTU_01' })
   @IsOptional()
   @Sanitize()
   @IsString()
   @MaxLength(10)
+  @Matches(/^GTU_\d{2}$/, { message: 'Kod GTU musi być w formacie GTU_XX (np. GTU_01)' })
   gtuCode?: string;
 
-  @ApiPropertyOptional({ description: 'PKD code filter' })
+  @ApiPropertyOptional({ description: 'PKD code filter (e.g., 62.01.Z)', example: '62.01.Z' })
   @IsOptional()
   @Sanitize()
   @IsString()
   @MaxLength(10)
+  @Matches(PKD_CODE_REGEX, { message: PKD_CODE_VALIDATION_MESSAGE })
   pkdCode?: string;
 
   @ApiPropertyOptional({ description: 'Filter by email copy preference' })
@@ -219,6 +324,16 @@ export class ClientFiltersDto {
   companyStartDateTo?: string;
 
   @ApiPropertyOptional({
+    description: 'Custom field filters',
+    type: [CustomFieldFilterDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CustomFieldFilterDto)
+  customFieldFilters?: CustomFieldFilterDto[];
+
+  @ApiPropertyOptional({
     description: 'Page number (1-based)',
     minimum: 1,
     default: 1,
@@ -245,12 +360,64 @@ export class ClientFiltersDto {
   limit?: number = 20;
 }
 
+/**
+ * Custom validator for limiting the number of properties in an object
+ */
+function MaxProperties(max: number, validationOptions?: ValidationOptions) {
+  return function (object: object, propertyName: string) {
+    registerDecorator({
+      name: 'maxProperties',
+      target: object.constructor,
+      propertyName: propertyName,
+      constraints: [max],
+      options: validationOptions,
+      validator: {
+        validate(value: unknown, args: ValidationArguments) {
+          if (!value || typeof value !== 'object') return true;
+          return Object.keys(value).length <= args.constraints[0];
+        },
+        defaultMessage(args: ValidationArguments) {
+          return `Obiekt może mieć maksymalnie ${args.constraints[0]} właściwości`;
+        },
+      },
+    });
+  };
+}
+
+/**
+ * Custom validator for limiting string value lengths in a Record
+ */
+function MaxValueLength(max: number, validationOptions?: ValidationOptions) {
+  return function (object: object, propertyName: string) {
+    registerDecorator({
+      name: 'maxValueLength',
+      target: object.constructor,
+      propertyName: propertyName,
+      constraints: [max],
+      options: validationOptions,
+      validator: {
+        validate(value: unknown, args: ValidationArguments) {
+          if (!value || typeof value !== 'object') return true;
+          return Object.values(value).every(
+            (v) => v === null || (typeof v === 'string' && v.length <= args.constraints[0])
+          );
+        },
+        defaultMessage(args: ValidationArguments) {
+          return `Wartości nie mogą przekraczać ${args.constraints[0]} znaków`;
+        },
+      },
+    });
+  };
+}
+
 export class SetCustomFieldValuesDto {
   @ApiProperty({
     type: 'object',
     additionalProperties: { type: 'string', nullable: true },
-    description: 'Object mapping field definition IDs to values',
+    description: 'Object mapping field definition IDs to values (max 50 fields, max 1000 chars per value)',
   })
   @IsObject()
+  @MaxProperties(50, { message: 'Maksymalnie 50 pól niestandardowych' })
+  @MaxValueLength(1000, { message: 'Wartość pola nie może przekraczać 1000 znaków' })
   values!: Record<string, string | null>;
 }

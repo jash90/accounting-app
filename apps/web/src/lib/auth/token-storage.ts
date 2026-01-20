@@ -1,10 +1,33 @@
+/**
+ * Token Storage Module
+ *
+ * SECURITY NOTE:
+ * This module stores JWT tokens in localStorage, which is vulnerable to XSS attacks.
+ * If an attacker can execute JavaScript on the page (via XSS), they can read these tokens.
+ *
+ * TODO: [SECURITY] Migrate to httpOnly cookies for token storage
+ * - Requires backend changes to set httpOnly, Secure, SameSite cookies on login
+ * - Backend should return tokens via Set-Cookie header instead of response body
+ * - Frontend would no longer need direct token access (cookies sent automatically)
+ * - Implement CSRF protection (double-submit cookie or synchronizer token pattern)
+ *
+ * Current mitigations:
+ * - Short access token expiry (1h) limits exposure window
+ * - Refresh tokens have separate expiry (7d) and rotation
+ * - Content Security Policy (CSP) should be configured to prevent inline scripts
+ * - Input sanitization and output encoding to prevent XSS
+ *
+ * @see https://owasp.org/www-community/HttpOnly
+ */
+
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 const TOKEN_CHANGE_EVENT = 'auth-token-change';
 
 // Custom event for same-tab token changes (storage events only fire for other tabs)
 type TokenChangeCallback = () => void;
-const tokenChangeListeners = new Set<TokenChangeCallback>();
+// Reserved for future use with direct callback subscriptions
+const _tokenChangeListeners = new Set<TokenChangeCallback>();
 
 const notifyTokenChange = (): void => {
   if (typeof window === 'undefined') return;
@@ -41,12 +64,24 @@ export const tokenStorage = {
     notifyTokenChange();
   },
 
-  isTokenValid: (token: string): boolean => {
+  /**
+   * Checks if a JWT token has expired based on its `exp` claim.
+   *
+   * IMPORTANT: This only checks expiration, NOT signature validity.
+   * Token verification should always be done server-side.
+   * This is intended only for UX purposes (e.g., proactive refresh).
+   *
+   * @param token - JWT token string
+   * @returns true if token is expired or invalid, false if still valid
+   */
+  isTokenExpired: (token: string): boolean => {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.exp * 1000 > Date.now();
+      // Return true if expired (exp * 1000 <= current time)
+      return payload.exp * 1000 <= Date.now();
     } catch {
-      return false;
+      // If we can't parse the token, consider it expired
+      return true;
     }
   },
 

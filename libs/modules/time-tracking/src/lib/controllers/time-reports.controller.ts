@@ -6,6 +6,7 @@ import {
   UseGuards,
   ParseUUIDPipe,
   Res,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -139,50 +140,68 @@ export class TimeReportsController {
     const reportData = await this.timesheetService.getReportSummary(dto, user);
     const format = dto.format || ExportFormat.CSV;
 
-    if (format === ExportFormat.CSV) {
-      const csv = this.generateCsv(reportData);
-      return {
-        data: Buffer.from(csv, 'utf-8'),
-        filename: `time-report-${dto.startDate}-${dto.endDate}.csv`,
-        mimeType: 'text/csv; charset=utf-8',
-      };
+    switch (format) {
+      case ExportFormat.CSV: {
+        const csv = this.generateCsv(reportData);
+        return {
+          data: Buffer.from(csv, 'utf-8'),
+          filename: `time-report-${dto.startDate}-${dto.endDate}.csv`,
+          mimeType: 'text/csv; charset=utf-8',
+        };
+      }
+      case ExportFormat.EXCEL:
+      case ExportFormat.PDF:
+        throw new BadRequestException(
+          `Format ${format} nie jest jeszcze obsługiwany. Użyj CSV.`
+        );
+      default:
+        throw new BadRequestException(`Nieznany format eksportu: ${format}`);
     }
+  }
 
-    // For Excel, we would need a library like exceljs
-    // For now, fall back to CSV
-    const csv = this.generateCsv(reportData);
-    return {
-      data: Buffer.from(csv, 'utf-8'),
-      filename: `time-report-${dto.startDate}-${dto.endDate}.csv`,
-      mimeType: 'text/csv; charset=utf-8',
-    };
+  /**
+   * Sanitize CSV values to prevent CSV injection attacks.
+   * Values starting with =, +, -, @, Tab, or CR are prefixed with a single quote.
+   */
+  private sanitizeCsvValue(value: string | number | null | undefined): string {
+    if (value === null || value === undefined) return '';
+    const str = String(value);
+    // Prevent CSV injection by prefixing potentially dangerous characters
+    if (/^[=+\-@\t\r]/.test(str)) {
+      return `'${str}`;
+    }
+    // Properly escape values containing quotes, commas, or newlines
+    if (str.includes('"') || str.includes(',') || str.includes('\n')) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
   }
 
   private generateCsv(reportData: any): string {
     const lines: string[] = [];
 
-    // Header
-    lines.push('Raport czasu pracy');
-    lines.push(`Okres: ${reportData.startDate} - ${reportData.endDate}`);
+    // Header (sanitized to prevent injection)
+    lines.push(this.sanitizeCsvValue('Raport czasu pracy'));
+    lines.push(`Okres: ${this.sanitizeCsvValue(reportData.startDate)} - ${this.sanitizeCsvValue(reportData.endDate)}`);
     lines.push('');
 
     // Summary
-    lines.push('Podsumowanie');
-    lines.push(`Całkowity czas (min),${reportData.totalMinutes}`);
-    lines.push(`Czas rozliczalny (min),${reportData.billableMinutes}`);
-    lines.push(`Czas nierozliczalny (min),${reportData.nonBillableMinutes}`);
-    lines.push(`Całkowita kwota,${reportData.totalAmount}`);
-    lines.push(`Liczba wpisów,${reportData.entriesCount}`);
+    lines.push(this.sanitizeCsvValue('Podsumowanie'));
+    lines.push(`Całkowity czas (min),${this.sanitizeCsvValue(reportData.totalMinutes)}`);
+    lines.push(`Czas rozliczalny (min),${this.sanitizeCsvValue(reportData.billableMinutes)}`);
+    lines.push(`Czas nierozliczalny (min),${this.sanitizeCsvValue(reportData.nonBillableMinutes)}`);
+    lines.push(`Całkowita kwota,${this.sanitizeCsvValue(reportData.totalAmount)}`);
+    lines.push(`Liczba wpisów,${this.sanitizeCsvValue(reportData.entriesCount)}`);
     lines.push('');
 
     // Grouped data if available
     if (reportData.groupedData && reportData.groupedData.length > 0) {
-      lines.push('Dane szczegółowe');
+      lines.push(this.sanitizeCsvValue('Dane szczegółowe'));
       lines.push('Grupa,Całkowity czas (min),Czas rozliczalny (min),Kwota,Liczba wpisów');
 
       for (const group of reportData.groupedData) {
         lines.push(
-          `"${group.groupName}",${group.totalMinutes},${group.billableMinutes},${group.totalAmount},${group.entriesCount}`
+          `${this.sanitizeCsvValue(group.groupName)},${this.sanitizeCsvValue(group.totalMinutes)},${this.sanitizeCsvValue(group.billableMinutes)},${this.sanitizeCsvValue(group.totalAmount)},${this.sanitizeCsvValue(group.entriesCount)}`
         );
       }
     }

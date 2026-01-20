@@ -14,9 +14,9 @@ import {
   TaxScheme,
   ZusStatus,
   AmlGroup,
-  TenantService,
   PaginatedResponseDto,
 } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
 import { ClientNotFoundException } from '../exceptions';
 
 describe('ClientsService', () => {
@@ -237,6 +237,32 @@ describe('ClientsService', () => {
       );
     });
 
+    it('should apply PKD code filter', async () => {
+      const mockQueryBuilder = createMockQueryBuilder();
+      clientRepository.createQueryBuilder = jest.fn(() => mockQueryBuilder) as any;
+
+      const filters: ClientFilters = { pkdCode: '62.01' };
+      await service.findAll(mockUser as User, filters);
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'client.pkdCode = :pkdCode',
+        { pkdCode: '62.01' },
+      );
+    });
+
+    it('should apply PKD code filter with subsection', async () => {
+      const mockQueryBuilder = createMockQueryBuilder();
+      clientRepository.createQueryBuilder = jest.fn(() => mockQueryBuilder) as any;
+
+      const filters: ClientFilters = { pkdCode: '62.01.Z' };
+      await service.findAll(mockUser as User, filters);
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'client.pkdCode = :pkdCode',
+        { pkdCode: '62.01.Z' },
+      );
+    });
+
     it('should apply receiveEmailCopy filter', async () => {
       const mockQueryBuilder = createMockQueryBuilder();
       clientRepository.createQueryBuilder = jest.fn(() => mockQueryBuilder) as any;
@@ -415,6 +441,59 @@ describe('ClientsService', () => {
       const result = await service.create(createDto, mockUser as User);
 
       expect(result).toEqual(savedClient);
+    });
+
+    it('should create client with valid PKD code', async () => {
+      const dtoWithPkd: CreateClientDto = {
+        ...createDto,
+        pkdCode: '62.01',
+      };
+      const savedClient = { ...mockClient, ...dtoWithPkd };
+      clientRepository.create = jest.fn().mockReturnValue(savedClient);
+      clientRepository.save = jest.fn().mockResolvedValue(savedClient);
+
+      const result = await service.create(dtoWithPkd, mockUser as User);
+
+      expect(result.pkdCode).toBe('62.01');
+      expect(clientRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ pkdCode: '62.01' }),
+      );
+    });
+
+    it('should create client with PKD code including subsection', async () => {
+      const dtoWithPkd: CreateClientDto = {
+        ...createDto,
+        pkdCode: '62.01.Z',
+      };
+      const savedClient = { ...mockClient, ...dtoWithPkd };
+      clientRepository.create = jest.fn().mockReturnValue(savedClient);
+      clientRepository.save = jest.fn().mockResolvedValue(savedClient);
+
+      const result = await service.create(dtoWithPkd, mockUser as User);
+
+      expect(result.pkdCode).toBe('62.01.Z');
+    });
+
+    it('should reject invalid PKD code format', async () => {
+      const dtoWithInvalidPkd: CreateClientDto = {
+        ...createDto,
+        pkdCode: 'INVALID',
+      };
+
+      await expect(service.create(dtoWithInvalidPkd, mockUser as User)).rejects.toThrow(
+        'Nieprawidłowy kod PKD',
+      );
+    });
+
+    it('should reject PKD code not in registry', async () => {
+      const dtoWithInvalidPkd: CreateClientDto = {
+        ...createDto,
+        pkdCode: '99.99', // Valid format but doesn't exist
+      };
+
+      await expect(service.create(dtoWithInvalidPkd, mockUser as User)).rejects.toThrow(
+        'Nieprawidłowy kod PKD',
+      );
     });
   });
 

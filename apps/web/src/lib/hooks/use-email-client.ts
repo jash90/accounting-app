@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../api/client';
 import { tokenStorage } from '../auth/token-storage';
@@ -390,6 +390,15 @@ export function useGenerateAiDraftStream() {
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Cleanup AbortController on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
   const startStream = useCallback(async (params: {
     messageUid: number;
     tone?: 'formal' | 'casual' | 'neutral';
@@ -446,11 +455,8 @@ export function useGenerateAiDraftStream() {
         const lines = buffer.split('\n');
         buffer = lines.pop() || ''; // Keep incomplete line in buffer
 
-        let eventType = '';
         for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            eventType = line.slice(7);
-          } else if (line.startsWith('data: ')) {
+          if (line.startsWith('data: ')) {
             const data = line.slice(6);
             try {
               const chunk: StreamChunk = JSON.parse(data);

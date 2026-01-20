@@ -7,7 +7,9 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { EmailConfiguration, Company, EncryptionService } from '@accounting/common';
+import { EmailConfiguration, Company } from '@accounting/common';
+// Import EncryptionService directly from the file to avoid pulling Node.js deps into browser bundles
+import { EncryptionService } from '../../../../common/src/lib/services/encryption.service';
 import { CreateEmailConfigDto } from '../dto/create-email-config.dto';
 import { UpdateEmailConfigDto } from '../dto/update-email-config.dto';
 import { EmailConfigResponseDto } from '../dto/email-config-response.dto';

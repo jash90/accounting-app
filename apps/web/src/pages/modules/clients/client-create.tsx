@@ -2,8 +2,6 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useAuthContext } from '@/contexts/auth-context';
-import { UserRole } from '@/types/enums';
 import {
   createClientSchema,
   CreateClientFormData,
@@ -14,47 +12,63 @@ import {
   useFieldDefinitions,
   useCheckDuplicates,
 } from '@/lib/hooks/use-clients';
+import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import { CreateClientDto, SetCustomFieldValuesDto } from '@/types/dtos';
 import { DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
-import {
-  EmploymentTypeLabels,
-  VatStatusLabels,
-  TaxSchemeLabels,
-  ZusStatusLabels,
-  AmlGroup,
-  CustomFieldType,
-} from '@/types/enums';
-import { AmlGroupLabels, GTU_CODES, PKD_CODES, PKD_SECTIONS } from '@/lib/constants/polish-labels';
-import { ClientFieldDefinition } from '@/types/entities';
 import { PageHeader } from '@/components/common/page-header';
+import { ErrorBoundary } from '@/components/common/error-boundary';
 import { DuplicateWarningDialog } from '@/components/clients/duplicate-warning-dialog';
+import { useToast } from '@/components/ui/use-toast';
+import { CustomFieldRenderer } from '@/components/clients/custom-field-renderer';
+import {
+  BasicInfoCard,
+  TaxEmploymentCard,
+  AdditionalInfoCard,
+  DatesCard,
+  CustomFieldsCard,
+} from '@/components/forms/client-form-sections';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Combobox } from '@/components/ui/combobox';
-import { GroupedCombobox } from '@/components/ui/grouped-combobox';
-import { ArrowLeft, Plus, Loader2, Users } from 'lucide-react';
+import { Form } from '@/components/ui/form';
+import { ArrowLeft, Plus, Loader2, Users, AlertTriangle } from 'lucide-react';
+
+/**
+ * Error fallback component for ClientCreatePage
+ */
+function ClientCreateErrorFallback() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+      <AlertTriangle className="h-16 w-16 text-destructive" />
+      <h2 className="text-xl font-semibold">Wystąpił błąd</h2>
+      <p className="text-muted-foreground text-center max-w-md">
+        Nie udało się załadować formularza. Proszę odświeżyć stronę lub spróbować później.
+      </p>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Powrót
+        </Button>
+        <Button onClick={() => window.location.reload()}>
+          Odśwież stronę
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export default function ClientCreatePage() {
+  return (
+    <ErrorBoundary fallback={<ClientCreateErrorFallback />}>
+      <ClientCreateForm />
+    </ErrorBoundary>
+  );
+}
+
+function ClientCreateForm() {
   const navigate = useNavigate();
-  const { user } = useAuthContext();
+  const basePath = useModuleBasePath('clients');
+  const { toast } = useToast();
 
   const createClient = useCreateClient();
   const setCustomFields = useSetClientCustomFields();
@@ -70,19 +84,6 @@ export default function ClientCreatePage() {
   const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
   const [duplicateCheckResult, setDuplicateCheckResult] = useState<DuplicateCheckResultDto | null>(null);
   const [pendingCreateData, setPendingCreateData] = useState<{ data: CreateClientDto; customFields?: SetCustomFieldValuesDto } | null>(null);
-
-  const getBasePath = () => {
-    switch (user?.role) {
-      case UserRole.ADMIN:
-        return '/admin/modules/clients';
-      case UserRole.COMPANY_OWNER:
-        return '/company/modules/clients';
-      default:
-        return '/modules/clients';
-    }
-  };
-
-  const basePath = getBasePath();
 
   const form = useForm<CreateClientFormData>({
     resolver: zodResolver(createClientSchema),
@@ -142,14 +143,21 @@ export default function ClientCreatePage() {
     if (!pendingCreateData) return;
 
     try {
-      await createClientAndNavigate(pendingCreateData.data, pendingCreateData.customFields);
+      const newClient = await createClient.mutateAsync(pendingCreateData.data);
+      if (pendingCreateData.customFields && Object.keys(pendingCreateData.customFields.values).length > 0) {
+        await setCustomFields.mutateAsync({
+          id: newClient.id,
+          data: pendingCreateData.customFields,
+        });
+      }
+      navigate(`${basePath}/list`);
       setDuplicateWarningOpen(false);
       setDuplicateCheckResult(null);
       setPendingCreateData(null);
     } catch {
-      // Error handled by mutation
+      // Error notification handled by mutation's onError
     }
-  }, [pendingCreateData]);
+  }, [pendingCreateData, createClient, setCustomFields, navigate, basePath]);
 
   const handleCancelDuplicate = useCallback(() => {
     setDuplicateWarningOpen(false);
@@ -168,6 +176,11 @@ export default function ClientCreatePage() {
       .map((fd) => fd.label);
 
     if (missingRequiredFields.length > 0) {
+      toast({
+        title: 'Brakujące wymagane pola',
+        description: `Proszę wypełnić: ${missingRequiredFields.join(', ')}`,
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -197,79 +210,16 @@ export default function ClientCreatePage() {
     );
   };
 
-  const renderCustomField = (definition: ClientFieldDefinition) => {
+  const renderCustomField = (definition: typeof activeFieldDefinitions[0]) => {
     const value = customFieldValues[definition.id] || '';
 
-    switch (definition.fieldType) {
-      case CustomFieldType.TEXT:
-        return (
-          <Input
-            value={value}
-            onChange={(e) => handleCustomFieldChange(definition.id, e.target.value)}
-            placeholder={definition.label}
-          />
-        );
-
-      case CustomFieldType.NUMBER:
-        return (
-          <Input
-            type="number"
-            value={value}
-            onChange={(e) => handleCustomFieldChange(definition.id, e.target.value)}
-            placeholder={definition.label}
-          />
-        );
-
-      case CustomFieldType.DATE:
-        return (
-          <Input
-            type="date"
-            value={value}
-            onChange={(e) => handleCustomFieldChange(definition.id, e.target.value)}
-          />
-        );
-
-      case CustomFieldType.BOOLEAN:
-        return (
-          <div className="flex items-center space-x-2">
-            <Switch
-              checked={value === 'true'}
-              onCheckedChange={(checked) => handleCustomFieldChange(definition.id, String(checked))}
-            />
-            <span className="text-sm text-muted-foreground">
-              {value === 'true' ? 'Tak' : 'Nie'}
-            </span>
-          </div>
-        );
-
-      case CustomFieldType.ENUM:
-        return (
-          <Select
-            value={value}
-            onValueChange={(v) => handleCustomFieldChange(definition.id, v)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Wybierz..." />
-            </SelectTrigger>
-            <SelectContent>
-              {definition.enumValues?.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        );
-
-      default:
-        return (
-          <Input
-            value={value}
-            onChange={(e) => handleCustomFieldChange(definition.id, e.target.value)}
-            placeholder={definition.label}
-          />
-        );
-    }
+    return (
+      <CustomFieldRenderer
+        definition={definition}
+        value={value}
+        onChange={(newValue) => handleCustomFieldChange(definition.id, newValue)}
+      />
+    );
   };
 
   return (
@@ -292,488 +242,20 @@ export default function ClientCreatePage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Main content - left column */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Basic Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Dane podstawowe</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nazwa klienta *</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Nazwa firmy lub imię i nazwisko"
-                            className="text-lg"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="nip"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>NIP</FormLabel>
-                          <FormControl>
-                            <Input placeholder="1234567890" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="email"
-                              placeholder="email@example.com"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Telefon</FormLabel>
-                          <FormControl>
-                            <Input placeholder="+48 123 456 789" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="receiveEmailCopy"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            Wyślij email powitalny do klienta
-                          </FormLabel>
-                          <p className="text-sm text-muted-foreground">
-                            Klient otrzyma email z podsumowaniem wprowadzonych danych
-                          </p>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value ?? true}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Tax and Employment */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Podatki i zatrudnienie</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="employmentType"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Forma zatrudnienia</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Wybierz..." />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {Object.entries(EmploymentTypeLabels).map(
-                                ([value, label]) => (
-                                  <SelectItem key={value} value={value}>
-                                    {label}
-                                  </SelectItem>
-                                )
-                              )}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="vatStatus"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Status VAT</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Wybierz..." />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {Object.entries(VatStatusLabels).map(
-                                ([value, label]) => (
-                                  <SelectItem key={value} value={value}>
-                                    {label}
-                                  </SelectItem>
-                                )
-                              )}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="taxScheme"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Forma opodatkowania</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Wybierz..." />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {Object.entries(TaxSchemeLabels).map(
-                                ([value, label]) => (
-                                  <SelectItem key={value} value={value}>
-                                    {label}
-                                  </SelectItem>
-                                )
-                              )}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="zusStatus"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Status ZUS</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Wybierz..." />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {Object.entries(ZusStatusLabels).map(
-                                ([value, label]) => (
-                                  <SelectItem key={value} value={value}>
-                                    {label}
-                                  </SelectItem>
-                                )
-                              )}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Additional Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Dodatkowe informacje</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="pkdCode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Główny kod PKD</FormLabel>
-                        <FormControl>
-                          <GroupedCombobox
-                            options={PKD_CODES.map((pkd) => ({
-                              value: pkd.code,
-                              label: pkd.label,
-                              group: pkd.section,
-                            }))}
-                            groups={Object.entries(PKD_SECTIONS).map(([key, label]) => ({
-                              key,
-                              label,
-                            }))}
-                            value={field.value || null}
-                            onChange={(value) => field.onChange(value || '')}
-                            placeholder="Wybierz kod PKD"
-                            searchPlaceholder="Szukaj kodu PKD..."
-                            emptyText="Nie znaleziono kodu"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="gtuCode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Kod GTU</FormLabel>
-                          <FormControl>
-                            <Combobox
-                              options={GTU_CODES.map((gtu) => ({
-                                value: gtu.code,
-                                label: gtu.label,
-                              }))}
-                              value={field.value || null}
-                              onChange={(value) => field.onChange(value || '')}
-                              placeholder="Wybierz kod GTU"
-                              searchPlaceholder="Szukaj kodu GTU..."
-                              emptyText="Nie znaleziono kodu"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="amlGroup"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Grupa AML</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value || ''}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Wybierz grupę ryzyka" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {Object.values(AmlGroup).map((group) => (
-                                <SelectItem key={group} value={group}>
-                                  {AmlGroupLabels[group]}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="companySpecificity"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Specyfika firmy</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Opisz specyfikę działalności..."
-                            className="min-h-[100px] resize-y"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="additionalInfo"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Dodatkowe informacje</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Dodatkowe uwagi..."
-                            className="min-h-[100px] resize-y"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Custom Fields */}
-              {activeFieldDefinitions.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Pola niestandardowe</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
-                      {activeFieldDefinitions
-                        .sort((a, b) => a.displayOrder - b.displayOrder)
-                        .map((definition) => (
-                          <div key={definition.id} className="space-y-2">
-                            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                              {definition.label}
-                              {definition.isRequired && ' *'}
-                            </label>
-                            {renderCustomField(definition)}
-                            {definition.isRequired &&
-                              !customFieldValues[definition.id] &&
-                              form.formState.isSubmitted && (
-                                <p className="text-sm font-medium text-destructive">
-                                  To pole jest wymagane
-                                </p>
-                              )}
-                          </div>
-                        ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              <BasicInfoCard control={form.control} />
+              <TaxEmploymentCard control={form.control} />
+              <AdditionalInfoCard control={form.control} />
+              <CustomFieldsCard
+                definitions={activeFieldDefinitions}
+                values={customFieldValues}
+                isSubmitted={form.formState.isSubmitted}
+                renderField={renderCustomField}
+              />
             </div>
 
             {/* Sidebar - right column */}
             <div className="space-y-6">
-              {/* Dates */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Daty</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="companyStartDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Data rozpoczęcia firmy</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="date"
-                            {...field}
-                            value={
-                              field.value instanceof Date
-                                ? field.value.toISOString().split('T')[0]
-                                : ''
-                            }
-                            onChange={(e) =>
-                              field.onChange(
-                                e.target.value
-                                  ? new Date(e.target.value)
-                                  : undefined
-                              )
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="cooperationStartDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Data rozpoczęcia współpracy</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="date"
-                            {...field}
-                            value={
-                              field.value instanceof Date
-                                ? field.value.toISOString().split('T')[0]
-                                : ''
-                            }
-                            onChange={(e) =>
-                              field.onChange(
-                                e.target.value
-                                  ? new Date(e.target.value)
-                                  : undefined
-                              )
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="suspensionDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Data zawieszenia</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="date"
-                            {...field}
-                            value={
-                              field.value instanceof Date
-                                ? field.value.toISOString().split('T')[0]
-                                : ''
-                            }
-                            onChange={(e) =>
-                              field.onChange(
-                                e.target.value
-                                  ? new Date(e.target.value)
-                                  : undefined
-                              )
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </CardContent>
-              </Card>
+              <DatesCard control={form.control} />
             </div>
           </div>
 

@@ -119,6 +119,23 @@ export interface ImportResultDto {
   errors: { row: number; field: string; message: string }[];
 }
 
+// ============================================
+// PKD Code Types
+// ============================================
+
+export interface PkdCodeOption {
+  code: string;
+  label: string;
+  section: string;
+  division: string;
+}
+
+export interface PkdSearchParams {
+  search?: string;
+  section?: string;
+  limit?: number;
+}
+
 const BASE_URL = '/api/modules/clients';
 
 // Helper function to convert custom field filters to query params
@@ -296,6 +313,19 @@ export const clientsApi = {
     const formData = new FormData();
     formData.append('file', file);
     const { data } = await apiClient.post<ImportResultDto>(`${BASE_URL}/import`, formData);
+    return data;
+  },
+
+  // PKD Codes (lazy loading)
+  searchPkdCodes: async (params?: PkdSearchParams): Promise<PkdCodeOption[]> => {
+    const { data } = await apiClient.get<PkdCodeOption[]>(`${BASE_URL}/pkd-codes/search`, {
+      params,
+    });
+    return data;
+  },
+
+  getPkdSections: async (): Promise<Record<string, string>> => {
+    const { data } = await apiClient.get<Record<string, string>>(`${BASE_URL}/pkd-codes/sections`);
     return data;
   },
 };

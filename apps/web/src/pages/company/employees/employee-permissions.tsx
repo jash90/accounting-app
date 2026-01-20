@@ -23,7 +23,7 @@ export default function EmployeePermissionsPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: employee, isPending: employeeLoading } = useEmployee(id || '');
-  const { data: availableModules = [], isPending: modulesLoading } = useCompanyModules();
+  const { data: availableModules = [], isPending: _modulesLoading } = useCompanyModules();
   const { data: employeeModules = [], isPending: permissionsLoading } = useEmployeeModules(id || '');
   const grantAccess = useGrantModuleAccess();
   const updatePermission = useUpdateModulePermission();
@@ -151,7 +151,7 @@ export default function EmployeePermissionsPage() {
               Brak przyznanych dostępów do modułów.
             </p>
             <p className="text-sm text-muted-foreground mt-1">
-              Kliknij „Nadaj dostęp do modułu", aby rozpocząć.
+              Kliknij &quot;Nadaj dostęp do modułu&quot;, aby rozpocząć.
             </p>
           </CardContent>
         </Card>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Klienci zaktualizowani</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #3b82f6; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+    .field { margin-bottom: 12px; }
+    .label { font-weight: 600; color: #6b7280; font-size: 12px; text-transform: uppercase; }
+    .value { font-size: 16px; margin-top: 4px; }
+    .client-section { margin-top: 20px; background: white; padding: 16px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #e5e7eb; }
+    .client-name { font-weight: 600; color: #374151; font-size: 16px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; }
+    .change-item { padding: 8px 0; border-left: 3px solid #3b82f6; padding-left: 12px; margin-bottom: 8px; }
+    .change-field { font-weight: 600; color: #374151; font-size: 13px; }
+    .change-values { display: flex; align-items: center; margin-top: 4px; font-size: 14px; }
+    .old-value { color: #ef4444; text-decoration: line-through; }
+    .arrow { color: #9ca3af; margin: 0 8px; }
+    .new-value { color: #10b981; font-weight: 500; }
+    .footer { margin-top: 20px; font-size: 12px; color: #9ca3af; text-align: center; }
+    .count-badge { background: #dbeafe; color: #3b82f6; padding: 4px 12px; border-radius: 12px; font-weight: 600; display: inline-block; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 style="margin: 0;">📝 Zaktualizowano klientów <span class="count-badge">{{clientCount}}</span></h1>
+  </div>
+  <div class="content">
+    <div class="field">
+      <div class="label">Firma</div>
+      <div class="value">{{companyName}}</div>
+    </div>
+    <div class="field">
+      <div class="label">Zaktualizowane przez</div>
+      <div class="value">{{updatedByName}}</div>
+    </div>
+    <div class="field">
+      <div class="label">Data aktualizacji</div>
+      <div class="value">{{updatedAt}}</div>
+    </div>
+
+    {{#each clients}}
+    <div class="client-section">
+      <div class="client-name">{{this.name}}</div>
+      {{#each this.changes}}
+      <div class="change-item">
+        <div class="change-field">{{this.field}}</div>
+        <div class="change-values">
+          <span class="old-value">{{this.oldValue}}</span>
+          <span class="arrow">→</span>
+          <span class="new-value">{{this.newValue}}</span>
+        </div>
+      </div>
+      {{/each}}
+    </div>
+    {{/each}}
+  </div>
+  <div class="footer">
+    Ta wiadomość została wygenerowana automatycznie przez system Accounting.
+  </div>
+</body>
+</html>

@@ -1,10 +1,15 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
+/**
+ * Migration to add Time Tracking module tables:
+ * 1. Creates time_projects table for project management
+ * 2. Creates time_entries table for time tracking entries
+ * 3. Creates time_settings table for company-specific settings
+ */
 export class AddTimeTrackingModule1768758559156 implements MigrationInterface {
     name = 'AddTimeTrackingModule1768758559156'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE "change_logs" DROP CONSTRAINT "FK_change_logs_company"`);
         await queryRunner.query(`CREATE TYPE "public"."time_projects_status_enum" AS ENUM('active', 'on_hold', 'completed', 'archived')`);
         await queryRunner.query(`CREATE TABLE "time_projects" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying(255) NOT NULL, "description" text, "code" character varying(50), "color" character varying(7), "status" "public"."time_projects_status_enum" NOT NULL DEFAULT 'active', "budgetMinutes" integer, "budgetAmount" numeric(12,2), "defaultHourlyRate" numeric(10,2), "currency" character varying(3) NOT NULL DEFAULT 'PLN', "isBillableByDefault" boolean NOT NULL DEFAULT true, "startDate" date, "endDate" date, "companyId" uuid NOT NULL, "clientId" uuid, "createdById" uuid NOT NULL, "isActive" boolean NOT NULL DEFAULT true, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_013ad2f9e73a800926795b0a1a2" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE INDEX "IDX_dbc052e97ee88e55d5a5c2f83d" ON "time_projects" ("companyId", "isActive") `);
@@ -76,7 +81,6 @@ export class AddTimeTrackingModule1768758559156 implements MigrationInterface {
         await queryRunner.query(`DROP INDEX "public"."IDX_dbc052e97ee88e55d5a5c2f83d"`);
         await queryRunner.query(`DROP TABLE "time_projects"`);
         await queryRunner.query(`DROP TYPE "public"."time_projects_status_enum"`);
-        await queryRunner.query(`ALTER TABLE "change_logs" ADD CONSTRAINT "FK_change_logs_company" FOREIGN KEY ("companyId") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
     }
 
 }

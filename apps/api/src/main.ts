@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { AppModule } from './app/app.module';
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { SeedersModule } from './seeders/seeders.module';
 import { SeederService } from './seeders/seeder.service';
 import { AllExceptionsFilter } from './common';
@@ -47,12 +48,14 @@ async function bootstrap() {
         return callback(null, true);
       }
 
-      // Allow all localhost origins (any port)
-      if (origin.match(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/)) {
-        return callback(null, true);
+      // Allow all localhost origins (any port) - ONLY in development
+      if (process.env.NODE_ENV !== 'production') {
+        if (origin.match(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/)) {
+          return callback(null, true);
+        }
       }
 
-      // Allow origins from CORS_ORIGINS env variable (for production)
+      // Allow origins from CORS_ORIGINS env variable (for all environments)
       if (allowedOrigins.has(origin)) {
         return callback(null, true);
       }
@@ -139,15 +142,33 @@ async function seedAdminIfNotExists(app: any) {
     if (parseInt(adminExists[0].count) === 0) {
       console.log('Creating admin user...');
 
+      // Get password from environment variable or generate a secure random one
+      let adminPassword = process.env.ADMIN_SEED_PASSWORD;
+      let passwordGenerated = false;
+
+      if (!adminPassword) {
+        // Generate cryptographically secure random password (24 chars)
+        adminPassword = crypto.randomBytes(18).toString('base64url');
+        passwordGenerated = true;
+      }
+
       // Create admin user
-      const hashedPassword = await bcrypt.hash('Admin123!', 10);
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
       await dataSource.query(
         `INSERT INTO users (id, email, password, "firstName", "lastName", role, "companyId", "isActive", "createdAt", "updatedAt")
          VALUES (gen_random_uuid(), 'admin@system.com', $1, 'Admin', 'User', 'ADMIN', NULL, true, NOW(), NOW())`,
         [hashedPassword]
       );
 
-      console.log('✅ Admin user created: admin@system.com / Admin123!');
+      console.log('✅ Admin user created: admin@system.com');
+      if (passwordGenerated) {
+        console.log('   ⚠️  A random password was generated.');
+        console.log('   💡 Set ADMIN_SEED_PASSWORD env var to use a specific password.');
+        console.log('   🔐 Re-deploy with ADMIN_SEED_PASSWORD set to access admin account.');
+        // Security: Password intentionally not logged to prevent exposure in log aggregation
+      } else {
+        console.log('   Password set from ADMIN_SEED_PASSWORD environment variable.');
+      }
     } else {
       console.log('Admin user already exists, skipping seed.');
     }

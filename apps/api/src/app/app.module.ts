@@ -30,7 +30,6 @@ import {
   NotificationSettings,
   ClientDeleteRequest,
   EmailConfiguration,
-  EmailDraft,
   Task,
   TaskLabel,
   TaskLabelAssignment,
@@ -39,6 +38,7 @@ import {
   TimeEntry,
   TimeSettings,
 } from '@accounting/common';
+import { EmailDraft } from '@accounting/modules/email-client';
 import { AuthModule, JwtAuthGuard } from '@accounting/auth';
 import { AdminModule } from '../admin/admin.module';
 import { CompanyModule } from '../company/company.module';

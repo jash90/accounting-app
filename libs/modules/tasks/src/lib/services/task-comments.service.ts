@@ -5,8 +5,8 @@ import {
   Task,
   TaskComment,
   User,
-  TenantService,
 } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
 import { TaskNotFoundException, TaskCommentNotFoundException } from '../exceptions';
 import { CreateTaskCommentDto, UpdateTaskCommentDto } from '../dto/task-comment.dto';
 

@@ -7,8 +7,8 @@ import {
   User,
   UserRole,
   DeleteRequestStatus,
-  TenantService,
 } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
 import { ClientsService } from './clients.service';
 import { ClientChangelogService } from './client-changelog.service';
 import {

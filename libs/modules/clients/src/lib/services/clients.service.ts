@@ -1,6 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
+import { Repository, In, DataSource } from 'typeorm';
+import { randomUUID } from 'crypto';
 import {
   Client,
   User,
@@ -10,9 +11,12 @@ import {
   ZusStatus,
   AmlGroup,
   PaginatedResponseDto,
-  TenantService,
   isValidPkdCode,
+  PKD_CLASSES,
+  PKD_SECTIONS,
+  type PkdCodeOption,
 } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 import { ClientChangelogService } from './client-changelog.service';
 import { AutoAssignService } from './auto-assign.service';
@@ -23,62 +27,12 @@ import {
   BulkEditClientsDto,
   BulkOperationResultDto,
 } from '../dto/bulk-operations.dto';
-
-export interface CreateClientDto {
-  name: string;
-  nip?: string;
-  email?: string;
-  phone?: string;
-  companyStartDate?: Date;
-  cooperationStartDate?: Date;
-  suspensionDate?: Date;
-  companySpecificity?: string;
-  additionalInfo?: string;
-  // Legacy field (kept for backward compatibility)
-  gtuCode?: string;
-  // New array field for multiple GTU codes
-  gtuCodes?: string[];
-  // PKD code (Polska Klasyfikacja Działalności)
-  pkdCode?: string;
-  // Legacy field (kept for backward compatibility)
-  amlGroup?: string;
-  // New enum field for AML group
-  amlGroupEnum?: AmlGroup;
-  // Flag for receiving email copies
-  receiveEmailCopy?: boolean;
-  employmentType?: EmploymentType;
-  vatStatus?: VatStatus;
-  taxScheme?: TaxScheme;
-  zusStatus?: ZusStatus;
-}
-
-export interface UpdateClientDto extends Partial<CreateClientDto> {}
-
-export interface CustomFieldFilter {
-  fieldId: string;
-  operator: string;
-  value: string | string[];
-}
-
-export interface ClientFilters {
-  search?: string;
-  employmentType?: EmploymentType;
-  vatStatus?: VatStatus;
-  taxScheme?: TaxScheme;
-  zusStatus?: ZusStatus;
-  amlGroupEnum?: AmlGroup;
-  gtuCode?: string;
-  pkdCode?: string;
-  receiveEmailCopy?: boolean;
-  isActive?: boolean;
-  cooperationStartDateFrom?: string;
-  cooperationStartDateTo?: string;
-  companyStartDateFrom?: string;
-  companyStartDateTo?: string;
-  customFieldFilters?: CustomFieldFilter[];
-  page?: number;
-  limit?: number;
-}
+import {
+  CreateClientDto,
+  UpdateClientDto,
+  ClientFiltersDto,
+  CustomFieldFilter,
+} from '../dto/client.dto';
 
 @Injectable()
 export class ClientsService {
@@ -87,11 +41,61 @@ export class ClientsService {
   constructor(
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
     private readonly changeLogService: ChangeLogService,
     private readonly clientChangelogService: ClientChangelogService,
     private readonly autoAssignService: AutoAssignService,
     private readonly tenantService: TenantService,
   ) {}
+
+  /**
+   * Search PKD codes server-side to avoid loading all ~659 codes at startup.
+   * Searches by code prefix and name substring, returns top matches.
+   *
+   * @param search - Search term (matches code or name)
+   * @param section - Optional section filter (e.g., 'A', 'B', 'C')
+   * @param limit - Maximum results to return (default 50)
+   * @returns Array of matching PKD codes
+   */
+  searchPkdCodes(search?: string, section?: string, limit = 50): PkdCodeOption[] {
+    let results = PKD_CLASSES.map((pkd) => ({
+      code: pkd.code,
+      label: `${pkd.code} - ${pkd.name}`,
+      section: pkd.section,
+      division: pkd.division,
+    }));
+
+    // Filter by section if provided
+    if (section) {
+      results = results.filter((pkd) => pkd.section === section.toUpperCase());
+    }
+
+    // Filter by search term (code or name)
+    if (search) {
+      const searchLower = search.toLowerCase();
+      results = results.filter(
+        (pkd) =>
+          pkd.code.toLowerCase().includes(searchLower) ||
+          pkd.label.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Return limited results
+    return results.slice(0, limit);
+  }
+
+  /**
+   * Get PKD sections for dropdown.
+   * @returns Object mapping section codes to labels
+   */
+  getPkdSections(): Record<string, string> {
+    const sections: Record<string, string> = {};
+    PKD_SECTIONS.forEach((section) => {
+      sections[section.code] = `${section.code} - ${section.name}`;
+    });
+    return sections;
+  }
 
   /**
    * Escape special characters in LIKE/ILIKE patterns to prevent SQL injection
@@ -105,7 +109,7 @@ export class ClientsService {
 
   async findAll(
     user: User,
-    filters?: ClientFilters,
+    filters?: ClientFiltersDto,
   ): Promise<PaginatedResponseDto<Client>> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
     const page = filters?.page ?? 1;
@@ -414,144 +418,218 @@ export class ClientsService {
 
   /**
    * Bulk delete (soft delete) multiple clients.
+   * Uses transaction to ensure atomicity - all clients are deleted or none.
+   * Includes bulk operation ID for audit trail correlation.
    */
   async bulkDelete(dto: BulkDeleteClientsDto, user: User): Promise<BulkOperationResultDto> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const bulkOperationId = randomUUID();
 
-    // Get clients that belong to this company and are active
-    const clients = await this.clientRepository.find({
-      where: {
-        id: In(dto.clientIds),
+    return this.dataSource.transaction(async (manager) => {
+      const clientRepo = manager.getRepository(Client);
+
+      // Get clients that belong to this company and are active
+      const clients = await clientRepo.find({
+        where: {
+          id: In(dto.clientIds),
+          companyId,
+          isActive: true,
+        },
+      });
+
+      if (clients.length === 0) {
+        return { affected: 0, requested: dto.clientIds.length, bulkOperationId };
+      }
+
+      // Collect old values for changelog before mutation
+      const changelogEntries = clients.map((client) => ({
+        entityId: client.id,
+        data: {
+          ...this.sanitizeClientForLog(client),
+          _bulkOperationId: bulkOperationId,
+        },
+      }));
+
+      // Batch update all clients
+      for (const client of clients) {
+        client.isActive = false;
+        client.updatedById = user.id;
+      }
+      await clientRepo.save(clients);
+
+      // Batch log all deletions in a single database call
+      await this.changeLogService.logBulkDelete('Client', changelogEntries, user);
+
+      // Batch notify about all deleted clients
+      await this.clientChangelogService.notifyBulkClientsDeleted(clients, user);
+
+      this.logger.log(`Bulk deleted ${clients.length} clients`, {
         companyId,
-        isActive: true,
-      },
+        userId: user.id,
+        clientIds: clients.map((c) => c.id),
+        bulkOperationId,
+      });
+
+      return { affected: clients.length, requested: dto.clientIds.length, bulkOperationId };
     });
-
-    if (clients.length === 0) {
-      return { affected: 0, requested: dto.clientIds.length };
-    }
-
-    // Soft delete each client and log the change
-    for (const client of clients) {
-      const oldValues = this.sanitizeClientForLog(client);
-      client.isActive = false;
-      client.updatedById = user.id;
-      await this.clientRepository.save(client);
-
-      await this.changeLogService.logDelete('Client', client.id, oldValues, user);
-      await this.clientChangelogService.notifyClientDeleted(client, user);
-    }
-
-    this.logger.log(`Bulk deleted ${clients.length} clients`, {
-      companyId,
-      userId: user.id,
-      clientIds: clients.map((c) => c.id),
-    });
-
-    return { affected: clients.length, requested: dto.clientIds.length };
   }
 
   /**
    * Bulk restore multiple deleted clients.
+   * Uses transaction to ensure atomicity - all clients are restored or none.
+   * Includes bulk operation ID for audit trail correlation.
    */
   async bulkRestore(dto: BulkRestoreClientsDto, user: User): Promise<BulkOperationResultDto> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const bulkOperationId = randomUUID();
 
-    // Get clients that belong to this company and are inactive
-    const clients = await this.clientRepository.find({
-      where: {
-        id: In(dto.clientIds),
+    return this.dataSource.transaction(async (manager) => {
+      const clientRepo = manager.getRepository(Client);
+
+      // Get clients that belong to this company and are inactive
+      const clients = await clientRepo.find({
+        where: {
+          id: In(dto.clientIds),
+          companyId,
+          isActive: false,
+        },
+      });
+
+      if (clients.length === 0) {
+        return { affected: 0, requested: dto.clientIds.length, bulkOperationId };
+      }
+
+      // Collect old values for changelog before mutation
+      const oldValuesMap = new Map<string, Record<string, unknown>>();
+      for (const client of clients) {
+        oldValuesMap.set(client.id, this.sanitizeClientForLog(client));
+      }
+
+      // Batch update all clients
+      for (const client of clients) {
+        client.isActive = true;
+        client.updatedById = user.id;
+      }
+      await clientRepo.save(clients);
+
+      // Prepare changelog entries with old and new values
+      const changelogEntries = clients.map((client) => ({
+        entityId: client.id,
+        oldData: {
+          ...oldValuesMap.get(client.id)!,
+          _bulkOperationId: bulkOperationId,
+        },
+        newData: {
+          ...this.sanitizeClientForLog(client),
+          _bulkOperationId: bulkOperationId,
+        },
+      }));
+
+      // Batch log all updates in a single database call
+      await this.changeLogService.logBulkUpdate('Client', changelogEntries, user);
+
+      this.logger.log(`Bulk restored ${clients.length} clients`, {
         companyId,
-        isActive: false,
-      },
+        userId: user.id,
+        clientIds: clients.map((c) => c.id),
+        bulkOperationId,
+      });
+
+      return { affected: clients.length, requested: dto.clientIds.length, bulkOperationId };
     });
-
-    if (clients.length === 0) {
-      return { affected: 0, requested: dto.clientIds.length };
-    }
-
-    // Restore each client and log the change
-    for (const client of clients) {
-      const oldValues = this.sanitizeClientForLog(client);
-      client.isActive = true;
-      client.updatedById = user.id;
-      await this.clientRepository.save(client);
-
-      await this.changeLogService.logUpdate(
-        'Client',
-        client.id,
-        oldValues,
-        this.sanitizeClientForLog(client),
-        user,
-      );
-    }
-
-    this.logger.log(`Bulk restored ${clients.length} clients`, {
-      companyId,
-      userId: user.id,
-      clientIds: clients.map((c) => c.id),
-    });
-
-    return { affected: clients.length, requested: dto.clientIds.length };
   }
 
   /**
    * Bulk edit multiple clients with the same values.
+   * Uses transaction to ensure atomicity - all clients are updated or none.
+   * Includes bulk operation ID for audit trail correlation.
    */
   async bulkEdit(dto: BulkEditClientsDto, user: User): Promise<BulkOperationResultDto> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const bulkOperationId = randomUUID();
 
-    // Get clients that belong to this company
-    const clients = await this.clientRepository.find({
-      where: {
-        id: In(dto.clientIds),
-        companyId,
-        isActive: true,
-      },
-    });
-
-    if (clients.length === 0) {
-      return { affected: 0, requested: dto.clientIds.length };
+    // Validate PKD code if provided (before building payload)
+    if (dto.pkdCode && !isValidPkdCode(dto.pkdCode)) {
+      throw new BadRequestException(`Nieprawidłowy kod PKD: ${dto.pkdCode}`);
     }
 
-    // Build update payload from non-undefined values
+    // Build update payload from non-undefined values (outside transaction for validation)
     const updatePayload: Partial<Client> = {};
     if (dto.employmentType !== undefined) updatePayload.employmentType = dto.employmentType;
     if (dto.vatStatus !== undefined) updatePayload.vatStatus = dto.vatStatus;
     if (dto.taxScheme !== undefined) updatePayload.taxScheme = dto.taxScheme;
     if (dto.zusStatus !== undefined) updatePayload.zusStatus = dto.zusStatus;
     if (dto.receiveEmailCopy !== undefined) updatePayload.receiveEmailCopy = dto.receiveEmailCopy;
+    if (dto.pkdCode !== undefined) updatePayload.pkdCode = dto.pkdCode;
 
     if (Object.keys(updatePayload).length === 0) {
-      return { affected: 0, requested: dto.clientIds.length };
+      return { affected: 0, requested: dto.clientIds.length, bulkOperationId };
     }
 
-    // Update each client and log the change
-    for (const client of clients) {
-      const oldValues = this.sanitizeClientForLog(client);
-      Object.assign(client, updatePayload);
-      client.updatedById = user.id;
-      await this.clientRepository.save(client);
+    return this.dataSource.transaction(async (manager) => {
+      const clientRepo = manager.getRepository(Client);
 
-      await this.changeLogService.logUpdate(
-        'Client',
-        client.id,
-        oldValues,
-        this.sanitizeClientForLog(client),
-        user,
-      );
+      // Get clients that belong to this company
+      const clients = await clientRepo.find({
+        where: {
+          id: In(dto.clientIds),
+          companyId,
+          isActive: true,
+        },
+      });
 
-      await this.clientChangelogService.notifyClientUpdated(client, oldValues, user);
-    }
+      if (clients.length === 0) {
+        return { affected: 0, requested: dto.clientIds.length, bulkOperationId };
+      }
 
-    this.logger.log(`Bulk edited ${clients.length} clients`, {
-      companyId,
-      userId: user.id,
-      clientIds: clients.map((c) => c.id),
-      changes: updatePayload,
+      // Collect old values for changelog before mutation
+      const oldValuesMap = new Map<string, Record<string, unknown>>();
+      for (const client of clients) {
+        oldValuesMap.set(client.id, this.sanitizeClientForLog(client));
+      }
+
+      // Batch update all clients
+      for (const client of clients) {
+        Object.assign(client, updatePayload);
+        client.updatedById = user.id;
+      }
+      await clientRepo.save(clients);
+
+      // Prepare changelog entries with old and new values
+      const changelogEntries = clients.map((client) => ({
+        entityId: client.id,
+        oldData: {
+          ...oldValuesMap.get(client.id)!,
+          _bulkOperationId: bulkOperationId,
+        },
+        newData: {
+          ...this.sanitizeClientForLog(client),
+          _bulkOperationId: bulkOperationId,
+        },
+      }));
+
+      // Batch log all updates in a single database call
+      await this.changeLogService.logBulkUpdate('Client', changelogEntries, user);
+
+      // Prepare updates for batch notification
+      const notificationUpdates = clients.map((client) => ({
+        client,
+        oldValues: oldValuesMap.get(client.id)!,
+      }));
+
+      // Batch notify about all updated clients
+      await this.clientChangelogService.notifyBulkClientsUpdated(notificationUpdates, user);
+
+      this.logger.log(`Bulk edited ${clients.length} clients`, {
+        companyId,
+        userId: user.id,
+        clientIds: clients.map((c) => c.id),
+        changes: updatePayload,
+        bulkOperationId,
+      });
+
+      return { affected: clients.length, requested: dto.clientIds.length, bulkOperationId };
     });
-
-    return { affected: clients.length, requested: dto.clientIds.length };
   }
 
   /**

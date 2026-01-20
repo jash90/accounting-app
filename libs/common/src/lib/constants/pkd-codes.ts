@@ -4,6 +4,18 @@
  * Rozporządzenie Rady Ministrów z dnia 18.12.2024 r. (Dz. U. poz. 1936)
  */
 
+/**
+ * Standard PKD code validation regex.
+ * Format: XX.XX.X (e.g., 62.01.Z)
+ * All PKD codes MUST include the suffix letter.
+ */
+export const PKD_CODE_REGEX = /^\d{2}\.\d{2}\.[A-Z]$/;
+
+/**
+ * Standard validation message for PKD code format errors.
+ */
+export const PKD_CODE_VALIDATION_MESSAGE = 'Kod PKD musi być w formacie XX.XX.X (np. 62.01.Z)';
+
 export interface PkdSection {
   code: string;
   name: string;
@@ -183,8 +195,9 @@ export const PKD_DIVISIONS: PkdDivision[] = [
   { code: '99', name: 'Organizacje i zespoły eksterytorialne', section: 'V' },
 ];
 
-// Re-export PKD_CLASSES from separate file
-export { PKD_CLASSES } from './pkd-classes';
+// Import PKD_CLASSES for internal use and re-export for external consumers
+import { PKD_CLASSES } from './pkd-classes';
+export { PKD_CLASSES };
 
 // Helper function to get PKD code with full label (supports both division and class codes)
 export function getPkdLabel(code: string): string {
@@ -195,8 +208,7 @@ export function getPkdLabel(code: string): string {
   }
 
   // Try to find as class (XX.XX.X format)
-  const { PKD_CLASSES } = require('./pkd-classes');
-  const pkdClass = PKD_CLASSES.find((c: PkdClass) => c.code === code);
+  const pkdClass = PKD_CLASSES.find((c) => c.code === code);
   if (pkdClass) {
     return `${pkdClass.code} - ${pkdClass.name}`;
   }
@@ -224,11 +236,10 @@ export function getPkdDivisionsBySection(): Map<string, PkdDivision[]> {
 
 // Get classes grouped by section for UI
 export function getPkdClassesBySection(): Map<string, PkdClass[]> {
-  const { PKD_CLASSES } = require('./pkd-classes');
   const grouped = new Map<string, PkdClass[]>();
 
   PKD_SECTIONS.forEach(section => {
-    const classes = PKD_CLASSES.filter((c: PkdClass) => c.section === section.code);
+    const classes = PKD_CLASSES.filter((c) => c.section === section.code);
     grouped.set(section.code, classes);
   });
 
@@ -237,18 +248,85 @@ export function getPkdClassesBySection(): Map<string, PkdClass[]> {
 
 // Get classes by division code
 export function getPkdClassesByDivision(divisionCode: string): PkdClass[] {
-  const { PKD_CLASSES } = require('./pkd-classes');
-  return PKD_CLASSES.filter((c: PkdClass) => c.division === divisionCode);
+  return PKD_CLASSES.filter((c) => c.division === divisionCode);
 }
 
 // Validate if a PKD code exists
 export function isValidPkdCode(code: string): boolean {
-  const { PKD_CLASSES } = require('./pkd-classes');
-  return PKD_CLASSES.some((c: PkdClass) => c.code === code);
+  return PKD_CLASSES.some((c) => c.code === code);
 }
 
 // Get all valid PKD codes as a Set for fast lookup
 export function getValidPkdCodes(): Set<string> {
-  const { PKD_CLASSES } = require('./pkd-classes');
-  return new Set(PKD_CLASSES.map((c: PkdClass) => c.code));
+  return new Set(PKD_CLASSES.map((c) => c.code));
+}
+
+// =====================================================
+// Frontend-compatible data structures and adapters
+// =====================================================
+
+/**
+ * Frontend-compatible PKD code format
+ * Used by GroupedCombobox and form components
+ */
+export interface PkdCodeOption {
+  code: string;    // e.g., "01.11.Z"
+  label: string;   // e.g., "01.11.Z - Uprawa zbóż"
+  section: string; // e.g., "A"
+  division: string; // e.g., "01"
+}
+
+/**
+ * Frontend-compatible section format for GroupedCombobox groups
+ */
+export interface PkdSectionGroup {
+  key: string;   // e.g., "A"
+  label: string; // e.g., "A - Rolnictwo, leśnictwo i rybactwo"
+}
+
+/**
+ * Get PKD codes in frontend-compatible format
+ * Transforms backend PkdClass[] to PkdCodeOption[]
+ */
+export function getPkdCodesForFrontend(): PkdCodeOption[] {
+  return PKD_CLASSES.map((pkd) => ({
+    code: pkd.code,
+    label: `${pkd.code} - ${pkd.name}`,
+    section: pkd.section,
+    division: pkd.division,
+  }));
+}
+
+/**
+ * Get PKD sections in frontend-compatible format
+ * Transforms PKD_SECTIONS to simple key-label object
+ */
+export function getPkdSectionsForFrontend(): Record<string, string> {
+  const sections: Record<string, string> = {};
+  PKD_SECTIONS.forEach(section => {
+    sections[section.code] = `${section.code} - ${section.name}`;
+  });
+  return sections;
+}
+
+/**
+ * Get PKD section groups for GroupedCombobox
+ */
+export function getPkdSectionGroups(): PkdSectionGroup[] {
+  return PKD_SECTIONS.map(section => ({
+    key: section.code,
+    label: `${section.code} - ${section.name}`,
+  }));
+}
+
+/**
+ * Get PKD codes as combobox options format
+ * Ready for use with GroupedCombobox component
+ */
+export function getPkdComboboxOptions(): Array<{ value: string; label: string; group: string }> {
+  return PKD_CLASSES.map((pkd) => ({
+    value: pkd.code,
+    label: `${pkd.code} - ${pkd.name}`,
+    group: pkd.section,
+  }));
 }

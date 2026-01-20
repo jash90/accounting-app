@@ -1,9 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthContext } from '@/contexts/auth-context';
-import { UserRole } from '@/types/enums';
 import {
   Dialog,
   DialogContent,
@@ -42,15 +40,18 @@ import {
   TaxSchemeLabels,
   ZusStatusLabels,
   AmlGroup,
-  CustomFieldType,
 } from '@/types/enums';
 import { Maximize2 } from 'lucide-react';
-import { AmlGroupLabels, GTU_CODES, PKD_CODES, PKD_SECTIONS } from '@/lib/constants/polish-labels';
+import { useToast } from '@/components/ui/use-toast';
+import { AmlGroupLabels, GTU_CODES } from '@/lib/constants/polish-labels';
+import { usePkdSearch, usePkdCode } from '@/lib/hooks/use-pkd-search';
 import { Combobox } from '@/components/ui/combobox';
 import { GroupedCombobox } from '@/components/ui/grouped-combobox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useFieldDefinitions } from '@/lib/hooks/use-clients';
 import { ClientFieldDefinition } from '@/types/entities';
+import { CustomFieldRenderer } from '@/components/clients/custom-field-renderer';
+import { useModuleCreatePath } from '@/lib/hooks/use-module-base-path';
 
 interface ClientFormDialogProps {
   open: boolean;
@@ -66,24 +67,14 @@ export function ClientFormDialog({
   onSubmit,
 }: ClientFormDialogProps) {
   const navigate = useNavigate();
-  const { user } = useAuthContext();
+  const { toast } = useToast();
+  const createPath = useModuleCreatePath('clients');
   const isEditing = !!client;
   const schema = isEditing ? updateClientSchema : createClientSchema;
 
-  const getCreatePath = () => {
-    switch (user?.role) {
-      case UserRole.ADMIN:
-        return '/admin/modules/clients/create';
-      case UserRole.COMPANY_OWNER:
-        return '/company/modules/clients/create';
-      default:
-        return '/modules/clients/create';
-    }
-  };
-
   const handleMaximize = () => {
     onOpenChange(false);
-    navigate(getCreatePath());
+    navigate(createPath);
   };
 
   // Fetch field definitions
@@ -145,6 +136,48 @@ export function ClientFormDialog({
     defaultValues: getDefaultValues(client),
   });
 
+  // PKD search hook for server-side search
+  const {
+    options: pkdSearchOptions,
+    groups: pkdGroups,
+    setSearch: setPkdSearch,
+    isLoading: pkdIsLoading,
+    isFetching: pkdIsFetching,
+  } = usePkdSearch();
+
+  // Get the currently selected PKD code (for editing)
+  const currentPkdValue = form.watch('pkdCode');
+  const selectedPkdCode = usePkdCode(currentPkdValue);
+
+  // Merge selected PKD code into options if not already present
+  const pkdOptions = useMemo(() => {
+    if (!selectedPkdCode) return pkdSearchOptions;
+
+    // Check if the selected code is already in search results
+    const isInResults = pkdSearchOptions.some(opt => opt.value === selectedPkdCode.code);
+    if (isInResults) return pkdSearchOptions;
+
+    // Add selected code at the beginning for visibility
+    return [
+      {
+        value: selectedPkdCode.code,
+        label: selectedPkdCode.label,
+        group: selectedPkdCode.section,
+      },
+      ...pkdSearchOptions,
+    ];
+  }, [pkdSearchOptions, selectedPkdCode]);
+
+  // Memoize GTU_CODES transformation to avoid recreating on every render
+  const gtuOptions = useMemo(
+    () =>
+      GTU_CODES.map((gtu) => ({
+        value: gtu.code,
+        label: gtu.label,
+      })),
+    []
+  );
+
   // Helper to compute initial custom field values from client data
   const getInitialCustomFieldValues = useCallback(
     (clientData?: ClientResponseDto): Record<string, string> => {
@@ -159,6 +192,8 @@ export function ClientFormDialog({
   );
 
   // Handle dialog open/close - initialize or reset state based on transition
+  // Note: If client prop changes while dialog is open, it will update on next open/close cycle.
+  // For immediate updates when client changes, the parent should use key={client?.id} on this component.
   const handleOpenChange = useCallback(
     (newOpen: boolean) => {
       if (newOpen) {
@@ -189,8 +224,12 @@ export function ClientFormDialog({
       .map((fd) => fd.label);
 
     if (missingRequiredFields.length > 0) {
-      // Trigger form validation state to show error messages
-      // The error messages are shown inline next to each field
+      // Show toast notification for missing required fields
+      toast({
+        title: 'Brakujące pola wymagane',
+        description: `Proszę wypełnić następujące pola: ${missingRequiredFields.join(', ')}`,
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -226,76 +265,13 @@ export function ClientFormDialog({
   const renderCustomField = (definition: ClientFieldDefinition) => {
     const value = customFieldValues[definition.id] || '';
 
-    switch (definition.fieldType) {
-      case CustomFieldType.TEXT:
-        return (
-          <Input
-            value={value}
-            onChange={(e) => handleCustomFieldChange(definition.id, e.target.value)}
-            placeholder={definition.label}
-          />
-        );
-
-      case CustomFieldType.NUMBER:
-        return (
-          <Input
-            type="number"
-            value={value}
-            onChange={(e) => handleCustomFieldChange(definition.id, e.target.value)}
-            placeholder={definition.label}
-          />
-        );
-
-      case CustomFieldType.DATE:
-        return (
-          <Input
-            type="date"
-            value={value}
-            onChange={(e) => handleCustomFieldChange(definition.id, e.target.value)}
-          />
-        );
-
-      case CustomFieldType.BOOLEAN:
-        return (
-          <div className="flex items-center space-x-2">
-            <Switch
-              checked={value === 'true'}
-              onCheckedChange={(checked) => handleCustomFieldChange(definition.id, String(checked))}
-            />
-            <span className="text-sm text-muted-foreground">
-              {value === 'true' ? 'Tak' : 'Nie'}
-            </span>
-          </div>
-        );
-
-      case CustomFieldType.ENUM:
-        return (
-          <Select
-            value={value}
-            onValueChange={(v) => handleCustomFieldChange(definition.id, v)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Wybierz..." />
-            </SelectTrigger>
-            <SelectContent>
-              {definition.enumValues?.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        );
-
-      default:
-        return (
-          <Input
-            value={value}
-            onChange={(e) => handleCustomFieldChange(definition.id, e.target.value)}
-            placeholder={definition.label}
-          />
-        );
-    }
+    return (
+      <CustomFieldRenderer
+        definition={definition}
+        value={value}
+        onChange={(newValue) => handleCustomFieldChange(definition.id, newValue)}
+      />
+    );
   };
 
   return (
@@ -657,20 +633,15 @@ export function ClientFormDialog({
                         <FormLabel>Główny kod PKD</FormLabel>
                         <FormControl>
                           <GroupedCombobox
-                            options={PKD_CODES.map((pkd) => ({
-                              value: pkd.code,
-                              label: pkd.label,
-                              group: pkd.section,
-                            }))}
-                            groups={Object.entries(PKD_SECTIONS).map(([key, label]) => ({
-                              key,
-                              label,
-                            }))}
+                            options={pkdOptions}
+                            groups={pkdGroups}
                             value={field.value || null}
                             onChange={(value) => field.onChange(value || '')}
                             placeholder="Wybierz kod PKD"
                             searchPlaceholder="Szukaj kodu PKD..."
                             emptyText="Nie znaleziono kodu"
+                            onSearchChange={setPkdSearch}
+                            isLoading={pkdIsLoading || pkdIsFetching}
                           />
                         </FormControl>
                         <FormMessage />
@@ -686,10 +657,7 @@ export function ClientFormDialog({
                         <FormLabel>Kod GTU</FormLabel>
                         <FormControl>
                           <Combobox
-                            options={GTU_CODES.map((gtu) => ({
-                              value: gtu.code,
-                              label: gtu.label,
-                            }))}
+                            options={gtuOptions}
                             value={field.value || null}
                             onChange={(value) => field.onChange(value || '')}
                             placeholder="Wybierz kod GTU"

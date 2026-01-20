@@ -9,8 +9,8 @@ import {
   VatStatus,
   TaxScheme,
   ZusStatus,
-  TenantService,
 } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
 import {
   ClientStatisticsDto,
   ClientStatisticsWithRecentDto,

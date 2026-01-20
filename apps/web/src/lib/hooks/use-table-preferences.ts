@@ -1,8 +1,23 @@
 import { useState, useCallback, useEffect } from 'react';
 
+/**
+ * Current version of the preferences schema.
+ * Increment this when making breaking changes to the stored format.
+ */
+const PREFERENCES_VERSION = 1;
+
 export type ViewMode = 'table' | 'grid';
 
 export interface TablePreferences {
+  viewMode: ViewMode;
+  visibleColumns: string[];
+}
+
+/**
+ * Internal storage format with versioning support.
+ */
+interface StoredPreferences {
+  version: number;
   viewMode: ViewMode;
   visibleColumns: string[];
 }
@@ -27,13 +42,60 @@ function getStorageKey(tableId: string): string {
   return `table_preferences_${tableId}`;
 }
 
+/**
+ * Migrates preferences from older versions to the current version.
+ * Add migration logic here when PREFERENCES_VERSION is incremented.
+ *
+ * @param stored - The stored preferences object
+ * @returns Migrated preferences or null if migration fails
+ */
+function migratePreferences(stored: StoredPreferences): StoredPreferences | null {
+  const version = stored.version ?? 0;
+
+  // Already at current version
+  if (version === PREFERENCES_VERSION) {
+    return stored;
+  }
+
+  // Migration from version 0 (unversioned) to version 1
+  if (version === 0) {
+    // Version 1 just adds the version field, no data changes needed
+    return {
+      ...stored,
+      version: PREFERENCES_VERSION,
+    };
+  }
+
+  // Future migrations would go here:
+  // if (version === 1) {
+  //   // Migrate from v1 to v2
+  //   stored = { ...stored, newField: defaultValue, version: 2 };
+  // }
+
+  // Unknown version - return null to trigger reset to defaults
+  if (import.meta.env.DEV) {
+    console.warn(
+      `Unknown preferences version ${version}, resetting to defaults. ` +
+      `Current version: ${PREFERENCES_VERSION}`
+    );
+  }
+  return null;
+}
+
 function loadFromStorage(tableId: string): TablePreferences | null {
   try {
     const stored = localStorage.getItem(getStorageKey(tableId));
     if (stored) {
-      const parsed = JSON.parse(stored);
+      const parsed = JSON.parse(stored) as StoredPreferences;
       if (parsed && typeof parsed.viewMode === 'string' && Array.isArray(parsed.visibleColumns)) {
-        return parsed;
+        // Migrate if needed
+        const migrated = migratePreferences(parsed);
+        if (migrated) {
+          return {
+            viewMode: migrated.viewMode,
+            visibleColumns: migrated.visibleColumns,
+          };
+        }
       }
     }
   } catch {
@@ -44,9 +106,22 @@ function loadFromStorage(tableId: string): TablePreferences | null {
 
 function saveToStorage(tableId: string, preferences: TablePreferences): void {
   try {
-    localStorage.setItem(getStorageKey(tableId), JSON.stringify(preferences));
-  } catch {
-    // Ignore storage errors (e.g., quota exceeded)
+    const storedPreferences: StoredPreferences = {
+      version: PREFERENCES_VERSION,
+      viewMode: preferences.viewMode,
+      visibleColumns: preferences.visibleColumns,
+    };
+    localStorage.setItem(getStorageKey(tableId), JSON.stringify(storedPreferences));
+  } catch (error) {
+    // Storage quota may be exceeded - warn user in development
+    if (import.meta.env.DEV) {
+      console.warn(
+        'Failed to save table preferences - storage quota may be exceeded.',
+        error
+      );
+    }
+    // In production, silently fail but could optionally notify user
+    // via toast or other mechanism if critical
   }
 }
 
@@ -73,8 +148,11 @@ export function useTablePreferences(
         .filter((col) => col.alwaysVisible)
         .map((col) => col.id);
 
+      // Preserve user's column order by filtering stored columns first,
+      // then prepending always-visible columns that may be missing
       const mergedVisibleColumns = [
-        ...new Set([...alwaysVisibleColumns, ...stored.visibleColumns]),
+        ...alwaysVisibleColumns,
+        ...stored.visibleColumns.filter((id) => !alwaysVisibleColumns.includes(id)),
       ];
 
       return {
@@ -127,8 +205,9 @@ export function useTablePreferences(
   );
 
   const resetToDefaults = useCallback(() => {
-    setPreferences(defaultPrefs);
-  }, [defaultPrefs]);
+    // Recalculate defaults from current columns to avoid stale closure
+    setPreferences(getDefaultPreferences(columns));
+  }, [columns]);
 
   return {
     viewMode: preferences.viewMode,

@@ -70,6 +70,7 @@ import {
 import { AmlGroupLabels } from '@/lib/constants/polish-labels';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import { toast } from '@/components/ui/use-toast';
 
 export default function ClientsListPage() {
   const { user } = useAuthContext();
@@ -222,7 +223,15 @@ export default function ClientsListPage() {
   }, [bulkEdit]);
 
   const handleExport = useCallback(async () => {
-    await exportClients.mutateAsync(filters);
+    try {
+      await exportClients.mutateAsync(filters);
+    } catch (error) {
+      toast({
+        title: 'Błąd eksportu',
+        description: error instanceof Error ? error.message : 'Nie udało się wyeksportować klientów',
+        variant: 'destructive',
+      });
+    }
   }, [exportClients, filters]);
 
   const handleImport = useCallback(async (file: File) => {
@@ -231,8 +240,27 @@ export default function ClientsListPage() {
   }, [importClients]);
 
   const handleDownloadTemplate = useCallback(async () => {
-    await downloadTemplate.mutateAsync();
+    try {
+      await downloadTemplate.mutateAsync();
+    } catch (error) {
+      toast({
+        title: 'Błąd pobierania szablonu',
+        description: error instanceof Error ? error.message : 'Nie udało się pobrać szablonu importu',
+        variant: 'destructive',
+      });
+    }
   }, [downloadTemplate]);
+
+  const createClientAndClose = useCallback(async (data: CreateClientDto, customFields?: { values: Record<string, unknown> }) => {
+    const newClient = await createClient.mutateAsync(data);
+    if (customFields && Object.keys(customFields.values).length > 0) {
+      await setCustomFields.mutateAsync({
+        id: newClient.id,
+        data: customFields,
+      });
+    }
+    setCreateOpen(false);
+  }, [createClient, setCustomFields]);
 
   const handleCreateWithDuplicateCheck = useCallback(async (data: CreateClientDto, customFields?: { values: Record<string, unknown> }) => {
     // Check for duplicates first
@@ -252,18 +280,7 @@ export default function ClientsListPage() {
 
     // No duplicates, proceed with creation
     await createClientAndClose(data, customFields);
-  }, [checkDuplicates]);
-
-  const createClientAndClose = async (data: CreateClientDto, customFields?: { values: Record<string, unknown> }) => {
-    const newClient = await createClient.mutateAsync(data);
-    if (customFields && Object.keys(customFields.values).length > 0) {
-      await setCustomFields.mutateAsync({
-        id: newClient.id,
-        data: customFields,
-      });
-    }
-    setCreateOpen(false);
-  };
+  }, [checkDuplicates, createClientAndClose]);
 
   const handleProceedWithDuplicate = useCallback(async () => {
     if (!pendingCreateData) return;
@@ -276,7 +293,7 @@ export default function ClientsListPage() {
     } catch {
       // Error handled by mutation
     }
-  }, [pendingCreateData]);
+  }, [pendingCreateData, createClientAndClose]);
 
   const handleCancelDuplicate = useCallback(() => {
     setDuplicateWarningOpen(false);
@@ -700,7 +717,27 @@ export default function ClientsListPage() {
             onOpenChange={setCreateOpen}
             onSubmit={async (data, customFields) => {
               try {
-                await handleCreateWithDuplicateCheck(data as CreateClientDto, customFields);
+                // Transform form data to CreateClientDto with proper validation
+                const createDto: CreateClientDto = {
+                  name: data.name,
+                  nip: data.nip || undefined,
+                  email: data.email || undefined,
+                  phone: data.phone || undefined,
+                  companyStartDate: data.companyStartDate,
+                  cooperationStartDate: data.cooperationStartDate,
+                  suspensionDate: data.suspensionDate,
+                  companySpecificity: data.companySpecificity || undefined,
+                  additionalInfo: data.additionalInfo || undefined,
+                  gtuCode: data.gtuCode || undefined,
+                  pkdCode: data.pkdCode || undefined,
+                  amlGroup: data.amlGroup || undefined,
+                  employmentType: data.employmentType,
+                  vatStatus: data.vatStatus,
+                  taxScheme: data.taxScheme,
+                  zusStatus: data.zusStatus,
+                  receiveEmailCopy: data.receiveEmailCopy,
+                };
+                await handleCreateWithDuplicateCheck(createDto, customFields);
               } catch {
                 // Error is handled by mutation's onError callback
                 // Dialog stays open so user can retry
@@ -710,6 +747,7 @@ export default function ClientsListPage() {
 
           {editingClient && (
             <ClientFormDialog
+              key={editingClient.id}
               open={!!editingClient}
               onOpenChange={(open) => !open && setEditingClient(null)}
               client={editingClient}

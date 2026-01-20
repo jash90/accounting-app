@@ -5,8 +5,8 @@ import {
   Task,
   TaskDependency,
   User,
-  TenantService,
 } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
 import {
   TaskNotFoundException,
   TaskDependencyNotFoundException,

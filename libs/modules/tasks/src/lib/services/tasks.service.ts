@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Brackets } from 'typeorm';
+import { Repository, In, Brackets, DataSource } from 'typeorm';
 import {
   Task,
   TaskLabel,
@@ -9,8 +9,8 @@ import {
   TaskStatus,
   TaskStatusLabels,
   PaginatedResponseDto,
-  TenantService,
 } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 import { TaskNotFoundException, TaskInvalidParentException } from '../exceptions';
 import {
@@ -27,6 +27,19 @@ import {
 } from '../dto/task-response.dto';
 import { TaskNotificationService } from './task-notification.service';
 
+/**
+ * Valid status transitions for tasks.
+ * Prevents invalid state changes and ensures workflow integrity.
+ */
+const VALID_STATUS_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
+  [TaskStatus.BACKLOG]: [TaskStatus.TODO, TaskStatus.CANCELLED],
+  [TaskStatus.TODO]: [TaskStatus.IN_PROGRESS, TaskStatus.BACKLOG, TaskStatus.CANCELLED],
+  [TaskStatus.IN_PROGRESS]: [TaskStatus.IN_REVIEW, TaskStatus.TODO, TaskStatus.CANCELLED],
+  [TaskStatus.IN_REVIEW]: [TaskStatus.DONE, TaskStatus.IN_PROGRESS, TaskStatus.CANCELLED],
+  [TaskStatus.DONE]: [TaskStatus.IN_PROGRESS], // Allow reopening
+  [TaskStatus.CANCELLED]: [TaskStatus.BACKLOG, TaskStatus.TODO], // Allow restoring
+};
+
 @Injectable()
 export class TasksService {
   private readonly logger = new Logger(TasksService.name);
@@ -41,6 +54,7 @@ export class TasksService {
     private readonly changeLogService: ChangeLogService,
     private readonly tenantService: TenantService,
     private readonly taskNotificationService: TaskNotificationService,
+    private readonly dataSource: DataSource,
   ) {}
 
   private escapeLikePattern(pattern: string): string {
@@ -341,6 +355,11 @@ export class TasksService {
       }
     }
 
+    // Validate assignee ownership if provided
+    if (dto.assigneeId) {
+      await this.validateAssigneeOwnership(dto.assigneeId, companyId);
+    }
+
     // Get max sort order
     const maxSortOrder = await this.taskRepository
       .createQueryBuilder('task')
@@ -407,11 +426,16 @@ export class TasksService {
     const task = await this.findOne(id, user);
     const oldValues = this.sanitizeTaskForLog(task);
     const oldClientId = task.clientId;
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+
+    // Validate status transition if status is being changed
+    if (dto.status !== undefined && dto.status !== task.status) {
+      this.validateStatusTransition(task.status, dto.status);
+    }
 
     // Validate new parent if provided
     if (dto.parentTaskId !== undefined && dto.parentTaskId !== task.parentTaskId) {
       if (dto.parentTaskId) {
-        const companyId = await this.tenantService.getEffectiveCompanyId(user);
         const parentTask = await this.taskRepository.findOne({
           where: { id: dto.parentTaskId, companyId },
         });
@@ -425,6 +449,11 @@ export class TasksService {
       }
     }
 
+    // Validate assignee ownership if being changed
+    if (dto.assigneeId !== undefined && dto.assigneeId !== task.assigneeId && dto.assigneeId !== null) {
+      await this.validateAssigneeOwnership(dto.assigneeId, companyId);
+    }
+
     const { labelIds, ...taskData } = dto;
 
     Object.assign(task, taskData);
@@ -436,7 +465,6 @@ export class TasksService {
       await this.labelAssignmentRepository.delete({ taskId: id });
 
       if (labelIds.length > 0) {
-        const companyId = await this.tenantService.getEffectiveCompanyId(user);
         const labels = await this.labelRepository.find({
           where: { id: In(labelIds), companyId, isActive: true },
         });
@@ -573,6 +601,44 @@ export class TasksService {
     }
 
     return false;
+  }
+
+  /**
+   * Validates that a status transition is allowed.
+   * Throws BadRequestException if the transition is invalid.
+   *
+   * @param from - Current task status
+   * @param to - Target task status
+   * @throws BadRequestException if transition is not allowed
+   */
+  private validateStatusTransition(from: TaskStatus, to: TaskStatus): void {
+    const allowedTransitions = VALID_STATUS_TRANSITIONS[from];
+
+    if (!allowedTransitions || !allowedTransitions.includes(to)) {
+      const fromLabel = TaskStatusLabels[from] || from;
+      const toLabel = TaskStatusLabels[to] || to;
+      const allowedLabels = allowedTransitions
+        ?.map((s) => TaskStatusLabels[s] || s)
+        .join(', ') || 'none';
+
+      throw new BadRequestException(
+        `Nieprawidłowa zmiana statusu: ${fromLabel} → ${toLabel}. ` +
+        `Dozwolone przejścia z "${fromLabel}": ${allowedLabels}`
+      );
+    }
+  }
+
+  /**
+   * Validates that an assignee belongs to the specified company.
+   * Throws NotFoundException if user doesn't exist or doesn't belong to company.
+   */
+  private async validateAssigneeOwnership(assigneeId: string, companyId: string): Promise<void> {
+    const user = await this.dataSource.getRepository('User').findOne({
+      where: { id: assigneeId, companyId, isActive: true },
+    });
+    if (!user) {
+      throw new NotFoundException('Użytkownik nie należy do tej firmy lub nie istnieje');
+    }
   }
 
   private sanitizeTaskForLog(task: Task): Record<string, unknown> {

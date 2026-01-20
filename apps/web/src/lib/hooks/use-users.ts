@@ -1,8 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
 import { usersApi } from '../api/endpoints/users';
 import { queryKeys } from '../api/query-client';
-import { CreateUserDto, UpdateUserDto, UserDto } from '@/types/dtos';
+import { CreateUserDto, UpdateUserDto } from '@/types/dtos';
 import { useToast } from '@/components/ui/use-toast';
+
+interface ApiErrorResponse {
+  message?: string;
+  error?: string;
+  statusCode?: number;
+}
 
 export function useUsers() {
   return useQuery({
@@ -36,7 +43,7 @@ export function useCreateUser() {
         description: 'Użytkownik został utworzony',
       });
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<ApiErrorResponse>) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się utworzyć użytkownika',
@@ -61,7 +68,7 @@ export function useUpdateUser() {
         description: 'Użytkownik został zaktualizowany',
       });
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<ApiErrorResponse>) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się zaktualizować użytkownika',
@@ -84,7 +91,7 @@ export function useDeleteUser() {
         description: 'Użytkownik został usunięty',
       });
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<ApiErrorResponse>) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się usunąć użytkownika',

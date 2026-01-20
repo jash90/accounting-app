@@ -8,7 +8,8 @@ import { DiscoveryCacheService } from './services/discovery-cache.service';
 import { ProviderLookupService } from './services/provider-lookup.service';
 import { DnsDiscoveryService } from './services/dns-discovery.service';
 import { EmailConfigurationController } from './controllers/email-configuration.controller';
-import { EmailConfiguration, Company, CommonModule } from '@accounting/common';
+import { EmailConfiguration, Company } from '@accounting/common';
+import { CommonModule } from '@accounting/common/backend';
 import { AuthModule } from '@accounting/auth';
 import { RBACModule } from '@accounting/rbac';
 
