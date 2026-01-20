@@ -102,12 +102,12 @@ export const GTU_CODES = [
 export type GtuCode = typeof GTU_CODES[number]['code'];
 
 // PKD 2025 - Polska Klasyfikacja Działalności (657 kodów na poziomie klasy)
-// Import from shared constants library (browser-safe, no Node.js dependencies)
+// Import from browser-safe subpath (no TypeORM/Node.js dependencies)
 import {
   getPkdCodesForFrontend,
   getPkdSectionsForFrontend,
   type PkdCodeOption,
-} from '@accounting/common';
+} from '@accounting/common/browser';
 
 // Re-export with backwards-compatible names and proper types
 export const PKD_CODES: PkdCodeOption[] = getPkdCodesForFrontend();

@@ -317,6 +317,7 @@ export class CustomFieldsService {
         clientId: dto.clientId,
         fieldDefinitionId: dto.fieldDefinitionId,
         value: dto.value ?? undefined,
+        companyId,
       });
     }
 
@@ -376,6 +377,7 @@ export class CustomFieldsService {
             clientId,
             fieldDefinitionId,
             value: value ?? undefined,
+            companyId,
           });
         }
 
