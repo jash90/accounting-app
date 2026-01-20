@@ -147,7 +147,13 @@ async function seedAdminIfNotExists(app: any) {
       let passwordGenerated = false;
 
       if (!adminPassword) {
-        // Generate cryptographically secure random password (24 chars)
+        // In production, require ADMIN_SEED_PASSWORD to be set for security
+        if (process.env.NODE_ENV === 'production') {
+          console.error('❌ ADMIN_SEED_PASSWORD environment variable is required in production');
+          console.error('   Set ADMIN_SEED_PASSWORD to a secure password before deploying');
+          process.exit(1);
+        }
+        // Generate cryptographically secure random password (24 chars) for non-production
         adminPassword = crypto.randomBytes(18).toString('base64url');
         passwordGenerated = true;
       }

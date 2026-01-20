@@ -28,14 +28,14 @@ export default async function globalSetup() {
     // Verify PostgreSQL version
     const result = await client.query('SELECT version()');
     console.log(`📊 PostgreSQL: ${result.rows[0].version.split(',')[0]}`);
-
-    await client.end();
   } catch (error: any) {
     console.error('❌ Failed to connect to test database');
     console.error(`   Error: ${error.message}`);
     console.error('\n💡 Make sure the test database is running:');
     console.error('   docker-compose -f test/integration/docker-compose.yml up -d');
     process.exit(1);
+  } finally {
+    await client.end();
   }
 
   console.log('========================\n');

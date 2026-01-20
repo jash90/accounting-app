@@ -516,11 +516,14 @@ export default function ClientsListPage() {
           }
 
           if (field.fieldType === 'DATE') {
-            try {
-              return <span className="text-sm">{new Date(value).toLocaleDateString('pl-PL')}</span>;
-            } catch {
-              return <span className="text-sm">{value}</span>;
+            const dateValue = new Date(value);
+            // Check if date is valid (getTime() returns NaN for invalid dates)
+            if (!isNaN(dateValue.getTime())) {
+              return <span className="text-sm">{dateValue.toLocaleDateString('pl-PL')}</span>;
             }
+            // Log invalid date for debugging
+            console.error(`Invalid date value for field "${field.label}":`, value);
+            return <span className="text-sm">{value}</span>;
           }
 
           return <span className="text-sm truncate max-w-[150px] block">{value}</span>;

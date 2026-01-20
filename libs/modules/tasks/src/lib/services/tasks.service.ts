@@ -546,6 +546,15 @@ export class TasksService {
       });
     }
 
+    // Validate status transitions if newStatus is provided
+    if (dto.newStatus) {
+      for (const task of tasks) {
+        if (task.status !== dto.newStatus) {
+          this.validateStatusTransition(task.status, dto.newStatus);
+        }
+      }
+    }
+
     // Update sort orders
     for (let i = 0; i < dto.taskIds.length; i++) {
       await this.taskRepository.update(
@@ -557,6 +566,17 @@ export class TasksService {
 
   async bulkUpdateStatus(dto: BulkUpdateStatusDto, user: User): Promise<{ updated: number }> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
+
+    // Validate status transitions for all tasks
+    const tasks = await this.taskRepository.find({
+      where: { id: In(dto.taskIds), companyId },
+    });
+
+    for (const task of tasks) {
+      if (task.status !== dto.status) {
+        this.validateStatusTransition(task.status, dto.status);
+      }
+    }
 
     const result = await this.taskRepository.update(
       { id: In(dto.taskIds), companyId },

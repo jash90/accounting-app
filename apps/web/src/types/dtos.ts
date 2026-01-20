@@ -10,6 +10,8 @@ import {
   TaskStatus,
   TaskPriority,
   TaskDependencyType,
+  TimeEntryStatus,
+  TimeRoundingMethod,
 } from './enums';
 import {
   Client,
@@ -22,6 +24,8 @@ import {
   TaskComment,
   TaskDependency,
   AcceptanceCriterion,
+  TimeEntry,
+  TimeSettings,
 } from './entities';
 
 // Re-export for external consumers
@@ -766,15 +770,6 @@ export interface TaskDependencyResponseDto extends TaskDependency {
 // =============================================
 // Time Tracking DTOs
 // =============================================
-
-import {
-  TimeEntry,
-  TimeSettings,
-} from './entities';
-import {
-  TimeEntryStatus,
-  TimeRoundingMethod,
-} from './enums';
 
 // Time Entry DTOs
 export interface CreateTimeEntryDto {

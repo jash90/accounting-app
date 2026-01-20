@@ -237,7 +237,6 @@ export class CustomFieldsService {
         ClientErrorCode.CLIENT_BATCH_OPERATION_FAILED,
         'Failed to hard delete field definition',
         {
-          clientId: id, // Using clientId field for the definition ID
           companyId,
           operationStage: 'hardDeleteDefinition',
           additionalInfo: {

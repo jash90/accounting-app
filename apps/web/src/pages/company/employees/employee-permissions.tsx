@@ -92,7 +92,7 @@ export default function EmployeePermissionsPage() {
     (module) => !employeeModules.some((em) => em.module?.slug === module.slug)
   );
 
-  if (employeeLoading || permissionsLoading) {
+  if (employeeLoading || permissionsLoading || _modulesLoading) {
     return (
       <div className="space-y-6">
         <div className="h-8 bg-apptax-soft-teal/30 rounded w-1/3 animate-pulse" />

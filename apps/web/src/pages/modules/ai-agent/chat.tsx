@@ -116,9 +116,13 @@ export default function AIAgentChatPage() {
 
   const confirmDeleteConversation = async () => {
     if (conversationToDelete) {
-      await deleteConversation.mutateAsync(conversationToDelete);
-      if (selectedConversationId === conversationToDelete) {
-        setSelectedConversationId(null);
+      try {
+        await deleteConversation.mutateAsync(conversationToDelete);
+        if (selectedConversationId === conversationToDelete) {
+          setSelectedConversationId(null);
+        }
+      } catch {
+        // Error is handled by the mutation's error state
       }
     }
     setDeleteDialogOpen(false);
@@ -364,7 +368,12 @@ export default function AIAgentChatPage() {
       </div>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => {
+        setDeleteDialogOpen(open);
+        if (!open) {
+          setConversationToDelete(null);
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Usuń rozmowę</AlertDialogTitle>
@@ -373,7 +382,7 @@ export default function AIAgentChatPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConversationToDelete(null)}>
+            <AlertDialogCancel>
               Anuluj
             </AlertDialogCancel>
             <AlertDialogAction

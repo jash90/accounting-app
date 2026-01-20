@@ -42,6 +42,9 @@ export class TimeSettingsService {
   /**
    * Get settings for the current company, creating default if not exists.
    * Results are cached for 5 minutes per company.
+   *
+   * Uses INSERT ... ON CONFLICT to handle race conditions when multiple
+   * requests try to create settings simultaneously for the same company.
    */
   async getSettings(user: User): Promise<TimeSettings> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
@@ -57,8 +60,10 @@ export class TimeSettingsService {
     });
 
     if (!settings) {
-      // Create default settings
-      settings = this.settingsRepository.create({
+      // Use upsert pattern to handle race conditions.
+      // If two requests arrive simultaneously for a company without settings,
+      // ON CONFLICT ensures only one row is created and the other gets the existing row.
+      const defaultSettings = {
         companyId,
         roundingMethod: TimeRoundingMethod.NONE,
         roundingIntervalMinutes: 15,
@@ -75,9 +80,45 @@ export class TimeSettingsService {
         maximumEntryMinutes: 0,
         enableDailyReminder: false,
         lockEntriesAfterDays: 0,
-      });
-      settings = await this.settingsRepository.save(settings);
-      this.logger.log(`Created default time settings for company ${companyId}`);
+      };
+
+      try {
+        // Try to insert with ON CONFLICT DO NOTHING to handle race conditions
+        await this.settingsRepository
+          .createQueryBuilder()
+          .insert()
+          .into(TimeSettings)
+          .values(defaultSettings)
+          .orIgnore() // ON CONFLICT DO NOTHING
+          .execute();
+
+        // Fetch the settings (either just created or already existing)
+        settings = await this.settingsRepository.findOne({
+          where: { companyId },
+        });
+
+        if (settings) {
+          this.logger.log(`Ensured time settings exist for company ${companyId}`);
+        }
+      } catch (error) {
+        // Fallback: If insert fails for any reason, try to fetch existing settings
+        settings = await this.settingsRepository.findOne({
+          where: { companyId },
+        });
+
+        if (!settings) {
+          // If still no settings, rethrow the original error
+          throw error;
+        }
+      }
+    }
+
+    // Ensure settings is not null - this should never happen after the upsert logic
+    if (!settings) {
+      throw new Error(
+        `Failed to retrieve or create time settings for company ${companyId}. ` +
+          `This may indicate a database connectivity issue or data corruption.`,
+      );
     }
 
     // Store in cache
@@ -98,14 +139,20 @@ export class TimeSettingsService {
     user: User,
   ): Promise<TimeSettings> {
     const settings = await this.getSettings(user);
+    const companyId = settings.companyId;
 
-    Object.assign(settings, dto, { updatedById: user.id });
-    const savedSettings = await this.settingsRepository.save(settings);
+    // Create a new object with merged properties to avoid mutating cached entity
+    const updatedSettings = this.settingsRepository.create({
+      ...settings,
+      ...dto,
+      updatedById: user.id,
+    });
+    const savedSettings = await this.settingsRepository.save(updatedSettings);
 
     // Invalidate cache for this company
-    this.cache.delete(settings.companyId);
+    this.cache.delete(companyId);
 
-    this.logger.log(`Updated time settings for company ${settings.companyId}`);
+    this.logger.log(`Updated time settings for company ${companyId}`);
 
     return savedSettings;
   }

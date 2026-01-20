@@ -94,7 +94,7 @@ export default function TimeTrackingSettingsPage() {
         workdayHours: settings.workdayHours || 8,
       });
     }
-  }, [settings, form]);
+  }, [settings]); // eslint-disable-line react-hooks/exhaustive-deps -- form.reset should only run when settings change, not on form instance change
 
   const getBasePath = () => {
     switch (user?.role) {
@@ -117,10 +117,12 @@ export default function TimeTrackingSettingsPage() {
         ? parseFloat(data.defaultHourlyRate)
         : undefined,
       defaultCurrency: data.defaultCurrency,
+      defaultIsBillable: data.defaultIsBillable,
       requireApproval: data.requireApproval,
       allowOverlappingEntries: data.allowOverlappingEntries,
       autoStopTimerAfterMinutes: data.autoStopTimerAtMidnight ? 1440 : 0,
       enableDailyReminder: data.reminderEnabled,
+      dailyReminderTime: data.reminderIntervalMinutes?.toString(),
       minimumEntryMinutes: data.minimumEntryDurationMinutes,
       maximumEntryMinutes: data.maximumEntryDurationMinutes,
       workingHoursPerDay: data.workdayHours,
@@ -211,7 +213,10 @@ export default function TimeTrackingSettingsPage() {
                           min={1}
                           max={60}
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value, 10))}
+                          onChange={(e) => {
+                            const parsed = parseInt(e.target.value, 10);
+                            field.onChange(isNaN(parsed) ? 1 : parsed);
+                          }}
                         />
                       </FormControl>
                       <FormDescription>np. 15 = zaokrąglanie do 15 minut</FormDescription>

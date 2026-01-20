@@ -105,6 +105,7 @@ export default function TimeTrackingDashboardPage() {
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-4">
+        {/* Note: Statistics are based on latest 100 entries */}
         <Card className="border-apptax-soft-teal/30">
           <CardHeader className="pb-2">
             <CardDescription>Wszystkie wpisy</CardDescription>
@@ -183,6 +184,9 @@ export default function TimeTrackingDashboardPage() {
           </CardContent>
         </Card>
       </div>
+      <p className="text-xs text-muted-foreground text-center">
+        Statystyki bazują na ostatnich 100 wpisach
+      </p>
 
       {/* View Cards */}
       <div className="grid gap-6 md:grid-cols-2">

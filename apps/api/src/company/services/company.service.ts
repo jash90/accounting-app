@@ -26,7 +26,7 @@ export class CompanyService {
   ) {
     // Use FRONTEND_URL env var, fallback to CORS_ORIGINS first value, or localhost
     this.frontendUrl = this.configService.get<string>('FRONTEND_URL')
-      || this.configService.get<string>('CORS_ORIGINS')?.split(',')[0]
+      || this.configService.get<string>('CORS_ORIGINS')?.split(',')[0]?.trim()
       || 'http://localhost:4200';
   }
 

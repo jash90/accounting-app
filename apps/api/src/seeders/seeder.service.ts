@@ -319,10 +319,16 @@ export class SeederService {
     const employee = employeesA[0];
     if (!employee) return;
 
-    const grantedById = employee.companyId
-      ? (await this.companyRepository.findOne({ where: { id: employee.companyId } }))
-          ?.ownerId || ''
-      : '';
+    if (!employee.companyId) {
+      this.logger.warn('Employee has no companyId, skipping permissions');
+      return;
+    }
+    const company = await this.companyRepository.findOne({ where: { id: employee.companyId } });
+    if (!company?.ownerId) {
+      this.logger.warn('Company or owner not found, skipping permissions');
+      return;
+    }
+    const grantedById = company.ownerId;
 
     if (aiAgentModule) {
       await this.userModulePermissionRepository.save(

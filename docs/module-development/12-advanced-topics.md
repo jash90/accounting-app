@@ -91,7 +91,9 @@ Implement dynamic filtering and sorting for flexible data queries.
 ### Filter DTO
 
 ```typescript
-// DTO
+// DTO - Import validators from class-validator
+// import { IsOptional, IsEnum, IsUUID, IsIn } from 'class-validator';
+
 export class FilterTasksDto {
   @IsOptional()
   @IsEnum(TaskStatus)
@@ -106,8 +108,8 @@ export class FilterTasksDto {
   assigneeId?: string;
 
   @IsOptional()
-  @IsEnum(['createdAt', 'dueDate', 'priority', 'status'])
-  sortBy?: string;
+  @IsIn(['createdAt', 'dueDate', 'priority', 'status'])
+  sortBy?: 'createdAt' | 'dueDate' | 'priority' | 'status';
 
   @IsOptional()
   @IsEnum(['ASC', 'DESC'])

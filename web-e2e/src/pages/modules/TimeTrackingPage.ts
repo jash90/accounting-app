@@ -200,10 +200,13 @@ export class TimeTrackingPage extends BasePage {
   async deleteEntry(description: string): Promise<void> {
     const row = this.getEntryRow(description);
     await row.getByRole('button', { name: /usuń|delete/i }).click();
-    // Confirm deletion if dialog appears
+    // Confirm deletion if dialog appears - use waitFor to avoid race condition
     const confirmButton = this.page.getByRole('button', { name: /potwierdź|confirm|tak|yes/i });
-    if (await confirmButton.isVisible()) {
+    try {
+      await confirmButton.waitFor({ state: 'visible', timeout: 5000 });
       await confirmButton.click();
+    } catch {
+      // Confirmation dialog did not appear - deletion may proceed without confirmation
     }
     await this.page.waitForLoadState('networkidle');
   }

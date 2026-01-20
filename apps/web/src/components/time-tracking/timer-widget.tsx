@@ -120,10 +120,14 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
   }, [stopTimer, description]);
 
   const handleDiscard = useCallback(() => {
-    discardTimer.mutate();
-    setDescription('');
-    setClientId('');
-    setIsBillable(true);
+    discardTimer.mutate(undefined, {
+      onSuccess: () => {
+        setDescription('');
+        setClientId('');
+        setIsBillable(true);
+      },
+      // On error, keep the current state so user can retry
+    });
   }, [discardTimer]);
 
   const handleDescriptionBlur = useCallback(() => {

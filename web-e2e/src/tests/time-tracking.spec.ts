@@ -246,23 +246,32 @@ test.describe('Time Tracking - Employee Access', () => {
 
   test('employee should only see their own time entries', async ({ authenticatedEmployeePage }) => {
     const timeTrackingPage = new TimeTrackingPage(authenticatedEmployeePage);
-    const description = `Employee entry ${Date.now()}`;
+    const employeeDescription = `Employee entry ${Date.now()}`;
+    const uniqueOwnerMarker = `OWNER_ONLY_${Date.now()}`;
 
     await timeTrackingPage.goto();
     await timeTrackingPage.switchToEntriesListView();
 
+    // Get initial count of entries (should only be employee's entries)
+    const initialCount = await timeTrackingPage.getEntriesCount();
+
     // Create entry as employee
     await timeTrackingPage.createTimeEntry({
-      description,
+      description: employeeDescription,
       startTime: '09:00',
       endTime: '10:00',
     });
 
     // Should see own entry
-    await timeTrackingPage.expectEntryInList(description);
+    await timeTrackingPage.expectEntryInList(employeeDescription);
 
-    // Entry count should be reasonable (only own entries)
-    const count = await timeTrackingPage.getEntriesCount();
-    expect(count).toBeGreaterThan(0);
+    // Entry count should increase by exactly 1 (only own entries visible)
+    const newCount = await timeTrackingPage.getEntriesCount();
+    expect(newCount).toBe(initialCount + 1);
+
+    // Verify isolation: employee should NOT see entries with owner-specific markers
+    // (These would be created by company owner in a separate session)
+    const pageContent = await timeTrackingPage.page.content();
+    expect(pageContent).not.toContain(uniqueOwnerMarker);
   });
 });

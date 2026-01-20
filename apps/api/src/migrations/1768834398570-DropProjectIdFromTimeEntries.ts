@@ -97,72 +97,79 @@ export class DropProjectIdFromTimeEntries1768834398570 implements MigrationInter
   public async down(queryRunner: QueryRunner): Promise<void> {
     console.log(`[${this.migrationName}] Rolling back: recreating projectId column...`);
 
-    // Step 1: Check if backup table exists before proceeding
-    const backupExists = await queryRunner.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables
-        WHERE table_schema = 'public'
-        AND table_name = 'time_entries_project_backup'
-      ) as exists
-    `);
-
-    if (!backupExists[0]?.exists) {
-      console.warn(`[${this.migrationName}] ⚠️  WARNING: Backup table 'time_entries_project_backup' does not exist!`);
-      console.warn(`[${this.migrationName}]    projectId column will be recreated but data cannot be restored.`);
-      console.warn(`[${this.migrationName}]    If you need to restore project associations, restore from database backup first.`);
-    } else {
-      // Verify backup table has data
-      const backupCount = await queryRunner.query(
-        `SELECT COUNT(*) as count FROM "time_entries_project_backup"`
-      );
-      console.log(`[${this.migrationName}] Backup table found with ${backupCount[0]?.count || 0} records.`);
-    }
-
-    // Step 2: Recreate the projectId column
-    await queryRunner.query(
-      `ALTER TABLE "time_entries" ADD "projectId" uuid`
-    );
-
-    // Step 3: Restore projectId data from backup table if it exists
-    if (backupExists[0]?.exists) {
-      console.log(`[${this.migrationName}] Restoring projectId data from backup table...`);
-      await queryRunner.query(`
-        UPDATE "time_entries" te
-        SET "projectId" = backup."projectId"
-        FROM "time_entries_project_backup" backup
-        WHERE te."id" = backup."timeEntryId"
+    await queryRunner.startTransaction();
+    try {
+      // Step 1: Check if backup table exists before proceeding
+      const backupExists = await queryRunner.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables
+          WHERE table_schema = 'public'
+          AND table_name = 'time_entries_project_backup'
+        ) as exists
       `);
 
-      const resultRestore = await queryRunner.query(
-        `SELECT COUNT(*) as count FROM "time_entries" WHERE "projectId" IS NOT NULL`
-      );
-      console.log(`[${this.migrationName}] ✅ Restored ${resultRestore[0]?.count || 0} time entry-project associations`);
-    }
+      if (!backupExists[0]?.exists) {
+        console.warn(`[${this.migrationName}] ⚠️  WARNING: Backup table 'time_entries_project_backup' does not exist!`);
+        console.warn(`[${this.migrationName}]    projectId column will be recreated but data cannot be restored.`);
+        console.warn(`[${this.migrationName}]    If you need to restore project associations, restore from database backup first.`);
+      } else {
+        // Verify backup table has data
+        const backupCount = await queryRunner.query(
+          `SELECT COUNT(*) as count FROM "time_entries_project_backup"`
+        );
+        console.log(`[${this.migrationName}] Backup table found with ${backupCount[0]?.count || 0} records.`);
+      }
 
-    // Step 4: Recreate the index
-    await queryRunner.query(
-      `CREATE INDEX "IDX_23cbfc98b81c157d8c8f758925" ON "time_entries" ("companyId", "projectId")`
-    );
-
-    // Step 5: Recreate the foreign key constraint (only if time_projects table exists)
-    // This handles the case where DropTimeProjectsTable migration has already run
-    const timeProjectsExists = await queryRunner.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables
-        WHERE table_schema = 'public' AND table_name = 'time_projects'
-      ) as exists
-    `);
-
-    if (timeProjectsExists[0]?.exists) {
+      // Step 2: Recreate the projectId column (idempotent - handles case where column already exists)
       await queryRunner.query(
-        `ALTER TABLE "time_entries" ADD CONSTRAINT "FK_f051d95ecf3cd671445ef0c9be8" FOREIGN KEY ("projectId") REFERENCES "time_projects"("id") ON DELETE SET NULL ON UPDATE NO ACTION`
+        `ALTER TABLE "time_entries" ADD COLUMN IF NOT EXISTS "projectId" uuid`
       );
-      console.log(`[${this.migrationName}] FK constraint to time_projects recreated.`);
-    } else {
-      console.warn(`[${this.migrationName}] time_projects table does not exist - skipping FK constraint creation.`);
-      console.warn(`[${this.migrationName}] Run the DropTimeProjectsTable rollback first to restore the table.`);
-    }
 
-    console.log(`[${this.migrationName}] Rollback complete.`);
+      // Step 3: Restore projectId data from backup table if it exists
+      if (backupExists[0]?.exists) {
+        console.log(`[${this.migrationName}] Restoring projectId data from backup table...`);
+        await queryRunner.query(`
+          UPDATE "time_entries" te
+          SET "projectId" = backup."projectId"
+          FROM "time_entries_project_backup" backup
+          WHERE te."id" = backup."timeEntryId"
+        `);
+
+        const resultRestore = await queryRunner.query(
+          `SELECT COUNT(*) as count FROM "time_entries" WHERE "projectId" IS NOT NULL`
+        );
+        console.log(`[${this.migrationName}] ✅ Restored ${resultRestore[0]?.count || 0} time entry-project associations`);
+      }
+
+      // Step 4: Recreate the index
+      await queryRunner.query(
+        `CREATE INDEX "IDX_23cbfc98b81c157d8c8f758925" ON "time_entries" ("companyId", "projectId")`
+      );
+
+      // Step 5: Recreate the foreign key constraint (only if time_projects table exists)
+      // This handles the case where DropTimeProjectsTable migration has already run
+      const timeProjectsExists = await queryRunner.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables
+          WHERE table_schema = 'public' AND table_name = 'time_projects'
+        ) as exists
+      `);
+
+      if (timeProjectsExists[0]?.exists) {
+        await queryRunner.query(
+          `ALTER TABLE "time_entries" ADD CONSTRAINT "FK_f051d95ecf3cd671445ef0c9be8" FOREIGN KEY ("projectId") REFERENCES "time_projects"("id") ON DELETE SET NULL ON UPDATE NO ACTION`
+        );
+        console.log(`[${this.migrationName}] FK constraint to time_projects recreated.`);
+      } else {
+        console.warn(`[${this.migrationName}] time_projects table does not exist - skipping FK constraint creation.`);
+        console.warn(`[${this.migrationName}] Run the DropTimeProjectsTable rollback first to restore the table.`);
+      }
+
+      await queryRunner.commitTransaction();
+      console.log(`[${this.migrationName}] Rollback complete.`);
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    }
   }
 }

@@ -38,7 +38,7 @@ accounting/
 │   │   └── entities/           # All database entities
 │   └── modules/                # Business modules
 │       ├── simple-text/        # Example module
-│       └── tasks/              # Our new module (to be created)
+│       └── tasks/              # Example module (used throughout this guide)
 └── package.json
 ```
 

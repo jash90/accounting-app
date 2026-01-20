@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   ParseUUIDPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import {
@@ -243,7 +244,10 @@ export class TimeEntriesController {
     @Body() dto: RejectTimeEntryDto,
     @CurrentUser() user: User,
   ) {
-    return this.entriesService.rejectEntry(id, dto.rejectionNote || '', user);
+    if (!dto.rejectionNote?.trim()) {
+      throw new BadRequestException('Powód odrzucenia jest wymagany');
+    }
+    return this.entriesService.rejectEntry(id, dto.rejectionNote.trim(), user);
   }
 
   @Post(':id/lock')

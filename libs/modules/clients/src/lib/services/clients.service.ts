@@ -247,13 +247,18 @@ export class ClientsService {
   async create(dto: CreateClientDto, user: User): Promise<Client> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
-    // Validate PKD code if provided
-    if (dto.pkdCode && !isValidPkdCode(dto.pkdCode)) {
-      throw new BadRequestException(`Nieprawidłowy kod PKD: ${dto.pkdCode}`);
+    // Normalize and validate PKD code if provided
+    let normalizedPkdCode = dto.pkdCode?.trim();
+    if (normalizedPkdCode === '') {
+      normalizedPkdCode = undefined;
+    }
+    if (normalizedPkdCode && !isValidPkdCode(normalizedPkdCode)) {
+      throw new BadRequestException(`Nieprawidłowy kod PKD: ${normalizedPkdCode}`);
     }
 
     const client = this.clientRepository.create({
       ...dto,
+      pkdCode: normalizedPkdCode,
       companyId,
       createdById: user.id,
     });
@@ -293,14 +298,18 @@ export class ClientsService {
   async update(id: string, dto: UpdateClientDto, user: User): Promise<Client> {
     const client = await this.findOne(id, user);
 
-    // Validate PKD code if provided
-    if (dto.pkdCode && !isValidPkdCode(dto.pkdCode)) {
-      throw new BadRequestException(`Nieprawidłowy kod PKD: ${dto.pkdCode}`);
+    // Normalize and validate PKD code if provided
+    let normalizedPkdCode = dto.pkdCode?.trim();
+    if (normalizedPkdCode === '') {
+      normalizedPkdCode = undefined;
+    }
+    if (normalizedPkdCode && !isValidPkdCode(normalizedPkdCode)) {
+      throw new BadRequestException(`Nieprawidłowy kod PKD: ${normalizedPkdCode}`);
     }
 
     const oldValues = this.sanitizeClientForLog(client);
 
-    Object.assign(client, dto);
+    Object.assign(client, { ...dto, pkdCode: normalizedPkdCode });
     client.updatedById = user.id;
 
     const savedClient = await this.clientRepository.save(client);
@@ -548,9 +557,13 @@ export class ClientsService {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
     const bulkOperationId = randomUUID();
 
-    // Validate PKD code if provided (before building payload)
-    if (dto.pkdCode && !isValidPkdCode(dto.pkdCode)) {
-      throw new BadRequestException(`Nieprawidłowy kod PKD: ${dto.pkdCode}`);
+    // Normalize and validate PKD code if provided (before building payload)
+    let normalizedPkdCode = dto.pkdCode?.trim();
+    if (normalizedPkdCode === '') {
+      normalizedPkdCode = undefined;
+    }
+    if (normalizedPkdCode && !isValidPkdCode(normalizedPkdCode)) {
+      throw new BadRequestException(`Nieprawidłowy kod PKD: ${normalizedPkdCode}`);
     }
 
     // Build update payload from non-undefined values (outside transaction for validation)
@@ -560,7 +573,7 @@ export class ClientsService {
     if (dto.taxScheme !== undefined) updatePayload.taxScheme = dto.taxScheme;
     if (dto.zusStatus !== undefined) updatePayload.zusStatus = dto.zusStatus;
     if (dto.receiveEmailCopy !== undefined) updatePayload.receiveEmailCopy = dto.receiveEmailCopy;
-    if (dto.pkdCode !== undefined) updatePayload.pkdCode = dto.pkdCode;
+    if (dto.pkdCode !== undefined) updatePayload.pkdCode = normalizedPkdCode;
 
     if (Object.keys(updatePayload).length === 0) {
       return { affected: 0, requested: dto.clientIds.length, bulkOperationId };
@@ -697,29 +710,25 @@ export class ClientsService {
           break;
 
         case 'gt':
-          // For numeric comparison, cast to numeric
-          queryBuilder.andWhere(`CAST(${alias}.value AS DECIMAL) > :value_${index}`, {
-            [`value_${index}`]: parseFloat(String(value)),
-          });
-          break;
-
         case 'gte':
-          queryBuilder.andWhere(`CAST(${alias}.value AS DECIMAL) >= :value_${index}`, {
-            [`value_${index}`]: parseFloat(String(value)),
-          });
-          break;
-
         case 'lt':
-          queryBuilder.andWhere(`CAST(${alias}.value AS DECIMAL) < :value_${index}`, {
-            [`value_${index}`]: parseFloat(String(value)),
-          });
-          break;
+        case 'lte': {
+          // Validate numeric value before comparison to prevent database errors
+          const numericValue = parseFloat(String(value));
+          if (isNaN(numericValue)) {
+            this.logger.warn(`Invalid numeric value for operator ${operator}: ${value}`);
+            break;
+          }
 
-        case 'lte':
-          queryBuilder.andWhere(`CAST(${alias}.value AS DECIMAL) <= :value_${index}`, {
-            [`value_${index}`]: parseFloat(String(value)),
-          });
+          // Numeric comparisons require DECIMAL cast - ensure field type is NUMBER
+          // by adding a condition that only matches if the value can be cast
+          const comparisonOp = operator === 'gt' ? '>' : operator === 'gte' ? '>=' : operator === 'lt' ? '<' : '<=';
+          queryBuilder.andWhere(
+            `CAST(${alias}.value AS DECIMAL) ${comparisonOp} :value_${index}`,
+            { [`value_${index}`]: numericValue }
+          );
           break;
+        }
 
         case 'in':
           // For ENUM type - check if value is in the list

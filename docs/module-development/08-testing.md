@@ -80,6 +80,10 @@ describe('Tasks (e2e)', () => {
     token = response.body.access_token;
   });
 
+  afterAll(async () => {
+    await app.close();
+  });
+
   it('/modules/tasks (GET)', () => {
     return request(app.getHttpServer())
       .get('/modules/tasks')

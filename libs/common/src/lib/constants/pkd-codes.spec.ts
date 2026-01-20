@@ -34,7 +34,8 @@ describe('PKD Codes Constants', () => {
       const sectionCodes = PKD_SECTIONS.map((s) => s.code);
       expect(sectionCodes).toContain('A'); // Agriculture
       expect(sectionCodes).toContain('C'); // Manufacturing
-      expect(sectionCodes).toContain('K'); // IT & Telecommunications
+      expect(sectionCodes).toContain('J'); // Information and Communication (IT)
+      expect(sectionCodes).toContain('K'); // Financial and Insurance Activities
     });
   });
 
@@ -128,11 +129,13 @@ describe('PKD Helper Functions', () => {
       expect(grouped.size).toBe(PKD_SECTIONS.length);
     });
 
-    it('should have classes for section K (IT)', () => {
+    it('should have classes for section J (Information and Communication - IT)', () => {
       const grouped = getPkdClassesBySection();
-      const sectionK = grouped.get('K');
-      expect(sectionK).toBeDefined();
-      expect(sectionK?.length).toBeGreaterThan(0);
+      const sectionJ = grouped.get('J');
+      expect(sectionJ).toBeDefined();
+      expect(sectionJ?.length).toBeGreaterThan(0);
+      // Section J contains IT codes like 62.01.Z (Software development)
+      expect(sectionJ?.some((c) => c.code.startsWith('62.'))).toBe(true);
     });
   });
 

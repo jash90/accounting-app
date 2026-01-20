@@ -191,6 +191,7 @@ export class BulkRejectDto {
   entryIds!: string[];
 
   @ApiProperty({ description: 'Reason for rejection', maxLength: 500 })
+  @IsNotEmpty({ message: 'Powód odrzucenia jest wymagany' })
   @Sanitize()
   @IsString()
   @MaxLength(500)
