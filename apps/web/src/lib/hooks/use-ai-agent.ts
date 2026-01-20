@@ -110,9 +110,9 @@ export function useSendMessageStream(conversationId: string) {
         // signal - for cancellation
         abortControllerRef.current?.signal,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       setIsStreaming(false);
-      const message = error.message || 'Nie udało się wysłać wiadomości';
+      const message = error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości';
       toast.error(message);
     }
   }, [conversationId, queryClient]);

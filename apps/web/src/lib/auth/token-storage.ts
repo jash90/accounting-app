@@ -26,8 +26,6 @@ const TOKEN_CHANGE_EVENT = 'auth-token-change';
 
 // Custom event for same-tab token changes (storage events only fire for other tabs)
 type TokenChangeCallback = () => void;
-// Reserved for future use with direct callback subscriptions
-const _tokenChangeListeners = new Set<TokenChangeCallback>();
 
 const notifyTokenChange = (): void => {
   if (typeof window === 'undefined') return;
