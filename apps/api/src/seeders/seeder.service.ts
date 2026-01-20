@@ -44,7 +44,7 @@ export class SeederService {
     private emailConfigService: EmailConfigurationService,
     private moduleDiscoveryService: ModuleDiscoveryService,
     private configService: ConfigService,
-  ) {}
+  ) { }
 
   async seed() {
     this.logger.log('Starting database seeding...');
@@ -79,10 +79,10 @@ export class SeederService {
     await this.seedClients(companyA, ownerA);
 
     this.logger.log('Database seeding completed!');
-    this.logger.log('Test Users:');
-    this.logger.log('  Admin: admin@system.com / Admin123!');
-    this.logger.log('  Company A Owner: bartlomiej.zimny@onet.pl / Owner123!');
-    this.logger.log('  Company A Employee: bartlomiej.zimny@interia.pl / Employee123!');
+    this.logger.log('Test Users (passwords configured in .env):');
+    this.logger.log(`  Admin: ${this.configService.get('SEED_ADMIN_EMAIL', 'admin@system.com')}`);
+    this.logger.log(`  Company Owner: ${this.configService.get('SEED_OWNER_EMAIL', 'owner@company.pl')}`);
+    this.logger.log(`  Employee: ${this.configService.get('SEED_EMPLOYEE_EMAIL', 'employee@company.pl')}`);
   }
 
   /**
@@ -173,9 +173,11 @@ export class SeederService {
   }
 
   private async seedAdmin() {
-    const hashedPassword = await bcrypt.hash('Admin123!', 10);
+    const adminEmail = this.configService.get<string>('SEED_ADMIN_EMAIL', 'admin@system.com');
+    const adminPassword = this.configService.get<string>('SEED_ADMIN_PASSWORD', 'Admin123456!');
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
     const admin = this.userRepository.create({
-      email: 'admin@system.com'.toLowerCase(),
+      email: adminEmail.toLowerCase(),
       password: hashedPassword,
       firstName: 'Admin',
       lastName: 'User',
@@ -200,9 +202,11 @@ export class SeederService {
   }
 
   private async seedCompanyA() {
-    const hashedPassword = await bcrypt.hash('Owner123!', 10);
+    const ownerEmail = this.configService.get<string>('SEED_OWNER_EMAIL', 'owner@company.pl');
+    const ownerPassword = this.configService.get<string>('SEED_OWNER_PASSWORD', 'Owner123456!');
+    const hashedPassword = await bcrypt.hash(ownerPassword, 10);
     const ownerA = this.userRepository.create({
-      email: 'bartlomiej.zimny@onet.pl'.toLowerCase(),
+      email: ownerEmail.toLowerCase(),
       password: hashedPassword,
       firstName: 'Owner',
       lastName: 'A',
@@ -221,9 +225,11 @@ export class SeederService {
     savedOwnerA.companyId = savedCompanyA.id;
     await this.userRepository.save(savedOwnerA);
 
-    const employee1Password = await bcrypt.hash('Employee123!', 10);
+    const employeeEmail = this.configService.get<string>('SEED_EMPLOYEE_EMAIL', 'employee@company.pl');
+    const employeePassword = this.configService.get<string>('SEED_EMPLOYEE_PASSWORD', 'Employee123456!');
+    const employee1Password = await bcrypt.hash(employeePassword, 10);
     const employee1 = this.userRepository.create({
-      email: 'bartlomiej.zimny@interia.pl'.toLowerCase(),
+      email: employeeEmail.toLowerCase(),
       password: employee1Password,
       firstName: 'Employee',
       lastName: '1A',

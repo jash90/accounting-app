@@ -1,7 +1,6 @@
-import { Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { MessageSquare, Settings, FolderOpen, BarChart3, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MessageSquare, Settings, FolderOpen, BarChart3, Sparkles, CheckCircle2 } from 'lucide-react';
+import { NavigationCard } from '@/components/ui/navigation-card';
 
 export default function AdminAIAgentDashboard() {
   const features = [
@@ -47,34 +46,17 @@ export default function AdminAIAgentDashboard() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {features.map((feature) => {
-          const Icon = feature.icon;
-          return (
-            <Card
-              key={feature.title}
-              className="hover:shadow-apptax-md transition-all duration-300 hover:-translate-y-1 hover:border-apptax-blue group"
-            >
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className={`p-3 rounded-xl ${feature.gradient} text-white ai-glow group-hover:shadow-apptax-md transition-shadow`}>
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <CardTitle className="text-apptax-navy">{feature.title}</CardTitle>
-                </div>
-                <CardDescription>{feature.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link to={feature.href}>
-                  <Button className="w-full group-hover:shadow-apptax-sm transition-shadow">
-                    Otwórz
-                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          );
-        })}
+      <div className="flex flex-wrap gap-6">
+        {features.map((feature) => (
+          <NavigationCard
+            key={feature.title}
+            title={feature.title}
+            description={feature.description}
+            icon={feature.icon}
+            href={feature.href}
+            gradient={feature.gradient}
+          />
+        ))}
       </div>
 
       <Card className="bg-apptax-warm-gray border-0">

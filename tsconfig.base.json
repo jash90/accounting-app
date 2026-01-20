@@ -19,6 +19,7 @@
       "@accounting/auth": ["libs/auth/src/index.ts"],
       "@accounting/common": ["libs/common/src/index.ts"],
       "@accounting/common/backend": ["libs/common/src/backend.ts"],
+      "@accounting/common/browser": ["libs/common/src/browser.ts"],
       "@accounting/email": ["libs/email/src/index.ts"],
       "@accounting/modules/ai-agent": ["libs/modules/ai-agent/src/index.ts"],
       "@accounting/modules/clients": ["libs/modules/clients/src/index.ts"],

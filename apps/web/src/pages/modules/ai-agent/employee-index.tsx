@@ -1,7 +1,6 @@
-import { Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { MessageSquare, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MessageSquare, Sparkles, CheckCircle2 } from 'lucide-react';
+import { NavigationCard } from '@/components/ui/navigation-card';
 
 export default function EmployeeAIAgentDashboard() {
   return (
@@ -17,34 +16,14 @@ export default function EmployeeAIAgentDashboard() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-        <Card className="hover:shadow-apptax-md transition-shadow border-apptax-teal/20 hover:border-apptax-teal">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-apptax-ai-gradient text-white ai-glow">
-                <MessageSquare className="h-8 w-8" />
-              </div>
-              <div>
-                <CardTitle className="text-xl text-apptax-navy">Czat AI</CardTitle>
-                <CardDescription className="text-base">
-                  Rozpocznij rozmowy i uzyskaj inteligentne odpowiedzi
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Zadawaj pytania, uzyskaj pomoc przy zadaniach i wykorzystaj AI do zwiększenia produktywności.
-              AI ma dostęp do bazy wiedzy Twojej firmy, zapewniając dokładne odpowiedzi świadome kontekstu.
-            </p>
-            <Link to="/modules/ai-agent/chat">
-              <Button size="lg" variant="teal" className="w-full">
-                <Sparkles className="mr-2 h-5 w-5" />
-                Rozpocznij czat
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <NavigationCard
+          title="Czat AI"
+          description="Rozpocznij rozmowy i uzyskaj inteligentne odpowiedzi. Zadawaj pytania, uzyskaj pomoc przy zadaniach i wykorzystaj AI do zwiększenia produktywności."
+          icon={MessageSquare}
+          href="/modules/ai-agent/chat"
+          gradient="bg-apptax-ai-gradient"
+          buttonText="Rozpocznij czat"
+        />
 
         <Card className="bg-apptax-warm-gray border-0">
           <CardHeader>
