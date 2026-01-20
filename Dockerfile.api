@@ -40,6 +40,10 @@ RUN npm ci --omit=dev --legacy-peer-deps
 # Copy built application (includes pre-compiled migrations)
 COPY --from=builder /app/dist ./dist
 
+# Copy module configuration files for ModuleDiscoveryService
+# These JSON files are needed at runtime for module discovery
+COPY --from=builder /app/libs/modules ./libs/modules
+
 # Expose port
 EXPOSE 3000
 
