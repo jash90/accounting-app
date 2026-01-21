@@ -135,10 +135,10 @@ libs/modules/[name]/
 │       └── exceptions/       # Custom exceptions
 ```
 
-### Frontend Module (`web/src/pages/modules/[name]/`)
+### Frontend Module (`apps/web/src/pages/modules/[name]/`)
 
 ```
-web/src/
+apps/web/src/
 ├── pages/modules/[name]/     # Page components
 ├── components/forms/         # Form dialogs
 ├── lib/
