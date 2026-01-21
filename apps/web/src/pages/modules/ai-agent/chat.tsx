@@ -1,11 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { Send, Plus, Trash2, Bot, User, Sparkles, MessageSquare, Zap, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
+
+import {
+  Send,
+  Plus,
+  Trash2,
+  Bot,
+  User,
+  Sparkles,
+  MessageSquare,
+  Zap,
+  AlertCircle,
+} from 'lucide-react';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +24,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import {
   useConversations,
   useConversation,
@@ -98,7 +111,11 @@ export default function AIAgentChatPage() {
       // Check for rate limit error (429)
       const errorMessage = error instanceof Error ? error.message : '';
       const axiosStatus = (error as { response?: { status?: number } })?.response?.status;
-      if (axiosStatus === 429 || errorMessage.includes('overloaded') || errorMessage.includes('rate limit')) {
+      if (
+        axiosStatus === 429 ||
+        errorMessage.includes('overloaded') ||
+        errorMessage.includes('rate limit')
+      ) {
         setRateLimitHit(true);
       }
     }
@@ -151,7 +168,13 @@ export default function AIAgentChatPage() {
                 Rozmowy
                 <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
               </CardTitle>
-              <Button onClick={handleNewConversation} size="sm" variant="teal" disabled={createConversation.isPending} data-testid="new-chat-button">
+              <Button
+                onClick={handleNewConversation}
+                size="sm"
+                variant="teal"
+                disabled={createConversation.isPending}
+                data-testid="new-chat-button"
+              >
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
@@ -181,7 +204,12 @@ export default function AIAgentChatPage() {
                     data-testid="conversation-item"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-medium truncate flex-1" data-testid="conversation-title">{conv.title}</span>
+                      <span
+                        className="font-medium truncate flex-1"
+                        data-testid="conversation-title"
+                      >
+                        {conv.title}
+                      </span>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -191,23 +219,37 @@ export default function AIAgentChatPage() {
                         }}
                         className={cn(
                           'opacity-0 group-hover:opacity-100 h-7 w-7 p-0',
-                          selectedConversationId === conv.id ? 'hover:bg-white/20' : 'hover:bg-destructive/10'
+                          selectedConversationId === conv.id
+                            ? 'hover:bg-white/20'
+                            : 'hover:bg-destructive/10'
                         )}
                         data-testid="delete-conversation-button"
                       >
-                        <Trash2 className={cn('h-4 w-4', selectedConversationId === conv.id ? 'text-white' : 'text-destructive')} />
+                        <Trash2
+                          className={cn(
+                            'h-4 w-4',
+                            selectedConversationId === conv.id ? 'text-white' : 'text-destructive'
+                          )}
+                        />
                       </Button>
                     </div>
-                    <p className={cn(
-                      'text-xs mt-1',
-                      selectedConversationId === conv.id ? 'text-white/70' : 'text-muted-foreground'
-                    )}>
+                    <p
+                      className={cn(
+                        'text-xs mt-1',
+                        selectedConversationId === conv.id
+                          ? 'text-white/70'
+                          : 'text-muted-foreground'
+                      )}
+                    >
                       {new Date(conv.createdAt).toLocaleDateString('pl-PL')}
                     </p>
                   </div>
                 ))}
                 {conversations?.length === 0 && (
-                  <p className="text-muted-foreground text-sm text-center py-8" data-testid="no-conversations">
+                  <p
+                    className="text-muted-foreground text-sm text-center py-8"
+                    data-testid="no-conversations"
+                  >
                     Brak rozmów. Utwórz nową, aby rozpocząć!
                   </p>
                 )}
@@ -232,56 +274,69 @@ export default function AIAgentChatPage() {
             {/* Messages */}
             <ScrollArea className="flex-1 p-4" ref={scrollRef}>
               {currentConversation?.messages.length === 0 && (
-                <div className="flex items-center justify-center h-full text-muted-foreground" data-testid="empty-chat">
+                <div
+                  className="flex items-center justify-center h-full text-muted-foreground"
+                  data-testid="empty-chat"
+                >
                   <div className="text-center">
                     <div className="w-16 h-16 rounded-full bg-apptax-ai-gradient flex items-center justify-center mx-auto mb-4">
                       <Bot className="h-8 w-8 text-white" />
                     </div>
                     <p className="text-lg font-medium text-apptax-navy">Rozpocznij rozmowę</p>
-                    <p className="text-sm text-muted-foreground mt-1">Zapytaj asystenta AI o cokolwiek</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Zapytaj asystenta AI o cokolwiek
+                    </p>
                   </div>
                 </div>
               )}
               <div className="space-y-4" data-testid="messages-container">
-                {[...(currentConversation?.messages ?? [])].sort(
-                  (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-                ).map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={cn(
-                      'flex gap-3',
-                      msg.role === MessageRole.USER ? 'justify-end' : 'justify-start'
-                    )}
-                    data-testid={msg.role === MessageRole.USER ? 'user-message' : 'assistant-message'}
-                  >
-                    {msg.role === MessageRole.ASSISTANT && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-apptax-ai-gradient flex items-center justify-center ai-glow">
-                        <Bot className="h-4 w-4 text-white" />
-                      </div>
-                    )}
+                {[...(currentConversation?.messages ?? [])]
+                  .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+                  .map((msg) => (
                     <div
+                      key={msg.id}
                       className={cn(
-                        'rounded-xl px-4 py-3 max-w-[70%]',
-                        msg.role === MessageRole.USER
-                          ? 'bg-apptax-blue text-white'
-                          : 'bg-apptax-soft-teal text-apptax-navy'
+                        'flex gap-3',
+                        msg.role === MessageRole.USER ? 'justify-end' : 'justify-start'
                       )}
+                      data-testid={
+                        msg.role === MessageRole.USER ? 'user-message' : 'assistant-message'
+                      }
                     >
-                      <p className="whitespace-pre-wrap" data-testid="message-content">{msg.content}</p>
-                      <p className={cn(
-                        'text-xs mt-2',
-                        msg.role === MessageRole.USER ? 'text-white/70' : 'text-apptax-navy/50'
-                      )} data-testid="token-count">
-                        {new Date(msg.createdAt).toLocaleTimeString('pl-PL')} • {msg.totalTokens ?? 0} tokenów
-                      </p>
-                    </div>
-                    {msg.role === MessageRole.USER && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-apptax-navy flex items-center justify-center">
-                        <User className="h-4 w-4 text-white" />
+                      {msg.role === MessageRole.ASSISTANT && (
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-apptax-ai-gradient flex items-center justify-center ai-glow">
+                          <Bot className="h-4 w-4 text-white" />
+                        </div>
+                      )}
+                      <div
+                        className={cn(
+                          'rounded-xl px-4 py-3 max-w-[70%]',
+                          msg.role === MessageRole.USER
+                            ? 'bg-apptax-blue text-white'
+                            : 'bg-apptax-soft-teal text-apptax-navy'
+                        )}
+                      >
+                        <p className="whitespace-pre-wrap" data-testid="message-content">
+                          {msg.content}
+                        </p>
+                        <p
+                          className={cn(
+                            'text-xs mt-2',
+                            msg.role === MessageRole.USER ? 'text-white/70' : 'text-apptax-navy/50'
+                          )}
+                          data-testid="token-count"
+                        >
+                          {new Date(msg.createdAt).toLocaleTimeString('pl-PL')} •{' '}
+                          {msg.totalTokens ?? 0} tokenów
+                        </p>
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {msg.role === MessageRole.USER && (
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-apptax-navy flex items-center justify-center">
+                          <User className="h-4 w-4 text-white" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 {/* Streaming content or thinking indicator */}
                 {isStreaming && streamingContent && (
                   <div className="flex gap-3" data-testid="streaming-message">
@@ -323,7 +378,10 @@ export default function AIAgentChatPage() {
                   </span>
                   <span className="flex items-center gap-1">
                     <Zap className="h-3 w-3" />
-                    {currentConversation.messages.reduce((sum, m) => sum + (m.totalTokens ?? 0), 0).toLocaleString()} tokenów
+                    {currentConversation.messages
+                      .reduce((sum, m) => sum + (m.totalTokens ?? 0), 0)
+                      .toLocaleString()}{' '}
+                    tokenów
                   </span>
                 </div>
                 {rateLimitHit && (
@@ -368,12 +426,15 @@ export default function AIAgentChatPage() {
       </div>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => {
-        setDeleteDialogOpen(open);
-        if (!open) {
-          setConversationToDelete(null);
-        }
-      }}>
+      <AlertDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) {
+            setConversationToDelete(null);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Usuń rozmowę</AlertDialogTitle>
@@ -382,9 +443,7 @@ export default function AIAgentChatPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>
-              Anuluj
-            </AlertDialogCancel>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteConversation}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

@@ -1,4 +1,5 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
+
 import { tokenStorage } from '../auth/token-storage';
 
 // Extend Window interface for runtime config
@@ -81,8 +82,9 @@ apiClient.interceptors.response.use(
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Don't intercept 401 from login/register endpoints - let them show errors naturally
-      const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
-                            originalRequest.url?.includes('/auth/register');
+      const isAuthEndpoint =
+        originalRequest.url?.includes('/auth/login') ||
+        originalRequest.url?.includes('/auth/register');
 
       // Don't intercept 401 from AI agent endpoints - these are API key issues, not JWT issues
       const isAIAgentEndpoint = originalRequest.url?.includes('/modules/ai-agent/');
@@ -97,9 +99,10 @@ apiClient.interceptors.response.use(
           ? responseData.message
           : ''
       ).toLowerCase();
-      const isApiKeyError = errorMessage.includes('api key') ||
-                            errorMessage.includes('invalid key') ||
-                            errorMessage.includes('configuration');
+      const isApiKeyError =
+        errorMessage.includes('api key') ||
+        errorMessage.includes('invalid key') ||
+        errorMessage.includes('configuration');
 
       if (isAuthEndpoint || isAIAgentEndpoint || isApiKeyError) {
         return Promise.reject(error);
@@ -128,10 +131,9 @@ apiClient.interceptors.response.use(
       }
 
       try {
-        const { data } = await axios.post(
-          `${getApiBaseUrl()}/api/auth/refresh`,
-          { refresh_token: refreshToken }
-        );
+        const { data } = await axios.post(`${getApiBaseUrl()}/api/auth/refresh`, {
+          refresh_token: refreshToken,
+        });
 
         tokenStorage.setAccessToken(data.access_token);
         processQueue(null, data.access_token);
@@ -153,4 +155,3 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
-

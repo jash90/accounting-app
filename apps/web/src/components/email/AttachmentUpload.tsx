@@ -1,7 +1,10 @@
 import { useState, useCallback } from 'react';
+
 import { Upload, Loader2 } from 'lucide-react';
+
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
+
 import { AttachmentList, type Attachment, formatFileSize } from './AttachmentList';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -105,10 +108,7 @@ export function AttachmentUpload({
           className="hidden"
           onChange={(e) => handleFileUpload(e.target.files)}
         />
-        <label
-          htmlFor="file-upload"
-          className="cursor-pointer flex flex-col items-center gap-2"
-        >
+        <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center gap-2">
           {isUploading ? (
             <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
           ) : (
@@ -126,11 +126,7 @@ export function AttachmentUpload({
       </div>
 
       {/* Uploaded Attachments List */}
-      <AttachmentList
-        attachments={attachments}
-        mode="compose"
-        onRemove={handleRemoveAttachment}
-      />
+      <AttachmentList attachments={attachments} mode="compose" onRemove={handleRemoveAttachment} />
     </div>
   );
 }

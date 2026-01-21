@@ -1,5 +1,7 @@
 import { FileIcon, X, Download, Loader2 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+
 import { type Attachment, formatFileSize } from './AttachmentList';
 
 interface AttachmentItemProps {
@@ -20,16 +22,12 @@ export function AttachmentItem({
   isDownloading,
 }: AttachmentItemProps) {
   return (
-    <div
-      className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-    >
+    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
       <div className="flex items-center gap-3 min-w-0">
         <FileIcon className="h-5 w-5 text-muted-foreground shrink-0" />
         <div className="min-w-0">
           <p className="text-sm font-medium truncate">{attachment.filename}</p>
-          <p className="text-xs text-muted-foreground">
-            {formatFileSize(attachment.size)}
-          </p>
+          <p className="text-xs text-muted-foreground">{formatFileSize(attachment.size)}</p>
         </div>
       </div>
 

@@ -1,8 +1,19 @@
 import { useState } from 'react';
+
+import {
+  Upload,
+  Trash2,
+  FileText,
+  File as FileIcon,
+  FolderOpen,
+  Sparkles,
+  Eye,
+  Loader2,
+} from 'lucide-react';
+import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -10,10 +21,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useContextFiles, useUploadContextFile, useDeleteContextFile, useContextFile } from '@/lib/hooks/use-ai-agent';
-import { Upload, Trash2, FileText, File as FileIcon, FolderOpen, Sparkles, Eye, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  useContextFiles,
+  useUploadContextFile,
+  useDeleteContextFile,
+  useContextFile,
+} from '@/lib/hooks/use-ai-agent';
 
 export default function ContextFilesPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -145,9 +168,7 @@ export default function ContextFilesPage() {
             <FolderOpen className="h-5 w-5 text-apptax-teal" />
             Uploaded Files
           </CardTitle>
-          <CardDescription>
-            {files?.length || 0} file(s) in knowledge base
-          </CardDescription>
+          <CardDescription>{files?.length || 0} file(s) in knowledge base</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -233,13 +254,20 @@ export default function ContextFilesPage() {
             {previewFile && (
               <DialogDescription className="flex flex-wrap gap-4 text-sm">
                 <span>
-                  Type: <span className="font-medium">{previewFile.mimeType.split('/')[1]?.toUpperCase()}</span>
+                  Type:{' '}
+                  <span className="font-medium">
+                    {previewFile.mimeType.split('/')[1]?.toUpperCase()}
+                  </span>
                 </span>
                 <span>
                   Size: <span className="font-medium">{formatFileSize(previewFile.fileSize)}</span>
                 </span>
                 <span>
-                  Uploaded: <span className="font-medium">{new Date(previewFile.createdAt).toLocaleDateString()} by {previewFile.uploadedBy.firstName} {previewFile.uploadedBy.lastName}</span>
+                  Uploaded:{' '}
+                  <span className="font-medium">
+                    {new Date(previewFile.createdAt).toLocaleDateString()} by{' '}
+                    {previewFile.uploadedBy.firstName} {previewFile.uploadedBy.lastName}
+                  </span>
                 </span>
               </DialogDescription>
             )}

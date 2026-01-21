@@ -1,7 +1,12 @@
 import { useForm } from 'react-hook-form';
+
 import { useQueryClient } from '@tanstack/react-query';
-import { useCreateTask, useTaskAssignees } from '@/lib/hooks/use-tasks';
-import { queryKeys } from '@/lib/api/query-client';
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
+import { CalendarIcon, Building2, Loader2 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Dialog,
   DialogContent,
@@ -10,9 +15,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -20,18 +25,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { CalendarIcon, Building2, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { queryKeys } from '@/lib/api/query-client';
+import { useCreateTask, useTaskAssignees } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
+import { type CreateTaskDto } from '@/types/dtos';
 import { TaskPriority, TaskPriorityLabels } from '@/types/enums';
-import { CreateTaskDto } from '@/types/dtos';
 
 interface QuickAddTaskDialogProps {
   open: boolean;
@@ -130,9 +128,7 @@ export function QuickAddTaskDialog({
                 },
               })}
             />
-            {errors.title && (
-              <p className="text-sm text-destructive">{errors.title.message}</p>
-            )}
+            {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
           </div>
 
           {/* Priority */}

@@ -12,12 +12,15 @@
  *   - Run: npm run test:integration
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
-import { TypeOrmModule, getDataSourceToken } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
 import { ConflictException } from '@nestjs/common';
-import { TimeEntriesService } from './time-entries.service';
+import { Test, type TestingModule } from '@nestjs/testing';
+import { TypeOrmModule, getDataSourceToken } from '@nestjs/typeorm';
+
+import { type DataSource, type Repository } from 'typeorm';
+
 import { TimeEntry } from '@accounting/common';
+
+import { TimeEntriesService } from './time-entries.service';
 import { TEST_DB_CONFIG, runConcurrently } from '../../../../../../test/integration/setup';
 
 describe('TimeEntriesService Integration Tests', () => {
@@ -93,7 +96,7 @@ describe('TimeEntriesService Integration Tests', () => {
         service.startTimer(testUserId, {
           description: 'Second timer',
           companyId: testCompanyId,
-        }),
+        })
       ).rejects.toThrow(ConflictException);
 
       // Verify only one timer exists
@@ -196,17 +199,23 @@ describe('TimeEntriesService Integration Tests', () => {
   describe('Unique Index Validation', () => {
     it('should enforce unique partial index at database level', async () => {
       // Insert a running timer directly using raw SQL
-      await dataSource.query(`
+      await dataSource.query(
+        `
         INSERT INTO time_entries (id, user_id, company_id, description, start_time, is_running)
         VALUES ($1, $2, $3, $4, NOW(), true)
-      `, ['entry-1', testUserId, testCompanyId, 'Direct insert 1']);
+      `,
+        ['entry-1', testUserId, testCompanyId, 'Direct insert 1']
+      );
 
       // Attempt to insert another running timer directly
       await expect(
-        dataSource.query(`
+        dataSource.query(
+          `
           INSERT INTO time_entries (id, user_id, company_id, description, start_time, is_running)
           VALUES ($1, $2, $3, $4, NOW(), true)
-        `, ['entry-2', testUserId, testCompanyId, 'Direct insert 2']),
+        `,
+          ['entry-2', testUserId, testCompanyId, 'Direct insert 2']
+        )
       ).rejects.toThrow();
     });
 
@@ -219,10 +228,13 @@ describe('TimeEntriesService Integration Tests', () => {
       ];
 
       for (const entry of entries) {
-        await dataSource.query(`
+        await dataSource.query(
+          `
           INSERT INTO time_entries (id, user_id, company_id, description, start_time, end_time, is_running)
           VALUES ($1, $2, $3, $4, NOW() - INTERVAL '1 hour', NOW(), false)
-        `, [entry.id, testUserId, testCompanyId, entry.description]);
+        `,
+          [entry.id, testUserId, testCompanyId, entry.description]
+        );
       }
 
       // All should exist

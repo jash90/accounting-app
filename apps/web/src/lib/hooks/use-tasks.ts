@@ -1,26 +1,28 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useToast } from '@/components/ui/use-toast';
+import { type ApiErrorResponse } from '@/types/api';
+import {
+  type CreateTaskDto,
+  type UpdateTaskDto,
+  type TaskFiltersDto,
+  type ReorderTasksDto,
+  type BulkUpdateStatusDto,
+  type CreateTaskLabelDto,
+  type UpdateTaskLabelDto,
+  type CreateTaskCommentDto,
+  type UpdateTaskCommentDto,
+  type CreateTaskDependencyDto,
+} from '@/types/dtos';
+
 import {
   tasksApi,
   taskLabelsApi,
   taskCommentsApi,
   taskDependenciesApi,
-  TaskLabelQueryDto,
+  type TaskLabelQueryDto,
 } from '../api/endpoints/tasks';
 import { queryKeys } from '../api/query-client';
-import {
-  CreateTaskDto,
-  UpdateTaskDto,
-  TaskFiltersDto,
-  ReorderTasksDto,
-  BulkUpdateStatusDto,
-  CreateTaskLabelDto,
-  UpdateTaskLabelDto,
-  CreateTaskCommentDto,
-  UpdateTaskCommentDto,
-  CreateTaskDependencyDto,
-} from '@/types/dtos';
-import { ApiErrorResponse } from '@/types/api';
-import { useToast } from '@/components/ui/use-toast';
 
 // ============================================
 // Task Hooks
@@ -107,7 +109,9 @@ export function useCreateTask() {
       queryClient.invalidateQueries({ queryKey: ['tasks', 'calendar'], exact: false });
       // Invalidate statistics if client was assigned
       if (newTask.clientId) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.tasks.clientStatistics(newTask.clientId) });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.tasks.clientStatistics(newTask.clientId),
+        });
       }
       toast({
         title: 'Sukces',
@@ -129,8 +133,7 @@ export function useUpdateTask() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateTaskDto }) =>
-      tasksApi.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateTaskDto }) => tasksApi.update(id, data),
     onSuccess: (updatedTask, variables) => {
       // Invalidate the specific task detail
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.id) });
@@ -509,8 +512,12 @@ export function useCreateTaskDependency() {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
       // Also invalidate the dependent task
       if (variables.data.dependsOnTaskId) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.tasks.dependencies(variables.data.dependsOnTaskId) });
-        queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.data.dependsOnTaskId) });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.tasks.dependencies(variables.data.dependsOnTaskId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.tasks.detail(variables.data.dependsOnTaskId),
+        });
       }
       toast({
         title: 'Sukces',

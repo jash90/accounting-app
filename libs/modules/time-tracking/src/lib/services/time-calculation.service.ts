@@ -1,8 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import {
-  TimeRoundingMethod,
-  DefaultRoundingInterval,
-} from '@accounting/common';
+
+import { TimeRoundingMethod, DefaultRoundingInterval } from '@accounting/common';
 
 @Injectable()
 export class TimeCalculationService {
@@ -20,7 +18,7 @@ export class TimeCalculationService {
   roundDuration(
     durationMinutes: number,
     method: TimeRoundingMethod,
-    intervalMinutes: number = DefaultRoundingInterval,
+    intervalMinutes: number = DefaultRoundingInterval
   ): number {
     if (method === TimeRoundingMethod.NONE || intervalMinutes <= 0) {
       return durationMinutes;
@@ -55,7 +53,7 @@ export class TimeCalculationService {
   getEffectiveHourlyRate(
     entryRate?: number,
     projectRate?: number,
-    settingsRate?: number,
+    settingsRate?: number
   ): number | undefined {
     return entryRate ?? projectRate ?? settingsRate ?? undefined;
   }
@@ -88,12 +86,7 @@ export class TimeCalculationService {
   /**
    * Check if two time ranges overlap
    */
-  checkOverlap(
-    start1: Date,
-    end1: Date | null,
-    start2: Date,
-    end2: Date | null,
-  ): boolean {
+  checkOverlap(start1: Date, end1: Date | null, start2: Date, end2: Date | null): boolean {
     // If either entry is running (no end time), use current time
     const now = new Date();
     const effectiveEnd1 = end1 ?? now;
@@ -120,10 +113,7 @@ export class TimeCalculationService {
   /**
    * Get start and end of a week
    */
-  getWeekBounds(
-    date: Date,
-    weekStartDay: number = 1,
-  ): { startOfWeek: Date; endOfWeek: Date } {
+  getWeekBounds(date: Date, weekStartDay: number = 1): { startOfWeek: Date; endOfWeek: Date } {
     const startOfWeek = new Date(date.getTime());
     const dayOfWeek = startOfWeek.getDay();
     const diff = dayOfWeek - weekStartDay;
@@ -141,10 +131,7 @@ export class TimeCalculationService {
   /**
    * Get start and end of a month
    */
-  getMonthBounds(
-    year: number,
-    month: number,
-  ): { startOfMonth: Date; endOfMonth: Date } {
+  getMonthBounds(year: number, month: number): { startOfMonth: Date; endOfMonth: Date } {
     const startOfMonth = new Date(year, month - 1, 1, 0, 0, 0, 0);
 
     const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);

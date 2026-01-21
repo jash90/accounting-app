@@ -1,5 +1,12 @@
+import {
+  type LoginDto,
+  type RegisterDto,
+  type AuthResponseDto,
+  type RefreshTokenDto,
+  type UserDto,
+} from '@/types/dtos';
+
 import apiClient from '../client';
-import { LoginDto, RegisterDto, AuthResponseDto, RefreshTokenDto, UserDto } from '@/types/dtos';
 
 export const authApi = {
   login: async (credentials: LoginDto): Promise<AuthResponseDto> => {
@@ -13,7 +20,10 @@ export const authApi = {
   },
 
   refresh: async (refreshToken: RefreshTokenDto): Promise<{ access_token: string }> => {
-    const { data } = await apiClient.post<{ access_token: string }>('/api/auth/refresh', refreshToken);
+    const { data } = await apiClient.post<{ access_token: string }>(
+      '/api/auth/refresh',
+      refreshToken
+    );
     return data;
   },
 

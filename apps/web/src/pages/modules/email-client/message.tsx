@@ -1,25 +1,17 @@
-import { useParams, Link } from 'react-router-dom';
-import DOMPurify from 'dompurify';
-import {
-  useEmail,
-  useMarkAsRead,
-  useDeleteEmails,
-} from '@/lib/hooks/use-email-client';
-import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import {
-  ArrowLeft,
-  Reply,
-  Trash2,
-  Mail,
-  CheckCheck,
-  Paperclip,
-  Sparkles,
-} from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
 import { useEffect } from 'react';
+
+import { useParams, Link } from 'react-router-dom';
+
+import DOMPurify from 'dompurify';
+import { ArrowLeft, Reply, Trash2, Mail, CheckCheck, Paperclip, Sparkles } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/components/ui/use-toast';
+import { useEmail, useMarkAsRead, useDeleteEmails } from '@/lib/hooks/use-email-client';
+import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
+
 import { EmailDetailSkeleton } from './components/email-detail-skeleton';
 
 export default function EmailMessage() {
@@ -122,9 +114,7 @@ export default function EmailMessage() {
           <Button variant="ghost" size="sm" onClick={() => emailNav.toInbox()}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold">
-            {email.subject || '(Brak tematu)'}
-          </h1>
+          <h1 className="text-2xl font-bold">{email.subject || '(Brak tematu)'}</h1>
           {isUnread && (
             <Badge variant="secondary" className="ml-2">
               Nieprzeczytana
@@ -159,44 +149,28 @@ export default function EmailMessage() {
           {/* Email Headers */}
           <div className="space-y-3 mb-6">
             <div className="flex items-start gap-4">
-              <span className="text-sm text-muted-foreground w-16 shrink-0">
-                Od:
-              </span>
+              <span className="text-sm text-muted-foreground w-16 shrink-0">Od:</span>
               <span className="text-sm font-medium">
                 {email.from.map(formatEmailAddress).join(', ')}
               </span>
             </div>
             <div className="flex items-start gap-4">
-              <span className="text-sm text-muted-foreground w-16 shrink-0">
-                Do:
-              </span>
-              <span className="text-sm">
-                {email.to.map(formatEmailAddress).join(', ')}
-              </span>
+              <span className="text-sm text-muted-foreground w-16 shrink-0">Do:</span>
+              <span className="text-sm">{email.to.map(formatEmailAddress).join(', ')}</span>
             </div>
             {email.cc && email.cc.length > 0 && (
               <div className="flex items-start gap-4">
-                <span className="text-sm text-muted-foreground w-16 shrink-0">
-                  DW:
-                </span>
-                <span className="text-sm">
-                  {email.cc.map(formatEmailAddress).join(', ')}
-                </span>
+                <span className="text-sm text-muted-foreground w-16 shrink-0">DW:</span>
+                <span className="text-sm">{email.cc.map(formatEmailAddress).join(', ')}</span>
               </div>
             )}
             <div className="flex items-start gap-4">
-              <span className="text-sm text-muted-foreground w-16 shrink-0">
-                Data:
-              </span>
+              <span className="text-sm text-muted-foreground w-16 shrink-0">Data:</span>
               <span className="text-sm">{formatDate(email.date)}</span>
             </div>
             <div className="flex items-start gap-4">
-              <span className="text-sm text-muted-foreground w-16 shrink-0">
-                Temat:
-              </span>
-              <span className="text-sm font-medium">
-                {email.subject || '(Brak tematu)'}
-              </span>
+              <span className="text-sm text-muted-foreground w-16 shrink-0">Temat:</span>
+              <span className="text-sm font-medium">{email.subject || '(Brak tematu)'}</span>
             </div>
           </div>
 
@@ -214,11 +188,7 @@ export default function EmailMessage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {email.attachments.map((attachment, index) => (
-                    <Badge
-                      key={index}
-                      variant="outline"
-                      className="cursor-pointer hover:bg-muted"
-                    >
+                    <Badge key={index} variant="outline" className="cursor-pointer hover:bg-muted">
                       {attachment.filename || `Załącznik ${index + 1}`}
                       {attachment.size && (
                         <span className="ml-1 text-muted-foreground">

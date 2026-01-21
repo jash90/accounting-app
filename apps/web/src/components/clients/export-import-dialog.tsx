@@ -1,5 +1,8 @@
 import { useState, useRef } from 'react';
-import { useToast } from '@/components/ui/use-toast';
+
+import { Download, Upload, FileSpreadsheet, AlertCircle, CheckCircle2 } from 'lucide-react';
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -9,10 +12,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { Download, Upload, FileSpreadsheet, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils/cn';
 
 interface ExportImportDialogProps {
@@ -119,7 +121,8 @@ export function ExportImportDialog({
               <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground" />
               <h3 className="mt-4 text-lg font-medium">Eksport do CSV</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Pobierz listę wszystkich klientów w formacie CSV. Plik będzie zawierał wszystkie aktualnie przefiltrowane dane.
+                Pobierz listę wszystkich klientów w formacie CSV. Plik będzie zawierał wszystkie
+                aktualnie przefiltrowane dane.
               </p>
             </div>
 
@@ -169,11 +172,7 @@ export function ExportImportDialog({
                       <p className="text-sm text-muted-foreground">
                         {(selectedFile.size / 1024).toFixed(1)} KB
                       </p>
-                      <Button
-                        variant="link"
-                        size="sm"
-                        onClick={() => setSelectedFile(null)}
-                      >
+                      <Button variant="link" size="sm" onClick={() => setSelectedFile(null)}>
                         Wybierz inny plik
                       </Button>
                     </div>
@@ -195,9 +194,7 @@ export function ExportImportDialog({
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    Nie masz szablonu?
-                  </span>
+                  <span className="text-muted-foreground">Nie masz szablonu?</span>
                   <Button
                     variant="link"
                     size="sm"
@@ -220,10 +217,7 @@ export function ExportImportDialog({
                   <Button variant="outline" onClick={handleClose}>
                     Anuluj
                   </Button>
-                  <Button
-                    onClick={handleImport}
-                    disabled={!selectedFile || isImporting}
-                  >
+                  <Button onClick={handleImport} disabled={!selectedFile || isImporting}>
                     <Upload className="mr-2 h-4 w-4" />
                     {isImporting ? 'Importowanie...' : 'Importuj'}
                   </Button>
@@ -237,17 +231,13 @@ export function ExportImportDialog({
                   ) : (
                     <CheckCircle2 className="h-4 w-4" />
                   )}
-                  <AlertTitle>
-                    Import zakończony
-                  </AlertTitle>
+                  <AlertTitle>Import zakończony</AlertTitle>
                   <AlertDescription>
                     <ul className="mt-2 space-y-1">
                       <li>Zaimportowano: {importResult.imported} klientów</li>
                       <li>Zaktualizowano: {importResult.updated} klientów</li>
                       {importResult.errors.length > 0 && (
-                        <li className="text-destructive">
-                          Błędów: {importResult.errors.length}
-                        </li>
+                        <li className="text-destructive">Błędów: {importResult.errors.length}</li>
                       )}
                     </ul>
                   </AlertDescription>
@@ -267,9 +257,7 @@ export function ExportImportDialog({
                 )}
 
                 <DialogFooter>
-                  <Button onClick={handleClose}>
-                    Zamknij
-                  </Button>
+                  <Button onClick={handleClose}>Zamknij</Button>
                 </DialogFooter>
               </>
             )}

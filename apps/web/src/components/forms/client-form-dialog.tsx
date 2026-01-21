@@ -1,13 +1,15 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useCallback, useMemo } from 'react';
+
+import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Maximize2 } from 'lucide-react';
+
+import { CustomFieldRenderer } from '@/components/clients/custom-field-renderer';
+import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -16,10 +18,9 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { GroupedCombobox } from '@/components/ui/grouped-combobox';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -27,6 +28,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
+import { AmlGroupLabels, GTU_CODES } from '@/lib/constants/polish-labels';
+import { useFieldDefinitions } from '@/lib/hooks/use-clients';
+import { useModuleCreatePath } from '@/lib/hooks/use-module-base-path';
+import { usePkdSearch, usePkdCode } from '@/lib/hooks/use-pkd-search';
 import {
   createClientSchema,
   updateClientSchema,
@@ -41,31 +49,19 @@ import {
   ZusStatusLabels,
   AmlGroup,
 } from '@/types/enums';
-import { Maximize2 } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-import { AmlGroupLabels, GTU_CODES } from '@/lib/constants/polish-labels';
-import { usePkdSearch, usePkdCode } from '@/lib/hooks/use-pkd-search';
-import { Combobox } from '@/components/ui/combobox';
-import { GroupedCombobox } from '@/components/ui/grouped-combobox';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useFieldDefinitions } from '@/lib/hooks/use-clients';
-import { ClientFieldDefinition } from '@/types/entities';
-import { CustomFieldRenderer } from '@/components/clients/custom-field-renderer';
-import { useModuleCreatePath } from '@/lib/hooks/use-module-base-path';
+import { type ClientFieldDefinition } from '@/types/entities';
 
 interface ClientFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   client?: ClientResponseDto;
-  onSubmit: (data: CreateClientFormData | UpdateClientFormData, customFields?: SetCustomFieldValuesDto) => void;
+  onSubmit: (
+    data: CreateClientFormData | UpdateClientFormData,
+    customFields?: SetCustomFieldValuesDto
+  ) => void;
 }
 
-export function ClientFormDialog({
-  open,
-  onOpenChange,
-  client,
-  onSubmit,
-}: ClientFormDialogProps) {
+export function ClientFormDialog({ open, onOpenChange, client, onSubmit }: ClientFormDialogProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const createPath = useModuleCreatePath('clients');
@@ -154,7 +150,7 @@ export function ClientFormDialog({
     if (!selectedPkdCode) return pkdSearchOptions;
 
     // Check if the selected code is already in search results
-    const isInResults = pkdSearchOptions.some(opt => opt.value === selectedPkdCode.code);
+    const isInResults = pkdSearchOptions.some((opt) => opt.value === selectedPkdCode.code);
     if (isInResults) return pkdSearchOptions;
 
     // Add selected code at the beginning for visibility
@@ -235,24 +231,18 @@ export function ClientFormDialog({
 
     // Clean up empty strings to undefined
     const cleanedData = Object.fromEntries(
-      Object.entries(data).map(([key, value]) => [
-        key,
-        value === '' ? undefined : value,
-      ])
+      Object.entries(data).map(([key, value]) => [key, value === '' ? undefined : value])
     );
 
     // Prepare custom field values - convert empty strings to null
     const customFieldsData: SetCustomFieldValuesDto = {
       values: Object.fromEntries(
-        Object.entries(customFieldValues).map(([key, value]) => [
-          key,
-          value === '' ? null : value,
-        ])
+        Object.entries(customFieldValues).map(([key, value]) => [key, value === '' ? null : value])
       ),
     };
 
     // Check if any custom fields have values
-    const hasCustomFieldValues = Object.values(customFieldsData.values).some(v => v !== null);
+    const hasCustomFieldValues = Object.values(customFieldsData.values).some((v) => v !== null);
 
     // Note: Form reset is handled by parent closing dialog on success
     // Do NOT reset here - if mutation fails, user loses their data
@@ -279,9 +269,7 @@ export function ClientFormDialog({
       <DialogContent className="sm:max-w-[700px] max-h-[90vh]">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <DialogTitle>
-              {isEditing ? 'Edytuj klienta' : 'Dodaj klienta'}
-            </DialogTitle>
+            <DialogTitle>{isEditing ? 'Edytuj klienta' : 'Dodaj klienta'}</DialogTitle>
             {!isEditing && (
               <Button
                 type="button"
@@ -299,15 +287,10 @@ export function ClientFormDialog({
 
         <ScrollArea className="max-h-[70vh] pr-4">
           <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(handleSubmit)}
-              className="space-y-6"
-            >
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               {/* Basic Information */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-apptax-navy">
-                  Dane podstawowe
-                </h3>
+                <h3 className="text-sm font-semibold text-apptax-navy">Dane podstawowe</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -345,11 +328,7 @@ export function ClientFormDialog({
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="email@example.com"
-                            {...field}
-                          />
+                          <Input type="email" placeholder="email@example.com" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -384,10 +363,7 @@ export function ClientFormDialog({
                           </p>
                         </div>
                         <FormControl>
-                          <Switch
-                            checked={field.value ?? true}
-                            onCheckedChange={field.onChange}
-                          />
+                          <Switch checked={field.value ?? true} onCheckedChange={field.onChange} />
                         </FormControl>
                       </FormItem>
                     )}
@@ -405,7 +381,9 @@ export function ClientFormDialog({
                     name="companyStartDate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="min-h-[40px] flex items-end">Data rozpoczęcia firmy</FormLabel>
+                        <FormLabel className="min-h-[40px] flex items-end">
+                          Data rozpoczęcia firmy
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type="date"
@@ -416,11 +394,7 @@ export function ClientFormDialog({
                                 : ''
                             }
                             onChange={(e) =>
-                              field.onChange(
-                                e.target.value
-                                  ? new Date(e.target.value)
-                                  : undefined
-                              )
+                              field.onChange(e.target.value ? new Date(e.target.value) : undefined)
                             }
                           />
                         </FormControl>
@@ -445,11 +419,7 @@ export function ClientFormDialog({
                                 : ''
                             }
                             onChange={(e) =>
-                              field.onChange(
-                                e.target.value
-                                  ? new Date(e.target.value)
-                                  : undefined
-                              )
+                              field.onChange(e.target.value ? new Date(e.target.value) : undefined)
                             }
                           />
                         </FormControl>
@@ -474,11 +444,7 @@ export function ClientFormDialog({
                                 : ''
                             }
                             onChange={(e) =>
-                              field.onChange(
-                                e.target.value
-                                  ? new Date(e.target.value)
-                                  : undefined
-                              )
+                              field.onChange(e.target.value ? new Date(e.target.value) : undefined)
                             }
                           />
                         </FormControl>
@@ -491,9 +457,7 @@ export function ClientFormDialog({
 
               {/* Tax and Employment */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-apptax-navy">
-                  Podatki i zatrudnienie
-                </h3>
+                <h3 className="text-sm font-semibold text-apptax-navy">Podatki i zatrudnienie</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -502,23 +466,18 @@ export function ClientFormDialog({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Forma zatrudnienia</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Wybierz..." />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Object.entries(EmploymentTypeLabels).map(
-                              ([value, label]) => (
-                                <SelectItem key={value} value={value}>
-                                  {label}
-                                </SelectItem>
-                              )
-                            )}
+                            {Object.entries(EmploymentTypeLabels).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -532,23 +491,18 @@ export function ClientFormDialog({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Status VAT</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Wybierz..." />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Object.entries(VatStatusLabels).map(
-                              ([value, label]) => (
-                                <SelectItem key={value} value={value}>
-                                  {label}
-                                </SelectItem>
-                              )
-                            )}
+                            {Object.entries(VatStatusLabels).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -562,23 +516,18 @@ export function ClientFormDialog({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Forma opodatkowania</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Wybierz..." />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Object.entries(TaxSchemeLabels).map(
-                              ([value, label]) => (
-                                <SelectItem key={value} value={value}>
-                                  {label}
-                                </SelectItem>
-                              )
-                            )}
+                            {Object.entries(TaxSchemeLabels).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -592,23 +541,18 @@ export function ClientFormDialog({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Status ZUS</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Wybierz..." />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Object.entries(ZusStatusLabels).map(
-                              ([value, label]) => (
-                                <SelectItem key={value} value={value}>
-                                  {label}
-                                </SelectItem>
-                              )
-                            )}
+                            {Object.entries(ZusStatusLabels).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -620,9 +564,7 @@ export function ClientFormDialog({
 
               {/* Additional Information */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-apptax-navy">
-                  Dodatkowe informacje
-                </h3>
+                <h3 className="text-sm font-semibold text-apptax-navy">Dodatkowe informacje</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -676,10 +618,7 @@ export function ClientFormDialog({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Grupa AML</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value || ''}
-                        >
+                        <Select onValueChange={field.onChange} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Wybierz grupę ryzyka" />
@@ -739,9 +678,7 @@ export function ClientFormDialog({
               {/* Custom Fields */}
               {activeFieldDefinitions.length > 0 && (
                 <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-apptax-navy">
-                    Pola niestandardowe
-                  </h3>
+                  <h3 className="text-sm font-semibold text-apptax-navy">Pola niestandardowe</h3>
 
                   <div className="grid grid-cols-2 gap-4">
                     {activeFieldDefinitions
@@ -767,11 +704,7 @@ export function ClientFormDialog({
               )}
 
               <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => handleOpenChange(false)}
-                >
+                <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>
                   Anuluj
                 </Button>
                 <Button

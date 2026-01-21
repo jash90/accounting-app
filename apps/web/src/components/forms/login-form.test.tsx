@@ -1,10 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
-import LoginPage from '@/pages/public/login-page';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import * as useAuthModule from '@/lib/hooks/use-auth';
+import LoginPage from '@/pages/public/login-page';
 
 // Mock the useAuth hook
 vi.mock('@/lib/hooks/use-auth', () => ({
@@ -21,9 +23,7 @@ const createWrapper = () => {
 
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={['/login']}>
-        {children}
-      </MemoryRouter>
+      <MemoryRouter initialEntries={['/login']}>{children}</MemoryRouter>
     </QueryClientProvider>
   );
   Wrapper.displayName = 'TestWrapper';
@@ -202,7 +202,9 @@ describe('LoginPage', () => {
       render(<LoginPage />, { wrapper: createWrapper() });
 
       expect(screen.getByRole('alert')).toBeInTheDocument();
-      expect(screen.getByText('Nieprawidłowe dane logowania. Spróbuj ponownie.')).toBeInTheDocument();
+      expect(
+        screen.getByText('Nieprawidłowe dane logowania. Spróbuj ponownie.')
+      ).toBeInTheDocument();
     });
   });
 
@@ -324,4 +326,3 @@ describe('LoginPage', () => {
     });
   });
 });
-

@@ -1,6 +1,8 @@
 import { Injectable, InternalServerErrorException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
+
 import { NotificationSettings, User } from '@accounting/common';
 
 export interface UpdateNotificationSettingsDto {
@@ -18,7 +20,7 @@ export class NotificationSettingsService {
     @InjectRepository(NotificationSettings)
     private readonly settingsRepository: Repository<NotificationSettings>,
     @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly userRepository: Repository<User>
   ) {}
 
   async getSettings(user: User): Promise<NotificationSettings> {
@@ -79,9 +81,9 @@ export class NotificationSettingsService {
 
   async updateSettings(
     user: User,
-    dto: UpdateNotificationSettingsDto,
+    dto: UpdateNotificationSettingsDto
   ): Promise<NotificationSettings> {
-    let settings = await this.getSettings(user);
+    const settings = await this.getSettings(user);
 
     Object.assign(settings, dto);
     return this.settingsRepository.save(settings);
@@ -117,7 +119,7 @@ export class NotificationSettingsService {
   async setUserSettings(
     userId: string,
     companyId: string,
-    dto: UpdateNotificationSettingsDto,
+    dto: UpdateNotificationSettingsDto
   ): Promise<NotificationSettings> {
     // Validate user belongs to the specified company (multi-tenant isolation)
     const targetUser = await this.userRepository.findOne({
@@ -151,7 +153,7 @@ export class NotificationSettingsService {
       .values(defaultSettings)
       .orUpdate(
         ['receiveOnCreate', 'receiveOnUpdate', 'receiveOnDelete', 'isAdminCopy'],
-        ['companyId', 'userId', 'moduleSlug'],
+        ['companyId', 'userId', 'moduleSlug']
       )
       .execute();
 
@@ -165,9 +167,7 @@ export class NotificationSettingsService {
     });
 
     if (!settings) {
-      throw new InternalServerErrorException(
-        'Failed to create or retrieve notification settings'
-      );
+      throw new InternalServerErrorException('Failed to create or retrieve notification settings');
     }
 
     return settings;

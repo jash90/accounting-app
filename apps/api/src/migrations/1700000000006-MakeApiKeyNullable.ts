@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
 export class MakeApiKeyNullable1700000000006 implements MigrationInterface {
   name = 'MakeApiKeyNullable1700000000006';

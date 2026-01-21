@@ -9,6 +9,7 @@ This section covers advanced patterns for complex modules requiring encryption, 
 ## When to Use Advanced Patterns
 
 Use these patterns when your module needs:
+
 - **Multiple related entities** (3+ entities with complex relationships)
 - **Sensitive data handling** (API keys, credentials, tokens)
 - **External service integration** (third-party APIs, providers)
@@ -107,7 +108,7 @@ For entities requiring unique combinations:
 
 ```typescript
 @Entity('token_usage')
-@Index(['companyId', 'date'], { unique: true })  // One record per company per day
+@Index(['companyId', 'date'], { unique: true }) // One record per company per day
 export class TokenUsage {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -185,7 +186,7 @@ export class AIConfigurationService implements OnModuleInit {
     const key = process.env.AI_ENCRYPTION_KEY;
     if (!key) {
       throw new Error(
-        'AI_ENCRYPTION_KEY environment variable is required for secure API key storage',
+        'AI_ENCRYPTION_KEY environment variable is required for secure API key storage'
       );
     }
     // Derive a proper 32-byte key using PBKDF2
@@ -199,11 +200,7 @@ export class AIConfigurationService implements OnModuleInit {
    */
   private encryptApiKey(apiKey: string): string {
     const iv = crypto.randomBytes(12); // GCM recommended IV size is 12 bytes
-    const cipher = crypto.createCipheriv(
-      this.ALGORITHM,
-      this.ENCRYPTION_KEY,
-      iv,
-    );
+    const cipher = crypto.createCipheriv(this.ALGORITHM, this.ENCRYPTION_KEY, iv);
     let encrypted = cipher.update(apiKey, 'utf8', 'hex');
     encrypted += cipher.final('hex');
     const authTag = cipher.getAuthTag();
@@ -216,11 +213,7 @@ export class AIConfigurationService implements OnModuleInit {
   private decryptApiKey(encryptedKey: string): string {
     const [ivHex, encrypted] = encryptedKey.split(':');
     const iv = Buffer.from(ivHex, 'hex');
-    const decipher = crypto.createDecipheriv(
-      this.ALGORITHM,
-      this.ENCRYPTION_KEY,
-      iv,
-    );
+    const decipher = crypto.createDecipheriv(this.ALGORITHM, this.ENCRYPTION_KEY, iv);
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;
@@ -229,10 +222,7 @@ export class AIConfigurationService implements OnModuleInit {
   /**
    * Store configuration - encrypt API key before saving
    */
-  async create(
-    createDto: CreateAIConfigurationDto,
-    user: User,
-  ): Promise<AIConfiguration> {
+  async create(createDto: CreateAIConfigurationDto, user: User): Promise<AIConfiguration> {
     const configuration = this.configRepository.create({
       ...createDto,
       companyId: user.companyId,
@@ -342,13 +332,10 @@ export abstract class AIProviderService {
     model: string,
     temperature: number,
     maxTokens: number,
-    apiKey: string,
+    apiKey: string
   ): Promise<ChatResponse>;
 
-  abstract generateEmbedding(
-    text: string,
-    apiKey: string,
-  ): Promise<EmbeddingResponse>;
+  abstract generateEmbedding(text: string, apiKey: string): Promise<EmbeddingResponse>;
 
   abstract listModels(apiKey: string): Promise<string[]>;
 }
@@ -377,7 +364,7 @@ export class OpenAIProviderService extends AIProviderService {
     model: string,
     temperature: number,
     maxTokens: number,
-    apiKey: string,
+    apiKey: string
   ): Promise<ChatResponse> {
     const client = new OpenAI({ apiKey });
 
@@ -397,10 +384,7 @@ export class OpenAIProviderService extends AIProviderService {
     };
   }
 
-  async generateEmbedding(
-    text: string,
-    apiKey: string,
-  ): Promise<EmbeddingResponse> {
+  async generateEmbedding(text: string, apiKey: string): Promise<EmbeddingResponse> {
     const client = new OpenAI({ apiKey });
 
     const response = await client.embeddings.create({
@@ -418,9 +402,7 @@ export class OpenAIProviderService extends AIProviderService {
     const client = new OpenAI({ apiKey });
     const response = await client.models.list();
 
-    return response.data
-      .filter((model) => model.id.startsWith('gpt-'))
-      .map((model) => model.id);
+    return response.data.filter((model) => model.id.startsWith('gpt-')).map((model) => model.id);
   }
 }
 ```
@@ -440,7 +422,7 @@ export class OpenRouterProviderService extends AIProviderService {
     model: string,
     temperature: number,
     maxTokens: number,
-    apiKey: string,
+    apiKey: string
   ): Promise<ChatResponse> {
     // OpenRouter uses OpenAI-compatible API
     const client = new OpenAI({
@@ -480,7 +462,7 @@ export class AIChatService {
   constructor(
     private readonly openAIProvider: OpenAIProviderService,
     private readonly openRouterProvider: OpenRouterProviderService,
-    private readonly configService: AIConfigurationService,
+    private readonly configService: AIConfigurationService
   ) {
     // Register available providers
     this.providers = new Map([
@@ -501,9 +483,7 @@ export class AIChatService {
     const provider = this.providers.get(config.provider);
 
     if (!provider) {
-      throw new BadRequestException(
-        `Unsupported AI provider: ${config.provider}`,
-      );
+      throw new BadRequestException(`Unsupported AI provider: ${config.provider}`);
     }
 
     const apiKey = await this.configService.getDecryptedApiKey(companyId);
@@ -520,7 +500,7 @@ export class AIChatService {
       config.model,
       config.temperature,
       config.maxTokens,
-      apiKey,
+      apiKey
     );
 
     return response;
@@ -575,30 +555,22 @@ export class AIContextController {
       },
       fileFilter: (req, file, cb) => {
         // Validate file types
-        const allowedTypes = [
-          'text/plain',
-          'text/markdown',
-          'application/pdf',
-          'application/json',
-        ];
+        const allowedTypes = ['text/plain', 'text/markdown', 'application/pdf', 'application/json'];
         const allowedExtensions = ['.txt', '.md', '.pdf', '.json'];
 
         const ext = extname(file.originalname).toLowerCase();
-        if (
-          allowedTypes.includes(file.mimetype) ||
-          allowedExtensions.includes(ext)
-        ) {
+        if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(ext)) {
           cb(null, true);
         } else {
           cb(
             new BadRequestException(
-              `File type not allowed. Allowed: ${allowedExtensions.join(', ')}`,
+              `File type not allowed. Allowed: ${allowedExtensions.join(', ')}`
             ),
-            false,
+            false
           );
         }
       },
-    }),
+    })
   )
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -621,7 +593,7 @@ export class AIContextController {
   async uploadContext(
     @UploadedFile() file: Express.Multer.File,
     @Body('title') title: string,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     if (!file) {
       throw new BadRequestException('File is required');
@@ -637,11 +609,7 @@ export class AIContextController {
 ```typescript
 @Injectable()
 export class AIContextService {
-  async createFromFile(
-    file: Express.Multer.File,
-    title: string,
-    user: User,
-  ): Promise<AIContext> {
+  async createFromFile(file: Express.Multer.File, title: string, user: User): Promise<AIContext> {
     // Read and process file content
     const content = await this.extractContent(file);
 
@@ -743,16 +711,13 @@ export class AddPgvector implements MigrationInterface {
 export class AIContextService {
   constructor(
     private readonly configService: AIConfigurationService,
-    private readonly openAIProvider: OpenAIProviderService,
+    private readonly openAIProvider: OpenAIProviderService
   ) {}
 
   /**
    * Generate embedding vector for text
    */
-  private async generateEmbedding(
-    text: string,
-    companyId: string,
-  ): Promise<number[]> {
+  private async generateEmbedding(text: string, companyId: string): Promise<number[]> {
     const apiKey = await this.configService.getDecryptedApiKey(companyId);
 
     const response = await this.openAIProvider.generateEmbedding(text, apiKey);
@@ -774,7 +739,7 @@ export class AIContextService {
     query: string,
     companyId: string,
     limit: number = 5,
-    minSimilarity: number = 0.7,
+    minSimilarity: number = 0.7
   ): Promise<AIContext[]> {
     // Generate embedding for query
     const queryEmbedding = await this.generateEmbedding(query, companyId);
@@ -782,16 +747,8 @@ export class AIContextService {
     // Use raw query for vector similarity search
     const results = await this.contextRepository
       .createQueryBuilder('context')
-      .select([
-        'context.id',
-        'context.title',
-        'context.content',
-        'context.source',
-      ])
-      .addSelect(
-        `1 - (context.embedding <=> :embedding)`,
-        'similarity',
-      )
+      .select(['context.id', 'context.title', 'context.content', 'context.source'])
+      .addSelect(`1 - (context.embedding <=> :embedding)`, 'similarity')
       .where('context.companyId = :companyId', { companyId })
       .andWhere('context.isActive = true')
       .andWhere('context.embedding IS NOT NULL')
@@ -934,7 +891,7 @@ export class TokenUsageService {
   async recordUsage(
     companyId: string,
     promptTokens: number,
-    completionTokens: number,
+    completionTokens: number
   ): Promise<void> {
     const today = new Date().toISOString().split('T')[0];
 
@@ -958,7 +915,7 @@ export class TokenUsageService {
           'totalTokens = token_usage.totalTokens + EXCLUDED.totalTokens',
           'requestCount = token_usage.requestCount + 1',
         ],
-        ['companyId', 'date'],
+        ['companyId', 'date']
       )
       .execute();
   }
@@ -968,7 +925,7 @@ export class TokenUsageService {
    */
   async checkLimits(
     companyId: string,
-    estimatedTokens: number,
+    estimatedTokens: number
   ): Promise<{ allowed: boolean; reason?: string; usage?: TokenUsageStats }> {
     const limit = await this.getCompanyLimit(companyId);
     if (!limit) {
@@ -1001,7 +958,7 @@ export class TokenUsageService {
     if (monthlyPercentage >= limit.warningThreshold) {
       // Log warning but allow request
       this.logger.warn(
-        `Company ${companyId} at ${(monthlyPercentage * 100).toFixed(1)}% of monthly limit`,
+        `Company ${companyId} at ${(monthlyPercentage * 100).toFixed(1)}% of monthly limit`
       );
     }
 
@@ -1075,10 +1032,7 @@ AI Agent Controllers:
 export class AIConfigurationController {
   @Post()
   @ApiOperation({ summary: 'Create AI configuration (Admin/Owner only)' })
-  async create(
-    @Body() createDto: CreateAIConfigurationDto,
-    @CurrentUser() user: User,
-  ) {
+  async create(@Body() createDto: CreateAIConfigurationDto, @CurrentUser() user: User) {
     return this.configService.create(createDto, user);
   }
 
@@ -1087,7 +1041,7 @@ export class AIConfigurationController {
   async update(
     @Param('id') id: string,
     @Body() updateDto: UpdateAIConfigurationDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.configService.update(id, updateDto, user);
   }
@@ -1113,10 +1067,7 @@ export class AIConversationController {
   @Post()
   @RequirePermission('ai-agent', Permission.WRITE)
   @ApiOperation({ summary: 'Start new conversation' })
-  async create(
-    @Body() createDto: CreateConversationDto,
-    @CurrentUser() user: User,
-  ) {
+  async create(@Body() createDto: CreateConversationDto, @CurrentUser() user: User) {
     return this.conversationService.create(createDto, user);
   }
 
@@ -1126,7 +1077,7 @@ export class AIConversationController {
   async sendMessage(
     @Param('id') conversationId: string,
     @Body() messageDto: SendMessageDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.chatService.chat(conversationId, messageDto.content, user);
   }
@@ -1195,11 +1146,7 @@ export class TokenUsageController {
     OpenAIProviderService,
     OpenRouterProviderService,
   ],
-  exports: [
-    AIConfigurationService,
-    AIChatService,
-    TokenUsageService,
-  ],
+  exports: [AIConfigurationService, AIChatService, TokenUsageService],
 })
 export class AIAgentModule {}
 ```

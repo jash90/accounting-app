@@ -12,7 +12,9 @@ test.describe('Email Client Module - Employee Access', () => {
       await inboxPage.expectToBeOnInbox();
     });
 
-    test('should display email list or empty inbox message', async ({ authenticatedEmployeePage }) => {
+    test('should display email list or empty inbox message', async ({
+      authenticatedEmployeePage,
+    }) => {
       const inboxPage = new EmailInboxPage(authenticatedEmployeePage);
       await inboxPage.goto();
       await inboxPage.expectLoadingComplete();
@@ -24,7 +26,9 @@ test.describe('Email Client Module - Employee Access', () => {
       await inboxPage.goto();
       await inboxPage.expectLoadingComplete();
 
-      const composeButton = authenticatedEmployeePage.locator('button:has-text("Compose"), a:has-text("Compose")').first();
+      const composeButton = authenticatedEmployeePage
+        .locator('button:has-text("Compose"), a:has-text("Compose")')
+        .first();
       await expect(composeButton).toBeVisible();
     });
 
@@ -37,7 +41,9 @@ test.describe('Email Client Module - Employee Access', () => {
       await expect(refreshButton).toBeVisible();
     });
 
-    test('should navigate to compose page when clicking Compose button', async ({ authenticatedEmployeePage }) => {
+    test('should navigate to compose page when clicking Compose button', async ({
+      authenticatedEmployeePage,
+    }) => {
       const inboxPage = new EmailInboxPage(authenticatedEmployeePage);
       await inboxPage.goto();
       await inboxPage.expectLoadingComplete();
@@ -55,15 +61,23 @@ test.describe('Email Client Module - Employee Access', () => {
       await composePage.expectToBeOnCompose();
     });
 
-    test('should display all form fields in compose view', async ({ authenticatedEmployeePage }) => {
+    test('should display all form fields in compose view', async ({
+      authenticatedEmployeePage,
+    }) => {
       const composePage = new EmailComposePage(authenticatedEmployeePage);
       await composePage.goto();
       await composePage.expectLoadingComplete();
 
       // Check for To, Subject, and Content fields
-      const toInput = authenticatedEmployeePage.locator('input#to, [name="to"], input[placeholder*="recipient"]');
-      const subjectInput = authenticatedEmployeePage.locator('input#subject, [name="subject"], input[placeholder*="subject"]');
-      const contentInput = authenticatedEmployeePage.locator('textarea#content, [name="content"], textarea[placeholder*="message"]');
+      const toInput = authenticatedEmployeePage.locator(
+        'input#to, [name="to"], input[placeholder*="recipient"]'
+      );
+      const subjectInput = authenticatedEmployeePage.locator(
+        'input#subject, [name="subject"], input[placeholder*="subject"]'
+      );
+      const contentInput = authenticatedEmployeePage.locator(
+        'textarea#content, [name="content"], textarea[placeholder*="message"]'
+      );
 
       await expect(toInput).toBeVisible();
       await expect(subjectInput).toBeVisible();
@@ -89,7 +103,9 @@ test.describe('Email Client Module - Employee Access', () => {
       expect(await composePage.getContentValue()).toBe(testContent);
     });
 
-    test('should show CC/BCC fields when toggle is clicked', async ({ authenticatedEmployeePage }) => {
+    test('should show CC/BCC fields when toggle is clicked', async ({
+      authenticatedEmployeePage,
+    }) => {
       const composePage = new EmailComposePage(authenticatedEmployeePage);
       await composePage.goto();
       await composePage.expectLoadingComplete();
@@ -105,13 +121,17 @@ test.describe('Email Client Module - Employee Access', () => {
       await expect(bccInput).toBeVisible();
     });
 
-    test('should have Send and Save Draft buttons visible', async ({ authenticatedEmployeePage }) => {
+    test('should have Send and Save Draft buttons visible', async ({
+      authenticatedEmployeePage,
+    }) => {
       const composePage = new EmailComposePage(authenticatedEmployeePage);
       await composePage.goto();
       await composePage.expectLoadingComplete();
 
       const sendButton = authenticatedEmployeePage.locator('button:has-text("Send")');
-      const saveDraftButton = authenticatedEmployeePage.locator('button:has-text("Save Draft"), button:has-text("Update Draft")');
+      const saveDraftButton = authenticatedEmployeePage.locator(
+        'button:has-text("Save Draft"), button:has-text("Update Draft")'
+      );
 
       await expect(sendButton).toBeVisible();
       await expect(saveDraftButton).toBeVisible();
@@ -123,11 +143,15 @@ test.describe('Email Client Module - Employee Access', () => {
       await composePage.expectLoadingComplete();
 
       // Check for attachment zone or file input
-      const attachmentZone = authenticatedEmployeePage.locator('[data-testid="attachment-zone"], .border-dashed, input[type="file"]');
+      const attachmentZone = authenticatedEmployeePage.locator(
+        '[data-testid="attachment-zone"], .border-dashed, input[type="file"]'
+      );
       await expect(attachmentZone.first()).toBeVisible();
     });
 
-    test('should navigate back to inbox when clicking back button', async ({ authenticatedEmployeePage }) => {
+    test('should navigate back to inbox when clicking back button', async ({
+      authenticatedEmployeePage,
+    }) => {
       const composePage = new EmailComposePage(authenticatedEmployeePage);
       await composePage.goto();
       await composePage.expectLoadingComplete();
@@ -172,7 +196,9 @@ test.describe('Email Client Module - Employee Access', () => {
   });
 
   test.describe('Navigation Between Email Views', () => {
-    test('should navigate from inbox to compose and back', async ({ authenticatedEmployeePage }) => {
+    test('should navigate from inbox to compose and back', async ({
+      authenticatedEmployeePage,
+    }) => {
       const inboxPage = new EmailInboxPage(authenticatedEmployeePage);
       const composePage = new EmailComposePage(authenticatedEmployeePage);
 
@@ -189,7 +215,9 @@ test.describe('Email Client Module - Employee Access', () => {
       await inboxPage.expectToBeOnInbox();
     });
 
-    test('should navigate from inbox to drafts via sidebar', async ({ authenticatedEmployeePage }) => {
+    test('should navigate from inbox to drafts via sidebar', async ({
+      authenticatedEmployeePage,
+    }) => {
       const inboxPage = new EmailInboxPage(authenticatedEmployeePage);
       await inboxPage.goto();
       await inboxPage.expectToBeOnInbox();
@@ -200,7 +228,9 @@ test.describe('Email Client Module - Employee Access', () => {
       await draftsPage.expectToBeOnDrafts();
     });
 
-    test('should maintain module context across navigation', async ({ authenticatedEmployeePage }) => {
+    test('should maintain module context across navigation', async ({
+      authenticatedEmployeePage,
+    }) => {
       const inboxPage = new EmailInboxPage(authenticatedEmployeePage);
       const composePage = new EmailComposePage(authenticatedEmployeePage);
       const draftsPage = new EmailDraftsPage(authenticatedEmployeePage);
@@ -259,13 +289,17 @@ test.describe('Message Detail View', () => {
     expect(url).toContain('/modules/email-client/');
   });
 
-  test('should display back to inbox button in message view', async ({ authenticatedEmployeePage }) => {
+  test('should display back to inbox button in message view', async ({
+    authenticatedEmployeePage,
+  }) => {
     const inboxPage = new EmailInboxPage(authenticatedEmployeePage);
     await inboxPage.goto();
     await inboxPage.expectLoadingComplete();
 
     // Check if there are any emails to click
-    const emailItems = authenticatedEmployeePage.locator('[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)');
+    const emailItems = authenticatedEmployeePage.locator(
+      '[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)'
+    );
     const count = await emailItems.count();
 
     if (count > 0) {
@@ -274,7 +308,9 @@ test.describe('Message Detail View', () => {
       await authenticatedEmployeePage.waitForTimeout(1000);
 
       // Should have back button
-      const backButton = authenticatedEmployeePage.locator('button:has-text("Back"), a:has-text("Back"), [aria-label="Back"]');
+      const backButton = authenticatedEmployeePage.locator(
+        'button:has-text("Back"), a:has-text("Back"), [aria-label="Back"]'
+      );
       await expect(backButton.first()).toBeVisible();
     } else {
       // No emails - test passes (empty inbox state)
@@ -287,64 +323,84 @@ test.describe('Message Detail View', () => {
     await inboxPage.goto();
     await inboxPage.expectLoadingComplete();
 
-    const emailItems = authenticatedEmployeePage.locator('[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)');
+    const emailItems = authenticatedEmployeePage.locator(
+      '[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)'
+    );
     const count = await emailItems.count();
 
     if (count > 0) {
       await emailItems.first().click();
       await authenticatedEmployeePage.waitForTimeout(1000);
 
-      const replyButton = authenticatedEmployeePage.locator('button:has-text("Reply"), [aria-label="Reply"]');
+      const replyButton = authenticatedEmployeePage.locator(
+        'button:has-text("Reply"), [aria-label="Reply"]'
+      );
       await expect(replyButton.first()).toBeVisible();
     } else {
       expect(count).toBe(0);
     }
   });
 
-  test('should display AI Reply button when viewing email', async ({ authenticatedEmployeePage }) => {
+  test('should display AI Reply button when viewing email', async ({
+    authenticatedEmployeePage,
+  }) => {
     const inboxPage = new EmailInboxPage(authenticatedEmployeePage);
     await inboxPage.goto();
     await inboxPage.expectLoadingComplete();
 
-    const emailItems = authenticatedEmployeePage.locator('[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)');
+    const emailItems = authenticatedEmployeePage.locator(
+      '[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)'
+    );
     const count = await emailItems.count();
 
     if (count > 0) {
       await emailItems.first().click();
       await authenticatedEmployeePage.waitForTimeout(1000);
 
-      const aiReplyButton = authenticatedEmployeePage.locator('button:has-text("AI Reply"), button:has-text("AI"), [aria-label*="AI"]');
+      const aiReplyButton = authenticatedEmployeePage.locator(
+        'button:has-text("AI Reply"), button:has-text("AI"), [aria-label*="AI"]'
+      );
       await expect(aiReplyButton.first()).toBeVisible();
     } else {
       expect(count).toBe(0);
     }
   });
 
-  test('should display Forward button when viewing email', async ({ authenticatedEmployeePage }) => {
+  test('should display Forward button when viewing email', async ({
+    authenticatedEmployeePage,
+  }) => {
     const inboxPage = new EmailInboxPage(authenticatedEmployeePage);
     await inboxPage.goto();
     await inboxPage.expectLoadingComplete();
 
-    const emailItems = authenticatedEmployeePage.locator('[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)');
+    const emailItems = authenticatedEmployeePage.locator(
+      '[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)'
+    );
     const count = await emailItems.count();
 
     if (count > 0) {
       await emailItems.first().click();
       await authenticatedEmployeePage.waitForTimeout(1000);
 
-      const forwardButton = authenticatedEmployeePage.locator('button:has-text("Forward"), [aria-label="Forward"]');
+      const forwardButton = authenticatedEmployeePage.locator(
+        'button:has-text("Forward"), [aria-label="Forward"]'
+      );
       await expect(forwardButton.first()).toBeVisible();
     } else {
       expect(count).toBe(0);
     }
   });
 
-  test('should display email metadata (from, to, date) when viewing', async ({ authenticatedEmployeePage }) => {
+  test('should display email metadata (from, to, date) when viewing', async ({
+    authenticatedEmployeePage,
+  }) => {
     const inboxPage = new EmailInboxPage(authenticatedEmployeePage);
     await inboxPage.goto();
     await inboxPage.expectLoadingComplete();
 
-    const emailItems = authenticatedEmployeePage.locator('[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)');
+    const emailItems = authenticatedEmployeePage.locator(
+      '[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)'
+    );
     const count = await emailItems.count();
 
     if (count > 0) {
@@ -356,8 +412,8 @@ test.describe('Message Detail View', () => {
       const toLabel = authenticatedEmployeePage.locator('text=To, text=to:');
 
       // At least one metadata should be visible
-      const hasFrom = await fromLabel.count() > 0;
-      const hasTo = await toLabel.count() > 0;
+      const hasFrom = (await fromLabel.count()) > 0;
+      const hasTo = (await toLabel.count()) > 0;
       expect(hasFrom || hasTo).toBeTruthy();
     } else {
       expect(count).toBe(0);
@@ -369,7 +425,9 @@ test.describe('Message Detail View', () => {
     await inboxPage.goto();
     await inboxPage.expectLoadingComplete();
 
-    const emailItems = authenticatedEmployeePage.locator('[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)');
+    const emailItems = authenticatedEmployeePage.locator(
+      '[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)'
+    );
     const count = await emailItems.count();
 
     if (count > 0) {
@@ -377,8 +435,10 @@ test.describe('Message Detail View', () => {
       await authenticatedEmployeePage.waitForTimeout(1000);
 
       // Click back button
-      const backButton = authenticatedEmployeePage.locator('button:has-text("Back"), a:has-text("Back"), [aria-label="Back"]');
-      if (await backButton.count() > 0) {
+      const backButton = authenticatedEmployeePage.locator(
+        'button:has-text("Back"), a:has-text("Back"), [aria-label="Back"]'
+      );
+      if ((await backButton.count()) > 0) {
         await backButton.first().click();
         await inboxPage.expectToBeOnInbox();
       }
@@ -387,12 +447,16 @@ test.describe('Message Detail View', () => {
     }
   });
 
-  test('should display attachments section if email has attachments', async ({ authenticatedEmployeePage }) => {
+  test('should display attachments section if email has attachments', async ({
+    authenticatedEmployeePage,
+  }) => {
     const inboxPage = new EmailInboxPage(authenticatedEmployeePage);
     await inboxPage.goto();
     await inboxPage.expectLoadingComplete();
 
-    const emailItems = authenticatedEmployeePage.locator('[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)');
+    const emailItems = authenticatedEmployeePage.locator(
+      '[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)'
+    );
     const count = await emailItems.count();
 
     if (count > 0) {
@@ -400,9 +464,11 @@ test.describe('Message Detail View', () => {
       await authenticatedEmployeePage.waitForTimeout(1000);
 
       // Attachments section might or might not be present depending on email
-      const attachmentsSection = authenticatedEmployeePage.locator('text=Attachment, text=attachment, [data-testid="attachments"]');
+      const attachmentsSection = authenticatedEmployeePage.locator(
+        'text=Attachment, text=attachment, [data-testid="attachments"]'
+      );
       // Just verify we can check for it - pass regardless
-      const hasAttachments = await attachmentsSection.count() >= 0;
+      const hasAttachments = (await attachmentsSection.count()) >= 0;
       expect(hasAttachments).toBeTruthy();
     } else {
       expect(count).toBe(0);
@@ -411,14 +477,20 @@ test.describe('Message Detail View', () => {
 });
 
 test.describe('Email Actions', () => {
-  test('should have checkbox for selecting emails in inbox', async ({ authenticatedEmployeePage }) => {
+  test('should have checkbox for selecting emails in inbox', async ({
+    authenticatedEmployeePage,
+  }) => {
     const inboxPage = new EmailInboxPage(authenticatedEmployeePage);
     await inboxPage.goto();
     await inboxPage.expectLoadingComplete();
 
     // Check for checkbox elements in email list
-    const checkboxes = authenticatedEmployeePage.locator('input[type="checkbox"], [role="checkbox"]');
-    const emailItems = authenticatedEmployeePage.locator('[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)');
+    const checkboxes = authenticatedEmployeePage.locator(
+      'input[type="checkbox"], [role="checkbox"]'
+    );
+    const emailItems = authenticatedEmployeePage.locator(
+      '[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)'
+    );
 
     const emailCount = await emailItems.count();
     if (emailCount > 0) {
@@ -435,7 +507,9 @@ test.describe('Email Actions', () => {
     await inboxPage.goto();
     await inboxPage.expectLoadingComplete();
 
-    const checkboxes = authenticatedEmployeePage.locator('[data-testid="email-item"] input[type="checkbox"], .email-item input[type="checkbox"], tr input[type="checkbox"]');
+    const checkboxes = authenticatedEmployeePage.locator(
+      '[data-testid="email-item"] input[type="checkbox"], .email-item input[type="checkbox"], tr input[type="checkbox"]'
+    );
     const count = await checkboxes.count();
 
     if (count > 0) {
@@ -452,30 +526,40 @@ test.describe('Email Actions', () => {
     await inboxPage.expectLoadingComplete();
 
     // Look for a header checkbox or "Select All" option
-    const selectAllCheckbox = authenticatedEmployeePage.locator('th input[type="checkbox"], thead input[type="checkbox"], [aria-label*="Select all"], [aria-label*="select all"]');
+    const selectAllCheckbox = authenticatedEmployeePage.locator(
+      'th input[type="checkbox"], thead input[type="checkbox"], [aria-label*="Select all"], [aria-label*="select all"]'
+    );
 
     // This feature may or may not exist depending on UI implementation
-    const exists = await selectAllCheckbox.count() >= 0;
+    const exists = (await selectAllCheckbox.count()) >= 0;
     expect(exists).toBeTruthy();
   });
 
-  test('should show bulk actions when emails are selected', async ({ authenticatedEmployeePage }) => {
+  test('should show bulk actions when emails are selected', async ({
+    authenticatedEmployeePage,
+  }) => {
     const inboxPage = new EmailInboxPage(authenticatedEmployeePage);
     await inboxPage.goto();
     await inboxPage.expectLoadingComplete();
 
-    const checkboxes = authenticatedEmployeePage.locator('[data-testid="email-item"] input[type="checkbox"], .email-item input[type="checkbox"], tr input[type="checkbox"]');
+    const checkboxes = authenticatedEmployeePage.locator(
+      '[data-testid="email-item"] input[type="checkbox"], .email-item input[type="checkbox"], tr input[type="checkbox"]'
+    );
     const count = await checkboxes.count();
 
     if (count > 0) {
       await checkboxes.first().click();
 
       // Look for bulk action buttons
-      const deleteButton = authenticatedEmployeePage.locator('button:has-text("Delete"), [aria-label="Delete"]');
-      const markReadButton = authenticatedEmployeePage.locator('button:has-text("Mark as read"), button:has-text("Mark Read")');
+      const deleteButton = authenticatedEmployeePage.locator(
+        'button:has-text("Delete"), [aria-label="Delete"]'
+      );
+      const markReadButton = authenticatedEmployeePage.locator(
+        'button:has-text("Mark as read"), button:has-text("Mark Read")'
+      );
 
       // At least some action should appear
-      const hasActions = await deleteButton.count() > 0 || await markReadButton.count() > 0;
+      const hasActions = (await deleteButton.count()) > 0 || (await markReadButton.count()) > 0;
       // If no bulk actions, the test still passes as the UI might not implement bulk actions
       expect(hasActions || true).toBeTruthy();
     } else {
@@ -488,7 +572,9 @@ test.describe('Email Actions', () => {
     await inboxPage.goto();
     await inboxPage.expectLoadingComplete();
 
-    const emailItems = authenticatedEmployeePage.locator('[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)');
+    const emailItems = authenticatedEmployeePage.locator(
+      '[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)'
+    );
     const count = await emailItems.count();
 
     if (count > 0) {
@@ -513,7 +599,9 @@ test.describe('Email Actions', () => {
     await inboxPage.goto();
     await inboxPage.expectLoadingComplete();
 
-    const emailItems = authenticatedEmployeePage.locator('[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)');
+    const emailItems = authenticatedEmployeePage.locator(
+      '[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)'
+    );
     const count = await emailItems.count();
 
     if (count > 0) {
@@ -522,10 +610,12 @@ test.describe('Email Actions', () => {
       await authenticatedEmployeePage.waitForTimeout(1000);
 
       // Look for delete button in message view
-      const deleteButton = authenticatedEmployeePage.locator('button:has-text("Delete"), [aria-label="Delete"], button:has([data-icon="trash"])');
+      const deleteButton = authenticatedEmployeePage.locator(
+        'button:has-text("Delete"), [aria-label="Delete"], button:has([data-icon="trash"])'
+      );
 
       // Delete might or might not be visible depending on implementation
-      const hasDelete = await deleteButton.count() >= 0;
+      const hasDelete = (await deleteButton.count()) >= 0;
       expect(hasDelete).toBeTruthy();
     } else {
       expect(count).toBe(0);
@@ -540,7 +630,9 @@ test.describe('Draft Advanced Operations', () => {
     await draftsPage.expectLoadingComplete();
 
     // Check if there are drafts to edit
-    const editButtons = authenticatedEmployeePage.locator('button:has-text("Edit"), a:has-text("Edit"), [aria-label="Edit"]');
+    const editButtons = authenticatedEmployeePage.locator(
+      'button:has-text("Edit"), a:has-text("Edit"), [aria-label="Edit"]'
+    );
     const count = await editButtons.count();
 
     if (count > 0) {
@@ -575,8 +667,10 @@ test.describe('Draft Advanced Operations', () => {
     await draftsPage.goto();
     await draftsPage.expectLoadingComplete();
 
-    const editButtons = authenticatedEmployeePage.locator('button:has-text("Edit"), a:has-text("Edit")');
-    if (await editButtons.count() > 0) {
+    const editButtons = authenticatedEmployeePage.locator(
+      'button:has-text("Edit"), a:has-text("Edit")'
+    );
+    if ((await editButtons.count()) > 0) {
       await editButtons.first().click();
       await authenticatedEmployeePage.waitForTimeout(1000);
 
@@ -603,8 +697,10 @@ test.describe('Draft Advanced Operations', () => {
     await draftsPage.goto();
     await draftsPage.expectLoadingComplete();
 
-    const editButtons = authenticatedEmployeePage.locator('button:has-text("Edit"), a:has-text("Edit")');
-    if (await editButtons.count() > 0) {
+    const editButtons = authenticatedEmployeePage.locator(
+      'button:has-text("Edit"), a:has-text("Edit")'
+    );
+    if ((await editButtons.count()) > 0) {
       await editButtons.first().click();
       await authenticatedEmployeePage.waitForTimeout(1000);
 
@@ -612,8 +708,10 @@ test.describe('Draft Advanced Operations', () => {
       await composePage.fillContent('Updated content');
 
       // Save (Update Draft button)
-      const updateButton = authenticatedEmployeePage.locator('button:has-text("Update Draft"), button:has-text("Save Draft")');
-      if (await updateButton.count() > 0) {
+      const updateButton = authenticatedEmployeePage.locator(
+        'button:has-text("Update Draft"), button:has-text("Save Draft")'
+      );
+      if ((await updateButton.count()) > 0) {
         await updateButton.first().click();
         await authenticatedEmployeePage.waitForTimeout(1000);
         expect(true).toBeTruthy();
@@ -627,7 +725,9 @@ test.describe('Draft Advanced Operations', () => {
     await draftsPage.expectLoadingComplete();
 
     // Check for send buttons on drafts
-    const sendButtons = authenticatedEmployeePage.locator('button:has-text("Send"), [aria-label="Send"]');
+    const sendButtons = authenticatedEmployeePage.locator(
+      'button:has-text("Send"), [aria-label="Send"]'
+    );
     const count = await sendButtons.count();
 
     // Verify send action is available (don't actually send to avoid side effects)
@@ -641,20 +741,26 @@ test.describe('Draft Advanced Operations', () => {
 });
 
 test.describe('Reply and Forward Flow', () => {
-  test('should open compose with prefilled To when clicking Reply', async ({ authenticatedEmployeePage }) => {
+  test('should open compose with prefilled To when clicking Reply', async ({
+    authenticatedEmployeePage,
+  }) => {
     const inboxPage = new EmailInboxPage(authenticatedEmployeePage);
     await inboxPage.goto();
     await inboxPage.expectLoadingComplete();
 
-    const emailItems = authenticatedEmployeePage.locator('[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)');
+    const emailItems = authenticatedEmployeePage.locator(
+      '[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)'
+    );
     const count = await emailItems.count();
 
     if (count > 0) {
       await emailItems.first().click();
       await authenticatedEmployeePage.waitForTimeout(1000);
 
-      const replyButton = authenticatedEmployeePage.locator('button:has-text("Reply"), [aria-label="Reply"]');
-      if (await replyButton.count() > 0) {
+      const replyButton = authenticatedEmployeePage.locator(
+        'button:has-text("Reply"), [aria-label="Reply"]'
+      );
+      if ((await replyButton.count()) > 0) {
         await replyButton.first().click();
         await authenticatedEmployeePage.waitForTimeout(1000);
 
@@ -667,20 +773,26 @@ test.describe('Reply and Forward Flow', () => {
     }
   });
 
-  test('should prefill subject with Re: prefix when replying', async ({ authenticatedEmployeePage }) => {
+  test('should prefill subject with Re: prefix when replying', async ({
+    authenticatedEmployeePage,
+  }) => {
     const inboxPage = new EmailInboxPage(authenticatedEmployeePage);
     await inboxPage.goto();
     await inboxPage.expectLoadingComplete();
 
-    const emailItems = authenticatedEmployeePage.locator('[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)');
+    const emailItems = authenticatedEmployeePage.locator(
+      '[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)'
+    );
     const count = await emailItems.count();
 
     if (count > 0) {
       await emailItems.first().click();
       await authenticatedEmployeePage.waitForTimeout(1000);
 
-      const replyButton = authenticatedEmployeePage.locator('button:has-text("Reply"), [aria-label="Reply"]');
-      if (await replyButton.count() > 0) {
+      const replyButton = authenticatedEmployeePage.locator(
+        'button:has-text("Reply"), [aria-label="Reply"]'
+      );
+      if ((await replyButton.count()) > 0) {
         await replyButton.first().click();
         await authenticatedEmployeePage.waitForTimeout(1000);
 
@@ -700,15 +812,19 @@ test.describe('Reply and Forward Flow', () => {
     await inboxPage.goto();
     await inboxPage.expectLoadingComplete();
 
-    const emailItems = authenticatedEmployeePage.locator('[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)');
+    const emailItems = authenticatedEmployeePage.locator(
+      '[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)'
+    );
     const count = await emailItems.count();
 
     if (count > 0) {
       await emailItems.first().click();
       await authenticatedEmployeePage.waitForTimeout(1000);
 
-      const forwardButton = authenticatedEmployeePage.locator('button:has-text("Forward"), [aria-label="Forward"]');
-      if (await forwardButton.count() > 0) {
+      const forwardButton = authenticatedEmployeePage.locator(
+        'button:has-text("Forward"), [aria-label="Forward"]'
+      );
+      if ((await forwardButton.count()) > 0) {
         await forwardButton.first().click();
         await authenticatedEmployeePage.waitForTimeout(1000);
 
@@ -720,20 +836,26 @@ test.describe('Reply and Forward Flow', () => {
     }
   });
 
-  test('should prefill subject with Fwd: prefix when forwarding', async ({ authenticatedEmployeePage }) => {
+  test('should prefill subject with Fwd: prefix when forwarding', async ({
+    authenticatedEmployeePage,
+  }) => {
     const inboxPage = new EmailInboxPage(authenticatedEmployeePage);
     await inboxPage.goto();
     await inboxPage.expectLoadingComplete();
 
-    const emailItems = authenticatedEmployeePage.locator('[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)');
+    const emailItems = authenticatedEmployeePage.locator(
+      '[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)'
+    );
     const count = await emailItems.count();
 
     if (count > 0) {
       await emailItems.first().click();
       await authenticatedEmployeePage.waitForTimeout(1000);
 
-      const forwardButton = authenticatedEmployeePage.locator('button:has-text("Forward"), [aria-label="Forward"]');
-      if (await forwardButton.count() > 0) {
+      const forwardButton = authenticatedEmployeePage.locator(
+        'button:has-text("Forward"), [aria-label="Forward"]'
+      );
+      if ((await forwardButton.count()) > 0) {
         await forwardButton.first().click();
         await authenticatedEmployeePage.waitForTimeout(1000);
 
@@ -747,27 +869,36 @@ test.describe('Reply and Forward Flow', () => {
     }
   });
 
-  test('should trigger AI Reply when clicking AI Reply button', async ({ authenticatedEmployeePage }) => {
+  test('should trigger AI Reply when clicking AI Reply button', async ({
+    authenticatedEmployeePage,
+  }) => {
     const inboxPage = new EmailInboxPage(authenticatedEmployeePage);
     await inboxPage.goto();
     await inboxPage.expectLoadingComplete();
 
-    const emailItems = authenticatedEmployeePage.locator('[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)');
+    const emailItems = authenticatedEmployeePage.locator(
+      '[data-testid="email-item"], .email-item, tr[data-email-id], [role="row"]:has(td)'
+    );
     const count = await emailItems.count();
 
     if (count > 0) {
       await emailItems.first().click();
       await authenticatedEmployeePage.waitForTimeout(1000);
 
-      const aiReplyButton = authenticatedEmployeePage.locator('button:has-text("AI Reply"), button:has-text("AI")');
-      if (await aiReplyButton.count() > 0) {
+      const aiReplyButton = authenticatedEmployeePage.locator(
+        'button:has-text("AI Reply"), button:has-text("AI")'
+      );
+      if ((await aiReplyButton.count()) > 0) {
         await aiReplyButton.first().click();
         await authenticatedEmployeePage.waitForTimeout(2000);
 
         // Should navigate to compose or show loading state
         const url = authenticatedEmployeePage.url();
         const isOnCompose = url.includes('/compose');
-        const hasLoadingState = await authenticatedEmployeePage.locator('.loading, [data-loading], text=Generating').count() > 0;
+        const hasLoadingState =
+          (await authenticatedEmployeePage
+            .locator('.loading, [data-loading], text=Generating')
+            .count()) > 0;
 
         expect(isOnCompose || hasLoadingState || true).toBeTruthy();
       }
@@ -792,7 +923,9 @@ test.describe('Attachment Handling', () => {
     await composePage.goto();
     await composePage.expectLoadingComplete();
 
-    const dropZone = authenticatedEmployeePage.locator('[data-testid="attachment-zone"], .border-dashed, [data-dropzone], .dropzone');
+    const dropZone = authenticatedEmployeePage.locator(
+      '[data-testid="attachment-zone"], .border-dashed, [data-dropzone], .dropzone'
+    );
     expect(await dropZone.count()).toBeGreaterThanOrEqual(0);
   });
 
@@ -802,10 +935,12 @@ test.describe('Attachment Handling', () => {
     await composePage.expectLoadingComplete();
 
     // Look for file size limit text
-    const sizeLimitText = authenticatedEmployeePage.locator('text=/10\\s*MB/i, text=/max.*size/i, text=/limit/i');
+    const sizeLimitText = authenticatedEmployeePage.locator(
+      'text=/10\\s*MB/i, text=/max.*size/i, text=/limit/i'
+    );
 
     // File size limit might be displayed or not
-    const hasLimitInfo = await sizeLimitText.count() >= 0;
+    const hasLimitInfo = (await sizeLimitText.count()) >= 0;
     expect(hasLimitInfo).toBeTruthy();
   });
 
@@ -816,10 +951,12 @@ test.describe('Attachment Handling', () => {
 
     // This test verifies the attachment preview area exists
     // Actual file upload would require test file setup
-    const attachmentPreview = authenticatedEmployeePage.locator('[data-testid="attachment-preview"], .attachment-preview, .attachments-list');
+    const attachmentPreview = authenticatedEmployeePage.locator(
+      '[data-testid="attachment-preview"], .attachment-preview, .attachments-list'
+    );
 
     // Preview area might not be visible until file is uploaded
-    const exists = await attachmentPreview.count() >= 0;
+    const exists = (await attachmentPreview.count()) >= 0;
     expect(exists).toBeTruthy();
   });
 });
@@ -862,7 +999,8 @@ test.describe('Email Client Module - Permission Checks', () => {
 
     // Either redirected to login or stayed but shows error
     const isOnLogin = url.includes('/login');
-    const hasError = await page.locator('text=Unauthorized, text=Access Denied, text=Please log in').count() > 0;
+    const hasError =
+      (await page.locator('text=Unauthorized, text=Access Denied, text=Please log in').count()) > 0;
 
     expect(isOnLogin || hasError || !url.includes('/modules/email-client/')).toBeTruthy();
   });

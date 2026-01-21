@@ -1,7 +1,8 @@
+import { Users, Package } from 'lucide-react';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useEmployees } from '@/lib/hooks/use-employees';
 import { useCompanyModules } from '@/lib/hooks/use-permissions';
-import { Users, Package } from 'lucide-react';
 
 export default function CompanyDashboard() {
   const { data: employees, isPending: employeesLoading } = useEmployees();
@@ -12,9 +13,7 @@ export default function CompanyDashboard() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-apptax-navy">Panel Firmy</h1>
-        <p className="text-muted-foreground mt-2">
-          Przegląd Twojej firmy i pracowników
-        </p>
+        <p className="text-muted-foreground mt-2">Przegląd Twojej firmy i pracowników</p>
       </div>
 
       {/* Stats Grid */}
@@ -64,8 +63,8 @@ export default function CompanyDashboard() {
             <div>
               <h2 className="text-2xl font-bold mb-2">Zarządzaj swoją firmą</h2>
               <p className="text-white/80 max-w-xl">
-                Dodawaj pracowników, konfiguruj uprawnienia i zarządzaj modułami firmy
-                z tego panelu. Korzystaj z narzędzi księgowych wspieranych przez AI.
+                Dodawaj pracowników, konfiguruj uprawnienia i zarządzaj modułami firmy z tego
+                panelu. Korzystaj z narzędzi księgowych wspieranych przez AI.
               </p>
             </div>
             <div className="hidden md:block">

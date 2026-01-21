@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
 import {
   User,
   Company,
@@ -7,9 +8,10 @@ import {
   CompanyModuleAccess,
   UserModulePermission,
 } from '@accounting/common';
+import { RBACModule } from '@accounting/rbac';
+
 import { ModulesController } from './modules.controller';
 import { ModulesService } from './modules.service';
-import { RBACModule } from '@accounting/rbac';
 
 @Module({
   imports: [

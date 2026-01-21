@@ -1,19 +1,19 @@
 import {
-  UserRole,
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
-  CustomFieldType,
-  ChangeAction,
-  AmlGroup,
-  IconType,
-  AutoAssignCondition,
-  TaskStatus,
-  TaskPriority,
-  TaskDependencyType,
-  TimeEntryStatus,
-  TimeRoundingMethod,
+  type UserRole,
+  type EmploymentType,
+  type VatStatus,
+  type TaxScheme,
+  type ZusStatus,
+  type CustomFieldType,
+  type ChangeAction,
+  type AmlGroup,
+  type IconType,
+  type AutoAssignCondition,
+  type TaskStatus,
+  type TaskPriority,
+  type TaskDependencyType,
+  type TimeEntryStatus,
+  type TimeRoundingMethod,
 } from './enums';
 
 export interface User {
@@ -327,4 +327,3 @@ export interface TimeSettings {
   createdAt: Date;
   updatedAt: Date;
 }
-

@@ -2,11 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '@accounting/common';
-import {
-  EmailReaderService,
-  EmailConfigurationService,
-  ReceivedEmail,
-} from '@accounting/email';
+import { EmailReaderService, EmailConfigurationService, ReceivedEmail } from '@accounting/email';
 import { EmailDraft } from '../entities/email-draft.entity';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -37,7 +33,7 @@ export class EmailDraftSyncService {
     @InjectRepository(EmailDraft)
     private readonly draftRepository: Repository<EmailDraft>,
     private readonly emailReaderService: EmailReaderService,
-    private readonly emailConfigService: EmailConfigurationService,
+    private readonly emailConfigService: EmailConfigurationService
   ) {}
 
   /**
@@ -53,13 +49,17 @@ export class EmailDraftSyncService {
     };
 
     try {
-      const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(user.companyId!);
+      const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
+        user.companyId!
+      );
       if (!emailConfig) {
         throw new Error('No email configuration found');
       }
 
       // Step 1: Fetch all drafts from IMAP
-      const imapDrafts = await this.emailReaderService.fetchDrafts(emailConfig.imap, { limit: 100 });
+      const imapDrafts = await this.emailReaderService.fetchDrafts(emailConfig.imap, {
+        limit: 100,
+      });
       this.logger.log(`Found ${imapDrafts.length} drafts on IMAP server`);
 
       // Step 2: Fetch all drafts from database for this company
@@ -69,13 +69,11 @@ export class EmailDraftSyncService {
       this.logger.log(`Found ${dbDrafts.length} drafts in database`);
 
       // Step 3: Build lookup maps
-      const imapByUid = new Map(imapDrafts.map(d => [d.uid, d]));
-      const dbByImapUid = new Map(
-        dbDrafts.filter(d => d.imapUid).map(d => [d.imapUid!, d])
-      );
+      const imapByUid = new Map(imapDrafts.map((d) => [d.uid, d]));
+      const dbByImapUid = new Map(dbDrafts.filter((d) => d.imapUid).map((d) => [d.imapUid!, d]));
 
       // Step 4: Push local drafts to IMAP (drafts with syncStatus='local')
-      const localDrafts = dbDrafts.filter(d => d.syncStatus === 'local');
+      const localDrafts = dbDrafts.filter((d) => d.syncStatus === 'local');
       for (const draft of localDrafts) {
         try {
           await this.pushDraftToImap(draft, emailConfig);
@@ -93,13 +91,15 @@ export class EmailDraftSyncService {
             await this.importDraftFromImap(imapDraft, user, emailConfig);
             result.imported++;
           } catch (error) {
-            result.errors.push(`Failed to import IMAP draft ${imapDraft.uid}: ${(error as Error).message}`);
+            result.errors.push(
+              `Failed to import IMAP draft ${imapDraft.uid}: ${(error as Error).message}`
+            );
           }
         }
       }
 
       // Step 6: Handle deletions - drafts in DB with imapUid but not in IMAP
-      const syncedDrafts = dbDrafts.filter(d => d.syncStatus === 'synced' && d.imapUid);
+      const syncedDrafts = dbDrafts.filter((d) => d.syncStatus === 'synced' && d.imapUid);
       for (const draft of syncedDrafts) {
         if (!imapByUid.has(draft.imapUid!)) {
           // Draft was deleted from IMAP, remove from DB
@@ -110,7 +110,9 @@ export class EmailDraftSyncService {
       }
 
       // Step 7: Detect conflicts (draft modified locally after last sync)
-      for (const draft of dbDrafts.filter(d => d.syncStatus === 'synced' && d.imapUid && d.imapSyncedAt)) {
+      for (const draft of dbDrafts.filter(
+        (d) => d.syncStatus === 'synced' && d.imapUid && d.imapSyncedAt
+      )) {
         if (draft.updatedAt > draft.imapSyncedAt!) {
           // DB was modified after last sync - mark as conflict
           draft.syncStatus = 'conflict';
@@ -120,9 +122,10 @@ export class EmailDraftSyncService {
         }
       }
 
-      this.logger.log(`Sync complete: synced=${result.synced}, imported=${result.imported}, conflicts=${result.conflicts}, deleted=${result.deleted}`);
+      this.logger.log(
+        `Sync complete: synced=${result.synced}, imported=${result.imported}, conflicts=${result.conflicts}, deleted=${result.deleted}`
+      );
       return result;
-
     } catch (error) {
       result.errors.push((error as Error).message);
       return result;
@@ -139,7 +142,7 @@ export class EmailDraftSyncService {
     // Append to IMAP Drafts folder
     const { uid, mailbox } = await this.emailReaderService.appendToDrafts(
       emailConfig.imap,
-      rawMessage,
+      rawMessage
     );
 
     // Update database record
@@ -158,15 +161,15 @@ export class EmailDraftSyncService {
   async importDraftFromImap(
     imapDraft: ReceivedEmail,
     user: User,
-    emailConfig: any,
+    emailConfig: any
   ): Promise<EmailDraft> {
     const draftsMailbox = await this.emailReaderService.findDraftsMailbox(emailConfig.imap);
 
     const draft = this.draftRepository.create({
       companyId: user.companyId!,
       userId: user.id,
-      to: imapDraft.to.map(a => a.address),
-      cc: imapDraft.cc?.map(a => a.address),
+      to: imapDraft.to.map((a) => a.address),
+      cc: imapDraft.cc?.map((a) => a.address),
       subject: imapDraft.subject,
       textContent: imapDraft.text || '',
       htmlContent: imapDraft.html,
@@ -205,7 +208,7 @@ export class EmailDraftSyncService {
   async updateDraftWithSync(
     draft: EmailDraft,
     updates: Partial<EmailDraft>,
-    emailConfig: any,
+    emailConfig: any
   ): Promise<EmailDraft> {
     // Update database
     Object.assign(draft, updates);
@@ -216,7 +219,7 @@ export class EmailDraftSyncService {
       const { uid } = await this.emailReaderService.updateDraftInImap(
         emailConfig.imap,
         draft.imapUid,
-        rawMessage,
+        rawMessage
       );
       draft.imapUid = uid;
       draft.imapSyncedAt = new Date();
@@ -249,7 +252,7 @@ export class EmailDraftSyncService {
   async resolveConflict(
     draftId: string,
     resolution: 'keep_local' | 'keep_imap',
-    user: User,
+    user: User
   ): Promise<EmailDraft> {
     const draft = await this.draftRepository.findOne({
       where: { id: draftId, companyId: user.companyId! },
@@ -259,7 +262,9 @@ export class EmailDraftSyncService {
       throw new Error('Draft not found or not in conflict state');
     }
 
-    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(user.companyId!);
+    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
+      user.companyId!
+    );
     if (!emailConfig) {
       throw new Error('No email configuration found');
     }
@@ -272,7 +277,7 @@ export class EmailDraftSyncService {
           const { uid } = await this.emailReaderService.updateDraftInImap(
             emailConfig.imap,
             draft.imapUid,
-            rawMessage,
+            rawMessage
           );
           draft.imapUid = uid;
         } else {
@@ -287,10 +292,10 @@ export class EmailDraftSyncService {
           const imapDrafts = await this.emailReaderService.fetchDrafts(emailConfig.imap, {
             limit: 100,
           });
-          const imapDraft = imapDrafts.find(d => d.uid === draft.imapUid);
+          const imapDraft = imapDrafts.find((d) => d.uid === draft.imapUid);
           if (imapDraft) {
-            draft.to = imapDraft.to.map(a => a.address);
-            draft.cc = imapDraft.cc?.map(a => a.address);
+            draft.to = imapDraft.to.map((a) => a.address);
+            draft.cc = imapDraft.cc?.map((a) => a.address);
             draft.subject = imapDraft.subject;
             draft.textContent = imapDraft.text || '';
             draft.htmlContent = imapDraft.html;
@@ -332,7 +337,6 @@ export class EmailDraftSyncService {
 
       this.logger.log(`Deleted ${result.deleted} drafts from database`);
       return result;
-
     } catch (error) {
       this.logger.error(`Failed to delete drafts: ${(error as Error).message}`);
       result.errors.push((error as Error).message);

@@ -1,8 +1,9 @@
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Star, GitCompare, Check, Eye, Wrench, Zap } from 'lucide-react';
-import { OpenRouterModelDto } from '@/types/dtos';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
+import { type OpenRouterModelDto } from '@/types/dtos';
 
 interface ModelDetailPanelProps {
   model: OpenRouterModelDto | null;
@@ -27,7 +28,10 @@ function formatContextWindow(tokens: number): string {
   return `${tokens}`;
 }
 
-function getCostTier(costPer1kInput: number): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } {
+function getCostTier(costPer1kInput: number): {
+  label: string;
+  variant: 'default' | 'secondary' | 'destructive' | 'outline';
+} {
   if (costPer1kInput === 0) return { label: 'Darmowy', variant: 'secondary' };
   if (costPer1kInput < 0.5) return { label: 'Bardzo niski', variant: 'secondary' };
   if (costPer1kInput < 2) return { label: 'Niski', variant: 'outline' };
@@ -63,9 +67,7 @@ export function ModelDetailPanel({
       <div className="p-4 border-b border-border">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <h3 className="text-lg font-semibold text-foreground truncate">
-              {model.name}
-            </h3>
+            <h3 className="text-lg font-semibold text-foreground truncate">{model.name}</h3>
             <p className="text-sm text-muted-foreground">{model.provider}</p>
           </div>
           <button
@@ -138,10 +140,7 @@ export function ModelDetailPanel({
           <div className="flex flex-wrap gap-2">
             <Badge
               variant={model.supportsVision ? 'default' : 'outline'}
-              className={cn(
-                'gap-1',
-                !model.supportsVision && 'text-muted-foreground'
-              )}
+              className={cn('gap-1', !model.supportsVision && 'text-muted-foreground')}
             >
               <Eye className="w-3 h-3" />
               Wizja
@@ -149,10 +148,7 @@ export function ModelDetailPanel({
             </Badge>
             <Badge
               variant={model.supportsFunctionCalling ? 'default' : 'outline'}
-              className={cn(
-                'gap-1',
-                !model.supportsFunctionCalling && 'text-muted-foreground'
-              )}
+              className={cn('gap-1', !model.supportsFunctionCalling && 'text-muted-foreground')}
             >
               <Wrench className="w-3 h-3" />
               Narzędzia

@@ -1,12 +1,13 @@
+import { useState } from 'react';
+
 import { useParams, useNavigate } from 'react-router-dom';
-import { useEmployee } from '@/lib/hooks/use-employees';
-import { useCompanyModules, useEmployeeModules, useGrantModuleAccess, useUpdateModulePermission, useRevokeModuleAccess } from '@/lib/hooks/use-permissions';
+
+import { ArrowLeft, Plus, Trash2, Shield, Key, Package } from 'lucide-react';
+
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Plus, Trash2, Shield, Key, Package } from 'lucide-react';
-import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,8 +16,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ModulePermission } from '@/types/enums';
 import { useToast } from '@/components/ui/use-toast';
+import { useEmployee } from '@/lib/hooks/use-employees';
+import {
+  useCompanyModules,
+  useEmployeeModules,
+  useGrantModuleAccess,
+  useUpdateModulePermission,
+  useRevokeModuleAccess,
+} from '@/lib/hooks/use-permissions';
+import { ModulePermission } from '@/types/enums';
 
 export default function EmployeePermissionsPage() {
   const { id } = useParams<{ id: string }>();
@@ -24,7 +33,9 @@ export default function EmployeePermissionsPage() {
   const { toast } = useToast();
   const { data: employee, isPending: employeeLoading } = useEmployee(id || '');
   const { data: availableModules = [], isPending: _modulesLoading } = useCompanyModules();
-  const { data: employeeModules = [], isPending: permissionsLoading } = useEmployeeModules(id || '');
+  const { data: employeeModules = [], isPending: permissionsLoading } = useEmployeeModules(
+    id || ''
+  );
   const grantAccess = useGrantModuleAccess();
   const updatePermission = useUpdateModulePermission();
   const revokeAccess = useRevokeModuleAccess();
@@ -36,7 +47,7 @@ export default function EmployeePermissionsPage() {
   const handleGrantAccess = () => {
     if (!id || !selectedModule) return;
 
-    const isModuleAvailable = availableModules.some(m => m.slug === selectedModule);
+    const isModuleAvailable = availableModules.some((m) => m.slug === selectedModule);
     if (!isModuleAvailable) {
       toast({
         title: 'Błąd',
@@ -46,7 +57,7 @@ export default function EmployeePermissionsPage() {
       return;
     }
 
-    const isAlreadyGranted = employeeModules.some(em => em.module?.slug === selectedModule);
+    const isAlreadyGranted = employeeModules.some((em) => em.module?.slug === selectedModule);
     if (isAlreadyGranted) {
       toast({
         title: 'Błąd',
@@ -56,17 +67,20 @@ export default function EmployeePermissionsPage() {
       return;
     }
 
-    grantAccess.mutate({
-      employeeId: id,
-      moduleSlug: selectedModule,
-      permissions: { moduleSlug: selectedModule, permissions: selectedPermissions },
-    }, {
-      onSuccess: () => {
-        setGrantDialogOpen(false);
-        setSelectedModule(null);
-        setSelectedPermissions([]);
+    grantAccess.mutate(
+      {
+        employeeId: id,
+        moduleSlug: selectedModule,
+        permissions: { moduleSlug: selectedModule, permissions: selectedPermissions },
       },
-    });
+      {
+        onSuccess: () => {
+          setGrantDialogOpen(false);
+          setSelectedModule(null);
+          setSelectedPermissions([]);
+        },
+      }
+    );
   };
 
   const handleUpdatePermissions = (moduleSlug: string, permissions: string[]) => {
@@ -147,9 +161,7 @@ export default function EmployeePermissionsPage() {
             <div className="w-16 h-16 rounded-full bg-apptax-soft-teal flex items-center justify-center mx-auto mb-4">
               <Shield className="h-8 w-8 text-apptax-teal" />
             </div>
-            <p className="text-apptax-navy font-medium">
-              Brak przyznanych dostępów do modułów.
-            </p>
+            <p className="text-apptax-navy font-medium">Brak przyznanych dostępów do modułów.</p>
             <p className="text-sm text-muted-foreground mt-1">
               Kliknij &quot;Nadaj dostęp do modułu&quot;, aby rozpocząć.
             </p>
@@ -165,13 +177,18 @@ export default function EmployeePermissionsPage() {
             const isAiModule = module.slug === 'ai-agent';
 
             return (
-              <Card key={employeeModule.id} className="border-apptax-soft-teal/30 hover:shadow-apptax-md transition-all duration-300">
+              <Card
+                key={employeeModule.id}
+                className="border-apptax-soft-teal/30 hover:shadow-apptax-md transition-all duration-300"
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        isAiModule ? 'bg-apptax-ai-gradient ai-glow' : 'bg-apptax-gradient'
-                      }`}>
+                      <div
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                          isAiModule ? 'bg-apptax-ai-gradient ai-glow' : 'bg-apptax-gradient'
+                        }`}
+                      >
                         <Package className="h-5 w-5 text-white" />
                       </div>
                       <div>
@@ -199,29 +216,31 @@ export default function EmployeePermissionsPage() {
                   <div className="space-y-3">
                     <div className="text-sm font-semibold text-apptax-navy">Uprawnienia:</div>
                     <div className="flex flex-wrap gap-6">
-                      {[ModulePermission.READ, ModulePermission.WRITE, ModulePermission.DELETE].map((permission) => {
-                        const hasPermission = currentPermissions.includes(permission);
-                        return (
-                          <div key={permission} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`${module.slug}-${permission}`}
-                              checked={hasPermission}
-                              onCheckedChange={(checked) => {
-                                const newPermissions = checked
-                                  ? [...currentPermissions, permission]
-                                  : currentPermissions.filter((p) => p !== permission);
-                                handleUpdatePermissions(module.slug, newPermissions);
-                              }}
-                            />
-                            <label
-                              htmlFor={`${module.slug}-${permission}`}
-                              className="text-sm font-medium cursor-pointer text-apptax-navy/80"
-                            >
-                              {permission.charAt(0).toUpperCase() + permission.slice(1)}
-                            </label>
-                          </div>
-                        );
-                      })}
+                      {[ModulePermission.READ, ModulePermission.WRITE, ModulePermission.DELETE].map(
+                        (permission) => {
+                          const hasPermission = currentPermissions.includes(permission);
+                          return (
+                            <div key={permission} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`${module.slug}-${permission}`}
+                                checked={hasPermission}
+                                onCheckedChange={(checked) => {
+                                  const newPermissions = checked
+                                    ? [...currentPermissions, permission]
+                                    : currentPermissions.filter((p) => p !== permission);
+                                  handleUpdatePermissions(module.slug, newPermissions);
+                                }}
+                              />
+                              <label
+                                htmlFor={`${module.slug}-${permission}`}
+                                className="text-sm font-medium cursor-pointer text-apptax-navy/80"
+                              >
+                                {permission.charAt(0).toUpperCase() + permission.slice(1)}
+                              </label>
+                            </div>
+                          );
+                        }
+                      )}
                     </div>
                     {currentPermissions.length === 0 && (
                       <p className="text-sm text-muted-foreground">Brak przyznanych uprawnień</p>
@@ -270,26 +289,35 @@ export default function EmployeePermissionsPage() {
 
             {selectedModule && (
               <div>
-                <label className="text-sm font-medium text-apptax-navy mb-2 block">Uprawnienia</label>
+                <label className="text-sm font-medium text-apptax-navy mb-2 block">
+                  Uprawnienia
+                </label>
                 <div className="mt-2 space-y-3">
-                  {[ModulePermission.READ, ModulePermission.WRITE, ModulePermission.DELETE].map((permission) => (
-                    <div key={permission} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`grant-${permission}`}
-                        checked={selectedPermissions.includes(permission)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedPermissions([...selectedPermissions, permission]);
-                          } else {
-                            setSelectedPermissions(selectedPermissions.filter((p) => p !== permission));
-                          }
-                        }}
-                      />
-                      <label htmlFor={`grant-${permission}`} className="text-sm cursor-pointer text-gray-700">
-                        {permission.charAt(0).toUpperCase() + permission.slice(1)}
-                      </label>
-                    </div>
-                  ))}
+                  {[ModulePermission.READ, ModulePermission.WRITE, ModulePermission.DELETE].map(
+                    (permission) => (
+                      <div key={permission} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`grant-${permission}`}
+                          checked={selectedPermissions.includes(permission)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedPermissions([...selectedPermissions, permission]);
+                            } else {
+                              setSelectedPermissions(
+                                selectedPermissions.filter((p) => p !== permission)
+                              );
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor={`grant-${permission}`}
+                          className="text-sm cursor-pointer text-gray-700"
+                        >
+                          {permission.charAt(0).toUpperCase() + permission.slice(1)}
+                        </label>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
             )}
@@ -304,7 +332,9 @@ export default function EmployeePermissionsPage() {
             </Button>
             <Button
               onClick={handleGrantAccess}
-              disabled={!selectedModule || selectedPermissions.length === 0 || grantAccess.isPending}
+              disabled={
+                !selectedModule || selectedPermissions.length === 0 || grantAccess.isPending
+              }
               className="bg-apptax-blue hover:bg-apptax-blue/90"
             >
               Nadaj dostęp

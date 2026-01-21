@@ -1,18 +1,13 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+
 import { ArrowLeft, Settings, Save } from 'lucide-react';
+
+import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Form,
   FormControl,
@@ -22,12 +17,20 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PageHeader } from '@/components/common/page-header';
+import { Switch } from '@/components/ui/switch';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useTimeSettings, useUpdateTimeSettings } from '@/lib/hooks/use-time-tracking';
+import { type UpdateTimeSettingsDto } from '@/types/dtos';
 import { UserRole, TimeRoundingMethod, TimeRoundingMethodLabels } from '@/types/enums';
-import { UpdateTimeSettingsDto } from '@/types/dtos';
 
 interface FormData {
   roundingMethod: TimeRoundingMethod;
@@ -113,9 +116,7 @@ export default function TimeTrackingSettingsPage() {
     const updateData: UpdateTimeSettingsDto = {
       roundingMethod: data.roundingMethod,
       roundingIntervalMinutes: data.roundingIntervalMinutes,
-      defaultHourlyRate: data.defaultHourlyRate
-        ? parseFloat(data.defaultHourlyRate)
-        : undefined,
+      defaultHourlyRate: data.defaultHourlyRate ? parseFloat(data.defaultHourlyRate) : undefined,
       defaultCurrency: data.defaultCurrency,
       defaultIsBillable: data.defaultIsBillable,
       requireApproval: data.requireApproval,
@@ -184,18 +185,14 @@ export default function TimeTrackingSettingsPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {Object.entries(TimeRoundingMethodLabels).map(
-                            ([value, label]) => (
-                              <SelectItem key={value} value={value}>
-                                {label}
-                              </SelectItem>
-                            )
-                          )}
+                          {Object.entries(TimeRoundingMethodLabels).map(([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
-                      <FormDescription>
-                        Jak zaokrąglać czas przy zapisie wpisu
-                      </FormDescription>
+                      <FormDescription>Jak zaokrąglać czas przy zapisie wpisu</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -232,9 +229,7 @@ export default function TimeTrackingSettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Wartości domyślne</CardTitle>
-              <CardDescription>
-                Domyślne ustawienia dla nowych wpisów czasu
-              </CardDescription>
+              <CardDescription>Domyślne ustawienia dla nowych wpisów czasu</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -245,16 +240,9 @@ export default function TimeTrackingSettingsPage() {
                     <FormItem>
                       <FormLabel>Domyślna stawka godzinowa</FormLabel>
                       <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="np. 150.00"
-                          {...field}
-                        />
+                        <Input type="number" step="0.01" placeholder="np. 150.00" {...field} />
                       </FormControl>
-                      <FormDescription>
-                        Stawka używana gdy nie określono innej
-                      </FormDescription>
+                      <FormDescription>Stawka używana gdy nie określono innej</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -293,9 +281,7 @@ export default function TimeTrackingSettingsPage() {
                     <FormControl>
                       <Switch checked={field.value} onCheckedChange={field.onChange} />
                     </FormControl>
-                    <FormLabel className="cursor-pointer">
-                      Domyślnie rozliczalny
-                    </FormLabel>
+                    <FormLabel className="cursor-pointer">Domyślnie rozliczalny</FormLabel>
                   </FormItem>
                 )}
               />
@@ -306,9 +292,7 @@ export default function TimeTrackingSettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Workflow</CardTitle>
-              <CardDescription>
-                Ustawienia procesu zatwierdzania i walidacji
-              </CardDescription>
+              <CardDescription>Ustawienia procesu zatwierdzania i walidacji</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -320,9 +304,7 @@ export default function TimeTrackingSettingsPage() {
                       <Switch checked={field.value} onCheckedChange={field.onChange} />
                     </FormControl>
                     <div>
-                      <FormLabel className="cursor-pointer">
-                        Wymagaj zatwierdzenia
-                      </FormLabel>
+                      <FormLabel className="cursor-pointer">Wymagaj zatwierdzenia</FormLabel>
                       <FormDescription>
                         Wpisy muszą być zatwierdzone przed rozliczeniem
                       </FormDescription>
@@ -343,9 +325,7 @@ export default function TimeTrackingSettingsPage() {
                       <FormLabel className="cursor-pointer">
                         Zezwalaj na nakładające się wpisy
                       </FormLabel>
-                      <FormDescription>
-                        Czy można tworzyć wpisy w tym samym czasie
-                      </FormDescription>
+                      <FormDescription>Czy można tworzyć wpisy w tym samym czasie</FormDescription>
                     </div>
                   </FormItem>
                 )}
@@ -363,9 +343,7 @@ export default function TimeTrackingSettingsPage() {
                       <FormLabel className="cursor-pointer">
                         Automatycznie zatrzymuj timer o północy
                       </FormLabel>
-                      <FormDescription>
-                        Zapobiega bardzo długim wpisom
-                      </FormDescription>
+                      <FormDescription>Zapobiega bardzo długim wpisom</FormDescription>
                     </div>
                   </FormItem>
                 )}
@@ -377,9 +355,7 @@ export default function TimeTrackingSettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Godziny pracy</CardTitle>
-              <CardDescription>
-                Definiuj standardowy dzień pracy
-              </CardDescription>
+              <CardDescription>Definiuj standardowy dzień pracy</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-4">
@@ -438,9 +414,7 @@ export default function TimeTrackingSettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Limity</CardTitle>
-              <CardDescription>
-                Minimalny i maksymalny czas trwania wpisu
-              </CardDescription>
+              <CardDescription>Minimalny i maksymalny czas trwania wpisu</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">

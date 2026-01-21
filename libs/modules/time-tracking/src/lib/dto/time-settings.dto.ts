@@ -1,3 +1,5 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
+
 import {
   IsString,
   IsOptional,
@@ -10,7 +12,7 @@ import {
   IsNumber,
   Matches,
 } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+
 import { TimeRoundingMethod } from '@accounting/common';
 
 export class UpdateTimeSettingsDto {
@@ -19,7 +21,12 @@ export class UpdateTimeSettingsDto {
   @IsEnum(TimeRoundingMethod)
   roundingMethod?: TimeRoundingMethod;
 
-  @ApiPropertyOptional({ description: 'Rounding interval in minutes', default: 15, minimum: 1, maximum: 60 })
+  @ApiPropertyOptional({
+    description: 'Rounding interval in minutes',
+    default: 15,
+    minimum: 1,
+    maximum: 60,
+  })
   @IsOptional()
   @IsInt()
   @Min(1)
@@ -32,7 +39,11 @@ export class UpdateTimeSettingsDto {
   @Min(0)
   defaultHourlyRate?: number;
 
-  @ApiPropertyOptional({ description: 'Default currency code (ISO 4217)', default: 'PLN', maxLength: 3 })
+  @ApiPropertyOptional({
+    description: 'Default currency code (ISO 4217)',
+    default: 'PLN',
+    maxLength: 3,
+  })
   @IsOptional()
   @IsString()
   @MaxLength(3)
@@ -48,21 +59,36 @@ export class UpdateTimeSettingsDto {
   @IsBoolean()
   allowOverlappingEntries?: boolean;
 
-  @ApiPropertyOptional({ description: 'Working hours per day', default: 8, minimum: 1, maximum: 24 })
+  @ApiPropertyOptional({
+    description: 'Working hours per day',
+    default: 8,
+    minimum: 1,
+    maximum: 24,
+  })
   @IsOptional()
   @IsInt()
   @Min(1)
   @Max(24)
   workingHoursPerDay?: number;
 
-  @ApiPropertyOptional({ description: 'Working hours per week', default: 40, minimum: 1, maximum: 168 })
+  @ApiPropertyOptional({
+    description: 'Working hours per week',
+    default: 40,
+    minimum: 1,
+    maximum: 168,
+  })
   @IsOptional()
   @IsInt()
   @Min(1)
   @Max(168)
   workingHoursPerWeek?: number;
 
-  @ApiPropertyOptional({ description: 'First day of week (0=Sunday, 1=Monday, etc.)', default: 1, minimum: 0, maximum: 6 })
+  @ApiPropertyOptional({
+    description: 'First day of week (0=Sunday, 1=Monday, etc.)',
+    default: 1,
+    minimum: 0,
+    maximum: 6,
+  })
   @IsOptional()
   @IsInt()
   @Min(0)
@@ -79,19 +105,31 @@ export class UpdateTimeSettingsDto {
   @IsBoolean()
   allowManualEntry?: boolean;
 
-  @ApiPropertyOptional({ description: 'Auto-stop timer after X minutes (0=disabled)', default: 0, minimum: 0 })
+  @ApiPropertyOptional({
+    description: 'Auto-stop timer after X minutes (0=disabled)',
+    default: 0,
+    minimum: 0,
+  })
   @IsOptional()
   @IsInt()
   @Min(0)
   autoStopTimerAfterMinutes?: number;
 
-  @ApiPropertyOptional({ description: 'Minimum entry duration in minutes (0=no minimum)', default: 0, minimum: 0 })
+  @ApiPropertyOptional({
+    description: 'Minimum entry duration in minutes (0=no minimum)',
+    default: 0,
+    minimum: 0,
+  })
   @IsOptional()
   @IsInt()
   @Min(0)
   minimumEntryMinutes?: number;
 
-  @ApiPropertyOptional({ description: 'Maximum entry duration in minutes (0=no maximum)', default: 0, minimum: 0 })
+  @ApiPropertyOptional({
+    description: 'Maximum entry duration in minutes (0=no maximum)',
+    default: 0,
+    minimum: 0,
+  })
   @IsOptional()
   @IsInt()
   @Min(0)
@@ -108,7 +146,11 @@ export class UpdateTimeSettingsDto {
   @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: 'Godzina musi być w formacie HH:MM' })
   dailyReminderTime?: string;
 
-  @ApiPropertyOptional({ description: 'Lock entries older than X days (0=disabled)', default: 0, minimum: 0 })
+  @ApiPropertyOptional({
+    description: 'Lock entries older than X days (0=disabled)',
+    default: 0,
+    minimum: 0,
+  })
   @IsOptional()
   @IsInt()
   @Min(0)

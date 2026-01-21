@@ -1,13 +1,9 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import {
-  createCipheriv,
-  createDecipheriv,
-  randomBytes,
-  scrypt,
-} from 'crypto';
-import { promisify } from 'util';
+
+import { createCipheriv, createDecipheriv, randomBytes, scrypt } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
+import { promisify } from 'util';
 
 const scryptAsync = promisify(scrypt);
 
@@ -32,9 +28,7 @@ export class EncryptionService implements OnModuleInit {
 
     if (process.env.NODE_ENV === 'production') {
       if (!envKey) {
-        throw new Error(
-          'ENCRYPTION_SECRET environment variable is required in production'
-        );
+        throw new Error('ENCRYPTION_SECRET environment variable is required in production');
       }
       if (envKey.length < 32) {
         throw new Error('ENCRYPTION_SECRET must be at least 32 characters long');
@@ -77,9 +71,7 @@ export class EncryptionService implements OnModuleInit {
       // Generate new key and persist it
       const newKey = randomBytes(32).toString('hex');
       fs.writeFileSync(DEV_KEY_FILE, newKey, { mode: 0o600 }); // Read/write only for owner
-      this.logger.log(
-        `Generated new development encryption key and saved to ${DEV_KEY_FILE}`
-      );
+      this.logger.log(`Generated new development encryption key and saved to ${DEV_KEY_FILE}`);
       return newKey;
     } catch (error) {
       // Fallback: generate key without persistence (with loud warning)
@@ -107,10 +99,7 @@ export class EncryptionService implements OnModuleInit {
     const key = (await scryptAsync(this.secretKey, salt, 32)) as Buffer;
 
     const cipher = createCipheriv(this.algorithm, key, iv);
-    const encrypted = Buffer.concat([
-      cipher.update(text, 'utf8'),
-      cipher.final(),
-    ]);
+    const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
 
     // Get authentication tag (GCM provides this)
     const authTag = cipher.getAuthTag();
@@ -137,16 +126,12 @@ export class EncryptionService implements OnModuleInit {
     }
 
     if (!ENCRYPTION_FORMAT_REGEX.test(encryptedText)) {
-      throw new Error(
-        'Invalid encrypted text format: expected salt:iv:authTag:encryptedData'
-      );
+      throw new Error('Invalid encrypted text format: expected salt:iv:authTag:encryptedData');
     }
 
     const parts = encryptedText.split(':');
     if (parts.length !== 4) {
-      throw new Error(
-        'Invalid encrypted text format: expected 4 parts separated by colons'
-      );
+      throw new Error('Invalid encrypted text format: expected 4 parts separated by colons');
     }
 
     const [saltHex, ivHex, authTagHex, encryptedDataHex] = parts;
@@ -163,10 +148,7 @@ export class EncryptionService implements OnModuleInit {
       const decipher = createDecipheriv(this.algorithm, key, iv);
       decipher.setAuthTag(authTag);
 
-      const decrypted = Buffer.concat([
-        decipher.update(encryptedData),
-        decipher.final(),
-      ]);
+      const decrypted = Buffer.concat([decipher.update(encryptedData), decipher.final()]);
 
       return decrypted.toString('utf8');
     } catch {

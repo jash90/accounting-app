@@ -1,4 +1,5 @@
 import { DataSource } from 'typeorm';
+
 import {
   User,
   Company,
@@ -82,4 +83,3 @@ export default new DataSource({
   migrations: ['apps/api/src/migrations/*{.ts,.js}'],
   synchronize: false,
 });
-

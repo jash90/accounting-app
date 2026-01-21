@@ -1,3 +1,7 @@
+import { AlertTriangle, ExternalLink } from 'lucide-react';
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -7,9 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, ExternalLink } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 
 interface DuplicateClientInfo {
   id: string;
@@ -66,10 +67,7 @@ export function DuplicateWarningDialog({
               <AlertDescription>
                 <ul className="mt-2 space-y-2">
                   {byNip.map((client) => (
-                    <li
-                      key={client.id}
-                      className="flex items-center justify-between text-sm"
-                    >
+                    <li key={client.id} className="flex items-center justify-between text-sm">
                       <div>
                         <span className="font-medium">{client.name}</span>
                         {!client.isActive && (
@@ -78,16 +76,10 @@ export function DuplicateWarningDialog({
                           </Badge>
                         )}
                         <br />
-                        <span className="text-muted-foreground text-xs">
-                          NIP: {client.nip}
-                        </span>
+                        <span className="text-muted-foreground text-xs">NIP: {client.nip}</span>
                       </div>
                       {onViewClient && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onViewClient(client.id)}
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => onViewClient(client.id)}>
                           <ExternalLink className="h-3 w-3" />
                         </Button>
                       )}
@@ -106,10 +98,7 @@ export function DuplicateWarningDialog({
               <AlertDescription>
                 <ul className="mt-2 space-y-2">
                   {byEmail.map((client) => (
-                    <li
-                      key={client.id}
-                      className="flex items-center justify-between text-sm"
-                    >
+                    <li key={client.id} className="flex items-center justify-between text-sm">
                       <div>
                         <span className="font-medium">{client.name}</span>
                         {!client.isActive && (
@@ -118,16 +107,10 @@ export function DuplicateWarningDialog({
                           </Badge>
                         )}
                         <br />
-                        <span className="text-muted-foreground text-xs">
-                          Email: {client.email}
-                        </span>
+                        <span className="text-muted-foreground text-xs">Email: {client.email}</span>
                       </div>
                       {onViewClient && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onViewClient(client.id)}
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => onViewClient(client.id)}>
                           <ExternalLink className="h-3 w-3" />
                         </Button>
                       )}

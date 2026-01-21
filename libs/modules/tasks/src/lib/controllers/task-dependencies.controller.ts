@@ -8,24 +8,24 @@ import {
   UseGuards,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiParam,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+
 import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
   PermissionGuard,
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
-import { User } from '@accounting/common';
-import { TaskDependenciesService } from '../services/task-dependencies.service';
+
 import { CreateTaskDependencyDto } from '../dto/task-dependency.dto';
-import { TaskDependencyResponseDto, SuccessMessageResponseDto, ErrorResponseDto } from '../dto/task-response.dto';
+import {
+  TaskDependencyResponseDto,
+  SuccessMessageResponseDto,
+  ErrorResponseDto,
+} from '../dto/task-response.dto';
+import { TaskDependenciesService } from '../services/task-dependencies.service';
 
 @ApiTags('Task Dependencies')
 @ApiBearerAuth()
@@ -41,7 +41,11 @@ export class TaskDependenciesController {
     description: 'Returns tasks that this task depends on (blocked by)',
   })
   @ApiParam({ name: 'taskId', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'List of dependencies', type: [TaskDependencyResponseDto] })
+  @ApiResponse({
+    status: 200,
+    description: 'List of dependencies',
+    type: [TaskDependencyResponseDto],
+  })
   @ApiResponse({ status: 404, description: 'Task not found', type: ErrorResponseDto })
   @RequirePermission('tasks', 'read')
   async findAll(@Param('taskId', ParseUUIDPipe) taskId: string, @CurrentUser() user: User) {
@@ -79,14 +83,18 @@ export class TaskDependenciesController {
   })
   @ApiParam({ name: 'taskId', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 201, description: 'Dependency created', type: TaskDependencyResponseDto })
-  @ApiResponse({ status: 400, description: 'Cycle detected or self-dependency', type: ErrorResponseDto })
+  @ApiResponse({
+    status: 400,
+    description: 'Cycle detected or self-dependency',
+    type: ErrorResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Task not found', type: ErrorResponseDto })
   @ApiResponse({ status: 409, description: 'Dependency already exists', type: ErrorResponseDto })
   @RequirePermission('tasks', 'write')
   async create(
     @Param('taskId', ParseUUIDPipe) taskId: string,
     @Body() dto: CreateTaskDependencyDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.dependenciesService.create(taskId, dto, user);
   }
@@ -97,7 +105,10 @@ export class TaskDependenciesController {
   @ApiResponse({ status: 200, description: 'Dependency removed', type: SuccessMessageResponseDto })
   @ApiResponse({ status: 404, description: 'Dependency not found', type: ErrorResponseDto })
   @RequirePermission('tasks', 'write')
-  async remove(@Param('dependencyId', ParseUUIDPipe) dependencyId: string, @CurrentUser() user: User) {
+  async remove(
+    @Param('dependencyId', ParseUUIDPipe) dependencyId: string,
+    @CurrentUser() user: User
+  ) {
     await this.dependenciesService.remove(dependencyId, user);
     return { message: 'Zależność została usunięta' };
   }

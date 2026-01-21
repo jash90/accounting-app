@@ -23,7 +23,9 @@ import { Company } from './company.entity';
  * Passwords are stored encrypted using EncryptionService
  */
 @Entity('email_configurations')
-@Check(`("userId" IS NOT NULL AND "companyId" IS NULL) OR ("userId" IS NULL AND "companyId" IS NOT NULL)`)
+@Check(
+  `("userId" IS NOT NULL AND "companyId" IS NULL) OR ("userId" IS NULL AND "companyId" IS NOT NULL)`
+)
 export class EmailConfiguration {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -40,7 +42,10 @@ export class EmailConfiguration {
   @Column({ type: 'uuid', nullable: true })
   companyId!: string | null;
 
-  @OneToOne(() => Company, (company) => company.emailConfig, { nullable: true, onDelete: 'CASCADE' })
+  @OneToOne(() => Company, (company) => company.emailConfig, {
+    nullable: true,
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'companyId' })
   company!: Company | null;
 

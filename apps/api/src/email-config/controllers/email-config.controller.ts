@@ -10,7 +10,6 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -26,14 +25,17 @@ import {
   ApiBody,
   ApiQuery,
 } from '@nestjs/swagger';
-import { EmailConfigService } from '../services/email-config.service';
-import { SmtpImapService } from '../services/smtp-imap.service';
-import { CreateEmailConfigDto, UpdateEmailConfigDto } from '@accounting/email';
-import { SendEmailDto } from '../dto/send-email.dto';
-import { TestSmtpDto, TestImapDto, TestConnectionResultDto } from '../dto/test-connection.dto';
+import { Throttle } from '@nestjs/throttler';
+
 import { CurrentUser, Roles, RolesGuard } from '@accounting/auth';
 import { User, UserRole, EmailConfiguration } from '@accounting/common';
+import { CreateEmailConfigDto, UpdateEmailConfigDto } from '@accounting/email';
 import { OwnerOrAdminGuard, RequireCompany, RequireCompanyGuard } from '@accounting/rbac';
+
+import { SendEmailDto } from '../dto/send-email.dto';
+import { TestSmtpDto, TestImapDto, TestConnectionResultDto } from '../dto/test-connection.dto';
+import { EmailConfigService } from '../services/email-config.service';
+import { SmtpImapService } from '../services/smtp-imap.service';
 
 @ApiTags('Email Configuration')
 @ApiBearerAuth('JWT-auth')
@@ -41,7 +43,7 @@ import { OwnerOrAdminGuard, RequireCompany, RequireCompanyGuard } from '@account
 export class EmailConfigController {
   constructor(
     private readonly emailConfigService: EmailConfigService,
-    private readonly smtpImapService: SmtpImapService,
+    private readonly smtpImapService: SmtpImapService
   ) {}
 
   // ========== USER EMAIL CONFIGURATION ENDPOINTS ==========
@@ -65,7 +67,10 @@ export class EmailConfigController {
     description: 'Create a new email configuration for the authenticated user',
   })
   @ApiBody({ type: CreateEmailConfigDto })
-  @ApiCreatedResponse({ description: 'Email configuration created successfully', type: EmailConfiguration })
+  @ApiCreatedResponse({
+    description: 'Email configuration created successfully',
+    type: EmailConfiguration,
+  })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiConflictResponse({ description: 'User already has an email configuration' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
@@ -79,7 +84,10 @@ export class EmailConfigController {
     description: 'Update the email configuration for the authenticated user',
   })
   @ApiBody({ type: UpdateEmailConfigDto })
-  @ApiOkResponse({ description: 'Email configuration updated successfully', type: EmailConfiguration })
+  @ApiOkResponse({
+    description: 'Email configuration updated successfully',
+    type: EmailConfiguration,
+  })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiNotFoundResponse({ description: 'Email configuration not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
@@ -104,7 +112,7 @@ export class EmailConfigController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Send email using user email configuration',
-    description: 'Send an email using the authenticated user\'s SMTP configuration',
+    description: "Send an email using the authenticated user's SMTP configuration",
   })
   @ApiBody({ type: SendEmailDto })
   @ApiNoContentResponse({ description: 'Email sent successfully' })
@@ -118,7 +126,7 @@ export class EmailConfigController {
   @Get('inbox')
   @ApiOperation({
     summary: 'Check user inbox',
-    description: 'Retrieve recent emails from the authenticated user\'s inbox using IMAP',
+    description: "Retrieve recent emails from the authenticated user's inbox using IMAP",
   })
   @ApiQuery({
     name: 'limit',
@@ -144,7 +152,8 @@ export class EmailConfigController {
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
   @ApiOperation({
     summary: 'Test SMTP connection',
-    description: 'Test SMTP connection without sending an email. Validates credentials and server connectivity.',
+    description:
+      'Test SMTP connection without sending an email. Validates credentials and server connectivity.',
   })
   @ApiBody({ type: TestSmtpDto })
   @ApiOkResponse({ description: 'SMTP connection test result', type: TestConnectionResultDto })
@@ -162,7 +171,8 @@ export class EmailConfigController {
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
   @ApiOperation({
     summary: 'Test IMAP connection',
-    description: 'Test IMAP connection without fetching emails. Validates credentials and server connectivity.',
+    description:
+      'Test IMAP connection without fetching emails. Validates credentials and server connectivity.',
   })
   @ApiBody({ type: TestImapDto })
   @ApiOkResponse({ description: 'IMAP connection test result', type: TestConnectionResultDto })
@@ -201,7 +211,10 @@ export class EmailConfigController {
     description: 'Create a new email configuration for the company (COMPANY_OWNER only)',
   })
   @ApiBody({ type: CreateEmailConfigDto })
-  @ApiCreatedResponse({ description: 'Company email configuration created successfully', type: EmailConfiguration })
+  @ApiCreatedResponse({
+    description: 'Company email configuration created successfully',
+    type: EmailConfiguration,
+  })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiConflictResponse({ description: 'Company already has an email configuration' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
@@ -219,7 +232,10 @@ export class EmailConfigController {
     description: 'Update the email configuration for the company (COMPANY_OWNER only)',
   })
   @ApiBody({ type: UpdateEmailConfigDto })
-  @ApiOkResponse({ description: 'Company email configuration updated successfully', type: EmailConfiguration })
+  @ApiOkResponse({
+    description: 'Company email configuration updated successfully',
+    type: EmailConfiguration,
+  })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiNotFoundResponse({ description: 'Company email configuration not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
@@ -252,7 +268,7 @@ export class EmailConfigController {
   @RequireCompany()
   @ApiOperation({
     summary: 'Send email using company email configuration',
-    description: 'Send an email using the company\'s SMTP configuration (COMPANY_OWNER only)',
+    description: "Send an email using the company's SMTP configuration (COMPANY_OWNER only)",
   })
   @ApiBody({ type: SendEmailDto })
   @ApiNoContentResponse({ description: 'Email sent successfully' })
@@ -270,7 +286,7 @@ export class EmailConfigController {
   @RequireCompany()
   @ApiOperation({
     summary: 'Check company inbox',
-    description: 'Retrieve recent emails from the company\'s inbox using IMAP (COMPANY_OWNER only)',
+    description: "Retrieve recent emails from the company's inbox using IMAP (COMPANY_OWNER only)",
   })
   @ApiQuery({
     name: 'limit',
@@ -352,7 +368,10 @@ export class EmailConfigController {
     description: 'Create a new shared email configuration for all admins (ADMIN only)',
   })
   @ApiBody({ type: CreateEmailConfigDto })
-  @ApiCreatedResponse({ description: 'System Admin email configuration created successfully', type: EmailConfiguration })
+  @ApiCreatedResponse({
+    description: 'System Admin email configuration created successfully',
+    type: EmailConfiguration,
+  })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiConflictResponse({ description: 'System Admin already has an email configuration' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
@@ -369,7 +388,10 @@ export class EmailConfigController {
     description: 'Update the shared email configuration for all admins (ADMIN only)',
   })
   @ApiBody({ type: UpdateEmailConfigDto })
-  @ApiOkResponse({ description: 'System Admin email configuration updated successfully', type: EmailConfiguration })
+  @ApiOkResponse({
+    description: 'System Admin email configuration updated successfully',
+    type: EmailConfiguration,
+  })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiNotFoundResponse({ description: 'System Admin email configuration not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })

@@ -1,7 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { useAuth } from './use-auth';
 import { authApi } from '../api/endpoints/auth';
 import { tokenStorage } from '../auth/token-storage';
@@ -19,9 +21,7 @@ const createWrapper = () => {
 
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
-        {children}
-      </MemoryRouter>
+      <MemoryRouter>{children}</MemoryRouter>
     </QueryClientProvider>
   );
   Wrapper.displayName = 'TestWrapper';
@@ -176,4 +176,3 @@ describe('useAuth', () => {
     });
   });
 });
-

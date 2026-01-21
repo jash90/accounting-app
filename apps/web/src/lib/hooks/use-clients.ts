@@ -1,31 +1,33 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useToast } from '@/components/ui/use-toast';
+import { type ApiErrorResponse } from '@/types/api';
+import {
+  type CreateClientDto,
+  type UpdateClientDto,
+  type ClientFiltersDto,
+  type SetCustomFieldValuesDto,
+  type CreateClientFieldDefinitionDto,
+  type UpdateClientFieldDefinitionDto,
+  type CreateClientIconDto,
+  type UpdateClientIconDto,
+  type CreateNotificationSettingsDto,
+  type UpdateNotificationSettingsDto,
+} from '@/types/dtos';
+
 import {
   clientsApi,
   fieldDefinitionsApi,
   clientIconsApi,
   notificationSettingsApi,
-  FieldDefinitionQueryDto,
-  IconQueryDto,
-  BulkDeleteClientsDto,
-  BulkRestoreClientsDto,
-  BulkEditClientsDto,
-  CheckDuplicatesDto,
+  type FieldDefinitionQueryDto,
+  type IconQueryDto,
+  type BulkDeleteClientsDto,
+  type BulkRestoreClientsDto,
+  type BulkEditClientsDto,
+  type CheckDuplicatesDto,
 } from '../api/endpoints/clients';
 import { queryKeys } from '../api/query-client';
-import {
-  CreateClientDto,
-  UpdateClientDto,
-  ClientFiltersDto,
-  SetCustomFieldValuesDto,
-  CreateClientFieldDefinitionDto,
-  UpdateClientFieldDefinitionDto,
-  CreateClientIconDto,
-  UpdateClientIconDto,
-  CreateNotificationSettingsDto,
-  UpdateNotificationSettingsDto,
-} from '@/types/dtos';
-import { ApiErrorResponse } from '@/types/api';
-import { useToast } from '@/components/ui/use-toast';
 
 // ============================================
 // Client Hooks
@@ -677,8 +679,7 @@ export function useCreateNotificationSettings() {
     onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
-        description:
-          error.response?.data?.message || 'Nie udało się utworzyć ustawień powiadomień',
+        description: error.response?.data?.message || 'Nie udało się utworzyć ustawień powiadomień',
         variant: 'destructive',
       });
     },
@@ -726,8 +727,7 @@ export function useDeleteNotificationSettings() {
     onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
-        description:
-          error.response?.data?.message || 'Nie udało się usunąć ustawień powiadomień',
+        description: error.response?.data?.message || 'Nie udało się usunąć ustawień powiadomień',
         variant: 'destructive',
       });
     },

@@ -1,11 +1,5 @@
 import { Page } from '@playwright/test';
-import {
-  ScreenshotMetadata,
-  Issue,
-  Recommendation,
-  DesignAnalysis,
-  Metrics,
-} from './types';
+import { ScreenshotMetadata, Issue, Recommendation, DesignAnalysis, Metrics } from './types';
 
 export class MCPAnalysisHelper {
   constructor(private page: Page) {}
@@ -14,9 +8,7 @@ export class MCPAnalysisHelper {
    * Sequential MCP: Systematic screenshot analysis
    * Uses sequential-thinking to analyze design systematically
    */
-  async analyzeWithSequential(
-    screenshots: ScreenshotMetadata[]
-  ): Promise<Issue[]> {
+  async analyzeWithSequential(screenshots: ScreenshotMetadata[]): Promise<Issue[]> {
     console.log('🔄 Starting Sequential MCP analysis...');
 
     const issues: Issue[] = [];
@@ -63,10 +55,7 @@ export class MCPAnalysisHelper {
           const color = styles.color;
 
           // Simple contrast check (would need proper implementation)
-          if (
-            bgColor.includes('rgb(241, 245, 249)') &&
-            color.includes('rgb(15, 23, 42)')
-          ) {
+          if (bgColor.includes('rgb(241, 245, 249)') && color.includes('rgb(15, 23, 42)')) {
             problems.push({
               element: button.textContent?.trim() || 'Button',
               fg: color,
@@ -135,8 +124,7 @@ export class MCPAnalysisHelper {
           description: `Inconsistent table cell padding: ${spacingResults.length} cells with non-standard padding`,
           affectedComponents: ['Table cells'],
           screenshots: [],
-          recommendation:
-            'Standardize table cell padding to 12px (Tailwind: p-3)',
+          recommendation: 'Standardize table cell padding to 12px (Tailwind: p-3)',
         });
       }
     } catch (error) {
@@ -185,8 +173,7 @@ export class MCPAnalysisHelper {
           affectedComponents: ['Buttons', 'Links', 'Inputs'],
           screenshots: [],
           wcagViolation: 'WCAG 2.1 2.4.7 Focus Visible - AA',
-          recommendation:
-            'Add visible focus indicators using focus-visible:ring-2',
+          recommendation: 'Add visible focus indicators using focus-visible:ring-2',
         });
       }
     } catch (error) {
@@ -200,7 +187,7 @@ export class MCPAnalysisHelper {
    * Check accessibility using Playwright's accessibility tree
    */
   private async checkAccessibility(): Promise<Issue[]> {
-    const issues: Issue[]  = [];
+    const issues: Issue[] = [];
 
     try {
       const snapshot = await this.page.accessibility.snapshot();
@@ -259,10 +246,7 @@ export class MCPAnalysisHelper {
    * Magic MCP: Component-specific suggestions
    * Note: This is a placeholder - actual MCP integration would happen here
    */
-  async getComponentSuggestions(
-    component: string,
-    context: string
-  ): Promise<Recommendation[]> {
+  async getComponentSuggestions(component: string, context: string): Promise<Recommendation[]> {
     console.log(`✨ Getting Magic suggestions for: ${component} (${context})`);
     // In real implementation, this would call Magic MCP
     return [];
@@ -312,9 +296,7 @@ export class MCPAnalysisHelper {
       },
       priority: index + 1,
       estimatedEffort:
-        issue.severity === 'critical' || issue.severity === 'high'
-          ? 'high'
-          : 'medium',
+        issue.severity === 'critical' || issue.severity === 'high' ? 'high' : 'medium',
     }));
 
     return {

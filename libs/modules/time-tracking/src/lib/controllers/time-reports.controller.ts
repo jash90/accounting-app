@@ -16,16 +16,18 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
+
 import { Response } from 'express';
+
 import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
   PermissionGuard,
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
-import { User } from '@accounting/common';
-import { TimesheetService } from '../services/timesheet.service';
+
 import {
   DailyTimesheetDto,
   WeeklyTimesheetDto,
@@ -33,6 +35,7 @@ import {
   ExportFiltersDto,
   ExportFormat,
 } from '../dto/timesheet.dto';
+import { TimesheetService } from '../services/timesheet.service';
 
 @ApiTags('Time Tracking - Reports')
 @ApiBearerAuth()
@@ -49,7 +52,12 @@ export class TimeReportsController {
     summary: 'Get daily timesheet',
     description: 'Retrieves time entries for a specific day grouped by hours.',
   })
-  @ApiQuery({ name: 'date', required: true, description: 'Date (YYYY-MM-DD)', example: '2024-01-15' })
+  @ApiQuery({
+    name: 'date',
+    required: true,
+    description: 'Date (YYYY-MM-DD)',
+    example: '2024-01-15',
+  })
   @ApiQuery({ name: 'userId', required: false, description: 'User ID (admin/owner only)' })
   @ApiResponse({ status: 200, description: 'Daily timesheet data' })
   @RequirePermission('time-tracking', 'read')
@@ -62,7 +70,12 @@ export class TimeReportsController {
     summary: 'Get weekly timesheet',
     description: 'Retrieves time entries for a week grouped by days.',
   })
-  @ApiQuery({ name: 'weekStart', required: true, description: 'Week start date (YYYY-MM-DD)', example: '2024-01-15' })
+  @ApiQuery({
+    name: 'weekStart',
+    required: true,
+    description: 'Week start date (YYYY-MM-DD)',
+    example: '2024-01-15',
+  })
   @ApiQuery({ name: 'userId', required: false, description: 'User ID (admin/owner only)' })
   @ApiResponse({ status: 200, description: 'Weekly timesheet data' })
   @RequirePermission('time-tracking', 'read')
@@ -75,11 +88,16 @@ export class TimeReportsController {
   @Get('reports/summary')
   @ApiOperation({
     summary: 'Get time tracking summary',
-    description: 'Retrieves aggregated time tracking data for the specified period with optional grouping.',
+    description:
+      'Retrieves aggregated time tracking data for the specified period with optional grouping.',
   })
   @ApiQuery({ name: 'startDate', required: true, description: 'Start date (YYYY-MM-DD)' })
   @ApiQuery({ name: 'endDate', required: true, description: 'End date (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'groupBy', required: false, description: 'Group results by: day, client, task' })
+  @ApiQuery({
+    name: 'groupBy',
+    required: false,
+    description: 'Group results by: day, client, task',
+  })
   @ApiQuery({ name: 'userId', required: false, description: 'Filter by user ID' })
   @ApiQuery({ name: 'clientId', required: false, description: 'Filter by client ID' })
   @ApiQuery({ name: 'isBillable', required: false, description: 'Filter by billable status' })
@@ -102,7 +120,7 @@ export class TimeReportsController {
   async getClientReport(
     @Param('clientId', ParseUUIDPipe) clientId: string,
     @Query() dto: ReportFiltersDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.timesheetService.getClientReport(clientId, dto, user);
   }
@@ -116,7 +134,12 @@ export class TimeReportsController {
   })
   @ApiQuery({ name: 'startDate', required: true, description: 'Start date (YYYY-MM-DD)' })
   @ApiQuery({ name: 'endDate', required: true, description: 'End date (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'format', required: false, description: 'Export format: csv or xlsx', enum: ExportFormat })
+  @ApiQuery({
+    name: 'format',
+    required: false,
+    description: 'Export format: csv or xlsx',
+    enum: ExportFormat,
+  })
   @ApiQuery({ name: 'userId', required: false, description: 'Filter by user ID' })
   @ApiQuery({ name: 'clientId', required: false, description: 'Filter by client ID' })
   @ApiResponse({ status: 200, description: 'Exported file' })
@@ -124,7 +147,7 @@ export class TimeReportsController {
   async exportReport(
     @Query() dto: ExportFiltersDto,
     @CurrentUser() user: User,
-    @Res() res: Response,
+    @Res() res: Response
   ) {
     const { data, filename, mimeType } = await this.generateExport(dto, user);
 
@@ -135,7 +158,7 @@ export class TimeReportsController {
 
   private async generateExport(
     dto: ExportFiltersDto,
-    user: User,
+    user: User
   ): Promise<{ data: Buffer; filename: string; mimeType: string }> {
     const reportData = await this.timesheetService.getReportSummary(dto, user);
     const format = dto.format || ExportFormat.CSV;
@@ -151,9 +174,7 @@ export class TimeReportsController {
       }
       case ExportFormat.EXCEL:
       case ExportFormat.PDF:
-        throw new BadRequestException(
-          `Format ${format} nie jest jeszcze obsługiwany. Użyj CSV.`
-        );
+        throw new BadRequestException(`Format ${format} nie jest jeszcze obsługiwany. Użyj CSV.`);
       default:
         throw new BadRequestException(`Nieznany format eksportu: ${format}`);
     }
@@ -182,7 +203,9 @@ export class TimeReportsController {
 
     // Header (sanitized to prevent injection)
     lines.push(this.sanitizeCsvValue('Raport czasu pracy'));
-    lines.push(`Okres: ${this.sanitizeCsvValue(reportData.startDate)} - ${this.sanitizeCsvValue(reportData.endDate)}`);
+    lines.push(
+      `Okres: ${this.sanitizeCsvValue(reportData.startDate)} - ${this.sanitizeCsvValue(reportData.endDate)}`
+    );
     lines.push('');
 
     // Summary

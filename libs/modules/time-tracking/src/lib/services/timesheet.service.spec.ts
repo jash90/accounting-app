@@ -1,18 +1,21 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, Between, DataSource } from 'typeorm';
-import { TimesheetService, TimesheetSummary, GroupedReportData } from './timesheet.service';
-import { TimeCalculationService } from './time-calculation.service';
-import { TimeSettingsService } from './time-settings.service';
+
+import { type Repository, DataSource } from 'typeorm';
+
 import {
   TimeEntry,
   TimeEntryStatus,
-  User,
+  type User,
   UserRole,
   TimeRoundingMethod,
-  TimeSettings,
+  type TimeSettings,
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
+
+import { TimeCalculationService } from './time-calculation.service';
+import { TimeSettingsService } from './time-settings.service';
+import { TimesheetService } from './timesheet.service';
 import { TimesheetGroupBy } from '../dto/timesheet.dto';
 
 describe('TimesheetService', () => {
@@ -20,7 +23,7 @@ describe('TimesheetService', () => {
   let entryRepository: jest.Mocked<Repository<TimeEntry>>;
   let tenantService: jest.Mocked<TenantService>;
   let settingsService: jest.Mocked<TimeSettingsService>;
-  let calculationService: TimeCalculationService;
+  let _calculationService: TimeCalculationService;
 
   // Mock data
   const mockCompanyId = 'company-123';
@@ -148,7 +151,7 @@ describe('TimesheetService', () => {
     entryRepository = module.get(getRepositoryToken(TimeEntry));
     tenantService = module.get(TenantService);
     settingsService = module.get(TimeSettingsService);
-    calculationService = module.get(TimeCalculationService);
+    _calculationService = module.get(TimeCalculationService);
   });
 
   describe('getDailyTimesheet', () => {
@@ -156,10 +159,7 @@ describe('TimesheetService', () => {
       const mockEntries = [createMockEntry(), createMockEntry()];
       entryRepository.find = jest.fn().mockResolvedValue(mockEntries);
 
-      const result = await service.getDailyTimesheet(
-        { date: '2024-01-15' },
-        mockEmployee as User,
-      );
+      const result = await service.getDailyTimesheet({ date: '2024-01-15' }, mockEmployee as User);
 
       expect(result.date).toBe('2024-01-15');
       expect(result.entries).toHaveLength(2);
@@ -171,7 +171,7 @@ describe('TimesheetService', () => {
             userId: mockUserId,
             isActive: true,
           }),
-        }),
+        })
       );
     });
 
@@ -179,9 +179,9 @@ describe('TimesheetService', () => {
       const mockEntries = [createMockEntry({ userId: 'other-user' })];
       entryRepository.find = jest.fn().mockResolvedValue(mockEntries);
 
-      const result = await service.getDailyTimesheet(
+      await service.getDailyTimesheet(
         { date: '2024-01-15', userId: 'other-user' },
-        mockOwner as User,
+        mockOwner as User
       );
 
       expect(entryRepository.find).toHaveBeenCalledWith(
@@ -189,7 +189,7 @@ describe('TimesheetService', () => {
           where: expect.objectContaining({
             userId: 'other-user',
           }),
-        }),
+        })
       );
     });
 
@@ -199,7 +199,7 @@ describe('TimesheetService', () => {
 
       await service.getDailyTimesheet(
         { date: '2024-01-15', userId: 'other-user' },
-        mockEmployee as User,
+        mockEmployee as User
       );
 
       expect(entryRepository.find).toHaveBeenCalledWith(
@@ -207,37 +207,31 @@ describe('TimesheetService', () => {
           where: expect.objectContaining({
             userId: mockUserId, // Should use current user, not other-user
           }),
-        }),
+        })
       );
     });
 
     it('should include client and task relations', async () => {
       entryRepository.find = jest.fn().mockResolvedValue([]);
 
-      await service.getDailyTimesheet(
-        { date: '2024-01-15' },
-        mockEmployee as User,
-      );
+      await service.getDailyTimesheet({ date: '2024-01-15' }, mockEmployee as User);
 
       expect(entryRepository.find).toHaveBeenCalledWith(
         expect.objectContaining({
           relations: expect.arrayContaining(['client', 'task']),
-        }),
+        })
       );
     });
 
     it('should order entries by startTime ASC', async () => {
       entryRepository.find = jest.fn().mockResolvedValue([]);
 
-      await service.getDailyTimesheet(
-        { date: '2024-01-15' },
-        mockEmployee as User,
-      );
+      await service.getDailyTimesheet({ date: '2024-01-15' }, mockEmployee as User);
 
       expect(entryRepository.find).toHaveBeenCalledWith(
         expect.objectContaining({
           order: { startTime: 'ASC' },
-        }),
+        })
       );
     });
   });
@@ -252,7 +246,7 @@ describe('TimesheetService', () => {
 
       const result = await service.getWeeklyTimesheet(
         { weekStart: '2024-01-15' },
-        mockEmployee as User,
+        mockEmployee as User
       );
 
       expect(result.days).toHaveLength(7);
@@ -267,10 +261,7 @@ describe('TimesheetService', () => {
         weekStartDay: 0, // Sunday
       });
 
-      await service.getWeeklyTimesheet(
-        { weekStart: '2024-01-14' },
-        mockEmployee as User,
-      );
+      await service.getWeeklyTimesheet({ weekStart: '2024-01-14' }, mockEmployee as User);
 
       expect(settingsService.getSettings).toHaveBeenCalledWith(mockEmployee);
     });
@@ -294,11 +285,11 @@ describe('TimesheetService', () => {
 
       const result = await service.getWeeklyTimesheet(
         { weekStart: '2024-01-15' },
-        mockEmployee as User,
+        mockEmployee as User
       );
 
       // Find the day with 2 entries
-      const dayWith2Entries = result.days.find(d => d.entries.length === 2);
+      const dayWith2Entries = result.days.find((d) => d.entries.length === 2);
       expect(dayWith2Entries).toBeDefined();
       expect(dayWith2Entries?.totalMinutes).toBe(120);
     });
@@ -322,10 +313,10 @@ describe('TimesheetService', () => {
 
       const result = await service.getWeeklyTimesheet(
         { weekStart: '2024-01-15' },
-        mockEmployee as User,
+        mockEmployee as User
       );
 
-      const dayWithEntries = result.days.find(d => d.entries.length > 0);
+      const dayWithEntries = result.days.find((d) => d.entries.length > 0);
       expect(dayWithEntries?.totalMinutes).toBe(120);
       expect(dayWithEntries?.billableMinutes).toBe(60);
     });
@@ -335,7 +326,7 @@ describe('TimesheetService', () => {
 
       await service.getWeeklyTimesheet(
         { weekStart: '2024-01-15', userId: 'other-user' },
-        mockOwner as User,
+        mockOwner as User
       );
 
       expect(entryRepository.find).toHaveBeenCalledWith(
@@ -343,7 +334,7 @@ describe('TimesheetService', () => {
           where: expect.objectContaining({
             userId: 'other-user',
           }),
-        }),
+        })
       );
     });
   });
@@ -360,16 +351,16 @@ describe('TimesheetService', () => {
 
       await service.getReportSummary(
         { startDate: '2024-01-01', endDate: '2024-01-31' },
-        mockEmployee as User,
+        mockEmployee as User
       );
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         'entry.startTime >= :startDate',
-        expect.any(Object),
+        expect.any(Object)
       );
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         'entry.startTime <= :endDate',
-        expect.any(Object),
+        expect.any(Object)
       );
     });
 
@@ -379,13 +370,12 @@ describe('TimesheetService', () => {
 
       await service.getReportSummary(
         { startDate: '2024-01-01', endDate: '2024-01-31', clientId: 'client-123' },
-        mockEmployee as User,
+        mockEmployee as User
       );
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'entry.clientId = :clientId',
-        { clientId: 'client-123' },
-      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('entry.clientId = :clientId', {
+        clientId: 'client-123',
+      });
     });
 
     it('should filter by taskId', async () => {
@@ -394,13 +384,12 @@ describe('TimesheetService', () => {
 
       await service.getReportSummary(
         { startDate: '2024-01-01', endDate: '2024-01-31', taskId: 'task-123' },
-        mockEmployee as User,
+        mockEmployee as User
       );
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'entry.taskId = :taskId',
-        { taskId: 'task-123' },
-      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('entry.taskId = :taskId', {
+        taskId: 'task-123',
+      });
     });
 
     it('should filter by billable status', async () => {
@@ -409,13 +398,12 @@ describe('TimesheetService', () => {
 
       await service.getReportSummary(
         { startDate: '2024-01-01', endDate: '2024-01-31', isBillable: true },
-        mockEmployee as User,
+        mockEmployee as User
       );
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'entry.isBillable = :isBillable',
-        { isBillable: true },
-      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('entry.isBillable = :isBillable', {
+        isBillable: true,
+      });
     });
 
     it('should filter by userId for non-managers', async () => {
@@ -424,13 +412,12 @@ describe('TimesheetService', () => {
 
       await service.getReportSummary(
         { startDate: '2024-01-01', endDate: '2024-01-31' },
-        mockEmployee as User,
+        mockEmployee as User
       );
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'entry.userId = :userId',
-        { userId: mockUserId },
-      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('entry.userId = :userId', {
+        userId: mockUserId,
+      });
     });
 
     it('should allow managers to see all entries', async () => {
@@ -439,14 +426,12 @@ describe('TimesheetService', () => {
 
       await service.getReportSummary(
         { startDate: '2024-01-01', endDate: '2024-01-31' },
-        mockOwner as User,
+        mockOwner as User
       );
 
       // Should not call andWhere with userId for managers without userId filter
       const calls = mockQueryBuilder.andWhere.mock.calls;
-      const hasUserIdFilter = calls.some(
-        (call: any) => call[0] === 'entry.userId = :userId',
-      );
+      const hasUserIdFilter = calls.some((call: any) => call[0] === 'entry.userId = :userId');
       expect(hasUserIdFilter).toBe(false);
     });
 
@@ -462,7 +447,7 @@ describe('TimesheetService', () => {
 
       const result = await service.getReportSummary(
         { startDate: '2024-01-01', endDate: '2024-01-31', groupBy: TimesheetGroupBy.DAY },
-        mockEmployee as User,
+        mockEmployee as User
       );
 
       expect(result.groupedData).toBeDefined();
@@ -471,9 +456,18 @@ describe('TimesheetService', () => {
 
     it('should group by client when specified', async () => {
       const mockEntries = [
-        createMockEntry({ clientId: 'client-1', client: { id: 'client-1', name: 'Client 1' } as any }),
-        createMockEntry({ clientId: 'client-1', client: { id: 'client-1', name: 'Client 1' } as any }),
-        createMockEntry({ clientId: 'client-2', client: { id: 'client-2', name: 'Client 2' } as any }),
+        createMockEntry({
+          clientId: 'client-1',
+          client: { id: 'client-1', name: 'Client 1' } as any,
+        }),
+        createMockEntry({
+          clientId: 'client-1',
+          client: { id: 'client-1', name: 'Client 1' } as any,
+        }),
+        createMockEntry({
+          clientId: 'client-2',
+          client: { id: 'client-2', name: 'Client 2' } as any,
+        }),
       ];
       const mockQueryBuilder = createMockQueryBuilder();
       mockQueryBuilder.getMany = jest.fn().mockResolvedValue(mockEntries);
@@ -481,7 +475,7 @@ describe('TimesheetService', () => {
 
       const result = await service.getReportSummary(
         { startDate: '2024-01-01', endDate: '2024-01-31', groupBy: TimesheetGroupBy.CLIENT },
-        mockEmployee as User,
+        mockEmployee as User
       );
 
       expect(result.groupedData).toBeDefined();
@@ -499,7 +493,7 @@ describe('TimesheetService', () => {
 
       const result = await service.getReportSummary(
         { startDate: '2024-01-01', endDate: '2024-01-31', groupBy: TimesheetGroupBy.TASK },
-        mockEmployee as User,
+        mockEmployee as User
       );
 
       expect(result.groupedData).toBeDefined();
@@ -519,12 +513,12 @@ describe('TimesheetService', () => {
       await service.getClientReport(
         'client-123',
         { startDate: '2024-01-01', endDate: '2024-01-31' },
-        mockEmployee as User,
+        mockEmployee as User
       );
 
       expect(spy).toHaveBeenCalledWith(
         expect.objectContaining({ clientId: 'client-123' }),
-        mockEmployee,
+        mockEmployee
       );
     });
   });
@@ -538,10 +532,7 @@ describe('TimesheetService', () => {
       ];
       entryRepository.find = jest.fn().mockResolvedValue(mockEntries);
 
-      const result = await service.getDailyTimesheet(
-        { date: '2024-01-15' },
-        mockEmployee as User,
-      );
+      const result = await service.getDailyTimesheet({ date: '2024-01-15' }, mockEmployee as User);
 
       expect(result.summary.totalMinutes).toBe(180);
     });
@@ -554,10 +545,7 @@ describe('TimesheetService', () => {
       ];
       entryRepository.find = jest.fn().mockResolvedValue(mockEntries);
 
-      const result = await service.getDailyTimesheet(
-        { date: '2024-01-15' },
-        mockEmployee as User,
-      );
+      const result = await service.getDailyTimesheet({ date: '2024-01-15' }, mockEmployee as User);
 
       expect(result.summary.billableMinutes).toBe(120);
       expect(result.summary.nonBillableMinutes).toBe(60);
@@ -578,10 +566,7 @@ describe('TimesheetService', () => {
       ];
       entryRepository.find = jest.fn().mockResolvedValue(mockEntries);
 
-      const result = await service.getDailyTimesheet(
-        { date: '2024-01-15' },
-        mockEmployee as User,
-      );
+      const result = await service.getDailyTimesheet({ date: '2024-01-15' }, mockEmployee as User);
 
       expect(result.summary.totalAmount).toBeCloseTo(250.49, 2);
     });
@@ -589,10 +574,7 @@ describe('TimesheetService', () => {
     it('should handle empty entries array', async () => {
       entryRepository.find = jest.fn().mockResolvedValue([]);
 
-      const result = await service.getDailyTimesheet(
-        { date: '2024-01-15' },
-        mockEmployee as User,
-      );
+      const result = await service.getDailyTimesheet({ date: '2024-01-15' }, mockEmployee as User);
 
       expect(result.summary.totalMinutes).toBe(0);
       expect(result.summary.billableMinutes).toBe(0);
@@ -608,10 +590,7 @@ describe('TimesheetService', () => {
       ];
       entryRepository.find = jest.fn().mockResolvedValue(mockEntries);
 
-      const result = await service.getDailyTimesheet(
-        { date: '2024-01-15' },
-        mockEmployee as User,
-      );
+      const result = await service.getDailyTimesheet({ date: '2024-01-15' }, mockEmployee as User);
 
       expect(result.summary.totalMinutes).toBe(60);
     });
@@ -626,10 +605,7 @@ describe('TimesheetService', () => {
       ];
       entryRepository.find = jest.fn().mockResolvedValue(mockEntries);
 
-      const result = await service.getDailyTimesheet(
-        { date: '2024-01-15' },
-        mockEmployee as User,
-      );
+      const result = await service.getDailyTimesheet({ date: '2024-01-15' }, mockEmployee as User);
 
       expect(result.summary.totalAmount).toBe(0);
     });
@@ -649,10 +625,10 @@ describe('TimesheetService', () => {
 
       const result = await service.getReportSummary(
         { startDate: '2024-01-01', endDate: '2024-01-31', groupBy: TimesheetGroupBy.CLIENT },
-        mockEmployee as User,
+        mockEmployee as User
       );
 
-      const noClientGroup = result.groupedData?.find(g => g.groupId === 'no-client');
+      const noClientGroup = result.groupedData?.find((g) => g.groupId === 'no-client');
       expect(noClientGroup?.groupName).toBe('Bez klienta');
     });
 
@@ -669,10 +645,10 @@ describe('TimesheetService', () => {
 
       const result = await service.getReportSummary(
         { startDate: '2024-01-01', endDate: '2024-01-31', groupBy: TimesheetGroupBy.TASK },
-        mockEmployee as User,
+        mockEmployee as User
       );
 
-      const noTaskGroup = result.groupedData?.find(g => g.groupId === 'no-task');
+      const noTaskGroup = result.groupedData?.find((g) => g.groupId === 'no-task');
       expect(noTaskGroup?.groupName).toBe('Bez zadania');
     });
 
@@ -706,16 +682,16 @@ describe('TimesheetService', () => {
 
       const result = await service.getReportSummary(
         { startDate: '2024-01-01', endDate: '2024-01-31', groupBy: TimesheetGroupBy.CLIENT },
-        mockEmployee as User,
+        mockEmployee as User
       );
 
-      const client1Group = result.groupedData?.find(g => g.groupId === 'client-1');
+      const client1Group = result.groupedData?.find((g) => g.groupId === 'client-1');
       expect(client1Group?.totalMinutes).toBe(150);
       expect(client1Group?.billableMinutes).toBe(150);
       expect(client1Group?.totalAmount).toBe(250);
       expect(client1Group?.entriesCount).toBe(2);
 
-      const client2Group = result.groupedData?.find(g => g.groupId === 'client-2');
+      const client2Group = result.groupedData?.find((g) => g.groupId === 'client-2');
       expect(client2Group?.totalMinutes).toBe(30);
       expect(client2Group?.billableMinutes).toBe(0);
       expect(client2Group?.entriesCount).toBe(1);
@@ -726,10 +702,7 @@ describe('TimesheetService', () => {
     it('should always use tenant service for company context', async () => {
       entryRepository.find = jest.fn().mockResolvedValue([]);
 
-      await service.getDailyTimesheet(
-        { date: '2024-01-15' },
-        mockEmployee as User,
-      );
+      await service.getDailyTimesheet({ date: '2024-01-15' }, mockEmployee as User);
 
       expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockEmployee);
     });
@@ -737,17 +710,14 @@ describe('TimesheetService', () => {
     it('should filter by companyId in all queries', async () => {
       entryRepository.find = jest.fn().mockResolvedValue([]);
 
-      await service.getDailyTimesheet(
-        { date: '2024-01-15' },
-        mockEmployee as User,
-      );
+      await service.getDailyTimesheet({ date: '2024-01-15' }, mockEmployee as User);
 
       expect(entryRepository.find).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             companyId: mockCompanyId,
           }),
-        }),
+        })
       );
     });
 
@@ -757,13 +727,12 @@ describe('TimesheetService', () => {
 
       await service.getReportSummary(
         { startDate: '2024-01-01', endDate: '2024-01-31' },
-        mockEmployee as User,
+        mockEmployee as User
       );
 
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        'entry.companyId = :companyId',
-        { companyId: mockCompanyId },
-      );
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('entry.companyId = :companyId', {
+        companyId: mockCompanyId,
+      });
     });
   });
 });

@@ -36,18 +36,18 @@ A full-stack multi-tenant SaaS application featuring Role-Based Access Control (
 
 ## ✨ Key Features
 
-| Feature | Description |
-|---------|-------------|
-| 🔐 **Authentication** | JWT with secure refresh token rotation |
-| 👥 **Multi-tenancy** | Complete data isolation between companies |
-| 🛡️ **RBAC** | Three-tier roles with granular module permissions |
-| 🤖 **AI Integration** | Claude/OpenAI agent for intelligent assistance |
-| 📧 **Email Client** | IMAP/SMTP integration for email management |
-| 👤 **Client Management** | CRM-style client tracking and history |
-| ✅ **Task Management** | Tasks with assignments and notifications |
-| ⏱️ **Time Tracking** | Billable hours and project time logging |
-| 📁 **File Uploads** | S3-compatible file storage |
-| 📖 **API Docs** | Auto-generated Swagger/OpenAPI documentation |
+| Feature                  | Description                                       |
+| ------------------------ | ------------------------------------------------- |
+| 🔐 **Authentication**    | JWT with secure refresh token rotation            |
+| 👥 **Multi-tenancy**     | Complete data isolation between companies         |
+| 🛡️ **RBAC**              | Three-tier roles with granular module permissions |
+| 🤖 **AI Integration**    | Claude/OpenAI agent for intelligent assistance    |
+| 📧 **Email Client**      | IMAP/SMTP integration for email management        |
+| 👤 **Client Management** | CRM-style client tracking and history             |
+| ✅ **Task Management**   | Tasks with assignments and notifications          |
+| ⏱️ **Time Tracking**     | Billable hours and project time logging           |
+| 📁 **File Uploads**      | S3-compatible file storage                        |
+| 📖 **API Docs**          | Auto-generated Swagger/OpenAPI documentation      |
 
 ---
 
@@ -58,33 +58,36 @@ A full-stack multi-tenant SaaS application featuring Role-Based Access Control (
 <td width="50%" valign="top">
 
 ### Backend
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| NestJS | 11 | Application framework |
-| TypeORM | 0.3 | Database ORM |
-| PostgreSQL | 15+ | Primary database |
-| JWT | - | Token authentication |
-| CASL | 6 | Authorization |
-| Swagger | - | API documentation |
+
+| Technology | Version | Purpose               |
+| ---------- | ------- | --------------------- |
+| NestJS     | 11      | Application framework |
+| TypeORM    | 0.3     | Database ORM          |
+| PostgreSQL | 15+     | Primary database      |
+| JWT        | -       | Token authentication  |
+| CASL       | 6       | Authorization         |
+| Swagger    | -       | API documentation     |
 
 </td>
 <td width="50%" valign="top">
 
 ### Frontend
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| React | 19 | UI library |
-| Vite | 7 | Build tool |
-| React Router | 7 | Routing |
-| TanStack Query | 5 | Server state |
-| Tailwind CSS | 4 | Styling |
-| shadcn/ui | - | Component library |
+
+| Technology     | Version | Purpose           |
+| -------------- | ------- | ----------------- |
+| React          | 19      | UI library        |
+| Vite           | 7       | Build tool        |
+| React Router   | 7       | Routing           |
+| TanStack Query | 5       | Server state      |
+| Tailwind CSS   | 4       | Styling           |
+| shadcn/ui      | -       | Component library |
 
 </td>
 </tr>
 </table>
 
 ### Testing & Tooling
+
 - **Nx 22** — Monorepo management, caching, and task orchestration
 - **Bun Test** — Fast frontend unit testing
 - **Jest** — Backend unit testing
@@ -128,18 +131,18 @@ bun run dev
 
 After seeding, use these credentials to log in:
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | `admin@system.com` | `Admin123!` |
-| Company Owner | `owner@acme.com` | `Owner123!` |
-| Employee | `employee@acme.com` | `Employee123!` |
+| Role          | Email               | Password       |
+| ------------- | ------------------- | -------------- |
+| Admin         | `admin@system.com`  | `Admin123!`    |
+| Company Owner | `owner@acme.com`    | `Owner123!`    |
+| Employee      | `employee@acme.com` | `Employee123!` |
 
 ### Available URLs
 
-| Service | URL |
-|---------|-----|
-| Frontend | http://localhost:4200 |
-| Backend API | http://localhost:3000 |
+| Service      | URL                            |
+| ------------ | ------------------------------ |
+| Frontend     | http://localhost:4200          |
+| Backend API  | http://localhost:3000          |
 | Swagger Docs | http://localhost:3000/api/docs |
 
 ---
@@ -206,21 +209,21 @@ Request → JWT Guard → Role Check → Module Access → Permission Check → 
 <details>
 <summary><strong>Development</strong></summary>
 
-| Command | Description |
-|---------|-------------|
-| `bun run dev` | Start backend and frontend concurrently |
-| `bun run serve` | Start backend only (port 3000) |
-| `bun run serve:web` | Start frontend only (port 4200) |
-| `bun run seed` | Seed database with test data |
+| Command             | Description                             |
+| ------------------- | --------------------------------------- |
+| `bun run dev`       | Start backend and frontend concurrently |
+| `bun run serve`     | Start backend only (port 3000)          |
+| `bun run serve:web` | Start frontend only (port 4200)         |
+| `bun run seed`      | Seed database with test data            |
 
 </details>
 
 <details>
 <summary><strong>Build</strong></summary>
 
-| Command | Description |
-|---------|-------------|
-| `bun run build` | Build backend for production |
+| Command             | Description                   |
+| ------------------- | ----------------------------- |
+| `bun run build`     | Build backend for production  |
 | `bun run build:web` | Build frontend for production |
 
 </details>
@@ -228,32 +231,32 @@ Request → JWT Guard → Role Check → Module Access → Permission Check → 
 <details>
 <summary><strong>Testing</strong></summary>
 
-| Command | Description |
-|---------|-------------|
-| `bun test` | Run backend unit tests (Jest) |
-| `bun run test:web` | Run frontend unit tests (Bun) |
-| `bun run test:e2e` | Run E2E tests (Playwright) |
-| `bun run test:integration` | Run integration tests |
+| Command                    | Description                   |
+| -------------------------- | ----------------------------- |
+| `bun test`                 | Run backend unit tests (Jest) |
+| `bun run test:web`         | Run frontend unit tests (Bun) |
+| `bun run test:e2e`         | Run E2E tests (Playwright)    |
+| `bun run test:integration` | Run integration tests         |
 
 </details>
 
 <details>
 <summary><strong>Database</strong></summary>
 
-| Command | Description |
-|---------|-------------|
+| Command                      | Description                            |
+| ---------------------------- | -------------------------------------- |
 | `bun run migration:generate` | Generate migration from entity changes |
-| `bun run migration:run` | Run pending migrations |
-| `bun run migration:revert` | Revert last migration |
+| `bun run migration:run`      | Run pending migrations                 |
+| `bun run migration:revert`   | Revert last migration                  |
 
 </details>
 
 <details>
 <summary><strong>Code Quality</strong></summary>
 
-| Command | Description |
-|---------|-------------|
-| `bun run lint` | Lint backend |
+| Command            | Description   |
+| ------------------ | ------------- |
+| `bun run lint`     | Lint backend  |
 | `bun run lint:web` | Lint frontend |
 
 </details>
@@ -315,25 +318,25 @@ S3_SECRET_KEY=your-secret-key
 
 TypeScript path aliases configured in `tsconfig.base.json`:
 
-| Alias | Location | Description |
-|-------|----------|-------------|
-| `@accounting/auth` | `libs/auth` | Authentication library |
-| `@accounting/rbac` | `libs/rbac` | RBAC system |
-| `@accounting/common` | `libs/common` | Shared entities and enums |
-| `@accounting/modules/*` | `libs/modules/*` | Business modules |
-| `@/*` | `apps/web/src/*` | Frontend source root |
+| Alias                   | Location         | Description               |
+| ----------------------- | ---------------- | ------------------------- |
+| `@accounting/auth`      | `libs/auth`      | Authentication library    |
+| `@accounting/rbac`      | `libs/rbac`      | RBAC system               |
+| `@accounting/common`    | `libs/common`    | Shared entities and enums |
+| `@accounting/modules/*` | `libs/modules/*` | Business modules          |
+| `@/*`                   | `apps/web/src/*` | Frontend source root      |
 
 ---
 
 ## 📚 Documentation
 
-| Guide | Description |
-|-------|-------------|
+| Guide                                            | Description                              |
+| ------------------------------------------------ | ---------------------------------------- |
 | [Architecture Guide](docs/ARCHITECTURE_GUIDE.md) | System architecture and design decisions |
-| [Frontend Guide](docs/FRONTEND_GUIDE.md) | React frontend development patterns |
-| [API Documentation](docs/API_DOCUMENTATION.md) | Backend API reference |
-| [Module Development](docs/MODULE_DEVELOPMENT.md) | Creating new business modules |
-| [Design System](docs/DESIGN_SYSTEM.md) | UI components and styling guide |
+| [Frontend Guide](docs/FRONTEND_GUIDE.md)         | React frontend development patterns      |
+| [API Documentation](docs/API_DOCUMENTATION.md)   | Backend API reference                    |
+| [Module Development](docs/MODULE_DEVELOPMENT.md) | Creating new business modules            |
+| [Design System](docs/DESIGN_SYSTEM.md)           | UI components and styling guide          |
 | [Developer Handbook](docs/DEVELOPER_HANDBOOK.md) | Development workflows and best practices |
 
 ### API Documentation

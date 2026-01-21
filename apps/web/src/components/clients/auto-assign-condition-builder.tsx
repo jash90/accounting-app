@@ -1,5 +1,7 @@
+import { Zap } from 'lucide-react';
+
+import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -7,15 +9,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
-import { Zap } from 'lucide-react';
-import { AutoAssignCondition, SingleCondition, VatStatus, EmploymentType, TaxScheme, ZusStatus } from '@/types/enums';
+import { Switch } from '@/components/ui/switch';
+import {
+  type AutoAssignCondition,
+  type SingleCondition,
+  VatStatus,
+  EmploymentType,
+  TaxScheme,
+  ZusStatus,
+} from '@/types/enums';
 
 // Field definitions with Polish labels and enum values
-const ASSIGNABLE_FIELDS: Record<string, {
-  label: string;
-  values: Record<string, string>;
-}> = {
+const ASSIGNABLE_FIELDS: Record<
+  string,
+  {
+    label: string;
+    values: Record<string, string>;
+  }
+> = {
   vatStatus: {
     label: 'VAT',
     values: {
@@ -63,10 +74,7 @@ function isSingleCondition(condition: AutoAssignCondition): condition is SingleC
   return 'field' in condition && 'operator' in condition;
 }
 
-export function AutoAssignConditionBuilder({
-  value,
-  onChange,
-}: AutoAssignConditionBuilderProps) {
+export function AutoAssignConditionBuilder({ value, onChange }: AutoAssignConditionBuilderProps) {
   // Extract current values from condition (only support simple field=value for now)
   const isEnabled = !!value;
   const currentField = value && isSingleCondition(value) ? value.field : '';
@@ -119,11 +127,7 @@ export function AutoAssignConditionBuilder({
               Automatyczne przypisywanie
             </Label>
           </div>
-          <Switch
-            id="auto-assign-toggle"
-            checked={isEnabled}
-            onCheckedChange={handleToggle}
-          />
+          <Switch id="auto-assign-toggle" checked={isEnabled} onCheckedChange={handleToggle} />
         </div>
 
         {isEnabled && (

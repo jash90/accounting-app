@@ -86,7 +86,7 @@ export class TimeTrackingPage extends BasePage {
    * Get timer elapsed time text
    */
   async getTimerElapsedTime(): Promise<string> {
-    return await this.timerDisplay.textContent() || '';
+    return (await this.timerDisplay.textContent()) || '';
   }
 
   /**
@@ -240,7 +240,7 @@ export class TimeTrackingPage extends BasePage {
    */
   async getTotalHours(): Promise<string> {
     const totalElement = this.page.getByTestId('total-hours');
-    return await totalElement.textContent() || '0';
+    return (await totalElement.textContent()) || '0';
   }
 
   /**

@@ -1,3 +1,6 @@
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+
+import { Type, Transform } from 'class-transformer';
 import {
   IsString,
   IsOptional,
@@ -13,14 +16,8 @@ import {
   ValidateNested,
   IsDateString,
 } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional, PartialType, OmitType } from '@nestjs/swagger';
-import {
-  TaskStatus,
-  TaskPriority,
-  Sanitize,
-  SanitizeWithFormatting,
-} from '@accounting/common';
+
+import { TaskStatus, TaskPriority, Sanitize, SanitizeWithFormatting } from '@accounting/common';
 
 export class AcceptanceCriterionDto {
   @ApiProperty({ description: 'Unique ID of the criterion' })
@@ -85,7 +82,10 @@ export class CreateTaskDto {
   @Max(21)
   storyPoints?: number;
 
-  @ApiPropertyOptional({ description: 'Acceptance criteria checklist', type: [AcceptanceCriterionDto] })
+  @ApiPropertyOptional({
+    description: 'Acceptance criteria checklist',
+    type: [AcceptanceCriterionDto],
+  })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
@@ -129,7 +129,11 @@ export class TaskFiltersDto {
   @IsEnum(TaskStatus)
   status?: TaskStatus;
 
-  @ApiPropertyOptional({ enum: TaskStatus, isArray: true, description: 'Filter by multiple statuses' })
+  @ApiPropertyOptional({
+    enum: TaskStatus,
+    isArray: true,
+    description: 'Filter by multiple statuses',
+  })
   @IsOptional()
   @IsArray()
   @IsEnum(TaskStatus, { each: true })

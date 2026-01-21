@@ -1,7 +1,10 @@
-import { AllExceptionsFilter } from './all-exceptions.filter';
-import { ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { type ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
+
+import { type Request, type Response } from 'express';
+
 import { ClientException, ClientErrorCode } from '@accounting/modules/clients';
-import { Request, Response } from 'express';
+
+import { AllExceptionsFilter } from './all-exceptions.filter';
 
 describe('AllExceptionsFilter', () => {
   let filter: AllExceptionsFilter;
@@ -159,10 +162,7 @@ describe('AllExceptionsFilter', () => {
 
     it('should handle validation errors with array of messages', () => {
       const validationMessages = ['Field is required', 'Invalid format'];
-      const exception = new HttpException(
-        { message: validationMessages },
-        HttpStatus.BAD_REQUEST
-      );
+      const exception = new HttpException({ message: validationMessages }, HttpStatus.BAD_REQUEST);
 
       filter.catch(exception, mockHost);
 
@@ -383,7 +383,12 @@ describe('AllExceptionsFilter', () => {
   describe('Integration Scenarios', () => {
     it('should handle rapid successive exceptions', () => {
       const exceptions = [
-        new ClientException(ClientErrorCode.CLIENT_NOT_FOUND, 'Error 1', undefined, HttpStatus.NOT_FOUND),
+        new ClientException(
+          ClientErrorCode.CLIENT_NOT_FOUND,
+          'Error 1',
+          undefined,
+          HttpStatus.NOT_FOUND
+        ),
         new HttpException('Error 2', HttpStatus.BAD_REQUEST),
         new Error('Error 3'),
       ];

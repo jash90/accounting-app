@@ -1,3 +1,6 @@
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+
+import { Type, Transform } from 'class-transformer';
 import {
   IsString,
   IsOptional,
@@ -16,8 +19,7 @@ import {
   IsNotEmpty,
   Matches,
 } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+
 import { TimeEntryStatus, Sanitize } from '@accounting/common';
 
 export class CreateTimeEntryDto {
@@ -37,7 +39,11 @@ export class CreateTimeEntryDto {
   @IsDateString()
   endTime?: string;
 
-  @ApiPropertyOptional({ description: 'Duration in minutes (optional if endTime provided)', minimum: 0, maximum: 1440 })
+  @ApiPropertyOptional({
+    description: 'Duration in minutes (optional if endTime provided)',
+    minimum: 0,
+    maximum: 1440,
+  })
   @IsOptional()
   @IsInt()
   @Min(0)
@@ -59,7 +65,9 @@ export class CreateTimeEntryDto {
   @ApiPropertyOptional({ description: 'Currency code (ISO 4217)', default: 'PLN', maxLength: 3 })
   @IsOptional()
   @IsString()
-  @Matches(/^[A-Z]{3}$/, { message: 'Currency must be a valid 3-letter ISO 4217 code (e.g., PLN, USD, EUR)' })
+  @Matches(/^[A-Z]{3}$/, {
+    message: 'Currency must be a valid 3-letter ISO 4217 code (e.g., PLN, USD, EUR)',
+  })
   currency?: string;
 
   @ApiPropertyOptional({ description: 'Tags for categorization', type: [String] })
@@ -97,7 +105,11 @@ export class TimeEntryFiltersDto {
   @IsEnum(TimeEntryStatus)
   status?: TimeEntryStatus;
 
-  @ApiPropertyOptional({ enum: TimeEntryStatus, isArray: true, description: 'Filter by multiple statuses' })
+  @ApiPropertyOptional({
+    enum: TimeEntryStatus,
+    isArray: true,
+    description: 'Filter by multiple statuses',
+  })
   @IsOptional()
   @IsArray()
   @IsEnum(TimeEntryStatus, { each: true })

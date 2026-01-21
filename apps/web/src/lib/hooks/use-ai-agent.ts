@@ -1,16 +1,19 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useCallback, useRef } from 'react';
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+
+import { type ApiErrorResponse } from '@/types/api';
+import {
+  type CreateConversationDto,
+  type SendMessageDto,
+  type CreateAIConfigurationDto,
+  type UpdateAIConfigurationDto,
+  type SetTokenLimitDto,
+} from '@/types/dtos';
+
 import { aiAgentApi } from '../api/endpoints/ai-agent';
 import { queryKeys } from '../api/query-client';
-import {
-  CreateConversationDto,
-  SendMessageDto,
-  CreateAIConfigurationDto,
-  UpdateAIConfigurationDto,
-  SetTokenLimitDto,
-} from '@/types/dtos';
-import { toast } from 'sonner';
-import { ApiErrorResponse } from '@/types/api';
 
 // ============================================================================
 // Conversation Hooks
@@ -50,10 +53,13 @@ export function useSendMessage(conversationId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: SendMessageDto) => aiAgentApi.conversations.sendMessage(conversationId, data),
+    mutationFn: (data: SendMessageDto) =>
+      aiAgentApi.conversations.sendMessage(conversationId, data),
     onSuccess: () => {
       // Invalidate both conversation detail and token usage
-      queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.conversations.detail(conversationId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.aiAgent.conversations.detail(conversationId),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.me });
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.myDetailed });
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.company });
@@ -75,47 +81,52 @@ export function useSendMessageStream(conversationId: string) {
   const [isStreaming, setIsStreaming] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const sendMessage = useCallback(async (content: string) => {
-    if (!conversationId) {
-      toast.error('Nie wybrano konwersacji');
-      return;
-    }
+  const sendMessage = useCallback(
+    async (content: string) => {
+      if (!conversationId) {
+        toast.error('Nie wybrano konwersacji');
+        return;
+      }
 
-    setIsStreaming(true);
-    setStreamingContent('');
-    abortControllerRef.current = new AbortController();
+      setIsStreaming(true);
+      setStreamingContent('');
+      abortControllerRef.current = new AbortController();
 
-    try {
-      await aiAgentApi.conversations.sendMessageStream(
-        conversationId,
-        { content },
-        // onChunk - called for each content piece
-        (chunk) => {
-          setStreamingContent((prev) => prev + chunk);
-        },
-        // onDone - called when streaming completes
-        () => {
-          setIsStreaming(false);
-          // Invalidate queries to refresh data with final message
-          queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.conversations.detail(conversationId) });
-          queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.me });
-          queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.myDetailed });
-          queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.company });
-        },
-        // onError - called if streaming fails
-        (error) => {
-          setIsStreaming(false);
-          toast.error(error);
-        },
-        // signal - for cancellation
-        abortControllerRef.current?.signal,
-      );
-    } catch (error: unknown) {
-      setIsStreaming(false);
-      const message = error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości';
-      toast.error(message);
-    }
-  }, [conversationId, queryClient]);
+      try {
+        await aiAgentApi.conversations.sendMessageStream(
+          conversationId,
+          { content },
+          // onChunk - called for each content piece
+          (chunk) => {
+            setStreamingContent((prev) => prev + chunk);
+          },
+          // onDone - called when streaming completes
+          () => {
+            setIsStreaming(false);
+            // Invalidate queries to refresh data with final message
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.aiAgent.conversations.detail(conversationId),
+            });
+            queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.me });
+            queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.myDetailed });
+            queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.company });
+          },
+          // onError - called if streaming fails
+          (error) => {
+            setIsStreaming(false);
+            toast.error(error);
+          },
+          // signal - for cancellation
+          abortControllerRef.current?.signal
+        );
+      } catch (error: unknown) {
+        setIsStreaming(false);
+        const message = error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości';
+        toast.error(message);
+      }
+    },
+    [conversationId, queryClient]
+  );
 
   const cancelStream = useCallback(() => {
     abortControllerRef.current?.abort();
@@ -227,7 +238,9 @@ export function useResetApiKey() {
     mutationFn: () => aiAgentApi.configuration.resetApiKey(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.configuration });
-      toast.success('Klucz API został zresetowany. Skonfiguruj nowy klucz API, aby korzystać z funkcji AI.');
+      toast.success(
+        'Klucz API został zresetowany. Skonfiguruj nowy klucz API, aby korzystać z funkcji AI.'
+      );
     },
     onError: (error: ApiErrorResponse) => {
       toast.error(error.response?.data?.message || 'Nie udało się zresetować klucza API');
@@ -357,12 +370,20 @@ export function useUploadContextFile() {
 
       // Provide more helpful error messages for common issues
       if (message.toLowerCase().includes('api key')) {
-        toast.error('Błąd konfiguracji AI: Nieprawidłowy klucz API. Skontaktuj się z administratorem, aby zaktualizować konfigurację AI.');
+        toast.error(
+          'Błąd konfiguracji AI: Nieprawidłowy klucz API. Skontaktuj się z administratorem, aby zaktualizować konfigurację AI.'
+        );
       } else if (status === 413 || message.toLowerCase().includes('too large')) {
         toast.error('Plik jest za duży. Maksymalny rozmiar pliku to 10MB.');
-      } else if (message.toLowerCase().includes('file type') || message.toLowerCase().includes('not allowed')) {
+      } else if (
+        message.toLowerCase().includes('file type') ||
+        message.toLowerCase().includes('not allowed')
+      ) {
         toast.error('Nieprawidłowy typ pliku. Dozwolone są tylko pliki PDF, TXT i MD.');
-      } else if (message.toLowerCase().includes('not found') && message.toLowerCase().includes('configuration')) {
+      } else if (
+        message.toLowerCase().includes('not found') &&
+        message.toLowerCase().includes('configuration')
+      ) {
         toast.error('AI nie jest skonfigurowane. Poproś administratora o skonfigurowanie AI.');
       } else {
         toast.error(message);

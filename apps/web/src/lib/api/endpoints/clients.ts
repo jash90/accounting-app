@@ -1,28 +1,24 @@
-import apiClient from '../client';
+import { type PaginatedResponse } from '@/types/api';
 import {
-  CreateClientDto,
-  UpdateClientDto,
-  ClientFiltersDto,
-  ClientResponseDto,
-  SetCustomFieldValuesDto,
-  CreateClientFieldDefinitionDto,
-  UpdateClientFieldDefinitionDto,
-  ClientFieldDefinitionResponseDto,
-  CreateClientIconDto,
-  UpdateClientIconDto,
-  ClientIconResponseDto,
-  CreateNotificationSettingsDto,
-  UpdateNotificationSettingsDto,
-  NotificationSettingsResponseDto,
-  ChangeLogResponseDto,
+  type CreateClientDto,
+  type UpdateClientDto,
+  type ClientFiltersDto,
+  type ClientResponseDto,
+  type SetCustomFieldValuesDto,
+  type CreateClientFieldDefinitionDto,
+  type UpdateClientFieldDefinitionDto,
+  type ClientFieldDefinitionResponseDto,
+  type CreateClientIconDto,
+  type UpdateClientIconDto,
+  type ClientIconResponseDto,
+  type CreateNotificationSettingsDto,
+  type UpdateNotificationSettingsDto,
+  type NotificationSettingsResponseDto,
+  type ChangeLogResponseDto,
 } from '@/types/dtos';
-import { PaginatedResponse } from '@/types/api';
-import {
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
-} from '@/types/enums';
+import { type EmploymentType, type VatStatus, type TaxScheme, type ZusStatus } from '@/types/enums';
+
+import apiClient from '../client';
 
 // ============================================
 // Bulk Operations Types
@@ -143,14 +139,15 @@ function buildCustomFieldParams(filters?: ClientFiltersDto): Record<string, stri
   if (!filters) return {};
 
   const { customFieldFilters, ...rest } = filters;
-  const params: Record<string, string | undefined> = { ...rest } as Record<string, string | undefined>;
+  const params: Record<string, string | undefined> = { ...rest } as Record<
+    string,
+    string | undefined
+  >;
 
   // Convert customFieldFilters to customField_[fieldId]=operator:value format
   if (customFieldFilters && customFieldFilters.length > 0) {
     customFieldFilters.forEach((filter) => {
-      const value = Array.isArray(filter.value)
-        ? filter.value.join(',')
-        : filter.value;
+      const value = Array.isArray(filter.value) ? filter.value.join(',') : filter.value;
       params[`customField_${filter.fieldId}`] = `${filter.operator}:${value}`;
     });
   }
@@ -269,26 +266,17 @@ export const clientsApi = {
 
   // Bulk Operations
   bulkDelete: async (dto: BulkDeleteClientsDto): Promise<BulkOperationResultDto> => {
-    const { data } = await apiClient.patch<BulkOperationResultDto>(
-      `${BASE_URL}/bulk/delete`,
-      dto
-    );
+    const { data } = await apiClient.patch<BulkOperationResultDto>(`${BASE_URL}/bulk/delete`, dto);
     return data;
   },
 
   bulkRestore: async (dto: BulkRestoreClientsDto): Promise<BulkOperationResultDto> => {
-    const { data } = await apiClient.patch<BulkOperationResultDto>(
-      `${BASE_URL}/bulk/restore`,
-      dto
-    );
+    const { data } = await apiClient.patch<BulkOperationResultDto>(`${BASE_URL}/bulk/restore`, dto);
     return data;
   },
 
   bulkEdit: async (dto: BulkEditClientsDto): Promise<BulkOperationResultDto> => {
-    const { data } = await apiClient.patch<BulkOperationResultDto>(
-      `${BASE_URL}/bulk/edit`,
-      dto
-    );
+    const { data } = await apiClient.patch<BulkOperationResultDto>(`${BASE_URL}/bulk/edit`, dto);
     return data;
   },
 
@@ -339,10 +327,15 @@ export interface FieldDefinitionQueryDto {
 }
 
 export const fieldDefinitionsApi = {
-  getAll: async (query?: FieldDefinitionQueryDto): Promise<PaginatedResponse<ClientFieldDefinitionResponseDto>> => {
-    const { data } = await apiClient.get<PaginatedResponse<ClientFieldDefinitionResponseDto>>(FIELD_DEFINITIONS_URL, {
-      params: query,
-    });
+  getAll: async (
+    query?: FieldDefinitionQueryDto
+  ): Promise<PaginatedResponse<ClientFieldDefinitionResponseDto>> => {
+    const { data } = await apiClient.get<PaginatedResponse<ClientFieldDefinitionResponseDto>>(
+      FIELD_DEFINITIONS_URL,
+      {
+        params: query,
+      }
+    );
     return data;
   },
 
@@ -441,9 +434,8 @@ export const clientIconsApi = {
     // Handle autoAssignCondition - need to send null explicitly to clear it
     const payload = {
       ...iconData,
-      autoAssignCondition: iconData.autoAssignCondition === null
-        ? null
-        : iconData.autoAssignCondition,
+      autoAssignCondition:
+        iconData.autoAssignCondition === null ? null : iconData.autoAssignCondition,
     };
     const { data } = await apiClient.patch<ClientIconResponseDto>(`${ICONS_URL}/${id}`, payload);
     return data;
@@ -454,11 +446,22 @@ export const clientIconsApi = {
   },
 
   getClientIcons: async (clientId: string): Promise<ClientIconResponseDto[]> => {
-    const { data } = await apiClient.get<ClientIconResponseDto[]>(`${ICONS_URL}/client/${clientId}`);
+    const { data } = await apiClient.get<ClientIconResponseDto[]>(
+      `${ICONS_URL}/client/${clientId}`
+    );
     return data;
   },
 
-  assignIcon: async (clientId: string, iconId: string): Promise<{ id: string; clientId: string; iconId: string; isAutoAssigned: boolean; createdAt: Date }> => {
+  assignIcon: async (
+    clientId: string,
+    iconId: string
+  ): Promise<{
+    id: string;
+    clientId: string;
+    iconId: string;
+    isAutoAssigned: boolean;
+    createdAt: Date;
+  }> => {
     const { data } = await apiClient.post(`${ICONS_URL}/assign`, { clientId, iconId });
     return data;
   },

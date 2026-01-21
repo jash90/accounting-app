@@ -1,13 +1,7 @@
-import {
-  IsString,
-  IsOptional,
-  IsBoolean,
-  IsUUID,
-  MaxLength,
-  IsNumber,
-  Min,
-} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+
+import { IsString, IsOptional, IsBoolean, IsUUID, MaxLength, IsNumber, Min } from 'class-validator';
+
 import { Sanitize } from '@accounting/common';
 
 export class StartTimerDto {

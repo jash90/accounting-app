@@ -12,14 +12,17 @@ export class UsersListPage extends BasePage {
 
   // Selectors
   private readonly heading = 'h1:has-text("Users")';
-  private readonly createUserButton = 'button:has-text("Create User"), button:has-text("Add User"), button:has-text("New User")';
+  private readonly createUserButton =
+    'button:has-text("Create User"), button:has-text("Add User"), button:has-text("New User")';
   private readonly searchInput = 'input[placeholder*="Search"], input[type="search"]';
   private readonly roleFilter = 'select[name="role"], [data-testid="role-filter"]';
   private readonly userTable = 'table, [data-testid="users-table"]';
   private readonly userRow = 'tr[data-testid*="user-"], tbody tr';
   private readonly userEmail = (email: string) => `td:has-text("${email}")`;
-  private readonly editButton = (email: string) => `tr:has(td:has-text("${email}")) button:has-text("Edit"), tr:has(td:has-text("${email}")) [data-testid="edit-button"]`;
-  private readonly deleteButton = (email: string) => `tr:has(td:has-text("${email}")) button:has-text("Delete"), tr:has(td:has-text("${email}")) [data-testid="delete-button"]`;
+  private readonly editButton = (email: string) =>
+    `tr:has(td:has-text("${email}")) button:has-text("Edit"), tr:has(td:has-text("${email}")) [data-testid="edit-button"]`;
+  private readonly deleteButton = (email: string) =>
+    `tr:has(td:has-text("${email}")) button:has-text("Delete"), tr:has(td:has-text("${email}")) [data-testid="delete-button"]`;
   private readonly confirmDeleteButton = 'button:has-text("Confirm"), button:has-text("Delete")';
   private readonly cancelDeleteButton = 'button:has-text("Cancel")';
   private readonly deleteModal = '[role="dialog"]:has-text("Delete"), [data-testid="delete-modal"]';
@@ -158,7 +161,7 @@ export class UsersListPage extends BasePage {
   async getUserRole(email: string): Promise<string> {
     const row = this.page.locator(`tr:has(td:has-text("${email}"))`);
     const roleCell = row.locator('td').nth(2); // Assuming role is 3rd column
-    return await roleCell.textContent() || '';
+    return (await roleCell.textContent()) || '';
   }
 
   /**

@@ -1,42 +1,123 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
+
+import * as LucideIcons from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { IconTypeLabels } from '@/lib/constants/polish-labels';
 import { cn } from '@/lib/utils/cn';
 import { IconType } from '@/types/enums';
-import { IconTypeLabels } from '@/lib/constants/polish-labels';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import * as LucideIcons from 'lucide-react';
 
 // Popular Lucide icons for quick selection
 const POPULAR_LUCIDE_ICONS = [
-  'Star', 'Heart', 'Check', 'AlertCircle', 'Info', 'User', 'Users',
-  'Building', 'Briefcase', 'Calendar', 'Clock', 'Mail', 'Phone',
-  'FileText', 'Folder', 'Tag', 'Flag', 'Bell', 'Shield', 'Lock',
-  'Unlock', 'Eye', 'Settings', 'Zap', 'Target', 'Award', 'Gift',
-  'TrendingUp', 'TrendingDown', 'BarChart', 'PieChart', 'DollarSign',
-  'CreditCard', 'Wallet', 'Calculator', 'Receipt', 'Package',
+  'Star',
+  'Heart',
+  'Check',
+  'AlertCircle',
+  'Info',
+  'User',
+  'Users',
+  'Building',
+  'Briefcase',
+  'Calendar',
+  'Clock',
+  'Mail',
+  'Phone',
+  'FileText',
+  'Folder',
+  'Tag',
+  'Flag',
+  'Bell',
+  'Shield',
+  'Lock',
+  'Unlock',
+  'Eye',
+  'Settings',
+  'Zap',
+  'Target',
+  'Award',
+  'Gift',
+  'TrendingUp',
+  'TrendingDown',
+  'BarChart',
+  'PieChart',
+  'DollarSign',
+  'CreditCard',
+  'Wallet',
+  'Calculator',
+  'Receipt',
+  'Package',
 ];
 
 // Popular emojis for quick selection
 const POPULAR_EMOJIS = [
-  '⭐', '💰', '📊', '📈', '📉', '💵', '💳', '🏦', '🏢', '👤',
-  '👥', '📁', '📋', '📝', '✅', '❌', '⚠️', '❗', '❓', '🔔',
-  '🔒', '🔓', '🎯', '🏆', '🎁', '📅', '⏰', '📧', '📞', '🏷️',
-  '🚀', '💡', '🔧', '⚙️', '🛡️', '✨', '💎', '🌟', '🔥', '💪',
+  '⭐',
+  '💰',
+  '📊',
+  '📈',
+  '📉',
+  '💵',
+  '💳',
+  '🏦',
+  '🏢',
+  '👤',
+  '👥',
+  '📁',
+  '📋',
+  '📝',
+  '✅',
+  '❌',
+  '⚠️',
+  '❗',
+  '❓',
+  '🔔',
+  '🔒',
+  '🔓',
+  '🎯',
+  '🏆',
+  '🎁',
+  '📅',
+  '⏰',
+  '📧',
+  '📞',
+  '🏷️',
+  '🚀',
+  '💡',
+  '🔧',
+  '⚙️',
+  '🛡️',
+  '✨',
+  '💎',
+  '🌟',
+  '🔥',
+  '💪',
 ];
 
 // Common colors
 const PRESET_COLORS = [
-  '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16',
-  '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9',
-  '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
-  '#ec4899', '#f43f5e', '#64748b', '#000000', '#ffffff',
+  '#ef4444',
+  '#f97316',
+  '#f59e0b',
+  '#eab308',
+  '#84cc16',
+  '#22c55e',
+  '#10b981',
+  '#14b8a6',
+  '#06b6d4',
+  '#0ea5e9',
+  '#3b82f6',
+  '#6366f1',
+  '#8b5cf6',
+  '#a855f7',
+  '#d946ef',
+  '#ec4899',
+  '#f43f5e',
+  '#64748b',
+  '#000000',
+  '#ffffff',
 ];
 
 interface IconSelectorProps {
@@ -140,37 +221,31 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
   );
 
   const filteredLucideIcons = searchTerm
-    ? POPULAR_LUCIDE_ICONS.filter((icon) =>
-        icon.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+    ? POPULAR_LUCIDE_ICONS.filter((icon) => icon.toLowerCase().includes(searchTerm.toLowerCase()))
     : POPULAR_LUCIDE_ICONS;
 
   const renderIconPreview = () => {
     switch (value.iconType) {
       case IconType.LUCIDE: {
         const IconComponent = value.iconValue
-          ? (LucideIcons as Record<string, React.ComponentType<{ size?: number; className?: string }>>)[value.iconValue]
+          ? (
+              LucideIcons as Record<
+                string,
+                React.ComponentType<{ size?: number; className?: string }>
+              >
+            )[value.iconValue]
           : null;
         return IconComponent ? (
-          <IconComponent
-            size={32}
-            style={value.color ? { color: value.color } : undefined}
-          />
+          <IconComponent size={32} style={value.color ? { color: value.color } : undefined} />
         ) : (
           <LucideIcons.Circle size={32} className="text-muted-foreground" />
         );
       }
       case IconType.EMOJI:
-        return (
-          <span className="text-3xl">{value.iconValue || '⭐'}</span>
-        );
+        return <span className="text-3xl">{value.iconValue || '⭐'}</span>;
       case IconType.CUSTOM:
         return filePreviewUrl ? (
-          <img
-            src={filePreviewUrl}
-            alt="Podgląd ikony"
-            className="w-8 h-8 object-contain"
-          />
+          <img src={filePreviewUrl} alt="Podgląd ikony" className="w-8 h-8 object-contain" />
         ) : (
           <LucideIcons.Image size={32} className="text-muted-foreground" />
         );
@@ -185,7 +260,11 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
       <div className="flex items-center gap-4">
         <div
           className="w-16 h-16 rounded-lg border-2 border-dashed flex items-center justify-center bg-muted/50"
-          style={value.color && value.iconType !== IconType.EMOJI ? { borderColor: value.color } : undefined}
+          style={
+            value.color && value.iconType !== IconType.EMOJI
+              ? { borderColor: value.color }
+              : undefined
+          }
         >
           {renderIconPreview()}
         </div>
@@ -226,7 +305,12 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
           />
           <div className="grid grid-cols-8 gap-2 max-h-48 overflow-y-auto p-1">
             {filteredLucideIcons.map((iconName) => {
-              const IconComponent = (LucideIcons as Record<string, React.ComponentType<{ size?: number; className?: string }>>)[iconName];
+              const IconComponent = (
+                LucideIcons as Record<
+                  string,
+                  React.ComponentType<{ size?: number; className?: string }>
+                >
+              )[iconName];
               // Only render button if IconComponent exists to avoid empty buttons
               if (!IconComponent) return null;
               return (
@@ -352,12 +436,7 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
               </PopoverContent>
             </Popover>
             {value.color && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => handleColorSelect('')}
-              >
+              <Button type="button" variant="ghost" size="sm" onClick={() => handleColorSelect('')}>
                 Usuń kolor
               </Button>
             )}

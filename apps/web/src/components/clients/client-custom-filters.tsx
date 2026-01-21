@@ -1,9 +1,16 @@
 import { useState, useCallback, useMemo } from 'react';
+
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { Input } from '@/components/ui/input';
+import { ChevronDown, CalendarIcon, X, Loader2 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -11,24 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronDown, CalendarIcon, X, Loader2 } from 'lucide-react';
 import { useFieldDefinitions } from '@/lib/hooks/use-clients';
-import { CustomFieldType } from '@/types/enums';
-import { CustomFieldFilter } from '@/types/dtos';
-import { ClientFieldDefinition } from '@/types/entities';
 import { cn } from '@/lib/utils/cn';
+import { type CustomFieldFilter } from '@/types/dtos';
+import { type ClientFieldDefinition } from '@/types/entities';
+import { CustomFieldType } from '@/types/enums';
 
 interface ClientCustomFiltersProps {
   filters: CustomFieldFilter[];
@@ -151,10 +145,7 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
         <div className="space-y-2">
           <Label className="text-xs font-medium">{field.label}</Label>
           <div className="flex gap-2">
-            <Select
-              value={currentOperator}
-              onValueChange={handleOperatorChange}
-            >
+            <Select value={currentOperator} onValueChange={handleOperatorChange}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue />
               </SelectTrigger>
@@ -193,10 +184,7 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
         <div className="space-y-2">
           <Label className="text-xs font-medium">{field.label}</Label>
           <div className="flex gap-2">
-            <Select
-              value={currentOperator}
-              onValueChange={handleOperatorChange}
-            >
+            <Select value={currentOperator} onValueChange={handleOperatorChange}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue />
               </SelectTrigger>
@@ -236,10 +224,7 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
         <div className="space-y-2">
           <Label className="text-xs font-medium">{field.label}</Label>
           <div className="flex gap-2">
-            <Select
-              value={currentOperator}
-              onValueChange={handleOperatorChange}
-            >
+            <Select value={currentOperator} onValueChange={handleOperatorChange}>
               <SelectTrigger className="w-[120px]">
                 <SelectValue />
               </SelectTrigger>
@@ -261,7 +246,9 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {currentValue && typeof currentValue === 'string' && !isNaN(Date.parse(currentValue))
+                  {currentValue &&
+                  typeof currentValue === 'string' &&
+                  !isNaN(Date.parse(currentValue))
                     ? format(new Date(currentValue), 'dd.MM.yyyy', { locale: pl })
                     : 'Wybierz datę'}
                 </Button>
@@ -269,10 +256,14 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={currentValue && typeof currentValue === 'string' && !isNaN(Date.parse(currentValue)) ? new Date(currentValue) : undefined}
-                  onSelect={(date) =>
-                    handleValueChange(date ? format(date, 'yyyy-MM-dd') : '')
+                  selected={
+                    currentValue &&
+                    typeof currentValue === 'string' &&
+                    !isNaN(Date.parse(currentValue))
+                      ? new Date(currentValue)
+                      : undefined
                   }
+                  onSelect={(date) => handleValueChange(date ? format(date, 'yyyy-MM-dd') : '')}
                   initialFocus
                 />
               </PopoverContent>
@@ -320,7 +311,11 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
 
     case CustomFieldType.ENUM: {
       const enumValues = field.enumValues || [];
-      const selectedValues = Array.isArray(currentValue) ? currentValue : currentValue ? [currentValue] : [];
+      const selectedValues = Array.isArray(currentValue)
+        ? currentValue
+        : currentValue
+          ? [currentValue]
+          : [];
       const isMultiSelect = currentOperator === 'in';
 
       if (isMultiSelect) {
@@ -328,10 +323,7 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
           <div className="space-y-2">
             <Label className="text-xs font-medium">{field.label}</Label>
             <div className="flex gap-2 items-start">
-              <Select
-                value={currentOperator}
-                onValueChange={handleOperatorChange}
-              >
+              <Select value={currentOperator} onValueChange={handleOperatorChange}>
                 <SelectTrigger className="w-[120px]">
                   <SelectValue />
                 </SelectTrigger>
@@ -352,9 +344,7 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
                         key={enumValue}
                         className={cn(
                           'flex items-center gap-1.5 px-2 py-1 rounded text-sm cursor-pointer transition-colors',
-                          isSelected
-                            ? 'bg-apptax-blue text-white'
-                            : 'bg-muted hover:bg-muted/80'
+                          isSelected ? 'bg-apptax-blue text-white' : 'bg-muted hover:bg-muted/80'
                         )}
                       >
                         <Checkbox
@@ -395,10 +385,7 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
         <div className="space-y-2">
           <Label className="text-xs font-medium">{field.label}</Label>
           <div className="flex gap-2">
-            <Select
-              value={currentOperator}
-              onValueChange={handleOperatorChange}
-            >
+            <Select value={currentOperator} onValueChange={handleOperatorChange}>
               <SelectTrigger className="w-[120px]">
                 <SelectValue />
               </SelectTrigger>

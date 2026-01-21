@@ -58,7 +58,9 @@ test.describe('Employee Sidebar - Visibility', () => {
     await dashboard.nav.expectNavLinkVisible('Dashboard');
   });
 
-  test('should display module icons and labels when expanded', async ({ authenticatedEmployeePage }) => {
+  test('should display module icons and labels when expanded', async ({
+    authenticatedEmployeePage,
+  }) => {
     const dashboard = new ModulesDashboardPage(authenticatedEmployeePage);
     await dashboard.goto();
 
@@ -80,7 +82,9 @@ test.describe('Employee Sidebar - Visibility', () => {
 test.describe('Employee Sidebar - Navigation', () => {
   test.use({ viewport: { width: 1280, height: 720 } });
 
-  test('should navigate to module when sidebar link clicked', async ({ authenticatedEmployeePage }) => {
+  test('should navigate to module when sidebar link clicked', async ({
+    authenticatedEmployeePage,
+  }) => {
     const dashboard = new ModulesDashboardPage(authenticatedEmployeePage);
     await dashboard.goto();
 
@@ -148,7 +152,9 @@ test.describe('Employee Sidebar - Permissions', () => {
     expect(modules).toContain('AI Agent');
   });
 
-  test('employee does not see admin-only links in sidebar', async ({ authenticatedEmployeePage }) => {
+  test('employee does not see admin-only links in sidebar', async ({
+    authenticatedEmployeePage,
+  }) => {
     const dashboard = new ModulesDashboardPage(authenticatedEmployeePage);
     await dashboard.goto();
 
@@ -157,7 +163,9 @@ test.describe('Employee Sidebar - Permissions', () => {
     await dashboard.nav.expectModuleNotInSidebar('Modules Management');
   });
 
-  test('only shows modules with explicit UserModulePermission', async ({ authenticatedEmployeePage }) => {
+  test('only shows modules with explicit UserModulePermission', async ({
+    authenticatedEmployeePage,
+  }) => {
     const dashboard = new ModulesDashboardPage(authenticatedEmployeePage);
     await dashboard.goto();
 
@@ -174,7 +182,9 @@ test.describe('Employee Sidebar - Permissions', () => {
 test.describe('Employee Sidebar - Interaction', () => {
   test.use({ viewport: { width: 1280, height: 720 } });
 
-  test('should toggle sidebar collapse/expand on button click', async ({ authenticatedEmployeePage }) => {
+  test('should toggle sidebar collapse/expand on button click', async ({
+    authenticatedEmployeePage,
+  }) => {
     const dashboard = new ModulesDashboardPage(authenticatedEmployeePage);
     await dashboard.goto();
 
@@ -215,7 +225,9 @@ test.describe('Employee Sidebar - Interaction', () => {
     expect(isExpanded).toBe(false);
   });
 
-  test('should show icons always, labels only when expanded', async ({ authenticatedEmployeePage }) => {
+  test('should show icons always, labels only when expanded', async ({
+    authenticatedEmployeePage,
+  }) => {
     const dashboard = new ModulesDashboardPage(authenticatedEmployeePage);
     await dashboard.goto();
 
@@ -223,7 +235,9 @@ test.describe('Employee Sidebar - Interaction', () => {
     await dashboard.nav.toggleSidebar();
 
     // Icons should still be visible
-    const iconVisible = await authenticatedEmployeePage.isVisible('aside nav a svg, aside nav a [class*="lucide"]');
+    const iconVisible = await authenticatedEmployeePage.isVisible(
+      'aside nav a svg, aside nav a [class*="lucide"]'
+    );
     expect(iconVisible).toBe(true);
 
     // Labels might be hidden or very small

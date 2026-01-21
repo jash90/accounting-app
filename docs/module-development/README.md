@@ -56,23 +56,24 @@ See [Advanced AI Agent Patterns](./09-advanced-ai-agent.md).
 
 ### By Task
 
-| Task | Document |
-|------|----------|
-| Create a new entity | [Step-by-Step Tutorial](./05-step-by-step-tutorial.md) (Phase 1-3) |
-| Add RBAC to controller | [Step-by-Step Tutorial](./05-step-by-step-tutorial.md) (Phase 5) |
-| Create frontend page | [Step-by-Step Tutorial](./05-step-by-step-tutorial.md) (Phase 13) |
-| Configure module.json | [Module Configuration](./15-module-configuration.md) |
-| Add module icon | [Module Configuration](./15-module-configuration.md) |
-| Handle encryption | [Module Configuration](./15-module-configuration.md) |
-| Create MSW mocks | [Additional Topics](./17-additional-topics.md) |
-| Add Polish localization | [Frontend Patterns](./16-frontend-patterns.md) |
-| Implement permissions UI | [Additional Topics](./17-additional-topics.md) |
+| Task                     | Document                                                           |
+| ------------------------ | ------------------------------------------------------------------ |
+| Create a new entity      | [Step-by-Step Tutorial](./05-step-by-step-tutorial.md) (Phase 1-3) |
+| Add RBAC to controller   | [Step-by-Step Tutorial](./05-step-by-step-tutorial.md) (Phase 5)   |
+| Create frontend page     | [Step-by-Step Tutorial](./05-step-by-step-tutorial.md) (Phase 13)  |
+| Configure module.json    | [Module Configuration](./15-module-configuration.md)               |
+| Add module icon          | [Module Configuration](./15-module-configuration.md)               |
+| Handle encryption        | [Module Configuration](./15-module-configuration.md)               |
+| Create MSW mocks         | [Additional Topics](./17-additional-topics.md)                     |
+| Add Polish localization  | [Frontend Patterns](./16-frontend-patterns.md)                     |
+| Implement permissions UI | [Additional Topics](./17-additional-topics.md)                     |
 
 ---
 
 ## Module Types
 
 ### Simple Module (Tasks example)
+
 - 1 entity, 1 controller, 1 service
 - Basic CRUD operations
 - Standard RBAC integration
@@ -80,6 +81,7 @@ See [Advanced AI Agent Patterns](./09-advanced-ai-agent.md).
 **Follow:** [Quick Start](./02-quick-start.md) → [Step-by-Step Tutorial](./05-step-by-step-tutorial.md)
 
 ### Complex Module (AI Agent example)
+
 - 6+ entities
 - Multiple controllers with role separation
 - External API integration

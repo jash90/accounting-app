@@ -1,5 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, Sparkles, CheckCircle2 } from 'lucide-react';
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NavigationCard } from '@/components/ui/navigation-card';
 
 export default function EmployeeAIAgentDashboard() {
@@ -52,9 +53,7 @@ export default function EmployeeAIAgentDashboard() {
               <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-medium text-apptax-navy">Zawsze dostępny</p>
-                <p className="text-sm text-muted-foreground">
-                  Asystent AI gotowy do pomocy 24/7
-                </p>
+                <p className="text-sm text-muted-foreground">Asystent AI gotowy do pomocy 24/7</p>
               </div>
             </div>
           </CardContent>

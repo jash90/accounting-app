@@ -1,4 +1,10 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { REQUIRE_COMPANY_KEY } from '../decorators/require-company.decorator';
 
@@ -13,10 +19,10 @@ export class RequireCompanyGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requireCompany = this.reflector.getAllAndOverride<boolean>(
-      REQUIRE_COMPANY_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const requireCompany = this.reflector.getAllAndOverride<boolean>(REQUIRE_COMPANY_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     if (!requireCompany) {
       return true;

@@ -1,6 +1,10 @@
 import { useState, useMemo } from 'react';
+
 import { Settings2, Search, X } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -11,11 +15,9 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { ColumnConfig } from '@/lib/hooks/use-table-preferences';
+import { type ColumnConfig } from '@/lib/hooks/use-table-preferences';
 import { cn } from '@/lib/utils/cn';
 
 interface ColumnGroup {
@@ -58,12 +60,15 @@ export function ColumnVisibilityModal({
       return [{ key: 'all', label: 'Wszystkie kolumny', columns: filteredColumns }];
     }
 
-    return groups.map((group) => ({
-      ...group,
-      columns: group.columns.filter((col) =>
-        !searchQuery.trim() || col.label.toLowerCase().includes(searchQuery.toLowerCase())
-      ),
-    })).filter((group) => group.columns.length > 0);
+    return groups
+      .map((group) => ({
+        ...group,
+        columns: group.columns.filter(
+          (col) =>
+            !searchQuery.trim() || col.label.toLowerCase().includes(searchQuery.toLowerCase())
+        ),
+      }))
+      .filter((group) => group.columns.length > 0);
   }, [groups, filteredColumns, searchQuery]);
 
   return (
@@ -84,9 +89,7 @@ export function ColumnVisibilityModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Widoczność kolumn</DialogTitle>
-          <DialogDescription>
-            Wybierz które kolumny mają być widoczne w tabeli
-          </DialogDescription>
+          <DialogDescription>Wybierz które kolumny mają być widoczne w tabeli</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -152,9 +155,7 @@ export function ColumnVisibilityModal({
                             </Label>
                           </div>
                           {isDisabled && (
-                            <span className="text-xs text-muted-foreground">
-                              zawsze widoczna
-                            </span>
+                            <span className="text-xs text-muted-foreground">zawsze widoczna</span>
                           )}
                         </div>
                       );

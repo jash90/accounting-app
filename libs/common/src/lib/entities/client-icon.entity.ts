@@ -95,16 +95,12 @@ export class ClientIcon {
     if (this.iconType === IconType.CUSTOM) {
       // Custom icons require file-related fields
       if (!this.fileName || !this.filePath || !this.mimeType) {
-        throw new Error(
-          'Custom icons require fileName, filePath, and mimeType to be set'
-        );
+        throw new Error('Custom icons require fileName, filePath, and mimeType to be set');
       }
     } else if (this.iconType === IconType.LUCIDE || this.iconType === IconType.EMOJI) {
       // Lucide and emoji icons require iconValue
       if (!this.iconValue) {
-        throw new Error(
-          `${this.iconType} icons require iconValue to be set`
-        );
+        throw new Error(`${this.iconType} icons require iconValue to be set`);
       }
     }
   }

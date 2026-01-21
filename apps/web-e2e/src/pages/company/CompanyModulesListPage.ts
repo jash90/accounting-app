@@ -10,11 +10,13 @@ export class CompanyModulesListPage extends BasePage {
 
   // Selectors
   private readonly heading = 'h1:has-text("Modules")';
-  private readonly moduleCard = (moduleName: string) => `[data-testid="module-${moduleName}"], div:has-text("${moduleName}")`;
+  private readonly moduleCard = (moduleName: string) =>
+    `[data-testid="module-${moduleName}"], div:has-text("${moduleName}")`;
   private readonly modulesList = '[data-testid="modules-list"], .modules-grid';
   private readonly enabledBadge = '[data-testid="enabled-badge"], .badge:has-text("Enabled")';
   private readonly disabledBadge = '[data-testid="disabled-badge"], .badge:has-text("Disabled")';
-  private readonly accessButton = (moduleName: string) => `[data-testid="access-${moduleName}"], button:has-text("Access"):near(text="${moduleName}")`;
+  private readonly accessButton = (moduleName: string) =>
+    `[data-testid="access-${moduleName}"], button:has-text("Access"):near(text="${moduleName}")`;
   private readonly emptyState = '[data-testid="empty-state"], div:has-text("No modules")';
 
   constructor(page: Page) {
@@ -119,7 +121,9 @@ export class CompanyModulesListPage extends BasePage {
    * Get all visible module names
    */
   async getAllModuleNames(): Promise<string[]> {
-    const moduleCards = await this.page.locator(`${this.modulesList} [data-testid^="module-"]`).all();
+    const moduleCards = await this.page
+      .locator(`${this.modulesList} [data-testid^="module-"]`)
+      .all();
     const names: string[] = [];
 
     for (const card of moduleCards) {

@@ -12,9 +12,12 @@ export class LoginPage extends BasePage {
   private readonly emailInput = 'input[type="email"], input[name="email"], input#email';
   private readonly passwordInput = 'input[type="password"], input[name="password"], input#password';
   private readonly loginButton = 'button[type="submit"]';
-  private readonly emailError = '[data-testid="email-error"], .error:has-text("email"), p:has-text("email")';
-  private readonly passwordError = '[data-testid="password-error"], .error:has-text("password"), p:has-text("password")';
-  private readonly formError = '[data-testid="form-error"], .form-error, [role="alert"], .text-destructive';
+  private readonly emailError =
+    '[data-testid="email-error"], .error:has-text("email"), p:has-text("email")';
+  private readonly passwordError =
+    '[data-testid="password-error"], .error:has-text("password"), p:has-text("password")';
+  private readonly formError =
+    '[data-testid="form-error"], .form-error, [role="alert"], .text-destructive';
   private readonly loginForm = 'form';
   private readonly heading = 'h1, h2';
 
@@ -73,7 +76,11 @@ export class LoginPage extends BasePage {
   /**
    * Perform login and wait for redirect
    */
-  async loginAndWaitForRedirect(email: string, password: string, expectedPath?: string): Promise<void> {
+  async loginAndWaitForRedirect(
+    email: string,
+    password: string,
+    expectedPath?: string
+  ): Promise<void> {
     await this.login(email, password);
 
     // Wait for navigation away from login page
@@ -100,7 +107,10 @@ export class LoginPage extends BasePage {
   /**
    * Login as company owner
    */
-  async loginAsCompanyOwner(email = 'bartlomiej.zimny@onet.pl', password = 'Owner123!'): Promise<void> {
+  async loginAsCompanyOwner(
+    email = 'bartlomiej.zimny@onet.pl',
+    password = 'Owner123!'
+  ): Promise<void> {
     await this.goto();
     await this.loginAndWaitForRedirect(email, password, '/company');
   }
@@ -108,7 +118,10 @@ export class LoginPage extends BasePage {
   /**
    * Login as employee
    */
-  async loginAsEmployee(email = 'bartlomiej.zimny@interia.pl', password = 'Employee123!'): Promise<void> {
+  async loginAsEmployee(
+    email = 'bartlomiej.zimny@interia.pl',
+    password = 'Employee123!'
+  ): Promise<void> {
     await this.goto();
     await this.loginAndWaitForRedirect(email, password, '/modules');
   }
@@ -218,7 +231,9 @@ export class LoginPage extends BasePage {
    * Check if email input has focus
    */
   async expectEmailInputFocused(): Promise<void> {
-    const isFocused = await this.page.locator(this.emailInput).evaluate((el) => el === document.activeElement);
+    const isFocused = await this.page
+      .locator(this.emailInput)
+      .evaluate((el) => el === document.activeElement);
     expect(isFocused).toBe(true);
   }
 

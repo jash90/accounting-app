@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Module, ModuleSource } from '@accounting/common';
@@ -57,12 +53,12 @@ export class ModuleDiscoveryService implements OnModuleInit {
 
   constructor(
     @InjectRepository(Module)
-    private moduleRepository: Repository<Module>,
+    private moduleRepository: Repository<Module>
   ) {
     // Default to libs/modules relative to project root
     // In production, this might be configured differently
-    this.modulesBasePath = process.env['MODULES_PATH'] ||
-      path.resolve(process.cwd(), 'libs', 'modules');
+    this.modulesBasePath =
+      process.env['MODULES_PATH'] || path.resolve(process.cwd(), 'libs', 'modules');
   }
 
   /**
@@ -99,7 +95,7 @@ export class ModuleDiscoveryService implements OnModuleInit {
 
     // Get all directories in the modules folder
     const entries = fs.readdirSync(this.modulesBasePath, { withFileTypes: true });
-    const directories = entries.filter(entry => entry.isDirectory());
+    const directories = entries.filter((entry) => entry.isDirectory());
 
     for (const dir of directories) {
       const modulePath = path.join(this.modulesBasePath, dir.name);
@@ -155,7 +151,9 @@ export class ModuleDiscoveryService implements OnModuleInit {
     if (!config.slug) {
       errors.push('slug is required');
     } else if (!/^[a-z][a-z0-9-]*$/.test(config.slug)) {
-      errors.push('slug must start with lowercase letter and contain only lowercase letters, numbers, and hyphens');
+      errors.push(
+        'slug must start with lowercase letter and contain only lowercase letters, numbers, and hyphens'
+      );
     }
 
     if (!config.name) {
@@ -168,7 +166,11 @@ export class ModuleDiscoveryService implements OnModuleInit {
       errors.push('version must be in semver format (x.y.z)');
     }
 
-    if (!config.permissions || !Array.isArray(config.permissions) || config.permissions.length === 0) {
+    if (
+      !config.permissions ||
+      !Array.isArray(config.permissions) ||
+      config.permissions.length === 0
+    ) {
       errors.push('permissions array is required and must not be empty');
     }
 

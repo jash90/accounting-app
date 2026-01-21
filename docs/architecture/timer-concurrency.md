@@ -27,6 +27,7 @@ Enforcing this in a concurrent environment (multiple browser tabs, mobile apps, 
 ```
 
 A running timer is represented as a `TimeEntry` with:
+
 - `startTime`: When the timer was started
 - `endTime`: `NULL` (indicates the timer is still running)
 - `isRunning`: `true`
@@ -63,6 +64,7 @@ async startTimer(userId: string, dto: StartTimerDto): Promise<TimeEntry> {
 ```
 
 **How it works:**
+
 1. The transaction starts and acquires a lock on the row (if exists)
 2. Other concurrent transactions attempting to start a timer will wait for this lock
 3. When the first transaction commits, the second will see the newly created timer and throw an error
@@ -81,6 +83,7 @@ WHERE "is_running" = true AND "deleted_at" IS NULL;
 ```
 
 **How it works:**
+
 - The index only includes rows where `is_running = true` and `deleted_at IS NULL`
 - PostgreSQL enforces uniqueness on `(user_id, company_id)` within this subset
 - Any attempt to insert a second running timer will fail with a unique constraint violation
@@ -108,6 +111,7 @@ async startTimer(userId: string, dto: StartTimerDto): Promise<TimeEntry> {
 ```
 
 **Error codes handled:**
+
 - `23505`: Unique constraint violation (another timer was created)
 - `40001`: Serialization failure (transaction conflict)
 
@@ -138,6 +142,7 @@ WHERE user_id = :userId
 ```
 
 For running timers where `end_time` is `NULL`, we substitute `FAR_FUTURE_DATE` to make the comparison work correctly. This ensures:
+
 - A new entry cannot overlap with a running timer
 - A running timer is treated as extending indefinitely into the future
 
@@ -195,6 +200,7 @@ In this scenario, Layer 2 (unique index) catches the race condition that Layer 1
 ### Index Strategy
 
 The partial index is efficient because:
+
 1. Only indexes rows where `is_running = true` (typically 0-1 rows per user)
 2. Small index size means fast lookups and constraint checks
 3. Does not slow down queries for completed entries
@@ -202,6 +208,7 @@ The partial index is efficient because:
 ### Lock Duration
 
 Pessimistic locks are held only for the duration of the transaction:
+
 - Typical transaction time: <50ms
 - Lock contention is rare in practice (users don't usually spam the start button)
 - The lock ensures serialization only when truly needed
@@ -211,6 +218,7 @@ Pessimistic locks are held only for the duration of the transaction:
 ### Unit Tests (Mocked)
 
 Test the business logic flow:
+
 - Starting a timer when none exists
 - Starting a timer when one is already running
 - Error handling for constraint violations
@@ -218,6 +226,7 @@ Test the business logic flow:
 ### Integration Tests (Real Database)
 
 Test actual concurrency scenarios:
+
 1. Start two timers concurrently for the same user
 2. Verify exactly one succeeds and one fails with ConflictException
 3. Verify the unique index prevents duplicate running timers
@@ -236,8 +245,8 @@ describe('Timer Concurrency', () => {
     ]);
 
     // Exactly one should succeed
-    const successes = results.filter(r => r.status === 'fulfilled');
-    const failures = results.filter(r => r.status === 'rejected');
+    const successes = results.filter((r) => r.status === 'fulfilled');
+    const failures = results.filter((r) => r.status === 'rejected');
 
     expect(successes).toHaveLength(1);
     expect(failures).toHaveLength(1);

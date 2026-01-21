@@ -1,15 +1,7 @@
 import { useState, useCallback } from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import {
-  useKanbanBoard,
-  useCreateTask,
-  useUpdateTask,
-  useReorderTasks,
-} from '@/lib/hooks/use-tasks';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import { PageHeader } from '@/components/common/page-header';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+
 import {
   Plus,
   CheckSquare,
@@ -19,16 +11,27 @@ import {
   Calendar,
   GanttChartSquare,
 } from 'lucide-react';
-import {
-  TaskResponseDto,
-  CreateTaskDto,
-  UpdateTaskDto,
-  TaskFiltersDto,
-} from '@/types/dtos';
-import { TaskStatus, UserRole } from '@/types/enums';
+
+import { PageHeader } from '@/components/common/page-header';
 import { KanbanBoard, TaskFormDialog } from '@/components/tasks';
 import { TaskFilters } from '@/components/tasks/task-filters';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthContext } from '@/contexts/auth-context';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import {
+  useKanbanBoard,
+  useCreateTask,
+  useUpdateTask,
+  useReorderTasks,
+} from '@/lib/hooks/use-tasks';
+import {
+  type TaskResponseDto,
+  type CreateTaskDto,
+  type UpdateTaskDto,
+  type TaskFiltersDto,
+} from '@/types/dtos';
+import { TaskStatus, UserRole } from '@/types/enums';
 
 export default function TasksKanbanPage() {
   const { user } = useAuthContext();
@@ -57,9 +60,7 @@ export default function TasksKanbanPage() {
   const reorderTasks = useReorderTasks();
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [createDefaultStatus, setCreateDefaultStatus] = useState<TaskStatus>(
-    TaskStatus.TODO
-  );
+  const [createDefaultStatus, setCreateDefaultStatus] = useState<TaskStatus>(TaskStatus.TODO);
   const [editingTask, setEditingTask] = useState<TaskResponseDto | null>(null);
 
   const handleFiltersChange = useCallback((newFilters: TaskFiltersDto) => {
@@ -119,28 +120,16 @@ export default function TasksKanbanPage() {
         icon={<CheckSquare className="h-6 w-6" />}
         titleAction={
           <div className="flex items-center gap-1 border rounded-lg p-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/list`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/list`)}>
               <List className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="sm" className="bg-accent">
               <LayoutGrid className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/calendar`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/calendar`)}>
               <Calendar className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/timeline`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/timeline`)}>
               <GanttChartSquare className="h-4 w-4" />
             </Button>
           </div>
@@ -160,10 +149,7 @@ export default function TasksKanbanPage() {
       {isPending ? (
         <div className="flex gap-4 overflow-x-auto pb-4">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div
-              key={i}
-              className="flex flex-col w-[300px] min-w-[300px] bg-muted/50 rounded-lg"
-            >
+            <div key={i} className="flex flex-col w-[300px] min-w-[300px] bg-muted/50 rounded-lg">
               <div className="p-3 border-b bg-background/50 rounded-t-lg">
                 <Skeleton className="h-5 w-24" />
               </div>

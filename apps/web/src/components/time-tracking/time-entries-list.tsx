@@ -1,9 +1,12 @@
 import { useState, useCallback, useMemo } from 'react';
+
 import { Clock, Filter } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTaskClients } from '@/lib/hooks/use-tasks';
 import {
   useTimeEntries,
   useDeleteTimeEntry,
@@ -11,15 +14,15 @@ import {
   useApproveTimeEntry,
   useRejectTimeEntry,
 } from '@/lib/hooks/use-time-tracking';
-import { useTaskClients } from '@/lib/hooks/use-tasks';
-import { TimeEntryFormDialog } from './time-entry-form-dialog';
-import { TimeEntryRow } from './time-entry-row';
-import { TimeEntryFilters } from './time-entry-filters';
-import { TimeEntryPagination } from './time-entry-pagination';
-import { TimeEntryEmptyState } from './time-entry-empty-state';
-import { TimeEntryDeleteDialog, TimeEntryRejectDialog } from './time-entry-dialogs';
-import { TimeEntryResponseDto, TimeEntryFiltersDto } from '@/types/dtos';
 import { cn } from '@/lib/utils/cn';
+import { type TimeEntryResponseDto, type TimeEntryFiltersDto } from '@/types/dtos';
+
+import { TimeEntryDeleteDialog, TimeEntryRejectDialog } from './time-entry-dialogs';
+import { TimeEntryEmptyState } from './time-entry-empty-state';
+import { TimeEntryFilters } from './time-entry-filters';
+import { TimeEntryFormDialog } from './time-entry-form-dialog';
+import { TimeEntryPagination } from './time-entry-pagination';
+import { TimeEntryRow } from './time-entry-row';
 
 interface TimeEntriesListProps {
   className?: string;
@@ -85,13 +88,19 @@ export function TimeEntriesList({
     }
   }, [deleteEntry, deleteEntryMutation]);
 
-  const handleSubmit = useCallback((entry: TimeEntryResponseDto) => {
-    submitEntryMutation.mutate(entry.id);
-  }, [submitEntryMutation]);
+  const handleSubmit = useCallback(
+    (entry: TimeEntryResponseDto) => {
+      submitEntryMutation.mutate(entry.id);
+    },
+    [submitEntryMutation]
+  );
 
-  const handleApprove = useCallback((entry: TimeEntryResponseDto) => {
-    approveEntryMutation.mutate(entry.id);
-  }, [approveEntryMutation]);
+  const handleApprove = useCallback(
+    (entry: TimeEntryResponseDto) => {
+      approveEntryMutation.mutate(entry.id);
+    },
+    [approveEntryMutation]
+  );
 
   const handleReject = useCallback(() => {
     if (rejectEntry) {
@@ -112,17 +121,22 @@ export function TimeEntriesList({
     setRejectionNote('');
   }, []);
 
-  const handlePageChange = useCallback((page: number) => {
-    handleFilterChange('page', page);
-  }, [handleFilterChange]);
+  const handlePageChange = useCallback(
+    (page: number) => {
+      handleFilterChange('page', page);
+    },
+    [handleFilterChange]
+  );
 
   const hasActiveFilters = useMemo(
     () =>
-      !!(filters.status ||
+      !!(
+        filters.status ||
         filters.clientId ||
         filters.isBillable !== undefined ||
         filters.startDate ||
-        filters.endDate),
+        filters.endDate
+      ),
     [filters.status, filters.clientId, filters.isBillable, filters.startDate, filters.endDate]
   );
 
@@ -164,9 +178,7 @@ export function TimeEntriesList({
           </CardHeader>
         )}
         <CardContent>
-          <p className="text-sm text-destructive">
-            Nie udało się załadować wpisów czasu
-          </p>
+          <p className="text-sm text-destructive">Nie udało się załadować wpisów czasu</p>
         </CardContent>
       </Card>
     );

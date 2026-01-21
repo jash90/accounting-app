@@ -1,39 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { useTasks, useCreateTask } from '@/lib/hooks/use-tasks';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import { PageHeader } from '@/components/common/page-header';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  CheckSquare,
-  ArrowLeft,
-  List,
-  LayoutGrid,
-  Calendar,
-  GanttChartSquare,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-} from 'lucide-react';
-import { TaskResponseDto, CreateTaskDto, TaskFiltersDto } from '@/types/dtos';
-import {
-  TaskStatus,
-  TaskStatusLabels,
-  UserRole,
-} from '@/types/enums';
-import { TaskFormDialog } from '@/components/tasks';
-import { TaskStatusBadge } from '@/components/tasks';
-import { TaskFilters } from '@/components/tasks/task-filters';
-import { useAuthContext } from '@/contexts/auth-context';
+
 import {
   format,
   startOfWeek,
@@ -49,7 +17,37 @@ import {
   min,
 } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import {
+  CheckSquare,
+  ArrowLeft,
+  List,
+  LayoutGrid,
+  Calendar,
+  GanttChartSquare,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+} from 'lucide-react';
+
+import { PageHeader } from '@/components/common/page-header';
+import { TaskFormDialog, TaskStatusBadge } from '@/components/tasks';
+import { TaskFilters } from '@/components/tasks/task-filters';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import { useTasks, useCreateTask } from '@/lib/hooks/use-tasks';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils/cn';
+import { type TaskResponseDto, type CreateTaskDto, type TaskFiltersDto } from '@/types/dtos';
+import { TaskStatus, TaskStatusLabels, UserRole } from '@/types/enums';
+import { useAuthContext } from '@/contexts/auth-context';
 
 type ViewMode = 'day' | 'week' | 'month';
 
@@ -246,25 +244,13 @@ export default function TasksTimelinePage() {
         icon={<CheckSquare className="h-6 w-6" />}
         titleAction={
           <div className="flex items-center gap-1 border rounded-lg p-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/list`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/list`)}>
               <List className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/kanban`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/kanban`)}>
               <LayoutGrid className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/calendar`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/calendar`)}>
               <Calendar className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="sm" className="bg-accent">
@@ -289,25 +275,13 @@ export default function TasksTimelinePage() {
         <CardContent className="py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleNavigate('today')}
-              >
+              <Button variant="outline" size="sm" onClick={() => handleNavigate('today')}>
                 Dziś
               </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handleNavigate('prev')}
-              >
+              <Button variant="outline" size="icon" onClick={() => handleNavigate('prev')}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handleNavigate('next')}
-              >
+              <Button variant="outline" size="icon" onClick={() => handleNavigate('next')}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
               <span className="text-sm font-medium ml-2">
@@ -318,10 +292,7 @@ export default function TasksTimelinePage() {
 
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Widok:</span>
-              <Select
-                value={viewMode}
-                onValueChange={(v) => setViewMode(v as ViewMode)}
-              >
+              <Select value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
@@ -350,9 +321,7 @@ export default function TasksTimelinePage() {
             <div className="min-w-[800px]">
               {/* Timeline header */}
               <div className="flex border-b sticky top-0 bg-background z-10">
-                <div className="w-64 min-w-64 p-3 border-r font-medium text-sm">
-                  Zadanie
-                </div>
+                <div className="w-64 min-w-64 p-3 border-r font-medium text-sm">Zadanie</div>
                 <div className="flex-1 flex">
                   {timelineHeaders.map((header, index) => (
                     <div
@@ -386,9 +355,7 @@ export default function TasksTimelinePage() {
                       <div className="w-64 min-w-64 p-3 border-r">
                         <div className="flex items-start gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">
-                              {task.title}
-                            </p>
+                            <p className="font-medium text-sm truncate">{task.title}</p>
                             <div className="flex items-center gap-2 mt-1">
                               <TaskStatusBadge status={task.status} size="sm" />
                             </div>
@@ -403,10 +370,7 @@ export default function TasksTimelinePage() {
                           {timelineHeaders.map((header, index) => (
                             <div
                               key={index}
-                              className={cn(
-                                'flex-1 border-r',
-                                header.isWeekend && 'bg-muted/30'
-                              )}
+                              className={cn('flex-1 border-r', header.isWeekend && 'bg-muted/30')}
                             />
                           ))}
                         </div>
@@ -453,12 +417,7 @@ export default function TasksTimelinePage() {
               .filter(([key]) => key !== TaskStatus.CANCELLED)
               .map(([status, label]) => (
                 <div key={status} className="flex items-center gap-2">
-                  <div
-                    className={cn(
-                      'w-3 h-3 rounded',
-                      getStatusColor(status as TaskStatus)
-                    )}
-                  />
+                  <div className={cn('w-3 h-3 rounded', getStatusColor(status as TaskStatus))} />
                   <span>{label}</span>
                 </div>
               ))}

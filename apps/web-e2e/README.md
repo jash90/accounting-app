@@ -5,6 +5,7 @@ Comprehensive Playwright E2E test suite for the Accounting System with RBAC (Rol
 ## 📊 Test Coverage
 
 ### Test Statistics
+
 - **Total Test Cases**: 127+
 - **Test Files**: 5
 - **Page Object Models**: 20+
@@ -14,6 +15,7 @@ Comprehensive Playwright E2E test suite for the Accounting System with RBAC (Rol
 ### Test Suites
 
 #### 1. Authentication Tests (`auth.spec.ts`) - 23 tests
+
 - ✅ Login flows for all roles (Admin, Company Owner, Employee)
 - ✅ Invalid credentials handling
 - ✅ Token persistence and refresh
@@ -24,6 +26,7 @@ Comprehensive Playwright E2E test suite for the Accounting System with RBAC (Rol
 - ✅ Unauthorized access prevention
 
 #### 2. Admin Workflow Tests (`admin-workflows.spec.ts`) - 30 tests
+
 - ✅ User management (create, read, update, delete)
 - ✅ Company management (CRUD operations)
 - ✅ Module management (enable/disable for companies)
@@ -33,6 +36,7 @@ Comprehensive Playwright E2E test suite for the Accounting System with RBAC (Rol
 - ✅ Role-based user creation
 
 #### 3. Company Owner Workflow Tests (`company-owner-workflows.spec.ts`) - 28 tests
+
 - ✅ Employee management (invite, update, delete)
 - ✅ Permission management (grant/revoke read, write, delete)
 - ✅ Module access control
@@ -42,6 +46,7 @@ Comprehensive Playwright E2E test suite for the Accounting System with RBAC (Rol
 - ✅ Multi-tenant employee isolation
 
 #### 4. Employee Sidebar Tests (`employee-sidebar.spec.ts`) - 15+ tests
+
 - ✅ Sidebar visibility and module display
 - ✅ Navigation to modules from sidebar
 - ✅ Permission-based module filtering
@@ -133,6 +138,7 @@ npm run seed
 ```
 
 The seed script creates:
+
 - **Admin**: admin@system.com / Admin123!
 - **Company A Owner**: bartlomiej.zimny@onet.pl / Owner123!
 - **Company A Employees**:
@@ -219,6 +225,7 @@ npx playwright show-report playwright-report
 ```
 
 The report includes:
+
 - Test execution summary
 - Screenshots on failure
 - Videos on failure (in CI)
@@ -228,6 +235,7 @@ The report includes:
 ### CI/CD Reports
 
 The following reports are generated for CI/CD:
+
 - **HTML**: `playwright-report/index.html`
 - **JSON**: `test-results/results.json`
 - **JUnit XML**: `test-results/junit.xml`
@@ -247,6 +255,7 @@ CI=true
 ### Playwright Configuration
 
 Edit `playwright.config.ts` to customize:
+
 - **Timeout settings**: Global timeout, action timeout
 - **Retry logic**: Number of retries on failure
 - **Parallel execution**: Number of workers
@@ -301,6 +310,7 @@ DEBUG=pw:api npx playwright test
 ### Inspector
 
 Use Playwright Inspector to step through tests:
+
 - Set breakpoints with `await page.pause()`
 - Inspect element selectors
 - View page state at each step
@@ -346,7 +356,6 @@ const userData = TestDataFactory.createUserData('EMPLOYEE');
 
 const companyData = TestDataFactory.createCompanyData();
 // { name: 'Test Company 123', description: '...' }
-
 ```
 
 ### Creating a New Page Object
@@ -376,30 +385,35 @@ export class MyNewPage extends BasePage {
 ## 🎯 Best Practices
 
 ### Test Organization
+
 - ✅ Group related tests in `describe` blocks
 - ✅ Use descriptive test names that explain intent
 - ✅ Keep tests independent and isolated
 - ✅ Clean up test data after tests (where applicable)
 
 ### Selectors
+
 - ✅ Prefer `data-testid` attributes
 - ✅ Use role-based selectors (`getByRole`)
 - ✅ Use text-based selectors as fallback
 - ✅ Avoid CSS/XPath selectors when possible
 
 ### Assertions
+
 - ✅ Use Playwright's auto-waiting assertions
 - ✅ Assert on visible elements before interaction
 - ✅ Use specific assertions (`toHaveText` vs `toContainText`)
 - ✅ Add meaningful error messages to assertions
 
 ### Performance
+
 - ✅ Use parallel execution for independent tests
 - ✅ Minimize navigation between tests
 - ✅ Use pre-authenticated fixtures
 - ✅ Avoid unnecessary `waitForTimeout`
 
 ### Maintenance
+
 - ✅ Keep Page Objects updated with UI changes
 - ✅ Extract common operations to helpers
 - ✅ Document complex test scenarios
@@ -451,18 +465,23 @@ jobs:
 ### Common Issues
 
 #### Tests fail with "Target closed" error
+
 **Solution**: Ensure API and Web servers are running. Check `webServer` config in `playwright.config.ts`.
 
 #### Tests fail with timeout errors
+
 **Solution**: Increase timeout in config or use `test.setTimeout()`. Check network/server performance.
 
 #### Authentication tests fail
+
 **Solution**: Verify database is seeded. Check test credentials in `auth.fixtures.ts`.
 
 #### Selector not found errors
+
 **Solution**: Update selectors in Page Objects. Use Playwright Inspector to find correct selectors.
 
 #### Tests pass locally but fail in CI
+
 **Solution**: Check CI environment variables. Ensure database seeding works in CI. Review CI-specific config.
 
 ## 🤝 Contributing

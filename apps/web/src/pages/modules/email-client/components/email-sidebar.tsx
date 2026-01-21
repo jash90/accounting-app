@@ -1,7 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
-import { useFolders } from '@/lib/hooks/use-email-client';
-import { cn } from '@/lib/utils/cn';
+
 import {
   Inbox,
   Send,
@@ -16,6 +14,10 @@ import {
   Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+
+import { useFolders } from '@/lib/hooks/use-email-client';
+import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
+import { cn } from '@/lib/utils/cn';
 
 // Map IMAP folder names to appropriate icons
 function getFolderIcon(folderName: string): LucideIcon {
@@ -34,14 +36,22 @@ function getFolderIcon(folderName: string): LucideIcon {
   if (lower.includes('trash') || lower.includes('kosz') || lower.includes('deleted')) return Trash2;
 
   // Spam/Junk folder variants
-  if (lower.includes('spam') || lower.includes('śmieci') || lower.includes('smieci') || lower.includes('junk')) return AlertTriangle;
+  if (
+    lower.includes('spam') ||
+    lower.includes('śmieci') ||
+    lower.includes('smieci') ||
+    lower.includes('junk')
+  )
+    return AlertTriangle;
 
   // Archive folder variants
   if (lower.includes('archive') || lower.includes('archiwum')) return Archive;
 
   // Special folders (Polish email providers)
-  if (lower.includes('społeczności') || lower.includes('spolecznosci') || lower.includes('social')) return Users;
-  if (lower.includes('oferty') || lower.includes('promotions') || lower.includes('promo')) return ShoppingBag;
+  if (lower.includes('społeczności') || lower.includes('spolecznosci') || lower.includes('social'))
+    return Users;
+  if (lower.includes('oferty') || lower.includes('promotions') || lower.includes('promo'))
+    return ShoppingBag;
   if (lower.includes('kategori') || lower.includes('label')) return Tag;
 
   // Default folder icon

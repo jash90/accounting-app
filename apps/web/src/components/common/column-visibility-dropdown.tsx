@@ -1,4 +1,5 @@
 import { Settings2 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -8,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ColumnConfig } from '@/lib/hooks/use-table-preferences';
+import { type ColumnConfig } from '@/lib/hooks/use-table-preferences';
 
 interface ColumnVisibilityDropdownProps {
   columns: ColumnConfig[];

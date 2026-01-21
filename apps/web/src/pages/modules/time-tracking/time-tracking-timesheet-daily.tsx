@@ -1,11 +1,13 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
+
 import { parseISO } from 'date-fns';
 import { ArrowLeft, Calendar, List, CalendarDays } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
 import { PageHeader } from '@/components/common/page-header';
+import { DailyTimesheet, TimerWidget } from '@/components/time-tracking';
+import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/contexts/auth-context';
 import { UserRole } from '@/types/enums';
-import { DailyTimesheet, TimerWidget } from '@/components/time-tracking';
 
 export default function TimeTrackingTimesheetDailyPage() {
   const { user } = useAuthContext();
@@ -42,7 +44,11 @@ export default function TimeTrackingTimesheetDailyPage() {
         description="Widok dzienny z podsumowaniem czasu pracy"
         icon={<Calendar className="h-6 w-6" />}
         titleAction={
-          <div className="flex items-center gap-1 border rounded-lg p-1" role="group" aria-label="Widok timesheet">
+          <div
+            className="flex items-center gap-1 border rounded-lg p-1"
+            role="group"
+            aria-label="Widok timesheet"
+          >
             <Button
               variant="ghost"
               size="sm"
@@ -51,7 +57,13 @@ export default function TimeTrackingTimesheetDailyPage() {
             >
               <List className="h-4 w-4" aria-hidden="true" />
             </Button>
-            <Button variant="ghost" size="sm" className="bg-accent" aria-label="Widok dzienny" aria-current="page">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="bg-accent"
+              aria-label="Widok dzienny"
+              aria-current="page"
+            >
               <Calendar className="h-4 w-4" aria-hidden="true" />
             </Button>
             <Button

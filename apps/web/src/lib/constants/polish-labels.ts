@@ -5,7 +5,7 @@ import {
   ZusStatus,
   AmlGroup,
   IconType,
-  ConditionOperator,
+  type ConditionOperator,
   CustomFieldType,
 } from '@/types/enums';
 
@@ -95,11 +95,14 @@ export const GTU_CODES = [
   { code: 'GTU_09', label: 'GTU_09 - Leki i wyroby medyczne' },
   { code: 'GTU_10', label: 'GTU_10 - Budynki, budowle i grunty' },
   { code: 'GTU_11', label: 'GTU_11 - Przenoszenie uprawnień do emisji gazów cieplarnianych' },
-  { code: 'GTU_12', label: 'GTU_12 - Usługi niematerialne (doradcze, księgowe, prawne, marketingowe)' },
+  {
+    code: 'GTU_12',
+    label: 'GTU_12 - Usługi niematerialne (doradcze, księgowe, prawne, marketingowe)',
+  },
   { code: 'GTU_13', label: 'GTU_13 - Usługi transportowe i magazynowe' },
 ] as const;
 
-export type GtuCode = typeof GTU_CODES[number]['code'];
+export type GtuCode = (typeof GTU_CODES)[number]['code'];
 
 // PKD 2025 - Polska Klasyfikacja Działalności (657 kodów na poziomie klasy)
 // Import from browser-safe subpath (no TypeORM/Node.js dependencies)
@@ -150,9 +153,19 @@ export const CONDITION_FIELDS = [
   { field: 'nip', label: 'NIP', type: 'string' },
   { field: 'email', label: 'Email', type: 'string' },
   { field: 'phone', label: 'Telefon', type: 'string' },
-  { field: 'employmentType', label: 'Forma zatrudnienia', type: 'enum', enumValues: Object.values(EmploymentType) },
+  {
+    field: 'employmentType',
+    label: 'Forma zatrudnienia',
+    type: 'enum',
+    enumValues: Object.values(EmploymentType),
+  },
   { field: 'vatStatus', label: 'Status VAT', type: 'enum', enumValues: Object.values(VatStatus) },
-  { field: 'taxScheme', label: 'Forma opodatkowania', type: 'enum', enumValues: Object.values(TaxScheme) },
+  {
+    field: 'taxScheme',
+    label: 'Forma opodatkowania',
+    type: 'enum',
+    enumValues: Object.values(TaxScheme),
+  },
   { field: 'zusStatus', label: 'Status ZUS', type: 'enum', enumValues: Object.values(ZusStatus) },
   { field: 'amlGroupEnum', label: 'Grupa AML', type: 'enum', enumValues: Object.values(AmlGroup) },
   { field: 'gtuCodes', label: 'Kody GTU', type: 'array' },
@@ -166,9 +179,29 @@ export const CONDITION_FIELDS = [
 // Operators available for each field type
 export const OPERATORS_BY_TYPE: Record<string, ConditionOperator[]> = {
   string: ['equals', 'notEquals', 'contains', 'notContains', 'isEmpty', 'isNotEmpty'],
-  number: ['equals', 'notEquals', 'greaterThan', 'lessThan', 'greaterThanOrEqual', 'lessThanOrEqual', 'between', 'isEmpty', 'isNotEmpty'],
+  number: [
+    'equals',
+    'notEquals',
+    'greaterThan',
+    'lessThan',
+    'greaterThanOrEqual',
+    'lessThanOrEqual',
+    'between',
+    'isEmpty',
+    'isNotEmpty',
+  ],
   boolean: ['equals'],
-  date: ['equals', 'notEquals', 'greaterThan', 'lessThan', 'greaterThanOrEqual', 'lessThanOrEqual', 'between', 'isEmpty', 'isNotEmpty'],
+  date: [
+    'equals',
+    'notEquals',
+    'greaterThan',
+    'lessThan',
+    'greaterThanOrEqual',
+    'lessThanOrEqual',
+    'between',
+    'isEmpty',
+    'isNotEmpty',
+  ],
   enum: ['equals', 'notEquals', 'in', 'notIn', 'isEmpty', 'isNotEmpty'],
   array: ['contains', 'notContains', 'isEmpty', 'isNotEmpty'],
 };

@@ -23,7 +23,6 @@ import { diskStorage } from 'multer';
 import {
   ApiTags,
   ApiOperation,
-  ApiResponse,
   ApiBearerAuth,
   ApiParam,
   ApiBody,
@@ -72,14 +71,15 @@ export class AIConversationController {
     @InjectRepository(AIContext)
     private contextRepository: Repository<AIContext>,
     @InjectRepository(Company)
-    private companyRepository: Repository<Company>,
+    private companyRepository: Repository<Company>
   ) {}
 
   @Get('conversations')
   @RequirePermission('ai-agent', 'read')
   @ApiOperation({
     summary: 'Get all conversations',
-    description: 'Retrieve all AI chat conversations for the authenticated user\'s company. ADMIN users see System Admin company conversations. Supports optional pagination.',
+    description:
+      "Retrieve all AI chat conversations for the authenticated user's company. ADMIN users see System Admin company conversations. Supports optional pagination.",
   })
   @ApiQuery({
     name: 'page',
@@ -94,7 +94,8 @@ export class AIConversationController {
     description: 'Items per page (default: 20, max: 100)',
   })
   @ApiOkResponse({
-    description: 'List of conversations retrieved successfully. Returns paginated response if pagination params provided, otherwise returns array.',
+    description:
+      'List of conversations retrieved successfully. Returns paginated response if pagination params provided, otherwise returns array.',
     type: [ConversationResponseDto],
   })
   @ApiForbiddenResponse({
@@ -103,10 +104,7 @@ export class AIConversationController {
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing JWT token',
   })
-  async findAllConversations(
-    @CurrentUser() user: User,
-    @Query() pagination?: PaginationQueryDto,
-  ) {
+  async findAllConversations(@CurrentUser() user: User, @Query() pagination?: PaginationQueryDto) {
     // If both page and limit are undefined, return unpaginated for backward compatibility
     if (!pagination?.page && !pagination?.limit) {
       return this.conversationService.findAll(user);
@@ -118,7 +116,7 @@ export class AIConversationController {
   @RequirePermission('ai-agent', 'read')
   @ApiOperation({
     summary: 'Get conversation by ID',
-    description: 'Retrieve a single conversation with all messages. Must belong to user\'s company.',
+    description: "Retrieve a single conversation with all messages. Must belong to user's company.",
   })
   @ApiParam({
     name: 'id',
@@ -139,10 +137,7 @@ export class AIConversationController {
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing JWT token',
   })
-  async findOneConversation(
-    @Param('id') id: string,
-    @CurrentUser() user: User,
-  ) {
+  async findOneConversation(@Param('id') id: string, @CurrentUser() user: User) {
     return this.conversationService.findOne(id, user);
   }
 
@@ -167,10 +162,7 @@ export class AIConversationController {
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing JWT token',
   })
-  async createConversation(
-    @Body() createDto: CreateConversationDto,
-    @CurrentUser() user: User,
-  ) {
+  async createConversation(@Body() createDto: CreateConversationDto, @CurrentUser() user: User) {
     return this.conversationService.create(createDto, user);
   }
 
@@ -178,7 +170,8 @@ export class AIConversationController {
   @RequirePermission('ai-agent', 'write')
   @ApiOperation({
     summary: 'Send message in conversation',
-    description: 'Send a user message and receive AI response. RAG context is automatically injected if relevant files are uploaded. Token usage is tracked and limits are enforced.',
+    description:
+      'Send a user message and receive AI response. RAG context is automatically injected if relevant files are uploaded. Token usage is tracked and limits are enforced.',
   })
   @ApiParam({
     name: 'id',
@@ -215,13 +208,9 @@ export class AIConversationController {
   async sendMessage(
     @Param('id') id: string,
     @Body() sendDto: SendMessageDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
-    const assistantMessage = await this.conversationService.sendMessage(
-      id,
-      sendDto,
-      user,
-    );
+    const assistantMessage = await this.conversationService.sendMessage(id, sendDto, user);
 
     return {
       userMessage: { content: sendDto.content },
@@ -234,7 +223,8 @@ export class AIConversationController {
   @Sse()
   @ApiOperation({
     summary: 'Send message with streaming response (SSE)',
-    description: 'Send a user message and receive AI response as a stream of Server-Sent Events. Use when enableStreaming is true in AI configuration.',
+    description:
+      'Send a user message and receive AI response as a stream of Server-Sent Events. Use when enableStreaming is true in AI configuration.',
   })
   @ApiParam({
     name: 'id',
@@ -275,11 +265,11 @@ export class AIConversationController {
   sendMessageStream(
     @Param('id') id: string,
     @Body() sendDto: SendMessageDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ): Observable<MessageEvent> {
-    return this.conversationService.sendMessageStream(id, sendDto, user).pipe(
-      map((chunk) => ({ data: chunk } as MessageEvent)),
-    );
+    return this.conversationService
+      .sendMessageStream(id, sendDto, user)
+      .pipe(map((chunk) => ({ data: chunk }) as MessageEvent));
   }
 
   @Delete('conversations/:id')
@@ -307,10 +297,7 @@ export class AIConversationController {
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing JWT token',
   })
-  async removeConversation(
-    @Param('id') id: string,
-    @CurrentUser() user: User,
-  ) {
+  async removeConversation(@Param('id') id: string, @CurrentUser() user: User) {
     return this.conversationService.remove(id, user);
   }
 
@@ -328,23 +315,20 @@ export class AIConversationController {
       }),
       limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
       fileFilter: (req, file, cb) => {
-        const allowedMimes = [
-          'application/pdf',
-          'text/plain',
-          'text/markdown',
-        ];
+        const allowedMimes = ['application/pdf', 'text/plain', 'text/markdown'];
         if (allowedMimes.includes(file.mimetype)) {
           cb(null, true);
         } else {
           cb(new BadRequestException('Only PDF, TXT, and MD files are allowed'), false);
         }
       },
-    }),
+    })
   )
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
     summary: 'Upload context file for RAG',
-    description: 'Upload a PDF, TXT, or MD file to be used as context for AI responses. File is processed to extract text and generate embeddings for semantic search. Max file size: 10MB.',
+    description:
+      'Upload a PDF, TXT, or MD file to be used as context for AI responses. File is processed to extract text and generate embeddings for semantic search. Max file size: 10MB.',
   })
   @ApiBody({
     schema: {
@@ -371,10 +355,7 @@ export class AIConversationController {
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing JWT token',
   })
-  async uploadContext(
-    @UploadedFile() file: Express.Multer.File,
-    @CurrentUser() user: User,
-  ) {
+  async uploadContext(@UploadedFile() file: Express.Multer.File, @CurrentUser() user: User) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
@@ -404,7 +385,7 @@ export class AIConversationController {
       companyId,
       user,
       embeddingConfig.apiKey,
-      embeddingConfig.model,
+      embeddingConfig.model
     );
 
     return this.contextRepository.findOne({
@@ -417,7 +398,8 @@ export class AIConversationController {
   @RequirePermission('ai-agent', 'read')
   @ApiOperation({
     summary: 'Get all uploaded context files',
-    description: 'Retrieve list of all uploaded context files for RAG. Files belong to user\'s company.',
+    description:
+      "Retrieve list of all uploaded context files for RAG. Files belong to user's company.",
   })
   @ApiOkResponse({
     description: 'List of context files retrieved successfully',
@@ -503,11 +485,13 @@ export class AIConversationController {
     return {
       id: context.id,
       companyId: context.companyId,
-      company: context.company ? {
-        id: context.company.id,
-        name: context.company.name,
-        isSystemCompany: context.company.isSystemCompany,
-      } : null,
+      company: context.company
+        ? {
+            id: context.company.id,
+            name: context.company.name,
+            isSystemCompany: context.company.isSystemCompany,
+          }
+        : null,
       filename: context.filename,
       mimeType: context.mimeType,
       fileSize: context.fileSize,
@@ -529,7 +513,7 @@ export class AIConversationController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete context file',
-    description: 'Permanently delete an uploaded context file. File must belong to user\'s company.',
+    description: "Permanently delete an uploaded context file. File must belong to user's company.",
   })
   @ApiParam({
     name: 'id',
@@ -575,7 +559,7 @@ export class AIConversationController {
     // Delete physical file
     try {
       await fs.unlink(context.filePath);
-    } catch (error) {
+    } catch {
       // File already deleted or doesn't exist
     }
 

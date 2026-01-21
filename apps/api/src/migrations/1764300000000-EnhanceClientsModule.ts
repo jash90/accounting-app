@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
 const BATCH_SIZE = 1000;
 
@@ -187,7 +187,7 @@ export class EnhanceClientsModule1764300000000 implements MigrationInterface {
     if (unmappedCount > 0) {
       console.warn(
         `WARNING: ${unmappedCount} clients had unmapped AML values that defaulted to LOW. ` +
-        `Affected values: ${[...new Set(unmappedResult.map((r: { amlGroup: string }) => r.amlGroup))].join(', ')}`
+          `Affected values: ${[...new Set(unmappedResult.map((r: { amlGroup: string }) => r.amlGroup))].join(', ')}`
       );
     }
 
@@ -231,7 +231,7 @@ export class EnhanceClientsModule1764300000000 implements MigrationInterface {
     if (preservedCount > 0) {
       console.warn(
         `WARNING: Migrated ${preservedCount} gtuCodes back to gtuCode. ` +
-        `If any clients had multiple GTU codes, only the first was preserved.`
+          `If any clients had multiple GTU codes, only the first was preserved.`
       );
     }
 

@@ -11,6 +11,10 @@
     "test:integration": "bun test apps/api/src/**/*.integration.spec.ts --timeout 30000",
     "lint": "nx lint api",
     "lint:web": "nx lint web",
+    "lint:all": "nx run-many --target=lint --all",
+    "lint:fix": "nx run-many --target=lint --all -- --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md,css,scss}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md,css,scss}\"",
     "serve": "nx serve api",
     "serve:web": "nx serve web",
     "dev": "nx run-many --target=serve --projects=api,web --parallel",
@@ -21,7 +25,16 @@
     "migration:compile:prod": "tsc apps/api/typeorm.prod.config.ts apps/api/src/migrations/*.ts --outDir dist/apps/api --module commonjs --target ES2021 --esModuleInterop --experimentalDecorators --emitDecoratorMetadata --skipLibCheck --resolveJsonModule",
     "migration:run:prod": "cd dist/apps/api && node ../../../node_modules/typeorm/cli.js migration:run -d typeorm.prod.config.js",
     "db:migrate:prod": "npm run migration:compile:prod && npm run migration:run:prod",
-    "seed:prod": "node dist/apps/api/main.js"
+    "seed:prod": "node dist/apps/api/main.js",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix --max-warnings=0"
+    ],
+    "*.{ts,tsx,json,md,css,scss}": [
+      "prettier --write"
+    ]
   },
   "private": true,
   "dependencies": {
@@ -157,11 +170,17 @@
     "concurrently": "^9.2.1",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-security": "^3.0.1",
     "globals": "^16.5.0",
+    "husky": "^9.1.7",
     "jiti": "2.6.1",
     "jsdom": "~27.1.0",
+    "lint-staged": "^16.2.7",
     "lucide-react": "^0.553.0",
     "msw": "^2.12.1",
     "nx": "22.0.3",

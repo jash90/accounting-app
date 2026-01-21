@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
 export class DropTimeProjectsTable1768900000001 implements MigrationInterface {
   name = 'DropTimeProjectsTable1768900000001';
@@ -19,7 +19,9 @@ export class DropTimeProjectsTable1768900000001 implements MigrationInterface {
         const count = parseInt(rowCount[0]?.count || '0');
 
         if (count > 0) {
-          console.warn(`[DropTimeProjectsTable] WARNING: Backing up ${count} rows before dropping table...`);
+          console.warn(
+            `[DropTimeProjectsTable] WARNING: Backing up ${count} rows before dropping table...`
+          );
 
           // Create backup table preserving all data
           await queryRunner.query(`

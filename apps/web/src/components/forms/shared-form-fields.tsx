@@ -1,4 +1,4 @@
-import { Control, FieldPath, FieldValues } from 'react-hook-form';
+import { type Control, type FieldPath, type FieldValues } from 'react-hook-form';
 
 /**
  * Helper function to format date value for input display
@@ -14,13 +14,8 @@ function formatDateValue(value: unknown): string {
   return '';
 }
 
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -28,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 
 /**
  * Props for SelectFormField component
@@ -111,12 +105,7 @@ interface DateFormFieldProps<
 export function DateFormField<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
->({
-  control,
-  name,
-  label,
-  required = false,
-}: DateFormFieldProps<TFieldValues, TName>) {
+>({ control, name, label, required = false }: DateFormFieldProps<TFieldValues, TName>) {
   return (
     <FormField
       control={control}

@@ -22,11 +22,7 @@ import { EmailAttachmentsController } from './controllers/email-attachments.cont
     RBACModule,
     AIAgentModule,
   ],
-  controllers: [
-    EmailMessagesController,
-    EmailDraftsController,
-    EmailAttachmentsController,
-  ],
+  controllers: [EmailMessagesController, EmailDraftsController, EmailAttachmentsController],
   providers: [
     EmailDraftService,
     EmailDraftSyncService,

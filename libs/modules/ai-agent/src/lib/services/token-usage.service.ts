@@ -34,7 +34,7 @@ export class TokenUsageService {
     private usageRepository: Repository<TokenUsage>,
     @InjectRepository(Company)
     private companyRepository: Repository<Company>,
-    private systemCompanyService: SystemCompanyService,
+    private systemCompanyService: SystemCompanyService
   ) {}
 
   /**
@@ -121,7 +121,7 @@ export class TokenUsageService {
         totalOutputTokens: 0,
         conversationCount: 0,
         messageCount: 0,
-      },
+      }
     );
 
     return {
@@ -170,17 +170,20 @@ export class TokenUsageService {
     });
 
     // Aggregate by user
-    const userAggregation = new Map<string, {
-      userId: string;
-      email: string;
-      firstName: string;
-      lastName: string;
-      totalTokens: number;
-      totalInputTokens: number;
-      totalOutputTokens: number;
-      conversationCount: number;
-      messageCount: number;
-    }>();
+    const userAggregation = new Map<
+      string,
+      {
+        userId: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        totalTokens: number;
+        totalInputTokens: number;
+        totalOutputTokens: number;
+        conversationCount: number;
+        messageCount: number;
+      }
+    >();
 
     let companyTotalTokens = 0;
     let companyTotalInputTokens = 0;
@@ -313,17 +316,20 @@ export class TokenUsageService {
       });
 
       // Aggregate by user
-      const userAggregation = new Map<string, {
-        userId: string;
-        email: string;
-        firstName: string;
-        lastName: string;
-        totalTokens: number;
-        totalInputTokens: number;
-        totalOutputTokens: number;
-        conversationCount: number;
-        messageCount: number;
-      }>();
+      const userAggregation = new Map<
+        string,
+        {
+          userId: string;
+          email: string;
+          firstName: string;
+          lastName: string;
+          totalTokens: number;
+          totalInputTokens: number;
+          totalOutputTokens: number;
+          conversationCount: number;
+          messageCount: number;
+        }
+      >();
 
       let companyTotalTokens = 0;
       let companyTotalInputTokens = 0;

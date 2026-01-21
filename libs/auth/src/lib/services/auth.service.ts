@@ -1,4 +1,10 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  BadRequestException,
+  Inject,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -19,7 +25,7 @@ export class AuthService {
     @Inject(ACCESS_JWT_SERVICE)
     private accessJwtService: JwtService,
     @Inject(REFRESH_JWT_SERVICE)
-    private refreshJwtService: JwtService,
+    private refreshJwtService: JwtService
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
@@ -34,8 +40,7 @@ export class AuthService {
 
     // Validate companyId for COMPANY_OWNER and EMPLOYEE
     if (
-      (registerDto.role === UserRole.COMPANY_OWNER ||
-        registerDto.role === UserRole.EMPLOYEE) &&
+      (registerDto.role === UserRole.COMPANY_OWNER || registerDto.role === UserRole.EMPLOYEE) &&
       !registerDto.companyId
     ) {
       throw new BadRequestException('companyId is required for COMPANY_OWNER and EMPLOYEE roles');
@@ -113,7 +118,7 @@ export class AuthService {
       }
 
       return this.generateTokens(user);
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
   }
@@ -150,4 +155,3 @@ export class AuthService {
     };
   }
 }
-

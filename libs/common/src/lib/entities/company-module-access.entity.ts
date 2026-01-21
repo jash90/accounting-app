@@ -40,4 +40,3 @@ export class CompanyModuleAccess {
   @CreateDateColumn()
   createdAt!: Date;
 }
-

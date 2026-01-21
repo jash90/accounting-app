@@ -59,10 +59,7 @@ export function useModelPreferences(): ModelPreferences {
     });
   }, []);
 
-  const isFavorite = useCallback(
-    (modelId: string) => favorites.includes(modelId),
-    [favorites]
-  );
+  const isFavorite = useCallback((modelId: string) => favorites.includes(modelId), [favorites]);
 
   const addRecent = useCallback((modelId: string) => {
     setRecents((prev) => {

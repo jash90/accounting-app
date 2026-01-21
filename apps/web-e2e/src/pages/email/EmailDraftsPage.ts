@@ -8,10 +8,14 @@ export class EmailDraftsPage extends BasePage {
   // Locators
   private readonly heading = 'h1:has-text("Drafts"), h1:has-text("Email Drafts")';
   private readonly draftsList = '[data-testid="drafts-list"], .drafts-list, table tbody';
-  private readonly draftRow = (index: number) => `tr:nth-child(${index + 1}), [data-testid="draft-row-${index}"]`;
-  private readonly editButton = (index: number) => `tr:nth-child(${index + 1}) button:has-text("Edit"), [data-testid="edit-draft-${index}"]`;
-  private readonly deleteButton = (index: number) => `tr:nth-child(${index + 1}) button:has-text("Delete"), [data-testid="delete-draft-${index}"]`;
-  private readonly sendButton = (index: number) => `tr:nth-child(${index + 1}) button:has-text("Send"), [data-testid="send-draft-${index}"]`;
+  private readonly draftRow = (index: number) =>
+    `tr:nth-child(${index + 1}), [data-testid="draft-row-${index}"]`;
+  private readonly editButton = (index: number) =>
+    `tr:nth-child(${index + 1}) button:has-text("Edit"), [data-testid="edit-draft-${index}"]`;
+  private readonly deleteButton = (index: number) =>
+    `tr:nth-child(${index + 1}) button:has-text("Delete"), [data-testid="delete-draft-${index}"]`;
+  private readonly sendButton = (index: number) =>
+    `tr:nth-child(${index + 1}) button:has-text("Send"), [data-testid="send-draft-${index}"]`;
   private readonly emptyDraftsMessage = 'text=No drafts, text=No saved drafts';
   private readonly loadingSpinner = '.animate-spin, [data-testid="loading"]';
   private readonly aiGeneratedBadge = '.bg-purple-100, [data-testid="ai-badge"]';
@@ -80,18 +84,18 @@ export class EmailDraftsPage extends BasePage {
   async getDraftSubject(index: number): Promise<string> {
     const row = this.page.locator(this.draftRow(index));
     const subject = row.locator('td:nth-child(2), [data-testid="draft-subject"]');
-    return await subject.textContent() || '';
+    return (await subject.textContent()) || '';
   }
 
   async getDraftRecipient(index: number): Promise<string> {
     const row = this.page.locator(this.draftRow(index));
     const to = row.locator('td:nth-child(1), [data-testid="draft-to"]');
-    return await to.textContent() || '';
+    return (await to.textContent()) || '';
   }
 
   async hasAiGeneratedDrafts(): Promise<boolean> {
     const aiBadges = this.page.locator(this.aiGeneratedBadge);
-    return await aiBadges.count() > 0;
+    return (await aiBadges.count()) > 0;
   }
 
   async clickCompose(): Promise<void> {

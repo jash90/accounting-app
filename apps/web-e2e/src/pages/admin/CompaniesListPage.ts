@@ -12,14 +12,18 @@ export class CompaniesListPage extends BasePage {
 
   // Selectors
   private readonly heading = 'h1:has-text("Companies")';
-  private readonly createCompanyButton = 'button:has-text("Create Company"), button:has-text("Add Company"), button:has-text("New Company")';
+  private readonly createCompanyButton =
+    'button:has-text("Create Company"), button:has-text("Add Company"), button:has-text("New Company")';
   private readonly searchInput = 'input[placeholder*="Search"], input[type="search"]';
   private readonly companyTable = 'table, [data-testid="companies-table"]';
   private readonly companyRow = 'tr[data-testid*="company-"], tbody tr';
   private readonly companyName = (name: string) => `td:has-text("${name}")`;
-  private readonly editButton = (name: string) => `tr:has(td:has-text("${name}")) button:has-text("Edit"), tr:has(td:has-text("${name}")) [data-testid="edit-button"]`;
-  private readonly deleteButton = (name: string) => `tr:has(td:has-text("${name}")) button:has-text("Delete"), tr:has(td:has-text("${name}")) [data-testid="delete-button"]`;
-  private readonly modulesButton = (name: string) => `tr:has(td:has-text("${name}")) button:has-text("Modules"), tr:has(td:has-text("${name}")) [data-testid="modules-button"]`;
+  private readonly editButton = (name: string) =>
+    `tr:has(td:has-text("${name}")) button:has-text("Edit"), tr:has(td:has-text("${name}")) [data-testid="edit-button"]`;
+  private readonly deleteButton = (name: string) =>
+    `tr:has(td:has-text("${name}")) button:has-text("Delete"), tr:has(td:has-text("${name}")) [data-testid="delete-button"]`;
+  private readonly modulesButton = (name: string) =>
+    `tr:has(td:has-text("${name}")) button:has-text("Modules"), tr:has(td:has-text("${name}")) [data-testid="modules-button"]`;
   private readonly confirmDeleteButton = 'button:has-text("Confirm"), button:has-text("Delete")';
   private readonly cancelDeleteButton = 'button:has-text("Cancel")';
   private readonly deleteModal = '[role="dialog"]:has-text("Delete"), [data-testid="delete-modal"]';

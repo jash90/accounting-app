@@ -9,9 +9,12 @@ export class NavigationComponent {
 
   // Navigation selectors
   private readonly navContainer = '[role="navigation"], aside nav, nav';
-  private readonly navLink = (text: string) => `a:has-text("${text}"), a:has(span:text-is("${text}"))`;
-  private readonly userMenuButton = '[data-testid="user-menu-button"], button:has(div[class*="avatar"]), button.rounded-full, button.relative.h-10.w-10';
-  private readonly logoutButton = '[role="menuitem"]:has-text("Logout"), button:has-text("Logout"), [data-testid="logout-button"]';
+  private readonly navLink = (text: string) =>
+    `a:has-text("${text}"), a:has(span:text-is("${text}"))`;
+  private readonly userMenuButton =
+    '[data-testid="user-menu-button"], button:has(div[class*="avatar"]), button.rounded-full, button.relative.h-10.w-10';
+  private readonly logoutButton =
+    '[role="menuitem"]:has-text("Logout"), button:has-text("Logout"), [data-testid="logout-button"]';
 
   constructor(page: Page) {
     this.page = page;
@@ -60,9 +63,8 @@ export class NavigationComponent {
    * Get all visible navigation links
    */
   async getVisibleNavLinks(): Promise<string[]> {
-    const links = await this.page.$$eval(
-      `${this.navContainer} a`,
-      (elements) => elements.map((el) => el.textContent?.trim() || '')
+    const links = await this.page.$$eval(`${this.navContainer} a`, (elements) =>
+      elements.map((el) => el.textContent?.trim() || '')
     );
     return links.filter(Boolean);
   }
@@ -130,10 +132,12 @@ export class NavigationComponent {
    * Get current active navigation item
    */
   async getActiveNavItem(): Promise<string | null> {
-    const activeLink = await this.page.$eval(
-      `${this.navContainer} a[aria-current="page"], ${this.navContainer} a.active`,
-      (el) => el.textContent?.trim() || null
-    ).catch(() => null);
+    const activeLink = await this.page
+      .$eval(
+        `${this.navContainer} a[aria-current="page"], ${this.navContainer} a.active`,
+        (el) => el.textContent?.trim() || null
+      )
+      .catch(() => null);
 
     return activeLink;
   }
@@ -143,7 +147,8 @@ export class NavigationComponent {
   // ============================================
 
   private readonly sidebarContainer = 'aside';
-  private readonly sidebarToggle = 'button[aria-label*="sidebar" i], button[aria-label*="Collapse" i], button[aria-label*="Expand" i], aside button:has(svg)';
+  private readonly sidebarToggle =
+    'button[aria-label*="sidebar" i], button[aria-label*="Collapse" i], button[aria-label*="Expand" i], aside button:has(svg)';
   private readonly moduleLink = (moduleName: string) => `aside nav a:has-text("${moduleName}")`;
 
   /**
@@ -154,9 +159,8 @@ export class NavigationComponent {
     await this.page.waitForSelector(this.sidebarContainer, { state: 'visible' });
 
     // Get all nav links except Dashboard
-    const modules = await this.page.$$eval(
-      `${this.sidebarContainer} nav a`,
-      (elements) => elements
+    const modules = await this.page.$$eval(`${this.sidebarContainer} nav a`, (elements) =>
+      elements
         .map((el) => el.textContent?.trim() || '')
         .filter((text) => text && text !== 'Dashboard')
     );
@@ -171,7 +175,7 @@ export class NavigationComponent {
     const selector = this.moduleLink(moduleName);
     await this.page.waitForSelector(selector, {
       state: 'visible',
-      timeout: 5000
+      timeout: 5000,
     });
   }
 

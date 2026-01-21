@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+
 import { IsString, IsInt, IsBoolean, IsOptional, Min, Max, IsEmail } from 'class-validator';
 
 export class TestSmtpDto {

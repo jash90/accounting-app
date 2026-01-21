@@ -24,6 +24,7 @@
 ### Design Philosophy
 
 **Principles**:
+
 - **Accessibility First**: WCAG 2.1 AA compliance (95%)
 - **Consistency**: Unified design language
 - **Clarity**: Clear visual hierarchy and feedback
@@ -32,17 +33,17 @@
 ### Color System
 
 **Primary Colors**:
+
 ```css
---primary: 221.2 83.2% 53.3%        /* #3b82f6 - Blue */
---primary-foreground: 210 40% 98%   /* White */
+--primary: 221.2 83.2% 53.3% /* #3b82f6 - Blue */ --primary-foreground: 210 40% 98% /* White */;
 ```
 
 **Supporting Colors** (Improved for visibility):
+
 ```css
---secondary: 210 40% 88%            /* #cbd5e1 - Visible gray-blue */
---accent: 210 40% 92%               /* #e2e8f0 - Clear hover */
---muted: 214.3 31.8% 91.4%          /* #e5e7eb - Neutral gray */
---destructive: 0 84.2% 60.2%        /* #ef4444 - Red */
+--secondary: 210 40% 88% /* #cbd5e1 - Visible gray-blue */ --accent: 210 40% 92%
+  /* #e2e8f0 - Clear hover */ --muted: 214.3 31.8% 91.4% /* #e5e7eb - Neutral gray */
+  --destructive: 0 84.2% 60.2% /* #ef4444 - Red */;
 ```
 
 **WCAG Compliance**: All color combinations meet 4.5:1 contrast ratio (AA standard)
@@ -109,6 +110,7 @@ import { Button } from '@/components/ui/button';
 ```
 
 **Best Practice**:
+
 ```tsx
 // Action buttons with icons
 <Button variant="ghost" className="group">
@@ -121,6 +123,7 @@ import { Button } from '@/components/ui/button';
 ```
 
 **Accessibility**:
+
 - Icon-only buttons require `aria-label`
 - Focus visible ring on keyboard navigation
 - Disabled state with `opacity-50`
@@ -130,7 +133,14 @@ import { Button } from '@/components/ui/button';
 ```tsx
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from '@/components/ui/form';
 
 // Complete form field
 <FormField
@@ -145,7 +155,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
       <FormMessage />
     </FormItem>
   )}
-/>
+/>;
 ```
 
 **Form Spacing**: Use `space-y-6` for generous breathing room
@@ -153,6 +163,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 ### Card
 
 **Enhanced Pattern**:
+
 ```tsx
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 
@@ -183,7 +194,14 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 ### Table
 
 ```tsx
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 // Enhanced hover state
 <TableRow className="hover:bg-muted/30">
@@ -193,7 +211,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
       <Edit className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
     </Button>
   </TableCell>
-</TableRow>
+</TableRow>;
 ```
 
 ### Badge
@@ -217,16 +235,21 @@ import { Badge } from '@/components/ui/badge';
 ### Dialog
 
 ```tsx
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 // Controlled dialog
 <Dialog open={open} onOpenChange={setOpen}>
   <DialogContent>
     <DialogHeader>
       <DialogTitle>Delete User</DialogTitle>
-      <DialogDescription>
-        This action cannot be undone.
-      </DialogDescription>
+      <DialogDescription>This action cannot be undone.</DialogDescription>
     </DialogHeader>
     <DialogFooter>
       <Button variant="secondary" onClick={() => setOpen(false)}>
@@ -237,7 +260,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
       </Button>
     </DialogFooter>
   </DialogContent>
-</Dialog>
+</Dialog>;
 ```
 
 ---
@@ -249,12 +272,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 **File**: `components/common/data-table.tsx`
 
 **Features**:
+
 - Sorting, pagination, row selection
 - Loading skeletons
 - Empty states
 - Enhanced hover states (`hover:bg-muted/30`)
 
 **Usage Pattern**:
+
 ```tsx
 const columns: ColumnDef<User>[] = [
   {
@@ -272,7 +297,7 @@ const columns: ColumnDef<User>[] = [
   },
 ];
 
-<DataTable columns={columns} data={users} />
+<DataTable columns={columns} data={users} />;
 ```
 
 ### UserMenu (Enhanced)
@@ -280,9 +305,7 @@ const columns: ColumnDef<User>[] = [
 ```tsx
 // Enhanced avatar with visible background
 <Avatar>
-  <AvatarFallback className="bg-primary/10 text-primary">
-    {initials}
-  </AvatarFallback>
+  <AvatarFallback className="bg-primary/10 text-primary">{initials}</AvatarFallback>
 </Avatar>
 ```
 
@@ -324,6 +347,7 @@ const columns: ColumnDef<User>[] = [
 ```
 
 **Key Improvements**:
+
 - Default state visible (`text-muted-foreground`)
 - Hover state clear (`hover:bg-accent/80`)
 - Active state prominent (`bg-primary`)
@@ -334,7 +358,9 @@ const columns: ColumnDef<User>[] = [
 ```tsx
 // Mobile-first responsive grid
 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-  {items.map(item => <Card key={item.id}>...</Card>)}
+  {items.map((item) => (
+    <Card key={item.id}>...</Card>
+  ))}
 </div>
 ```
 
@@ -402,6 +428,7 @@ function UsersListPage() {
 ### WCAG 2.1 AA Compliance: 95%
 
 **Implemented Standards**:
+
 - ✅ 1.4.3 Contrast (Minimum): 95% (was 20%)
 - ✅ 1.4.11 Non-text Contrast: 100%
 - ✅ 2.4.7 Focus Visible: 90%
@@ -409,17 +436,18 @@ function UsersListPage() {
 
 ### Contrast Ratios
 
-| Element | Ratio | Status |
-|---------|-------|--------|
-| Ghost button hover | >3:1 | ✅ PASS |
-| Secondary button | >4.5:1 | ✅ PASS |
-| Outline button | >3:1 | ✅ PASS |
-| Icons (default) | >4.5:1 | ✅ PASS |
-| Navigation | >3:1 | ✅ PASS |
+| Element            | Ratio  | Status  |
+| ------------------ | ------ | ------- |
+| Ghost button hover | >3:1   | ✅ PASS |
+| Secondary button   | >4.5:1 | ✅ PASS |
+| Outline button     | >3:1   | ✅ PASS |
+| Icons (default)    | >4.5:1 | ✅ PASS |
+| Navigation         | >3:1   | ✅ PASS |
 
 ### Keyboard Navigation
 
 All components support:
+
 - **Tab**: Navigate elements
 - **Enter/Space**: Activate buttons
 - **Escape**: Close dialogs
@@ -446,11 +474,13 @@ All components support:
 ### Design Improvement Process
 
 **Multi-MCP Workflow** (November 2025):
+
 - **Playwright**: Visual verification & screenshots
 - **Sequential**: Systematic design analysis
 - **Context7**: Tailwind best practices validation
 
 **Results**:
+
 - 17 issues fixed (4 Critical, 8 High, 5 Medium)
 - 16 files modified
 - WCAG compliance: 40% → 95%
@@ -459,11 +489,13 @@ All components support:
 ### Key Improvements
 
 **1. Color Variables** (Single change, massive impact):
+
 - Fixed invisible ghost/secondary buttons globally
 - Improved hover states across app
 - 60% of visibility problems resolved
 
 **2. Icon Color Strategy**:
+
 ```tsx
 // Established pattern for all action icons
 text-muted-foreground              // Visible default
@@ -473,6 +505,7 @@ transition-colors                  // Smooth feedback
 ```
 
 **3. Card Enhancement**:
+
 ```tsx
 // Professional appearance
 shadow-lg border border-gray-200   // Clear depth
@@ -483,6 +516,7 @@ space-y-6                          // Generous spacing
 ### Best Practices
 
 **Component Composition**:
+
 ```tsx
 // ✅ DO: Compose for reusability
 <Card>
@@ -499,6 +533,7 @@ space-y-6                          // Generous spacing
 ```
 
 **Styling**:
+
 ```tsx
 // ✅ DO: Use Tailwind utilities
 <div className="flex items-center gap-2 p-4 rounded-lg">
@@ -542,12 +577,14 @@ xl:  1280px  /* Desktops */
 ## Related Documentation
 
 **Detailed References**:
+
 - Component catalog: `duplicated/design/COMPONENT_DESIGN_SYSTEM.md`
 - Design improvements: `duplicated/design/DESIGN_IMPROVEMENTS_FINAL_REPORT.md`
 - Frontend guide: `FRONTEND_GUIDE.md`
 - API integration: `API_DOCUMENTATION.md`
 
 **Quick Start**:
+
 1. Import from `@/components/ui/*`
 2. Apply variants and sizes
 3. Style with Tailwind utilities

@@ -50,7 +50,8 @@ export const queryKeys = {
       myDetailed: ['ai-agent', 'token-usage', 'me', 'detailed'] as const,
       company: ['ai-agent', 'token-usage', 'company'] as const,
       allCompanies: ['ai-agent', 'token-usage', 'all-companies'] as const,
-      companyById: (companyId: string) => ['ai-agent', 'token-usage', 'company', companyId] as const,
+      companyById: (companyId: string) =>
+        ['ai-agent', 'token-usage', 'company', companyId] as const,
     },
     context: {
       all: ['ai-agent', 'context'] as const,
@@ -124,8 +125,8 @@ export const queryKeys = {
     },
     reports: {
       summary: (params?: Record<string, unknown>) => ['time-reports', 'summary', params] as const,
-      byClient: (params?: Record<string, unknown>) => ['time-reports', 'by-client', params] as const,
+      byClient: (params?: Record<string, unknown>) =>
+        ['time-reports', 'by-client', params] as const,
     },
   },
 };
-

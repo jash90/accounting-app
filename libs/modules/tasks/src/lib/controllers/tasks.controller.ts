@@ -19,22 +19,16 @@ import {
   ApiExtraModels,
   ApiQuery,
 } from '@nestjs/swagger';
+
 import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
   PermissionGuard,
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
-import { User } from '@accounting/common';
-import { TasksService } from '../services/tasks.service';
-import {
-  CreateTaskDto,
-  UpdateTaskDto,
-  TaskFiltersDto,
-  ReorderTasksDto,
-  BulkUpdateStatusDto,
-} from '../dto/task.dto';
+
 import {
   TaskResponseDto,
   PaginatedTasksResponseDto,
@@ -43,6 +37,14 @@ import {
   SuccessMessageResponseDto,
   ErrorResponseDto,
 } from '../dto/task-response.dto';
+import {
+  CreateTaskDto,
+  UpdateTaskDto,
+  TaskFiltersDto,
+  ReorderTasksDto,
+  BulkUpdateStatusDto,
+} from '../dto/task.dto';
+import { TasksService } from '../services/tasks.service';
 
 @ApiTags('Tasks')
 @ApiBearerAuth()
@@ -52,7 +54,7 @@ import {
   KanbanBoardResponseDto,
   ClientTaskStatisticsDto,
   SuccessMessageResponseDto,
-  ErrorResponseDto,
+  ErrorResponseDto
 )
 @Controller('modules/tasks')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
@@ -65,7 +67,11 @@ export class TasksController {
     summary: 'Get all tasks',
     description: 'Retrieves a paginated list of tasks with optional filters.',
   })
-  @ApiResponse({ status: 200, description: 'Paginated list of tasks', type: PaginatedTasksResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of tasks',
+    type: PaginatedTasksResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized', type: ErrorResponseDto })
   @ApiResponse({ status: 403, description: 'Forbidden', type: ErrorResponseDto })
   @RequirePermission('tasks', 'read')
@@ -89,14 +95,24 @@ export class TasksController {
     summary: 'Get calendar tasks',
     description: 'Retrieves tasks with due dates within the specified range.',
   })
-  @ApiQuery({ name: 'startDate', required: true, description: 'Start date (ISO 8601)', example: '2024-01-01' })
-  @ApiQuery({ name: 'endDate', required: true, description: 'End date (ISO 8601)', example: '2024-12-31' })
+  @ApiQuery({
+    name: 'startDate',
+    required: true,
+    description: 'Start date (ISO 8601)',
+    example: '2024-01-01',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: true,
+    description: 'End date (ISO 8601)',
+    example: '2024-12-31',
+  })
   @ApiResponse({ status: 200, description: 'Tasks for calendar', type: [TaskResponseDto] })
   @RequirePermission('tasks', 'read')
   async getCalendar(
     @CurrentUser() user: User,
     @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string,
+    @Query('endDate') endDate: string
   ) {
     return this.tasksService.getCalendarTasks(user, startDate, endDate);
   }
@@ -116,7 +132,7 @@ export class TasksController {
   @RequirePermission('tasks', 'read')
   async getClientStatistics(
     @Param('clientId', ParseUUIDPipe) clientId: string,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.tasksService.getClientTaskStatistics(clientId, user);
   }
@@ -181,7 +197,7 @@ export class TasksController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateTaskDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.tasksService.update(id, dto, user);
   }

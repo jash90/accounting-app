@@ -1,9 +1,7 @@
 import { useState, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
-import { useFolder, useMarkAsRead, useDeleteEmails } from '@/lib/hooks/use-email-client';
-import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+
+import { useParams, Link } from 'react-router-dom';
+
 import {
   RefreshCw,
   Mail,
@@ -14,8 +12,13 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
+import { useFolder, useMarkAsRead, useDeleteEmails } from '@/lib/hooks/use-email-client';
+import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
+
 import { EmailListSkeleton } from './components/email-inbox-skeleton';
 import { EmailSidebar } from './components/email-sidebar';
 
@@ -45,9 +48,7 @@ export default function EmailFolder() {
   // Sort emails by date (newest first) and paginate
   const sortedEmails = useMemo(() => {
     if (!emails) return [];
-    return [...emails].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+    return [...emails].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [emails]);
 
   const totalPages = Math.ceil(sortedEmails.length / pageSize);
@@ -148,9 +149,7 @@ export default function EmailFolder() {
         <div className="border-b p-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">{getFolderDisplayName(decodedFolderName)}</h1>
-            <p className="text-sm text-muted-foreground">
-              {emails?.length || 0} wiadomości
-            </p>
+            <p className="text-sm text-muted-foreground">{emails?.length || 0} wiadomości</p>
           </div>
           <div className="flex gap-2">
             <Button
@@ -184,9 +183,7 @@ export default function EmailFolder() {
                 onCheckedChange={toggleSelectAll}
                 aria-label="Select all"
               />
-              <span className="text-sm font-medium">
-                {selectedUids.size} zaznaczono
-              </span>
+              <span className="text-sm font-medium">{selectedUids.size} zaznaczono</span>
             </div>
             <div className="flex gap-2">
               {unreadSelectedCount > 0 && (
@@ -218,12 +215,7 @@ export default function EmailFolder() {
                 )}
                 Usuń
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearSelection}
-                disabled={isProcessing}
-              >
+              <Button variant="ghost" size="sm" onClick={clearSelection} disabled={isProcessing}>
                 Wyczyść zaznaczenie
               </Button>
             </div>
@@ -233,11 +225,7 @@ export default function EmailFolder() {
         {/* Select All Row (when no selection) */}
         {!someSelected && sortedEmails.length > 0 && (
           <div className="border-b px-4 h-12 flex items-center gap-2 bg-muted/30">
-            <Checkbox
-              checked={false}
-              onCheckedChange={toggleSelectAll}
-              aria-label="Select all"
-            />
+            <Checkbox checked={false} onCheckedChange={toggleSelectAll} aria-label="Select all" />
             <span className="text-sm text-muted-foreground">Zaznacz wszystkie</span>
           </div>
         )}
@@ -284,11 +272,7 @@ export default function EmailFolder() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p
-                              className={`truncate ${
-                                isUnread ? 'font-bold' : 'font-semibold'
-                              }`}
-                            >
+                            <p className={`truncate ${isUnread ? 'font-bold' : 'font-semibold'}`}>
                               {email.from[0]?.name || email.from[0]?.address}
                             </p>
                             {isUnread && (
@@ -323,8 +307,7 @@ export default function EmailFolder() {
           <div className="border-t px-4 py-3 flex items-center justify-between">
             <span className="text-sm text-muted-foreground">
               {(currentPage - 1) * pageSize + 1}-
-              {Math.min(currentPage * pageSize, sortedEmails.length)} z{' '}
-              {sortedEmails.length}
+              {Math.min(currentPage * pageSize, sortedEmails.length)} z {sortedEmails.length}
             </span>
             <div className="flex gap-2">
               <Button

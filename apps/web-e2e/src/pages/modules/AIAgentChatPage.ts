@@ -27,7 +27,8 @@ export class AIAgentChatPage extends BasePage {
     newChatButton: '[data-testid="new-chat-button"], button:has(svg.lucide-plus)',
     conversationItem: '[data-testid="conversation-item"], [role="button"]',
     conversationTitle: '[data-testid="conversation-title"], .font-medium',
-    deleteConversationButton: '[data-testid="delete-conversation-button"], button:has(svg.lucide-trash-2)',
+    deleteConversationButton:
+      '[data-testid="delete-conversation-button"], button:has(svg.lucide-trash-2)',
     noConversationsMessage: '[data-testid="no-conversations"], text=No conversations yet',
 
     // Chat area
@@ -67,7 +68,10 @@ export class AIAgentChatPage extends BasePage {
    */
   async waitForChatInterface(): Promise<void> {
     await this.page.waitForSelector(this.selectors.pageTitle, { state: 'visible', timeout: 10000 });
-    await this.page.waitForSelector(this.selectors.conversationsTitle, { state: 'visible', timeout: 10000 });
+    await this.page.waitForSelector(this.selectors.conversationsTitle, {
+      state: 'visible',
+      timeout: 10000,
+    });
   }
 
   /**
@@ -264,7 +268,9 @@ export class AIAgentChatPage extends BasePage {
   /**
    * Get all messages in current conversation
    */
-  async getMessages(): Promise<Array<{ role: 'user' | 'assistant'; content: string; tokens: number }>> {
+  async getMessages(): Promise<
+    Array<{ role: 'user' | 'assistant'; content: string; tokens: number }>
+  > {
     const messages: Array<{ role: 'user' | 'assistant'; content: string; tokens: number }> = [];
 
     const userMessages = this.page.locator(this.selectors.userMessage);
@@ -300,7 +306,11 @@ export class AIAgentChatPage extends BasePage {
   /**
    * Get the last message
    */
-  async getLastMessage(): Promise<{ role: 'user' | 'assistant'; content: string; tokens: number } | null> {
+  async getLastMessage(): Promise<{
+    role: 'user' | 'assistant';
+    content: string;
+    tokens: number;
+  } | null> {
     const messages = await this.getMessages();
     return messages.length > 0 ? messages[messages.length - 1] : null;
   }

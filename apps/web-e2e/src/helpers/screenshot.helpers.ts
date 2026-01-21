@@ -108,13 +108,7 @@ export class ScreenshotHelper {
     await element.hover();
     await this.page.waitForTimeout(300); // Wait for transition
 
-    return this.captureElement(
-      selector,
-      category,
-      pageName,
-      `hover-${elementName}`,
-      viewport
-    );
+    return this.captureElement(selector, category, pageName, `hover-${elementName}`, viewport);
   }
 
   async captureFocusState(
@@ -151,12 +145,7 @@ export class ScreenshotHelper {
       });
       await this.page.waitForTimeout(500);
 
-      const screenshot = await this.capture(
-        category,
-        pageName,
-        state,
-        viewport.name
-      );
+      const screenshot = await this.capture(category, pageName, state, viewport.name);
       screenshots.push(screenshot);
     }
 

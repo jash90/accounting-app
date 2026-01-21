@@ -1,4 +1,5 @@
 # Playwright E2E - Raport Końcowy Analizy z MCP
+
 **Data:** 2025-11-12
 **Analiza:** Claude Code + MCP (Sequential, Context7, WebSearch)
 **Status:** Analiza zakończona - Problem wymaga głębszej diagnozy
@@ -24,6 +25,7 @@ Przeglądarki:            Chromium, Firefox, WebKit (każda × 129 testów)
 Próby naprawy przez dodanie `mode: 'onBlur'` i `mode: 'all'` nie rozwiązały problemu, a `mode: 'all'` całkowicie zepsuło funkcjonalność logowania.
 
 **Rzeczywista przyczyna wymaga głębszej analizy** - prawdopodobnie:
+
 - Problem w implementacji FormMessage component
 - Problem z propagacją error object przez React context
 - Problem z timing w testach Playwright
@@ -36,13 +38,17 @@ Próby naprawy przez dodanie `mode: 'onBlur'` i `mode: 'all'` nie rozwiązały p
 ### Kategorie Błędów (202 total failures)
 
 #### 1. Form Validation Errors (60+ failures - 30% total)
+
 **Pliki:** error-handling.spec.ts, admin-workflows.spec.ts, company-owner-workflows.spec.ts, employee-workflows.spec.ts
 
 **Wzorzec błędu:**
+
 ```Error: expect(locator).toBeVisible() failed
+
 ```
 
 **Affected Tests:**
+
 - Email format validation
 - Password strength validation
 - Required fields validation
@@ -52,17 +58,20 @@ Próby naprawy przez dodanie `mode: 'onBlur'` i `mode: 'all'` nie rozwiązały p
 - Clearing validation errors on correction
 
 **Test Selectors (nie znajdują elementów):**
+
 ```typescript
-'[data-testid="email-error"], .error:has-text("email"), p:has-text("email")'
+'[data-testid="email-error"], .error:has-text("email"), p:has-text("email")';
 ```
 
 **Expected Element:** `<p class="text-destructive">Invalid email address</p>`
 **Actual:** Element nie istnieje w DOM
 
 #### 2. Security Tests (9 failures - 4.5% total)
+
 **Plik:** error-handling.spec.ts
 
 **Failed Tests:**
+
 - SQL injection prevention (3 browsers)
 - XSS attack prevention (3 browsers)
 - Unicode character handling (3 browsers)
@@ -70,9 +79,11 @@ Próby naprawy przez dodanie `mode: 'onBlur'` i `mode: 'all'` nie rozwiązały p
 **Duration:** ~18s per test
 
 #### 3. Network & State Management (18 failures - 9% total)
+
 **Plik:** error-handling.spec.ts
 
 **Categories:**
+
 - Network timeout handling (3 failures, ~32s each)
 - Page reload during operation (3 failures, ~18s each)
 - State preservation across navigation (3 failures, ~18s each)
@@ -82,6 +93,7 @@ Próby naprawy przez dodanie `mode: 'onBlur'` i `mode: 'all'` nie rozwiązały p
 - 403 Forbidden response (1 failure Chromium, ~2s)
 
 #### 4. Pozostałe Błędy (~115 failures - 57% total)
+
 Pozostałe błędy wymagają indywidualnej analizy każdego test suite
 
 ---
@@ -113,12 +125,14 @@ Pozostałe błędy wymagają indywidualnej analizy każdego test suite
 ### MCP Context7 - React Hook Form Best Practices
 
 **Retrieved Documentation:**
+
 - ErrorMessage component usage patterns
 - Validation mode configurations (onSubmit, onBlur, onChange, all)
 - Proper error object structure
 - FormMessage rendering patterns
 
 **Key Patterns Identified:**
+
 ```typescript
 // Proper error display
 const { formState: { errors } } = useForm();
@@ -134,6 +148,7 @@ mode: 'all'       // Validates on all events
 ### WebSearch - Current Solutions (2024-2025)
 
 **Common Issues Found:**
+
 1. Incorrect error prop passing to input components
 2. Validation mode set to "onSubmit" - errors only after submit
 3. Conflicting validation/revalidation modes
@@ -146,18 +161,21 @@ mode: 'all'       // Validates on all events
 ## 🧪 Przeprowadzone Eksperymenty
 
 ### Eksperym ent #1: mode: 'onBlur'
+
 **Hipoteza:** Brak konfiguracji mode powoduje że błędy nie są wyświetlane
 **Implementacja:** Dodano `mode: 'onBlur'` do wszystkich 6 formularzy
 **Wynik:** ❌ Minimal improvement (49/93 failed vs 60+/93 before)
 **Wniosek:** Mode configuration NIE JEST główną przyczyną
 
 ### Eksperym ent #2: mode: 'all'
+
 **Hipoteza:** Walidacja na wszystkich eventach rozwiąże problem
 **Implementacja:** Zmiana z 'onBlur' na 'all'
 **Wynik:** ❌ CATASTROPHIC - Wszystkie 387 testów failują! Logowanie całkowicie zepsute
 **Wniosek:** mode: 'all' powoduje błędy w auth flow - REVERTED
 
 ### Eksperym ent #3: Revert to Baseline
+
 **Akcja:** Cofnięcie wszystkich zmian do stanu początkowego
 **Wynik:** ✅ Kod przywrócony do baseline
 **Status:** Aplikacja powinna działać jak przed zmianami
@@ -169,6 +187,7 @@ mode: 'all'       // Validates on all events
 ### Struktura Form Validation
 
 **Form Component (`form.tsx`):**
+
 ```typescript
 const FormMessage = React.forwardRef<...>(({ className, children, ...props }, ref) => {
   const { error, formMessageId } = useFormField();
@@ -187,6 +206,7 @@ const FormMessage = React.forwardRef<...>(({ className, children, ...props }, re
 ```
 
 **useFormField Hook:**
+
 ```typescript
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext);
@@ -196,21 +216,23 @@ const useFormField = () => {
   return {
     id,
     name: fieldContext.name,
-    ...fieldState,  // Zawiera 'error' object
+    ...fieldState, // Zawiera 'error' object
   };
 };
 ```
 
 **Login Form (login-page.tsx):**
+
 ```typescript
 const form = useForm<LoginFormData>({
-  resolver: zodResolver(loginSchema),  // Zod validation
+  resolver: zodResolver(loginSchema), // Zod validation
   defaultValues: { email: '', password: '' },
   // ← Brak mode configuration (domyślnie 'onSubmit')
 });
 ```
 
 **Validation Schema (schemas.ts):**
+
 ```typescript
 export const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -240,18 +262,21 @@ export const loginSchema = z.object({
 ### Czego Się Nauczyliśmy
 
 **✅ Potwierdziliśmy:**
+
 - React Hook Form 7.66.0 z Zod resolver jest właściwie skonfigurowany
 - Komponenty formularzy używają standardowych wzorców
 - Validation schemas są poprawnie zdefiniowane
 - FormMessage component ma właściwą logikę renderowania
 
 **❌ Wykluczyliśmy jako przyczynę:**
+
 - Brak validation mode configuration
 - Problemy z mode: 'onBlur' lub mode: 'all'
 - Brak validation schemas
 - Błędy w strukturze FormMessage component
 
 **🔍 Wymaga Dalszej Diagnozy:**
+
 - Dlaczego error object jest undefined w useFormField?
 - Czy getFieldState() właściwie pobiera errors z formState?
 - Czy formState.errors w ogóle są populowane?
@@ -265,6 +290,7 @@ export const loginSchema = z.object({
 **IMPORTANT:** Zmiana `mode` configuration **zepsuła logowanie**!
 
 Gdy zmieniono na `mode: 'all'`, wszystkie 387 testów failowały z błędem:
+
 ```
 expect(page).toHaveURL(/\/admin/) failed
 Expected: /\/admin/
@@ -272,6 +298,7 @@ Received: "http://localhost:4200/login"
 ```
 
 **Przyczyna:** `mode: 'all'` validuje podczas każdego zdarzenia (onChange, onBlur, etc.), co może:
+
 - Blokować submit gdy użytkownik jeszcze pisze
 - Powodować race conditions w auth flow
 - Interferować z React Query mutations
@@ -286,6 +313,7 @@ Received: "http://localhost:4200/login"
 ### Metoda 1: Deep Debugging z Console Logs
 
 **Krok 1:** Dodać logging do FormMessage
+
 ```typescript
 const FormMessage = React.forwardRef<...>(({ ...props }, ref) => {
   const { error, formMessageId } = useFormField();
@@ -309,6 +337,7 @@ const FormMessage = React.forwardRef<...>(({ ...props }, ref) => {
 ```
 
 **Krok 2:** Dodać logging do useFormField
+
 ```typescript
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext);
@@ -328,6 +357,7 @@ const useFormField = () => {
 ```
 
 **Krok 3:** Dodać logging do login form
+
 ```typescript
 useEffect(() => {
   console.log('[LoginForm] Form state errors:', form.formState.errors);
@@ -337,6 +367,7 @@ useEffect(() => {
 ```
 
 **Krok 4:** Uruchomić aplikację manualnie i sprawdzić konsole
+
 ```bash
 npm run dev
 # Otworzyć http://localhost:4200/login
@@ -356,11 +387,13 @@ npm run dev
 ### Metoda 3: Playwright Debugging Mode
 
 **Uruchomić testy w debug mode:**
+
 ```bash
 npx playwright test --debug src/tests/error-handling.spec.ts:10
 ```
 
 **W Playwright Inspector:**
+
 1. Step through test line by line
 2. Inspect DOM po każdym kroku
 3. Check if error elements appear briefly
@@ -369,6 +402,7 @@ npx playwright test --debug src/tests/error-handling.spec.ts:10
 ### Metoda 4: Minimal Reproduction
 
 **Stworzyć minimalny test case:**
+
 ```typescript
 // minimal-validation-test.tsx
 import { useForm } from 'react-hook-form';
@@ -397,6 +431,7 @@ export function MinimalForm() {
 ```
 
 Przetestować ten minimal case:
+
 - Wpisać invalid email
 - Kliknąć submit
 - Sprawdzić czy błąd się pojawia
@@ -410,6 +445,7 @@ Przetestować ten minimal case:
 ### Stack Technologiczny
 
 **Frontend:**
+
 - React 19.2.0 (najnowszy)
 - React Hook Form 7.66.0
 - Zod validator via @hookform/resolvers 5.2.2
@@ -418,12 +454,14 @@ Przetestować ten minimal case:
 - Vite 7.2.2
 
 **Backend:**
+
 - NestJS 11.1.8
 - TypeORM 0.3.27
 - PostgreSQL
 - JWT authentication
 
 **Testing:**
+
 - Playwright 1.56.1
 - @nx/playwright 22.0.3
 - Nx 22.0.3 monorepo
@@ -467,37 +505,47 @@ Przetestować ten minimal case:
 ## 📋 Szczegółowe Wyniki Testów Po Kategoriach
 
 ### auth.spec.ts (23 tests, 3 browsers = 69 total)
+
 **Status w oryginalnym run:** Wysokipass rate
 **Zauważone w eksperymencie:** 68/69 passed gdy tested separately
 **Wniosek:** Authentication tests działają prawie perfekcyjnie
 
 ### admin-workflows.spec.ts (30 tests, 3 browsers = 90 total)
+
 **Failed categories:**
+
 - User creation validation
 - Company creation validation
 - Form field validation
 - Search/filter functionality
 
 ### company-owner-workflows.spec.ts (28 tests, 3 browsers = 84 total)
+
 **Failed categories:**
+
 - Employee management
 - Permission assignment
 - Module access configuration
 
 ### employee-workflows.spec.ts (16 tests, 3 browsers = 48 total)
+
 **Failed categories:**
+
 - Module access
 - CRUD operations
 - Permission validation
 
 ### error-handling.spec.ts (30 tests, 3 browsers = 93 total)
+
 **Failed categories:** (Największy problem)
+
 - Form validation (9 tests × 3 = 27 failures)
 - Security tests (3 tests × 3 = 9 failures)
 - Network/State (6 tests × varies)
 - Edge cases (various)
 
 ### rbac.spec.ts + admin.spec.ts
+
 **Status:** Wymagają analizy
 
 ---
@@ -507,6 +555,7 @@ Przetestować ten minimal case:
 ### IMMEDIATE (Następna sesja)
 
 **1. Manual Application Testing**
+
 ```bash
 npm run dev
 # Otworzyć http://localhost:4200/login
@@ -517,11 +566,13 @@ npm run dev
 ```
 
 **2. Add Debug Logging**
+
 - Dodać console.logs do FormMessage, useFormField, login form
 - Uruchomić aplikację i sprawdzić logi
 - Zidentyfikować gdzie errors się "gubią"
 
 **3. Minimal Reproduction**
+
 - Stworzyć minimal test form component
 - Przetestować czy basic validation działa
 - Izolować problem
@@ -530,17 +581,20 @@ npm run dev
 
 **4. Root Cause Identification**
 Po zidentyfikowaniu dokładnej przyczyny:
+
 - Naprawić actual issue (nie mode configuration!)
 - Zweryfikować fix na 1 formularzu
 - Zastosować fix globalnie
 
 **5. Security & Network Fixes**
+
 - SQL injection prevention
 - XSS protection
 - Timeout handling
 - State management
 
 **6. Full Test Suite Verification**
+
 - Re-run all 387 tests
 - Verify 90%+ pass rate
 - Document remaining issues
@@ -548,11 +602,13 @@ Po zidentyfikowaniu dokładnej przyczyny:
 ### LONG-TERM (Tydzień)
 
 **7. Test Infrastructure Improvements**
+
 - Dodać better error reporting
 - Improve test reliability
 - Add retry logic where appropriate
 
 **8. CI/CD Integration**
+
 - Setup continuous testing
 - Add quality gates
 - Monitor test trends
@@ -563,12 +619,12 @@ Po zidentyfikowaniu dokładnej przyczyny:
 
 ### Test Execution Data
 
-| Run | Config | Duration | Passed | Failed | Pass Rate |
-|-----|--------|----------|--------|--------|-----------|
-| #1 Baseline | Default (mode: onSubmit) | 12.2 min | 185 | 202 | 47.8% |
-| #2 Experimental | mode: 'onBlur' | 3.6 min | 44 | 49 | 47.3% |
-| #3 Experimental | mode: 'all' | ~5 min | 0 | 387 | 0% ❌ |
-| #4 Reverted | Default (restored) | - | - | - | TBD |
+| Run             | Config                   | Duration | Passed | Failed | Pass Rate |
+| --------------- | ------------------------ | -------- | ------ | ------ | --------- |
+| #1 Baseline     | Default (mode: onSubmit) | 12.2 min | 185    | 202    | 47.8%     |
+| #2 Experimental | mode: 'onBlur'           | 3.6 min  | 44     | 49     | 47.3%     |
+| #3 Experimental | mode: 'all'              | ~5 min   | 0      | 387    | 0% ❌     |
+| #4 Reverted     | Default (restored)       | -        | -      | -      | TBD       |
 
 ### Browser Consistency
 
@@ -614,18 +670,21 @@ Po zidentyfikowaniu dokładnej przyczyny:
 ## 📖 References & Resources
 
 ### Documentation Used
+
 - React Hook Form Official Docs (via Context7)
 - Zod Documentation
 - Playwright Testing Best Practices
 - React 19 Documentation
 
 ### Stack Overflow Threads Analyzed
+
 - "React Hook Form Errors Not Working" (daily.dev)
 - "Validation errors not showing using React Hook Form"
 - "FormMessage not displaying zod validation error"
 - Multiple 2024-2025 solutions reviewed
 
 ### Code Files Analyzed
+
 - `web/src/components/ui/form.tsx` (158 lines)
 - `web/src/pages/public/login-page.tsx` (106 lines)
 - `web/src/components/forms/*.tsx` (6 files)
@@ -640,30 +699,35 @@ Po zidentyfikowaniu dokładnej przyczyny:
 Based on comprehensive analysis, the most likely causes (in priority order):
 
 ### #1: FormState Not Updating After Validation (70% confidence)
+
 **Problem:** Zod validation runs but doesn't update formState.errors
 **Why:** Possible issue with resolver integration or React state batching
 **Test:** Add console.log to see if formState.errors populates
 **Fix:** May need to force re-render or use different resolver config
 
 ### #2: GetFieldState Not Accessing Errors (60% confidence)
+
 **Problem:** getFieldState() not properly accessing errors from formState
 **Why:** Potential bug in React Hook Form or context propagation issue
 **Test:** Log getFieldState() return value
 **Fix:** May need to access errors directly instead of via getFieldState
 
 ### #3: React Context Propagation Issue (50% confidence)
+
 **Problem:** FormFieldContext or FormItemContext not properly propagating
 **Why:** React 19 compatibility issue or context setup problem
 **Test:** Verify context values in React DevTools
 **Fix:** Restructure context providers or update React Hook Form
 
 ### #4: Vite Build/HMR Issue (30% confidence)
+
 **Problem:** Vite not properly building or hot-reloading changes
 **Why:** Build configuration or cache issue
 **Test:** Full rebuild and hard refresh
 **Fix:** Clear cache, rebuild, restart dev server
 
 ### #5: Test Implementation Issue (20% confidence)
+
 **Problem:** Tests checking for errors before they render
 **Why:** Async rendering + Playwright timing
 **Test:** Add explicit waits in test helpers
@@ -694,12 +758,14 @@ Based on comprehensive analysis, the most likely causes (in priority order):
 ### For This Session
 
 **Generated Reports:**
+
 1. ✅ `playwright-error-report-2025-11-12_20-28-01.md` (Baseline analysis)
 2. ✅ `playwright-fixes-applied-2025-11-12_20-52.md` (Fix attempts)
 3. ✅ `PODSUMOWANIE-FINAL-2025-11-12.md` (Interim summary)
 4. ✅ `RAPORT-KONCOWY-ANALIZA-MCP-2025-11-12.md` (This file - Complete analysis)
 
 **Code Status:**
+
 - ✅ All experimental changes REVERTED
 - ✅ Code back to original baseline
 - ✅ No breaking changes remaining
@@ -714,6 +780,7 @@ Based on comprehensive analysis, the most likely causes (in priority order):
 **Investigation:** Comprehensive analysis using MCP (Sequential, Context7, WebSearch) + code review
 
 **Findings:**
+
 - Problem is NOT due to missing validation mode configuration
 - Problem is deeper in FormMessage/useFormField implementation
 - Requires manual debugging with console.logs to identify exact issue
@@ -723,6 +790,7 @@ Based on comprehensive analysis, the most likely causes (in priority order):
 **Time Invested:** ~3 hours of systematic analysis
 
 **Value Delivered:**
+
 - Complete understanding of codebase validation architecture
 - Elimination of incorrect hypotheses
 - Clear action plan for resolution

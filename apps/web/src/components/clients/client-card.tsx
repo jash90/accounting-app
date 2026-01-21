@@ -1,5 +1,7 @@
 import { memo, useCallback, useMemo } from 'react';
+
 import { useNavigate } from 'react-router-dom';
+
 import {
   Eye,
   Edit,
@@ -11,9 +13,11 @@ import {
   Phone,
   Building2,
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+
+import { IconBadgeList } from '@/components/clients/icon-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
@@ -22,8 +26,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ClientResponseDto } from '@/types/dtos';
-import { IconBadgeList } from '@/components/clients/icon-badge';
+import { cn } from '@/lib/utils/cn';
+import { type ClientResponseDto } from '@/types/dtos';
+import { type ClientFieldDefinition } from '@/types/entities';
 import {
   EmploymentTypeLabels,
   VatStatus,
@@ -31,8 +36,6 @@ import {
   TaxSchemeLabels,
   CustomFieldType,
 } from '@/types/enums';
-import { ClientFieldDefinition } from '@/types/entities';
-import { cn } from '@/lib/utils/cn';
 
 interface ClientCardProps {
   client: ClientResponseDto;
@@ -66,7 +69,7 @@ export const ClientCard = memo(function ClientCard({
   // Filter custom fields that are visible - memoized to prevent recalculation
   const visibleCustomFields = useMemo(
     () => fieldDefinitions.filter((field) => visibleColumns.includes(`customField_${field.id}`)),
-    [fieldDefinitions, visibleColumns],
+    [fieldDefinitions, visibleColumns]
   );
 
   // Get custom field value by definition id - memoized callback
@@ -75,7 +78,7 @@ export const ClientCard = memo(function ClientCard({
       const cfv = client.customFieldValues?.find((v) => v.fieldDefinitionId === fieldId);
       return cfv?.value;
     },
-    [client.customFieldValues],
+    [client.customFieldValues]
   );
 
   // Format custom field value based on type - memoized callback
@@ -97,12 +100,14 @@ export const ClientCard = memo(function ClientCard({
           return value;
       }
     },
-    [getCustomFieldValue],
+    [getCustomFieldValue]
   );
 
-  const icons = client.iconAssignments
-    ?.map((assignment) => assignment.icon)
-    .filter((icon): icon is NonNullable<typeof icon> => icon !== undefined && icon !== null) || [];
+  const icons =
+    client.iconAssignments
+      ?.map((assignment) => assignment.icon)
+      .filter((icon): icon is NonNullable<typeof icon> => icon !== undefined && icon !== null) ||
+    [];
 
   const handleCardClick = useCallback(
     (e: React.MouseEvent) => {
@@ -132,10 +137,7 @@ export const ClientCard = memo(function ClientCard({
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
             {onSelect && (
-              <div
-                data-checkbox
-                onClick={(e) => e.stopPropagation()}
-              >
+              <div data-checkbox onClick={(e) => e.stopPropagation()}>
                 <Checkbox
                   checked={isSelected}
                   onCheckedChange={onSelect}
@@ -143,9 +145,7 @@ export const ClientCard = memo(function ClientCard({
                 />
               </div>
             )}
-            {icons.length > 0 && (
-              <IconBadgeList icons={icons} size="sm" maxVisible={3} />
-            )}
+            {icons.length > 0 && <IconBadgeList icons={icons} size="sm" maxVisible={3} />}
           </div>
           <div className="flex items-center gap-2">
             <div data-dropdown>
@@ -178,9 +178,7 @@ export const ClientCard = memo(function ClientCard({
                     </DropdownMenuItem>
                   )}
 
-                  <DropdownMenuItem
-                    onClick={() => navigate(`${basePath}/${client.id}#changelog`)}
-                  >
+                  <DropdownMenuItem onClick={() => navigate(`${basePath}/${client.id}#changelog`)}>
                     <History className="mr-2 h-4 w-4" />
                     Historia zmian
                   </DropdownMenuItem>
@@ -223,9 +221,7 @@ export const ClientCard = memo(function ClientCard({
             {client.name}
           </h3>
           {client.isActive ? (
-            <Badge className="bg-green-100 text-green-700 text-xs shrink-0">
-              Aktywny
-            </Badge>
+            <Badge className="bg-green-100 text-green-700 text-xs shrink-0">Aktywny</Badge>
           ) : (
             <Badge variant="outline" className="text-xs shrink-0">
               Nieaktywny

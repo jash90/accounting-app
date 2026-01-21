@@ -1,10 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
-} from '@accounting/common';
+
+import { EmploymentType, VatStatus, TaxScheme, ZusStatus } from '@accounting/common';
 
 /**
  * Response DTO for client data

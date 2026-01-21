@@ -1,8 +1,9 @@
+import { Users, Building2, Package } from 'lucide-react';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useUsers } from '@/lib/hooks/use-users';
 import { useCompanies } from '@/lib/hooks/use-companies';
 import { useModules } from '@/lib/hooks/use-modules';
-import { Users, Building2, Package } from 'lucide-react';
+import { useUsers } from '@/lib/hooks/use-users';
 
 export default function AdminDashboard() {
   const { data: users, isPending: usersLoading } = useUsers();
@@ -14,9 +15,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-apptax-navy">Panel Administratora</h1>
-        <p className="text-muted-foreground mt-2">
-          Przegląd statystyk systemowych i zarządzanie
-        </p>
+        <p className="text-muted-foreground mt-2">Przegląd statystyk systemowych i zarządzanie</p>
       </div>
 
       {/* Stats Grid */}
@@ -83,8 +82,8 @@ export default function AdminDashboard() {
             <div>
               <h2 className="text-2xl font-bold mb-2">Witaj w AppTax Admin</h2>
               <p className="text-white/80 max-w-xl">
-                Zarządzaj firmami, użytkownikami i modułami z tego centralnego panelu.
-                Monitoruj stan systemu i konfiguruj ustawienia platformy.
+                Zarządzaj firmami, użytkownikami i modułami z tego centralnego panelu. Monitoruj
+                stan systemu i konfiguruj ustawienia platformy.
               </p>
             </div>
             <div className="hidden md:block">

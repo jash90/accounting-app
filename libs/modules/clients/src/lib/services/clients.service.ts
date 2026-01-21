@@ -1,15 +1,12 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
-import { Repository, In, DataSource } from 'typeorm';
+
 import { randomUUID } from 'crypto';
+import { Repository, In, DataSource } from 'typeorm';
+
 import {
   Client,
   User,
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
-  AmlGroup,
   PaginatedResponseDto,
   isValidPkdCode,
   PKD_CLASSES,
@@ -18,9 +15,9 @@ import {
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
-import { ClientChangelogService } from './client-changelog.service';
+
 import { AutoAssignService } from './auto-assign.service';
-import { ClientNotFoundException } from '../exceptions';
+import { ClientChangelogService } from './client-changelog.service';
 import {
   BulkDeleteClientsDto,
   BulkRestoreClientsDto,
@@ -33,6 +30,7 @@ import {
   ClientFiltersDto,
   CustomFieldFilter,
 } from '../dto/client.dto';
+import { ClientNotFoundException } from '../exceptions';
 
 @Injectable()
 export class ClientsService {
@@ -46,7 +44,7 @@ export class ClientsService {
     private readonly changeLogService: ChangeLogService,
     private readonly clientChangelogService: ClientChangelogService,
     private readonly autoAssignService: AutoAssignService,
-    private readonly tenantService: TenantService,
+    private readonly tenantService: TenantService
   ) {}
 
   /**
@@ -101,16 +99,10 @@ export class ClientsService {
    * Escape special characters in LIKE/ILIKE patterns to prevent SQL injection
    */
   private escapeLikePattern(pattern: string): string {
-    return pattern
-      .replace(/\\/g, '\\\\')
-      .replace(/%/g, '\\%')
-      .replace(/_/g, '\\_');
+    return pattern.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
   }
 
-  async findAll(
-    user: User,
-    filters?: ClientFiltersDto,
-  ): Promise<PaginatedResponseDto<Client>> {
+  async findAll(user: User, filters?: ClientFiltersDto): Promise<PaginatedResponseDto<Client>> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
     const page = filters?.page ?? 1;
     const limit = filters?.limit ?? 20;
@@ -128,7 +120,7 @@ export class ClientsService {
       const escapedSearch = this.escapeLikePattern(filters.search);
       queryBuilder.andWhere(
         "(client.name ILIKE :search ESCAPE '\\' OR client.nip ILIKE :search ESCAPE '\\' OR client.email ILIKE :search ESCAPE '\\')",
-        { search: `%${escapedSearch}%` },
+        { search: `%${escapedSearch}%` }
       );
     }
 
@@ -270,15 +262,12 @@ export class ClientsService {
       await this.autoAssignService.evaluateAndAssign(savedClient);
     } catch (error) {
       // Log error but don't fail the client creation
-      this.logger.warn(
-        `Failed to auto-assign icons for client after creation`,
-        {
-          clientId: savedClient.id,
-          companyId: savedClient.companyId,
-          userId: user.id,
-          error: (error as Error).message,
-        },
-      );
+      this.logger.warn(`Failed to auto-assign icons for client after creation`, {
+        clientId: savedClient.id,
+        companyId: savedClient.companyId,
+        userId: user.id,
+        error: (error as Error).message,
+      });
     }
 
     // Log change
@@ -286,7 +275,7 @@ export class ClientsService {
       'Client',
       savedClient.id,
       this.sanitizeClientForLog(savedClient),
-      user,
+      user
     );
 
     // Send notifications
@@ -319,15 +308,12 @@ export class ClientsService {
       await this.autoAssignService.evaluateAndAssign(savedClient);
     } catch (error) {
       // Log error but don't fail the client update
-      this.logger.warn(
-        `Failed to auto-assign icons for client after update`,
-        {
-          clientId: savedClient.id,
-          companyId: savedClient.companyId,
-          userId: user.id,
-          error: (error as Error).message,
-        },
-      );
+      this.logger.warn(`Failed to auto-assign icons for client after update`, {
+        clientId: savedClient.id,
+        companyId: savedClient.companyId,
+        userId: user.id,
+        error: (error as Error).message,
+      });
     }
 
     // Log change with diff
@@ -336,15 +322,11 @@ export class ClientsService {
       savedClient.id,
       oldValues,
       this.sanitizeClientForLog(savedClient),
-      user,
+      user
     );
 
     // Send notifications
-    await this.clientChangelogService.notifyClientUpdated(
-      savedClient,
-      oldValues,
-      user,
-    );
+    await this.clientChangelogService.notifyClientUpdated(savedClient, oldValues, user);
 
     return savedClient;
   }
@@ -359,12 +341,7 @@ export class ClientsService {
     await this.clientRepository.save(client);
 
     // Log change
-    await this.changeLogService.logDelete(
-      'Client',
-      client.id,
-      oldValues,
-      user,
-    );
+    await this.changeLogService.logDelete('Client', client.id, oldValues, user);
 
     // Send notifications
     await this.clientChangelogService.notifyClientDeleted(client, user);
@@ -374,22 +351,19 @@ export class ClientsService {
     const client = await this.findOne(id, user);
 
     // Log permanent deletion for audit trail before removing
-    this.logger.warn(
-      `Permanent deletion of client`,
-      {
-        clientId: client.id,
-        clientName: client.name,
-        companyId: client.companyId,
-        performedBy: user.id,
-      },
-    );
+    this.logger.warn(`Permanent deletion of client`, {
+      clientId: client.id,
+      clientName: client.name,
+      companyId: client.companyId,
+      performedBy: user.id,
+    });
 
     // Record in changelog before permanent deletion
     await this.changeLogService.logDelete(
       'Client',
       client.id,
       { name: client.name, nip: client.nip, deletionType: 'permanent' },
-      user,
+      user
     );
 
     await this.clientRepository.remove(client);
@@ -419,7 +393,7 @@ export class ClientsService {
       savedClient.id,
       oldValues,
       this.sanitizeClientForLog(savedClient),
-      user,
+      user
     );
 
     return savedClient;
@@ -653,7 +627,7 @@ export class ClientsService {
    */
   private applyCustomFieldFilters(
     queryBuilder: ReturnType<typeof this.clientRepository.createQueryBuilder>,
-    customFieldFilters: CustomFieldFilter[],
+    customFieldFilters: CustomFieldFilter[]
   ): void {
     customFieldFilters.forEach((filter, index) => {
       const alias = `cfv_${index}`;
@@ -669,14 +643,13 @@ export class ClientsService {
           'client_custom_field_values',
           alias,
           `${alias}.clientId = client.id AND ${alias}.fieldDefinitionId = :fieldId_${index}`,
-          { [`fieldId_${index}`]: fieldId },
+          { [`fieldId_${index}`]: fieldId }
         );
 
         // Match clients with value = 'false' OR no value set (NULL)
-        queryBuilder.andWhere(
-          `(${alias}.value = :value_${index} OR ${alias}.value IS NULL)`,
-          { [`value_${index}`]: 'false' },
-        );
+        queryBuilder.andWhere(`(${alias}.value = :value_${index} OR ${alias}.value IS NULL)`, {
+          [`value_${index}`]: 'false',
+        });
         return; // Skip the rest of the switch for this filter
       }
 
@@ -685,14 +658,14 @@ export class ClientsService {
         'client_custom_field_values',
         alias,
         `${alias}.clientId = client.id AND ${alias}.fieldDefinitionId = :fieldId_${index}`,
-        { [`fieldId_${index}`]: fieldId },
+        { [`fieldId_${index}`]: fieldId }
       );
 
       // Join field definition to get the field type
       queryBuilder.innerJoin(
         'client_field_definitions',
         fdAlias,
-        `${fdAlias}.id = ${alias}.fieldDefinitionId`,
+        `${fdAlias}.id = ${alias}.fieldDefinitionId`
       );
 
       // Apply the appropriate filter based on the operator
@@ -722,33 +695,41 @@ export class ClientsService {
 
           // Numeric comparisons require DECIMAL cast - ensure field type is NUMBER
           // by adding a condition that only matches if the value can be cast
-          const comparisonOp = operator === 'gt' ? '>' : operator === 'gte' ? '>=' : operator === 'lt' ? '<' : '<=';
-          queryBuilder.andWhere(
-            `CAST(${alias}.value AS DECIMAL) ${comparisonOp} :value_${index}`,
-            { [`value_${index}`]: numericValue }
-          );
+          const comparisonOp =
+            operator === 'gt' ? '>' : operator === 'gte' ? '>=' : operator === 'lt' ? '<' : '<=';
+          queryBuilder.andWhere(`CAST(${alias}.value AS DECIMAL) ${comparisonOp} :value_${index}`, {
+            [`value_${index}`]: numericValue,
+          });
           break;
         }
 
-        case 'in':
+        case 'in': {
           // For ENUM type - check if value is in the list
           const inValues = Array.isArray(value) ? value : String(value).split(',');
           queryBuilder.andWhere(`${alias}.value IN (:...values_${index})`, {
             [`values_${index}`]: inValues,
           });
           break;
+        }
 
-        case 'contains_any':
+        case 'contains_any': {
           // For MULTISELECT - check if any of the values match
           const anyValues = Array.isArray(value) ? value : String(value).split(',');
-          const conditions = anyValues.map((v, i) => `${alias}.value ILIKE :anyValue_${index}_${i}`);
-          queryBuilder.andWhere(`(${conditions.join(' OR ')})`,
-            anyValues.reduce((acc, v, i) => ({
-              ...acc,
-              [`anyValue_${index}_${i}`]: `%${this.escapeLikePattern(String(v))}%`,
-            }), {}),
+          const conditions = anyValues.map(
+            (v, i) => `${alias}.value ILIKE :anyValue_${index}_${i}`
+          );
+          queryBuilder.andWhere(
+            `(${conditions.join(' OR ')})`,
+            anyValues.reduce(
+              (acc, v, i) => ({
+                ...acc,
+                [`anyValue_${index}_${i}`]: `%${this.escapeLikePattern(String(v))}%`,
+              }),
+              {}
+            )
           );
           break;
+        }
 
         default:
           this.logger.warn(`Unknown custom field filter operator: ${operator}`);

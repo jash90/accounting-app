@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+
 import {
   format,
   addWeeks,
@@ -10,21 +11,16 @@ import {
   parseISO,
 } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import {
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  DollarSign,
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Calendar, ChevronLeft, ChevronRight, Clock, DollarSign } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWeeklyTimesheet } from '@/lib/hooks/use-time-tracking';
-import { TimesheetDayDto } from '@/types/dtos';
 import { cn } from '@/lib/utils/cn';
 import { formatDuration } from '@/lib/utils/time';
+import { type TimesheetDayDto } from '@/types/dtos';
 
 /**
  * Polish pluralization for "wpis" (entry).
@@ -50,14 +46,8 @@ interface WeeklyTimesheetProps {
 export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps) {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
 
-  const weekStart = useMemo(
-    () => startOfWeek(selectedDate, { weekStartsOn: 1 }),
-    [selectedDate]
-  );
-  const weekEnd = useMemo(
-    () => endOfWeek(selectedDate, { weekStartsOn: 1 }),
-    [selectedDate]
-  );
+  const weekStart = useMemo(() => startOfWeek(selectedDate, { weekStartsOn: 1 }), [selectedDate]);
+  const weekEnd = useMemo(() => endOfWeek(selectedDate, { weekStartsOn: 1 }), [selectedDate]);
   const dateString = format(weekStart, 'yyyy-MM-dd');
 
   const { data: timesheet, isPending, error } = useWeeklyTimesheet(dateString);
@@ -67,9 +57,7 @@ export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps)
   }, [weekStart, weekEnd]);
 
   const navigateWeek = (direction: 'prev' | 'next') => {
-    setSelectedDate((prev) =>
-      direction === 'prev' ? subWeeks(prev, 1) : addWeeks(prev, 1)
-    );
+    setSelectedDate((prev) => (direction === 'prev' ? subWeeks(prev, 1) : addWeeks(prev, 1)));
   };
 
   const goToThisWeek = () => {
@@ -120,9 +108,7 @@ export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps)
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-destructive">
-            Nie udało się załadować danych timesheet
-          </p>
+          <p className="text-sm text-destructive">Nie udało się załadować danych timesheet</p>
         </CardContent>
       </Card>
     );
@@ -200,7 +186,9 @@ export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps)
                 key={day.toISOString()}
                 tabIndex={onDayClick ? 0 : undefined}
                 role={onDayClick ? 'button' : undefined}
-                aria-label={onDayClick ? `Wybierz ${format(day, 'd MMMM yyyy', { locale: pl })}` : undefined}
+                aria-label={
+                  onDayClick ? `Wybierz ${format(day, 'd MMMM yyyy', { locale: pl })}` : undefined
+                }
                 onClick={() => onDayClick?.(day)}
                 onKeyDown={(e) => {
                   if (onDayClick && (e.key === 'Enter' || e.key === ' ')) {
@@ -211,7 +199,8 @@ export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps)
                 className={cn(
                   'cursor-pointer transition-all hover:shadow-md',
                   isToday && 'ring-2 ring-primary',
-                  onDayClick && 'hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
+                  onDayClick &&
+                    'hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
                 )}
               >
                 <CardContent className="p-3">
@@ -219,12 +208,7 @@ export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps)
                     <p className="text-xs text-muted-foreground uppercase">
                       {format(day, 'EEE', { locale: pl })}
                     </p>
-                    <p
-                      className={cn(
-                        'text-lg font-semibold',
-                        isToday && 'text-primary'
-                      )}
-                    >
+                    <p className={cn('text-lg font-semibold', isToday && 'text-primary')}>
                       {format(day, 'd')}
                     </p>
                   </div>
@@ -262,7 +246,6 @@ export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps)
             );
           })}
         </div>
-
       </CardContent>
     </Card>
   );

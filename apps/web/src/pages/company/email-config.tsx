@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { PageHeader } from '@/components/common/page-header';
+
+import { Building2, Edit, Trash2, Plus, Server, Lock, AlertCircle } from 'lucide-react';
+
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { PageHeader } from '@/components/common/page-header';
 import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/use-toast';
 import {
   useCompanyEmailConfig,
@@ -15,8 +18,10 @@ import {
   useTestCompanySmtp,
   useTestCompanyImap,
 } from '@/lib/hooks/use-email-config';
-import { CreateEmailConfigFormData, UpdateEmailConfigFormData } from '@/lib/validation/schemas';
-import { Building2, Edit, Trash2, Plus, Server, Lock, AlertCircle } from 'lucide-react';
+import {
+  type CreateEmailConfigFormData,
+  type UpdateEmailConfigFormData,
+} from '@/lib/validation/schemas';
 
 export default function CompanyEmailConfigPage() {
   const { data: emailConfig, isPending, isError, error } = useCompanyEmailConfig();
@@ -109,8 +114,9 @@ export default function CompanyEmailConfigPage() {
             <div className="flex-1 space-y-2">
               <h4 className="font-semibold text-apptax-navy">Konfiguracja email dla całej firmy</h4>
               <p className="text-sm text-muted-foreground">
-                Ta konfiguracja email będzie używana do wszystkich komunikacji firmowych, powiadomień i automatycznych
-                wiadomości wysyłanych w imieniu Twojej organizacji. Tylko właściciele firmy mogą zarządzać tą konfiguracją.
+                Ta konfiguracja email będzie używana do wszystkich komunikacji firmowych,
+                powiadomień i automatycznych wiadomości wysyłanych w imieniu Twojej organizacji.
+                Tylko właściciele firmy mogą zarządzać tą konfiguracją.
               </p>
             </div>
           </div>
@@ -137,10 +143,12 @@ export default function CompanyEmailConfigPage() {
                 <Building2 className="h-8 w-8 text-apptax-blue" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-apptax-navy">Brak konfiguracji email firmy</h3>
+                <h3 className="text-lg font-semibold text-apptax-navy">
+                  Brak konfiguracji email firmy
+                </h3>
                 <p className="text-muted-foreground max-w-md">
-                  Twoja firma nie ma jeszcze skonfigurowanych ustawień email. Utwórz konfigurację, aby umożliwić
-                  komunikację email i automatyczne powiadomienia w całej firmie.
+                  Twoja firma nie ma jeszcze skonfigurowanych ustawień email. Utwórz konfigurację,
+                  aby umożliwić komunikację email i automatyczne powiadomienia w całej firmie.
                 </p>
               </div>
               <Button onClick={() => setFormOpen(true)} className="mt-4">
@@ -277,15 +285,18 @@ export default function CompanyEmailConfigPage() {
                   </h4>
                   <div className="space-y-1 text-sm text-muted-foreground">
                     <p>
-                      Konfiguracja email Twojej firmy jest aktywna i zabezpieczona szyfrowaniem. Ta konfiguracja jest używana
-                      do wszystkich operacji email w całej firmie.
+                      Konfiguracja email Twojej firmy jest aktywna i zabezpieczona szyfrowaniem. Ta
+                      konfiguracja jest używana do wszystkich operacji email w całej firmie.
                     </p>
                     {emailConfig.company && (
                       <p className="font-medium text-apptax-navy">
                         Firma: {emailConfig.company.name}
                       </p>
                     )}
-                    <p>Ostatnia aktualizacja: {new Date(emailConfig.updatedAt).toLocaleDateString('pl-PL')}</p>
+                    <p>
+                      Ostatnia aktualizacja:{' '}
+                      {new Date(emailConfig.updatedAt).toLocaleDateString('pl-PL')}
+                    </p>
                   </div>
                 </div>
               </div>

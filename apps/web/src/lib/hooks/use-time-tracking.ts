@@ -1,4 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useToast } from '@/components/ui/use-toast';
+import { type ApiErrorResponse } from '@/types/api';
+import {
+  type CreateTimeEntryDto,
+  type UpdateTimeEntryDto,
+  type TimeEntryFiltersDto,
+  type StartTimerDto,
+  type StopTimerDto,
+  type UpdateTimerDto,
+  type RejectTimeEntryDto,
+  type UpdateTimeSettingsDto,
+} from '@/types/dtos';
+
 import {
   timeEntriesApi,
   timerApi,
@@ -7,18 +21,6 @@ import {
   timeReportsApi,
 } from '../api/endpoints/time-tracking';
 import { queryKeys } from '../api/query-client';
-import {
-  CreateTimeEntryDto,
-  UpdateTimeEntryDto,
-  TimeEntryFiltersDto,
-  StartTimerDto,
-  StopTimerDto,
-  UpdateTimerDto,
-  RejectTimeEntryDto,
-  UpdateTimeSettingsDto,
-} from '@/types/dtos';
-import { ApiErrorResponse } from '@/types/api';
-import { useToast } from '@/components/ui/use-toast';
 
 // Named constants for timer intervals and timeouts
 // Sync timer state with server periodically to keep elapsed time accurate on multiple devices/tabs
@@ -75,7 +77,9 @@ export function useUpdateTimeEntry() {
       timeEntriesApi.update(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.timeTracking.entries.detail(variables.id),
+      });
       toast({
         title: 'Sukces',
         description: 'Wpis czasu został zaktualizowany',
@@ -175,7 +179,9 @@ export function useRejectTimeEntry() {
       timeEntriesApi.reject(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.timeTracking.entries.detail(variables.id),
+      });
       toast({
         title: 'Sukces',
         description: 'Wpis czasu został odrzucony',

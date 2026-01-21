@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
-import { LucideIcon, ArrowRight } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+import { type LucideIcon, ArrowRight } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils/cn';
 
 export interface NavigationCardProps {
@@ -26,9 +28,7 @@ export function NavigationCard({
   className,
 }: NavigationCardProps) {
   return (
-    <Card
-      className={cn('flex flex-1 flex-col', className)}
-    >
+    <Card className={cn('flex flex-1 flex-col', className)}>
       <CardHeader className="flex-1 pb-6">
         <div className="flex items-center gap-3 pb-2">
           <div className={cn('text-white p-3 rounded-xl', gradient)}>

@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
+
 import {
   GroupedCombobox,
-  GroupedComboboxOption,
-  GroupedComboboxGroup,
+  type GroupedComboboxOption,
+  type GroupedComboboxGroup,
 } from './grouped-combobox';
 
 // Mock ResizeObserver for Radix UI ScrollArea component
@@ -68,9 +69,7 @@ describe('GroupedCombobox', () => {
         />
       );
 
-      expect(
-        screen.getByText('01.11.Z - Grain cultivation')
-      ).toBeInTheDocument();
+      expect(screen.getByText('01.11.Z - Grain cultivation')).toBeInTheDocument();
     });
 
     it('renders with custom formatDisplayValue', () => {
@@ -196,9 +195,7 @@ describe('GroupedCombobox', () => {
       await user.click(screen.getByText('Grain cultivation'));
 
       // Popover should be closed - groups should not be visible
-      expect(
-        screen.queryByText('Section A - Agriculture')
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Section A - Agriculture')).not.toBeInTheDocument();
     });
   });
 
@@ -235,9 +232,7 @@ describe('GroupedCombobox', () => {
       await user.click(screen.getByLabelText('Wyczyść wybór'));
 
       // Popover should not open
-      expect(
-        screen.queryByText('Section A - Agriculture')
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Section A - Agriculture')).not.toBeInTheDocument();
     });
 
     it('clear button works with keyboard (Enter key)', async () => {
@@ -363,9 +358,7 @@ describe('GroupedCombobox', () => {
       // Only Section A should be visible
       expect(screen.getByText('Section A - Agriculture')).toBeInTheDocument();
       expect(screen.queryByText('Section B - Mining')).not.toBeInTheDocument();
-      expect(
-        screen.queryByText('Section C - Manufacturing')
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Section C - Manufacturing')).not.toBeInTheDocument();
     });
 
     it('clears search when selection is made', async () => {
@@ -529,9 +522,7 @@ describe('GroupedCombobox', () => {
 
       await user.keyboard('{Escape}');
 
-      expect(
-        screen.queryByText('Section A - Agriculture')
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Section A - Agriculture')).not.toBeInTheDocument();
     });
 
     it('resets highlighted index when Escape is pressed', async () => {
@@ -591,9 +582,7 @@ describe('GroupedCombobox', () => {
 
       await user.click(screen.getByRole('combobox'));
 
-      expect(
-        screen.queryByText('Section A - Agriculture')
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Section A - Agriculture')).not.toBeInTheDocument();
     });
   });
 
@@ -663,9 +652,7 @@ describe('GroupedCombobox', () => {
 
       await user.click(screen.getByRole('combobox'));
 
-      const selectedOption = screen
-        .getByText('Grain cultivation')
-        .closest('button');
+      const selectedOption = screen.getByText('Grain cultivation').closest('button');
       expect(selectedOption).toHaveAttribute('aria-selected', 'true');
     });
 
@@ -683,9 +670,7 @@ describe('GroupedCombobox', () => {
 
       await user.click(screen.getByRole('combobox'));
 
-      const nonSelectedOption = screen
-        .getByText('Rice cultivation')
-        .closest('button');
+      const nonSelectedOption = screen.getByText('Rice cultivation').closest('button');
       expect(nonSelectedOption).toHaveAttribute('aria-selected', 'false');
     });
 
@@ -708,10 +693,7 @@ describe('GroupedCombobox', () => {
 
       await user.keyboard('{ArrowDown}');
 
-      expect(searchInput).toHaveAttribute(
-        'aria-activedescendant',
-        'grouped-combobox-option-0'
-      );
+      expect(searchInput).toHaveAttribute('aria-activedescendant', 'grouped-combobox-option-0');
     });
 
     it('listbox has aria-label', async () => {
@@ -728,10 +710,7 @@ describe('GroupedCombobox', () => {
 
       await user.click(screen.getByRole('combobox'));
 
-      expect(screen.getByRole('listbox')).toHaveAttribute(
-        'aria-label',
-        'Opcje wyboru'
-      );
+      expect(screen.getByRole('listbox')).toHaveAttribute('aria-label', 'Opcje wyboru');
     });
 
     it('groups have role="group"', async () => {
@@ -798,28 +777,23 @@ describe('GroupedCombobox', () => {
       const onChange = vi.fn();
 
       // Create many groups and options
-      const manyGroups: GroupedComboboxGroup[] = Array.from(
-        { length: 20 },
-        (_, i) => ({
-          key: String.fromCharCode(65 + i),
-          label: `Section ${String.fromCharCode(65 + i)}`,
-        })
-      );
+      const manyGroups: GroupedComboboxGroup[] = Array.from({ length: 20 }, (_, i) => ({
+        key: String.fromCharCode(65 + i),
+        label: `Section ${String.fromCharCode(65 + i)}`,
+      }));
 
-      const manyOptions: GroupedComboboxOption[] = manyGroups.flatMap(
-        (group) => [
-          {
-            value: `${group.key}-1`,
-            label: `${group.key}-1 - Option 1`,
-            group: group.key,
-          },
-          {
-            value: `${group.key}-2`,
-            label: `${group.key}-2 - Option 2`,
-            group: group.key,
-          },
-        ]
-      );
+      const manyOptions: GroupedComboboxOption[] = manyGroups.flatMap((group) => [
+        {
+          value: `${group.key}-1`,
+          label: `${group.key}-1 - Option 1`,
+          group: group.key,
+        },
+        {
+          value: `${group.key}-2`,
+          label: `${group.key}-2 - Option 2`,
+          group: group.key,
+        },
+      ]);
 
       render(
         <GroupedCombobox

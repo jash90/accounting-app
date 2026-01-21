@@ -1,26 +1,37 @@
+import {
+  MessageSquare,
+  Settings,
+  FolderOpen,
+  BarChart3,
+  Sparkles,
+  CheckCircle2,
+} from 'lucide-react';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MessageSquare, Settings, FolderOpen, BarChart3, Sparkles, CheckCircle2 } from 'lucide-react';
 import { NavigationCard } from '@/components/ui/navigation-card';
 
 export default function AdminAIAgentDashboard() {
   const features = [
     {
       title: 'Czat AI',
-      description: 'Rozpocznij rozmowy z asystentem AI. Uzyskaj inteligentne odpowiedzi na podstawie bazy wiedzy.',
+      description:
+        'Rozpocznij rozmowy z asystentem AI. Uzyskaj inteligentne odpowiedzi na podstawie bazy wiedzy.',
       icon: MessageSquare,
       href: '/admin/modules/ai-agent/chat',
       gradient: 'bg-apptax-ai-gradient',
     },
     {
       title: 'Konfiguracja AI',
-      description: 'Skonfiguruj dostawcę AI (OpenAI/OpenRouter), model, klucze API i prompt systemowy.',
+      description:
+        'Skonfiguruj dostawcę AI (OpenAI/OpenRouter), model, klucze API i prompt systemowy.',
       icon: Settings,
       href: '/admin/modules/ai-agent/configuration',
       gradient: 'bg-apptax-gradient',
     },
     {
       title: 'Pliki bazy wiedzy',
-      description: 'Prześlij i zarządzaj plikami PDF, TXT i MD dla RAG (Retrieval Augmented Generation).',
+      description:
+        'Prześlij i zarządzaj plikami PDF, TXT i MD dla RAG (Retrieval Augmented Generation).',
       icon: FolderOpen,
       href: '/admin/modules/ai-agent/context',
       gradient: 'bg-apptax-dark-gradient',

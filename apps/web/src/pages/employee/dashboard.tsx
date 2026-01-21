@@ -1,13 +1,8 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Package, Users } from 'lucide-react';
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useEmployees } from '@/lib/hooks/use-employees';
 import { useCompanyModules } from '@/lib/hooks/use-permissions';
-import { Package, Users } from 'lucide-react';
 
 export default function EmployeeDashboard() {
   const { data: employees, isPending: employeesLoading } = useEmployees();

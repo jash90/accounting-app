@@ -12,11 +12,9 @@ export class EmailAttachmentService {
 
   constructor(
     private readonly storageService: StorageService,
-    private readonly configService: ConfigService,
+    private readonly configService: ConfigService
   ) {
-    this.basePath = path.resolve(
-      this.configService.get<string>('STORAGE_LOCAL_PATH', './uploads')
-    );
+    this.basePath = path.resolve(this.configService.get<string>('STORAGE_LOCAL_PATH', './uploads'));
   }
 
   async uploadAttachment(user: User, file: Express.Multer.File): Promise<string> {
@@ -53,7 +51,10 @@ export class EmailAttachmentService {
     return result.path;
   }
 
-  async downloadAttachment(user: User, filePath: string): Promise<{ buffer: Buffer; filename: string }> {
+  async downloadAttachment(
+    user: User,
+    filePath: string
+  ): Promise<{ buffer: Buffer; filename: string }> {
     if (!user.companyId || !filePath.startsWith(user.companyId)) {
       throw new BadRequestException('Access denied');
     }

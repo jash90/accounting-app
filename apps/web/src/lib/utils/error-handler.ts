@@ -1,5 +1,6 @@
 import { AxiosError } from 'axios';
-import { ApiError } from '@/types/api';
+
+import { type ApiError } from '@/types/api';
 
 export function getErrorMessage(error: unknown): string {
   if (error instanceof AxiosError) {
@@ -17,4 +18,3 @@ export function getErrorMessage(error: unknown): string {
 export function isApiError(error: unknown): error is AxiosError<ApiError> {
   return error instanceof AxiosError && !!error.response?.data;
 }
-

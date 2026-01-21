@@ -1,5 +1,7 @@
-import { IsEmail, IsString, IsEnum, IsOptional, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+
+import { IsEmail, IsString, IsEnum, IsOptional, IsBoolean } from 'class-validator';
+
 import { UserRole } from '@accounting/common';
 
 export class UpdateUserDto {
@@ -8,7 +10,10 @@ export class UpdateUserDto {
   @IsEmail()
   email?: string;
 
-  @ApiPropertyOptional({ example: 'NewSecureP@ss!', description: 'Updated password (minimum 8 characters)' })
+  @ApiPropertyOptional({
+    example: 'NewSecureP@ss!',
+    description: 'Updated password (minimum 8 characters)',
+  })
   @IsOptional()
   @IsString()
   password?: string;
@@ -23,12 +28,19 @@ export class UpdateUserDto {
   @IsString()
   lastName?: string;
 
-  @ApiPropertyOptional({ enum: UserRole, example: UserRole.EMPLOYEE, description: 'Updated user role' })
+  @ApiPropertyOptional({
+    enum: UserRole,
+    example: UserRole.EMPLOYEE,
+    description: 'Updated user role',
+  })
   @IsOptional()
   @IsEnum(UserRole)
   role?: UserRole;
 
-  @ApiPropertyOptional({ example: '123e4567-e89b-12d3-a456-426614174000', description: 'Updated company ID' })
+  @ApiPropertyOptional({
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    description: 'Updated company ID',
+  })
   @IsOptional()
   @IsString()
   companyId?: string;
@@ -38,4 +50,3 @@ export class UpdateUserDto {
   @IsBoolean()
   isActive?: boolean;
 }
-

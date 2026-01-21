@@ -1,23 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
-import {
-  TaskLabel,
-  User,
-} from '@accounting/common';
+
+import { TaskLabel, User } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
-import {
-  TaskLabelNotFoundException,
-  TaskLabelAlreadyExistsException,
-} from '../exceptions';
+
 import { CreateTaskLabelDto, UpdateTaskLabelDto } from '../dto/task-label.dto';
+import { TaskLabelNotFoundException, TaskLabelAlreadyExistsException } from '../exceptions';
 
 @Injectable()
 export class TaskLabelsService {
   constructor(
     @InjectRepository(TaskLabel)
     private readonly labelRepository: Repository<TaskLabel>,
-    private readonly tenantService: TenantService,
+    private readonly tenantService: TenantService
   ) {}
 
   async findAll(user: User): Promise<TaskLabel[]> {

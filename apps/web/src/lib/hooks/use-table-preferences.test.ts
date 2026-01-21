@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useTablePreferences, ColumnConfig, ViewMode } from './use-table-preferences';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+import { useTablePreferences, type ColumnConfig, type ViewMode } from './use-table-preferences';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -45,9 +46,7 @@ describe('useTablePreferences', () => {
     it('should return default preferences when localStorage is empty', () => {
       localStorageMock.getItem.mockReturnValue(null);
 
-      const { result } = renderHook(() =>
-        useTablePreferences('test-table', defaultColumns)
-      );
+      const { result } = renderHook(() => useTablePreferences('test-table', defaultColumns));
 
       expect(result.current.viewMode).toBe('table');
       expect(result.current.visibleColumns).toContain('name');
@@ -65,9 +64,7 @@ describe('useTablePreferences', () => {
       };
       localStorageMock.getItem.mockReturnValue(JSON.stringify(storedPrefs));
 
-      const { result } = renderHook(() =>
-        useTablePreferences('test-table', defaultColumns)
-      );
+      const { result } = renderHook(() => useTablePreferences('test-table', defaultColumns));
 
       expect(result.current.viewMode).toBe('grid');
       expect(result.current.visibleColumns).toContain('email');
@@ -77,9 +74,7 @@ describe('useTablePreferences', () => {
     it('should handle malformed localStorage data gracefully', () => {
       localStorageMock.getItem.mockReturnValue('invalid json {{{');
 
-      const { result } = renderHook(() =>
-        useTablePreferences('test-table', defaultColumns)
-      );
+      const { result } = renderHook(() => useTablePreferences('test-table', defaultColumns));
 
       // Should fall back to defaults
       expect(result.current.viewMode).toBe('table');
@@ -90,9 +85,7 @@ describe('useTablePreferences', () => {
       // Missing visibleColumns array
       localStorageMock.getItem.mockReturnValue(JSON.stringify({ viewMode: 'grid' }));
 
-      const { result } = renderHook(() =>
-        useTablePreferences('test-table', defaultColumns)
-      );
+      const { result } = renderHook(() => useTablePreferences('test-table', defaultColumns));
 
       // Should fall back to defaults
       expect(result.current.viewMode).toBe('table');
@@ -105,9 +98,7 @@ describe('useTablePreferences', () => {
       };
       localStorageMock.getItem.mockReturnValue(JSON.stringify(storedPrefs));
 
-      const { result } = renderHook(() =>
-        useTablePreferences('test-table', defaultColumns)
-      );
+      const { result } = renderHook(() => useTablePreferences('test-table', defaultColumns));
 
       // 'name' should be included even though it wasn't in stored preferences
       expect(result.current.visibleColumns).toContain('name');
@@ -120,9 +111,7 @@ describe('useTablePreferences', () => {
     it('should toggle a column visibility', () => {
       localStorageMock.getItem.mockReturnValue(null);
 
-      const { result } = renderHook(() =>
-        useTablePreferences('test-table', defaultColumns)
-      );
+      const { result } = renderHook(() => useTablePreferences('test-table', defaultColumns));
 
       // Initially email is visible
       expect(result.current.visibleColumns).toContain('email');
@@ -145,9 +134,7 @@ describe('useTablePreferences', () => {
     it('should not toggle alwaysVisible columns', () => {
       localStorageMock.getItem.mockReturnValue(null);
 
-      const { result } = renderHook(() =>
-        useTablePreferences('test-table', defaultColumns)
-      );
+      const { result } = renderHook(() => useTablePreferences('test-table', defaultColumns));
 
       // 'name' is alwaysVisible
       expect(result.current.visibleColumns).toContain('name');
@@ -164,9 +151,7 @@ describe('useTablePreferences', () => {
     it('should add column that was not visible', () => {
       localStorageMock.getItem.mockReturnValue(null);
 
-      const { result } = renderHook(() =>
-        useTablePreferences('test-table', defaultColumns)
-      );
+      const { result } = renderHook(() => useTablePreferences('test-table', defaultColumns));
 
       // status has defaultVisible: false
       expect(result.current.visibleColumns).not.toContain('status');
@@ -183,9 +168,7 @@ describe('useTablePreferences', () => {
     it('should update view mode', () => {
       localStorageMock.getItem.mockReturnValue(null);
 
-      const { result } = renderHook(() =>
-        useTablePreferences('test-table', defaultColumns)
-      );
+      const { result } = renderHook(() => useTablePreferences('test-table', defaultColumns));
 
       expect(result.current.viewMode).toBe('table');
 
@@ -199,9 +182,7 @@ describe('useTablePreferences', () => {
     it('should persist view mode to localStorage', () => {
       localStorageMock.getItem.mockReturnValue(null);
 
-      const { result } = renderHook(() =>
-        useTablePreferences('test-table', defaultColumns)
-      );
+      const { result } = renderHook(() => useTablePreferences('test-table', defaultColumns));
 
       act(() => {
         result.current.setViewMode('grid');
@@ -218,9 +199,7 @@ describe('useTablePreferences', () => {
     it('should return true for visible columns', () => {
       localStorageMock.getItem.mockReturnValue(null);
 
-      const { result } = renderHook(() =>
-        useTablePreferences('test-table', defaultColumns)
-      );
+      const { result } = renderHook(() => useTablePreferences('test-table', defaultColumns));
 
       expect(result.current.isColumnVisible('name')).toBe(true);
       expect(result.current.isColumnVisible('email')).toBe(true);
@@ -229,9 +208,7 @@ describe('useTablePreferences', () => {
     it('should return false for hidden columns', () => {
       localStorageMock.getItem.mockReturnValue(null);
 
-      const { result } = renderHook(() =>
-        useTablePreferences('test-table', defaultColumns)
-      );
+      const { result } = renderHook(() => useTablePreferences('test-table', defaultColumns));
 
       // status has defaultVisible: false
       expect(result.current.isColumnVisible('status')).toBe(false);
@@ -240,9 +217,7 @@ describe('useTablePreferences', () => {
     it('should return false for non-existent columns', () => {
       localStorageMock.getItem.mockReturnValue(null);
 
-      const { result } = renderHook(() =>
-        useTablePreferences('test-table', defaultColumns)
-      );
+      const { result } = renderHook(() => useTablePreferences('test-table', defaultColumns));
 
       expect(result.current.isColumnVisible('nonexistent')).toBe(false);
     });
@@ -256,9 +231,7 @@ describe('useTablePreferences', () => {
       };
       localStorageMock.getItem.mockReturnValue(JSON.stringify(storedPrefs));
 
-      const { result } = renderHook(() =>
-        useTablePreferences('test-table', defaultColumns)
-      );
+      const { result } = renderHook(() => useTablePreferences('test-table', defaultColumns));
 
       // Verify we loaded stored prefs
       expect(result.current.viewMode).toBe('grid');
@@ -283,17 +256,13 @@ describe('useTablePreferences', () => {
 
       renderHook(() => useTablePreferences('my-custom-table', defaultColumns));
 
-      expect(localStorageMock.getItem).toHaveBeenCalledWith(
-        'table_preferences_my-custom-table'
-      );
+      expect(localStorageMock.getItem).toHaveBeenCalledWith('table_preferences_my-custom-table');
     });
 
     it('should persist changes to localStorage', () => {
       localStorageMock.getItem.mockReturnValue(null);
 
-      const { result } = renderHook(() =>
-        useTablePreferences('test-table', defaultColumns)
-      );
+      const { result } = renderHook(() => useTablePreferences('test-table', defaultColumns));
 
       act(() => {
         result.current.toggleColumn('email');
@@ -311,9 +280,7 @@ describe('useTablePreferences', () => {
         throw new Error('QuotaExceededError');
       });
 
-      const { result } = renderHook(() =>
-        useTablePreferences('test-table', defaultColumns)
-      );
+      const { result } = renderHook(() => useTablePreferences('test-table', defaultColumns));
 
       // Should not throw even if localStorage fails
       expect(() => {
@@ -338,12 +305,8 @@ describe('useTablePreferences', () => {
         return null;
       });
 
-      const { result: result1 } = renderHook(() =>
-        useTablePreferences('table1', defaultColumns)
-      );
-      const { result: result2 } = renderHook(() =>
-        useTablePreferences('table2', defaultColumns)
-      );
+      const { result: result1 } = renderHook(() => useTablePreferences('table1', defaultColumns));
+      const { result: result2 } = renderHook(() => useTablePreferences('table2', defaultColumns));
 
       expect(result1.current.viewMode).toBe('grid');
       expect(result2.current.viewMode).toBe('table');

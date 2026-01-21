@@ -1,12 +1,9 @@
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -16,9 +13,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { loginSchema, LoginFormData } from '@/lib/validation/schemas';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { loginSchema, type LoginFormData } from '@/lib/validation/schemas';
 
 export default function LoginPage() {
   const { login, isPending, error } = useAuth();
@@ -61,11 +57,7 @@ export default function LoginPage() {
           {/* Logo */}
           <div className="flex items-center gap-3 mb-12 animate-fade-in-left">
             <div className="relative">
-              <img
-                src="/apptax-logomark.svg"
-                alt="AppTax"
-                className="h-12 w-12"
-              />
+              <img src="/apptax-logomark.svg" alt="AppTax" className="h-12 w-12" />
               {/* AI indicator glow behind logo */}
               <div className="absolute inset-0 bg-apptax-teal/30 rounded-lg blur-xl -z-10" />
             </div>
@@ -79,23 +71,29 @@ export default function LoginPage() {
             Inteligentna Księgowość AI
           </h1>
           <p className="text-lg text-white/80 mb-8 animate-fade-in-left delay-200">
-            Połącz tradycyjną niezawodność księgowości z innowacyjnymi możliwościami AI.
-            Zmień sposób działania Twojego biura rachunkowego.
+            Połącz tradycyjną niezawodność księgowości z innowacyjnymi możliwościami AI. Zmień
+            sposób działania Twojego biura rachunkowego.
           </p>
 
           {/* Features */}
           <div className="space-y-4">
             <div className="flex items-center gap-3 animate-fade-in-left delay-300 group">
               <div className="w-2.5 h-2.5 rounded-full bg-apptax-teal animate-pulse-glow group-hover:scale-125 transition-transform" />
-              <span className="text-white/70 group-hover:text-white/90 transition-colors">Inteligentna automatyzacja</span>
+              <span className="text-white/70 group-hover:text-white/90 transition-colors">
+                Inteligentna automatyzacja
+              </span>
             </div>
             <div className="flex items-center gap-3 animate-fade-in-left delay-400 group">
               <div className="w-2.5 h-2.5 rounded-full bg-apptax-teal animate-pulse-glow group-hover:scale-125 transition-transform" />
-              <span className="text-white/70 group-hover:text-white/90 transition-colors">Zgodność z polskim prawem podatkowym</span>
+              <span className="text-white/70 group-hover:text-white/90 transition-colors">
+                Zgodność z polskim prawem podatkowym
+              </span>
             </div>
             <div className="flex items-center gap-3 animate-fade-in-left delay-500 group">
               <div className="w-2.5 h-2.5 rounded-full bg-apptax-teal animate-pulse-glow group-hover:scale-125 transition-transform" />
-              <span className="text-white/70 group-hover:text-white/90 transition-colors">Bezpieczna platforma wielodostępowa</span>
+              <span className="text-white/70 group-hover:text-white/90 transition-colors">
+                Bezpieczna platforma wielodostępowa
+              </span>
             </div>
           </div>
 
@@ -113,11 +111,7 @@ export default function LoginPage() {
             {/* Mobile Logo */}
             <div className="lg:hidden flex items-center justify-center gap-2 mb-4">
               <div className="relative">
-                <img
-                  src="/apptax-logomark.svg"
-                  alt="AppTax"
-                  className="h-10 w-10"
-                />
+                <img src="/apptax-logomark.svg" alt="AppTax" className="h-10 w-10" />
                 <div className="absolute inset-0 bg-apptax-teal/20 rounded-lg blur-lg -z-10" />
               </div>
               <span className="text-xl font-bold text-apptax-navy">
@@ -125,9 +119,7 @@ export default function LoginPage() {
               </span>
             </div>
 
-            <CardTitle className="text-2xl font-bold text-apptax-navy">
-              Witaj ponownie
-            </CardTitle>
+            <CardTitle className="text-2xl font-bold text-apptax-navy">Witaj ponownie</CardTitle>
             <CardDescription className="text-muted-foreground">
               Wprowadź dane logowania, aby uzyskać dostęp do konta
             </CardDescription>
@@ -140,8 +132,8 @@ export default function LoginPage() {
                 className="animate-fade-in-up mb-4 rounded-xl bg-destructive/10 border-l-4 border-destructive p-4 text-sm text-destructive"
               >
                 {(error as any)?.response?.data?.message ||
-                 (error as any)?.message ||
-                 'Nieprawidłowe dane logowania. Spróbuj ponownie.'}
+                  (error as any)?.message ||
+                  'Nieprawidłowe dane logowania. Spróbuj ponownie.'}
               </div>
             )}
             <Form {...form}>

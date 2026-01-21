@@ -1,25 +1,19 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-import {
-  Users,
-  UserCheck,
-  UserX,
-  TrendingUp,
-  Clock,
-  Activity,
-} from 'lucide-react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import { Users, UserCheck, UserX, TrendingUp, Clock, Activity } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   EmploymentTypeLabels,
   VatStatusLabels,
   TaxSchemeLabels,
   ZusStatusLabels,
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
+  type EmploymentType,
+  type VatStatus,
+  type TaxScheme,
+  type ZusStatus,
 } from '@/types/enums';
 
 interface RecentClient {
@@ -102,9 +96,7 @@ export function StatisticsDashboard({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{statistics.total}</div>
-            <p className="text-xs text-muted-foreground">
-              W bazie danych
-            </p>
+            <p className="text-xs text-muted-foreground">W bazie danych</p>
           </CardContent>
         </Card>
 
@@ -116,7 +108,8 @@ export function StatisticsDashboard({
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{statistics.active}</div>
             <p className="text-xs text-muted-foreground">
-              {statistics.total > 0 ? Math.round((statistics.active / statistics.total) * 100) : 0}% wszystkich
+              {statistics.total > 0 ? Math.round((statistics.active / statistics.total) * 100) : 0}%
+              wszystkich
             </p>
           </CardContent>
         </Card>
@@ -128,9 +121,7 @@ export function StatisticsDashboard({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{statistics.inactive}</div>
-            <p className="text-xs text-muted-foreground">
-              Dezaktywowani
-            </p>
+            <p className="text-xs text-muted-foreground">Dezaktywowani</p>
           </CardContent>
         </Card>
 

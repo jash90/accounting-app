@@ -1,11 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository, Not, IsNull, DataSource, EntityManager } from 'typeorm';
-import {
-  ClientIcon,
-  ClientIconAssignment,
-  Client,
-} from '@accounting/common';
+
+import { ClientIcon, ClientIconAssignment, Client } from '@accounting/common';
+
 import { ConditionEvaluatorService } from './condition-evaluator.service';
 import { ClientException, ClientErrorCode } from '../exceptions';
 
@@ -24,7 +23,7 @@ export class AutoAssignService {
     @InjectRepository(ClientIconAssignment)
     private readonly assignmentRepository: Repository<ClientIconAssignment>,
     private readonly conditionEvaluator: ConditionEvaluatorService,
-    private readonly dataSource: DataSource,
+    private readonly dataSource: DataSource
   ) {}
 
   /**
@@ -56,19 +55,14 @@ export class AutoAssignService {
       }
 
       // Get current auto-assigned icons for this client
-      const currentAutoAssignments = await queryRunner.manager.find(
-        ClientIconAssignment,
-        {
-          where: {
-            clientId: client.id,
-            isAutoAssigned: true,
-          },
-        }
-      );
+      const currentAutoAssignments = await queryRunner.manager.find(ClientIconAssignment, {
+        where: {
+          clientId: client.id,
+          isAutoAssigned: true,
+        },
+      });
 
-      const currentAutoIconIds = new Set(
-        currentAutoAssignments.map((a) => a.iconId)
-      );
+      const currentAutoIconIds = new Set(currentAutoAssignments.map((a) => a.iconId));
       const matchingIconIds = new Set<string>();
 
       // Evaluate each icon's condition against the client
@@ -88,15 +82,12 @@ export class AutoAssignService {
             }
           }
         } catch (error) {
-          this.logger.warn(
-            `Failed to evaluate client for icon condition`,
-            {
-              clientId: client.id,
-              iconId: icon.id,
-              companyId: client.companyId,
-              error: (error as Error).message,
-            },
-          );
+          this.logger.warn(`Failed to evaluate client for icon condition`, {
+            clientId: client.id,
+            iconId: icon.id,
+            companyId: client.companyId,
+            error: (error as Error).message,
+          });
         }
       }
 
@@ -111,16 +102,13 @@ export class AutoAssignService {
     } catch (error) {
       await queryRunner.rollbackTransaction();
 
-      this.logger.error(
-        `Failed to evaluate icons for client`,
-        {
-          clientId: client.id,
-          companyId: client.companyId,
-          error: (error as Error).message,
-          errorName: (error as Error).name,
-          stack: (error as Error).stack,
-        },
-      );
+      this.logger.error(`Failed to evaluate icons for client`, {
+        clientId: client.id,
+        companyId: client.companyId,
+        error: (error as Error).message,
+        errorName: (error as Error).name,
+        stack: (error as Error).stack,
+      });
 
       throw new ClientException(
         ClientErrorCode.AUTO_ASSIGN_EVALUATION_FAILED,
@@ -129,7 +117,7 @@ export class AutoAssignService {
           clientId: client.id,
           companyId: client.companyId,
           operationStage: 'evaluateAndAssign',
-        },
+        }
       );
     } finally {
       await queryRunner.release();
@@ -148,9 +136,7 @@ export class AutoAssignService {
     iconId: string,
     manager?: EntityManager
   ): Promise<void> {
-    const repo = manager
-      ? manager.getRepository(ClientIconAssignment)
-      : this.assignmentRepository;
+    const repo = manager ? manager.getRepository(ClientIconAssignment) : this.assignmentRepository;
 
     // Check if there's already a manual assignment - don't override manual assignments
     const existingManual = await repo.findOne({
@@ -188,9 +174,7 @@ export class AutoAssignService {
     currentMatchingIconIds: string[],
     manager?: EntityManager
   ): Promise<void> {
-    const repo = manager
-      ? manager.getRepository(ClientIconAssignment)
-      : this.assignmentRepository;
+    const repo = manager ? manager.getRepository(ClientIconAssignment) : this.assignmentRepository;
 
     // Use bulk delete query for efficiency - removes all auto-assignments
     // that are not in the current matching set in a single atomic operation
@@ -229,16 +213,13 @@ export class AutoAssignService {
     // Schedule background processing to avoid blocking the request
     setImmediate(() => {
       this.processIconReevaluationAsync(icon).catch((error) => {
-        this.logger.error(
-          `Failed to reevaluate icon for all clients`,
-          {
-            iconId: icon.id,
-            companyId: icon.companyId,
-            error: error.message,
-            errorName: error.name,
-            stack: error.stack,
-          },
-        );
+        this.logger.error(`Failed to reevaluate icon for all clients`, {
+          iconId: icon.id,
+          companyId: icon.companyId,
+          error: error.message,
+          errorName: error.name,
+          stack: error.stack,
+        });
       });
     });
   }
@@ -258,14 +239,11 @@ export class AutoAssignService {
       return;
     }
 
-    this.logger.log(
-      `Starting icon reevaluation for clients`,
-      {
-        iconId: icon.id,
-        companyId: icon.companyId,
-        totalClients,
-      },
-    );
+    this.logger.log(`Starting icon reevaluation for clients`, {
+      iconId: icon.id,
+      companyId: icon.companyId,
+      totalClients,
+    });
 
     let processed = 0;
 
@@ -286,14 +264,11 @@ export class AutoAssignService {
       }
     }
 
-    this.logger.log(
-      `Completed icon reevaluation for clients`,
-      {
-        iconId: icon.id,
-        companyId: icon.companyId,
-        processedClients: processed,
-      },
-    );
+    this.logger.log(`Completed icon reevaluation for clients`, {
+      iconId: icon.id,
+      companyId: icon.companyId,
+      processedClients: processed,
+    });
   }
 
   /**
@@ -303,10 +278,7 @@ export class AutoAssignService {
   private async processBatch(clients: Client[], icon: ClientIcon): Promise<void> {
     for (const client of clients) {
       try {
-        const matches = this.conditionEvaluator.evaluate(
-          client,
-          icon.autoAssignCondition ?? null,
-        );
+        const matches = this.conditionEvaluator.evaluate(client, icon.autoAssignCondition ?? null);
 
         if (matches) {
           // Should be assigned - addAutoAssignment uses upsert pattern (race-safe)
@@ -326,15 +298,12 @@ export class AutoAssignService {
         }
       } catch (error) {
         // Log error but continue with other clients
-        this.logger.warn(
-          `Failed to evaluate client for icon in batch processing`,
-          {
-            clientId: client.id,
-            iconId: icon.id,
-            companyId: client.companyId,
-            error: (error as Error).message,
-          },
-        );
+        this.logger.warn(`Failed to evaluate client for icon in batch processing`, {
+          clientId: client.id,
+          iconId: icon.id,
+          companyId: client.companyId,
+          error: (error as Error).message,
+        });
       }
     }
   }

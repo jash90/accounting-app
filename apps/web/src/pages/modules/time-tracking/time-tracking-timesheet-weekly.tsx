@@ -1,11 +1,13 @@
 import { useNavigate } from 'react-router-dom';
+
 import { format } from 'date-fns';
 import { ArrowLeft, CalendarDays, List, Calendar } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
 import { PageHeader } from '@/components/common/page-header';
+import { WeeklyTimesheet, TimerWidget } from '@/components/time-tracking';
+import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/contexts/auth-context';
 import { UserRole } from '@/types/enums';
-import { WeeklyTimesheet, TimerWidget } from '@/components/time-tracking';
 
 export default function TimeTrackingTimesheetWeeklyPage() {
   const { user } = useAuthContext();
@@ -43,11 +45,7 @@ export default function TimeTrackingTimesheetWeeklyPage() {
         icon={<CalendarDays className="h-6 w-6" />}
         titleAction={
           <div className="flex items-center gap-1 border rounded-lg p-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/entries`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/entries`)}>
               <List className="h-4 w-4" />
             </Button>
             <Button

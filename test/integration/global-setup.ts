@@ -21,16 +21,18 @@ export default async function globalSetup() {
   });
 
   try {
-    console.log(`📡 Connecting to test database at ${TEST_DB_CONFIG.host}:${TEST_DB_CONFIG.port}...`);
+    console.log(
+      `📡 Connecting to test database at ${TEST_DB_CONFIG.host}:${TEST_DB_CONFIG.port}...`
+    );
     await client.connect();
     console.log('✅ Database connection successful');
 
     // Verify PostgreSQL version
     const result = await client.query('SELECT version()');
     console.log(`📊 PostgreSQL: ${result.rows[0].version.split(',')[0]}`);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Failed to connect to test database');
-    console.error(`   Error: ${error.message}`);
+    console.error(`   Error: ${error instanceof Error ? error.message : String(error)}`);
     console.error('\n💡 Make sure the test database is running:');
     console.error('   docker-compose -f test/integration/docker-compose.yml up -d');
     process.exit(1);

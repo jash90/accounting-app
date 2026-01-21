@@ -10,12 +10,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
 import { OwnerOrAdminGuard } from '@accounting/rbac';
 import { User } from '@accounting/common';
@@ -24,10 +19,7 @@ import { EmailAutodiscoveryService } from '../services/email-autodiscovery.servi
 import { CreateEmailConfigDto } from '../dto/create-email-config.dto';
 import { UpdateEmailConfigDto } from '../dto/update-email-config.dto';
 import { EmailConfigResponseDto } from '../dto/email-config-response.dto';
-import {
-  AutodiscoverRequestDto,
-  AutodiscoverResponseDto,
-} from '../dto/autodiscover.dto';
+import { AutodiscoverRequestDto, AutodiscoverResponseDto } from '../dto/autodiscover.dto';
 
 /**
  * Controller for managing email configurations
@@ -40,7 +32,7 @@ import {
 export class EmailConfigurationController {
   constructor(
     private readonly emailConfigService: EmailConfigurationService,
-    private readonly autodiscoveryService: EmailAutodiscoveryService,
+    private readonly autodiscoveryService: EmailAutodiscoveryService
   ) {}
 
   // ==================== USER ENDPOINTS ====================
@@ -52,7 +44,7 @@ export class EmailConfigurationController {
   @Post('user')
   async createUserConfig(
     @CurrentUser() user: User,
-    @Body() dto: CreateEmailConfigDto,
+    @Body() dto: CreateEmailConfigDto
   ): Promise<EmailConfigResponseDto> {
     return this.emailConfigService.createUserConfig(user.id, dto);
   }
@@ -61,9 +53,7 @@ export class EmailConfigurationController {
    * Get email configuration for current user
    */
   @Get('user')
-  async getUserConfig(
-    @CurrentUser() user: User,
-  ): Promise<EmailConfigResponseDto> {
+  async getUserConfig(@CurrentUser() user: User): Promise<EmailConfigResponseDto> {
     return this.emailConfigService.getUserConfig(user.id);
   }
 
@@ -73,7 +63,7 @@ export class EmailConfigurationController {
   @Put('user')
   async updateUserConfig(
     @CurrentUser() user: User,
-    @Body() dto: UpdateEmailConfigDto,
+    @Body() dto: UpdateEmailConfigDto
   ): Promise<EmailConfigResponseDto> {
     return this.emailConfigService.updateUserConfig(user.id, dto);
   }
@@ -97,7 +87,7 @@ export class EmailConfigurationController {
   @UseGuards(OwnerOrAdminGuard)
   async createCompanyConfig(
     @CurrentUser() user: User,
-    @Body() dto: CreateEmailConfigDto,
+    @Body() dto: CreateEmailConfigDto
   ): Promise<EmailConfigResponseDto> {
     if (!user.companyId) {
       throw new Error('User is not associated with a company');
@@ -110,9 +100,7 @@ export class EmailConfigurationController {
    * Accessible to all employees of the company
    */
   @Get('company')
-  async getCompanyConfig(
-    @CurrentUser() user: User,
-  ): Promise<EmailConfigResponseDto> {
+  async getCompanyConfig(@CurrentUser() user: User): Promise<EmailConfigResponseDto> {
     if (!user.companyId) {
       throw new Error('User is not associated with a company');
     }
@@ -127,7 +115,7 @@ export class EmailConfigurationController {
   @UseGuards(OwnerOrAdminGuard)
   async updateCompanyConfig(
     @CurrentUser() user: User,
-    @Body() dto: UpdateEmailConfigDto,
+    @Body() dto: UpdateEmailConfigDto
   ): Promise<EmailConfigResponseDto> {
     if (!user.companyId) {
       throw new Error('User is not associated with a company');
@@ -178,9 +166,7 @@ export class EmailConfigurationController {
     status: 429,
     description: 'Too Many Requests - Rate limit exceeded. Check Retry-After header.',
   })
-  async autodiscover(
-    @Body() dto: AutodiscoverRequestDto,
-  ): Promise<AutodiscoverResponseDto> {
+  async autodiscover(@Body() dto: AutodiscoverRequestDto): Promise<AutodiscoverResponseDto> {
     const result = await this.autodiscoveryService.discover(dto.email);
     return AutodiscoverResponseDto.fromResult(result);
   }

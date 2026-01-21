@@ -14,7 +14,7 @@ import { UserRole } from '../enums/user-role.enum';
 export class TenantService {
   constructor(
     @InjectRepository(Company)
-    private readonly companyRepository: Repository<Company>,
+    private readonly companyRepository: Repository<Company>
   ) {}
 
   /**

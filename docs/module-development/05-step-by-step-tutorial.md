@@ -11,6 +11,7 @@ This tutorial walks you through creating a complete Tasks Module with full-stack
 ### Step 1: Analyze Requirements
 
 **Business Requirements for Tasks Module**:
+
 - Create, read, update, delete tasks
 - Assign tasks to employees
 - Set priority (low, medium, high, urgent)
@@ -20,6 +21,7 @@ This tutorial walks you through creating a complete Tasks Module with full-stack
 - Audit trail (who created, when)
 
 **Data Model**:
+
 ```
 Task
   - id (UUID)
@@ -36,6 +38,7 @@ Task
 ```
 
 **Permissions**:
+
 - `read`: View tasks
 - `write`: Create and update tasks
 - `delete`: Delete tasks
@@ -58,6 +61,7 @@ nx generate @nx/node:library tasks \
 ```
 
 This creates:
+
 ```
 libs/modules/tasks/
 ├── project.json
@@ -80,6 +84,7 @@ mkdir -p libs/modules/tasks/src/lib/dto
 ```
 
 Final structure:
+
 ```
 libs/modules/tasks/
 └── src/
@@ -132,10 +137,10 @@ export enum TaskPriority {
   URGENT = 'urgent',
 }
 
-@Entity('tasks')  // Table name in database
+@Entity('tasks') // Table name in database
 export class Task {
   @PrimaryGeneratedColumn('uuid')
-  id!: string;  // TypeScript non-null assertion
+  id!: string; // TypeScript non-null assertion
 
   // Business fields
   @Column()
@@ -167,8 +172,8 @@ export class Task {
   companyId!: string | null;
 
   @ManyToOne(() => Company, (company) => company.tasks, {
-    nullable: true,  // Important: allows null for system-level entries
-    onDelete: 'CASCADE',  // When company deleted, all tasks deleted
+    nullable: true, // Important: allows null for system-level entries
+    onDelete: 'CASCADE', // When company deleted, all tasks deleted
   })
   @JoinColumn({ name: 'companyId' })
   company!: Company | null;
@@ -199,6 +204,7 @@ export class Task {
 ```
 
 **Key Points**:
+
 - UUID primary key for security
 - TypeScript non-null assertions (`!`) for all fields
 - `companyId` nullable to support System Admin company pattern
@@ -226,7 +232,7 @@ export * from './lib/entities/simple-text.entity';
 
 // Add new entity export
 export * from './lib/entities/task.entity';
-export { TaskStatus, TaskPriority } from './lib/entities/task.entity';  // Export enums
+export { TaskStatus, TaskPriority } from './lib/entities/task.entity'; // Export enums
 ```
 
 ### Step 6: Update Company Entity
@@ -234,7 +240,7 @@ export { TaskStatus, TaskPriority } from './lib/entities/task.entity';  // Expor
 Add relationship in `libs/common/src/lib/entities/company.entity.ts`:
 
 ```typescript
-import { Task } from './task.entity';  // Add import
+import { Task } from './task.entity'; // Add import
 
 @Entity('companies')
 export class Company {
@@ -328,6 +334,7 @@ export class CreateTaskDto {
 ```
 
 **Key Points**:
+
 - All validation decorators from class-validator
 - Swagger documentation for API docs
 - Optional fields marked with `?` and `@IsOptional()`
@@ -394,18 +401,19 @@ export class UpdateTaskDto {
   })
   @IsOptional()
   @IsDateString()
-  dueDate?: string | null;  // Allow null to clear due date
+  dueDate?: string | null; // Allow null to clear due date
 
   @ApiPropertyOptional({
     description: 'User ID to assign task to',
   })
   @IsOptional()
   @IsUUID()
-  assigneeId?: string | null;  // Allow null to unassign
+  assigneeId?: string | null; // Allow null to unassign
 }
 ```
 
 **Key Points**:
+
 - All fields optional (partial update pattern)
 - Same validation rules as CreateDto
 - Allow `null` for fields that can be cleared
@@ -497,6 +505,7 @@ export class TaskResponseDto {
 ```
 
 **Key Points**:
+
 - Complete API response structure
 - Nested types for related entities (UserBasicInfoDto, CompanyBasicInfoDto)
 - Include `company` object with `isSystemCompany` flag for frontend UI logic
@@ -523,7 +532,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Task, User, UserRole, Company } from '@accounting/common';  // Include Company for System Company pattern
+import { Task, User, UserRole, Company } from '@accounting/common'; // Include Company for System Company pattern
 import { CreateTaskDto } from '../dto/create-task.dto';
 import { UpdateTaskDto } from '../dto/update-task.dto';
 
@@ -535,7 +544,7 @@ export class TaskService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     @InjectRepository(Company)
-    private companyRepository: Repository<Company>,  // Required for System Company pattern
+    private companyRepository: Repository<Company> // Required for System Company pattern
   ) {}
 
   /**
@@ -647,17 +656,15 @@ export class TaskService {
       }
 
       if (assignee.companyId !== targetCompanyId) {
-        throw new ForbiddenException(
-          'Cannot assign task to user from different company',
-        );
+        throw new ForbiddenException('Cannot assign task to user from different company');
       }
     }
 
     // Create task with automatic company/user association
     const task = this.taskRepository.create({
       ...createTaskDto,
-      companyId: targetCompanyId,  // Auto-set from authenticated user or System Company
-      createdById: user.id,        // Auto-set from authenticated user
+      companyId: targetCompanyId, // Auto-set from authenticated user or System Company
+      createdById: user.id, // Auto-set from authenticated user
       // dueDate is automatically converted from string to Date by TypeORM
     });
 
@@ -676,19 +683,12 @@ export class TaskService {
    * - Validates assignee if changed
    * - Partial update supported
    */
-  async update(
-    id: string,
-    updateTaskDto: UpdateTaskDto,
-    user: User,
-  ): Promise<Task> {
+  async update(id: string, updateTaskDto: UpdateTaskDto, user: User): Promise<Task> {
     // Verify ownership and get existing task
     const task = await this.findOne(id, user);
 
     // If assigneeId is being changed, validate new assignee
-    if (
-      updateTaskDto.assigneeId !== undefined &&
-      updateTaskDto.assigneeId !== null
-    ) {
+    if (updateTaskDto.assigneeId !== undefined && updateTaskDto.assigneeId !== null) {
       const assignee = await this.userRepository.findOne({
         where: { id: updateTaskDto.assigneeId },
       });
@@ -698,9 +698,7 @@ export class TaskService {
       }
 
       if (assignee.companyId !== user.companyId) {
-        throw new ForbiddenException(
-          'Cannot assign task to user from different company',
-        );
+        throw new ForbiddenException('Cannot assign task to user from different company');
       }
     }
 
@@ -730,9 +728,7 @@ export class TaskService {
    */
   async findByStatus(status: string, user: User): Promise<Task[]> {
     if (user.role === UserRole.ADMIN) {
-      throw new ForbiddenException(
-        'Admins do not have access to business module data',
-      );
+      throw new ForbiddenException('Admins do not have access to business module data');
     }
 
     if (!user.companyId) {
@@ -754,9 +750,7 @@ export class TaskService {
    */
   async findAssignedToUser(userId: string, user: User): Promise<Task[]> {
     if (user.role === UserRole.ADMIN) {
-      throw new ForbiddenException(
-        'Admins do not have access to business module data',
-      );
+      throw new ForbiddenException('Admins do not have access to business module data');
     }
 
     if (!user.companyId) {
@@ -776,6 +770,7 @@ export class TaskService {
 ```
 
 **Key Points**:
+
 - Repository injection with `@InjectRepository()` (including `Company` for System Company pattern)
 - Multi-tenant filtering by `companyId`
 - **System Admin Company Pattern**: ADMINs work with System Company data
@@ -790,6 +785,7 @@ export class TaskService {
 - Additional helper methods (findByStatus, findAssignedToUser)
 
 **Important Note**: When implementing System Admin Company pattern, you must:
+
 1. Import `Company` entity in addition to your main entity
 2. Inject `Company` repository in service constructor
 3. Create `getSystemCompany()` helper method
@@ -839,11 +835,11 @@ import { CreateTaskDto } from '../dto/create-task.dto';
 import { UpdateTaskDto } from '../dto/update-task.dto';
 import { TaskResponseDto } from '../dto/task-response.dto';
 
-@ApiTags('tasks')                              // Swagger tag
-@ApiBearerAuth('JWT-auth')                     // Requires JWT
-@Controller('modules/tasks')                    // Route: /modules/tasks
+@ApiTags('tasks') // Swagger tag
+@ApiBearerAuth('JWT-auth') // Requires JWT
+@Controller('modules/tasks') // Route: /modules/tasks
 @UseGuards(ModuleAccessGuard, PermissionGuard) // Apply authorization guards
-@RequireModule('tasks')                         // Require module access
+@RequireModule('tasks') // Require module access
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
@@ -879,10 +875,7 @@ export class TaskController {
     enum: ['todo', 'in_progress', 'done', 'cancelled'],
   })
   @ApiResponse({ status: 200, type: [TaskResponseDto] })
-  async findByStatus(
-    @Param('status') status: string,
-    @CurrentUser() user: User,
-  ): Promise<Task[]> {
+  async findByStatus(@Param('status') status: string, @CurrentUser() user: User): Promise<Task[]> {
     return this.taskService.findByStatus(status, user);
   }
 
@@ -897,7 +890,7 @@ export class TaskController {
   @ApiResponse({ status: 200, type: [TaskResponseDto] })
   async findAssignedToUser(
     @Param('userId') userId: string,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ): Promise<Task[]> {
     return this.taskService.findAssignedToUser(userId, user);
   }
@@ -917,10 +910,7 @@ export class TaskController {
   })
   @ApiResponse({ status: 404, description: 'Task not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
-  async findOne(
-    @Param('id') id: string,
-    @CurrentUser() user: User,
-  ): Promise<Task> {
+  async findOne(@Param('id') id: string, @CurrentUser() user: User): Promise<Task> {
     return this.taskService.findOne(id, user);
   }
 
@@ -942,10 +932,7 @@ export class TaskController {
     description: 'Validation error or assignee not found',
   })
   @ApiResponse({ status: 403, description: 'No write permission' })
-  async create(
-    @Body() createTaskDto: CreateTaskDto,
-    @CurrentUser() user: User,
-  ): Promise<Task> {
+  async create(@Body() createTaskDto: CreateTaskDto, @CurrentUser() user: User): Promise<Task> {
     return this.taskService.create(createTaskDto, user);
   }
 
@@ -967,7 +954,7 @@ export class TaskController {
   async update(
     @Param('id') id: string,
     @Body() updateTaskDto: UpdateTaskDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ): Promise<Task> {
     return this.taskService.update(id, updateTaskDto, user);
   }
@@ -984,16 +971,14 @@ export class TaskController {
   @ApiResponse({ status: 204, description: 'Task deleted successfully' })
   @ApiResponse({ status: 404, description: 'Task not found' })
   @ApiResponse({ status: 403, description: 'No delete permission' })
-  async remove(
-    @Param('id') id: string,
-    @CurrentUser() user: User,
-  ): Promise<void> {
+  async remove(@Param('id') id: string, @CurrentUser() user: User): Promise<void> {
     return this.taskService.remove(id, user);
   }
 }
 ```
 
 **Key Points**:
+
 - `@Controller()` with route prefix
 - Guards applied at class level
 - `@RequireModule()` for module access
@@ -1014,7 +999,7 @@ Create file: `libs/modules/tasks/src/lib/tasks.module.ts`
 ```typescript
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Task, User, Company } from '@accounting/common';  // Include Company for System Admin pattern
+import { Task, User, Company } from '@accounting/common'; // Include Company for System Admin pattern
 import { RBACModule } from '@accounting/rbac';
 import { TaskController } from './controllers/task.controller';
 import { TaskService } from './services/task.service';
@@ -1030,12 +1015,13 @@ import { TaskService } from './services/task.service';
   ],
   controllers: [TaskController],
   providers: [TaskService],
-  exports: [TaskService],  // Export if needed by other modules
+  exports: [TaskService], // Export if needed by other modules
 })
 export class TasksModule {}
 ```
 
 **Key Points**:
+
 - Import `TypeOrmModule.forFeature()` with required entities
 - **Include `Company` entity** when service needs System Admin Company pattern
 - Import `RBACModule` for authorization
@@ -1043,6 +1029,7 @@ export class TasksModule {}
 - Export service if other modules need it
 
 **When to include Company entity**:
+
 - Module implements System Admin Company pattern
 - Service needs to query for system company (`getSystemCompany()`)
 - ADMIN users need access to module data
@@ -1069,6 +1056,7 @@ export * from './lib/dto/task-response.dto';
 ```
 
 **Key Points**:
+
 - Export all public APIs
 - Allows importing from `@accounting/modules/tasks`
 
@@ -1091,12 +1079,12 @@ import {
   CompanyModuleAccess,
   UserModulePermission,
   SimpleText,
-  Task,  // Add Task entity
+  Task, // Add Task entity
 } from '@accounting/common';
 import { AuthModule } from '@accounting/auth';
 import { RBACModule } from '@accounting/rbac';
 import { SimpleTextModule } from '@accounting/modules/simple-text';
-import { TasksModule } from '@accounting/modules/tasks';  // Import TasksModule
+import { TasksModule } from '@accounting/modules/tasks'; // Import TasksModule
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -1118,16 +1106,16 @@ import { AppService } from './app.service';
           CompanyModuleAccess,
           UserModulePermission,
           SimpleText,
-          Task,  // Register Task entity
+          Task, // Register Task entity
         ],
-        synchronize: false,  // Use migrations in production
+        synchronize: false, // Use migrations in production
         logging: process.env.NODE_ENV === 'development',
       }),
     }),
     AuthModule,
     RBACModule,
     SimpleTextModule,
-    TasksModule,  // Import TasksModule
+    TasksModule, // Import TasksModule
   ],
   controllers: [AppController],
   providers: [AppService],
@@ -1136,6 +1124,7 @@ export class AppModule {}
 ```
 
 **Key Points**:
+
 - Import `TasksModule`
 - Add `Task` entity to TypeORM entities array
 - Module will be automatically registered
@@ -1153,7 +1142,7 @@ import {
   CompanyModuleAccess,
   UserModulePermission,
   SimpleText,
-  Task,  // Import Task entity
+  Task, // Import Task entity
 } from '@accounting/common';
 
 export default new DataSource({
@@ -1170,7 +1159,7 @@ export default new DataSource({
     CompanyModuleAccess,
     UserModulePermission,
     SimpleText,
-    Task,  // Add Task entity
+    Task, // Add Task entity
   ],
   migrations: ['apps/api/src/migrations/*.ts'],
   synchronize: false,
@@ -1178,6 +1167,7 @@ export default new DataSource({
 ```
 
 **Key Points**:
+
 - Import and register `Task` entity
 - Required for migrations to work
 
@@ -1295,6 +1285,7 @@ export class AddTaskEntity1234567890123 implements MigrationInterface {
 ```
 
 **Key Points**:
+
 - Enum types created for status and priority
 - Table with all columns
 - Foreign key constraints
@@ -1372,6 +1363,7 @@ npm run seed
 ```
 
 **Key Points**:
+
 - Module registered in database
 - Can be assigned to companies by admin
 - Slug matches decorator in controller
@@ -1394,14 +1386,14 @@ const config = new DocumentBuilder()
       description: 'Enter JWT token',
       in: 'header',
     },
-    'JWT-auth',
+    'JWT-auth'
   )
   .addTag('Health', 'Health check endpoints')
   .addTag('Auth', 'Authentication endpoints')
   .addTag('Admin', 'Admin management endpoints')
   .addTag('Company', 'Company management endpoints')
   .addTag('simple-text', 'Simple Text module endpoints')
-  .addTag('tasks', 'Tasks module endpoints')  // Add new tag
+  .addTag('tasks', 'Tasks module endpoints') // Add new tag
   .build();
 ```
 
@@ -1518,15 +1510,18 @@ async remove(@Param('id') id: string, @CurrentUser() user: User) {
 **Complete Swagger Decorator Reference**:
 
 **Operation Documentation**:
+
 - `@ApiOperation({ summary, description })` - ALWAYS include both summary AND description
 - `@ApiTags('module-name')` - Group endpoints by module
 
 **Request Documentation**:
+
 - `@ApiParam({ name, description, example })` - URL parameters
 - `@ApiQuery({ name, description, required })` - Query parameters
 - `@ApiBody({ type, description, examples })` - Request body with examples
 
 **Response Documentation**:
+
 - `@ApiOkResponse({ description, type })` - 200 OK responses
 - `@ApiCreatedResponse({ description, type })` - 201 Created responses
 - `@ApiNoContentResponse({ description })` - 204 No Content responses
@@ -1536,9 +1531,11 @@ async remove(@Param('id') id: string, @CurrentUser() user: User) {
 - `@ApiUnauthorizedResponse({ description })` - 401 Unauthorized responses
 
 **Security**:
+
 - `@ApiBearerAuth('JWT-auth')` - Require JWT authentication
 
 **Key Points**:
+
 - Every endpoint should have @ApiOperation with summary AND description
 - Document all possible response codes
 - Provide examples in @ApiBody for better developer experience
@@ -1547,6 +1544,7 @@ async remove(@Param('id') id: string, @CurrentUser() user: User) {
 - Accessible at `http://localhost:3000/api/docs`
 
 **Testing Swagger**:
+
 1. Start API: `npm run dev`
 2. Open browser: `http://localhost:3000/api/docs`
 3. Use "Authorize" button to add JWT token
@@ -1779,9 +1777,7 @@ describe('TaskService', () => {
         role: UserRole.ADMIN,
       } as User;
 
-      await expect(service.findAll(adminUser)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.findAll(adminUser)).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -1843,7 +1839,7 @@ export interface CreateTaskDto {
   description?: string;
   status?: 'todo' | 'in_progress' | 'done' | 'cancelled';
   priority?: 'low' | 'medium' | 'high' | 'urgent';
-  dueDate?: string;  // ISO 8601 date string
+  dueDate?: string; // ISO 8601 date string
   assigneeId?: string;
 }
 
@@ -1889,6 +1885,7 @@ export interface TaskResponseDto {
 ```
 
 **Key Points**:
+
 - Match backend DTO structure exactly
 - Include `company` object with `isSystemCompany` for UI logic
 - Use TypeScript types for type safety
@@ -1904,62 +1901,47 @@ Create/update file: `web/src/lib/validation/schemas.ts`
 import { z } from 'zod';
 
 export const createTaskSchema = z.object({
-  title: z.string()
-    .min(1, 'Title is required')
-    .max(200, 'Title must be less than 200 characters'),
+  title: z.string().min(1, 'Title is required').max(200, 'Title must be less than 200 characters'),
 
-  description: z.string()
-    .max(5000, 'Description must be less than 5000 characters')
-    .optional(),
+  description: z.string().max(5000, 'Description must be less than 5000 characters').optional(),
 
-  status: z.enum(['todo', 'in_progress', 'done', 'cancelled'])
-    .optional(),
+  status: z.enum(['todo', 'in_progress', 'done', 'cancelled']).optional(),
 
-  priority: z.enum(['low', 'medium', 'high', 'urgent'])
-    .optional(),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
 
-  dueDate: z.string()
+  dueDate: z
+    .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
     .optional(),
 
-  assigneeId: z.string()
-    .uuid('Invalid user ID')
-    .optional(),
+  assigneeId: z.string().uuid('Invalid user ID').optional(),
 });
 
 export type CreateTaskFormData = z.infer<typeof createTaskSchema>;
 
 export const updateTaskSchema = z.object({
-  title: z.string()
-    .min(1)
-    .max(200)
-    .optional(),
+  title: z.string().min(1).max(200).optional(),
 
-  description: z.string()
-    .max(5000)
-    .optional(),
+  description: z.string().max(5000).optional(),
 
-  status: z.enum(['todo', 'in_progress', 'done', 'cancelled'])
-    .optional(),
+  status: z.enum(['todo', 'in_progress', 'done', 'cancelled']).optional(),
 
-  priority: z.enum(['low', 'medium', 'high', 'urgent'])
-    .optional(),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
 
-  dueDate: z.string()
+  dueDate: z
+    .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .nullable()
     .optional(),
 
-  assigneeId: z.string()
-    .uuid()
-    .nullable()
-    .optional(),
+  assigneeId: z.string().uuid().nullable().optional(),
 });
 
 export type UpdateTaskFormData = z.infer<typeof updateTaskSchema>;
 ```
 
 **Key Points**:
+
 - Validation rules match backend DTOs
 - Use `z.infer<>` for TypeScript type generation
 - Client-side validation before API calls
@@ -1996,9 +1978,7 @@ export const tasksApi = {
    * Get tasks by status
    */
   getByStatus: async (status: string): Promise<TaskResponseDto[]> => {
-    const { data } = await apiClient.get<TaskResponseDto[]>(
-      `/api/modules/tasks/status/${status}`
-    );
+    const { data } = await apiClient.get<TaskResponseDto[]>(`/api/modules/tasks/status/${status}`);
     return data;
   },
 
@@ -2016,10 +1996,7 @@ export const tasksApi = {
    * Create new task
    */
   create: async (taskData: CreateTaskDto): Promise<TaskResponseDto> => {
-    const { data } = await apiClient.post<TaskResponseDto>(
-      '/api/modules/tasks',
-      taskData
-    );
+    const { data } = await apiClient.post<TaskResponseDto>('/api/modules/tasks', taskData);
     return data;
   },
 
@@ -2027,10 +2004,7 @@ export const tasksApi = {
    * Update existing task
    */
   update: async (id: string, taskData: UpdateTaskDto): Promise<TaskResponseDto> => {
-    const { data } = await apiClient.patch<TaskResponseDto>(
-      `/api/modules/tasks/${id}`,
-      taskData
-    );
+    const { data } = await apiClient.patch<TaskResponseDto>(`/api/modules/tasks/${id}`, taskData);
     return data;
   },
 
@@ -2044,6 +2018,7 @@ export const tasksApi = {
 ```
 
 **Key Points**:
+
 - Use centralized `apiClient` (axios instance with auth)
 - Type all requests and responses
 - Match backend endpoints exactly
@@ -2075,6 +2050,7 @@ export const queryKeys = {
 ```
 
 **Key Points**:
+
 - Hierarchical query key structure
 - Type-safe with `as const`
 - Enables granular cache invalidation
@@ -2110,7 +2086,7 @@ export function useTask(id: string) {
   return useQuery({
     queryKey: queryKeys.tasks.detail(id),
     queryFn: () => tasksApi.getById(id),
-    enabled: !!id,  // Only fetch if ID exists
+    enabled: !!id, // Only fetch if ID exists
   });
 }
 
@@ -2161,8 +2137,7 @@ export function useUpdateTask() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateTaskDto }) =>
-      tasksApi.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateTaskDto }) => tasksApi.update(id, data),
     onSuccess: (_, variables) => {
       // Invalidate both list and specific task
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
@@ -2212,6 +2187,7 @@ export function useDeleteTask() {
 ```
 
 **Key Points**:
+
 - Separate hook for each operation
 - Automatic cache invalidation on mutations
 - Toast notifications for user feedback
@@ -2356,6 +2332,7 @@ export function TaskListPage() {
 ```
 
 **Key Points**:
+
 - Use existing UI components (DataTable, Button, etc.)
 - State management for dialogs
 - Column definitions with custom cells
@@ -2493,6 +2470,7 @@ export function TaskFormDialog({ open, onClose, task }: TaskFormDialogProps) {
 ```
 
 **Key Points**:
+
 - React Hook Form for form state
 - Zod validation with zodResolver
 - Support both create and edit modes
@@ -2525,6 +2503,7 @@ Add routes for different user roles:
 ```
 
 **Key Points**:
+
 - Same component used across different routes
 - Different URL patterns for different roles
 - Consistent user experience regardless of role
@@ -2534,6 +2513,7 @@ Add routes for different user roles:
 ## Phase 13 Summary
 
 **Frontend Architecture**:
+
 ```
 User Interaction
        |
@@ -2547,6 +2527,7 @@ User Interaction
 ```
 
 **Key Files Created**:
+
 - `web/src/types/dtos.ts` - TypeScript types matching backend
 - `web/src/lib/validation/schemas.ts` - Zod validation schemas
 - `web/src/lib/api/endpoints/tasks.ts` - API client methods
@@ -2557,6 +2538,7 @@ User Interaction
 - `web/src/app/routes.tsx` - Routing (updated)
 
 **Testing Frontend**:
+
 1. Start backend: `npm run dev` (in api project)
 2. Start frontend: `npm run dev` (in web project)
 3. Login with different roles to test access

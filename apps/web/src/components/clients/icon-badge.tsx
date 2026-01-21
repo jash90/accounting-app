@@ -1,8 +1,9 @@
-import { cn } from '@/lib/utils/cn';
-import { ClientIcon } from '@/types/entities';
-import { IconType } from '@/types/enums';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import * as LucideIcons from 'lucide-react';
+
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils/cn';
+import { type ClientIcon } from '@/types/entities';
+import { IconType } from '@/types/enums';
 
 interface IconBadgeProps {
   icon: ClientIcon;
@@ -29,12 +30,7 @@ const emojiSizeClasses = {
   lg: 'text-xl',
 };
 
-export function IconBadge({
-  icon,
-  size = 'md',
-  showTooltip = true,
-  className,
-}: IconBadgeProps) {
+export function IconBadge({ icon, size = 'md', showTooltip = true, className }: IconBadgeProps) {
   const renderIcon = () => {
     switch (icon.iconType) {
       case IconType.LUCIDE: {
@@ -46,7 +42,9 @@ export function IconBadge({
           .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
           .join('');
 
-        const LucideIcon = (LucideIcons as Record<string, React.ComponentType<{ size?: number; className?: string }>>)[pascalCaseName];
+        const LucideIcon = (
+          LucideIcons as Record<string, React.ComponentType<{ size?: number; className?: string }>>
+        )[pascalCaseName];
 
         if (LucideIcon) {
           // Use inline style for color - Tailwind can't detect dynamic classes like text-[${color}]
@@ -71,10 +69,7 @@ export function IconBadge({
       case IconType.EMOJI: {
         return (
           <span
-            className={cn(
-              'flex items-center justify-center shrink-0',
-              emojiSizeClasses[size]
-            )}
+            className={cn('flex items-center justify-center shrink-0', emojiSizeClasses[size])}
             role="img"
             aria-label={icon.name}
           >
@@ -94,10 +89,7 @@ export function IconBadge({
               )}
               style={icon.color ? { backgroundColor: icon.color } : undefined}
             >
-              <LucideIcons.Image
-                size={iconSizeMap[size] * 0.6}
-                className="text-muted-foreground"
-              />
+              <LucideIcons.Image size={iconSizeMap[size] * 0.6} className="text-muted-foreground" />
             </div>
           );
         }

@@ -9,24 +9,24 @@ import {
   UseGuards,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiParam,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+
 import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
   PermissionGuard,
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
-import { User } from '@accounting/common';
-import { TaskCommentsService } from '../services/task-comments.service';
+
 import { CreateTaskCommentDto, UpdateTaskCommentDto } from '../dto/task-comment.dto';
-import { TaskCommentResponseDto, SuccessMessageResponseDto, ErrorResponseDto } from '../dto/task-response.dto';
+import {
+  TaskCommentResponseDto,
+  SuccessMessageResponseDto,
+  ErrorResponseDto,
+} from '../dto/task-response.dto';
+import { TaskCommentsService } from '../services/task-comments.service';
 
 @ApiTags('Task Comments')
 @ApiBearerAuth()
@@ -55,7 +55,7 @@ export class TaskCommentsController {
   async create(
     @Param('taskId', ParseUUIDPipe) taskId: string,
     @Body() dto: CreateTaskCommentDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.commentsService.create(taskId, dto, user);
   }
@@ -69,7 +69,7 @@ export class TaskCommentsController {
   async update(
     @Param('commentId', ParseUUIDPipe) commentId: string,
     @Body() dto: UpdateTaskCommentDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.commentsService.update(commentId, dto, user);
   }

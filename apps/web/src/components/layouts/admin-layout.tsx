@@ -1,8 +1,9 @@
 import { Outlet } from 'react-router-dom';
+
 import { UserMenu } from '@/components/common/user-menu';
 import { Sidebar } from '@/components/sidebar';
-import { useNavigationItems } from '@/hooks/use-navigation-items';
 import { useAuthContext } from '@/contexts/auth-context';
+import { useNavigationItems } from '@/hooks/use-navigation-items';
 
 export default function AdminLayout() {
   const { user } = useAuthContext();

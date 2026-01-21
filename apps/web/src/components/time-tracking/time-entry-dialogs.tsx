@@ -9,7 +9,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
-import { TimeEntryResponseDto } from '@/types/dtos';
+import { type TimeEntryResponseDto } from '@/types/dtos';
 
 interface DeleteDialogProps {
   entry: TimeEntryResponseDto | null;
@@ -17,11 +17,7 @@ interface DeleteDialogProps {
   onConfirm: () => void;
 }
 
-export function TimeEntryDeleteDialog({
-  entry,
-  onClose,
-  onConfirm,
-}: DeleteDialogProps) {
+export function TimeEntryDeleteDialog({ entry, onClose, onConfirm }: DeleteDialogProps) {
   return (
     <AlertDialog open={!!entry} onOpenChange={(open) => !open && onClose()}>
       <AlertDialogContent>

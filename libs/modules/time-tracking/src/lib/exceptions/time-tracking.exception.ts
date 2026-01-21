@@ -18,7 +18,7 @@ export class TimeEntryNotFoundException extends HttpException {
         error: TimeTrackingErrorCode.TIME_ENTRY_NOT_FOUND,
         message: 'Wpis czasu nie został znaleziony lub nie masz do niego dostępu',
       },
-      HttpStatus.NOT_FOUND,
+      HttpStatus.NOT_FOUND
     );
   }
 }
@@ -31,7 +31,7 @@ export class TimerAlreadyRunningException extends HttpException {
         error: TimeTrackingErrorCode.TIMER_ALREADY_RUNNING,
         message: 'Timer jest już uruchomiony. Zatrzymaj obecny timer przed uruchomieniem nowego.',
       },
-      HttpStatus.CONFLICT,
+      HttpStatus.CONFLICT
     );
   }
 }
@@ -44,7 +44,7 @@ export class TimerNotRunningException extends HttpException {
         error: TimeTrackingErrorCode.TIMER_NOT_RUNNING,
         message: 'Nie ma aktywnego timera do zatrzymania.',
       },
-      HttpStatus.NOT_FOUND,
+      HttpStatus.NOT_FOUND
     );
   }
 }
@@ -55,9 +55,10 @@ export class TimeEntryOverlapException extends HttpException {
       {
         statusCode: HttpStatus.CONFLICT,
         error: TimeTrackingErrorCode.TIME_ENTRY_OVERLAP,
-        message: 'Wpis czasu nakłada się z istniejącym wpisem. Nakładające się wpisy nie są dozwolone.',
+        message:
+          'Wpis czasu nakłada się z istniejącym wpisem. Nakładające się wpisy nie są dozwolone.',
       },
-      HttpStatus.CONFLICT,
+      HttpStatus.CONFLICT
     );
   }
 }
@@ -70,7 +71,7 @@ export class TimeEntryLockedException extends HttpException {
         error: TimeTrackingErrorCode.TIME_ENTRY_LOCKED,
         message: 'Wpis czasu jest zablokowany i nie może być edytowany.',
       },
-      HttpStatus.FORBIDDEN,
+      HttpStatus.FORBIDDEN
     );
   }
 }
@@ -83,7 +84,7 @@ export class TimeEntryInvalidStatusException extends HttpException {
         error: TimeTrackingErrorCode.TIME_ENTRY_INVALID_STATUS,
         message: `Nie można zmienić statusu z "${currentStatus}" na "${targetStatus}".`,
       },
-      HttpStatus.BAD_REQUEST,
+      HttpStatus.BAD_REQUEST
     );
   }
 }
@@ -96,7 +97,7 @@ export class TimeEntryUnlockNotAuthorizedException extends HttpException {
         error: TimeTrackingErrorCode.TIME_ENTRY_UNLOCK_NOT_AUTHORIZED,
         message: 'Nie masz uprawnień do odblokowania wpisu czasu.',
       },
-      HttpStatus.FORBIDDEN,
+      HttpStatus.FORBIDDEN
     );
   }
 }

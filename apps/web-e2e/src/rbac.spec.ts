@@ -6,10 +6,10 @@ test.describe('RBAC Scenarios', () => {
     await page.fill('[name="email"]', 'admin@system.com');
     await page.fill('[name="password"]', 'Admin123!');
     await page.click('button[type="submit"]');
-    
+
     // Try to access ai-agent module
     await page.goto('http://localhost:4200/modules/ai-agent');
-    
+
     // Should be redirected or see unauthorized message
     // This depends on backend implementation
     await expect(page).not.toHaveURL(/\/modules\/ai-agent/);
@@ -20,7 +20,7 @@ test.describe('RBAC Scenarios', () => {
     await page.fill('[name="email"]', 'bartlomiej.zimny@onet.pl');
     await page.fill('[name="password"]', 'Owner123!');
     await page.click('button[type="submit"]');
-    
+
     await page.click('text=Employees');
     await expect(page).toHaveURL(/\/company\/employees/);
     await expect(page.locator('text=Employees')).toBeVisible();
@@ -31,7 +31,7 @@ test.describe('RBAC Scenarios', () => {
     await page.fill('[name="email"]', 'bartlomiej.zimny@interia.pl');
     await page.fill('[name="password"]', 'Employee123!');
     await page.click('button[type="submit"]');
-    
+
     await page.goto('http://localhost:4200/modules/ai-agent');
     await expect(page.locator('text=Simple Text')).toBeVisible();
   });
@@ -41,11 +41,10 @@ test.describe('RBAC Scenarios', () => {
     await page.fill('[name="email"]', 'bartlomiej.zimny@interia.pl'); // Only read permission
     await page.fill('[name="password"]', 'Employee123!');
     await page.click('button[type="submit"]');
-    
+
     await page.goto('http://localhost:4200/modules/ai-agent');
-    
+
     // Create button should not be visible
     await expect(page.locator('text=Create Text')).not.toBeVisible();
   });
 });
-

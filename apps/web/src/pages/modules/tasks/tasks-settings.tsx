@@ -1,13 +1,13 @@
 import { useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { useTaskLabels, useCreateTaskLabel, useUpdateTaskLabel, useDeleteTaskLabel } from '@/lib/hooks/use-tasks';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
+
+import { Settings, ArrowLeft, Plus, Edit, Trash2, Tag } from 'lucide-react';
+
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -24,17 +27,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Settings,
-  ArrowLeft,
-  Plus,
-  Edit,
-  Trash2,
-  Tag,
-} from 'lucide-react';
-import { TaskLabelResponseDto, CreateTaskLabelDto, UpdateTaskLabelDto } from '@/types/dtos';
-import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { useAuthContext } from '@/contexts/auth-context';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import {
+  useTaskLabels,
+  useCreateTaskLabel,
+  useUpdateTaskLabel,
+  useDeleteTaskLabel,
+} from '@/lib/hooks/use-tasks';
+import {
+  type TaskLabelResponseDto,
+  type CreateTaskLabelDto,
+  type UpdateTaskLabelDto,
+} from '@/types/dtos';
 import { UserRole } from '@/types/enums';
 
 const DEFAULT_COLORS = [
@@ -142,9 +147,7 @@ export default function TasksSettingsPage() {
                 <Tag className="h-5 w-5" />
                 Etykiety
               </CardTitle>
-              <CardDescription>
-                Twórz i zarządzaj etykietami do kategoryzacji zadań
-              </CardDescription>
+              <CardDescription>Twórz i zarządzaj etykietami do kategoryzacji zadań</CardDescription>
             </div>
             {hasWritePermission && (
               <Button onClick={handleOpenCreateDialog}>
@@ -221,9 +224,7 @@ export default function TasksSettingsPage() {
       <Dialog open={labelDialogOpen} onOpenChange={setLabelDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editingLabel ? 'Edytuj etykietę' : 'Nowa etykieta'}
-            </DialogTitle>
+            <DialogTitle>{editingLabel ? 'Edytuj etykietę' : 'Nowa etykieta'}</DialogTitle>
             <DialogDescription>
               {editingLabel
                 ? 'Zmień nazwę lub kolor etykiety'

@@ -18,7 +18,9 @@ import {
   ApiParam,
   ApiExtraModels,
 } from '@nestjs/swagger';
+
 import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
   PermissionGuard,
@@ -27,8 +29,8 @@ import {
   OwnerOrAdminGuard,
   OwnerOrAdmin,
 } from '@accounting/rbac';
-import { User } from '@accounting/common';
-import { CustomFieldsService } from '../services/custom-fields.service';
+
+import { SuccessMessageResponseDto, ErrorResponseDto } from '../dto/client-response.dto';
 import {
   CreateFieldDefinitionDto,
   UpdateFieldDefinitionDto,
@@ -36,10 +38,7 @@ import {
   FieldDefinitionResponseDto,
   PaginatedFieldDefinitionsResponseDto,
 } from '../dto/field-definition.dto';
-import {
-  SuccessMessageResponseDto,
-  ErrorResponseDto,
-} from '../dto/client-response.dto';
+import { CustomFieldsService } from '../services/custom-fields.service';
 
 /**
  * Controller for managing custom field definitions within the clients module.
@@ -51,11 +50,7 @@ import {
  */
 @ApiTags('Client Field Definitions')
 @ApiBearerAuth()
-@ApiExtraModels(
-  FieldDefinitionResponseDto,
-  PaginatedFieldDefinitionsResponseDto,
-  ErrorResponseDto,
-)
+@ApiExtraModels(FieldDefinitionResponseDto, PaginatedFieldDefinitionsResponseDto, ErrorResponseDto)
 @Controller('modules/clients/field-definitions')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('clients')
@@ -69,7 +64,7 @@ export class FieldDefinitionsController {
   @ApiOperation({
     summary: 'Get all field definitions',
     description:
-      'Retrieves a paginated list of custom field definitions for the authenticated user\'s company. ' +
+      "Retrieves a paginated list of custom field definitions for the authenticated user's company. " +
       'Field definitions define the custom data fields available for clients. ' +
       'Supports pagination with configurable page size.',
   })
@@ -101,7 +96,7 @@ export class FieldDefinitionsController {
     summary: 'Get a field definition by ID',
     description:
       'Retrieves detailed information about a specific field definition. ' +
-      'The field definition must belong to the authenticated user\'s company.',
+      "The field definition must belong to the authenticated user's company.",
   })
   @ApiParam({
     name: 'id',
@@ -122,7 +117,8 @@ export class FieldDefinitionsController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - User lacks read permission or field definition belongs to different company',
+    description:
+      'Forbidden - User lacks read permission or field definition belongs to different company',
     type: ErrorResponseDto,
   })
   @ApiResponse({
@@ -131,10 +127,7 @@ export class FieldDefinitionsController {
     type: ErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
-  async findOne(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
-  ) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.customFieldsService.findDefinitionById(id, user);
   }
 
@@ -172,10 +165,7 @@ export class FieldDefinitionsController {
   @UseGuards(OwnerOrAdminGuard)
   @OwnerOrAdmin()
   @RequirePermission('clients', 'write')
-  async create(
-    @Body() dto: CreateFieldDefinitionDto,
-    @CurrentUser() user: User,
-  ) {
+  async create(@Body() dto: CreateFieldDefinitionDto, @CurrentUser() user: User) {
     return this.customFieldsService.createDefinition(dto, user);
   }
 
@@ -228,7 +218,7 @@ export class FieldDefinitionsController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateFieldDefinitionDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.customFieldsService.updateDefinition(id, dto, user);
   }
@@ -273,10 +263,7 @@ export class FieldDefinitionsController {
   @UseGuards(OwnerOrAdminGuard)
   @OwnerOrAdmin()
   @RequirePermission('clients', 'delete')
-  async remove(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
-  ) {
+  async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     await this.customFieldsService.removeDefinition(id, user);
     return { message: 'Field definition deleted successfully' };
   }

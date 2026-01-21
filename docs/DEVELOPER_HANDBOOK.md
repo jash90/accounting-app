@@ -22,12 +22,14 @@
 ### Setup (30 minutes)
 
 **Prerequisites**:
+
 - Node.js 20+
 - npm 9+
 - PostgreSQL 14+
 - Git
 
 **Installation**:
+
 ```bash
 # 1. Clone repository
 git clone https://github.com/your-org/accounting.git
@@ -55,6 +57,7 @@ npm run serve:web    # Frontend (port 4200)
 ```
 
 **Verify**:
+
 ```bash
 # Test backend
 curl http://localhost:3000
@@ -132,7 +135,7 @@ import { Repository } from 'typeorm';
 export class EntityService {
   constructor(
     @InjectRepository(Entity)
-    private repository: Repository<Entity>,
+    private repository: Repository<Entity>
   ) {}
 
   // Always filter by companyId
@@ -182,6 +185,7 @@ export class EntityService {
 ```
 
 **Key Points**:
+
 - Always filter by `companyId`
 - Never trust `companyId` from request
 - Block ADMIN from business data
@@ -242,7 +246,7 @@ export class UpdateEntityDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  description?: string | null;  // Allow null to clear
+  description?: string | null; // Allow null to clear
 }
 ```
 
@@ -345,9 +349,7 @@ import { http, HttpResponse } from 'msw';
 
 export const handlers = [
   http.get('/api/entities', () => {
-    return HttpResponse.json([
-      { id: '1', title: 'Entity 1' },
-    ]);
+    return HttpResponse.json([{ id: '1', title: 'Entity 1' }]);
   }),
 ];
 ```
@@ -361,6 +363,7 @@ export const handlers = [
 **Full guide**: `duplicated/guides/MODULE_DEVELOPMENT.md`
 
 **Steps**:
+
 1. Generate library: `nx generate @nx/node:library module-name`
 2. Create entity in `libs/common/src/lib/entities/`
 3. Create DTOs with validation
@@ -372,6 +375,7 @@ export const handlers = [
 9. Add to seeder
 
 **Entity Template**:
+
 ```typescript
 @Entity('entities')
 @Index(['companyId'])
@@ -383,7 +387,7 @@ export class Entity {
   title!: string;
 
   @Column({ nullable: true })
-  companyId!: string | null;  // Nullable for System Admin
+  companyId!: string | null; // Nullable for System Admin
 
   @ManyToOne(() => Company, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'companyId' })
@@ -411,6 +415,7 @@ export class Entity {
 ### Quick Deploy
 
 **Heroku**:
+
 ```bash
 heroku create accounting-api
 heroku addons:create heroku-postgresql
@@ -420,6 +425,7 @@ heroku run npm run migration:run
 ```
 
 **Vercel (Frontend)**:
+
 ```bash
 vercel --prod
 ```
@@ -427,6 +433,7 @@ vercel --prod
 ### Production Checklist
 
 **Security**:
+
 - [ ] HTTPS enforced
 - [ ] Strong JWT secrets (64+ chars)
 - [ ] CORS configured
@@ -435,12 +442,14 @@ vercel --prod
 - [ ] Secrets not committed
 
 **Performance**:
+
 - [ ] Bundle size < 500KB
 - [ ] Database queries optimized
 - [ ] Caching enabled
 - [ ] CDN configured
 
 **Monitoring**:
+
 - [ ] Error tracking (Sentry)
 - [ ] Performance monitoring
 - [ ] Database backups automated
@@ -451,6 +460,7 @@ vercel --prod
 ## Related Documentation
 
 **Complete References**:
+
 - Onboarding: `duplicated/guides/DEVELOPER_ONBOARDING.md`
 - Deployment: `duplicated/guides/DEPLOYMENT_GUIDE.md`
 - Module Development: `duplicated/guides/MODULE_DEVELOPMENT.md`
@@ -458,6 +468,7 @@ vercel --prod
 - Testing Report: `duplicated/guides/TEST_IMPLEMENTATION_REPORT.md`
 
 **Other Guides**:
+
 - Frontend: `FRONTEND_GUIDE.md`
 - API: `API_DOCUMENTATION.md`
 - Architecture: `ARCHITECTURE_GUIDE.md`

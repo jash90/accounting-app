@@ -1,6 +1,8 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository, In, Brackets, DataSource } from 'typeorm';
+
 import {
   Task,
   TaskLabel,
@@ -12,7 +14,12 @@ import {
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
-import { TaskNotFoundException, TaskInvalidParentException } from '../exceptions';
+
+import {
+  KanbanBoardResponseDto,
+  KanbanColumnDto,
+  ClientTaskStatisticsDto,
+} from '../dto/task-response.dto';
 import {
   CreateTaskDto,
   UpdateTaskDto,
@@ -20,11 +27,7 @@ import {
   ReorderTasksDto,
   BulkUpdateStatusDto,
 } from '../dto/task.dto';
-import {
-  KanbanBoardResponseDto,
-  KanbanColumnDto,
-  ClientTaskStatisticsDto,
-} from '../dto/task-response.dto';
+import { TaskNotFoundException, TaskInvalidParentException } from '../exceptions';
 import { TaskNotificationService } from './task-notification.service';
 
 /**
@@ -54,14 +57,11 @@ export class TasksService {
     private readonly changeLogService: ChangeLogService,
     private readonly tenantService: TenantService,
     private readonly taskNotificationService: TaskNotificationService,
-    private readonly dataSource: DataSource,
+    private readonly dataSource: DataSource
   ) {}
 
   private escapeLikePattern(pattern: string): string {
-    return pattern
-      .replace(/\\/g, '\\\\')
-      .replace(/%/g, '\\%')
-      .replace(/_/g, '\\_');
+    return pattern.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
   }
 
   async findAll(user: User, filters?: TaskFiltersDto): Promise<PaginatedResponseDto<Task>> {
@@ -83,9 +83,12 @@ export class TasksService {
       const escapedSearch = this.escapeLikePattern(filters.search);
       queryBuilder.andWhere(
         new Brackets((qb) => {
-          qb.where("task.title ILIKE :search ESCAPE '\\'", { search: `%${escapedSearch}%` })
-            .orWhere("task.description ILIKE :search ESCAPE '\\'", { search: `%${escapedSearch}%` });
-        }),
+          qb.where("task.title ILIKE :search ESCAPE '\\'", {
+            search: `%${escapedSearch}%`,
+          }).orWhere("task.description ILIKE :search ESCAPE '\\'", {
+            search: `%${escapedSearch}%`,
+          });
+        })
       );
     }
 
@@ -282,10 +285,7 @@ export class TasksService {
     return tasks;
   }
 
-  async getClientTaskStatistics(
-    clientId: string,
-    user: User,
-  ): Promise<ClientTaskStatisticsDto> {
+  async getClientTaskStatistics(clientId: string, user: User): Promise<ClientTaskStatisticsDto> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     // Verify client belongs to the company (multi-tenant isolation)
@@ -389,7 +389,7 @@ export class TasksService {
           taskId: savedTask.id,
           labelId: label.id,
           assignedById: user.id,
-        }),
+        })
       );
       await this.labelAssignmentRepository.save(assignments);
       (savedTask as Task & { labels?: TaskLabel[] }).labels = labels;
@@ -402,27 +402,29 @@ export class TasksService {
       'Task',
       savedTask.id,
       this.sanitizeTaskForLog(savedTask),
-      user,
+      user
     );
 
     // Send notification if task is associated with a client
     if (savedTask.clientId) {
       // Load task with relations for notification
       const taskWithRelations = await this.findOne(savedTask.id, user);
-      this.taskNotificationService
-        .notifyTaskCreated(taskWithRelations, user)
-        .catch((error) => {
-          this.logger.error('Failed to send task created notification', {
-            taskId: savedTask.id,
-            error: (error as Error).message,
-          });
+      this.taskNotificationService.notifyTaskCreated(taskWithRelations, user).catch((error) => {
+        this.logger.error('Failed to send task created notification', {
+          taskId: savedTask.id,
+          error: (error as Error).message,
         });
+      });
     }
 
     return savedTask as Task & { labels?: TaskLabel[] };
   }
 
-  async update(id: string, dto: UpdateTaskDto, user: User): Promise<Task & { labels?: TaskLabel[] }> {
+  async update(
+    id: string,
+    dto: UpdateTaskDto,
+    user: User
+  ): Promise<Task & { labels?: TaskLabel[] }> {
     const task = await this.findOne(id, user);
     const oldValues = this.sanitizeTaskForLog(task);
     const oldClientId = task.clientId;
@@ -443,14 +445,18 @@ export class TasksService {
           throw new TaskInvalidParentException(id, dto.parentTaskId);
         }
         // Prevent setting parent to itself or descendant
-        if (dto.parentTaskId === id || await this.isDescendant(dto.parentTaskId, id)) {
+        if (dto.parentTaskId === id || (await this.isDescendant(dto.parentTaskId, id))) {
           throw new TaskInvalidParentException(id, dto.parentTaskId);
         }
       }
     }
 
     // Validate assignee ownership if being changed
-    if (dto.assigneeId !== undefined && dto.assigneeId !== task.assigneeId && dto.assigneeId !== null) {
+    if (
+      dto.assigneeId !== undefined &&
+      dto.assigneeId !== task.assigneeId &&
+      dto.assigneeId !== null
+    ) {
       await this.validateAssigneeOwnership(dto.assigneeId, companyId);
     }
 
@@ -474,7 +480,7 @@ export class TasksService {
             taskId: id,
             labelId: label.id,
             assignedById: user.id,
-          }),
+          })
         );
         await this.labelAssignmentRepository.save(assignments);
         (savedTask as Task & { labels?: TaskLabel[] }).labels = labels;
@@ -489,7 +495,7 @@ export class TasksService {
       savedTask.id,
       oldValues,
       this.sanitizeTaskForLog(savedTask),
-      user,
+      user
     );
 
     // Send notification if task is/was associated with a client
@@ -520,14 +526,12 @@ export class TasksService {
 
     // Send notification if task was associated with a client
     if (task.clientId) {
-      this.taskNotificationService
-        .notifyTaskDeleted(task, user)
-        .catch((error) => {
-          this.logger.error('Failed to send task deleted notification', {
-            taskId: task.id,
-            error: (error as Error).message,
-          });
+      this.taskNotificationService.notifyTaskDeleted(task, user).catch((error) => {
+        this.logger.error('Failed to send task deleted notification', {
+          taskId: task.id,
+          error: (error as Error).message,
         });
+      });
     }
   }
 
@@ -559,7 +563,7 @@ export class TasksService {
     for (let i = 0; i < dto.taskIds.length; i++) {
       await this.taskRepository.update(
         { id: dto.taskIds[i], companyId },
-        { sortOrder: i, ...(dto.newStatus ? { status: dto.newStatus } : {}) },
+        { sortOrder: i, ...(dto.newStatus ? { status: dto.newStatus } : {}) }
       );
     }
   }
@@ -580,7 +584,7 @@ export class TasksService {
 
     const result = await this.taskRepository.update(
       { id: In(dto.taskIds), companyId },
-      { status: dto.status },
+      { status: dto.status }
     );
 
     return { updated: result.affected ?? 0 };
@@ -637,13 +641,12 @@ export class TasksService {
     if (!allowedTransitions || !allowedTransitions.includes(to)) {
       const fromLabel = TaskStatusLabels[from] || from;
       const toLabel = TaskStatusLabels[to] || to;
-      const allowedLabels = allowedTransitions
-        ?.map((s) => TaskStatusLabels[s] || s)
-        .join(', ') || 'none';
+      const allowedLabels =
+        allowedTransitions?.map((s) => TaskStatusLabels[s] || s).join(', ') || 'none';
 
       throw new BadRequestException(
         `Nieprawidłowa zmiana statusu: ${fromLabel} → ${toLabel}. ` +
-        `Dozwolone przejścia z "${fromLabel}": ${allowedLabels}`
+          `Dozwolone przejścia z "${fromLabel}": ${allowedLabels}`
       );
     }
   }

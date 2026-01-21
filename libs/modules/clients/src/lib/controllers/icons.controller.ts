@@ -13,8 +13,9 @@ import {
   ParseUUIDPipe,
   BadRequestException,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
+
 import { memoryStorage } from 'multer';
 
 // File upload configuration
@@ -25,13 +26,11 @@ const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'
 const fileFilter = (
   _req: Express.Request,
   file: Express.Multer.File,
-  callback: (error: Error | null, acceptFile: boolean) => void,
+  callback: (error: Error | null, acceptFile: boolean) => void
 ) => {
   if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
     callback(
-      new BadRequestException(
-        `Invalid file type. Allowed types: ${ALLOWED_MIME_TYPES.join(', ')}`
-      ),
+      new BadRequestException(`Invalid file type. Allowed types: ${ALLOWED_MIME_TYPES.join(', ')}`),
       false
     );
     return;
@@ -54,7 +53,9 @@ import {
   ApiParam,
   ApiExtraModels,
 } from '@nestjs/swagger';
+
 import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
   PermissionGuard,
@@ -63,8 +64,8 @@ import {
   OwnerOrAdminGuard,
   OwnerOrAdmin,
 } from '@accounting/rbac';
-import { User } from '@accounting/common';
-import { ClientIconsService } from '../services/client-icons.service';
+
+import { SuccessMessageResponseDto, ErrorResponseDto } from '../dto/client-response.dto';
 import {
   CreateIconDto,
   UpdateIconDto,
@@ -75,7 +76,7 @@ import {
   IconAssignmentResponseDto,
   IconUrlResponseDto,
 } from '../dto/icon.dto';
-import { SuccessMessageResponseDto, ErrorResponseDto } from '../dto/client-response.dto';
+import { ClientIconsService } from '../services/client-icons.service';
 
 /**
  * Controller for managing client icons within the clients module.
@@ -94,7 +95,7 @@ import { SuccessMessageResponseDto, ErrorResponseDto } from '../dto/client-respo
   IconAssignmentResponseDto,
   IconUrlResponseDto,
   SuccessMessageResponseDto,
-  ErrorResponseDto,
+  ErrorResponseDto
 )
 @Controller('modules/clients/icons')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
@@ -113,7 +114,7 @@ export class IconsController {
   @ApiOperation({
     summary: 'Get all icons',
     description:
-      'Retrieves a paginated list of icons defined for the authenticated user\'s company. ' +
+      "Retrieves a paginated list of icons defined for the authenticated user's company. " +
       'Icons can be of three types: Lucide icons, custom uploaded images, or emoji. ' +
       'Each icon may have an auto-assign condition for automatic assignment to clients matching specific criteria.',
   })
@@ -178,7 +179,7 @@ export class IconsController {
   @RequirePermission('clients', 'read')
   async getClientIcons(
     @Param('clientId', ParseUUIDPipe) clientId: string,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.iconsService.getClientIcons(clientId, user);
   }
@@ -192,7 +193,7 @@ export class IconsController {
     description:
       'Manually assigns an icon to a client. This creates a manual assignment that ' +
       'will not be affected by auto-assign rule changes. Both the icon and client must ' +
-      'belong to the authenticated user\'s company.',
+      "belong to the authenticated user's company.",
   })
   @ApiResponse({
     status: 201,
@@ -273,7 +274,7 @@ export class IconsController {
   async unassignIcon(
     @Param('clientId', ParseUUIDPipe) clientId: string,
     @Param('iconId', ParseUUIDPipe) iconId: string,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     await this.iconsService.unassignIcon(clientId, iconId, user);
     return { message: 'Icon unassigned successfully' };
@@ -322,10 +323,7 @@ export class IconsController {
     type: ErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
-  async getUrl(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
-  ) {
+  async getUrl(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     const url = await this.iconsService.getIconUrl(id, user);
     return { url };
   }
@@ -339,7 +337,7 @@ export class IconsController {
     description:
       'Retrieves detailed information about a specific icon including its type, ' +
       'configuration, and auto-assign condition if defined. The icon must belong to ' +
-      'the authenticated user\'s company.',
+      "the authenticated user's company.",
   })
   @ApiParam({
     name: 'id',
@@ -369,10 +367,7 @@ export class IconsController {
     type: ErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
-  async findOne(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
-  ) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.iconsService.findIconById(id, user);
   }
 
@@ -425,7 +420,8 @@ export class IconsController {
         autoAssignCondition: {
           type: 'string',
           description: 'JSON string with auto-assign condition for automatic icon assignment',
-          example: '{"type":"AND","conditions":[{"field":"vatStatus","operator":"equals","value":"VAT_MONTHLY"}]}',
+          example:
+            '{"type":"AND","conditions":[{"field":"vatStatus","operator":"equals","value":"VAT_MONTHLY"}]}',
         },
         file: {
           type: 'string',
@@ -469,7 +465,7 @@ export class IconsController {
   async create(
     @Body() dto: CreateIconDto,
     @UploadedFile() file: Express.Multer.File | undefined,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.iconsService.createIcon(dto, file, user);
   }
@@ -566,7 +562,7 @@ export class IconsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateIconDto,
     @UploadedFile() file: Express.Multer.File | undefined,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.iconsService.updateIcon(id, dto, file, user);
   }
@@ -612,10 +608,7 @@ export class IconsController {
   @UseGuards(OwnerOrAdminGuard)
   @OwnerOrAdmin()
   @RequirePermission('clients', 'delete')
-  async remove(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
-  ) {
+  async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     await this.iconsService.removeIcon(id, user);
     return { message: 'Icon deleted successfully' };
   }

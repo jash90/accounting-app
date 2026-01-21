@@ -73,7 +73,9 @@ export class EmailSenderService {
       const info = await transporter.sendMail(mailOptions);
 
       this.logger.log(`Email sent successfully: ${(info as { messageId?: string }).messageId}`);
-      this.logger.debug(`Preview URL: ${nodemailer.getTestMessageUrl(info as nodemailer.SentMessageInfo)}`);
+      this.logger.debug(
+        `Preview URL: ${nodemailer.getTestMessageUrl(info as nodemailer.SentMessageInfo)}`
+      );
     } catch (error) {
       const err = error as Error;
       this.logger.error(`Failed to send email: ${err.message}`, err.stack);
@@ -90,12 +92,12 @@ export class EmailSenderService {
       this.logger.debug('Batch email processing started', {
         totalCount: messages.length,
         smtpHost: smtpConfig.host,
-        recipients: messages.map(m => this.maskEmail(Array.isArray(m.to) ? m.to[0] : m.to)),
+        recipients: messages.map((m) => this.maskEmail(Array.isArray(m.to) ? m.to[0] : m.to)),
       });
     }
 
     try {
-      const promises = messages.map(message => this.sendEmail(smtpConfig, message));
+      const promises = messages.map((message) => this.sendEmail(smtpConfig, message));
       await Promise.all(promises);
 
       if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
@@ -197,7 +199,7 @@ export class EmailSenderService {
    */
   private maskEmail(email: string): string {
     if (!email) return 'N/A';
-    const [local, domain] = email.split('@');
+    const [, domain] = email.split('@');
     return `***@${domain || 'unknown'}`;
   }
 
@@ -214,7 +216,7 @@ export class EmailSenderService {
   async sendBatchEmailsAndSave(
     smtpConfig: SmtpConfig,
     imapConfig: ImapConfig,
-    messages: EmailMessage[],
+    messages: EmailMessage[]
   ): Promise<void> {
     this.logger.log(`Sending batch of ${messages.length} emails with IMAP save`);
 
@@ -249,7 +251,7 @@ export class EmailSenderService {
   async sendEmailAndSave(
     smtpConfig: SmtpConfig,
     imapConfig: ImapConfig,
-    message: EmailMessage,
+    message: EmailMessage
   ): Promise<void> {
     const recipient = this.maskEmail(Array.isArray(message.to) ? message.to[0] : message.to);
     this.logger.log(`Sending email with IMAP save: ${recipient}`);
@@ -296,7 +298,7 @@ export class EmailSenderService {
         imapConfig,
         sentFolder,
         rawMessage,
-        ['\\Seen'], // Mark as read
+        ['\\Seen'] // Mark as read
       );
 
       this.logger.log(`Email saved to ${sentFolder} folder via IMAP`);

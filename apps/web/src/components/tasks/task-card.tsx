@@ -1,17 +1,20 @@
 import { forwardRef } from 'react';
+
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { cn } from '@/lib/utils/cn';
-import { TaskResponseDto } from '@/types/dtos';
-import { TaskStatusBadge } from './task-status-badge';
-import { TaskPriorityBadge } from './task-priority-badge';
-import { TaskLabelList } from './task-label-badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Calendar, MessageSquare, Link2, GripVertical } from 'lucide-react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import { Calendar, MessageSquare, Link2, GripVertical } from 'lucide-react';
+
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils/cn';
+import { type TaskResponseDto } from '@/types/dtos';
+
+import { TaskLabelList } from './task-label-badge';
+import { TaskPriorityBadge } from './task-priority-badge';
+import { TaskStatusBadge } from './task-status-badge';
 
 interface TaskCardProps {
   task: TaskResponseDto;
@@ -34,8 +37,7 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
       return (first + last).toUpperCase() || '?';
     };
 
-    const isOverdue =
-      task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
+    const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
       if (onClick && (e.key === 'Enter' || e.key === ' ')) {
@@ -63,9 +65,7 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
       >
         <CardContent className="p-3 space-y-2">
           {/* Labels */}
-          {labels.length > 0 && (
-            <TaskLabelList labels={labels as any} size="sm" maxVisible={2} />
-          )}
+          {labels.length > 0 && <TaskLabelList labels={labels as any} size="sm" maxVisible={2} />}
 
           {/* Title */}
           <h4 className="font-medium text-sm leading-snug line-clamp-2">{task.title}</h4>
@@ -166,14 +166,9 @@ interface SortableTaskCardProps extends TaskCardProps {
 }
 
 export function SortableTaskCard({ id, ...props }: SortableTaskCardProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),

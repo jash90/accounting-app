@@ -1,4 +1,10 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RBACService } from '../services/rbac.service';
 import { REQUIRE_PERMISSION_KEY } from '../decorators/require-permission.decorator';
@@ -9,7 +15,7 @@ export class PermissionGuard implements CanActivate {
 
   constructor(
     private rbacService: RBACService,
-    private reflector: Reflector,
+    private reflector: Reflector
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -32,13 +38,13 @@ export class PermissionGuard implements CanActivate {
     const hasPermission = await this.rbacService.hasPermission(
       user.id,
       permissionData.module,
-      permissionData.permission,
+      permissionData.permission
     );
 
     if (!hasPermission) {
       // Log detailed information for debugging (only visible server-side)
       this.logger.warn(
-        `Permission denied for user ${user.id}: ${permissionData.permission} on module ${permissionData.module}`,
+        `Permission denied for user ${user.id}: ${permissionData.permission} on module ${permissionData.module}`
       );
       // Return generic message to client to prevent information disclosure
       throw new ForbiddenException('Nie masz uprawnień do wykonania tej operacji');
@@ -47,4 +53,3 @@ export class PermissionGuard implements CanActivate {
     return true;
   }
 }
-

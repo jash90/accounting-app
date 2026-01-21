@@ -1,5 +1,6 @@
+import { type UserDto, type CreateUserDto, type UpdateUserDto } from '@/types/dtos';
+
 import apiClient from '../client';
-import { UserDto, CreateUserDto, UpdateUserDto } from '@/types/dtos';
 
 export const usersApi = {
   getAll: async (): Promise<UserDto[]> => {
@@ -27,7 +28,9 @@ export const usersApi = {
   },
 
   activate: async (id: string, isActive: boolean): Promise<UserDto> => {
-    const { data } = await apiClient.patch<UserDto>(`/api/admin/users/${id}/activate`, { isActive });
+    const { data } = await apiClient.patch<UserDto>(`/api/admin/users/${id}/activate`, {
+      isActive,
+    });
     return data;
   },
 
@@ -36,4 +39,3 @@ export const usersApi = {
     return data;
   },
 };
-

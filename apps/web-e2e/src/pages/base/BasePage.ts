@@ -89,7 +89,7 @@ export class BasePage {
    * Get text content of an element
    */
   async getText(selector: string): Promise<string> {
-    return await this.page.textContent(selector) || '';
+    return (await this.page.textContent(selector)) || '';
   }
 
   /**
@@ -189,7 +189,10 @@ export class BasePage {
   /**
    * Get locator by role
    */
-  getByRole(role: 'button' | 'link' | 'heading' | 'textbox' | 'checkbox' | 'radio' | 'combobox', options?: { name?: string }): Locator {
+  getByRole(
+    role: 'button' | 'link' | 'heading' | 'textbox' | 'checkbox' | 'radio' | 'combobox',
+    options?: { name?: string }
+  ): Locator {
     return this.page.getByRole(role, options);
   }
 

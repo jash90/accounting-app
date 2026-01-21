@@ -1,25 +1,18 @@
-import {
-  Controller,
-  Get,
-  UseGuards,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
+
 import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { User, Client, UserRole } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
 import {
   ModuleAccessGuard,
   PermissionGuard,
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
-import { User, Client, UserRole } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 interface AssigneeDto {
   id: string;
@@ -44,7 +37,7 @@ export class TasksLookupController {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
-    private readonly tenantService: TenantService,
+    private readonly tenantService: TenantService
   ) {}
 
   @Get('assignees')

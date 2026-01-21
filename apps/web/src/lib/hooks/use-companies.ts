@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useToast } from '@/components/ui/use-toast';
+import { type ApiErrorResponse } from '@/types/api';
+import { type CreateCompanyDto, type UpdateCompanyDto } from '@/types/dtos';
+
 import { companiesApi } from '../api/endpoints/companies';
 import { queryKeys } from '../api/query-client';
-import { CreateCompanyDto, UpdateCompanyDto } from '@/types/dtos';
-import { useToast } from '@/components/ui/use-toast';
-import { ApiErrorResponse } from '@/types/api';
 
 export function useCompanies() {
   return useQuery({
@@ -110,7 +112,9 @@ export function useGrantModuleToCompany() {
     mutationFn: ({ companyId, moduleSlug }: { companyId: string; moduleSlug: string }) =>
       companiesApi.grantModuleToCompany(companyId, moduleSlug),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.companies.detail(variables.companyId), 'modules'] });
+      queryClient.invalidateQueries({
+        queryKey: [...queryKeys.companies.detail(variables.companyId), 'modules'],
+      });
       toast({
         title: 'Sukces',
         description: 'Moduł został włączony',
@@ -134,12 +138,15 @@ export function useRevokeModuleFromCompany() {
     mutationFn: ({ companyId, moduleSlug }: { companyId: string; moduleSlug: string }) =>
       companiesApi.revokeModuleFromCompany(companyId, moduleSlug),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.companies.detail(variables.companyId), 'modules'] });
+      queryClient.invalidateQueries({
+        queryKey: [...queryKeys.companies.detail(variables.companyId), 'modules'],
+      });
       // Also invalidate employee permissions queries as they might have been cascaded
       queryClient.invalidateQueries({ queryKey: ['company', 'employees'] });
       toast({
         title: 'Sukces',
-        description: 'Dostęp do modułu został cofnięty. Wszystkie uprawnienia pracowników dla tego modułu zostały usunięte.',
+        description:
+          'Dostęp do modułu został cofnięty. Wszystkie uprawnienia pracowników dla tego modułu zostały usunięte.',
       });
     },
     onError: (error: ApiErrorResponse) => {
@@ -151,4 +158,3 @@ export function useRevokeModuleFromCompany() {
     },
   });
 }
-

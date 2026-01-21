@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+
 import { format, formatDistanceToNow } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
@@ -11,8 +12,9 @@ import {
   CheckCircle,
   XCircle,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,11 +22,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { TimeEntryStatusBadge } from './time-entry-status-badge';
-import { TimeEntryResponseDto } from '@/types/dtos';
-import { TimeEntryStatus } from '@/types/enums';
 import { cn } from '@/lib/utils/cn';
 import { formatDuration } from '@/lib/utils/time';
+import { type TimeEntryResponseDto } from '@/types/dtos';
+import { TimeEntryStatus } from '@/types/enums';
+
+import { TimeEntryStatusBadge } from './time-entry-status-badge';
 
 interface TimeEntryRowProps {
   entry: TimeEntryResponseDto;
@@ -92,19 +95,13 @@ export function TimeEntryRow({
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          {entry.isRunning && (
-            <Play className="h-4 w-4 text-green-600 animate-pulse" />
-          )}
-          <h4 className="font-medium text-sm truncate">
-            {entry.description || 'Bez opisu'}
-          </h4>
+          {entry.isRunning && <Play className="h-4 w-4 text-green-600 animate-pulse" />}
+          <h4 className="font-medium text-sm truncate">{entry.description || 'Bez opisu'}</h4>
         </div>
         <div className="flex items-center gap-2 mt-1 flex-wrap">
           <TimeEntryStatusBadge status={entry.status} />
           {entry.client && (
-            <span className="text-xs text-muted-foreground">
-              {entry.client.name}
-            </span>
+            <span className="text-xs text-muted-foreground">{entry.client.name}</span>
           )}
           {entry.isBillable && (
             <Badge variant="secondary" className="text-xs">
@@ -151,10 +148,7 @@ export function TimeEntryRow({
                   Wyślij do zatwierdzenia
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => onDelete(entry)}
-                  className="text-destructive"
-                >
+                <DropdownMenuItem onClick={() => onDelete(entry)} className="text-destructive">
                   <Trash2 className="h-4 w-4 mr-2" />
                   Usuń
                 </DropdownMenuItem>

@@ -45,8 +45,13 @@ export const TestDataFactory = {
   /**
    * Create test user data
    */
-  createUserData: (role: 'ADMIN' | 'COMPANY_OWNER' | 'EMPLOYEE' = 'EMPLOYEE', companyName?: string) => ({
-    email: TestDataGenerator.generateEmail(role.toLowerCase().split('_')[0] as 'admin' | 'owner' | 'employee'),
+  createUserData: (
+    role: 'ADMIN' | 'COMPANY_OWNER' | 'EMPLOYEE' = 'EMPLOYEE',
+    companyName?: string
+  ) => ({
+    email: TestDataGenerator.generateEmail(
+      role.toLowerCase().split('_')[0] as 'admin' | 'owner' | 'employee'
+    ),
     password: TestDataGenerator.generatePassword(),
     role,
     companyName,
@@ -59,7 +64,6 @@ export const TestDataFactory = {
     name: TestDataGenerator.generateCompanyName(),
     description: `Test company created at ${new Date().toISOString()}`,
   }),
-
 };
 
 /**
@@ -86,9 +90,7 @@ export const SEEDED_DATA = {
     email: 'admin@system.com',
     password: 'Admin123!',
   },
-  modules: [
-    { name: 'ai-agent', displayName: 'AI Agent' },
-  ],
+  modules: [{ name: 'ai-agent', displayName: 'AI Agent' }],
 };
 
 /**

@@ -18,7 +18,6 @@ import { VatStatus } from '@accounting/common';
 describe('Client Icons E2E Tests', () => {
   let app: INestApplication;
   let ownerToken: string;
-  let employeeToken: string;
   let ownerBToken: string;
   let testClientId: string;
   let lucideIconId: string;
@@ -36,7 +35,7 @@ describe('Client Icons E2E Tests', () => {
         whitelist: true,
         transform: true,
         forbidNonWhitelisted: true,
-      }),
+      })
     );
     await app.init();
   });
@@ -100,7 +99,6 @@ describe('Client Icons E2E Tests', () => {
         .expect(200);
 
       expect(response.body).toHaveProperty('access_token');
-      employeeToken = response.body.access_token;
     });
 
     it('should login as company B owner', async () => {
@@ -542,9 +540,7 @@ describe('Client Icons E2E Tests', () => {
     it('should create icon with VAT condition', async () => {
       const autoAssignCondition = {
         type: 'and',
-        conditions: [
-          { field: 'vatStatus', operator: 'equals', value: VatStatus.VAT_QUARTERLY },
-        ],
+        conditions: [{ field: 'vatStatus', operator: 'equals', value: VatStatus.VAT_QUARTERLY }],
       };
 
       const response = await request(app.getHttpServer())

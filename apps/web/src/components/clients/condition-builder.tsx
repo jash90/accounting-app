@@ -1,13 +1,21 @@
 import { useCallback } from 'react';
-import { cn } from '@/lib/utils/cn';
+
+import { Plus, Trash2, FolderPlus, ChevronDown, Check } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
-  AutoAssignCondition,
-  SingleCondition,
-  ConditionGroup,
-  ConditionOperator,
-  LogicalOperator,
-  isConditionGroup,
-} from '@/types/enums';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import {
   CONDITION_FIELDS,
   OPERATORS_BY_TYPE,
@@ -20,25 +28,15 @@ import {
   AmlGroupLabels,
   GTU_CODES,
 } from '@/lib/constants/polish-labels';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils/cn';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Card, CardContent } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Plus, Trash2, FolderPlus, ChevronDown, Check } from 'lucide-react';
+  AutoAssignCondition,
+  SingleCondition,
+  ConditionGroup,
+  ConditionOperator,
+  LogicalOperator,
+  isConditionGroup,
+} from '@/types/enums';
 
 // Generate unique ID for condition tracking (stable React keys)
 // Uses crypto.randomUUID() for SSR-safe, collision-resistant IDs
@@ -57,11 +55,7 @@ interface ConditionBuilderProps {
   className?: string;
 }
 
-export function ConditionBuilder({
-  value,
-  onChange,
-  className,
-}: ConditionBuilderProps) {
+export function ConditionBuilder({ value, onChange, className }: ConditionBuilderProps) {
   const handleAddCondition = useCallback(() => {
     const newCondition: SingleCondition = {
       id: generateConditionId(),
@@ -127,31 +121,16 @@ export function ConditionBuilder({
       <div className="flex items-center justify-between">
         <Label className="text-base font-medium">Warunki automatycznego przypisania</Label>
         <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleAddCondition}
-          >
+          <Button type="button" variant="outline" size="sm" onClick={handleAddCondition}>
             <Plus className="w-4 h-4 mr-1" />
             Warunek
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleAddGroup}
-          >
+          <Button type="button" variant="outline" size="sm" onClick={handleAddGroup}>
             <FolderPlus className="w-4 h-4 mr-1" />
             Grupa
           </Button>
           {value && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleClear}
-            >
+            <Button type="button" variant="ghost" size="sm" onClick={handleClear}>
               <Trash2 className="w-4 h-4 mr-1" />
               Wyczyść
             </Button>
@@ -160,12 +139,7 @@ export function ConditionBuilder({
       </div>
 
       {value ? (
-        <ConditionRenderer
-          condition={value}
-          onChange={onChange}
-          onRemove={handleClear}
-          isRoot
-        />
+        <ConditionRenderer condition={value} onChange={onChange} onRemove={handleClear} isRoot />
       ) : (
         <div className="text-center py-8 border-2 border-dashed rounded-lg text-muted-foreground">
           <p>Brak warunków. Ikona będzie przypisywana tylko ręcznie.</p>
@@ -202,13 +176,7 @@ function ConditionRenderer({
     );
   }
 
-  return (
-    <SingleConditionRenderer
-      condition={condition}
-      onChange={onChange}
-      onRemove={onRemove}
-    />
-  );
+  return <SingleConditionRenderer condition={condition} onChange={onChange} onRemove={onRemove} />;
 }
 
 interface GroupConditionRendererProps {
@@ -319,12 +287,7 @@ function GroupConditionRenderer({
             </span>
           </div>
           {!isRoot && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={onRemove}
-            >
+            <Button type="button" variant="ghost" size="icon" onClick={onRemove}>
               <Trash2 className="w-4 h-4" />
             </Button>
           )}
@@ -342,21 +305,11 @@ function GroupConditionRenderer({
         </div>
 
         <div className="flex gap-2 pl-4">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleAddCondition}
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={handleAddCondition}>
             <Plus className="w-4 h-4 mr-1" />
             Warunek
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleAddNestedGroup}
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={handleAddNestedGroup}>
             <FolderPlus className="w-4 h-4 mr-1" />
             Grupa zagnieżdżona
           </Button>
@@ -372,11 +325,7 @@ interface SingleConditionRendererProps {
   onRemove: () => void;
 }
 
-function SingleConditionRenderer({
-  condition,
-  onChange,
-  onRemove,
-}: SingleConditionRendererProps) {
+function SingleConditionRenderer({ condition, onChange, onRemove }: SingleConditionRendererProps) {
   const fieldConfig = CONDITION_FIELDS.find((f) => f.field === condition.field);
   const fieldType = fieldConfig?.type || 'string';
   const availableOperators = OPERATORS_BY_TYPE[fieldType] || OPERATORS_BY_TYPE.string;
@@ -488,7 +437,11 @@ function SingleConditionRenderer({
           <Input
             type={fieldType === 'number' ? 'number' : fieldType === 'date' ? 'date' : 'text'}
             value={condition.secondValue?.toString() || ''}
-            onChange={(e) => handleSecondValueChange(fieldType === 'number' ? Number(e.target.value) : e.target.value)}
+            onChange={(e) =>
+              handleSecondValueChange(
+                fieldType === 'number' ? Number(e.target.value) : e.target.value
+              )
+            }
             className="w-32"
           />
         </>
@@ -504,19 +457,13 @@ function SingleConditionRenderer({
 
 interface ValueInputProps {
   fieldType: string;
-  fieldConfig?: typeof CONDITION_FIELDS[number];
+  fieldConfig?: (typeof CONDITION_FIELDS)[number];
   operator: ConditionOperator;
   value?: string | number | boolean | string[];
   onChange: (value: string | number | boolean | string[]) => void;
 }
 
-function ValueInput({
-  fieldType,
-  fieldConfig,
-  operator,
-  value,
-  onChange,
-}: ValueInputProps) {
+function ValueInput({ fieldType, fieldConfig, operator, value, onChange }: ValueInputProps) {
   // Multi-select for 'in' and 'notIn' operators - use proper multi-select with checkboxes
   if (['in', 'notIn'].includes(operator) && fieldConfig?.type === 'enum') {
     const selectedValues = Array.isArray(value) ? value : [];
@@ -532,17 +479,13 @@ function ValueInput({
     return (
       <Popover>
         <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            className="w-48 justify-between font-normal"
-          >
+          <Button variant="outline" role="combobox" className="w-48 justify-between font-normal">
             <span className="truncate">
               {selectedValues.length === 0
                 ? 'Wybierz wartości...'
                 : selectedValues.length === 1
-                ? options.find((o) => o.value === selectedValues[0])?.label
-                : `Wybrano ${selectedValues.length}`}
+                  ? options.find((o) => o.value === selectedValues[0])?.label
+                  : `Wybrano ${selectedValues.length}`}
             </span>
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
@@ -592,10 +535,7 @@ function ValueInput({
   if (fieldType === 'boolean') {
     return (
       <div className="flex items-center gap-2">
-        <Switch
-          checked={value === true}
-          onCheckedChange={(checked) => onChange(checked)}
-        />
+        <Switch checked={value === true} onCheckedChange={(checked) => onChange(checked)} />
         <span className="text-sm">{value ? 'Tak' : 'Nie'}</span>
       </div>
     );
@@ -604,10 +544,7 @@ function ValueInput({
   // Enum select
   if (fieldType === 'enum' && fieldConfig) {
     return (
-      <Select
-        value={value?.toString() || ''}
-        onValueChange={onChange}
-      >
+      <Select value={value?.toString() || ''} onValueChange={onChange}>
         <SelectTrigger className="w-48">
           <SelectValue placeholder="Wybierz..." />
         </SelectTrigger>
@@ -625,10 +562,7 @@ function ValueInput({
   // Array (GTU codes)
   if (fieldType === 'array' && fieldConfig?.field === 'gtuCodes') {
     return (
-      <Select
-        value={value?.toString() || ''}
-        onValueChange={onChange}
-      >
+      <Select value={value?.toString() || ''} onValueChange={onChange}>
         <SelectTrigger className="w-64">
           <SelectValue placeholder="Wybierz kod GTU..." />
         </SelectTrigger>

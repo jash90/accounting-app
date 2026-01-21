@@ -16,7 +16,8 @@ export class UserFormPage extends BasePage {
   private readonly confirmPasswordInput = 'input[name="confirmPassword"], input#confirmPassword';
   private readonly roleSelect = 'select[name="role"], [data-testid="role-select"]';
   private readonly companySelect = 'select[name="companyId"], [data-testid="company-select"]';
-  private readonly submitButton = 'button[type="submit"]:has-text("Create"), button:has-text("Save"), button:has-text("Submit")';
+  private readonly submitButton =
+    'button[type="submit"]:has-text("Create"), button:has-text("Save"), button:has-text("Submit")';
   private readonly cancelButton = 'button:has-text("Cancel")';
   private readonly emailError = '[data-testid="email-error"], .error:has-text("email")';
   private readonly passwordError = '[data-testid="password-error"], .error:has-text("password")';

@@ -1,4 +1,5 @@
-import { LucideIcon } from 'lucide-react';
+import { type LucideIcon } from 'lucide-react';
+
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils/cn';
@@ -37,9 +38,7 @@ export function StatCard({
           {isLoading ? (
             <Skeleton className="h-8 w-16" />
           ) : (
-            <span className={cn('text-3xl font-bold', valueColor, valueClassName)}>
-              {value}
-            </span>
+            <span className={cn('text-3xl font-bold', valueColor, valueClassName)}>{value}</span>
           )}
         </div>
       </CardContent>

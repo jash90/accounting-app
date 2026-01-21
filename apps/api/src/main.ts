@@ -1,14 +1,16 @@
-import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import helmet from 'helmet';
-import { AppModule } from './app/app.module';
-import { DataSource } from 'typeorm';
+
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
-import { SeedersModule } from './seeders/seeders.module';
-import { SeederService } from './seeders/seeder.service';
+import helmet from 'helmet';
+import { DataSource } from 'typeorm';
+
+import { AppModule } from './app/app.module';
 import { AllExceptionsFilter } from './common';
+import { SeederService } from './seeders/seeder.service';
+import { SeedersModule } from './seeders/seeders.module';
 
 // Parse CORS origins at module scope for O(1) lookups
 const allowedOrigins = new Set(
@@ -79,7 +81,7 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: false,
       transform: true,
-    }),
+    })
   );
 
   // Global exception filter for consistent error responses
@@ -99,7 +101,7 @@ async function bootstrap() {
         description: 'Enter JWT token',
         in: 'header',
       },
-      'JWT-auth',
+      'JWT-auth'
     )
     .addTag('Auth', 'Authentication endpoints')
     .addTag('Admin', 'Admin management endpoints')

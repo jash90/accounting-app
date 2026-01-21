@@ -31,12 +31,14 @@ PostgreSQL Database
 ```
 
 **Key Features**:
+
 - Multi-tenant with data isolation
 - JWT authentication (access + refresh tokens)
 - Role-based access control (ADMIN, COMPANY_OWNER, EMPLOYEE)
 - Modular business modules with granular permissions
 
 **Endpoint Categories**:
+
 - Health (1), Auth (3)
 - Admin: Users (6), Companies (5), Modules (4), Company Module Access (3)
 - Company: Employees (5), Modules (2), Permissions (4)
@@ -100,12 +102,14 @@ POST /auth/refresh
 **Refresh Token**: 7 days expiry
 
 **Storage** (Frontend):
+
 ```typescript
 localStorage.setItem('access_token', accessToken);
 localStorage.setItem('refresh_token', refreshToken);
 ```
 
 **Auto-Refresh** (Axios Interceptor):
+
 ```typescript
 // When receiving 401, automatically refresh token
 apiClient.interceptors.response.use(
@@ -127,11 +131,11 @@ apiClient.interceptors.response.use(
 
 ### Role-Based Access
 
-| Role | Access |
-|------|--------|
-| **ADMIN** | System-wide: Users, Companies, Modules |
-| **COMPANY_OWNER** | Company scope: Employees, Permissions |
-| **EMPLOYEE** | Modules with granted permissions only |
+| Role              | Access                                 |
+| ----------------- | -------------------------------------- |
+| **ADMIN**         | System-wide: Users, Companies, Modules |
+| **COMPANY_OWNER** | Company scope: Employees, Permissions  |
+| **EMPLOYEE**      | Modules with granted permissions only  |
 
 ---
 
@@ -146,6 +150,7 @@ Component → Custom Hook → TanStack Query → API Function → Axios → Back
 ### Integration Example (User Management)
 
 **1. API Function** (`lib/api/endpoints/users.ts`):
+
 ```typescript
 export const usersApi = {
   getAll: async (): Promise<User[]> => {
@@ -161,6 +166,7 @@ export const usersApi = {
 ```
 
 **2. React Hook** (`lib/hooks/use-users.ts`):
+
 ```typescript
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -185,6 +191,7 @@ export const useCreateUser = () => {
 ```
 
 **3. Component Usage**:
+
 ```tsx
 function UsersListPage() {
   const { data: users, isPending } = useUsers();
@@ -195,9 +202,7 @@ function UsersListPage() {
   return (
     <div>
       <DataTable data={users} />
-      <Button onClick={() => createUser.mutate(formData)}>
-        Create User
-      </Button>
+      <Button onClick={() => createUser.mutate(formData)}>Create User</Button>
     </div>
   );
 }
@@ -224,6 +229,7 @@ export const queryKeys = {
 ```
 
 **Benefits**:
+
 - Type-safe cache management
 - Easy invalidation
 - Prevents typos
@@ -235,6 +241,7 @@ export const queryKeys = {
 ### Admin Endpoints (18 total)
 
 **Users** (6):
+
 - `GET /admin/users` - List all users
 - `GET /admin/users/:id` - Get user by ID
 - `POST /admin/users` - Create user
@@ -243,6 +250,7 @@ export const queryKeys = {
 - `PATCH /admin/users/:id/activate` - Activate/deactivate
 
 **Companies** (5):
+
 - `GET /admin/companies` - List companies
 - `GET /admin/companies/:id` - Get company
 - `POST /admin/companies` - Create company
@@ -250,12 +258,14 @@ export const queryKeys = {
 - `DELETE /admin/companies/:id` - Delete company (soft)
 
 **Modules** (4):
+
 - `GET /admin/modules` - List modules
 - `GET /admin/modules/:id` - Get module
 - `POST /admin/modules` - Create module
 - `PATCH /admin/modules/:id` - Update module
 
 **Company Module Access** (3):
+
 - `GET /admin/companies/:id/modules` - Get company's modules
 - `POST /admin/companies/:id/modules/:moduleId` - Grant module access
 - `DELETE /admin/companies/:id/modules/:moduleId` - Revoke module access
@@ -263,6 +273,7 @@ export const queryKeys = {
 ### Company Owner Endpoints (11 total)
 
 **Employees** (5):
+
 - `GET /company/employees` - List employees
 - `GET /company/employees/:id` - Get employee
 - `POST /company/employees` - Create employee
@@ -270,10 +281,12 @@ export const queryKeys = {
 - `DELETE /company/employees/:id` - Delete employee (soft)
 
 **Modules** (2):
+
 - `GET /company/modules` - Available modules
 - `GET /company/modules/:slug` - Get module details
 
 **Permissions** (4):
+
 - `GET /company/employees/:id/modules` - Get employee permissions
 - `POST /company/employees/:id/modules/:slug` - Grant permissions
 - `PATCH /company/employees/:id/modules/:slug` - Update permissions
@@ -282,6 +295,7 @@ export const queryKeys = {
 ### Business Module Endpoints (5 total)
 
 **Simple Text** (5):
+
 - `GET /modules/simple-text` - List texts
 - `GET /modules/simple-text/:id` - Get text
 - `POST /modules/simple-text` - Create text
@@ -372,9 +386,7 @@ import { http, HttpResponse } from 'msw';
 
 export const handlers = [
   http.get('/admin/users', () => {
-    return HttpResponse.json([
-      { id: '1', email: 'admin@test.com', role: 'ADMIN' },
-    ]);
+    return HttpResponse.json([{ id: '1', email: 'admin@test.com', role: 'ADMIN' }]);
   }),
 
   http.post('/admin/users', async ({ request }) => {
@@ -395,6 +407,7 @@ export const handlers = [
 **Frontend Integration Details**: `duplicated/api/API_INTEGRATION_GUIDE.md` (complete hook implementations)
 
 **Other Guides**:
+
 - Frontend patterns: `FRONTEND_GUIDE.md`
 - Architecture: `ARCHITECTURE_GUIDE.md`
 - Developer setup: `DEVELOPER_HANDBOOK.md`

@@ -128,9 +128,7 @@ export interface ConditionGroup {
 export type AutoAssignCondition = SingleCondition | ConditionGroup;
 
 // Type guard to check if condition is a group
-export function isConditionGroup(
-  condition: AutoAssignCondition
-): condition is ConditionGroup {
+export function isConditionGroup(condition: AutoAssignCondition): condition is ConditionGroup {
   return 'logicalOperator' in condition && 'conditions' in condition;
 }
 

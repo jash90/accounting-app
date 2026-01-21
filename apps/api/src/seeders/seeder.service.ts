@@ -1,8 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
-import { Repository, DataSource } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+
 import * as bcrypt from 'bcryptjs';
+import { Repository, DataSource } from 'typeorm';
+
 import {
   User,
   Company,
@@ -43,8 +45,8 @@ export class SeederService {
     private dataSource: DataSource,
     private emailConfigService: EmailConfigurationService,
     private moduleDiscoveryService: ModuleDiscoveryService,
-    private configService: ConfigService,
-  ) { }
+    private configService: ConfigService
+  ) {}
 
   async seed() {
     this.logger.log('Starting database seeding...');
@@ -71,7 +73,9 @@ export class SeederService {
     if (modules.length === 0) {
       this.logger.warn('No modules found! Make sure module.json files exist in libs/modules/*/');
     } else {
-      this.logger.log(`Found ${modules.length} modules from discovery: ${modules.map(m => m.slug).join(', ')}`);
+      this.logger.log(
+        `Found ${modules.length} modules from discovery: ${modules.map((m) => m.slug).join(', ')}`
+      );
     }
 
     await this.seedModuleAccess(companyA, modules);
@@ -81,8 +85,12 @@ export class SeederService {
     this.logger.log('Database seeding completed!');
     this.logger.log('Test Users (passwords configured in .env):');
     this.logger.log(`  Admin: ${this.configService.get('SEED_ADMIN_EMAIL', 'admin@system.com')}`);
-    this.logger.log(`  Company Owner: ${this.configService.get('SEED_OWNER_EMAIL', 'owner@company.pl')}`);
-    this.logger.log(`  Employee: ${this.configService.get('SEED_EMPLOYEE_EMAIL', 'employee@company.pl')}`);
+    this.logger.log(
+      `  Company Owner: ${this.configService.get('SEED_OWNER_EMAIL', 'owner@company.pl')}`
+    );
+    this.logger.log(
+      `  Employee: ${this.configService.get('SEED_EMPLOYEE_EMAIL', 'employee@company.pl')}`
+    );
   }
 
   /**
@@ -106,11 +114,13 @@ export class SeederService {
       if (attempt === 0) {
         this.logger.log('Waiting for module discovery to complete...');
       }
-      await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
     }
 
     if (!this.moduleDiscoveryService.isDiscoveryComplete()) {
-      this.logger.warn('Module discovery did not complete in time, proceeding with available modules');
+      this.logger.warn(
+        'Module discovery did not complete in time, proceeding with available modules'
+      );
     }
 
     // Get all active modules from database
@@ -225,8 +235,14 @@ export class SeederService {
     savedOwnerA.companyId = savedCompanyA.id;
     await this.userRepository.save(savedOwnerA);
 
-    const employeeEmail = this.configService.get<string>('SEED_EMPLOYEE_EMAIL', 'employee@company.pl');
-    const employeePassword = this.configService.get<string>('SEED_EMPLOYEE_PASSWORD', 'Employee123456!');
+    const employeeEmail = this.configService.get<string>(
+      'SEED_EMPLOYEE_EMAIL',
+      'employee@company.pl'
+    );
+    const employeePassword = this.configService.get<string>(
+      'SEED_EMPLOYEE_PASSWORD',
+      'Employee123456!'
+    );
     const employee1Password = await bcrypt.hash(employeePassword, 10);
     const employee1 = this.userRepository.create({
       email: employeeEmail.toLowerCase(),
@@ -249,10 +265,7 @@ export class SeederService {
   // seedModules() method removed - using file-based module discovery via ModuleDiscoveryService
   // Modules are now auto-discovered from libs/modules/*/module.json files
 
-  private async seedModuleAccess(
-    companyA: Company,
-    modules: ModuleEntity[],
-  ) {
+  private async seedModuleAccess(companyA: Company, modules: ModuleEntity[]) {
     // Company A: ai-agent, clients, email-client, tasks, time-tracking
     const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
     const clientsModule = modules.find((m) => m.slug === 'clients');
@@ -266,7 +279,7 @@ export class SeederService {
           companyId: companyA.id,
           moduleId: aiAgentModule.id,
           isEnabled: true,
-        }),
+        })
       );
     }
 
@@ -276,7 +289,7 @@ export class SeederService {
           companyId: companyA.id,
           moduleId: clientsModule.id,
           isEnabled: true,
-        }),
+        })
       );
     }
 
@@ -286,7 +299,7 @@ export class SeederService {
           companyId: companyA.id,
           moduleId: emailClientModule.id,
           isEnabled: true,
-        }),
+        })
       );
     }
 
@@ -296,7 +309,7 @@ export class SeederService {
           companyId: companyA.id,
           moduleId: tasksModule.id,
           isEnabled: true,
-        }),
+        })
       );
     }
 
@@ -306,15 +319,12 @@ export class SeederService {
           companyId: companyA.id,
           moduleId: timeTrackingModule.id,
           isEnabled: true,
-        }),
+        })
       );
     }
   }
 
-  private async seedEmployeePermissions(
-    employeesA: User[],
-    modules: ModuleEntity[],
-  ) {
+  private async seedEmployeePermissions(employeesA: User[], modules: ModuleEntity[]) {
     const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
     const clientsModule = modules.find((m) => m.slug === 'clients');
     const emailClientModule = modules.find((m) => m.slug === 'email-client');
@@ -343,7 +353,7 @@ export class SeederService {
           moduleId: aiAgentModule.id,
           permissions: ['read', 'write'],
           grantedById,
-        }),
+        })
       );
     }
 
@@ -354,7 +364,7 @@ export class SeederService {
           moduleId: clientsModule.id,
           permissions: ['read', 'write'],
           grantedById,
-        }),
+        })
       );
     }
 
@@ -365,7 +375,7 @@ export class SeederService {
           moduleId: emailClientModule.id,
           permissions: ['read', 'write'],
           grantedById,
-        }),
+        })
       );
     }
 
@@ -376,7 +386,7 @@ export class SeederService {
           moduleId: tasksModule.id,
           permissions: ['read', 'write'],
           grantedById,
-        }),
+        })
       );
     }
 
@@ -387,15 +397,12 @@ export class SeederService {
           moduleId: timeTrackingModule.id,
           permissions: ['read', 'write'],
           grantedById,
-        }),
+        })
       );
     }
   }
 
-  private async seedClients(
-    companyA: Company,
-    ownerA: User,
-  ) {
+  private async seedClients(companyA: Company, ownerA: User) {
     this.logger.log('Seeding clients...');
 
     // Create field definitions for Company A
@@ -439,9 +446,7 @@ export class SeederService {
     ];
 
     for (const fieldDef of fieldDefinitionsA) {
-      await this.fieldDefinitionRepository.save(
-        this.fieldDefinitionRepository.create(fieldDef),
-      );
+      await this.fieldDefinitionRepository.save(this.fieldDefinitionRepository.create(fieldDef));
     }
 
     // Create clients for Company A
@@ -500,11 +505,7 @@ export class SeederService {
     this.logger.log('Clients seeded successfully');
   }
 
-  private async seedEmailConfigurations(
-    companyA: Company,
-    _ownerA: User,
-    _employeesA: User[],
-  ) {
+  private async seedEmailConfigurations(companyA: Company, _ownerA: User, _employeesA: User[]) {
     this.logger.log('Seeding email configurations...');
 
     // Company-wide email configuration (used by Email Client module)
@@ -530,7 +531,9 @@ export class SeederService {
       this.logger.log('Company Email Config created for Tech Startup A (Onet)');
 
       this.logger.log('Email configurations seeded successfully');
-      this.logger.warn('SMTP verification skipped for dev/test - verify credentials before sending emails');
+      this.logger.warn(
+        'SMTP verification skipped for dev/test - verify credentials before sending emails'
+      );
     } catch (error) {
       this.logger.error('Error seeding email configurations', (error as Error).message);
       // Continue seeding even if email config fails (email config is optional)

@@ -1,13 +1,11 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { ClientsService, CreateClientDto, UpdateClientDto, ClientFilters } from './clients.service';
-import { ChangeLogService } from '@accounting/infrastructure/change-log';
-import { ClientChangelogService } from './client-changelog.service';
-import { AutoAssignService } from './auto-assign.service';
+
+import { type Repository } from 'typeorm';
+
 import {
   Client,
-  User,
+  type User,
   UserRole,
   EmploymentType,
   VatStatus,
@@ -17,6 +15,16 @@ import {
   PaginatedResponseDto,
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
+import { ChangeLogService } from '@accounting/infrastructure/change-log';
+
+import { AutoAssignService } from './auto-assign.service';
+import { ClientChangelogService } from './client-changelog.service';
+import {
+  ClientsService,
+  type CreateClientDto,
+  type UpdateClientDto,
+  type ClientFilters,
+} from './clients.service';
 import { ClientNotFoundException } from '../exceptions';
 
 describe('ClientsService', () => {
@@ -142,7 +150,7 @@ describe('ClientsService', () => {
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         expect.stringContaining('ILIKE'),
-        expect.objectContaining({ search: '%Test\\%Client%' }),
+        expect.objectContaining({ search: '%Test\\%Client%' })
       );
     });
 
@@ -155,7 +163,7 @@ describe('ClientsService', () => {
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         expect.stringContaining('ILIKE'),
-        expect.objectContaining({ search: '%Test\\_Client%' }),
+        expect.objectContaining({ search: '%Test\\_Client%' })
       );
     });
 
@@ -168,7 +176,7 @@ describe('ClientsService', () => {
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         'client.employmentType = :employmentType',
-        { employmentType: EmploymentType.DG },
+        { employmentType: EmploymentType.DG }
       );
     });
 
@@ -179,10 +187,9 @@ describe('ClientsService', () => {
       const filters: ClientFilters = { vatStatus: VatStatus.VAT_MONTHLY };
       await service.findAll(mockUser as User, filters);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'client.vatStatus = :vatStatus',
-        { vatStatus: VatStatus.VAT_MONTHLY },
-      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('client.vatStatus = :vatStatus', {
+        vatStatus: VatStatus.VAT_MONTHLY,
+      });
     });
 
     it('should apply tax scheme filter', async () => {
@@ -192,10 +199,9 @@ describe('ClientsService', () => {
       const filters: ClientFilters = { taxScheme: TaxScheme.GENERAL };
       await service.findAll(mockUser as User, filters);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'client.taxScheme = :taxScheme',
-        { taxScheme: TaxScheme.GENERAL },
-      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('client.taxScheme = :taxScheme', {
+        taxScheme: TaxScheme.GENERAL,
+      });
     });
 
     it('should apply ZUS status filter', async () => {
@@ -205,10 +211,9 @@ describe('ClientsService', () => {
       const filters: ClientFilters = { zusStatus: ZusStatus.FULL };
       await service.findAll(mockUser as User, filters);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'client.zusStatus = :zusStatus',
-        { zusStatus: ZusStatus.FULL },
-      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('client.zusStatus = :zusStatus', {
+        zusStatus: ZusStatus.FULL,
+      });
     });
 
     it('should apply AML group filter', async () => {
@@ -220,7 +225,7 @@ describe('ClientsService', () => {
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         'client.amlGroupEnum = :amlGroupEnum',
-        { amlGroupEnum: AmlGroup.HIGH },
+        { amlGroupEnum: AmlGroup.HIGH }
       );
     });
 
@@ -231,10 +236,9 @@ describe('ClientsService', () => {
       const filters: ClientFilters = { gtuCode: 'GTU_01' };
       await service.findAll(mockUser as User, filters);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        ':gtuCode = ANY(client.gtuCodes)',
-        { gtuCode: 'GTU_01' },
-      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(':gtuCode = ANY(client.gtuCodes)', {
+        gtuCode: 'GTU_01',
+      });
     });
 
     it('should apply PKD code filter', async () => {
@@ -244,10 +248,9 @@ describe('ClientsService', () => {
       const filters: ClientFilters = { pkdCode: '62.01' };
       await service.findAll(mockUser as User, filters);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'client.pkdCode = :pkdCode',
-        { pkdCode: '62.01' },
-      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('client.pkdCode = :pkdCode', {
+        pkdCode: '62.01',
+      });
     });
 
     it('should apply PKD code filter with subsection', async () => {
@@ -257,10 +260,9 @@ describe('ClientsService', () => {
       const filters: ClientFilters = { pkdCode: '62.01.Z' };
       await service.findAll(mockUser as User, filters);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'client.pkdCode = :pkdCode',
-        { pkdCode: '62.01.Z' },
-      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('client.pkdCode = :pkdCode', {
+        pkdCode: '62.01.Z',
+      });
     });
 
     it('should apply receiveEmailCopy filter', async () => {
@@ -272,7 +274,7 @@ describe('ClientsService', () => {
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         'client.receiveEmailCopy = :receiveEmailCopy',
-        { receiveEmailCopy: true },
+        { receiveEmailCopy: true }
       );
     });
 
@@ -283,10 +285,9 @@ describe('ClientsService', () => {
       const filters: ClientFilters = { isActive: false };
       await service.findAll(mockUser as User, filters);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'client.isActive = :isActive',
-        { isActive: false },
-      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('client.isActive = :isActive', {
+        isActive: false,
+      });
     });
 
     it('should apply pagination correctly', async () => {
@@ -357,7 +358,7 @@ describe('ClientsService', () => {
       clientRepository.findOne = jest.fn().mockResolvedValue(null);
 
       await expect(service.findOne('non-existent', mockUser as User)).rejects.toThrow(
-        ClientNotFoundException,
+        ClientNotFoundException
       );
     });
 
@@ -415,7 +416,7 @@ describe('ClientsService', () => {
         'Client',
         savedClient.id,
         expect.any(Object),
-        mockUser,
+        mockUser
       );
     });
 
@@ -428,7 +429,7 @@ describe('ClientsService', () => {
 
       expect(clientChangelogService.notifyClientCreated).toHaveBeenCalledWith(
         savedClient,
-        mockUser,
+        mockUser
       );
     });
 
@@ -436,7 +437,9 @@ describe('ClientsService', () => {
       const savedClient = { ...mockClient, ...createDto };
       clientRepository.create = jest.fn().mockReturnValue(savedClient);
       clientRepository.save = jest.fn().mockResolvedValue(savedClient);
-      autoAssignService.evaluateAndAssign = jest.fn().mockRejectedValue(new Error('Auto-assign failed'));
+      autoAssignService.evaluateAndAssign = jest
+        .fn()
+        .mockRejectedValue(new Error('Auto-assign failed'));
 
       const result = await service.create(createDto, mockUser as User);
 
@@ -456,7 +459,7 @@ describe('ClientsService', () => {
 
       expect(result.pkdCode).toBe('62.01');
       expect(clientRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ pkdCode: '62.01' }),
+        expect.objectContaining({ pkdCode: '62.01' })
       );
     });
 
@@ -481,7 +484,7 @@ describe('ClientsService', () => {
       };
 
       await expect(service.create(dtoWithInvalidPkd, mockUser as User)).rejects.toThrow(
-        'Nieprawidłowy kod PKD',
+        'Nieprawidłowy kod PKD'
       );
     });
 
@@ -492,7 +495,7 @@ describe('ClientsService', () => {
       };
 
       await expect(service.create(dtoWithInvalidPkd, mockUser as User)).rejects.toThrow(
-        'Nieprawidłowy kod PKD',
+        'Nieprawidłowy kod PKD'
       );
     });
   });
@@ -540,7 +543,7 @@ describe('ClientsService', () => {
         existingClient.id,
         expect.any(Object), // old values
         expect.any(Object), // new values
-        mockUser,
+        mockUser
       );
     });
 
@@ -559,16 +562,18 @@ describe('ClientsService', () => {
     it('should throw ClientNotFoundException if client not found', async () => {
       clientRepository.findOne = jest.fn().mockResolvedValue(null);
 
-      await expect(
-        service.update('non-existent', updateDto, mockUser as User),
-      ).rejects.toThrow(ClientNotFoundException);
+      await expect(service.update('non-existent', updateDto, mockUser as User)).rejects.toThrow(
+        ClientNotFoundException
+      );
     });
 
     it('should not fail if auto-assign throws error', async () => {
       const existingClient = { ...mockClient };
       clientRepository.findOne = jest.fn().mockResolvedValue(existingClient);
       clientRepository.save = jest.fn().mockResolvedValue({ ...existingClient, ...updateDto });
-      autoAssignService.evaluateAndAssign = jest.fn().mockRejectedValue(new Error('Auto-assign failed'));
+      autoAssignService.evaluateAndAssign = jest
+        .fn()
+        .mockRejectedValue(new Error('Auto-assign failed'));
 
       const result = await service.update('client-123', updateDto, mockUser as User);
 
@@ -585,7 +590,7 @@ describe('ClientsService', () => {
       await service.remove('client-123', mockUser as User);
 
       expect(clientRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ isActive: false, updatedById: mockUserId }),
+        expect.objectContaining({ isActive: false, updatedById: mockUserId })
       );
     });
 
@@ -600,7 +605,7 @@ describe('ClientsService', () => {
         'Client',
         existingClient.id,
         expect.any(Object),
-        mockUser,
+        mockUser
       );
     });
 
@@ -618,7 +623,7 @@ describe('ClientsService', () => {
       clientRepository.findOne = jest.fn().mockResolvedValue(null);
 
       await expect(service.remove('non-existent', mockUser as User)).rejects.toThrow(
-        ClientNotFoundException,
+        ClientNotFoundException
       );
     });
   });
@@ -638,7 +643,7 @@ describe('ClientsService', () => {
       clientRepository.findOne = jest.fn().mockResolvedValue(null);
 
       await expect(service.hardDelete('non-existent', mockUser as User)).rejects.toThrow(
-        ClientNotFoundException,
+        ClientNotFoundException
       );
     });
   });
@@ -665,7 +670,7 @@ describe('ClientsService', () => {
       await service.restore('client-123', mockUser as User);
 
       expect(clientRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ updatedById: mockUserId }),
+        expect.objectContaining({ updatedById: mockUserId })
       );
     });
 
@@ -673,7 +678,7 @@ describe('ClientsService', () => {
       clientRepository.findOne = jest.fn().mockResolvedValue(null);
 
       await expect(service.restore('non-existent', mockUser as User)).rejects.toThrow(
-        ClientNotFoundException,
+        ClientNotFoundException
       );
     });
   });
@@ -687,7 +692,7 @@ describe('ClientsService', () => {
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({ search: '%Test\\\\Client%' }),
+        expect.objectContaining({ search: '%Test\\\\Client%' })
       );
     });
 
@@ -699,7 +704,7 @@ describe('ClientsService', () => {
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({ search: '%50\\%%' }),
+        expect.objectContaining({ search: '%50\\%%' })
       );
     });
 
@@ -711,7 +716,7 @@ describe('ClientsService', () => {
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({ search: '%test\\_value%' }),
+        expect.objectContaining({ search: '%test\\_value%' })
       );
     });
 
@@ -723,7 +728,7 @@ describe('ClientsService', () => {
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({ search: '%50\\%\\_test\\\\%' }),
+        expect.objectContaining({ search: '%50\\%\\_test\\\\%' })
       );
     });
   });
@@ -743,10 +748,9 @@ describe('ClientsService', () => {
 
       await service.findAll(mockUser as User);
 
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        'client.companyId = :companyId',
-        { companyId: mockCompanyId },
-      );
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('client.companyId = :companyId', {
+        companyId: mockCompanyId,
+      });
     });
   });
 });

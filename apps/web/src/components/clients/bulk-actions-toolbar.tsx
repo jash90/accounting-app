@@ -1,13 +1,8 @@
 import { useState } from 'react';
+
+import { Trash2, RotateCcw, Edit, ChevronDown, X } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -17,23 +12,30 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Label } from '@/components/ui/label';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Trash2, RotateCcw, Edit, ChevronDown, X } from 'lucide-react';
-import { ClientResponseDto } from '@/types/dtos';
+import { type ClientResponseDto } from '@/types/dtos';
 import {
-  EmploymentType,
+  type EmploymentType,
   EmploymentTypeLabels,
-  VatStatus,
+  type VatStatus,
   VatStatusLabels,
-  TaxScheme,
+  type TaxScheme,
   TaxSchemeLabels,
-  ZusStatus,
+  type ZusStatus,
   ZusStatusLabels,
 } from '@/types/enums';
 
@@ -87,7 +89,10 @@ export function BulkActionsToolbar({
 
   const handleBulkEdit = () => {
     if (Object.keys(editChanges).length === 0) return;
-    onBulkEdit(activeClients.map((c) => c.id), editChanges);
+    onBulkEdit(
+      activeClients.map((c) => c.id),
+      editChanges
+    );
     setEditDialogOpen(false);
     setEditChanges({});
   };
@@ -98,7 +103,12 @@ export function BulkActionsToolbar({
     <>
       <div className="flex items-center gap-2 p-3 bg-apptax-soft-teal/30 rounded-lg border border-apptax-soft-teal">
         <span className="text-sm font-medium text-apptax-navy">
-          Zaznaczono {selectedClients.length} {selectedClients.length === 1 ? 'klienta' : selectedClients.length < 5 ? 'klientów' : 'klientów'}
+          Zaznaczono {selectedClients.length}{' '}
+          {selectedClients.length === 1
+            ? 'klienta'
+            : selectedClients.length < 5
+              ? 'klientów'
+              : 'klientów'}
         </span>
 
         <div className="flex-1" />
@@ -151,7 +161,8 @@ export function BulkActionsToolbar({
           <DialogHeader>
             <DialogTitle>Usuń {activeClients.length} klientów</DialogTitle>
             <DialogDescription>
-              Czy na pewno chcesz usunąć zaznaczonych klientów? Operacja ta jest odwracalna - klienci zostaną dezaktywowani i będzie można ich przywrócić.
+              Czy na pewno chcesz usunąć zaznaczonych klientów? Operacja ta jest odwracalna -
+              klienci zostaną dezaktywowani i będzie można ich przywrócić.
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-40 overflow-y-auto">
@@ -159,20 +170,14 @@ export function BulkActionsToolbar({
               {activeClients.slice(0, 10).map((client) => (
                 <li key={client.id}>• {client.name}</li>
               ))}
-              {activeClients.length > 10 && (
-                <li>... i {activeClients.length - 10} więcej</li>
-              )}
+              {activeClients.length > 10 && <li>... i {activeClients.length - 10} więcej</li>}
             </ul>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               Anuluj
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleBulkDelete}
-              disabled={isDeleting}
-            >
+            <Button variant="destructive" onClick={handleBulkDelete} disabled={isDeleting}>
               {isDeleting ? 'Usuwanie...' : 'Usuń'}
             </Button>
           </DialogFooter>
@@ -193,9 +198,7 @@ export function BulkActionsToolbar({
               {inactiveClients.slice(0, 10).map((client) => (
                 <li key={client.id}>• {client.name}</li>
               ))}
-              {inactiveClients.length > 10 && (
-                <li>... i {inactiveClients.length - 10} więcej</li>
-              )}
+              {inactiveClients.length > 10 && <li>... i {inactiveClients.length - 10} więcej</li>}
             </ul>
           </div>
           <DialogFooter>
@@ -227,7 +230,7 @@ export function BulkActionsToolbar({
                 onValueChange={(value) =>
                   setEditChanges((prev) => ({
                     ...prev,
-                    employmentType: value === '__none__' ? undefined : value as EmploymentType,
+                    employmentType: value === '__none__' ? undefined : (value as EmploymentType),
                   }))
                 }
               >
@@ -252,7 +255,7 @@ export function BulkActionsToolbar({
                 onValueChange={(value) =>
                   setEditChanges((prev) => ({
                     ...prev,
-                    vatStatus: value === '__none__' ? undefined : value as VatStatus,
+                    vatStatus: value === '__none__' ? undefined : (value as VatStatus),
                   }))
                 }
               >
@@ -277,7 +280,7 @@ export function BulkActionsToolbar({
                 onValueChange={(value) =>
                   setEditChanges((prev) => ({
                     ...prev,
-                    taxScheme: value === '__none__' ? undefined : value as TaxScheme,
+                    taxScheme: value === '__none__' ? undefined : (value as TaxScheme),
                   }))
                 }
               >
@@ -302,7 +305,7 @@ export function BulkActionsToolbar({
                 onValueChange={(value) =>
                   setEditChanges((prev) => ({
                     ...prev,
-                    zusStatus: value === '__none__' ? undefined : value as ZusStatus,
+                    zusStatus: value === '__none__' ? undefined : (value as ZusStatus),
                   }))
                 }
               >
@@ -327,7 +330,11 @@ export function BulkActionsToolbar({
             </Button>
             <Button
               onClick={handleBulkEdit}
-              disabled={isEditing || Object.keys(editChanges).filter(k => editChanges[k as keyof BulkEditChanges]).length === 0}
+              disabled={
+                isEditing ||
+                Object.keys(editChanges).filter((k) => editChanges[k as keyof BulkEditChanges])
+                  .length === 0
+              }
             >
               {isEditing ? 'Zapisywanie...' : 'Zapisz zmiany'}
             </Button>

@@ -14,8 +14,8 @@ function getRequiredSecret(configService: ConfigService, key: string): string {
   if (!secret) {
     throw new Error(
       `Missing required environment variable: ${key}. ` +
-      `JWT secrets must be explicitly configured for security. ` +
-      `Please set ${key} in your environment or .env file.`
+        `JWT secrets must be explicitly configured for security. ` +
+        `Please set ${key} in your environment or .env file.`
     );
   }
   return secret;

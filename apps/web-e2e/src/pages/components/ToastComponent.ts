@@ -56,9 +56,8 @@ export class ToastComponent {
    * Get all visible toast messages
    */
   async getAllToastMessages(): Promise<string[]> {
-    const messages = await this.page.$$eval(
-      this.toastMessage,
-      (elements) => elements.map((el) => el.textContent?.trim() || '')
+    const messages = await this.page.$$eval(this.toastMessage, (elements) =>
+      elements.map((el) => el.textContent?.trim() || '')
     );
     return messages.filter(Boolean);
   }

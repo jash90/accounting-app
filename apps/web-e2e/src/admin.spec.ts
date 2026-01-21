@@ -4,12 +4,12 @@ test.describe('Admin Pages', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to login page
     await page.goto('http://localhost:4200/login');
-    
+
     // Login as admin (assuming seeded data)
     await page.fill('[name="email"]', 'admin@system.com');
     await page.fill('[name="password"]', 'Admin123!');
     await page.click('button[type="submit"]');
-    
+
     // Wait for navigation to admin dashboard
     await expect(page).toHaveURL(/\/admin/);
   });
@@ -28,14 +28,14 @@ test.describe('Admin Pages', () => {
   test('admin can create a user', async ({ page }) => {
     await page.goto('http://localhost:4200/admin/users');
     await page.click('text=Create User');
-    
+
     await page.fill('[name="email"]', 'newuser@test.com');
     await page.fill('[name="password"]', 'Password123!');
     await page.fill('[name="firstName"]', 'New');
     await page.fill('[name="lastName"]', 'User');
-    
+
     await page.click('button:has-text("Create")');
-    
+
     // Wait for success toast or table update
     await expect(page.locator('text=newuser@test.com')).toBeVisible({ timeout: 5000 });
   });
@@ -52,4 +52,3 @@ test.describe('Admin Pages', () => {
     await expect(page.locator('text=Modules')).toBeVisible();
   });
 });
-

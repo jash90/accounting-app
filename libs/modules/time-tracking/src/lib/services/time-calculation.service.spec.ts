@@ -1,5 +1,6 @@
-import { TimeCalculationService } from './time-calculation.service';
 import { TimeRoundingMethod, DefaultRoundingInterval } from '@accounting/common';
+
+import { TimeCalculationService } from './time-calculation.service';
 
 describe('TimeCalculationService', () => {
   let service: TimeCalculationService;

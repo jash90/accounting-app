@@ -32,4 +32,3 @@ export class RegisterDto {
   @ValidateIf((o) => o.role === UserRole.COMPANY_OWNER || o.role === UserRole.EMPLOYEE)
   companyId?: string;
 }
-

@@ -1,16 +1,12 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, DataSource, EntityManager } from 'typeorm';
-import {
-  Client,
-  User,
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
-} from '@accounting/common';
+
+import { Repository, DataSource, EntityManager } from 'typeorm';
+
+import { Client, User, EmploymentType, VatStatus, TaxScheme, ZusStatus } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
+
 import { ClientFiltersDto } from '../dto/client.dto';
 
 // Type alias for backward compatibility
@@ -50,7 +46,7 @@ export class ClientExportService {
     private readonly clientRepository: Repository<Client>,
     private readonly changeLogService: ChangeLogService,
     private readonly tenantService: TenantService,
-    private readonly dataSource: DataSource,
+    private readonly dataSource: DataSource
   ) {}
 
   /**
@@ -98,7 +94,7 @@ export class ClientExportService {
       const escapedSearch = this.escapeLikePattern(filters.search);
       queryBuilder.andWhere(
         "(client.name ILIKE :search ESCAPE '\\' OR client.nip ILIKE :search ESCAPE '\\' OR client.email ILIKE :search ESCAPE '\\')",
-        { search: `%${escapedSearch}%` },
+        { search: `%${escapedSearch}%` }
       );
     }
 
@@ -141,10 +137,9 @@ export class ClientExportService {
       'Dodatkowe informacje',
     ];
 
-    const csvContent = [
-      headers.join(','),
-      exampleRow.map(this.escapeCsvField).join(','),
-    ].join('\n');
+    const csvContent = [headers.join(','), exampleRow.map(this.escapeCsvField).join(',')].join(
+      '\n'
+    );
 
     return Buffer.from(csvContent, 'utf-8');
   }
@@ -159,7 +154,9 @@ export class ClientExportService {
     // Parse CSV
     const lines = content.split('\n').filter((line) => line.trim());
     if (lines.length < 2) {
-      throw new BadRequestException('Plik CSV musi zawierać nagłówki i co najmniej jeden wiersz danych');
+      throw new BadRequestException(
+        'Plik CSV musi zawierać nagłówki i co najmniej jeden wiersz danych'
+      );
     }
 
     const headers = this.parseCsvLine(lines[0]);
@@ -244,7 +241,7 @@ export class ClientExportService {
               existingClient.id,
               oldValues,
               this.sanitizeClientForLog(existingClient),
-              user,
+              user
             );
 
             result.updated++;
@@ -262,7 +259,7 @@ export class ClientExportService {
               'Client',
               savedClient.id,
               this.sanitizeClientForLog(savedClient),
-              user,
+              user
             );
 
             result.imported++;
@@ -270,7 +267,9 @@ export class ClientExportService {
         } catch (error) {
           this.logger.error(`Error importing row ${rowNumber}`, error);
           // Re-throw to trigger transaction rollback
-          throw new BadRequestException(`Błąd podczas importu wiersza ${rowNumber}: ${error instanceof Error ? error.message : 'Nieznany błąd'}`);
+          throw new BadRequestException(
+            `Błąd podczas importu wiersza ${rowNumber}: ${error instanceof Error ? error.message : 'Nieznany błąd'}`
+          );
         }
       }
 
@@ -334,20 +333,16 @@ export class ClientExportService {
       client.isActive ? 'true' : 'false',
     ]);
 
-    return [
-      headers.join(','),
-      ...rows.map((row) => row.map(this.escapeCsvField).join(',')),
-    ].join('\n');
+    return [headers.join(','), ...rows.map((row) => row.map(this.escapeCsvField).join(','))].join(
+      '\n'
+    );
   }
 
   /**
    * Escape special LIKE pattern characters to prevent SQL injection.
    */
   private escapeLikePattern(pattern: string): string {
-    return pattern
-      .replace(/\\/g, '\\\\')
-      .replace(/%/g, '\\%')
-      .replace(/_/g, '\\_');
+    return pattern.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
   }
 
   /**
@@ -362,7 +357,7 @@ export class ClientExportService {
     // CSV injection protection: prefix values starting with formula characters
     // This prevents Excel/Sheets from interpreting them as formulas
     const formulaChars = ['=', '+', '-', '@', '\t', '\r'];
-    if (formulaChars.some(char => value.startsWith(char))) {
+    if (formulaChars.some((char) => value.startsWith(char))) {
       value = "'" + value;
     }
 
@@ -439,7 +434,10 @@ export class ClientExportService {
     }
 
     // Enum validations
-    if (row.employmentType && !Object.values(EmploymentType).includes(row.employmentType as EmploymentType)) {
+    if (
+      row.employmentType &&
+      !Object.values(EmploymentType).includes(row.employmentType as EmploymentType)
+    ) {
       errors.push({
         row: rowNumber,
         field: 'employmentType',

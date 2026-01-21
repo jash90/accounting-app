@@ -1,20 +1,9 @@
 import { useState, useCallback } from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { useTasks, useTaskAssignees } from '@/lib/hooks/use-tasks';
-import { useAuthContext } from '@/contexts/auth-context';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { TaskStatusBadge } from '@/components/tasks/task-status-badge';
-import { TaskPriorityBadge } from '@/components/tasks/task-priority-badge';
+
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
 import {
   CheckSquare,
   Plus,
@@ -26,11 +15,27 @@ import {
   Filter,
   X,
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+
+import { TaskPriorityBadge } from '@/components/tasks/task-priority-badge';
+import { TaskStatusBadge } from '@/components/tasks/task-status-badge';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+
+import { useAuthContext } from '@/contexts/auth-context';
+import { useTasks, useTaskAssignees } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
+import { type TaskFiltersDto } from '@/types/dtos';
 import { UserRole, TaskStatus, TaskPriority } from '@/types/enums';
-import { TaskFiltersDto } from '@/types/dtos';
+
 import { QuickAddTaskDialog } from './quick-add-task-dialog';
 
 interface ClientTasksListProps {
@@ -140,9 +145,7 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-destructive">
-            Nie udało się załadować zadań
-          </p>
+          <p className="text-sm text-destructive">Nie udało się załadować zadań</p>
         </CardContent>
       </Card>
     );
@@ -173,24 +176,19 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
               <Filter className="h-4 w-4 mr-1" />
               Filtry
               {hasActiveFilters && (
-                <Badge variant="default" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                <Badge
+                  variant="default"
+                  className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+                >
                   !
                 </Badge>
               )}
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleViewKanban}
-            >
+            <Button variant="ghost" size="sm" onClick={handleViewKanban}>
               <LayoutGrid className="h-4 w-4 mr-1" />
               Kanban
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setAddTaskOpen(true)}
-            >
+            <Button variant="outline" size="sm" onClick={() => setAddTaskOpen(true)}>
               <Plus className="h-4 w-4 mr-1" />
               Dodaj zadanie
             </Button>
@@ -202,7 +200,12 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
             <div className="flex flex-wrap items-center gap-3">
               <Select
                 value={filters.status || '__all__'}
-                onValueChange={(value) => handleFilterChange('status', value === '__all__' ? undefined : value as TaskStatus)}
+                onValueChange={(value) =>
+                  handleFilterChange(
+                    'status',
+                    value === '__all__' ? undefined : (value as TaskStatus)
+                  )
+                }
               >
                 <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Status" />
@@ -219,7 +222,12 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
 
               <Select
                 value={filters.priority || '__all__'}
-                onValueChange={(value) => handleFilterChange('priority', value === '__all__' ? undefined : value as TaskPriority)}
+                onValueChange={(value) =>
+                  handleFilterChange(
+                    'priority',
+                    value === '__all__' ? undefined : (value as TaskPriority)
+                  )
+                }
               >
                 <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Priorytet" />
@@ -236,7 +244,9 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
 
               <Select
                 value={filters.assigneeId || '__all__'}
-                onValueChange={(value) => handleFilterChange('assigneeId', value === '__all__' ? undefined : value)}
+                onValueChange={(value) =>
+                  handleFilterChange('assigneeId', value === '__all__' ? undefined : value)
+                }
               >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Przypisany do" />
@@ -290,9 +300,7 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
             <div className="space-y-2">
               {tasks.map((task) => {
                 const isOverdue =
-                  task.dueDate &&
-                  new Date(task.dueDate) < new Date() &&
-                  task.status !== 'done';
+                  task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
 
                 return (
                   <div
@@ -305,23 +313,15 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
                     )}
                   >
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm truncate">
-                        {task.title}
-                      </h4>
+                      <h4 className="font-medium text-sm truncate">{task.title}</h4>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <TaskStatusBadge status={task.status} size="sm" />
-                        <TaskPriorityBadge
-                          priority={task.priority}
-                          size="sm"
-                          showLabel={false}
-                        />
+                        <TaskPriorityBadge priority={task.priority} size="sm" showLabel={false} />
                         {task.dueDate && (
                           <span
                             className={cn(
                               'flex items-center gap-1 text-xs',
-                              isOverdue
-                                ? 'text-red-600'
-                                : 'text-muted-foreground'
+                              isOverdue ? 'text-red-600' : 'text-muted-foreground'
                             )}
                           >
                             <Calendar size={12} />

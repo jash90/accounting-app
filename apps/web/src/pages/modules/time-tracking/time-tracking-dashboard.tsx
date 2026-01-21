@@ -9,12 +9,13 @@ import {
   DollarSign,
   TrendingUp,
 } from 'lucide-react';
-import { useAuthContext } from '@/contexts/auth-context';
-import { useTimeEntries, useActiveTimer } from '@/lib/hooks/use-time-tracking';
-import { UserRole } from '@/types/enums';
+
 import { TimerWidget } from '@/components/time-tracking';
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
+import { useAuthContext } from '@/contexts/auth-context';
+import { useTimeEntries, useActiveTimer } from '@/lib/hooks/use-time-tracking';
+import { UserRole } from '@/types/enums';
 
 export default function TimeTrackingDashboardPage() {
   const { user } = useAuthContext();
@@ -89,8 +90,7 @@ export default function TimeTrackingDashboardPage() {
   ];
 
   // Settings option (only for admins and company owners)
-  const showSettings =
-    user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER;
+  const showSettings = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER;
 
   return (
     <div className="container mx-auto p-6 space-y-6">

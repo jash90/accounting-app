@@ -21,7 +21,7 @@ const SENSITIVE_KEYS = [
  * Sanitize details object to prevent leaking sensitive information
  */
 function sanitizeDetails(
-  details: Record<string, unknown> | undefined,
+  details: Record<string, unknown> | undefined
 ): Record<string, unknown> | undefined {
   if (!details) return undefined;
 
@@ -32,8 +32,7 @@ function sanitizeDetails(
 
     // Check if key contains any sensitive patterns
     const isSensitive = SENSITIVE_KEYS.some(
-      (sensitiveKey) =>
-        lowerKey.includes(sensitiveKey) || lowerKey === sensitiveKey,
+      (sensitiveKey) => lowerKey.includes(sensitiveKey) || lowerKey === sensitiveKey
     );
 
     if (isSensitive) {

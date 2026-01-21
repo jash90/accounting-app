@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { UserRole } from '@/types/enums';
 
 // Auth Schemas
@@ -11,7 +12,8 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 
 export const registerSchema = z.object({
   email: z.string().email('Nieprawidłowy adres email'),
-  password: z.string()
+  password: z
+    .string()
     .min(12, 'Hasło musi mieć co najmniej 12 znaków')
     .regex(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
     .regex(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
@@ -26,40 +28,40 @@ export const registerSchema = z.object({
 export type RegisterFormData = z.infer<typeof registerSchema>;
 
 // User Schemas
-export const createUserSchema = z.object({
-  email: z.string().email('Nieprawidłowy adres email'),
-  password: z.string()
-    .min(12, 'Hasło musi mieć co najmniej 12 znaków')
-    .regex(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
-    .regex(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
-    .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę')
-    .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Hasło musi zawierać znak specjalny'),
-  firstName: z.string().min(1, 'Imię jest wymagane'),
-  lastName: z.string().min(1, 'Nazwisko jest wymagane'),
-  role: z.nativeEnum(UserRole),
-  companyId: z.preprocess(
-    (val) => (val === '' ? undefined : val),
-    z.string().uuid().optional()
-  ),
-  companyName: z.string().optional(),
-}).superRefine((data, ctx) => {
-  // EMPLOYEE requires companyId
-  if (data.role === UserRole.EMPLOYEE && !data.companyId) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Firma jest wymagana dla roli Pracownik',
-      path: ['companyId'],
-    });
-  }
-  // COMPANY_OWNER requires companyName
-  if (data.role === UserRole.COMPANY_OWNER && !data.companyName?.trim()) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Nazwa firmy jest wymagana dla roli Właściciel firmy',
-      path: ['companyName'],
-    });
-  }
-});
+export const createUserSchema = z
+  .object({
+    email: z.string().email('Nieprawidłowy adres email'),
+    password: z
+      .string()
+      .min(12, 'Hasło musi mieć co najmniej 12 znaków')
+      .regex(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
+      .regex(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
+      .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę')
+      .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Hasło musi zawierać znak specjalny'),
+    firstName: z.string().min(1, 'Imię jest wymagane'),
+    lastName: z.string().min(1, 'Nazwisko jest wymagane'),
+    role: z.nativeEnum(UserRole),
+    companyId: z.preprocess((val) => (val === '' ? undefined : val), z.string().uuid().optional()),
+    companyName: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    // EMPLOYEE requires companyId
+    if (data.role === UserRole.EMPLOYEE && !data.companyId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Firma jest wymagana dla roli Pracownik',
+        path: ['companyId'],
+      });
+    }
+    // COMPANY_OWNER requires companyName
+    if (data.role === UserRole.COMPANY_OWNER && !data.companyName?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Nazwa firmy jest wymagana dla roli Właściciel firmy',
+        path: ['companyName'],
+      });
+    }
+  });
 
 export type CreateUserFormData = z.infer<typeof createUserSchema>;
 
@@ -92,7 +94,8 @@ export type UpdateCompanyFormData = z.infer<typeof updateCompanySchema>;
 // Module Schemas
 export const createModuleSchema = z.object({
   name: z.string().min(1, 'Nazwa modułu jest wymagana'),
-  slug: z.string()
+  slug: z
+    .string()
     .min(1, 'Identyfikator (slug) jest wymagany')
     .regex(/^[a-z0-9-]+$/, 'Identyfikator może zawierać tylko małe litery, cyfry i myślniki'),
   description: z.string().min(1, 'Opis jest wymagany'),
@@ -102,7 +105,8 @@ export type CreateModuleFormData = z.infer<typeof createModuleSchema>;
 
 export const updateModuleSchema = z.object({
   name: z.string().min(1).optional(),
-  slug: z.string()
+  slug: z
+    .string()
     .min(1)
     .regex(/^[a-z0-9-]+$/, 'Identyfikator może zawierać tylko małe litery, cyfry i myślniki')
     .optional(),
@@ -115,7 +119,8 @@ export type UpdateModuleFormData = z.infer<typeof updateModuleSchema>;
 // Employee Schemas
 export const createEmployeeSchema = z.object({
   email: z.string().email('Nieprawidłowy adres email'),
-  password: z.string()
+  password: z
+    .string()
     .min(12, 'Hasło musi mieć co najmniej 12 znaków')
     .regex(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
     .regex(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
@@ -130,7 +135,9 @@ export type CreateEmployeeFormData = z.infer<typeof createEmployeeSchema>;
 // Permission Schemas
 export const grantModuleAccessSchema = z.object({
   moduleSlug: z.string().min(1, 'Identyfikator modułu jest wymagany'),
-  permissions: z.array(z.enum(['read', 'write', 'delete'])).min(1, 'Wymagane jest co najmniej jedno uprawnienie'),
+  permissions: z
+    .array(z.enum(['read', 'write', 'delete']))
+    .min(1, 'Wymagane jest co najmniej jedno uprawnienie'),
 });
 
 export type GrantModuleAccessFormData = z.infer<typeof grantModuleAccessSchema>;
@@ -185,7 +192,8 @@ export type SendMessageFormData = z.infer<typeof sendMessageSchema>;
 
 // Context/File Upload Schemas
 export const uploadContextFileSchema = z.object({
-  file: z.instanceof(File, { message: 'Plik jest wymagany' })
+  file: z
+    .instanceof(File, { message: 'Plik jest wymagany' })
     .refine((file) => file.size <= 10 * 1024 * 1024, 'Rozmiar pliku musi być mniejszy niż 10MB')
     .refine(
       (file) => ['application/pdf', 'text/plain', 'text/markdown'].includes(file.type),
@@ -208,13 +216,21 @@ export type SetTokenLimitFormData = z.infer<typeof setTokenLimitSchema>;
 export const createEmailConfigSchema = z.object({
   // SMTP Configuration
   smtpHost: z.string().min(3, 'Host SMTP jest wymagany'),
-  smtpPort: z.number().int().min(1, 'Port musi być co najmniej 1').max(65535, 'Port musi być maksymalnie 65535'),
+  smtpPort: z
+    .number()
+    .int()
+    .min(1, 'Port musi być co najmniej 1')
+    .max(65535, 'Port musi być maksymalnie 65535'),
   smtpSecure: z.boolean(),
   smtpUser: z.string().email('Nieprawidłowy adres email'),
   smtpPassword: z.string().min(1, 'Hasło SMTP jest wymagane'),
   // IMAP Configuration
   imapHost: z.string().min(3, 'Host IMAP jest wymagany'),
-  imapPort: z.number().int().min(1, 'Port musi być co najmniej 1').max(65535, 'Port musi być maksymalnie 65535'),
+  imapPort: z
+    .number()
+    .int()
+    .min(1, 'Port musi być co najmniej 1')
+    .max(65535, 'Port musi być maksymalnie 65535'),
   imapTls: z.boolean(),
   imapUser: z.string().email('Nieprawidłowy adres email'),
   imapPassword: z.string().min(1, 'Hasło IMAP jest wymagane'),
@@ -244,22 +260,30 @@ export const updateEmailConfigSchema = z.object({
 export type UpdateEmailConfigFormData = z.infer<typeof updateEmailConfigSchema>;
 
 // PKD code validation - must be in format XX.XX or XX.XX.X (e.g., 62.01 or 62.01.Z)
-const pkdCodeSchema = z.string().max(10).optional().refine(
-  (val) => !val || /^\d{2}\.\d{2}(\.[A-Z])?$/.test(val),
-  { message: 'Kod PKD musi być w formacie XX.XX lub XX.XX.X (np. 62.01 lub 62.01.Z)' }
-);
+const pkdCodeSchema = z
+  .string()
+  .max(10)
+  .optional()
+  .refine((val) => !val || /^\d{2}\.\d{2}(\.[A-Z])?$/.test(val), {
+    message: 'Kod PKD musi być w formacie XX.XX lub XX.XX.X (np. 62.01 lub 62.01.Z)',
+  });
 
 // GTU code validation - must be in format GTU_XX (e.g., GTU_01)
-const gtuCodeSchema = z.string().max(10).optional().refine(
-  (val) => !val || /^GTU_\d{2}$/.test(val),
-  { message: 'Kod GTU musi być w formacie GTU_XX (np. GTU_01)' }
-);
+const gtuCodeSchema = z
+  .string()
+  .max(10)
+  .optional()
+  .refine((val) => !val || /^GTU_\d{2}$/.test(val), {
+    message: 'Kod GTU musi być w formacie GTU_XX (np. GTU_01)',
+  });
 
 // NIP validation - must be exactly 10 digits
-const nipSchema = z.string().optional().refine(
-  (val) => !val || /^\d{10}$/.test(val),
-  { message: 'NIP musi składać się z dokładnie 10 cyfr' }
-);
+const nipSchema = z
+  .string()
+  .optional()
+  .refine((val) => !val || /^\d{10}$/.test(val), {
+    message: 'NIP musi składać się z dokładnie 10 cyfr',
+  });
 
 // Client Schemas
 export const createClientSchema = z.object({
@@ -275,7 +299,9 @@ export const createClientSchema = z.object({
   gtuCode: gtuCodeSchema,
   pkdCode: pkdCodeSchema,
   amlGroup: z.string().max(50).optional(),
-  employmentType: z.enum(['DG', 'DG_ETAT', 'DG_AKCJONARIUSZ', 'DG_HALF_TIME_BELOW_MIN', 'DG_HALF_TIME_ABOVE_MIN']).optional(),
+  employmentType: z
+    .enum(['DG', 'DG_ETAT', 'DG_AKCJONARIUSZ', 'DG_HALF_TIME_BELOW_MIN', 'DG_HALF_TIME_ABOVE_MIN'])
+    .optional(),
   vatStatus: z.enum(['VAT_MONTHLY', 'VAT_QUARTERLY', 'NO', 'NO_WATCH_LIMIT']).optional(),
   taxScheme: z.enum(['PIT_17', 'PIT_19', 'LUMP_SUM', 'GENERAL']).optional(),
   zusStatus: z.enum(['FULL', 'PREFERENTIAL', 'NONE']).optional(),
@@ -296,7 +322,9 @@ export const customFieldFilterSchema = z.object({
 
 export const clientFiltersSchema = z.object({
   search: z.string().optional(),
-  employmentType: z.enum(['DG', 'DG_ETAT', 'DG_AKCJONARIUSZ', 'DG_HALF_TIME_BELOW_MIN', 'DG_HALF_TIME_ABOVE_MIN']).optional(),
+  employmentType: z
+    .enum(['DG', 'DG_ETAT', 'DG_AKCJONARIUSZ', 'DG_HALF_TIME_BELOW_MIN', 'DG_HALF_TIME_ABOVE_MIN'])
+    .optional(),
   vatStatus: z.enum(['VAT_MONTHLY', 'VAT_QUARTERLY', 'NO', 'NO_WATCH_LIMIT']).optional(),
   taxScheme: z.enum(['PIT_17', 'PIT_19', 'LUMP_SUM', 'GENERAL']).optional(),
   zusStatus: z.enum(['FULL', 'PREFERENTIAL', 'NONE']).optional(),
@@ -318,7 +346,9 @@ export type ClientFiltersFormData = z.infer<typeof clientFiltersSchema>;
 export const createClientFieldDefinitionSchema = z.object({
   name: z.string().min(1, 'Nazwa pola jest wymagana').max(100),
   label: z.string().min(1, 'Etykieta pola jest wymagana').max(200),
-  fieldType: z.enum(['TEXT', 'NUMBER', 'DATE', 'BOOLEAN', 'ENUM'], { required_error: 'Typ pola jest wymagany' }),
+  fieldType: z.enum(['TEXT', 'NUMBER', 'DATE', 'BOOLEAN', 'ENUM'], {
+    required_error: 'Typ pola jest wymagany',
+  }),
   isRequired: z.boolean().default(false),
   enumValues: z.array(z.string()).optional(),
   displayOrder: z.number().int().min(0).optional(),
@@ -326,16 +356,32 @@ export const createClientFieldDefinitionSchema = z.object({
 
 export type CreateClientFieldDefinitionFormData = z.infer<typeof createClientFieldDefinitionSchema>;
 
-export const updateClientFieldDefinitionSchema = createClientFieldDefinitionSchema.partial().extend({
-  isActive: z.boolean().optional(),
-});
+export const updateClientFieldDefinitionSchema = createClientFieldDefinitionSchema
+  .partial()
+  .extend({
+    isActive: z.boolean().optional(),
+  });
 
 export type UpdateClientFieldDefinitionFormData = z.infer<typeof updateClientFieldDefinitionSchema>;
 
 // Auto-Assign Condition Schema
 const singleConditionSchema = z.object({
   field: z.string().min(1),
-  operator: z.enum(['equals', 'notEquals', 'contains', 'notContains', 'greaterThan', 'lessThan', 'greaterThanOrEqual', 'lessThanOrEqual', 'isEmpty', 'isNotEmpty', 'in', 'notIn', 'between']),
+  operator: z.enum([
+    'equals',
+    'notEquals',
+    'contains',
+    'notContains',
+    'greaterThan',
+    'lessThan',
+    'greaterThanOrEqual',
+    'lessThanOrEqual',
+    'isEmpty',
+    'isNotEmpty',
+    'in',
+    'notIn',
+    'between',
+  ]),
   value: z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]).optional(),
   secondValue: z.union([z.string(), z.number()]).optional(),
 });
@@ -350,72 +396,86 @@ const conditionGroupSchema: z.ZodType<any> = z.lazy(() =>
 const autoAssignConditionSchema = z.union([singleConditionSchema, conditionGroupSchema]);
 
 // Client Icon Schemas
-export const createClientIconSchema = z.object({
-  name: z.string().min(1, 'Nazwa ikony jest wymagana').max(100),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Nieprawidłowy format koloru').optional().or(z.literal('')),
-  iconType: z.enum(['lucide', 'custom', 'emoji'], { required_error: 'Wybierz typ ikony' }),
-  iconValue: z.string().optional(),
-  file: z.instanceof(File)
-    .refine((file) => file.size <= 5 * 1024 * 1024, 'Rozmiar pliku nie może przekraczać 5MB')
-    .refine(
-      (file) => ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp'].includes(file.type),
-      'Dozwolone są tylko pliki PNG, JPEG, SVG i WebP'
-    )
-    .optional(),
-  autoAssignCondition: autoAssignConditionSchema.optional().nullable(),
-}).refine(
-  (data) => {
-    // For LUCIDE and EMOJI types, iconValue is required
-    if (data.iconType === 'lucide' || data.iconType === 'emoji') {
-      return !!data.iconValue;
+export const createClientIconSchema = z
+  .object({
+    name: z.string().min(1, 'Nazwa ikony jest wymagana').max(100),
+    color: z
+      .string()
+      .regex(/^#[0-9A-Fa-f]{6}$/, 'Nieprawidłowy format koloru')
+      .optional()
+      .or(z.literal('')),
+    iconType: z.enum(['lucide', 'custom', 'emoji'], { required_error: 'Wybierz typ ikony' }),
+    iconValue: z.string().optional(),
+    file: z
+      .instanceof(File)
+      .refine((file) => file.size <= 5 * 1024 * 1024, 'Rozmiar pliku nie może przekraczać 5MB')
+      .refine(
+        (file) => ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp'].includes(file.type),
+        'Dozwolone są tylko pliki PNG, JPEG, SVG i WebP'
+      )
+      .optional(),
+    autoAssignCondition: autoAssignConditionSchema.optional().nullable(),
+  })
+  .refine(
+    (data) => {
+      // For LUCIDE and EMOJI types, iconValue is required
+      if (data.iconType === 'lucide' || data.iconType === 'emoji') {
+        return !!data.iconValue;
+      }
+      // For CUSTOM type, file is required
+      if (data.iconType === 'custom') {
+        return !!data.file;
+      }
+      return true;
+    },
+    {
+      message: 'Wybierz ikonę lub prześlij plik',
+      path: ['iconValue'],
     }
-    // For CUSTOM type, file is required
-    if (data.iconType === 'custom') {
-      return !!data.file;
-    }
-    return true;
-  },
-  {
-    message: 'Wybierz ikonę lub prześlij plik',
-    path: ['iconValue'],
-  }
-);
+  );
 
 export type CreateClientIconFormData = z.infer<typeof createClientIconSchema>;
 
-export const updateClientIconSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().or(z.literal('')),
-  iconType: z.enum(['lucide', 'custom', 'emoji']).optional(),
-  iconValue: z.string().optional(),
-  file: z.instanceof(File)
-    .refine((file) => file.size <= 5 * 1024 * 1024, 'Rozmiar pliku nie może przekraczać 5MB')
-    .refine(
-      (file) => ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp'].includes(file.type),
-      'Dozwolone są tylko pliki PNG, JPEG, SVG i WebP'
-    )
-    .optional(),
-  isActive: z.boolean().optional(),
-  autoAssignCondition: autoAssignConditionSchema.optional().nullable(),
-}).superRefine((data, ctx) => {
-  // Only validate cross-field when iconType is being changed
-  if (data.iconType) {
-    if ((data.iconType === 'lucide' || data.iconType === 'emoji') && !data.iconValue) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Wartość ikony jest wymagana dla tego typu',
-        path: ['iconValue'],
-      });
+export const updateClientIconSchema = z
+  .object({
+    name: z.string().min(1).max(100).optional(),
+    color: z
+      .string()
+      .regex(/^#[0-9A-Fa-f]{6}$/)
+      .optional()
+      .or(z.literal('')),
+    iconType: z.enum(['lucide', 'custom', 'emoji']).optional(),
+    iconValue: z.string().optional(),
+    file: z
+      .instanceof(File)
+      .refine((file) => file.size <= 5 * 1024 * 1024, 'Rozmiar pliku nie może przekraczać 5MB')
+      .refine(
+        (file) => ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp'].includes(file.type),
+        'Dozwolone są tylko pliki PNG, JPEG, SVG i WebP'
+      )
+      .optional(),
+    isActive: z.boolean().optional(),
+    autoAssignCondition: autoAssignConditionSchema.optional().nullable(),
+  })
+  .superRefine((data, ctx) => {
+    // Only validate cross-field when iconType is being changed
+    if (data.iconType) {
+      if ((data.iconType === 'lucide' || data.iconType === 'emoji') && !data.iconValue) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Wartość ikony jest wymagana dla tego typu',
+          path: ['iconValue'],
+        });
+      }
+      if (data.iconType === 'custom' && !data.file) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Plik ikony jest wymagany dla typu niestandardowego',
+          path: ['file'],
+        });
+      }
     }
-    if (data.iconType === 'custom' && !data.file) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Plik ikony jest wymagany dla typu niestandardowego',
-        path: ['file'],
-      });
-    }
-  }
-});
+  });
 
 export type UpdateClientIconFormData = z.infer<typeof updateClientIconSchema>;
 
@@ -427,4 +487,3 @@ export const notificationSettingsSchema = z.object({
 });
 
 export type NotificationSettingsFormData = z.infer<typeof notificationSettingsSchema>;
-

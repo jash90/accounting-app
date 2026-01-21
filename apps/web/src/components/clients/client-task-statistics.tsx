@@ -1,8 +1,9 @@
-import { useClientTaskStatistics } from '@/lib/hooks/use-tasks';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart3, Clock, Target } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useClientTaskStatistics } from '@/lib/hooks/use-tasks';
 import { TaskStatus, TaskStatusLabels } from '@/types/enums';
 
 interface ClientTaskStatisticsProps {
@@ -60,9 +61,7 @@ export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Nie udało się załadować statystyk
-          </p>
+          <p className="text-sm text-muted-foreground">Nie udało się załadować statystyk</p>
         </CardContent>
       </Card>
     );
@@ -79,9 +78,7 @@ export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Brak zadań do wyświetlenia
-          </p>
+          <p className="text-sm text-muted-foreground">Brak zadań do wyświetlenia</p>
         </CardContent>
       </Card>
     );
@@ -121,9 +118,7 @@ export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
 
             return (
               <div key={status} className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">
-                  {TaskStatusLabels[status]}
-                </span>
+                <span className="text-sm text-muted-foreground">{TaskStatusLabels[status]}</span>
                 <Badge className={statusColors[status]}>{count}</Badge>
               </div>
             );
@@ -150,9 +145,7 @@ export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
               <Target className="h-3 w-3" />
               Story points
             </span>
-            <span className="text-sm font-medium">
-              {statistics.totalStoryPoints}
-            </span>
+            <span className="text-sm font-medium">{statistics.totalStoryPoints}</span>
           </div>
         )}
       </CardContent>

@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
+
 import {
   DndContext,
-  DragEndEvent,
-  DragOverEvent,
-  DragStartEvent,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
   DragOverlay,
   closestCorners,
   KeyboardSensor,
@@ -11,13 +12,12 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import {
-  arrayMove,
-  sortableKeyboardCoordinates,
-} from '@dnd-kit/sortable';
+import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+
 import { cn } from '@/lib/utils/cn';
+import { type TaskResponseDto, type KanbanBoardDto } from '@/types/dtos';
 import { TaskStatus } from '@/types/enums';
-import { TaskResponseDto, KanbanBoardDto } from '@/types/dtos';
+
 import { KanbanColumn } from './kanban-column';
 import { TaskCard } from './task-card';
 
@@ -187,12 +187,7 @@ export function KanbanBoard({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div
-        className={cn(
-          'flex gap-4 overflow-x-auto pb-4 min-h-[500px]',
-          className
-        )}
-      >
+      <div className={cn('flex gap-4 overflow-x-auto pb-4 min-h-[500px]', className)}>
         {statusOrder.map((status) => (
           <KanbanColumn
             key={status}
@@ -205,9 +200,7 @@ export function KanbanBoard({
       </div>
 
       <DragOverlay>
-        {activeTask && (
-          <TaskCard task={activeTask} isDragging className="rotate-3 shadow-xl" />
-        )}
+        {activeTask && <TaskCard task={activeTask} isDragging className="rotate-3 shadow-xl" />}
       </DragOverlay>
     </DndContext>
   );

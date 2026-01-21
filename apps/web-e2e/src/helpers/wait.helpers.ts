@@ -142,9 +142,7 @@ export class WaitHelpers {
   static async waitForAnimation(locator: Locator): Promise<void> {
     // Wait for animations to complete
     await locator.evaluate((element) => {
-      return Promise.all(
-        element.getAnimations().map((animation) => animation.finished)
-      );
+      return Promise.all(element.getAnimations().map((animation) => animation.finished));
     });
   }
 

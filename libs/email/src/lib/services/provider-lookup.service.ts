@@ -1,8 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  AutodiscoveryResult,
-  DiscoveredConfig,
-} from '../interfaces/autodiscovery.interface';
+import { AutodiscoveryResult, DiscoveredConfig } from '../interfaces/autodiscovery.interface';
 import { PROVIDER_LOOKUP } from '../data/known-providers';
 
 /**
@@ -88,7 +85,11 @@ export class ProviderLookupService {
     }
 
     // Microsoft 365
-    if (mxLower.includes('outlook') || mxLower.includes('microsoft') || mxLower.includes('protection.outlook')) {
+    if (
+      mxLower.includes('outlook') ||
+      mxLower.includes('microsoft') ||
+      mxLower.includes('protection.outlook')
+    ) {
       this.logger.debug('MX pattern matched: Microsoft 365', { mxHost, domain });
       return {
         smtp: { host: 'smtp.office365.com', port: 587, secure: false, authMethod: 'login' },
