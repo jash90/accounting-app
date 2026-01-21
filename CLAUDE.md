@@ -4,134 +4,265 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-RBAC Multi-tenant SaaS Backend API with React Frontend built using NestJS and Nx monorepo architecture. Supports three user roles (ADMIN, COMPANY_OWNER, EMPLOYEE) with fine-grained permission management and modular business features.
+RBAC Multi-tenant SaaS Platform with React Frontend built using NestJS and Nx monorepo architecture. Supports three user roles (ADMIN, COMPANY_OWNER, EMPLOYEE) with fine-grained permission management and modular business features.
 
 **Tech Stack:**
 
 - **Backend**: NestJS 11 + TypeORM + PostgreSQL + JWT + CASL
 - **Frontend**: React 19 + Vite + React Router + TanStack Query + Tailwind CSS + shadcn/ui
 - **Monorepo**: Nx 22 with workspace management
-- **Testing**: Vitest (frontend) + Playwright (E2E) + Jest (backend)
+- **Testing**: Bun Test + Playwright (E2E)
 
 ## Common Commands
 
-### Development Workflow
-
 ```bash
-# Start both backend and frontend concurrently
-npm run dev
+# Development
+bun run dev              # Start backend + frontend
+bun run serve            # Backend only (port 3000)
+bun run serve:web        # Frontend only (port 4200)
+bun run seed             # Seed test data
 
-# Start backend only (API on port 3000)
-npm run serve
+# Testing
+bun test                 # Backend tests
+bun run test:web         # Frontend tests
+bun run test:e2e         # Playwright E2E
+bun run test:integration # Integration tests
 
-# Start frontend only (Web on port 4200)
-npm run serve:web
+# Database
+bun run migration:generate  # Generate from entity changes
+bun run migration:run       # Run pending migrations
+bun run migration:revert    # Revert last migration
 
-# Database seeding with test data
-npm run seed
-# Creates: 1 admin, 2 companies with users, 3 modules with permissions
-# Admin credentials: admin@system.com / Admin123!
-
-# Build for production
-npm run build      # Backend
-npm run build:web  # Frontend
+# Quality
+bun run lint             # Lint backend
+bun run lint:web         # Lint frontend
 ```
 
-### Database Management
+## Test Credentials
 
-```bash
-# Generate migration from entity changes
-npm run migration:generate
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@system.com` | `Admin123!` |
+| Owner | `owner@acme.com` | `Owner123!` |
+| Employee | `employee@acme.com` | `Employee123!` |
 
-# Run pending migrations
-npm run migration:run
+## Critical Architecture Constraints
 
-# Revert last migration
-npm run migration:revert
+### Multi-Tenancy (MANDATORY)
+
+All business data **MUST** be isolated by `companyId`. Every business entity and query requires:
+
+```typescript
+// Entity pattern - ALWAYS include companyId
+@Entity()
+export class BusinessEntity {
+  @Column({ type: 'uuid', nullable: true })
+  companyId!: string | null;
+
+  @ManyToOne(() => Company, { nullable: true })
+  @JoinColumn({ name: 'companyId' })
+  company?: Company;
+}
+
+// Service pattern - ALWAYS filter by companyId
+async findAll(user: User): Promise<Entity[]> {
+  return this.repository.find({
+    where: { companyId: user.companyId },
+  });
+}
 ```
 
-### Testing
+### Authorization Guards (Required Order)
 
-```bash
-# Backend unit tests
-npm test
+Controllers must apply guards in this exact order:
 
-# Frontend unit tests
-npm run test:web
-
-# E2E tests (Playwright)
-npm run test:e2e
+```typescript
+@Controller('items')
+@UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
+@RequireModule('module-slug')
+export class ItemsController {
+  @Get()
+  @RequirePermission(Permission.READ)
+  async findAll(@CurrentUser() user: User) { }
+}
 ```
 
-### Code Quality
+### System Admin Company Pattern
 
-```bash
-# Lint backend
-npm run lint
+ADMIN users access data via a special "System Admin Company". Services must handle this:
 
-# Lint frontend
-npm run lint:web
+```typescript
+private async getSystemCompany(): Promise<Company> {
+  return this.companyRepository.findOneOrFail({
+    where: { name: 'System Admin Company' },
+  });
+}
+
+async findAll(user: User): Promise<Entity[]> {
+  if (user.role === UserRole.ADMIN) {
+    const systemCompany = await this.getSystemCompany();
+    return this.repository.find({ where: { companyId: systemCompany.id } });
+  }
+  return this.repository.find({ where: { companyId: user.companyId } });
+}
 ```
 
-## Architecture
-
-### Nx Monorepo Structure
+## Nx Monorepo Structure
 
 ```
 workspace/
 ├── apps/
-│   ├── api/              # NestJS backend application (port 3000)
+│   ├── api/              # NestJS backend (port 3000)
 │   └── api-e2e/          # Backend E2E tests
-├── web/                  # React frontend application (port 4200)
-├── web-e2e/              # Frontend E2E tests
+├── web/                  # React frontend (port 4200)
+├── web-e2e/              # Playwright E2E tests
 └── libs/
     ├── auth/             # @accounting/auth - JWT authentication
     ├── rbac/             # @accounting/rbac - RBAC system
     ├── common/           # @accounting/common - Shared entities/enums
+    ├── email/            # Email handling utilities
     └── modules/
-        └── simple-text/  # Business module example
+        ├── ai-agent/     # Claude/OpenAI integration
+        ├── clients/      # Client management (CRM)
+        ├── email-client/ # IMAP/SMTP email client
+        ├── tasks/        # Task management
+        └── time-tracking/# Time tracking
 ```
 
-### Authorization Flow
+## Module Structure
 
-**Request → JWT Guard → Role Check → Module Access → Permission Check**
+### Backend Module (`libs/modules/[name]/`)
 
-1. **JwtAuthGuard** (`libs/auth`) - Validates JWT token, attaches user to request
-2. **Module Access Guard** (`libs/rbac`) - Checks company has module enabled via `@RequireModule()`
-3. **Permission Guard** (`libs/rbac`) - Validates user permissions via `@RequirePermission()`
-4. **Owner/Admin Guard** (`libs/rbac`) - Restricts to COMPANY_OWNER or ADMIN via `@OwnerOrAdmin()`
+```
+libs/modules/[name]/
+├── src/
+│   ├── index.ts              # Barrel exports
+│   └── lib/
+│       ├── [name].module.ts  # NestJS module
+│       ├── controllers/      # REST endpoints
+│       ├── services/         # Business logic
+│       ├── dto/              # Request/response DTOs
+│       └── exceptions/       # Custom exceptions
+```
 
-### Multi-Tenant Data Isolation
+### Frontend Module (`web/src/pages/modules/[name]/`)
 
-All business data queries **must** filter by `companyId` to enforce tenant isolation. The user's company is available from the JWT payload via `@CurrentUser()` decorator.
-
-### Adding New Business Modules
-
-1. Create module in `libs/modules/[module-name]/`
-2. Define entity extending base entity pattern with `companyId`
-3. Register entity in `apps/api/typeorm.config.ts`
-4. Create controllers with guards: `@RequireModule('module-name')` and `@RequirePermission()`
-5. Add module entry to database via seeder or admin API
-6. Grant module access to companies via admin endpoints
-
-### Frontend Architecture
-
-- **Routing**: React Router 7 with file-based routing pattern in `web/src/pages/`
-- **State**: TanStack Query for server state, Context API for auth state
-- **Forms**: React Hook Form with validation
-- **UI**: shadcn/ui components with Radix UI + Tailwind CSS
-- **API Client**: Axios with base config in `web/src/lib/api-client.ts`
-- **Proxy**: Vite dev proxy forwards `/api` to backend on port 3000
+```
+web/src/
+├── pages/modules/[name]/     # Page components
+├── components/forms/         # Form dialogs
+├── lib/
+│   ├── api/endpoints/        # API client functions
+│   ├── hooks/                # React Query hooks
+│   └── validation/schemas.ts # Zod schemas
+└── types/dtos.ts             # TypeScript DTOs
+```
 
 ## Path Aliases
 
-TypeScript path aliases (from `tsconfig.base.json`):
+```typescript
+// Backend
+import { User, Company } from '@accounting/common';
+import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { RequireModule, RequirePermission } from '@accounting/rbac';
+import { TasksModule } from '@accounting/modules/tasks';
 
-- `@accounting/auth` → Authentication library
-- `@accounting/rbac` → RBAC system
-- `@accounting/common` → Shared entities and enums
-- `@accounting/modules/*` → Business modules
-- `@` → Frontend source root (`web/src/`)
+// Frontend
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/lib/hooks/use-auth';
+import { apiClient } from '@/lib/api-client';
+```
+
+## Key Patterns
+
+### Backend DTO Pattern
+
+```typescript
+// create-item.dto.ts
+export class CreateItemDto {
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ description: 'Item name' })
+  name!: string;
+}
+
+// item-response.dto.ts
+export class ItemResponseDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty() companyId!: string;
+}
+```
+
+### Frontend React Query Pattern
+
+```typescript
+// use-items.ts
+export function useItems() {
+  return useQuery({
+    queryKey: queryKeys.items.all,
+    queryFn: itemsApi.getAll,
+  });
+}
+
+export function useCreateItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: itemsApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.items.all });
+    },
+  });
+}
+```
+
+### Permission-Based UI
+
+```typescript
+const { hasPermission } = useModulePermissions('module-slug');
+
+return (
+  <>
+    {hasPermission(Permission.READ) && <ViewButton />}
+    {hasPermission(Permission.WRITE) && <EditButton />}
+    {hasPermission(Permission.DELETE) && <DeleteButton />}
+  </>
+);
+```
+
+## Role Hierarchy
+
+| Role | Access Scope | Business Data |
+|------|--------------|---------------|
+| **ADMIN** | System-wide (companies, modules) | Via System Admin Company only |
+| **COMPANY_OWNER** | Own company + employees | Full access to enabled modules |
+| **EMPLOYEE** | Granted permissions only | Filtered by companyId |
+
+## API Structure
+
+```
+GET  /                    # Health check
+GET  /api/docs            # Swagger UI
+
+POST /auth/login          # Public
+POST /auth/refresh        # Public
+POST /auth/register       # Public
+
+/admin/*                  # ADMIN role only
+/company/*                # COMPANY_OWNER role
+/modules/*                # Permission-based
+```
+
+## File Registration Checklist
+
+When creating new entities:
+
+1. Define entity in `libs/common/src/lib/entities/`
+2. Export from `libs/common/src/index.ts`
+3. Register in `apps/api/typeorm.config.ts`
+4. Add to module's `TypeOrmModule.forFeature([])`
+5. Generate migration: `bun run migration:generate`
+6. Run migration: `bun run migration:run`
 
 ## Environment Variables
 
@@ -157,52 +288,40 @@ NODE_ENV=development
 
 # CORS
 CORS_ORIGINS=http://localhost:4200
+
+# AI (optional)
+ANTHROPIC_API_KEY=your-anthropic-api-key
+OPENAI_API_KEY=your-openai-api-key
+
+# Email (optional)
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+IMAP_HOST=imap.example.com
+IMAP_PORT=993
+
+# S3 Storage (optional)
+S3_BUCKET=your-bucket
+S3_REGION=us-east-1
 ```
 
-## Key Implementation Patterns
+## Common Mistakes to Avoid
 
-### Backend: Creating Protected Endpoints
+1. **Missing companyId filter** - Always filter business data by `companyId`
+2. **Wrong guard order** - Must be: JwtAuthGuard → ModuleAccessGuard → PermissionGuard
+3. **Missing entity registration** - Register in both `typeorm.config.ts` AND module
+4. **Forgetting migrations** - Always generate after entity changes
+5. **ADMIN data access** - ADMIN uses System Admin Company, not `user.companyId`
+6. **Non-null assertions** - Use `!` in entities for TypeORM columns
 
-```typescript
-@Controller('items')
-@UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
-@RequireModule('module-name')
-export class ItemsController {
-  @Get()
-  @RequirePermission(Permission.READ)
-  async findAll(@CurrentUser() user: User) {
-    // Auto-filtered by user.companyId for tenant isolation
-  }
-}
-```
+## Documentation References
 
-### Frontend: Authenticated API Calls
-
-```typescript
-// Use TanStack Query with configured axios client
-const { data } = useQuery({
-  queryKey: ['items'],
-  queryFn: () => apiClient.get('/api/items'),
-});
-```
-
-### Database Entities
-
-All business entities must:
-
-- Include `companyId` column for multi-tenancy
-- Use TypeORM decorators
-- Be registered in `typeorm.config.ts`
-
-## API Documentation
-
-Swagger UI available at `http://localhost:3000/api/docs` when backend is running.
-
-## Role Hierarchy
-
-- **ADMIN**: System administrator, manages companies and modules (no business data access)
-- **COMPANY_OWNER**: Company administrator, manages employees and module permissions
-- **EMPLOYEE**: End user with assigned module permissions
+| Document | Purpose |
+|----------|---------|
+| `docs/ARCHITECTURE_GUIDE.md` | System design, entity relationships |
+| `docs/MODULE_DEVELOPMENT.md` | Complete module creation tutorial |
+| `docs/API_DOCUMENTATION.md` | Backend API reference |
+| `docs/FRONTEND_GUIDE.md` | React patterns, components |
+| `docs/DESIGN_SYSTEM.md` | UI components, styling |
 
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->
