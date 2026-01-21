@@ -3,7 +3,7 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/modules/clients/src",
   "projectType": "library",
-  "tags": [],
+  "tags": ["type:feature", "scope:backend"],
   "targets": {
     "test": {
       "executor": "./tools/executors/bun-test:test",

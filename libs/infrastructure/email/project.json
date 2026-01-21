@@ -3,6 +3,6 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/infrastructure/email/src",
   "projectType": "library",
-  "tags": ["scope:infrastructure"],
+  "tags": ["type:lib", "scope:backend"],
   "targets": {}
 }
