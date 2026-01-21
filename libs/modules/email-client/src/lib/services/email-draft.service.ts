@@ -8,12 +8,15 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
+
 import { User } from '@accounting/common';
 import { EmailConfigurationService } from '@accounting/email';
-import { EmailDraft } from '../entities/email-draft.entity';
-import { CreateDraftDto, UpdateDraftDto } from '../dto/create-draft.dto';
+
 import { EmailDraftSyncService, SyncResult } from './email-draft-sync.service';
+import { CreateDraftDto, UpdateDraftDto } from '../dto/create-draft.dto';
+import { EmailDraft } from '../entities/email-draft.entity';
 
 /**
  * Service for managing email drafts
@@ -115,8 +118,9 @@ export class EmailDraftService {
       throw new ForbiddenException('You can only edit your own drafts');
     }
 
+    // companyId is validated in findOne() which throws if missing
     const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
-      user.companyId!
+      user.companyId as string
     );
 
     if (emailConfig && draft.syncStatus === 'synced' && draft.imapUid) {
@@ -144,8 +148,9 @@ export class EmailDraftService {
       throw new ForbiddenException('You can only delete your own drafts');
     }
 
+    // companyId is validated in findOne() which throws if missing
     const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
-      user.companyId!
+      user.companyId as string
     );
 
     if (emailConfig && draft.imapUid) {

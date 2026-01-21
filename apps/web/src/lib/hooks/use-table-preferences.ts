@@ -131,60 +131,48 @@ function getDefaultPreferences(columns: ColumnConfig[]): TablePreferences {
   };
 }
 
+// Helper to compute initial preferences for a table
+function getInitialPreferences(tableId: string, columns: ColumnConfig[]): TablePreferences {
+  const stored = loadFromStorage(tableId);
+  if (stored) {
+    // Ensure always-visible columns are included
+    const alwaysVisibleColumns = columns.filter((col) => col.alwaysVisible).map((col) => col.id);
+
+    // Preserve user's column order by filtering stored columns first,
+    // then prepending always-visible columns that may be missing
+    const mergedVisibleColumns = [
+      ...alwaysVisibleColumns,
+      ...stored.visibleColumns.filter((id) => !alwaysVisibleColumns.includes(id)),
+    ];
+
+    return {
+      viewMode: stored.viewMode,
+      visibleColumns: mergedVisibleColumns,
+    };
+  }
+  return getDefaultPreferences(columns);
+}
+
 export function useTablePreferences(
   tableId: string,
   columns: ColumnConfig[]
 ): UseTablePreferencesReturn {
-  const defaultPrefs = getDefaultPreferences(columns);
+  // Track previous tableId to detect changes (React recommended pattern)
+  const [prevTableId, setPrevTableId] = useState(tableId);
+  const [preferences, setPreferences] = useState<TablePreferences>(() =>
+    getInitialPreferences(tableId, columns)
+  );
 
-  const [preferences, setPreferences] = useState<TablePreferences>(() => {
-    const stored = loadFromStorage(tableId);
-    if (stored) {
-      // Ensure always-visible columns are included
-      const alwaysVisibleColumns = columns.filter((col) => col.alwaysVisible).map((col) => col.id);
-
-      // Preserve user's column order by filtering stored columns first,
-      // then prepending always-visible columns that may be missing
-      const mergedVisibleColumns = [
-        ...alwaysVisibleColumns,
-        ...stored.visibleColumns.filter((id) => !alwaysVisibleColumns.includes(id)),
-      ];
-
-      return {
-        viewMode: stored.viewMode,
-        visibleColumns: mergedVisibleColumns,
-      };
-    }
-    return defaultPrefs;
-  });
+  // Synchronously update state when tableId changes (derived state pattern)
+  if (prevTableId !== tableId) {
+    setPrevTableId(tableId);
+    setPreferences(getInitialPreferences(tableId, columns));
+  }
 
   // Sync preferences to localStorage
   useEffect(() => {
     saveToStorage(tableId, preferences);
   }, [tableId, preferences]);
-
-  // Reload preferences when tableId changes
-  useEffect(() => {
-    const stored = loadFromStorage(tableId);
-    if (stored) {
-      // Ensure always-visible columns are included
-      const alwaysVisibleColumns = columns.filter((col) => col.alwaysVisible).map((col) => col.id);
-
-      const mergedVisibleColumns = [
-        ...alwaysVisibleColumns,
-        ...stored.visibleColumns.filter((id) => !alwaysVisibleColumns.includes(id)),
-      ];
-
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync preferences when tableId changes
-      setPreferences({
-        viewMode: stored.viewMode,
-        visibleColumns: mergedVisibleColumns,
-      });
-    } else {
-       
-      setPreferences(defaultPrefs);
-    }
-  }, [tableId]); // eslint-disable-line react-hooks/exhaustive-deps -- intentionally only re-run when tableId changes
 
   const setViewMode = useCallback((mode: ViewMode) => {
     setPreferences((prev) => ({

@@ -137,7 +137,12 @@ export const ClientCard = memo(function ClientCard({
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
             {onSelect && (
-              <div data-checkbox onClick={(e) => e.stopPropagation()}>
+              <div
+                data-checkbox
+                role="presentation"
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+              >
                 <Checkbox
                   checked={isSelected}
                   onCheckedChange={onSelect}

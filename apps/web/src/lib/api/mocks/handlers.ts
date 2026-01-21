@@ -25,7 +25,7 @@ export const handlers = [
   }),
 
   http.post('/api/auth/register', async ({ request }) => {
-    const userData = await request.json();
+    const userData = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json(
       {
         access_token: 'mock-access-token',
@@ -82,7 +82,7 @@ export const handlers = [
   }),
 
   http.post('/api/admin/users', async ({ request }) => {
-    const userData = await request.json();
+    const userData = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json(
       {
         id: 'new-user-id',

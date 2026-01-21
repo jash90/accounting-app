@@ -30,7 +30,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --fix --max-warnings=0"
+      "eslint --fix --max-warnings=0 --no-warn-ignored"
     ],
     "*.{ts,tsx,json,md,css,scss}": [
       "prettier --write"
@@ -74,10 +74,9 @@
     "gantt-task-react": "^0.3.9",
     "handlebars": "^4.7.8",
     "helmet": "^8.1.0",
-    "imap": "^0.8.19",
+    "imapflow": "^1.2.6",
     "mailparser": "^3.7.1",
     "multer": "^2.0.0",
-    "node-imap": "^0.9.6",
     "nodemailer": "^7.0.11",
     "openai": "^4.77.3",
     "passport": "^0.7.0",
@@ -150,11 +149,9 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/bun": "latest",
     "@types/dompurify": "^3.0.5",
-    "@types/imap": "^0.8.43",
     "@types/mailparser": "^3.4.6",
     "@types/multer": "^1.4.12",
     "@types/node": "^24.10.0",
-    "@types/node-imap": "^0.9.3",
     "@types/nodemailer": "^7.0.4",
     "@types/passport-jwt": "^4.0.1",
     "@types/pdf-parse": "^1.1.4",

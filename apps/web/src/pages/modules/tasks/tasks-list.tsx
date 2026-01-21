@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -48,6 +48,7 @@ import {
   useDeleteTask,
   useBulkUpdateStatus,
 } from '@/lib/hooks/use-tasks';
+import { mapTaskLabels } from '@/lib/utils/task-label-mapper';
 import {
   type TaskResponseDto,
   type CreateTaskDto,
@@ -91,18 +92,15 @@ export default function TasksListPage() {
   const [deletingTask, setDeletingTask] = useState<TaskResponseDto | null>(null);
 
   // Handle taskId from URL (from calendar/timeline navigation)
-  useEffect(() => {
-    const taskId = searchParams.get('taskId');
-    if (taskId && tasks.length > 0) {
-      const task = tasks.find((t) => t.id === taskId);
-      if (task) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync modal state with URL param
-        setEditingTask(task);
-        // Clear the URL param after opening the modal
-        setSearchParams({}, { replace: true });
-      }
-    }
-  }, [searchParams, tasks, setSearchParams]);
+  // Derive the task to edit from URL param
+  const taskIdFromUrl = searchParams.get('taskId');
+  const taskFromUrl = useMemo(() => {
+    if (!taskIdFromUrl || tasks.length === 0) return null;
+    return tasks.find((t) => t.id === taskIdFromUrl) || null;
+  }, [taskIdFromUrl, tasks]);
+
+  // The active editing task is either from local state or derived from URL
+  const activeEditingTask = editingTask || taskFromUrl;
 
   const handleFiltersChange = useCallback((newFilters: TaskFiltersDto) => {
     setFilters(newFilters);
@@ -162,12 +160,7 @@ export default function TasksListPage() {
           <div className="flex flex-col gap-1">
             <span className="font-medium">{row.original.title}</span>
             {row.original.labels && row.original.labels.length > 0 && (
-              <TaskLabelList
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TaskLabel type mismatch with mapped labels
-                labels={row.original.labels.map((la) => la.label).filter(Boolean) as any}
-                size="sm"
-                maxVisible={2}
-              />
+              <TaskLabelList labels={mapTaskLabels(row.original.labels)} size="sm" maxVisible={2} />
             )}
           </div>
         ),
@@ -364,17 +357,29 @@ export default function TasksListPage() {
             isLoading={createTask.isPending}
           />
 
-          {editingTask && (
+          {activeEditingTask && (
             <TaskFormDialog
-              open={!!editingTask}
-              onOpenChange={(open) => !open && setEditingTask(null)}
-              task={editingTask}
+              open={!!activeEditingTask}
+              onOpenChange={(open) => {
+                if (!open) {
+                  setEditingTask(null);
+                  // Clear URL param if present
+                  if (taskIdFromUrl) {
+                    setSearchParams({}, { replace: true });
+                  }
+                }
+              }}
+              task={activeEditingTask}
               onSubmit={async (data) => {
                 await updateTask.mutateAsync({
-                  id: editingTask.id,
+                  id: activeEditingTask.id,
                   data: data as UpdateTaskDto,
                 });
                 setEditingTask(null);
+                // Clear URL param if present
+                if (taskIdFromUrl) {
+                  setSearchParams({}, { replace: true });
+                }
               }}
               isLoading={updateTask.isPending}
             />

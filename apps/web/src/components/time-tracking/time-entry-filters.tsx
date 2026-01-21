@@ -97,7 +97,11 @@ export function TimeEntryFilters({
         <Input
           type="date"
           placeholder="Od"
-          value={filters.startDate || ''}
+          value={
+            filters.startDate instanceof Date
+              ? filters.startDate.toISOString().split('T')[0]
+              : filters.startDate || ''
+          }
           onChange={(e) => onFilterChange('startDate', e.target.value)}
           className="w-[150px]"
         />
@@ -105,7 +109,11 @@ export function TimeEntryFilters({
         <Input
           type="date"
           placeholder="Do"
-          value={filters.endDate || ''}
+          value={
+            filters.endDate instanceof Date
+              ? filters.endDate.toISOString().split('T')[0]
+              : filters.endDate || ''
+          }
           onChange={(e) => onFilterChange('endDate', e.target.value)}
           className="w-[150px]"
         />

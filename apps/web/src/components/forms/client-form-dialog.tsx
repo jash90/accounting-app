@@ -38,10 +38,11 @@ import { usePkdSearch, usePkdCode } from '@/lib/hooks/use-pkd-search';
 import {
   createClientSchema,
   updateClientSchema,
-  CreateClientFormData,
-  UpdateClientFormData,
+  type CreateClientFormData,
+  type UpdateClientFormData,
 } from '@/lib/validation/schemas';
-import { ClientResponseDto, SetCustomFieldValuesDto } from '@/types/dtos';
+import { type ClientResponseDto, type SetCustomFieldValuesDto } from '@/types/dtos';
+import { type ClientFieldDefinition } from '@/types/entities';
 import {
   EmploymentTypeLabels,
   VatStatusLabels,
@@ -49,7 +50,6 @@ import {
   ZusStatusLabels,
   AmlGroup,
 } from '@/types/enums';
-import { type ClientFieldDefinition } from '@/types/entities';
 
 interface ClientFormDialogProps {
   open: boolean;

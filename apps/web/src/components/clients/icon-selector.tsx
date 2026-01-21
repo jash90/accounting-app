@@ -229,10 +229,7 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
       case IconType.LUCIDE: {
         const IconComponent = value.iconValue
           ? (
-              LucideIcons as Record<
-                string,
-                React.ComponentType<{ size?: number; className?: string }>
-              >
+              LucideIcons as unknown as Record<string, React.ComponentType<LucideIcons.LucideProps>>
             )[value.iconValue]
           : null;
         return IconComponent ? (
@@ -306,9 +303,9 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
           <div className="grid grid-cols-8 gap-2 max-h-48 overflow-y-auto p-1">
             {filteredLucideIcons.map((iconName) => {
               const IconComponent = (
-                LucideIcons as Record<
+                LucideIcons as unknown as Record<
                   string,
-                  React.ComponentType<{ size?: number; className?: string }>
+                  React.ComponentType<LucideIcons.LucideProps>
                 >
               )[iconName];
               // Only render button if IconComponent exists to avoid empty buttons

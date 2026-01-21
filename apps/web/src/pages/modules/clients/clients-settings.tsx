@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo, useRef, useEffect } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -11,6 +11,17 @@ import { FieldDefinitionFormDialog } from '@/components/forms/field-definition-f
 import { NotificationSettingsForm } from '@/components/forms/notification-settings-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useAuthContext } from '@/contexts/auth-context';
 import {
   useFieldDefinitions,
   useCreateFieldDefinition,
@@ -24,32 +35,21 @@ import {
   useCreateNotificationSettings,
   useUpdateNotificationSettings,
 } from '@/lib/hooks/use-clients';
-import { UserRole, CustomFieldType } from '@/types/enums';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { useAuthContext } from '@/contexts/auth-context';
+  type CreateClientFieldDefinitionFormData,
+  type UpdateClientFieldDefinitionFormData,
+  type CreateClientIconFormData,
+  type UpdateClientIconFormData,
+  type NotificationSettingsFormData,
+} from '@/lib/validation/schemas';
 import {
   type ClientFieldDefinitionResponseDto,
   type ClientIconResponseDto,
   type CreateClientFieldDefinitionDto,
   type UpdateClientFieldDefinitionDto,
   type UpdateClientIconDto,
-  type NotificationSettingsFormData,
 } from '@/types/dtos';
-import {
-  type CreateClientFieldDefinitionFormData,
-  type UpdateClientFieldDefinitionFormData,
-  type CreateClientIconFormData,
-  type UpdateClientIconFormData,
-} from '@/lib/validation/schemas';
+import { UserRole, CustomFieldType } from '@/types/enums';
 
 const FIELD_TYPE_LABELS: Record<CustomFieldType, string> = {
   [CustomFieldType.TEXT]: 'Tekst',
@@ -58,6 +58,32 @@ const FIELD_TYPE_LABELS: Record<CustomFieldType, string> = {
   [CustomFieldType.BOOLEAN]: 'Tak/Nie',
   [CustomFieldType.ENUM]: 'Lista wyboru',
 };
+
+/**
+ * Icon image component with error handling via state
+ * Hides the image if it fails to load instead of showing a broken image
+ * Uses ref + useEffect to attach error handler and avoid lint warnings
+ */
+const IconImage = memo(function IconImage({ src, alt }: { src: string; alt: string }) {
+  const [hasError, setHasError] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    const img = imgRef.current;
+    if (!img) return;
+
+    const handleError = () => setHasError(true);
+    img.addEventListener('error', handleError);
+
+    return () => img.removeEventListener('error', handleError);
+  }, []);
+
+  if (hasError) {
+    return null;
+  }
+
+  return <img ref={imgRef} src={src} alt={alt} className="w-12 h-12 object-contain" />;
+});
 
 export default function ClientsSettingsPage() {
   const navigate = useNavigate();
@@ -144,7 +170,7 @@ export default function ClientsSettingsPage() {
             color: formData.color,
             iconType: formData.iconType,
             iconValue: formData.iconValue,
-            autoAssignCondition: formData.autoAssignCondition,
+            autoAssignCondition: formData.autoAssignCondition ?? undefined,
           },
           file: formData.file,
         },
@@ -310,16 +336,7 @@ export default function ClientsSettingsPage() {
                     borderColor: icon.color || '#e5e7eb',
                   }}
                 >
-                  {icon.filePath && (
-                    <img
-                      src={icon.filePath}
-                      alt={icon.name}
-                      className="w-12 h-12 object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  )}
+                  {icon.filePath && <IconImage src={icon.filePath} alt={icon.name} />}
                   <span className="text-sm font-medium text-center">{icon.name}</span>
                   {!icon.isActive && (
                     <Badge variant="outline" className="text-xs">

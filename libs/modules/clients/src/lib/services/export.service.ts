@@ -184,20 +184,20 @@ export class ClientExportService {
         continue;
       }
 
-      const row: CsvRow = {} as CsvRow;
+      const row = {} as Record<string, string | undefined>;
       for (let j = 0; j < headers.length; j++) {
         const header = headers[j] as keyof CsvRow;
         row[header] = values[j]?.trim() || undefined;
       }
 
       // Validate row
-      const rowErrors = this.validateRow(row, rowNumber);
+      const rowErrors = this.validateRow(row as unknown as CsvRow, rowNumber);
       if (rowErrors.length > 0) {
         validationErrors.push(...rowErrors);
         continue;
       }
 
-      parsedRows.push({ rowNumber, row });
+      parsedRows.push({ rowNumber, row: row as unknown as CsvRow });
     }
 
     // If there are validation errors, return them without starting transaction
@@ -291,14 +291,14 @@ export class ClientExportService {
 
     for (let i = 1; i < lines.length && i <= 100; i++) {
       const values = this.parseCsvLine(lines[i]);
-      const row: CsvRow = {} as CsvRow;
+      const row = {} as Record<string, string | undefined>;
 
       for (let j = 0; j < headers.length; j++) {
         const header = headers[j] as keyof CsvRow;
         row[header] = values[j]?.trim() || undefined;
       }
 
-      rows.push(row);
+      rows.push(row as unknown as CsvRow);
     }
 
     return rows;

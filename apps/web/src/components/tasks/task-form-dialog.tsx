@@ -29,12 +29,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { useAuthContext } from '@/contexts/auth-context';
-import { UserRole } from '@/types/enums';
-import { TaskStatus, TaskStatusLabels, TaskPriority, TaskPriorityLabels } from '@/types/enums';
-import { TaskResponseDto, CreateTaskDto, UpdateTaskDto } from '@/types/dtos';
-import { useTaskLabels, useTaskAssignees, useTaskClients } from '@/lib/hooks/use-tasks';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -42,8 +37,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Textarea } from '@/components/ui/textarea';
+import { useAuthContext } from '@/contexts/auth-context';
+import { useTaskLabels, useTaskAssignees, useTaskClients } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
+import { type TaskResponseDto, type CreateTaskDto, type UpdateTaskDto } from '@/types/dtos';
+import {
+  UserRole,
+  TaskStatus,
+  TaskStatusLabels,
+  TaskPriority,
+  TaskPriorityLabels,
+} from '@/types/enums';
 
 const taskFormSchema = z.object({
   title: z.string().min(1, 'Tytuł jest wymagany').max(255),

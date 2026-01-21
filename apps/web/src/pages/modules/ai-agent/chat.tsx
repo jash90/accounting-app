@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -42,8 +42,9 @@ import { cn } from '@/lib/utils/cn';
 import { MessageRole } from '@/types/dtos';
 
 export default function AIAgentChatPage() {
-  const _navigate = useNavigate();
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  // Keep useNavigate for potential future use or remove if not needed
+  useNavigate();
+  const [userSelectedConversationId, setUserSelectedConversationId] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [rateLimitHit, setRateLimitHit] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -51,6 +52,18 @@ export default function AIAgentChatPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: conversations, isLoading: conversationsLoading } = useConversations();
+
+  // Derive active conversation ID - auto-select first if user hasn't selected one
+  const selectedConversationId = useMemo(() => {
+    // If user explicitly selected a conversation, verify it still exists
+    if (userSelectedConversationId !== null) {
+      if (conversations?.some((c) => c.id === userSelectedConversationId)) {
+        return userSelectedConversationId;
+      }
+    }
+    // Default to first conversation if available
+    return conversations?.[0]?.id ?? null;
+  }, [userSelectedConversationId, conversations]);
   const { data: currentConversation } = useConversation(selectedConversationId || '');
   const { data: aiConfig } = useAIConfiguration();
   const createConversation = useCreateConversation();
@@ -76,18 +89,11 @@ export default function AIAgentChatPage() {
     }
   }, [currentConversation?.messages, streamingContent, isSending]);
 
-  useEffect(() => {
-    if (conversations && conversations.length > 0 && !selectedConversationId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: auto-select first conversation on load
-      setSelectedConversationId(conversations[0].id);
-    }
-  }, [conversations, selectedConversationId]);
-
   const handleNewConversation = async () => {
     const result = await createConversation.mutateAsync({
       title: `Nowy czat ${new Date().toLocaleString('pl-PL')}`,
     });
-    setSelectedConversationId(result.id);
+    setUserSelectedConversationId(result.id);
   };
 
   const sendMessageIfReady = async () => {
@@ -137,7 +143,7 @@ export default function AIAgentChatPage() {
       try {
         await deleteConversation.mutateAsync(conversationToDelete);
         if (selectedConversationId === conversationToDelete) {
-          setSelectedConversationId(null);
+          setUserSelectedConversationId(null);
         }
       } catch {
         // Error is handled by the mutation's error state
@@ -189,11 +195,11 @@ export default function AIAgentChatPage() {
                     key={conv.id}
                     role="button"
                     tabIndex={0}
-                    onClick={() => setSelectedConversationId(conv.id)}
+                    onClick={() => setUserSelectedConversationId(conv.id)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        setSelectedConversationId(conv.id);
+                        setUserSelectedConversationId(conv.id);
                       }
                     }}
                     className={cn(

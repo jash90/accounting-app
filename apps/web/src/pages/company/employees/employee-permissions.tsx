@@ -263,13 +263,19 @@ export default function EmployeePermissionsPage() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <label className="text-sm font-medium text-apptax-navy mb-2 block">Moduł</label>
+              <label
+                htmlFor="grant-module-select"
+                className="text-sm font-medium text-apptax-navy mb-2 block"
+              >
+                Moduł
+              </label>
               {availableModulesForGrant.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   Wszystkie dostępne moduły zostały już przyznane temu pracownikowi.
                 </p>
               ) : (
                 <select
+                  id="grant-module-select"
                   className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-apptax-blue/20 focus:border-apptax-blue"
                   value={selectedModule || ''}
                   onChange={(e) => {
@@ -289,9 +295,7 @@ export default function EmployeePermissionsPage() {
 
             {selectedModule && (
               <div>
-                <label className="text-sm font-medium text-apptax-navy mb-2 block">
-                  Uprawnienia
-                </label>
+                <span className="text-sm font-medium text-apptax-navy mb-2 block">Uprawnienia</span>
                 <div className="mt-2 space-y-3">
                   {[ModulePermission.READ, ModulePermission.WRITE, ModulePermission.DELETE].map(
                     (permission) => (

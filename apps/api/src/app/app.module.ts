@@ -45,8 +45,8 @@ import { AIAgentModule } from '@accounting/modules/ai-agent';
 import { ClientsModule } from '@accounting/modules/clients';
 import { EmailDraft, EmailClientModule } from '@accounting/modules/email-client';
 import { TasksModule } from '@accounting/modules/tasks';
-
 import { TimeTrackingModule } from '@accounting/modules/time-tracking';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HealthController } from './health.controller';
@@ -54,7 +54,6 @@ import { AdminModule } from '../admin/admin.module';
 import { CompanyModule } from '../company/company.module';
 import { EmailConfigModule } from '../email-config/email-config.module';
 import { ModulesModule } from '../modules/modules.module';
-
 import { SeedersModule } from '../seeders/seeders.module';
 
 // Shared entities array to avoid duplication between DATABASE_URL and local config

@@ -34,9 +34,6 @@ import { TaskFormDialog, TaskStatusBadge } from '@/components/tasks';
 import { TaskFilters } from '@/components/tasks/task-filters';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import { useTasks, useCreateTask } from '@/lib/hooks/use-tasks';
 import {
   Select,
   SelectContent,
@@ -44,10 +41,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthContext } from '@/contexts/auth-context';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import { useTasks, useCreateTask } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
 import { type TaskResponseDto, type CreateTaskDto, type TaskFiltersDto } from '@/types/dtos';
 import { TaskStatus, TaskStatusLabels, UserRole } from '@/types/enums';
-import { useAuthContext } from '@/contexts/auth-context';
 
 type ViewMode = 'day' | 'week' | 'month';
 
@@ -78,7 +78,7 @@ export default function TasksTimelinePage() {
   const [filters, setFilters] = useState<TaskFiltersDto>({});
 
   const { data: tasksResponse, isPending } = useTasks(filters);
-  const tasks = tasksResponse?.data ?? [];
+  const tasks = useMemo(() => tasksResponse?.data ?? [], [tasksResponse?.data]);
 
   const handleFiltersChange = useCallback((newFilters: TaskFiltersDto) => {
     setFilters(newFilters);
@@ -378,6 +378,8 @@ export default function TasksTimelinePage() {
                         {/* Task bar */}
                         {barStyle && (
                           <div
+                            role="button"
+                            tabIndex={0}
                             className="absolute top-3 h-10 rounded px-2 flex items-center cursor-pointer hover:opacity-80 transition-opacity"
                             style={{
                               left: barStyle.left,
@@ -385,6 +387,12 @@ export default function TasksTimelinePage() {
                               minWidth: '24px',
                             }}
                             onClick={() => navigate(`${basePath}/list?taskId=${task.id}`)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                navigate(`${basePath}/list?taskId=${task.id}`);
+                              }
+                            }}
                           >
                             <div
                               className={cn(

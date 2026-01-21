@@ -1,4 +1,4 @@
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger, type INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
@@ -20,18 +20,21 @@ const allowedOrigins = new Set(
     .filter(Boolean)
 );
 
+// Logger for bootstrap and seed operations
+const logger = new Logger('Bootstrap');
+
 async function bootstrap() {
   // One-time seed mode: Run full seeder and exit
   if (process.env.RUN_SEED === 'true') {
-    console.log('🌱 Running one-time database seed...');
+    logger.log('Running one-time database seed...');
     const app = await NestFactory.createApplicationContext(AppModule);
     try {
       const seedersModule = app.select(SeedersModule);
       const seeder = seedersModule.get(SeederService);
       await seeder.seed();
-      console.log('✅ Seeding completed successfully');
+      logger.log('Seeding completed successfully');
     } catch (error) {
-      console.error('❌ Seeding failed:', error);
+      logger.error('Seeding failed:', error);
       await app.close();
       process.exit(1);
     }
@@ -44,7 +47,10 @@ async function bootstrap() {
   // Security
   app.use(helmet());
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void
+    ) => {
       // Allow requests with no origin (like mobile apps, curl, Postman)
       if (!origin) {
         return callback(null, true);
@@ -52,8 +58,13 @@ async function bootstrap() {
 
       // Allow all localhost origins (any port) - ONLY in development
       if (process.env.NODE_ENV !== 'production') {
-        if (origin.match(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/)) {
-          return callback(null, true);
+        try {
+          const url = new URL(origin);
+          if (['localhost', '127.0.0.1'].includes(url.hostname)) {
+            return callback(null, true);
+          }
+        } catch {
+          // Invalid URL, fall through to other checks
         }
       }
 
@@ -128,11 +139,11 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-  console.log(`Application is running on: http://localhost:${port}`);
-  console.log(`Swagger documentation: http://localhost:${port}/docs`);
+  logger.log(`Application is running on: http://localhost:${port}`);
+  logger.log(`Swagger documentation: http://localhost:${port}/docs`);
 }
 
-async function seedAdminIfNotExists(app: any) {
+async function seedAdminIfNotExists(app: INestApplication) {
   try {
     const dataSource = app.get(DataSource);
 
@@ -142,7 +153,7 @@ async function seedAdminIfNotExists(app: any) {
     );
 
     if (parseInt(adminExists[0].count) === 0) {
-      console.log('Creating admin user...');
+      logger.log('Creating admin user...');
 
       // Get password from environment variable or generate a secure random one
       let adminPassword = process.env.ADMIN_SEED_PASSWORD;
@@ -151,8 +162,8 @@ async function seedAdminIfNotExists(app: any) {
       if (!adminPassword) {
         // In production, require ADMIN_SEED_PASSWORD to be set for security
         if (process.env.NODE_ENV === 'production') {
-          console.error('❌ ADMIN_SEED_PASSWORD environment variable is required in production');
-          console.error('   Set ADMIN_SEED_PASSWORD to a secure password before deploying');
+          logger.error('ADMIN_SEED_PASSWORD environment variable is required in production');
+          logger.error('Set ADMIN_SEED_PASSWORD to a secure password before deploying');
           process.exit(1);
         }
         // Generate cryptographically secure random password (24 chars) for non-production
@@ -168,20 +179,21 @@ async function seedAdminIfNotExists(app: any) {
         [hashedPassword]
       );
 
-      console.log('✅ Admin user created: admin@system.com');
+      logger.log('Admin user created: admin@system.com');
       if (passwordGenerated) {
-        console.log('   ⚠️  A random password was generated.');
-        console.log('   💡 Set ADMIN_SEED_PASSWORD env var to use a specific password.');
-        console.log('   🔐 Re-deploy with ADMIN_SEED_PASSWORD set to access admin account.');
+        logger.warn('A random password was generated.');
+        logger.log('Set ADMIN_SEED_PASSWORD env var to use a specific password.');
+        logger.log('Re-deploy with ADMIN_SEED_PASSWORD set to access admin account.');
         // Security: Password intentionally not logged to prevent exposure in log aggregation
       } else {
-        console.log('   Password set from ADMIN_SEED_PASSWORD environment variable.');
+        logger.log('Password set from ADMIN_SEED_PASSWORD environment variable.');
       }
     } else {
-      console.log('Admin user already exists, skipping seed.');
+      logger.log('Admin user already exists, skipping seed.');
     }
   } catch (error) {
-    console.error('Auto-seed failed (non-critical):', error.message);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error(`Auto-seed failed (non-critical): ${errorMessage}`);
     // Don't throw - allow app to start even if seed fails
   }
 }

@@ -310,7 +310,13 @@ export default function CompanyEmailConfigPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
         config={hasConfig ? emailConfig : undefined}
-        onSubmit={hasConfig ? handleUpdate : handleCreate}
+        onSubmit={(data) => {
+          if (hasConfig) {
+            handleUpdate(data as UpdateEmailConfigFormData);
+          } else {
+            handleCreate(data as CreateEmailConfigFormData);
+          }
+        }}
         type="company"
         onTestSmtp={(data) => testSmtp.mutate(data)}
         onTestImap={(data) => testImap.mutate(data)}

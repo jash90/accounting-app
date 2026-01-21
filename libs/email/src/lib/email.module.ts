@@ -1,17 +1,22 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { EmailSenderService } from './services/email-sender.service';
-import { EmailReaderService } from './services/email-reader.service';
-import { EmailConfigurationService } from './services/email-configuration.service';
-import { EmailAutodiscoveryService } from './services/email-autodiscovery.service';
-import { DiscoveryCacheService } from './services/discovery-cache.service';
-import { ProviderLookupService } from './services/provider-lookup.service';
-import { DnsDiscoveryService } from './services/dns-discovery.service';
-import { EmailConfigurationController } from './controllers/email-configuration.controller';
+
+import { AuthModule } from '@accounting/auth';
 import { EmailConfiguration, Company } from '@accounting/common';
 import { CommonModule } from '@accounting/common/backend';
-import { AuthModule } from '@accounting/auth';
 import { RBACModule } from '@accounting/rbac';
+
+import { EmailConfigurationController } from './controllers/email-configuration.controller';
+import { DiscoveryCacheService } from './services/discovery-cache.service';
+import { DnsDiscoveryService } from './services/dns-discovery.service';
+import { EmailAutodiscoveryService } from './services/email-autodiscovery.service';
+import { EmailConfigurationService } from './services/email-configuration.service';
+import { EmailReaderService } from './services/email-reader.service';
+import { EmailSenderService } from './services/email-sender.service';
+import { EmailVerificationService } from './services/email-verification.service';
+import { ImapMailboxService } from './services/imap-mailbox.service';
+import { ProviderLookupService } from './services/provider-lookup.service';
+
 
 /**
  * Email Module providing SMTP and IMAP functionality
@@ -50,16 +55,20 @@ import { RBACModule } from '@accounting/rbac';
     EmailReaderService,
     EmailConfigurationService,
     EmailAutodiscoveryService,
-    // Autodiscovery supporting services
+    // Supporting services
     DiscoveryCacheService,
     ProviderLookupService,
     DnsDiscoveryService,
+    EmailVerificationService,
+    ImapMailboxService,
   ],
   exports: [
     EmailSenderService,
     EmailReaderService,
     EmailConfigurationService,
     EmailAutodiscoveryService,
+    EmailVerificationService,
+    ImapMailboxService,
   ],
 })
 export class EmailModule {}

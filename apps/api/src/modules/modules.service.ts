@@ -8,14 +8,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository, EntityManager } from 'typeorm';
+import { Repository } from 'typeorm';
 
 import {
   User,
-  Company,
   Module as ModuleEntity,
-  CompanyModuleAccess,
-  UserModulePermission,
   UserRole,
   ManageModulePermissionDto,
   PermissionTargetType,
@@ -23,21 +20,17 @@ import {
 import { RBACService, ModuleDiscoveryService, DiscoveredModule } from '@accounting/rbac';
 
 import { CreateModuleDto, UpdateModuleDto, GrantModuleAccessDto } from './dto';
+import { CompanyModuleAccessService } from './services/company-module-access.service';
+import { EmployeeModulePermissionsService } from './services/employee-module-permissions.service';
 
 @Injectable()
 export class ModulesService {
   constructor(
     @InjectRepository(ModuleEntity)
     private moduleRepository: Repository<ModuleEntity>,
-    @InjectRepository(CompanyModuleAccess)
-    private companyModuleAccessRepository: Repository<CompanyModuleAccess>,
-    @InjectRepository(UserModulePermission)
-    private userModulePermissionRepository: Repository<UserModulePermission>,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-    @InjectRepository(Company)
-    private companyRepository: Repository<Company>,
     private rbacService: RBACService,
+    private companyModuleAccessService: CompanyModuleAccessService,
+    private employeePermissionsService: EmployeeModulePermissionsService,
     @Optional()
     private moduleDiscoveryService?: ModuleDiscoveryService
   ) {}
@@ -162,106 +155,18 @@ export class ModulesService {
   }
 
   // ==================== Company Module Access Management ====================
+  // Delegated to CompanyModuleAccessService
 
   async getCompanyModules(companyId: string) {
-    // Verify company exists
-    const company = await this.companyRepository.findOne({
-      where: { id: companyId },
-    });
-
-    if (!company) {
-      throw new NotFoundException(`Company with ID ${companyId} not found`);
-    }
-
-    return this.companyModuleAccessRepository.find({
-      where: { companyId: company.id },
-      relations: ['module'],
-    });
+    return this.companyModuleAccessService.getCompanyModules(companyId);
   }
 
   async grantModuleToCompany(companyId: string, moduleId: string) {
-    // Verify company exists
-    const company = await this.companyRepository.findOne({
-      where: { id: companyId },
-    });
-
-    if (!company) {
-      throw new NotFoundException(`Company with ID ${companyId} not found`);
-    }
-
-    // Verify module exists
-    const module = await this.findById(moduleId);
-
-    let access = await this.companyModuleAccessRepository.findOne({
-      where: { companyId: company.id, moduleId: module.id },
-    });
-
-    if (access) {
-      access.isEnabled = true;
-    } else {
-      access = this.companyModuleAccessRepository.create({
-        companyId: company.id,
-        moduleId: module.id,
-        isEnabled: true,
-      });
-    }
-
-    return this.companyModuleAccessRepository.save(access);
+    return this.companyModuleAccessService.grantModuleToCompany(companyId, moduleId);
   }
 
   async revokeModuleFromCompany(companyId: string, moduleId: string) {
-    // Verify company exists
-    const company = await this.companyRepository.findOne({
-      where: { id: companyId },
-    });
-
-    if (!company) {
-      throw new NotFoundException(`Company with ID ${companyId} not found`);
-    }
-
-    // Verify module exists
-    const module = await this.findById(moduleId);
-
-    const access = await this.companyModuleAccessRepository.findOne({
-      where: { companyId: company.id, moduleId: module.id },
-    });
-
-    if (!access) {
-      throw new NotFoundException('Module access not found');
-    }
-
-    // Use transaction to ensure atomicity
-    return this.companyModuleAccessRepository.manager.transaction(
-      async (manager: EntityManager) => {
-        // 1. Disable the module access for the company
-        access.isEnabled = false;
-        await manager.save(CompanyModuleAccess, access);
-
-        // 2. Find all employees in the company
-        const employees = await manager.find(User, {
-          where: {
-            companyId: company.id,
-            role: UserRole.EMPLOYEE,
-          },
-          select: ['id'],
-        });
-
-        // 3. If there are employees, delete their permissions for this module
-        if (employees.length > 0) {
-          const employeeIds = employees.map((emp) => emp.id);
-
-          await manager
-            .createQueryBuilder()
-            .delete()
-            .from(UserModulePermission)
-            .where('moduleId = :moduleId', { moduleId: module.id })
-            .andWhere('userId IN (:...userIds)', { userIds: employeeIds })
-            .execute();
-        }
-
-        return access;
-      }
-    );
+    return this.companyModuleAccessService.revokeModuleFromCompany(companyId, moduleId);
   }
 
   /**
@@ -269,99 +174,15 @@ export class ModulesService {
    * This method can be called manually to fix existing data inconsistencies
    * Returns the number of orphaned permissions that were removed
    */
-  async cleanupOrphanedPermissions(): Promise<{ deletedCount: number; companies: any[] }> {
-    const result = await this.companyModuleAccessRepository.manager.transaction(
-      async (manager: EntityManager) => {
-        // Find all disabled company module accesses
-        const disabledAccesses = await manager.find(CompanyModuleAccess, {
-          where: { isEnabled: false },
-          relations: ['company', 'module'],
-        });
-
-        let totalDeleted = 0;
-        const cleanupResults = [];
-
-        for (const access of disabledAccesses) {
-          // Find all employees in this company
-          const employees = await manager.find(User, {
-            where: {
-              companyId: access.companyId,
-              role: UserRole.EMPLOYEE,
-            },
-            select: ['id'],
-          });
-
-          if (employees.length > 0) {
-            const employeeIds = employees.map((emp) => emp.id);
-
-            // Delete orphaned permissions for this module and these employees
-            const deleteResult = await manager
-              .createQueryBuilder()
-              .delete()
-              .from(UserModulePermission)
-              .where('moduleId = :moduleId', { moduleId: access.moduleId })
-              .andWhere('userId IN (:...userIds)', { userIds: employeeIds })
-              .execute();
-
-            if (deleteResult.affected && deleteResult.affected > 0) {
-              totalDeleted += deleteResult.affected;
-              cleanupResults.push({
-                companyId: access.companyId,
-                companyName: access.company?.name,
-                moduleId: access.moduleId,
-                moduleName: access.module?.name,
-                deletedPermissions: deleteResult.affected,
-              });
-            }
-          }
-        }
-
-        return {
-          deletedCount: totalDeleted,
-          companies: cleanupResults,
-        };
-      }
-    );
-
-    return result;
+  async cleanupOrphanedPermissions() {
+    return this.companyModuleAccessService.cleanupOrphanedPermissions();
   }
 
   // ==================== Employee Module Permissions ====================
+  // Delegated to EmployeeModulePermissionsService
 
   async getEmployeeModules(companyId: string, employeeId: string) {
-    // Verify employee exists and belongs to company
-    const employee = await this.userRepository.findOne({
-      where: { id: employeeId, companyId, role: UserRole.EMPLOYEE },
-    });
-
-    if (!employee) {
-      throw new NotFoundException('Employee not found');
-    }
-
-    // Get all permissions for the employee
-    const permissions = await this.userModulePermissionRepository.find({
-      where: { userId: employeeId },
-      relations: ['module'],
-    });
-
-    // Get all enabled modules for the company
-    const companyModules = await this.companyModuleAccessRepository.find({
-      where: {
-        companyId: companyId,
-        isEnabled: true,
-      },
-      select: ['moduleId'],
-    });
-
-    // Create a set of enabled module IDs for faster lookup
-    const enabledModuleIds = new Set(companyModules.map((cm) => cm.moduleId));
-
-    // Filter permissions to only include modules that are enabled for the company
-    const filteredPermissions = permissions.filter(
-      (permission) => permission.moduleId && enabledModuleIds.has(permission.moduleId)
-    );
-
-    return filteredPermissions;
+    return this.employeePermissionsService.getEmployeeModules(companyId, employeeId);
   }
 
   async grantModuleToEmployee(
@@ -370,17 +191,11 @@ export class ModulesService {
     moduleSlug: string,
     grantModuleAccessDto: GrantModuleAccessDto
   ) {
-    // Use transaction to prevent race conditions
-    return this.userModulePermissionRepository.manager.transaction(
-      async (manager: EntityManager) => {
-        return this.grantModuleToEmployeeWithTransaction(
-          companyId,
-          employeeId,
-          moduleSlug,
-          grantModuleAccessDto,
-          manager
-        );
-      }
+    return this.employeePermissionsService.grantModuleToEmployee(
+      companyId,
+      employeeId,
+      moduleSlug,
+      grantModuleAccessDto
     );
   }
 
@@ -390,67 +205,19 @@ export class ModulesService {
     moduleSlug: string,
     grantModuleAccessDto: GrantModuleAccessDto
   ) {
-    // Verify company still has access to this module
-    const companyHasAccess = await this.rbacService.companyHasModule(companyId, moduleSlug);
-    if (!companyHasAccess) {
-      throw new ForbiddenException('Your company no longer has access to this module');
-    }
-
-    // Verify the permission exists (this is an update, not a grant)
-    const employee = await this.userRepository.findOne({
-      where: { id: employeeId, companyId, role: UserRole.EMPLOYEE },
-    });
-
-    if (!employee) {
-      throw new NotFoundException('Employee not found');
-    }
-
-    const module = await this.getModuleBySlugDirect(moduleSlug);
-
-    const existingPermission = await this.userModulePermissionRepository.findOne({
-      where: {
-        userId: employee.id,
-        moduleId: module.id,
-      },
-    });
-
-    if (!existingPermission) {
-      throw new NotFoundException(
-        'Employee does not have access to this module. Use grant endpoint instead.'
-      );
-    }
-
-    // Update the permissions
-    return this.grantModuleToEmployee(companyId, employeeId, moduleSlug, grantModuleAccessDto);
+    return this.employeePermissionsService.updateEmployeeModulePermissions(
+      companyId,
+      employeeId,
+      moduleSlug,
+      grantModuleAccessDto
+    );
   }
 
   async revokeModuleFromEmployee(companyId: string, employeeId: string, moduleSlug: string) {
-    // Use transaction for consistency
-    return this.userModulePermissionRepository.manager.transaction(
-      async (manager: EntityManager) => {
-        const employee = await this.userRepository.findOne({
-          where: { id: employeeId, companyId, role: UserRole.EMPLOYEE },
-        });
-
-        if (!employee) {
-          throw new NotFoundException('Employee not found');
-        }
-
-        const module = await this.getModuleBySlugDirect(moduleSlug);
-
-        const permission = await manager.findOne(UserModulePermission, {
-          where: {
-            userId: employee.id,
-            moduleId: module.id,
-          },
-        });
-
-        if (permission) {
-          await manager.remove(UserModulePermission, permission);
-        }
-
-        return { message: 'Module access revoked successfully' };
-      }
+    return this.employeePermissionsService.revokeModuleFromEmployee(
+      companyId,
+      employeeId,
+      moduleSlug
     );
   }
 
@@ -545,66 +312,6 @@ export class ModulesService {
     }
 
     return module;
-  }
-
-  /**
-   * Internal method that handles the actual grant logic within a transaction
-   */
-  private async grantModuleToEmployeeWithTransaction(
-    companyId: string,
-    employeeId: string,
-    moduleSlug: string,
-    grantModuleAccessDto: GrantModuleAccessDto,
-    manager: EntityManager
-  ) {
-    const employee = await this.userRepository.findOne({
-      where: { id: employeeId, companyId, role: UserRole.EMPLOYEE },
-    });
-
-    if (!employee) {
-      throw new NotFoundException('Employee not found');
-    }
-
-    const module = await this.getModuleBySlugDirect(moduleSlug);
-
-    // Check if company has access to this module (more efficient than checking owner's access)
-    // This check happens within the transaction to prevent race conditions
-    const companyHasAccess = await this.rbacService.companyHasModule(companyId, moduleSlug);
-    if (!companyHasAccess) {
-      throw new ForbiddenException('Your company does not have access to this module');
-    }
-
-    // Get company owner ID for grantedById field
-    const company = await manager.findOne(Company, {
-      where: { id: companyId },
-      relations: ['owner'],
-    });
-
-    if (!company) {
-      throw new NotFoundException('Company not found');
-    }
-
-    // Use transaction manager for all database operations
-    let permission = await manager.findOne(UserModulePermission, {
-      where: {
-        userId: employee.id,
-        moduleId: module.id,
-      },
-    });
-
-    if (permission) {
-      permission.permissions = grantModuleAccessDto.permissions;
-      permission.grantedById = company.ownerId;
-    } else {
-      permission = manager.create(UserModulePermission, {
-        userId: employee.id,
-        moduleId: module.id,
-        permissions: grantModuleAccessDto.permissions,
-        grantedById: company.ownerId,
-      });
-    }
-
-    return manager.save(UserModulePermission, permission);
   }
 
   // ==================== Module Discovery Methods ====================

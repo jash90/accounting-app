@@ -25,12 +25,12 @@ export class AddDatabaseIndexes1766478546257 implements MigrationInterface {
       fk.columnNames.includes('companyId')
     );
 
-    // Store FK metadata for restoration
+    // Store FK metadata for restoration (name is required - use non-null assertion)
     const companiesOwnerFKMetadata: FKMetadata | null = companiesOwnerFK
       ? {
-          name: companiesOwnerFK.name,
+          name: companiesOwnerFK.name!,
           columnNames: companiesOwnerFK.columnNames,
-          referencedTableName: companiesOwnerFK.referencedTableName,
+          referencedTableName: companiesOwnerFK.referencedTableName!,
           referencedColumnNames: companiesOwnerFK.referencedColumnNames,
           onDelete: companiesOwnerFK.onDelete,
           onUpdate: companiesOwnerFK.onUpdate,
@@ -39,9 +39,9 @@ export class AddDatabaseIndexes1766478546257 implements MigrationInterface {
 
     const usersCompanyFKMetadata: FKMetadata | null = usersCompanyFK
       ? {
-          name: usersCompanyFK.name,
+          name: usersCompanyFK.name!,
           columnNames: usersCompanyFK.columnNames,
-          referencedTableName: usersCompanyFK.referencedTableName,
+          referencedTableName: usersCompanyFK.referencedTableName!,
           referencedColumnNames: usersCompanyFK.referencedColumnNames,
           onDelete: usersCompanyFK.onDelete,
           onUpdate: usersCompanyFK.onUpdate,

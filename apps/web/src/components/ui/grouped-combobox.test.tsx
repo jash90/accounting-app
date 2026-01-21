@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, mock, beforeAll, afterAll } from 'bun:test';
 
 import {
   GroupedCombobox,
@@ -20,8 +20,7 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-  // @ts-expect-error - cleanup mock
-  delete global.ResizeObserver;
+  (global as { ResizeObserver?: typeof ResizeObserver }).ResizeObserver = undefined;
 });
 
 // Test data
@@ -43,7 +42,7 @@ const mockOptions: GroupedComboboxOption[] = [
 describe('GroupedCombobox', () => {
   describe('Rendering', () => {
     it('renders with placeholder when no value is selected', () => {
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -59,7 +58,7 @@ describe('GroupedCombobox', () => {
     });
 
     it('renders selected option label when value is set', () => {
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -73,7 +72,7 @@ describe('GroupedCombobox', () => {
     });
 
     it('renders with custom formatDisplayValue', () => {
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -89,7 +88,7 @@ describe('GroupedCombobox', () => {
 
     it('renders groups and options when opened', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -112,7 +111,7 @@ describe('GroupedCombobox', () => {
     });
 
     it('renders clear button when value is selected', () => {
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -126,7 +125,7 @@ describe('GroupedCombobox', () => {
     });
 
     it('does not render clear button when no value is selected', () => {
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -143,7 +142,7 @@ describe('GroupedCombobox', () => {
   describe('Selection', () => {
     it('calls onChange with selected value when option is clicked', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -161,7 +160,7 @@ describe('GroupedCombobox', () => {
 
     it('calls onChange with null when clicking already selected option (toggle)', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -179,7 +178,7 @@ describe('GroupedCombobox', () => {
 
     it('closes popover after selection', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -202,7 +201,7 @@ describe('GroupedCombobox', () => {
   describe('Clear Button', () => {
     it('calls onChange with null when clear button is clicked', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -219,7 +218,7 @@ describe('GroupedCombobox', () => {
 
     it('clear button click does not open the popover', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -236,7 +235,7 @@ describe('GroupedCombobox', () => {
     });
 
     it('clear button works with keyboard (Enter key)', async () => {
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -254,7 +253,7 @@ describe('GroupedCombobox', () => {
     });
 
     it('clear button works with keyboard (Space key)', async () => {
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -275,7 +274,7 @@ describe('GroupedCombobox', () => {
   describe('Search/Filter', () => {
     it('filters options based on search input', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -299,7 +298,7 @@ describe('GroupedCombobox', () => {
 
     it('filters are case-insensitive', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -319,7 +318,7 @@ describe('GroupedCombobox', () => {
 
     it('shows empty state when no results match', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -340,7 +339,7 @@ describe('GroupedCombobox', () => {
 
     it('hides groups with no matching options', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -363,7 +362,7 @@ describe('GroupedCombobox', () => {
 
     it('clears search when selection is made', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -390,7 +389,7 @@ describe('GroupedCombobox', () => {
   describe('Keyboard Navigation', () => {
     it('navigates down with ArrowDown', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -413,7 +412,7 @@ describe('GroupedCombobox', () => {
 
     it('navigates up with ArrowUp', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -435,7 +434,7 @@ describe('GroupedCombobox', () => {
 
     it('wraps navigation from last to first', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
 
       // Use only 2 options for easier testing
       const smallOptions = mockOptions.slice(0, 2);
@@ -463,7 +462,7 @@ describe('GroupedCombobox', () => {
 
     it('wraps navigation from first to last', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
 
       const smallOptions = mockOptions.slice(0, 2);
       render(
@@ -489,7 +488,7 @@ describe('GroupedCombobox', () => {
 
     it('selects highlighted option with Enter', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -508,7 +507,7 @@ describe('GroupedCombobox', () => {
 
     it('closes popover with Escape', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -528,7 +527,7 @@ describe('GroupedCombobox', () => {
 
     it('resets highlighted index when Escape is pressed', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -554,7 +553,7 @@ describe('GroupedCombobox', () => {
 
   describe('Disabled State', () => {
     it('renders disabled button when disabled prop is true', () => {
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -570,7 +569,7 @@ describe('GroupedCombobox', () => {
 
     it('does not open popover when disabled', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -589,7 +588,7 @@ describe('GroupedCombobox', () => {
 
   describe('Accessibility', () => {
     it('has correct combobox role', () => {
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -604,7 +603,7 @@ describe('GroupedCombobox', () => {
 
     it('has aria-expanded attribute', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -623,7 +622,7 @@ describe('GroupedCombobox', () => {
 
     it('options have role="option"', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -641,7 +640,7 @@ describe('GroupedCombobox', () => {
 
     it('selected option has aria-selected="true"', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -659,7 +658,7 @@ describe('GroupedCombobox', () => {
 
     it('non-selected options have aria-selected="false"', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -677,7 +676,7 @@ describe('GroupedCombobox', () => {
 
     it('has aria-activedescendant when navigating', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -699,7 +698,7 @@ describe('GroupedCombobox', () => {
 
     it('listbox has aria-label', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -716,7 +715,7 @@ describe('GroupedCombobox', () => {
 
     it('groups have role="group"', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -736,7 +735,7 @@ describe('GroupedCombobox', () => {
   describe('Edge Cases', () => {
     it('renders empty state when no options provided', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={[]}
@@ -754,7 +753,7 @@ describe('GroupedCombobox', () => {
 
     it('handles single group correctly', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       const singleGroupOptions = mockOptions.filter((o) => o.group === 'A');
       const singleGroup = [mockGroups[0]];
 
@@ -775,7 +774,7 @@ describe('GroupedCombobox', () => {
 
     it('handles many groups efficiently', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
 
       // Create many groups and options
       const manyGroups: GroupedComboboxGroup[] = Array.from({ length: 20 }, (_, i) => ({
@@ -813,7 +812,7 @@ describe('GroupedCombobox', () => {
     });
 
     it('handles undefined value correctly', () => {
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -828,7 +827,7 @@ describe('GroupedCombobox', () => {
     });
 
     it('applies custom className', () => {
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}
@@ -844,7 +843,7 @@ describe('GroupedCombobox', () => {
 
     it('resets highlighted index when filtered options change', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
+      const onChange = mock();
       render(
         <GroupedCombobox
           options={mockOptions}

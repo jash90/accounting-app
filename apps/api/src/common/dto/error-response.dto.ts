@@ -65,7 +65,7 @@ export class ErrorResponseDto {
     example: { clientId: 'abc-123', companyId: 'xyz-456' },
     required: false,
   })
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 
   @ApiProperty({
     description: 'ISO 8601 timestamp when the error occurred',

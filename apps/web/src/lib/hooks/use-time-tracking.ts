@@ -32,7 +32,7 @@ const TIMER_REFETCH_INTERVAL_MS = 10000; // 10 seconds
 
 export function useTimeEntries(filters?: TimeEntryFiltersDto) {
   return useQuery({
-    queryKey: queryKeys.timeTracking.entries.list(filters),
+    queryKey: queryKeys.timeTracking.entries.list(filters as Record<string, unknown> | undefined),
     queryFn: () => timeEntriesApi.getAll(filters),
   });
 }

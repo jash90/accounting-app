@@ -198,7 +198,8 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER role required' })
   getCompanyEmailConfig(@CurrentUser() user: User) {
-    return this.emailConfigService.getCompanyConfig(user.companyId);
+    // companyId is guaranteed to exist by RequireCompanyGuard
+    return this.emailConfigService.getCompanyConfig(user.companyId!);
   }
 
   @Post('company')
@@ -220,7 +221,8 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER role required' })
   createCompanyEmailConfig(@CurrentUser() user: User, @Body() createDto: CreateEmailConfigDto) {
-    return this.emailConfigService.createCompanyConfig(user.companyId, createDto);
+    // companyId is guaranteed to exist by RequireCompanyGuard
+    return this.emailConfigService.createCompanyConfig(user.companyId!, createDto);
   }
 
   @Put('company')
@@ -241,7 +243,8 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER role required' })
   updateCompanyEmailConfig(@CurrentUser() user: User, @Body() updateDto: UpdateEmailConfigDto) {
-    return this.emailConfigService.updateCompanyConfig(user.companyId, updateDto);
+    // companyId is guaranteed to exist by RequireCompanyGuard
+    return this.emailConfigService.updateCompanyConfig(user.companyId!, updateDto);
   }
 
   @Delete('company')
@@ -258,7 +261,8 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER role required' })
   async deleteCompanyEmailConfig(@CurrentUser() user: User) {
-    await this.emailConfigService.deleteCompanyConfig(user.companyId);
+    // companyId is guaranteed to exist by RequireCompanyGuard
+    await this.emailConfigService.deleteCompanyConfig(user.companyId!);
   }
 
   @Post('company/send')
@@ -277,7 +281,8 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER role required' })
   async sendCompanyEmail(@CurrentUser() user: User, @Body() sendDto: SendEmailDto) {
-    await this.smtpImapService.sendCompanyEmail(user.companyId, sendDto);
+    // companyId is guaranteed to exist by RequireCompanyGuard
+    await this.smtpImapService.sendCompanyEmail(user.companyId!, sendDto);
   }
 
   @Get('company/inbox')
@@ -301,7 +306,8 @@ export class EmailConfigController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - COMPANY_OWNER role required' })
   async checkCompanyInbox(@CurrentUser() user: User, @Query('limit') limit?: number) {
-    return this.smtpImapService.checkCompanyInbox(user.companyId, limit || 10);
+    // companyId is guaranteed to exist by RequireCompanyGuard
+    return this.smtpImapService.checkCompanyInbox(user.companyId!, limit || 10);
   }
 
   // ========== COMPANY CONNECTION TEST ENDPOINTS ==========

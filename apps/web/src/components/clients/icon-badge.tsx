@@ -43,7 +43,7 @@ export function IconBadge({ icon, size = 'md', showTooltip = true, className }: 
           .join('');
 
         const LucideIcon = (
-          LucideIcons as Record<string, React.ComponentType<{ size?: number; className?: string }>>
+          LucideIcons as unknown as Record<string, React.ComponentType<LucideIcons.LucideProps>>
         )[pascalCaseName];
 
         if (LucideIcon) {

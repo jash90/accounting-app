@@ -7,11 +7,39 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { TokenLimit, User, UserRole } from '@accounting/common';
-import { SetTokenLimitDto } from '../dto/set-token-limit.dto';
-import { TokenUsageService } from './token-usage.service';
+
+import { Repository, IsNull } from 'typeorm';
+
+import { Company, TokenLimit, User, UserRole } from '@accounting/common';
+
 import { SystemCompanyService } from './system-company.service';
+import { TokenUsageService } from './token-usage.service';
+import { SetTokenLimitDto } from '../dto/set-token-limit.dto';
+
+interface TokenLimitWithUsage {
+  id: string;
+  companyId: string | null;
+  userId: string | null;
+  monthlyLimit: number;
+  warningThresholdPercentage: number;
+  notifyOnWarning: boolean;
+  notifyOnExceeded: boolean;
+  setById: string;
+  createdAt: Date;
+  updatedAt: Date;
+  user?: User | null;
+  company?: Company | null;
+  setBy?: User | null;
+  currentUsage: number;
+  usagePercentage: number;
+  isExceeded: boolean;
+  isWarning: boolean;
+}
+
+interface MyLimitResult {
+  userLimit: TokenLimitWithUsage | null;
+  companyLimit: TokenLimitWithUsage | null;
+}
 
 @Injectable()
 export class TokenLimitService {
@@ -45,7 +73,7 @@ export class TokenLimitService {
     }
 
     let limit = await this.limitRepository.findOne({
-      where: { companyId, userId: null },
+      where: { companyId, userId: IsNull() },
     });
 
     if (limit) {
@@ -130,7 +158,7 @@ export class TokenLimitService {
 
     // Check user-specific limit first
     const userLimit = await this.limitRepository.findOne({
-      where: { companyId, userId: user.id },
+      where: { companyId: companyId ?? IsNull(), userId: user.id },
     });
 
     if (userLimit) {
@@ -144,7 +172,7 @@ export class TokenLimitService {
 
     // Check company-wide limit
     const companyLimit = await this.limitRepository.findOne({
-      where: { companyId, userId: null },
+      where: { companyId: companyId ?? IsNull(), userId: IsNull() },
     });
 
     if (companyLimit && companyId) {
@@ -160,7 +188,7 @@ export class TokenLimitService {
   /**
    * Get user's limit with current usage
    */
-  async getMyLimit(user: User): Promise<any> {
+  async getMyLimit(user: User): Promise<MyLimitResult> {
     let companyId: string | null;
 
     if (user.role === UserRole.ADMIN) {
@@ -170,12 +198,12 @@ export class TokenLimitService {
     }
 
     const userLimit = await this.limitRepository.findOne({
-      where: { companyId, userId: user.id },
+      where: { companyId: companyId ?? IsNull(), userId: user.id },
       relations: ['user', 'company', 'setBy'],
     });
 
     const companyLimit = await this.limitRepository.findOne({
-      where: { companyId, userId: null },
+      where: { companyId: companyId ?? IsNull(), userId: IsNull() },
       relations: ['company', 'setBy'],
     });
 

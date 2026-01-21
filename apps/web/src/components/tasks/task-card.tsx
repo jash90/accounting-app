@@ -10,7 +10,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils/cn';
+import { mapTaskLabels } from '@/lib/utils/task-label-mapper';
 import { type TaskResponseDto } from '@/types/dtos';
+import { TaskStatus } from '@/types/enums';
 
 import { TaskLabelList } from './task-label-badge';
 import { TaskPriorityBadge } from './task-priority-badge';
@@ -26,8 +28,7 @@ interface TaskCardProps {
 
 export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
   ({ task, onClick, isDragging = false, showStatus = false, className }, ref) => {
-    const labels = task.labels?.map((la) => la.label).filter(Boolean) || [];
-    const _hasSubtasks = task.subtasks && task.subtasks.length > 0;
+    const labels = mapTaskLabels(task.labels);
     const commentCount = task.comments?.length || 0;
     const dependencyCount = task.dependencies?.length || 0;
 
@@ -37,7 +38,8 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
       return (first + last).toUpperCase() || '?';
     };
 
-    const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
+    const isOverdue =
+      task.dueDate && new Date(task.dueDate) < new Date() && task.status !== TaskStatus.DONE;
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
       if (onClick && (e.key === 'Enter' || e.key === ' ')) {
@@ -65,8 +67,7 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
       >
         <CardContent className="p-3 space-y-2">
           {/* Labels */}
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- TaskLabel type mismatch with TaskLabelAssignment */}
-          {labels.length > 0 && <TaskLabelList labels={labels as any} size="sm" maxVisible={2} />}
+          {labels.length > 0 && <TaskLabelList labels={labels} size="sm" maxVisible={2} />}
 
           {/* Title */}
           <h4 className="font-medium text-sm leading-snug line-clamp-2">{task.title}</h4>

@@ -16,7 +16,8 @@
     "noImplicitOverride": true,
     "baseUrl": "../..",
     "paths": {
-      "@/*": ["apps/web/src/*"]
+      "@/*": ["apps/web/src/*"],
+      "@accounting/common/browser": ["libs/common/src/browser.ts"]
     },
     "types": [
       "node",

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, memo } from 'react';
 
 import { Search, X, GitCompare, Star, Clock, Loader2, ChevronRight } from 'lucide-react';
 
@@ -93,47 +93,41 @@ function getProviderOrder(provider: string): number {
   return index === -1 ? PROVIDER_ORDER.length : index;
 }
 
-export function ModelPickerModal({
-  open,
+// Inner content component - remounts when dialog opens to reset state
+interface ModelPickerModalContentProps {
+  onOpenChange: (open: boolean) => void;
+  models: OpenRouterModelDto[];
+  isLoading: boolean;
+  selectedModelId?: string;
+  onSelect: (modelId: string) => void;
+}
+
+const ModelPickerModalContent = memo(function ModelPickerModalContent({
   onOpenChange,
   models,
-  isLoading = false,
+  isLoading,
   selectedModelId,
   onSelect,
-}: ModelPickerModalProps) {
+}: ModelPickerModalContentProps) {
+  // State initializes fresh on each mount (when dialog opens)
   const [searchQuery, setSearchQuery] = useState('');
   const [costFilter, setCostFilter] = useState<CostFilter>('all');
   const [contextFilter, setContextFilter] = useState<ContextFilter>('all');
-  const [selectedModel, setSelectedModel] = useState<OpenRouterModelDto | null>(null);
+  // Initialize selectedModel from prop
+  const [selectedModel, setSelectedModel] = useState<OpenRouterModelDto | null>(() => {
+    if (selectedModelId) {
+      return models.find((m) => m.id === selectedModelId) || null;
+    }
+    return null;
+  });
   const [comparisonModels, setComparisonModels] = useState<OpenRouterModelDto[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('browse');
   const [showFavoritesBar, setShowFavoritesBar] = useState(true);
 
   const { favorites, recents, toggleFavorite, isFavorite, addRecent } = useModelPreferences();
 
-  // Reset state when modal opens
+  // Keyboard shortcuts - component only renders when open
   useEffect(() => {
-    if (open) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: reset form state when modal opens
-      setSearchQuery('');
-      setCostFilter('all');
-      setContextFilter('all');
-      setViewMode('browse');
-      setComparisonModels([]);
-      // Select the currently saved model if it exists
-      if (selectedModelId) {
-        const model = models.find((m) => m.id === selectedModelId);
-        setSelectedModel(model || null);
-      } else {
-        setSelectedModel(null);
-      }
-    }
-  }, [open, selectedModelId, models]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    if (!open) return;
-
     function handleKeyDown(e: KeyboardEvent) {
       // Ctrl+K: Focus search
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -163,7 +157,7 @@ export function ModelPickerModal({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, viewMode, comparisonModels.length]);
+  }, [viewMode, comparisonModels.length]);
 
   // Filter and group models
   const { groupedModels, totalCount, filteredCount } = useMemo(() => {
@@ -290,7 +284,7 @@ export function ModelPickerModal({
   }, [selectedModel, handleToggleComparison]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
       <DialogContent className="max-w-5xl h-[80vh] p-0 flex flex-col">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -537,6 +531,30 @@ export function ModelPickerModal({
           </div>
         )}
       </DialogContent>
+    </>
+  );
+});
+
+// Main exported component - wraps Dialog and conditionally renders content
+export function ModelPickerModal({
+  open,
+  onOpenChange,
+  models,
+  isLoading = false,
+  selectedModelId,
+  onSelect,
+}: ModelPickerModalProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open && (
+        <ModelPickerModalContent
+          onOpenChange={onOpenChange}
+          models={models}
+          isLoading={isLoading}
+          selectedModelId={selectedModelId}
+          onSelect={onSelect}
+        />
+      )}
     </Dialog>
   );
 }

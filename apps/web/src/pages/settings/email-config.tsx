@@ -37,30 +37,30 @@ export default function UserEmailConfigPage() {
 
   const hasConfig = !!emailConfig && !isError;
 
-  const handleCreate = (data: CreateEmailConfigFormData) => {
-    createConfig.mutate(data, {
-      onSuccess: () => setFormOpen(false),
-      onError: (err: Error) => {
-        toast({
-          title: 'Error',
-          description: err.message || 'Failed to create email configuration',
-          variant: 'destructive',
-        });
-      },
-    });
-  };
-
-  const handleUpdate = (data: UpdateEmailConfigFormData) => {
-    updateConfig.mutate(data, {
-      onSuccess: () => setFormOpen(false),
-      onError: (err: Error) => {
-        toast({
-          title: 'Error',
-          description: err.message || 'Failed to update email configuration',
-          variant: 'destructive',
-        });
-      },
-    });
+  const handleSubmit = (data: CreateEmailConfigFormData | UpdateEmailConfigFormData) => {
+    if (hasConfig) {
+      updateConfig.mutate(data as UpdateEmailConfigFormData, {
+        onSuccess: () => setFormOpen(false),
+        onError: (err: Error) => {
+          toast({
+            title: 'Error',
+            description: err.message || 'Failed to update email configuration',
+            variant: 'destructive',
+          });
+        },
+      });
+    } else {
+      createConfig.mutate(data as CreateEmailConfigFormData, {
+        onSuccess: () => setFormOpen(false),
+        onError: (err: Error) => {
+          toast({
+            title: 'Error',
+            description: err.message || 'Failed to create email configuration',
+            variant: 'destructive',
+          });
+        },
+      });
+    }
   };
 
   const handleDelete = () => {
@@ -279,7 +279,7 @@ export default function UserEmailConfigPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
         config={hasConfig ? emailConfig : undefined}
-        onSubmit={hasConfig ? handleUpdate : handleCreate}
+        onSubmit={handleSubmit}
         type="user"
         onTestSmtp={(data) => testSmtp.mutate(data)}
         onTestImap={(data) => testImap.mutate(data)}
