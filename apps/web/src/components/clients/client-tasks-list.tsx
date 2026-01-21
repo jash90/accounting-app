@@ -29,12 +29,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-
 import { useAuthContext } from '@/contexts/auth-context';
 import { useTasks, useTaskAssignees } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
 import { type TaskFiltersDto } from '@/types/dtos';
-import { UserRole, TaskStatus, TaskPriority } from '@/types/enums';
+import { UserRole, TaskStatus as TaskStatusEnum, TaskPriority } from '@/types/enums';
 
 import { QuickAddTaskDialog } from './quick-add-task-dialog';
 
@@ -45,14 +44,17 @@ interface ClientTasksListProps {
 
 const PAGE_SIZE = 10;
 
-const TaskStatusLabels: Record<TaskStatus, string> = {
-  [TaskStatus.TODO]: 'Do zrobienia',
-  [TaskStatus.IN_PROGRESS]: 'W trakcie',
-  [TaskStatus.REVIEW]: 'Do przeglądu',
-  [TaskStatus.DONE]: 'Zakończone',
+const TaskStatusLabels: Record<TaskStatusEnum, string> = {
+  [TaskStatusEnum.BACKLOG]: 'Backlog',
+  [TaskStatusEnum.TODO]: 'Do zrobienia',
+  [TaskStatusEnum.IN_PROGRESS]: 'W trakcie',
+  [TaskStatusEnum.IN_REVIEW]: 'Do przeglądu',
+  [TaskStatusEnum.DONE]: 'Zakończone',
+  [TaskStatusEnum.CANCELLED]: 'Anulowane',
 };
 
 const TaskPriorityLabels: Record<TaskPriority, string> = {
+  [TaskPriority.NONE]: 'Brak',
   [TaskPriority.LOW]: 'Niski',
   [TaskPriority.MEDIUM]: 'Średni',
   [TaskPriority.HIGH]: 'Wysoki',
@@ -112,7 +114,7 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
 
   const hasActiveFilters = filters.status || filters.priority || filters.assigneeId;
 
-  const totalPages = tasksData ? Math.ceil(tasksData.total / PAGE_SIZE) : 0;
+  const totalPages = tasksData ? Math.ceil(tasksData.meta.total / PAGE_SIZE) : 0;
   const currentPage = filters.page || 1;
 
   if (isPending) {
@@ -160,9 +162,9 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
           <CardTitle className="flex items-center gap-2">
             <CheckSquare className="h-5 w-5" />
             Zadania klienta
-            {tasksData?.total !== undefined && (
+            {tasksData?.meta.total !== undefined && (
               <Badge variant="secondary" className="ml-2">
-                {tasksData.total}
+                {tasksData.meta.total}
               </Badge>
             )}
           </CardTitle>
@@ -203,7 +205,7 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
                 onValueChange={(value) =>
                   handleFilterChange(
                     'status',
-                    value === '__all__' ? undefined : (value as TaskStatus)
+                    value === '__all__' ? undefined : (value as TaskStatusEnum)
                   )
                 }
               >
@@ -300,12 +302,22 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
             <div className="space-y-2">
               {tasks.map((task) => {
                 const isOverdue =
-                  task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
+                  task.dueDate &&
+                  new Date(task.dueDate) < new Date() &&
+                  task.status !== TaskStatusEnum.DONE;
 
                 return (
                   <div
                     key={task.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleTaskClick(task.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleTaskClick(task.id);
+                      }
+                    }}
                     className={cn(
                       'flex items-center justify-between p-3 rounded-lg border cursor-pointer',
                       'hover:bg-muted/50 transition-colors',
@@ -346,7 +358,7 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
               {totalPages > 1 && (
                 <div className="flex items-center justify-between pt-4 border-t mt-4">
                   <p className="text-sm text-muted-foreground">
-                    Strona {currentPage} z {totalPages} ({tasksData?.total} zadań)
+                    Strona {currentPage} z {totalPages} ({tasksData?.meta.total} zadań)
                   </p>
                   <div className="flex gap-2">
                     <Button

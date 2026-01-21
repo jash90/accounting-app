@@ -7,8 +7,8 @@ export class MCPAnalysisHelper {
   /**
    * Sequential MCP: Systematic screenshot analysis
    * Uses sequential-thinking to analyze design systematically
+   * @param _screenshots Reserved for future MCP visual analysis integration
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- screenshots parameter reserved for future MCP integration
   async analyzeWithSequential(_screenshots: ScreenshotMetadata[]): Promise<Issue[]> {
     console.log('🔄 Starting Sequential MCP analysis...');
 

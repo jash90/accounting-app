@@ -49,13 +49,29 @@ interface Draft {
 function SyncStatusIcon({ status }: { status: SyncStatus }) {
   switch (status) {
     case 'synced':
-      return <Cloud className="h-4 w-4 text-green-600" title="Zsynchronizowano z serwerem" />;
+      return (
+        <span title="Zsynchronizowano z serwerem">
+          <Cloud className="h-4 w-4 text-green-600" />
+        </span>
+      );
     case 'local':
-      return <CloudOff className="h-4 w-4 text-gray-400" title="Tylko lokalnie" />;
+      return (
+        <span title="Tylko lokalnie">
+          <CloudOff className="h-4 w-4 text-gray-400" />
+        </span>
+      );
     case 'imap_only':
-      return <Cloud className="h-4 w-4 text-blue-500" title="Tylko na serwerze" />;
+      return (
+        <span title="Tylko na serwerze">
+          <Cloud className="h-4 w-4 text-blue-500" />
+        </span>
+      );
     case 'conflict':
-      return <AlertTriangle className="h-4 w-4 text-yellow-600" title="Konflikt synchronizacji" />;
+      return (
+        <span title="Konflikt synchronizacji">
+          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+        </span>
+      );
     default:
       return <CloudOff className="h-4 w-4 text-gray-400" />;
   }

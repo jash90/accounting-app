@@ -12,11 +12,12 @@ import {
   Tags,
   AlertTriangle,
 } from 'lucide-react';
-import { ClientFormDialog } from '@/components/forms/client-form-dialog';
+
 import { ClientChangelog } from '@/components/clients/client-changelog';
-import { ClientTasksList } from '@/components/clients/client-tasks-list';
 import { ClientTaskStatistics } from '@/components/clients/client-task-statistics';
+import { ClientTasksList } from '@/components/clients/client-tasks-list';
 import { ErrorBoundary } from '@/components/common/error-boundary';
+import { ClientFormDialog } from '@/components/forms/client-form-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +31,7 @@ import {
   useSetClientCustomFields,
 } from '@/lib/hooks/use-clients';
 import { type UpdateClientDto } from '@/types/dtos';
-import { ClientIcon } from '@/types/entities';
+import { type ClientIcon } from '@/types/entities';
 import {
   EmploymentTypeLabels,
   VatStatusLabels,

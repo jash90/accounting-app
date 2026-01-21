@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { useForm } from 'react-hook-form';
+import type { Resolver } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -47,9 +48,10 @@ export function ClientIconFormDialog({
     icon?.autoAssignCondition || undefined
   );
 
-  const form = useForm<CreateClientIconFormData | UpdateClientIconFormData>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(schema) as any,
+  type FormData = CreateClientIconFormData | UpdateClientIconFormData;
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(schema) as Resolver<FormData>,
     defaultValues: icon
       ? {
           name: icon.name,
@@ -88,7 +90,7 @@ export function ClientIconFormDialog({
     }
   }, [open, icon, form]);
 
-  const handleSubmit = (data: CreateClientIconFormData | UpdateClientIconFormData) => {
+  const handleSubmit = (data: FormData) => {
     // Clean up empty color values
     const submitData = { ...data };
     if (!submitData.color) {

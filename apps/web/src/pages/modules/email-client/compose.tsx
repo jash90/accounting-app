@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 import { useLocation, useSearchParams } from 'react-router-dom';
 
@@ -45,98 +45,127 @@ interface LocationState {
   messageUid?: number;
 }
 
-export default function EmailCompose() {
-  const emailNav = useEmailClientNavigation();
-  const location = useLocation();
-  const [searchParams] = useSearchParams();
+interface EmailDraft {
+  id: string;
+  to?: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject?: string;
+  textContent?: string;
+  isAiGenerated?: boolean;
+}
+
+interface AiStreamState {
+  content: string;
+  draftId: string | null;
+  isStreaming: boolean;
+  error: string | null;
+  startStream: (params: { messageUid: number }) => void;
+  reset: () => void;
+}
+
+interface EmailComposeFormProps {
+  initialData: {
+    to: string;
+    cc: string;
+    subject: string;
+    content: string;
+    showCcBcc: boolean;
+  };
+  draftId: string | null;
+  existingDraft: EmailDraft | undefined;
+  aiStream: AiStreamState;
+  locationState: LocationState | null;
+  onNavigateToInbox: () => void;
+  onNavigateToDraft: (draftId: string, options?: { replace?: boolean }) => void;
+}
+
+function EmailComposeForm({
+  initialData,
+  draftId,
+  existingDraft,
+  aiStream,
+  locationState,
+  onNavigateToInbox,
+  onNavigateToDraft,
+}: EmailComposeFormProps) {
   const { toast } = useToast();
 
-  // Get draftId from URL query params
-  const draftId = searchParams.get('draftId');
-  const locationState = location.state as LocationState | null;
+  // Destructure aiStream properties for explicit dependencies
+  const {
+    content: aiStreamContent,
+    draftId: aiStreamDraftId,
+    isStreaming: aiStreamIsStreaming,
+    error: aiStreamError,
+    startStream,
+    reset: resetAiStream,
+  } = aiStream;
 
   // Hooks
   const sendEmail = useSendEmail();
   const createDraft = useCreateDraft();
   const updateDraft = useUpdateDraft();
-  const aiStream = useGenerateAiDraftStream();
   const uploadAttachment = useUploadAttachment();
-  const { data: existingDraft, isLoading: isDraftLoading } = useDraft(draftId || undefined);
 
-  // Form state
-  const [to, setTo] = useState('');
-  const [cc, setCc] = useState('');
+  // Form state - initialized from props (no useEffect needed due to key prop in parent)
+  const [to, setTo] = useState(initialData.to);
+  const [cc, setCc] = useState(initialData.cc);
   const [bcc, setBcc] = useState('');
-  const [subject, setSubject] = useState('');
-  const [content, setContent] = useState('');
-  const [showCcBcc, setShowCcBcc] = useState(false);
+  const [subject, setSubject] = useState(initialData.subject);
+  const [content, setContent] = useState(initialData.content);
+  const [showCcBcc, setShowCcBcc] = useState(initialData.showCcBcc);
   const [attachments, setAttachments] = useState<
     Array<{ path: string; filename: string; size: number }>
   >([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Sync streaming content to textarea
-  useEffect(() => {
-    if (aiStream.content) {
-      setContent(aiStream.content);
-    }
-  }, [aiStream.content]);
+  // Ref to track if AI generation was triggered to prevent re-triggering
+  const aiGenerateTriggeredRef = useRef(false);
+
+  // Derive display content: use streaming content during AI generation, otherwise use editable content
+  // This replaces the useEffect that was syncing aiStreamContent to content state
+  const displayContent = aiStreamIsStreaming && aiStreamContent ? aiStreamContent : content;
 
   // Navigate to draft when streaming completes
+  // Note: No need to sync content here - navigation causes remount and draft is loaded from server
   useEffect(() => {
-    if (aiStream.draftId && !aiStream.isStreaming) {
-      emailNav.toComposeWithQuery(`draftId=${aiStream.draftId}`, { replace: true });
+    if (aiStreamDraftId && !aiStreamIsStreaming) {
+      onNavigateToDraft(aiStreamDraftId, { replace: true });
       toast({ title: 'Sukces', description: 'Odpowiedź AI została wygenerowana' });
-      aiStream.reset();
+      resetAiStream();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Only trigger on draftId and isStreaming changes
-  }, [aiStream.draftId, aiStream.isStreaming]);
+  }, [aiStreamDraftId, aiStreamIsStreaming, resetAiStream, onNavigateToDraft, toast]);
 
   // Show error if streaming fails
   useEffect(() => {
-    if (aiStream.error) {
+    if (aiStreamError) {
       toast({
         title: 'Błąd',
-        description: aiStream.error,
+        description: aiStreamError,
         variant: 'destructive',
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Only trigger on error changes
-  }, [aiStream.error]);
+  }, [aiStreamError, toast]);
 
-  const handleGenerateAiReply = (messageUid: number) => {
-    // Clear content first to show skeleton
-    setContent('');
-    // Start streaming - text will appear progressively in textarea
-    aiStream.startStream({ messageUid });
-  };
+  const handleGenerateAiReply = useCallback(
+    (messageUid: number) => {
+      // Clear content first to show skeleton
+      setContent('');
+      // Start streaming - text will appear progressively in textarea
+      startStream({ messageUid });
+    },
+    [startStream]
+  );
 
-  // Load draft data or reply state
+  // Trigger AI generation on mount if requested via navigation state
+  // Uses ref to ensure this only runs once per component mount
+  // Note: Content is already empty via initialData when aiGenerate is used
   useEffect(() => {
-    if (existingDraft) {
-      // Loading existing draft
-      setTo(existingDraft.to?.join(', ') || '');
-      setCc(existingDraft.cc?.join(', ') || '');
-      setSubject(existingDraft.subject || '');
-      setContent(existingDraft.textContent || '');
-      if (existingDraft.cc && existingDraft.cc.length > 0) {
-        setShowCcBcc(true);
-      }
-    } else if (locationState) {
-      // Loading from reply state
-      if (locationState.to) {
-        setTo(locationState.to);
-      }
-      if (locationState.subject) {
-        setSubject(locationState.subject);
-      }
-      // Handle AI generation
-      if (locationState.aiGenerate && locationState.messageUid) {
-        handleGenerateAiReply(locationState.messageUid);
-      }
+    if (locationState?.aiGenerate && locationState.messageUid && !aiGenerateTriggeredRef.current) {
+      aiGenerateTriggeredRef.current = true;
+      startStream({ messageUid: locationState.messageUid });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleGenerateAiReply is stable
-  }, [existingDraft, locationState]);
+  }, [locationState?.aiGenerate, locationState?.messageUid, startStream]);
 
   // Attachment handlers
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -218,7 +247,7 @@ export default function EmailCompose() {
       });
 
       toast({ title: 'Sukces', description: 'Wiadomość została wysłana' });
-      emailNav.toInbox();
+      onNavigateToInbox();
     } catch {
       toast({
         title: 'Błąd',
@@ -260,7 +289,7 @@ export default function EmailCompose() {
           textContent: content,
         });
         // Navigate to edit the new draft so subsequent saves are updates
-        emailNav.toComposeWithQuery(`draftId=${newDraft.id}`, { replace: true });
+        onNavigateToDraft(newDraft.id, { replace: true });
         toast({ title: 'Sukces', description: 'Szkic zapisany' });
       }
     } catch {
@@ -272,17 +301,6 @@ export default function EmailCompose() {
     }
   };
 
-  if (isDraftLoading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
-          <p className="mt-2 text-sm text-muted-foreground">Ładowanie szkicu...</p>
-        </div>
-      </div>
-    );
-  }
-
   const isSaving = createDraft.isPending || updateDraft.isPending;
   const isSending = sendEmail.isPending;
   const isUploading = uploadAttachment.isPending;
@@ -291,7 +309,7 @@ export default function EmailCompose() {
     <div className="h-full flex flex-col">
       <div className="border-b p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => emailNav.toInbox()}>
+          <Button variant="ghost" size="sm" onClick={onNavigateToInbox}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-2xl font-bold">{draftId ? 'Edytuj szkic' : 'Nowa wiadomość'}</h1>
@@ -322,9 +340,9 @@ export default function EmailCompose() {
               variant="outline"
               size="sm"
               onClick={() => handleGenerateAiReply(locationState.replyTo!.uid)}
-              disabled={aiStream.isStreaming}
+              disabled={aiStreamIsStreaming}
             >
-              {aiStream.isStreaming ? (
+              {aiStreamIsStreaming ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
                 <Sparkles className="h-4 w-4 mr-2" />
@@ -402,7 +420,7 @@ export default function EmailCompose() {
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <Label htmlFor="content">Wiadomość</Label>
-              {(aiStream.isStreaming || (locationState?.aiGenerate && !content)) && (
+              {(aiStreamIsStreaming || (locationState?.aiGenerate && !content)) && (
                 <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
                   <Sparkles className="h-3 w-3" />
                   Generowanie AI...
@@ -410,7 +428,7 @@ export default function EmailCompose() {
               )}
             </div>
             <div className="relative">
-              {(aiStream.isStreaming || locationState?.aiGenerate) && !content && (
+              {(aiStreamIsStreaming || locationState?.aiGenerate) && !displayContent && (
                 <div className="absolute inset-0 bg-background rounded-md border p-3 space-y-2 z-10">
                   <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
                   <div className="h-4 bg-muted rounded animate-pulse w-full" />
@@ -422,11 +440,11 @@ export default function EmailCompose() {
               <Textarea
                 id="content"
                 placeholder="Wpisz treść wiadomości..."
-                value={content}
+                value={displayContent}
                 onChange={(e) => setContent(e.target.value)}
                 rows={15}
-                className={`font-mono ${aiStream.isStreaming || locationState?.aiGenerate ? 'border-purple-300 focus:border-purple-500' : ''}`}
-                disabled={aiStream.isStreaming || (locationState?.aiGenerate && !content)}
+                className={`font-mono ${aiStreamIsStreaming || locationState?.aiGenerate ? 'border-purple-300 focus:border-purple-500' : ''}`}
+                disabled={aiStreamIsStreaming || (locationState?.aiGenerate && !displayContent)}
               />
             </div>
           </div>
@@ -436,12 +454,21 @@ export default function EmailCompose() {
             <Label>Załączniki</Label>
 
             {/* Drag & Drop Zone */}
-            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions -- Keyboard accessible via file input below */}
             <div
+              role="button"
+              tabIndex={0}
+              aria-label="Strefa upuszczania załączników. Naciśnij Enter lub Spację aby otworzyć wybór plików."
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+              onClick={() => document.getElementById('file-upload')?.click()}
+              onKeyDown={(e: React.KeyboardEvent) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  document.getElementById('file-upload')?.click();
+                }
+              }}
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
                 isDragging
                   ? 'border-primary bg-primary/5'
                   : 'border-muted-foreground/25 hover:border-muted-foreground/50'
@@ -507,5 +534,76 @@ export default function EmailCompose() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function EmailCompose() {
+  const emailNav = useEmailClientNavigation();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+
+  // Get draftId from URL query params
+  const draftId = searchParams.get('draftId');
+  const locationState = location.state as LocationState | null;
+
+  // Fetch existing draft
+  const aiStream = useGenerateAiDraftStream();
+  const { data: existingDraft, isLoading: isDraftLoading } = useDraft(draftId || undefined);
+
+  // Compute initial form data from draft or location state
+  const initialFormData = useMemo(() => {
+    if (existingDraft) {
+      return {
+        to: existingDraft.to?.join(', ') || '',
+        cc: existingDraft.cc?.join(', ') || '',
+        subject: existingDraft.subject || '',
+        content: existingDraft.textContent || '',
+        showCcBcc: (existingDraft.cc?.length ?? 0) > 0,
+      };
+    }
+    if (locationState) {
+      return {
+        to: locationState.to || '',
+        cc: '',
+        subject: locationState.subject || '',
+        content: '',
+        showCcBcc: false,
+      };
+    }
+    return { to: '', cc: '', subject: '', content: '', showCcBcc: false };
+  }, [existingDraft, locationState]);
+
+  // Key to reset form when draft or reply context changes
+  const formKey = existingDraft?.id ?? locationState?.replyTo?.uid ?? 'new';
+
+  const handleNavigateToDraft = useCallback(
+    (newDraftId: string, options?: { replace?: boolean }) => {
+      emailNav.toComposeWithQuery(`draftId=${newDraftId}`, options);
+    },
+    [emailNav]
+  );
+
+  if (isDraftLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
+          <p className="mt-2 text-sm text-muted-foreground">Ładowanie szkicu...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <EmailComposeForm
+      key={formKey}
+      initialData={initialFormData}
+      draftId={draftId}
+      existingDraft={existingDraft}
+      aiStream={aiStream}
+      locationState={locationState}
+      onNavigateToInbox={() => emailNav.toInbox()}
+      onNavigateToDraft={handleNavigateToDraft}
+    />
   );
 }

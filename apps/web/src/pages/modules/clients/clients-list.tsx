@@ -24,10 +24,31 @@ import {
   type BulkEditChanges,
 } from '@/components/clients/bulk-actions-toolbar';
 import { ClientFilters } from '@/components/clients/client-filters';
+import { ClientGrid } from '@/components/clients/client-grid';
+import { DuplicateWarningDialog } from '@/components/clients/duplicate-warning-dialog';
+import { ExportImportDialog } from '@/components/clients/export-import-dialog';
 import { IconBadgeList } from '@/components/clients/icon-badge';
+import { StatisticsDashboard } from '@/components/clients/statistics-dashboard';
+import { ColumnVisibilityModal } from '@/components/common/column-visibility-modal';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { DataTable } from '@/components/common/data-table';
 import { PageHeader } from '@/components/common/page-header';
+import { ViewModeToggle } from '@/components/common/view-mode-toggle';
+import { ClientFormDialog } from '@/components/forms/client-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { toast } from '@/components/ui/use-toast';
+import { useAuthContext } from '@/contexts/auth-context';
+import { type DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
+import { AmlGroupLabels } from '@/lib/constants/polish-labels';
 import {
   useClients,
   useDeleteClient,
@@ -46,17 +67,6 @@ import {
   useFieldDefinitions,
 } from '@/lib/hooks/use-clients';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useTablePreferences, type ColumnConfig } from '@/lib/hooks/use-table-preferences';
 import {
   type ClientResponseDto,
@@ -64,25 +74,17 @@ import {
   type UpdateClientDto,
   type ClientFiltersDto,
 } from '@/types/dtos';
-import { ClientFormDialog } from '@/components/forms/client-form-dialog';
-import { ExportImportDialog } from '@/components/clients/export-import-dialog';
-import { DuplicateWarningDialog } from '@/components/clients/duplicate-warning-dialog';
-import { StatisticsDashboard } from '@/components/clients/statistics-dashboard';
-import { ClientGrid } from '@/components/clients/client-grid';
-import { ViewModeToggle } from '@/components/common/view-mode-toggle';
-import { ColumnVisibilityModal } from '@/components/common/column-visibility-modal';
-import { type DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
-import { useAuthContext } from '@/contexts/auth-context';
 import {
+  type EmploymentType,
   EmploymentTypeLabels,
   VatStatus,
   VatStatusLabels,
+  type TaxScheme,
   TaxSchemeLabels,
+  type ZusStatus,
   ZusStatusLabels,
   UserRole,
 } from '@/types/enums';
-import { AmlGroupLabels } from '@/lib/constants/polish-labels';
-import { toast } from '@/components/ui/use-toast';
 
 export default function ClientsListPage() {
   const { user } = useAuthContext();
@@ -107,7 +109,10 @@ export default function ClientsListPage() {
 
   // Fetch custom field definitions
   const { data: fieldDefinitionsResponse } = useFieldDefinitions({ isActive: true });
-  const fieldDefinitions = fieldDefinitionsResponse?.data ?? [];
+  const fieldDefinitions = useMemo(
+    () => fieldDefinitionsResponse?.data ?? [],
+    [fieldDefinitionsResponse?.data]
+  );
 
   // Column configuration for table preferences (including custom fields)
   const columnConfig: ColumnConfig[] = useMemo(() => {
@@ -217,7 +222,7 @@ export default function ClientsListPage() {
   );
   const [pendingCreateData, setPendingCreateData] = useState<{
     data: CreateClientDto;
-    customFields?: { values: Record<string, unknown> };
+    customFields?: { values: Record<string, string | null> };
   } | null>(null);
 
   const handleFiltersChange = useCallback((newFilters: ClientFiltersDto) => {
@@ -295,7 +300,7 @@ export default function ClientsListPage() {
   }, [downloadTemplate]);
 
   const createClientAndClose = useCallback(
-    async (data: CreateClientDto, customFields?: { values: Record<string, unknown> }) => {
+    async (data: CreateClientDto, customFields?: { values: Record<string, string | null> }) => {
       const newClient = await createClient.mutateAsync(data);
       if (customFields && Object.keys(customFields.values).length > 0) {
         await setCustomFields.mutateAsync({
@@ -309,7 +314,7 @@ export default function ClientsListPage() {
   );
 
   const handleCreateWithDuplicateCheck = useCallback(
-    async (data: CreateClientDto, customFields?: { values: Record<string, unknown> }) => {
+    async (data: CreateClientDto, customFields?: { values: Record<string, string | null> }) => {
       // Check for duplicates first
       if (data.nip || data.email) {
         const result = await checkDuplicates.mutateAsync({
@@ -747,22 +752,22 @@ export default function ClientsListPage() {
               try {
                 // Transform form data to CreateClientDto with proper validation
                 const createDto: CreateClientDto = {
-                  name: data.name,
+                  name: data.name!,
                   nip: data.nip || undefined,
                   email: data.email || undefined,
                   phone: data.phone || undefined,
-                  companyStartDate: data.companyStartDate,
-                  cooperationStartDate: data.cooperationStartDate,
-                  suspensionDate: data.suspensionDate,
+                  companyStartDate: data.companyStartDate ?? undefined,
+                  cooperationStartDate: data.cooperationStartDate ?? undefined,
+                  suspensionDate: data.suspensionDate ?? undefined,
                   companySpecificity: data.companySpecificity || undefined,
                   additionalInfo: data.additionalInfo || undefined,
                   gtuCode: data.gtuCode || undefined,
                   pkdCode: data.pkdCode || undefined,
                   amlGroup: data.amlGroup || undefined,
-                  employmentType: data.employmentType,
-                  vatStatus: data.vatStatus,
-                  taxScheme: data.taxScheme,
-                  zusStatus: data.zusStatus,
+                  employmentType: data.employmentType as EmploymentType | undefined,
+                  vatStatus: data.vatStatus as VatStatus | undefined,
+                  taxScheme: data.taxScheme as TaxScheme | undefined,
+                  zusStatus: data.zusStatus as ZusStatus | undefined,
                   receiveEmailCopy: data.receiveEmailCopy,
                 };
                 await handleCreateWithDuplicateCheck(createDto, customFields);

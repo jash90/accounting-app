@@ -131,8 +131,9 @@ export default function LoginPage() {
                 data-testid="form-error"
                 className="animate-fade-in-up mb-4 rounded-xl bg-destructive/10 border-l-4 border-destructive p-4 text-sm text-destructive"
               >
-                {(error as any)?.response?.data?.message ||
-                  (error as any)?.message ||
+                {(error as { response?: { data?: { message?: string } } })?.response?.data
+                  ?.message ||
+                  (error as Error)?.message ||
                   'Nieprawidłowe dane logowania. Spróbuj ponownie.'}
               </div>
             )}

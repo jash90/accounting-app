@@ -7,12 +7,15 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
+import * as crypto from 'crypto';
 import { Repository } from 'typeorm';
+
 import { AIConfiguration, User, UserRole } from '@accounting/common';
+
+import { SystemCompanyService } from './system-company.service';
 import { CreateAIConfigurationDto } from '../dto/create-ai-configuration.dto';
 import { UpdateAIConfigurationDto } from '../dto/update-ai-configuration.dto';
-import { SystemCompanyService } from './system-company.service';
-import * as crypto from 'crypto';
 
 @Injectable()
 export class AIConfigurationService {
@@ -200,6 +203,11 @@ export class AIConfigurationService {
     if (!config) {
       throw new NotFoundException(
         'AI configuration not found. Please configure the AI agent first.'
+      );
+    }
+    if (!config.apiKey) {
+      throw new NotFoundException(
+        'API key not configured. Please add an API key in the AI agent settings.'
       );
     }
     return this.decryptApiKey(config.apiKey);

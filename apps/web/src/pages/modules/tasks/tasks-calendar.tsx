@@ -22,13 +22,13 @@ import { TaskFilters } from '@/components/tasks/task-filters';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthContext } from '@/contexts/auth-context';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import { useCalendarTasks, useCreateTask } from '@/lib/hooks/use-tasks';
-import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils/cn';
 import { type CalendarTaskDto, type CreateTaskDto, type TaskFiltersDto } from '@/types/dtos';
 import { TaskPriority, UserRole } from '@/types/enums';
-import { useAuthContext } from '@/contexts/auth-context';
 
 export default function TasksCalendarPage() {
   const { user } = useAuthContext();
@@ -236,12 +236,19 @@ export default function TasksCalendarPage() {
                   day_disabled: 'text-muted-foreground opacity-50',
                 }}
                 components={{
-                  DayContent: ({ date }) => (
-                    <div className="flex flex-col items-center">
-                      <span>{date.getDate()}</span>
-                      {getDayContent(date)}
-                    </div>
-                  ),
+                  DayButton: (props) => {
+                    const { day, ...buttonProps } = props as {
+                      day: { date: Date };
+                    } & React.ButtonHTMLAttributes<HTMLButtonElement>;
+                    return (
+                      <button {...buttonProps}>
+                        <div className="flex flex-col items-center">
+                          <span>{day.date.getDate()}</span>
+                          {getDayContent(day.date)}
+                        </div>
+                      </button>
+                    );
+                  },
                 }}
               />
             )}
@@ -267,11 +274,19 @@ export default function TasksCalendarPage() {
                 {selectedDateTasks.map((task) => (
                   <div
                     key={task.id}
+                    role="button"
+                    tabIndex={0}
                     className={cn(
                       'p-3 rounded-lg border border-l-4 cursor-pointer hover:bg-muted/50 transition-colors',
                       getPriorityColor(task.priority)
                     )}
                     onClick={() => navigate(`${basePath}/list?taskId=${task.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        navigate(`${basePath}/list?taskId=${task.id}`);
+                      }
+                    }}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <span className="font-medium text-sm line-clamp-2">{task.title}</span>

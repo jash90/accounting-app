@@ -52,9 +52,7 @@ export function TimeEntryRow({
   // Update elapsed time every second for running timers
   useEffect(() => {
     if (!entry.isRunning) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync state with entry.isRunning prop
-      setElapsedTime('');
-      return;
+      return; // State not reset because elapsedTime isn't displayed when not running
     }
 
     const updateElapsedTime = () => {
@@ -76,10 +74,10 @@ export function TimeEntryRow({
   }, [entry.isRunning, entry.startTime]);
 
   return (
-    /* eslint-disable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex -- Interactive list item with keyboard support */
     <div
-      role="listitem"
+      role="button"
       tabIndex={0}
+      aria-label={`Wpis czasu: ${entry.description || 'Bez opisu'}. ${entry.isRunning ? 'W trakcie' : formatDuration(entry.durationMinutes)}. ${entry.status === TimeEntryStatus.DRAFT ? 'Naciśnij Enter aby edytować.' : ''}`}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -88,8 +86,13 @@ export function TimeEntryRow({
           }
         }
       }}
+      onClick={() => {
+        if (entry.status === TimeEntryStatus.DRAFT) {
+          onEdit(entry);
+        }
+      }}
       className={cn(
-        'flex items-center justify-between p-3 rounded-lg border',
+        'flex items-center justify-between p-3 rounded-lg border cursor-pointer',
         'hover:bg-muted/50 transition-colors',
         'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
         entry.isRunning && 'border-green-300 bg-green-50/50'

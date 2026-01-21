@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useUsers, useDeleteUser, useCreateUser, useUpdateUser } from '@/lib/hooks/use-users';
-import { type UserDto, UserRole } from '@/types/dtos';
+import { type UserDto, type CreateUserDto, type UpdateUserDto, UserRole } from '@/types/dtos';
 
 const columns: ColumnDef<UserDto>[] = [
   {
@@ -134,7 +134,7 @@ export default function UsersListPage() {
         onOpenChange={setCreateOpen}
         onSubmit={async (data) => {
           try {
-            await createUser.mutateAsync(data);
+            await createUser.mutateAsync(data as CreateUserDto);
             setCreateOpen(false);
           } catch {
             // Error handled by mutation's onError
@@ -149,7 +149,7 @@ export default function UsersListPage() {
           user={editingUser}
           onSubmit={async (data) => {
             try {
-              await updateUser.mutateAsync({ id: editingUser.id, data });
+              await updateUser.mutateAsync({ id: editingUser.id, data: data as UpdateUserDto });
               setEditingUser(null);
             } catch {
               // Error handled by mutation's onError

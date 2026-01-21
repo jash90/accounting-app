@@ -101,9 +101,14 @@ export function TimeEntryFormDialog({ open, onOpenChange, entry }: TimeEntryForm
 
   useEffect(() => {
     if (entry) {
-      // Use parseISO for consistent timezone-safe date parsing from ISO strings
-      const startDate = parseISO(entry.startTime);
-      const endDate = entry.endTime ? parseISO(entry.endTime) : null;
+      // Handle both Date objects and ISO strings for timezone-safe parsing
+      const startDate =
+        entry.startTime instanceof Date ? entry.startTime : parseISO(entry.startTime as string);
+      const endDate = entry.endTime
+        ? entry.endTime instanceof Date
+          ? entry.endTime
+          : parseISO(entry.endTime as string)
+        : null;
       reset({
         description: entry.description || '',
         date: format(startDate, 'yyyy-MM-dd'),

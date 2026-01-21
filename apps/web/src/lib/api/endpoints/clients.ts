@@ -324,6 +324,7 @@ const FIELD_DEFINITIONS_URL = '/api/modules/clients/field-definitions';
 export interface FieldDefinitionQueryDto {
   page?: number;
   limit?: number;
+  isActive?: boolean;
 }
 
 export const fieldDefinitionsApi = {
@@ -486,8 +487,9 @@ export const notificationSettingsApi = {
         `${NOTIFICATION_SETTINGS_URL}/me`
       );
       return data;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { status?: number } };
+      if (axiosError.response?.status === 404) {
         return null;
       }
       throw error;

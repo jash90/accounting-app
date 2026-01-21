@@ -54,6 +54,14 @@ interface StatisticsDashboardProps {
   onClientClick?: (clientId: string) => void;
 }
 
+/** Action type labels - defined outside component to prevent recreation on each render */
+const ACTION_LABELS: Record<string, string> = {
+  CREATE: 'Utworzono',
+  UPDATE: 'Zaktualizowano',
+  DELETE: 'Usunięto',
+  RESTORE: 'Przywrócono',
+};
+
 export function StatisticsDashboard({
   statistics,
   isLoading = false,
@@ -77,13 +85,6 @@ export function StatisticsDashboard({
   }
 
   if (!statistics) return null;
-
-  const actionLabels: Record<string, string> = {
-    CREATE: 'Utworzono',
-    UPDATE: 'Zaktualizowano',
-    DELETE: 'Usunięto',
-    RESTORE: 'Przywrócono',
-  };
 
   return (
     <div className="space-y-6">
@@ -254,8 +255,16 @@ export function StatisticsDashboard({
                 {statistics.recentlyAdded.slice(0, 5).map((client) => (
                   <div
                     key={client.id}
+                    role="button"
+                    tabIndex={0}
                     className="flex items-center justify-between text-sm cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded"
                     onClick={() => onClientClick?.(client.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onClientClick?.(client.id);
+                      }
+                    }}
                   >
                     <div>
                       <p className="font-medium">{client.name}</p>
@@ -284,13 +293,21 @@ export function StatisticsDashboard({
                 {statistics.recentActivity.slice(0, 5).map((activity) => (
                   <div
                     key={activity.id}
+                    role="button"
+                    tabIndex={0}
                     className="flex items-center justify-between text-sm cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded"
                     onClick={() => onClientClick?.(activity.entityId)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onClientClick?.(activity.entityId);
+                      }
+                    }}
                   >
                     <div>
                       <p className="font-medium">{activity.entityName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {actionLabels[activity.action] || activity.action}
+                        {ACTION_LABELS[activity.action] || activity.action}
                         {activity.changedByName && ` przez ${activity.changedByName}`}
                       </p>
                     </div>

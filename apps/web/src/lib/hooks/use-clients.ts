@@ -35,7 +35,7 @@ import { queryKeys } from '../api/query-client';
 
 export function useClients(filters?: ClientFiltersDto) {
   return useQuery({
-    queryKey: queryKeys.clients.list(filters),
+    queryKey: queryKeys.clients.list(filters as Record<string, unknown> | undefined),
     queryFn: () => clientsApi.getAll(filters),
   });
 }
@@ -274,7 +274,7 @@ export function useBulkDeleteClients() {
     mutationFn: (dto: BulkDeleteClientsDto) => clientsApi.bulkDelete(dto),
     onSuccess: (result, variables) => {
       // Remove deleted clients from cache
-      variables.ids.forEach((id) => {
+      variables.clientIds.forEach((id: string) => {
         queryClient.removeQueries({ queryKey: queryKeys.clients.detail(id) });
       });
       // Invalidate list views and statistics
@@ -303,7 +303,7 @@ export function useBulkRestoreClients() {
     mutationFn: (dto: BulkRestoreClientsDto) => clientsApi.bulkRestore(dto),
     onSuccess: (result, variables) => {
       // Invalidate restored clients
-      variables.ids.forEach((id) => {
+      variables.clientIds.forEach((id: string) => {
         queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(id) });
       });
       // Invalidate list views and statistics
@@ -332,7 +332,7 @@ export function useBulkEditClients() {
     mutationFn: (dto: BulkEditClientsDto) => clientsApi.bulkEdit(dto),
     onSuccess: (result, variables) => {
       // Invalidate edited clients
-      variables.ids.forEach((id) => {
+      variables.clientIds.forEach((id: string) => {
         queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(id) });
       });
       // Invalidate list views

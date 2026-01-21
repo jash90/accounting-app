@@ -29,8 +29,7 @@ export default function EmailMessage() {
     if (email && emailUid && !email.flags.includes('\\Seen')) {
       markAsRead.mutate([emailUid]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- markAsRead is stable from React Query
-  }, [email, emailUid]);
+  }, [email, emailUid, markAsRead]);
 
   const handleDelete = async () => {
     if (!emailUid) return;

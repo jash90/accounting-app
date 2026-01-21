@@ -93,7 +93,7 @@ export function useModulePermissions(_moduleSlug: string) {
       // Helper function for dynamic permission checks
       checkPermission,
     };
-  }, [user, isAuthenticated, _moduleSlug]);
+  }, [user, isAuthenticated]);
 }
 
 export function useCompanyModules() {

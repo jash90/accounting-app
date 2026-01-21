@@ -37,16 +37,13 @@ interface FormData {
   roundingIntervalMinutes: number;
   defaultHourlyRate: string;
   defaultCurrency: string;
-  defaultIsBillable: boolean;
   requireApproval: boolean;
   allowOverlappingEntries: boolean;
   autoStopTimerAtMidnight: boolean;
   reminderEnabled: boolean;
-  reminderIntervalMinutes: number;
+  reminderTime: string;
   minimumEntryDurationMinutes: number;
   maximumEntryDurationMinutes: number;
-  workdayStartTime: string;
-  workdayEndTime: string;
   workdayHours: number;
 }
 
@@ -63,41 +60,38 @@ export default function TimeTrackingSettingsPage() {
       roundingIntervalMinutes: 15,
       defaultHourlyRate: '',
       defaultCurrency: 'PLN',
-      defaultIsBillable: true,
       requireApproval: false,
       allowOverlappingEntries: false,
       autoStopTimerAtMidnight: true,
       reminderEnabled: false,
-      reminderIntervalMinutes: 60,
+      reminderTime: '17:00',
       minimumEntryDurationMinutes: 1,
       maximumEntryDurationMinutes: 1440,
-      workdayStartTime: '09:00',
-      workdayEndTime: '17:00',
       workdayHours: 8,
     },
   });
 
+  // Destructure reset for stable reference in useEffect deps
+  const { reset } = form;
+
   useEffect(() => {
     if (settings) {
-      form.reset({
+      reset({
         roundingMethod: settings.roundingMethod,
         roundingIntervalMinutes: settings.roundingIntervalMinutes,
         defaultHourlyRate: settings.defaultHourlyRate?.toString() || '',
         defaultCurrency: settings.defaultCurrency || 'PLN',
-        defaultIsBillable: settings.defaultIsBillable,
         requireApproval: settings.requireApproval,
         allowOverlappingEntries: settings.allowOverlappingEntries,
-        autoStopTimerAtMidnight: settings.autoStopTimerAtMidnight,
-        reminderEnabled: settings.reminderEnabled,
-        reminderIntervalMinutes: settings.reminderIntervalMinutes || 60,
-        minimumEntryDurationMinutes: settings.minimumEntryDurationMinutes || 1,
-        maximumEntryDurationMinutes: settings.maximumEntryDurationMinutes || 1440,
-        workdayStartTime: settings.workdayStartTime || '09:00',
-        workdayEndTime: settings.workdayEndTime || '17:00',
-        workdayHours: settings.workdayHours || 8,
+        autoStopTimerAtMidnight: settings.autoStopTimerAfterMinutes > 0,
+        reminderEnabled: settings.enableDailyReminder,
+        reminderTime: settings.dailyReminderTime || '17:00',
+        minimumEntryDurationMinutes: settings.minimumEntryMinutes || 1,
+        maximumEntryDurationMinutes: settings.maximumEntryMinutes || 1440,
+        workdayHours: settings.workingHoursPerDay || 8,
       });
     }
-  }, [settings]); // eslint-disable-line react-hooks/exhaustive-deps -- form.reset should only run when settings change, not on form instance change
+  }, [settings, reset]);
 
   const getBasePath = () => {
     switch (user?.role) {
@@ -118,12 +112,11 @@ export default function TimeTrackingSettingsPage() {
       roundingIntervalMinutes: data.roundingIntervalMinutes,
       defaultHourlyRate: data.defaultHourlyRate ? parseFloat(data.defaultHourlyRate) : undefined,
       defaultCurrency: data.defaultCurrency,
-      defaultIsBillable: data.defaultIsBillable,
       requireApproval: data.requireApproval,
       allowOverlappingEntries: data.allowOverlappingEntries,
       autoStopTimerAfterMinutes: data.autoStopTimerAtMidnight ? 1440 : 0,
       enableDailyReminder: data.reminderEnabled,
-      dailyReminderTime: data.reminderIntervalMinutes?.toString(),
+      dailyReminderTime: data.reminderTime,
       minimumEntryMinutes: data.minimumEntryDurationMinutes,
       maximumEntryMinutes: data.maximumEntryDurationMinutes,
       workingHoursPerDay: data.workdayHours,
@@ -272,19 +265,6 @@ export default function TimeTrackingSettingsPage() {
                   )}
                 />
               </div>
-
-              <FormField
-                control={form.control}
-                name="defaultIsBillable"
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-2 space-y-0">
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <FormLabel className="cursor-pointer">Domyślnie rozliczalny</FormLabel>
-                  </FormItem>
-                )}
-              />
             </CardContent>
           </Card>
 
@@ -358,55 +338,26 @@ export default function TimeTrackingSettingsPage() {
               <CardDescription>Definiuj standardowy dzień pracy</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="workdayStartTime"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Początek dnia pracy</FormLabel>
-                      <FormControl>
-                        <Input type="time" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="workdayEndTime"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Koniec dnia pracy</FormLabel>
-                      <FormControl>
-                        <Input type="time" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="workdayHours"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Godzin dziennie</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min={1}
-                          max={24}
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value, 10))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="workdayHours"
+                render={({ field }) => (
+                  <FormItem className="max-w-xs">
+                    <FormLabel>Godzin dziennie</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={24}
+                        {...field}
+                        onChange={(e) => field.onChange(parseInt(e.target.value, 10))}
+                      />
+                    </FormControl>
+                    <FormDescription>Standardowa liczba godzin pracy dziennie</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
           </Card>
 

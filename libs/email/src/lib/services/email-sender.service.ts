@@ -1,11 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
+
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
+import type Mail from 'nodemailer/lib/mailer';
+
+import { EmailReaderService } from './email-reader.service';
 import { SmtpConfig, ImapConfig } from '../interfaces/email-config.interface';
 import { EmailMessage } from '../interfaces/email-message.interface';
-import { EmailReaderService } from './email-reader.service';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+// CommonJS import - nodemailer's MailComposer lacks proper ESM exports
+ 
 const MailComposer = require('nodemailer/lib/mail-composer');
 
 /**
@@ -31,12 +35,25 @@ const MailComposer = require('nodemailer/lib/mail-composer');
  * }
  * ```
  */
+/** Cached transporter entry with creation timestamp */
+interface CachedTransporter {
+  transporter: Transporter;
+  createdAt: number;
+}
+
+/** Default TTL for cached transporters (1 hour) */
+const DEFAULT_TRANSPORTER_TTL_MS = 60 * 60 * 1000;
+
 @Injectable()
 export class EmailSenderService {
   private readonly logger = new Logger(EmailSenderService.name);
-  private transporters: Map<string, Transporter> = new Map();
+  private transporters: Map<string, CachedTransporter> = new Map();
+  private readonly transporterTtlMs: number;
 
-  constructor(private readonly emailReaderService: EmailReaderService) {}
+  constructor(private readonly emailReaderService: EmailReaderService) {
+    this.transporterTtlMs =
+      parseInt(process.env.EMAIL_TRANSPORTER_TTL_MS || '', 10) || DEFAULT_TRANSPORTER_TTL_MS;
+  }
 
   /**
    * Send an email using SMTP configuration
@@ -84,9 +101,13 @@ export class EmailSenderService {
   }
 
   /**
-   * Send multiple emails in batch
+   * Send multiple emails in batch using Promise.allSettled for partial success handling
+   * Returns results for each email, allowing caller to handle individual failures
    */
-  async sendBatchEmails(smtpConfig: SmtpConfig, messages: EmailMessage[]): Promise<void> {
+  async sendBatchEmails(
+    smtpConfig: SmtpConfig,
+    messages: EmailMessage[]
+  ): Promise<{ succeeded: number; failed: number; errors: string[] }> {
     // Debug logging for batch processing
     if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
       this.logger.debug('Batch email processing started', {
@@ -96,23 +117,28 @@ export class EmailSenderService {
       });
     }
 
-    try {
-      const promises = messages.map((message) => this.sendEmail(smtpConfig, message));
-      await Promise.all(promises);
+    const promises = messages.map((message) => this.sendEmail(smtpConfig, message));
+    const results = await Promise.allSettled(promises);
 
-      if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
-        this.logger.debug('Batch email processing completed', {
-          totalCount: messages.length,
-          status: 'success',
-        });
-      }
-    } catch (error) {
-      this.logger.error('Batch email processing failed', {
+    const succeeded = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    const errors = results
+      .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+      .map((r) => (r.reason as Error).message);
+
+    if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+      this.logger.debug('Batch email processing completed', {
         totalCount: messages.length,
-        error: (error as Error).message,
+        succeeded,
+        failed,
       });
-      throw error;
     }
+
+    if (failed > 0) {
+      this.logger.warn(`Batch email: ${failed}/${messages.length} emails failed`, { errors });
+    }
+
+    return { succeeded, failed, errors };
   }
 
   /**
@@ -133,21 +159,27 @@ export class EmailSenderService {
 
   /**
    * Get or create a nodemailer transporter for given config
-   * Transporters are cached by config hash for reuse
+   * Transporters are cached by config hash for reuse with TTL-based expiry
    */
   private getOrCreateTransporter(smtpConfig: SmtpConfig): Transporter {
     const configKey = this.getConfigKey(smtpConfig);
+    const now = Date.now();
 
-    if (this.transporters.has(configKey)) {
+    // Clean up expired transporters periodically
+    this.cleanupExpiredTransporters(now);
+
+    const cached = this.transporters.get(configKey);
+    if (cached && now - cached.createdAt < this.transporterTtlMs) {
       // Debug logging for cache hit
       if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
         this.logger.debug('Reusing cached SMTP transporter', {
           host: smtpConfig.host,
           port: smtpConfig.port,
           cacheSize: this.transporters.size,
+          ageMs: now - cached.createdAt,
         });
       }
-      return this.transporters.get(configKey)!;
+      return cached.transporter;
     }
 
     // Debug logging for new transporter creation
@@ -157,6 +189,7 @@ export class EmailSenderService {
         port: smtpConfig.port,
         secure: smtpConfig.secure,
         user: smtpConfig.auth.user,
+        reason: cached ? 'expired' : 'new',
       });
     }
 
@@ -171,10 +204,25 @@ export class EmailSenderService {
       ...(smtpConfig.tls && { tls: smtpConfig.tls }),
     });
 
-    this.transporters.set(configKey, transporter);
+    this.transporters.set(configKey, {
+      transporter,
+      createdAt: now,
+    });
     this.logger.debug(`Created new SMTP transporter for ${smtpConfig.host}`);
 
     return transporter;
+  }
+
+  /**
+   * Remove expired transporters from cache to prevent memory leaks
+   */
+  private cleanupExpiredTransporters(now: number): void {
+    for (const [key, cached] of this.transporters) {
+      if (now - cached.createdAt >= this.transporterTtlMs) {
+        this.transporters.delete(key);
+        this.logger.debug(`Removed expired transporter: ${key}`);
+      }
+    }
   }
 
   /**
@@ -265,7 +313,7 @@ export class EmailSenderService {
       subject: message.subject,
       text: message.text,
       html: message.html,
-      attachments: message.attachments as any, // MailComposer types compatibility
+      attachments: message.attachments as Mail.Attachment[], // MailComposer types compatibility
       replyTo: message.replyTo,
       headers: message.headers,
     });

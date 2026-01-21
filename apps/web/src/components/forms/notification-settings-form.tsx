@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
 import { useForm } from 'react-hook-form';
+import type { Resolver } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Bell, BellOff } from 'lucide-react';
@@ -34,7 +35,7 @@ export function NotificationSettingsForm({
   isLoading,
 }: NotificationSettingsFormProps) {
   const form = useForm<NotificationSettingsFormData>({
-    resolver: zodResolver(notificationSettingsSchema),
+    resolver: zodResolver(notificationSettingsSchema) as Resolver<NotificationSettingsFormData>,
     defaultValues: {
       receiveOnCreate: settings?.receiveOnCreate ?? false,
       receiveOnUpdate: settings?.receiveOnUpdate ?? false,
@@ -42,17 +43,19 @@ export function NotificationSettingsForm({
     },
   });
 
+  // Destructure reset for stable reference in useEffect deps
+  const { reset } = form;
+
   // Update form when settings change
   useEffect(() => {
     if (settings) {
-      form.reset({
+      reset({
         receiveOnCreate: settings.receiveOnCreate,
         receiveOnUpdate: settings.receiveOnUpdate,
         receiveOnDelete: settings.receiveOnDelete,
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings]);
+  }, [settings, reset]);
 
   const handleSubmit = (data: NotificationSettingsFormData) => {
     onSubmit(data);

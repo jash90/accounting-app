@@ -171,6 +171,17 @@ export interface ManageModulePermissionDto {
   permissions?: string[];
 }
 
+// User Module Permission (returned from getEmployeeModules)
+export interface UserModulePermission {
+  id: string;
+  userId: string;
+  moduleId: string;
+  module: ModuleDto;
+  permissions: string[];
+  grantedById: string;
+  createdAt: Date;
+}
+
 // AI Agent DTOs
 
 // Enums
@@ -675,7 +686,7 @@ export interface BulkUpdateStatusDto {
   status: TaskStatus;
 }
 
-export interface TaskResponseDto extends Task {
+export interface TaskResponseDto extends Omit<Task, 'createdBy' | 'assignee' | 'client'> {
   createdBy?: {
     id: string;
     email: string;
@@ -738,7 +749,7 @@ export interface UpdateTaskCommentDto {
   content: string;
 }
 
-export interface TaskCommentResponseDto extends TaskComment {
+export interface TaskCommentResponseDto extends Omit<TaskComment, 'author'> {
   author?: {
     id: string;
     email: string;
@@ -753,7 +764,7 @@ export interface CreateTaskDependencyDto {
   dependencyType: TaskDependencyType;
 }
 
-export interface TaskDependencyResponseDto extends TaskDependency {
+export interface TaskDependencyResponseDto extends Omit<TaskDependency, 'task' | 'dependsOnTask'> {
   task?: {
     id: string;
     title: string;
@@ -802,7 +813,10 @@ export interface TimeEntryFiltersDto {
   sortOrder?: 'ASC' | 'DESC';
 }
 
-export interface TimeEntryResponseDto extends TimeEntry {
+export interface TimeEntryResponseDto extends Omit<
+  TimeEntry,
+  'user' | 'client' | 'task' | 'createdBy' | 'approvedBy'
+> {
   user?: {
     id: string;
     email: string;
@@ -883,7 +897,7 @@ export interface UpdateTimeSettingsDto {
   lockEntriesAfterDays?: number;
 }
 
-export interface TimeSettingsResponseDto extends TimeSettings {
+export interface TimeSettingsResponseDto extends Omit<TimeSettings, 'updatedBy'> {
   updatedBy?: {
     id: string;
     email: string;

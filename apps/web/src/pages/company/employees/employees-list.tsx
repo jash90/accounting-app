@@ -18,7 +18,7 @@ import {
   useCreateEmployee,
   useUpdateEmployee,
 } from '@/lib/hooks/use-employees';
-import { type UserDto } from '@/types/dtos';
+import { type UserDto, type CreateEmployeeDto, type UpdateEmployeeDto } from '@/types/dtos';
 
 const columns: ColumnDef<UserDto>[] = [
   {
@@ -132,7 +132,7 @@ export default function EmployeesListPage() {
         onOpenChange={setCreateOpen}
         onSubmit={async (data) => {
           try {
-            await createEmployee.mutateAsync(data);
+            await createEmployee.mutateAsync(data as CreateEmployeeDto);
             setCreateOpen(false);
           } catch {
             // Error handled by mutation's onError
@@ -147,7 +147,10 @@ export default function EmployeesListPage() {
           employee={editingEmployee}
           onSubmit={async (data) => {
             try {
-              await updateEmployee.mutateAsync({ id: editingEmployee.id, data });
+              await updateEmployee.mutateAsync({
+                id: editingEmployee.id,
+                data: data as UpdateEmployeeDto,
+              });
               setEditingEmployee(null);
             } catch {
               // Error handled by mutation's onError

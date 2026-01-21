@@ -159,12 +159,24 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
         // Debounce search changes
         searchTimeoutRef.current = setTimeout(() => {
           setDebouncedSearch(currentSearch);
-          onFiltersChange(buildFilters(value, currentSearch, customFieldFiltersRef.current));
+          // Cast value - we handle customFieldFilters separately via customFieldFiltersRef
+          onFiltersChange(
+            buildFilters(
+              value as Partial<ClientFiltersFormData>,
+              currentSearch,
+              customFieldFiltersRef.current
+            )
+          );
         }, SEARCH_DEBOUNCE_MS);
       } else {
         // Immediate update for non-search filters
+        // Cast value - we handle customFieldFilters separately via customFieldFiltersRef
         onFiltersChange(
-          buildFilters(value, debouncedSearchRef.current, customFieldFiltersRef.current)
+          buildFilters(
+            value as Partial<ClientFiltersFormData>,
+            debouncedSearchRef.current,
+            customFieldFiltersRef.current
+          )
         );
       }
     });

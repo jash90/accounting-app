@@ -182,13 +182,26 @@ export function DataTable<TData, TValue>({
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="bg-apptax-navy/5 hover:bg-apptax-navy/5">
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id} className="text-apptax-navy font-semibold">
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
-                </TableHead>
-              ))}
+              {headerGroup.headers.map((header) => {
+                const sortDirection = header.column.getIsSorted();
+                return (
+                  <TableHead
+                    key={header.id}
+                    className="text-apptax-navy font-semibold"
+                    aria-sort={
+                      sortDirection === 'asc'
+                        ? 'ascending'
+                        : sortDirection === 'desc'
+                          ? 'descending'
+                          : undefined
+                    }
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                );
+              })}
             </TableRow>
           ))}
         </TableHeader>

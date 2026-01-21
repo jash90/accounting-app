@@ -4,7 +4,17 @@ import { useForm } from 'react-hook-form';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
+import { CalendarIcon, ArrowLeft, Plus, X, Loader2, CheckSquare } from 'lucide-react';
+import { z } from 'zod';
 
+import { PageHeader } from '@/components/common/page-header';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Combobox } from '@/components/ui/combobox';
 import {
   Form,
   FormControl,
@@ -14,6 +24,8 @@ import {
   FormMessage,
   FormDescription,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -21,19 +33,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { Badge } from '@/components/ui/badge';
-import { Combobox } from '@/components/ui/combobox';
-import { cn } from '@/lib/utils/cn';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
-import { CalendarIcon, ArrowLeft, Plus, X, Loader2, CheckSquare } from 'lucide-react';
-import { z } from 'zod';
-import { PageHeader } from '@/components/common/page-header';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuthContext } from '@/contexts/auth-context';
 import {
@@ -42,6 +41,7 @@ import {
   useTaskAssignees,
   useTaskClients,
 } from '@/lib/hooks/use-tasks';
+import { cn } from '@/lib/utils/cn';
 import { type CreateTaskDto } from '@/types/dtos';
 import {
   TaskStatus,

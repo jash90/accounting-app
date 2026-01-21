@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-import { useForm } from 'react-hook-form';
+import { useForm, type Control, type FieldValues, type Resolver } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -89,7 +89,7 @@ function ClientCreateForm() {
   } | null>(null);
 
   const form = useForm<CreateClientFormData>({
-    resolver: zodResolver(createClientSchema),
+    resolver: zodResolver(createClientSchema) as Resolver<CreateClientFormData>,
     defaultValues: {
       name: '',
       nip: '',
@@ -148,8 +148,11 @@ function ClientCreateForm() {
     await createClientAndNavigate(data, customFields);
   };
 
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- React Compiler cannot track all dependencies
-  const handleProceedWithDuplicate = useCallback(async () => {
+  /**
+   * Handles proceeding with client creation despite duplicate warning.
+   * React Compiler handles memoization automatically.
+   */
+  const handleProceedWithDuplicate = async () => {
     if (!pendingCreateData) return;
 
     try {
@@ -170,14 +173,17 @@ function ClientCreateForm() {
     } catch {
       // Error notification handled by mutation's onError
     }
-  }, [pendingCreateData, createClient, setCustomFields, navigate, basePath]);
+  };
 
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- React Compiler cannot track all dependencies
-  const handleCancelDuplicate = useCallback(() => {
+  /**
+   * Cancel duplicate warning dialog and clear pending state.
+   * React Compiler handles memoization automatically.
+   */
+  const handleCancelDuplicate = () => {
     setDuplicateWarningOpen(false);
     setDuplicateCheckResult(null);
     setPendingCreateData(null);
-  }, []);
+  };
 
   const handleClientClick = useCallback(
     (clientId: string) => {
@@ -220,7 +226,7 @@ function ClientCreateForm() {
       const hasCustomFieldValues = Object.values(customFieldsData.values).some((v) => v !== null);
 
       await handleCreateWithDuplicateCheck(
-        cleanedData as CreateClientDto,
+        cleanedData as unknown as CreateClientDto,
         hasCustomFieldValues ? customFieldsData : undefined
       );
     } catch (error) {
@@ -264,9 +270,9 @@ function ClientCreateForm() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Main content - left column */}
             <div className="lg:col-span-2 space-y-6">
-              <BasicInfoCard control={form.control} />
-              <TaxEmploymentCard control={form.control} />
-              <AdditionalInfoCard control={form.control} />
+              <BasicInfoCard control={form.control as unknown as Control<FieldValues>} />
+              <TaxEmploymentCard control={form.control as unknown as Control<FieldValues>} />
+              <AdditionalInfoCard control={form.control as unknown as Control<FieldValues>} />
               <CustomFieldsCard
                 definitions={activeFieldDefinitions}
                 values={customFieldValues}
@@ -277,7 +283,7 @@ function ClientCreateForm() {
 
             {/* Sidebar - right column */}
             <div className="space-y-6">
-              <DatesCard control={form.control} />
+              <DatesCard control={form.control as unknown as Control<FieldValues>} />
             </div>
           </div>
 

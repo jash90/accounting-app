@@ -44,7 +44,7 @@ function EmailConfigDisplay({
   emailConfig: EmailConfigResponseDto | undefined;
   isPending: boolean;
   isError: boolean;
-  error: any;
+  error: Error | null;
   type: 'user' | 'system-admin';
   onEdit: () => void;
   onDelete: () => void;
@@ -89,7 +89,7 @@ function EmailConfigDisplay({
       )}
 
       {/* Error State - No Configuration */}
-      {isError && error?.response?.status === 404 && (
+      {isError && (error as { response?: { status?: number } })?.response?.status === 404 && (
         <Card className="border-dashed">
           <CardContent className="p-12 text-center">
             <div className="flex flex-col items-center gap-4">
@@ -116,7 +116,7 @@ function EmailConfigDisplay({
       )}
 
       {/* Error State - Other Errors */}
-      {isError && error?.response?.status !== 404 && (
+      {isError && (error as { response?: { status?: number } })?.response?.status !== 404 && (
         <Card className="border-destructive">
           <CardContent className="p-6">
             <div className="flex items-center gap-3">
@@ -126,7 +126,7 @@ function EmailConfigDisplay({
               <div>
                 <h3 className="font-semibold text-destructive">Błąd ładowania konfiguracji</h3>
                 <p className="text-sm text-muted-foreground">
-                  {error.message || 'Nie udało się załadować konfiguracji email'}
+                  {error?.message || 'Nie udało się załadować konfiguracji email'}
                 </p>
               </div>
             </div>
@@ -402,7 +402,13 @@ export default function AdminEmailConfigPage() {
         open={userFormOpen}
         onOpenChange={setUserFormOpen}
         config={hasUserConfig ? userConfig.data : undefined}
-        onSubmit={hasUserConfig ? handleUserUpdate : handleUserCreate}
+        onSubmit={(data) => {
+          if (hasUserConfig) {
+            handleUserUpdate(data as UpdateEmailConfigFormData);
+          } else {
+            handleUserCreate(data as CreateEmailConfigFormData);
+          }
+        }}
         type="user"
         onTestSmtp={(data) => testSmtp.mutate(data)}
         onTestImap={(data) => testImap.mutate(data)}
@@ -426,7 +432,13 @@ export default function AdminEmailConfigPage() {
         open={systemAdminFormOpen}
         onOpenChange={setSystemAdminFormOpen}
         config={hasSystemAdminConfig ? systemAdminConfig.data : undefined}
-        onSubmit={hasSystemAdminConfig ? handleSystemAdminUpdate : handleSystemAdminCreate}
+        onSubmit={(data) => {
+          if (hasSystemAdminConfig) {
+            handleSystemAdminUpdate(data as UpdateEmailConfigFormData);
+          } else {
+            handleSystemAdminCreate(data as CreateEmailConfigFormData);
+          }
+        }}
         type="system-admin"
         onTestSmtp={(data) => testSystemAdminSmtp.mutate(data)}
         onTestImap={(data) => testSystemAdminImap.mutate(data)}

@@ -30,11 +30,11 @@ import {
 } from '@/lib/constants/polish-labels';
 import { cn } from '@/lib/utils/cn';
 import {
-  AutoAssignCondition,
-  SingleCondition,
-  ConditionGroup,
-  ConditionOperator,
-  LogicalOperator,
+  type AutoAssignCondition,
+  type SingleCondition,
+  type ConditionGroup,
+  type ConditionOperator,
+  type LogicalOperator,
   isConditionGroup,
 } from '@/types/enums';
 
@@ -435,13 +435,9 @@ function SingleConditionRenderer({ condition, onChange, onRemove }: SingleCondit
         <>
           <span className="text-sm text-muted-foreground">i</span>
           <Input
-            type={fieldType === 'number' ? 'number' : fieldType === 'date' ? 'date' : 'text'}
+            type={fieldType === 'date' ? 'date' : 'text'}
             value={condition.secondValue?.toString() || ''}
-            onChange={(e) =>
-              handleSecondValueChange(
-                fieldType === 'number' ? Number(e.target.value) : e.target.value
-              )
-            }
+            onChange={(e) => handleSecondValueChange(e.target.value)}
             className="w-32"
           />
         </>

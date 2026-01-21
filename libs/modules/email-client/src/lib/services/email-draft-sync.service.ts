@@ -1,11 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
+
 import { User } from '@accounting/common';
-import { EmailReaderService, EmailConfigurationService, ReceivedEmail } from '@accounting/email';
+import {
+  EmailReaderService,
+  EmailConfigurationService,
+  ReceivedEmail,
+  EmailConfig,
+} from '@accounting/email';
+
 import { EmailDraft } from '../entities/email-draft.entity';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+// CommonJS import - nodemailer's MailComposer lacks proper ESM exports
 const MailComposer = require('nodemailer/lib/mail-composer');
 
 export interface SyncResult {
@@ -48,9 +56,14 @@ export class EmailDraftSyncService {
       errors: [],
     };
 
+    if (!user.companyId) {
+      result.errors.push('User must belong to a company');
+      return result;
+    }
+
     try {
       const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
-        user.companyId!
+        user.companyId
       );
       if (!emailConfig) {
         throw new Error('No email configuration found');
@@ -64,7 +77,7 @@ export class EmailDraftSyncService {
 
       // Step 2: Fetch all drafts from database for this company
       const dbDrafts = await this.draftRepository.find({
-        where: { companyId: user.companyId! },
+        where: { companyId: user.companyId },
       });
       this.logger.log(`Found ${dbDrafts.length} drafts in database`);
 
@@ -135,7 +148,7 @@ export class EmailDraftSyncService {
   /**
    * Push a database draft to IMAP
    */
-  async pushDraftToImap(draft: EmailDraft, emailConfig: any): Promise<void> {
+  async pushDraftToImap(draft: EmailDraft, emailConfig: EmailConfig): Promise<void> {
     // Compose MIME message
     const rawMessage = await this.composeDraftMime(draft, emailConfig.smtp.auth.user);
 
@@ -161,12 +174,12 @@ export class EmailDraftSyncService {
   async importDraftFromImap(
     imapDraft: ReceivedEmail,
     user: User,
-    emailConfig: any
+    emailConfig: EmailConfig
   ): Promise<EmailDraft> {
     const draftsMailbox = await this.emailReaderService.findDraftsMailbox(emailConfig.imap);
 
     const draft = this.draftRepository.create({
-      companyId: user.companyId!,
+      companyId: user.companyId as string, // Validated in syncDrafts caller
       userId: user.id,
       to: imapDraft.to.map((a) => a.address),
       cc: imapDraft.cc?.map((a) => a.address),
@@ -208,7 +221,7 @@ export class EmailDraftSyncService {
   async updateDraftWithSync(
     draft: EmailDraft,
     updates: Partial<EmailDraft>,
-    emailConfig: any
+    emailConfig: EmailConfig
   ): Promise<EmailDraft> {
     // Update database
     Object.assign(draft, updates);
@@ -231,7 +244,7 @@ export class EmailDraftSyncService {
   /**
    * Delete draft from both database and IMAP
    */
-  async deleteDraftWithSync(draft: EmailDraft, emailConfig: any): Promise<void> {
+  async deleteDraftWithSync(draft: EmailDraft, emailConfig: EmailConfig): Promise<void> {
     // Delete from IMAP if synced
     if (draft.imapUid && draft.syncStatus === 'synced') {
       try {
@@ -254,8 +267,12 @@ export class EmailDraftSyncService {
     resolution: 'keep_local' | 'keep_imap',
     user: User
   ): Promise<EmailDraft> {
+    if (!user.companyId) {
+      throw new Error('User must belong to a company');
+    }
+
     const draft = await this.draftRepository.findOne({
-      where: { id: draftId, companyId: user.companyId! },
+      where: { id: draftId, companyId: user.companyId },
     });
 
     if (!draft || draft.syncStatus !== 'conflict') {
@@ -263,7 +280,7 @@ export class EmailDraftSyncService {
     }
 
     const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
-      user.companyId!
+      user.companyId
     );
     if (!emailConfig) {
       throw new Error('No email configuration found');
@@ -313,9 +330,13 @@ export class EmailDraftSyncService {
    * Get drafts with sync conflicts
    */
   async findConflicts(user: User): Promise<EmailDraft[]> {
+    if (!user.companyId) {
+      return [];
+    }
+
     return this.draftRepository.find({
       where: {
-        companyId: user.companyId!,
+        companyId: user.companyId,
         syncStatus: 'conflict',
       },
       order: { updatedAt: 'DESC' },
@@ -328,11 +349,16 @@ export class EmailDraftSyncService {
   async deleteAllDrafts(user: User): Promise<{ deleted: number; errors: string[] }> {
     const result = { deleted: 0, errors: [] as string[] };
 
+    if (!user.companyId) {
+      result.errors.push('User must belong to a company');
+      return result;
+    }
+
     try {
       this.logger.log(`Deleting all drafts for company ${user.companyId}`);
 
       // Delete all from database
-      const deleteResult = await this.draftRepository.delete({ companyId: user.companyId! });
+      const deleteResult = await this.draftRepository.delete({ companyId: user.companyId });
       result.deleted = deleteResult.affected || 0;
 
       this.logger.log(`Deleted ${result.deleted} drafts from database`);

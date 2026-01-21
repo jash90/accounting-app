@@ -90,8 +90,9 @@ export function AttachmentUpload({
     <div className="space-y-3">
       <Label>Załączniki</Label>
 
-      {/* Drag & Drop Zone */}
+      {/* Drag & Drop Zone - keyboard accessible via the file input inside */}
       <div
+        role="presentation"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}

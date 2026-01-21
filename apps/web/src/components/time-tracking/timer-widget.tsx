@@ -25,26 +25,49 @@ import {
 import { cn } from '@/lib/utils/cn';
 import { formatDurationSeconds } from '@/lib/utils/time';
 
-interface TimerWidgetProps {
-  className?: string;
-  compact?: boolean;
+interface Client {
+  id: string;
+  name: string;
 }
 
-export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
-  const { data: activeTimer, isLoading } = useActiveTimer();
-  const { data: clientsData } = useTaskClients();
+interface ActiveTimer {
+  id: string;
+  description?: string;
+  clientId?: string;
+  isBillable: boolean;
+  isRunning: boolean;
+  startTime?: string | Date;
+}
 
+interface TimerFormProps {
+  initialDescription: string;
+  initialClientId: string;
+  initialIsBillable: boolean;
+  activeTimer: ActiveTimer | null | undefined;
+  clients: Client[];
+  compact: boolean;
+  className?: string;
+}
+
+function TimerForm({
+  initialDescription,
+  initialClientId,
+  initialIsBillable,
+  activeTimer,
+  clients,
+  compact,
+  className,
+}: TimerFormProps) {
   const startTimer = useStartTimer();
   const stopTimer = useStopTimer();
   const updateTimer = useUpdateTimer();
   const discardTimer = useDiscardTimer();
 
-  const [description, setDescription] = useState('');
-  const [clientId, setClientId] = useState<string>('');
-  const [isBillable, setIsBillable] = useState(true);
+  // Form state - initialized from props (no useEffect needed due to key prop in parent)
+  const [description, setDescription] = useState(initialDescription);
+  const [clientId, setClientId] = useState(initialClientId);
+  const [isBillable, setIsBillable] = useState(initialIsBillable);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-
-  const clients = clientsData || [];
 
   // Ref to track component mount state to prevent memory leaks
   const mountedRef = useRef(true);
@@ -63,42 +86,25 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
 
   // Calculate elapsed time with unmount race condition guard
   useEffect(() => {
-    if (timerIsRunning && timerStartTime) {
-      const updateElapsed = () => {
-        // Guard against unmount race conditions
-        if (!mountedRef.current) return;
-        const start = new Date(timerStartTime).getTime();
-        const now = Date.now();
-        setElapsedSeconds(Math.floor((now - start) / 1000));
-      };
-
-      updateElapsed();
-      const interval = setInterval(updateElapsed, 1000);
-      return () => clearInterval(interval);
-    } else {
-      if (mountedRef.current) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: reset elapsed when timer stops
-        setElapsedSeconds(0);
-      }
+    if (!timerIsRunning || !timerStartTime) {
+      return; // Elapsed seconds derived as 0 in display when not running
     }
+
+    const updateElapsed = () => {
+      // Guard against unmount race conditions
+      if (!mountedRef.current) return;
+      const start = new Date(timerStartTime).getTime();
+      const now = Date.now();
+      setElapsedSeconds(Math.floor((now - start) / 1000));
+    };
+
+    updateElapsed();
+    const interval = setInterval(updateElapsed, 1000);
+    return () => clearInterval(interval);
   }, [timerIsRunning, timerStartTime]);
 
-  // Sync form state with active timer
-  useEffect(() => {
-    if (activeTimer) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync form state with timer data
-      setDescription(activeTimer.description || '');
-      setClientId(activeTimer.clientId || '');
-      setIsBillable(activeTimer.isBillable);
-    } else {
-      // Reset form state when timer becomes inactive/null
-      setDescription('');
-      setClientId('');
-      setIsBillable(true);
-    }
-  }, [activeTimer]);
-
-  const formattedTime = formatDurationSeconds(elapsedSeconds);
+  // Derive formatted time - show 0 when not running since we don't reset state
+  const formattedTime = formatDurationSeconds(timerIsRunning ? elapsedSeconds : 0);
 
   const handleStart = useCallback(() => {
     startTimer.mutate({
@@ -198,18 +204,6 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
     },
     [activeTimer?.isRunning, description, clientId, isBillable, updateTimer]
   );
-
-  if (isLoading) {
-    return (
-      <Card className={cn('w-full', className)}>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-center">
-            <Clock className="h-5 w-5 animate-pulse text-muted-foreground" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   const isRunning = activeTimer?.isRunning;
 
@@ -382,5 +376,45 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+interface TimerWidgetProps {
+  className?: string;
+  compact?: boolean;
+}
+
+export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
+  const { data: activeTimer, isLoading } = useActiveTimer();
+  const { data: clientsData } = useTaskClients();
+
+  const clients = clientsData || [];
+
+  if (isLoading) {
+    return (
+      <Card className={cn('w-full', className)}>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-center">
+            <Clock className="h-5 w-5 animate-pulse text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Key to reset form when active timer changes
+  const formKey = activeTimer?.id ?? 'no-timer';
+
+  return (
+    <TimerForm
+      key={formKey}
+      initialDescription={activeTimer?.description || ''}
+      initialClientId={activeTimer?.clientId || ''}
+      initialIsBillable={activeTimer?.isBillable ?? true}
+      activeTimer={activeTimer}
+      clients={clients}
+      compact={compact}
+      className={className}
+    />
   );
 }

@@ -93,7 +93,7 @@ export class ClientIconsService {
       iconType,
       iconValue: dto.iconValue,
       tooltip: dto.tooltip,
-      autoAssignCondition: dto.autoAssignCondition,
+      autoAssignCondition: dto.autoAssignCondition ?? undefined,
       companyId,
       createdById: user.id,
     };
@@ -292,7 +292,7 @@ export class ClientIconsService {
     const icon = await this.findIconById(id, user);
 
     if (!icon.filePath) {
-      throw new IconNotFoundException(id, null);
+      throw new IconNotFoundException(id, undefined);
     }
 
     return this.storageService.getFileUrl(icon.filePath);

@@ -30,7 +30,7 @@ import { queryKeys } from '../api/query-client';
 
 export function useTasks(filters?: TaskFiltersDto) {
   return useQuery({
-    queryKey: queryKeys.tasks.list(filters),
+    queryKey: queryKeys.tasks.list(filters as Record<string, unknown> | undefined),
     queryFn: () => tasksApi.getAll(filters),
   });
 }
@@ -134,7 +134,7 @@ export function useUpdateTask() {
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateTaskDto }) => tasksApi.update(id, data),
-    onSuccess: (updatedTask, variables) => {
+    onSuccess: (_updatedTask, variables) => {
       // Invalidate the specific task detail
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.id) });
       // Invalidate list views (status/assignee/client might have changed)

@@ -17,7 +17,7 @@ import {
   useUpdateModule,
 } from '@/lib/hooks/use-modules';
 import { getModuleIcon } from '@/lib/utils/module-icons';
-import { type ModuleDto } from '@/types/dtos';
+import { type ModuleDto, type CreateModuleDto, type UpdateModuleDto } from '@/types/dtos';
 
 const columns: ColumnDef<ModuleDto>[] = [
   {
@@ -141,7 +141,7 @@ export default function ModulesListPage() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         onSubmit={(data) => {
-          createModule.mutate(data);
+          createModule.mutate(data as CreateModuleDto);
           setCreateOpen(false);
         }}
       />
@@ -152,7 +152,7 @@ export default function ModulesListPage() {
           onOpenChange={(open) => !open && setEditingModule(null)}
           module={editingModule}
           onSubmit={(data) => {
-            updateModule.mutate({ id: editingModule.id, data });
+            updateModule.mutate({ id: editingModule.id, data: data as UpdateModuleDto });
             setEditingModule(null);
           }}
         />

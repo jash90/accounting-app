@@ -18,7 +18,7 @@ import {
   useCreateCompany,
   useUpdateCompany,
 } from '@/lib/hooks/use-companies';
-import { type CompanyDto } from '@/types/dtos';
+import { type CompanyDto, type CreateCompanyDto, type UpdateCompanyDto } from '@/types/dtos';
 
 const columns: ColumnDef<CompanyDto>[] = [
   {
@@ -135,7 +135,7 @@ export default function CompaniesListPage() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         onSubmit={(data) => {
-          createCompany.mutate(data);
+          createCompany.mutate(data as CreateCompanyDto);
           setCreateOpen(false);
         }}
       />
@@ -146,7 +146,7 @@ export default function CompaniesListPage() {
           onOpenChange={(open) => !open && setEditingCompany(null)}
           company={editingCompany}
           onSubmit={(data) => {
-            updateCompany.mutate({ id: editingCompany.id, data });
+            updateCompany.mutate({ id: editingCompany.id, data: data as UpdateCompanyDto });
             setEditingCompany(null);
           }}
         />

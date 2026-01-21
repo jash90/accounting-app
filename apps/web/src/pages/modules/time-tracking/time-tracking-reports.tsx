@@ -48,7 +48,7 @@ export default function TimeTrackingReportsPage() {
 
   const [startDate, setStartDate] = useState(() => format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(() => format(endOfMonth(new Date()), 'yyyy-MM-dd'));
-  const [groupBy, setGroupBy] = useState<'client' | 'day'>('client');
+  const [groupBy, setGroupBy] = useState<'client' | 'user' | 'project'>('client');
   const [clientId, setClientId] = useState<string>('');
 
   const { data: summaryReport, isPending: summaryLoading } = useTimeSummaryReport({
@@ -137,14 +137,15 @@ export default function TimeTrackingReportsPage() {
               <Label>Grupuj według</Label>
               <Select
                 value={groupBy}
-                onValueChange={(value) => setGroupBy(value as 'client' | 'day')}
+                onValueChange={(value) => setGroupBy(value as 'client' | 'user' | 'project')}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="client">Klient</SelectItem>
-                  <SelectItem value="day">Dzień</SelectItem>
+                  <SelectItem value="user">Użytkownik</SelectItem>
+                  <SelectItem value="project">Projekt</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -260,43 +261,44 @@ export default function TimeTrackingReportsPage() {
                 </div>
               </div>
 
-              {/* Breakdown */}
-              {summaryReport.breakdown && summaryReport.breakdown.length > 0 && (
+              {/* Breakdown by Client */}
+              {summaryReport.byClient && summaryReport.byClient.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="font-medium flex items-center gap-2">
-                    {groupBy === 'client' && <Users className="h-4 w-4" />}
-                    {groupBy === 'day' && <Clock className="h-4 w-4" />}
-                    Podział według {groupBy === 'client' ? 'klientów' : 'dni'}
+                    <Users className="h-4 w-4" />
+                    Podział według klientów
                   </h4>
                   <div className="space-y-2">
-                    {summaryReport.breakdown.map((item, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 rounded-lg border"
-                      >
-                        <div className="flex items-center gap-2">
-                          {item.color && (
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: item.color }}
-                            />
-                          )}
-                          <span>{item.name || 'Bez przypisania'}</span>
+                    {summaryReport.byClient.map(
+                      (
+                        item: {
+                          clientId: string;
+                          clientName: string;
+                          totalMinutes: number;
+                          totalAmount: number;
+                        },
+                        index: number
+                      ) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-3 rounded-lg border"
+                        >
+                          <span>{item.clientName || 'Bez przypisania'}</span>
+                          <div className="flex items-center gap-6 text-sm">
+                            <span className="font-mono">{formatDuration(item.totalMinutes)}</span>
+                            <span className="text-muted-foreground w-16 text-right">
+                              {Math.round(
+                                (item.totalMinutes / (summaryReport.totalMinutes || 1)) * 100
+                              )}
+                              %
+                            </span>
+                            <span className="font-semibold w-24 text-right">
+                              {item.totalAmount.toLocaleString('pl-PL')} PLN
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-6 text-sm">
-                          <span className="font-mono">{formatDuration(item.totalMinutes)}</span>
-                          <span className="text-muted-foreground w-16 text-right">
-                            {Math.round(
-                              (item.totalMinutes / (summaryReport.totalMinutes || 1)) * 100
-                            )}
-                            %
-                          </span>
-                          <span className="font-semibold w-24 text-right">
-                            {item.totalAmount.toLocaleString('pl-PL')} PLN
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    )}
                   </div>
                 </div>
               )}
@@ -325,16 +327,16 @@ export default function TimeTrackingReportsPage() {
                 <Skeleton key={i} className="h-16" />
               ))}
             </div>
-          ) : clientReport && clientReport.clients && clientReport.clients.length > 0 ? (
+          ) : clientReport && clientReport.length > 0 ? (
             <div className="space-y-2">
-              {clientReport.clients.map((client) => (
+              {clientReport.map((client) => (
                 <div
                   key={client.clientId || 'no-client'}
                   className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50"
                 >
                   <div>
                     <h4 className="font-medium">{client.clientName || 'Bez klienta'}</h4>
-                    <p className="text-sm text-muted-foreground">{client.entriesCount} wpisów</p>
+                    <p className="text-sm text-muted-foreground">{client.entryCount} wpisów</p>
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-right">

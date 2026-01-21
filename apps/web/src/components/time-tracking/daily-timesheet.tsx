@@ -208,22 +208,14 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
                     <div className="h-10 w-px bg-border" />
                     <div>
                       <div className="flex items-center gap-2">
-                        {entry.project?.color && (
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: entry.project.color }}
-                            role="img"
-                            aria-label={`Kolor projektu: ${entry.project.name}`}
-                          />
-                        )}
                         <span className="font-medium text-sm">
                           {entry.description || 'Bez opisu'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-1">
-                        {entry.project && (
+                        {entry.task && (
                           <Badge variant="outline" className="text-xs">
-                            {entry.project.name}
+                            {entry.task.title}
                           </Badge>
                         )}
                         {entry.client && (

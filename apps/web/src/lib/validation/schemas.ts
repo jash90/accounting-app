@@ -347,7 +347,7 @@ export const createClientFieldDefinitionSchema = z.object({
   name: z.string().min(1, 'Nazwa pola jest wymagana').max(100),
   label: z.string().min(1, 'Etykieta pola jest wymagana').max(200),
   fieldType: z.enum(['TEXT', 'NUMBER', 'DATE', 'BOOLEAN', 'ENUM'], {
-    required_error: 'Typ pola jest wymagany',
+    message: 'Typ pola jest wymagany',
   }),
   isRequired: z.boolean().default(false),
   enumValues: z.array(z.string()).optional(),
@@ -386,7 +386,14 @@ const singleConditionSchema = z.object({
   secondValue: z.union([z.string(), z.number()]).optional(),
 });
 
-const conditionGroupSchema: z.ZodType<any> = z.lazy(() =>
+type SingleCondition = z.infer<typeof singleConditionSchema>;
+
+interface ConditionGroup {
+  logicalOperator: 'and' | 'or';
+  conditions: (SingleCondition | ConditionGroup)[];
+}
+
+const conditionGroupSchema: z.ZodType<ConditionGroup> = z.lazy(() =>
   z.object({
     logicalOperator: z.enum(['and', 'or']),
     conditions: z.array(z.union([singleConditionSchema, conditionGroupSchema])),
@@ -404,7 +411,7 @@ export const createClientIconSchema = z
       .regex(/^#[0-9A-Fa-f]{6}$/, 'Nieprawidłowy format koloru')
       .optional()
       .or(z.literal('')),
-    iconType: z.enum(['lucide', 'custom', 'emoji'], { required_error: 'Wybierz typ ikony' }),
+    iconType: z.enum(['lucide', 'custom', 'emoji'], { message: 'Wybierz typ ikony' }),
     iconValue: z.string().optional(),
     file: z
       .instanceof(File)

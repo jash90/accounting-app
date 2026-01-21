@@ -1,9 +1,12 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+
+import { Repository, Between, IsNull } from 'typeorm';
+
 import { TokenUsage, User, UserRole, Company } from '@accounting/common';
-import { TokenUsageStatsDto } from '../dto/token-usage-response.dto';
+
 import { SystemCompanyService } from './system-company.service';
+import { TokenUsageStatsDto } from '../dto/token-usage-response.dto';
 
 interface CompanyTokenUsageDto {
   companyId: string;
@@ -56,7 +59,7 @@ export class TokenUsageService {
     let usage = await this.usageRepository.findOne({
       where: {
         userId: user.id,
-        companyId,
+        companyId: companyId ?? IsNull(),
         date: today,
       },
     });
@@ -100,7 +103,7 @@ export class TokenUsageService {
     const dailyUsage = await this.usageRepository.find({
       where: {
         userId: user.id,
-        companyId,
+        companyId: companyId ?? IsNull(),
         date: Between(startDate, endDate),
       },
       relations: ['user', 'company'],
@@ -150,7 +153,10 @@ export class TokenUsageService {
     if (user.role === UserRole.ADMIN) {
       companyId = await this.systemCompanyService.getSystemCompanyId();
     } else {
-      companyId = user.companyId!;
+      if (!user.companyId) {
+        throw new ForbiddenException('User must belong to a company');
+      }
+      companyId = user.companyId;
       // Get company name
       const company = await this.companyRepository.findOne({
         where: { id: companyId },

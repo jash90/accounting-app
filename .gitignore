@@ -44,3 +44,4 @@ performance.json
 *.telemetry.json
 .vercel
 test-results/
+coverage/

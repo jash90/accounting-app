@@ -73,7 +73,8 @@ export default function TasksSettingsPage() {
 
   const basePath = getBasePath();
 
-  const { data: labels, isPending } = useTaskLabels();
+  const { data: labelsResponse, isPending } = useTaskLabels();
+  const labels = labelsResponse?.data ?? [];
   const createLabel = useCreateTaskLabel();
   const updateLabel = useUpdateTaskLabel();
   const deleteLabel = useDeleteTaskLabel();

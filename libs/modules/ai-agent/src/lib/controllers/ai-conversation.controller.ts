@@ -16,10 +16,7 @@ import {
   Sse,
   MessageEvent,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
 import {
   ApiTags,
   ApiOperation,
@@ -36,27 +33,32 @@ import {
   ApiBadRequestResponse,
   ApiQuery,
 } from '@nestjs/swagger';
+import { InjectRepository } from '@nestjs/typeorm';
+
+import * as fs from 'fs/promises';
+import { diskStorage } from 'multer';
+import * as path from 'path';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { Repository } from 'typeorm';
+
 import { CurrentUser } from '@accounting/auth';
+import { AIContext, Company, User, UserRole } from '@accounting/common';
 import {
   ModuleAccessGuard,
   PermissionGuard,
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
-import { User } from '@accounting/common';
+
+import { AIContextResponseDto } from '../dto/ai-context-response.dto';
+import { ConversationResponseDto } from '../dto/conversation-response.dto';
+import { CreateConversationDto } from '../dto/create-conversation.dto';
+import { PaginationQueryDto } from '../dto/pagination.dto';
+import { SendMessageDto } from '../dto/send-message.dto';
+import { AIConfigurationService } from '../services/ai-configuration.service';
 import { AIConversationService } from '../services/ai-conversation.service';
 import { RAGService } from '../services/rag.service';
-import { AIConfigurationService } from '../services/ai-configuration.service';
-import { CreateConversationDto } from '../dto/create-conversation.dto';
-import { SendMessageDto } from '../dto/send-message.dto';
-import { ConversationResponseDto } from '../dto/conversation-response.dto';
-import { AIContextResponseDto } from '../dto/ai-context-response.dto';
-import { PaginationQueryDto } from '../dto/pagination.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { AIContext, Company, UserRole } from '@accounting/common';
-import * as path from 'path';
-import * as fs from 'fs/promises';
 
 @ApiTags('ai-agent')
 @ApiBearerAuth('JWT-auth')
@@ -309,8 +311,11 @@ export class AIConversationController {
         destination: './uploads/ai-context',
         filename: (req, file, cb) => {
           const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = path.extname(file.originalname);
-          cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+          // Sanitize file extension - lowercase and validate against allowed extensions
+          const ext = path.extname(file.originalname).toLowerCase();
+          const allowedExtensions = ['.pdf', '.txt', '.md'];
+          const sanitizedExt = allowedExtensions.includes(ext) ? ext : '';
+          cb(null, `${file.fieldname}-${uniqueSuffix}${sanitizedExt}`);
         },
       }),
       limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
@@ -412,7 +417,7 @@ export class AIConversationController {
     description: 'Invalid or missing JWT token',
   })
   async getAllContext(@CurrentUser() user: User) {
-    let companyId: string | null;
+    let companyId: string;
 
     if (user.role === UserRole.ADMIN) {
       const systemCompany = await this.companyRepository.findOne({
@@ -423,6 +428,10 @@ export class AIConversationController {
       }
       companyId = systemCompany.id;
     } else {
+      // Non-admin users must have a companyId
+      if (!user.companyId) {
+        throw new Error('User does not have a company assigned');
+      }
       companyId = user.companyId;
     }
 
@@ -459,7 +468,7 @@ export class AIConversationController {
     description: 'Invalid or missing JWT token',
   })
   async getContextFile(@Param('id') id: string, @CurrentUser() user: User) {
-    let companyId: string | null;
+    let companyId: string;
 
     if (user.role === UserRole.ADMIN) {
       const systemCompany = await this.companyRepository.findOne({
@@ -470,6 +479,9 @@ export class AIConversationController {
       }
       companyId = systemCompany.id;
     } else {
+      if (!user.companyId) {
+        throw new Error('User does not have a company assigned');
+      }
       companyId = user.companyId;
     }
 
@@ -534,7 +546,7 @@ export class AIConversationController {
     description: 'Invalid or missing JWT token',
   })
   async removeContext(@Param('id') id: string, @CurrentUser() user: User) {
-    let companyId: string | null;
+    let companyId: string;
 
     if (user.role === UserRole.ADMIN) {
       const systemCompany = await this.companyRepository.findOne({
@@ -545,6 +557,9 @@ export class AIConversationController {
       }
       companyId = systemCompany.id;
     } else {
+      if (!user.companyId) {
+        throw new Error('User does not have a company assigned');
+      }
       companyId = user.companyId;
     }
 

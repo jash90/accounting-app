@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
 import { useForm } from 'react-hook-form';
+import type { Resolver } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -43,17 +44,21 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
   const schema = isEditing ? updateUserSchema : createUserSchema;
   const { data: companies = [], isLoading: companiesLoading } = useCompanies();
 
-  const form = useForm<CreateUserFormData | UpdateUserFormData>({
-    resolver: zodResolver(schema),
-    defaultValues: user || {
-      email: '',
-      password: '',
-      firstName: '',
-      lastName: '',
-      role: UserRole.EMPLOYEE,
-      companyId: '',
-      companyName: '',
-    },
+  type FormData = CreateUserFormData | UpdateUserFormData;
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(schema) as Resolver<FormData>,
+    defaultValues: user
+      ? { ...user, companyId: user.companyId ?? undefined }
+      : {
+          email: '',
+          password: '',
+          firstName: '',
+          lastName: '',
+          role: UserRole.EMPLOYEE,
+          companyId: '',
+          companyName: '',
+        },
   });
 
   const watchedRole = form.watch('role');
@@ -62,15 +67,17 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
   useEffect(() => {
     if (open) {
       form.reset(
-        user || {
-          email: '',
-          password: '',
-          firstName: '',
-          lastName: '',
-          role: UserRole.EMPLOYEE,
-          companyId: '',
-          companyName: '',
-        }
+        user
+          ? { ...user, companyId: user.companyId ?? undefined }
+          : {
+              email: '',
+              password: '',
+              firstName: '',
+              lastName: '',
+              role: UserRole.EMPLOYEE,
+              companyId: '',
+              companyName: '',
+            }
       );
     }
   }, [open, user, form]);
