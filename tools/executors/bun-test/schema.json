@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "version": 2,
+  "title": "Bun Test executor",
+  "description": "Run tests using Bun's built-in test runner",
+  "type": "object",
+  "properties": {
+    "testDir": {
+      "type": "string",
+      "description": "Directory containing test files relative to project root",
+      "default": "src"
+    },
+    "timeout": {
+      "type": "number",
+      "description": "Test timeout in milliseconds",
+      "default": 5000
+    },
+    "coverage": {
+      "type": "boolean",
+      "description": "Enable code coverage",
+      "default": false
+    },
+    "watch": {
+      "type": "boolean",
+      "description": "Watch mode",
+      "default": false
+    },
+    "bail": {
+      "type": "boolean",
+      "description": "Stop on first failure",
+      "default": false
+    },
+    "passWithNoTests": {
+      "type": "boolean",
+      "description": "Pass if no tests are found",
+      "default": false
+    }
+  },
+  "required": []
+}

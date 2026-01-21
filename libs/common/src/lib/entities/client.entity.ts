@@ -35,16 +35,16 @@ export class Client {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   name!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   nip?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   email?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   phone?: string;
 
   @Column({ type: 'date', nullable: true })
@@ -63,7 +63,7 @@ export class Client {
   additionalInfo?: string;
 
   // Legacy single GTU code (kept for backward compatibility)
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   gtuCode?: string;
 
   // Multiple GTU codes array
@@ -71,11 +71,11 @@ export class Client {
   gtuCodes?: string[];
 
   // Main PKD code (Polska Klasyfikacja Działalności)
-  @Column({ nullable: true, length: 10 })
+  @Column({ type: 'varchar', nullable: true, length: 10 })
   pkdCode?: string;
 
   // Legacy amlGroup string (kept for backward compatibility)
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   amlGroup?: string;
 
   // New amlGroup enum
@@ -88,7 +88,7 @@ export class Client {
   amlGroupEnum?: AmlGroup;
 
   // Flag for client receiving email copies
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   receiveEmailCopy!: boolean;
 
   @Column({
@@ -119,7 +119,7 @@ export class Client {
   })
   zusStatus?: ZusStatus;
 
-  @Column()
+  @Column({ type: 'uuid' })
   companyId!: string;
 
   @ManyToOne(() => Company, (company) => company.clients, {
@@ -128,17 +128,17 @@ export class Client {
   @JoinColumn({ name: 'companyId' })
   company!: Company;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
-  @Column()
+  @Column({ type: 'uuid' })
   createdById!: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'createdById' })
   createdBy!: User;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   updatedById?: string;
 
   @ManyToOne(() => User)

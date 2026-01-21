@@ -22,7 +22,7 @@ export class AIConfiguration {
   id!: string;
 
   // System Admin Company pattern - nullable for ADMIN entries
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   companyId!: string | null;
 
   @ManyToOne(() => Company, (company) => company.aiConfigurations, {
@@ -40,7 +40,7 @@ export class AIConfiguration {
   })
   provider!: AIProvider;
 
-  @Column({ default: 'gpt-4' })
+  @Column({ type: 'varchar', default: 'gpt-4' })
   model!: string;
 
   @Column({ type: 'text', nullable: true })
@@ -77,14 +77,14 @@ export class AIConfiguration {
   embeddingModel!: string | null;
 
   // Audit trail
-  @Column()
+  @Column({ type: 'uuid' })
   createdById!: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'createdById' })
   createdBy!: User;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   updatedById!: string | null;
 
   @ManyToOne(() => User)

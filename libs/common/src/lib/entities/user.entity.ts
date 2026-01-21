@@ -23,16 +23,16 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ unique: true })
+  @Column({ type: 'varchar', unique: true })
   email!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   password!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   firstName!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   lastName!: string;
 
   @Column({
@@ -41,14 +41,14 @@ export class User {
   })
   role!: UserRole;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   companyId!: string | null;
 
   @ManyToOne(() => Company, (company) => company.employees, { nullable: true })
   @JoinColumn({ name: 'companyId' })
   company!: Company | null;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
   @OneToMany(() => UserModulePermission, (permission) => permission.user)

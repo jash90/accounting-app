@@ -29,7 +29,7 @@ export class TimeEntry {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   description?: string;
 
   @Column({ type: 'timestamptz' })
@@ -43,11 +43,11 @@ export class TimeEntry {
   durationMinutes?: number;
 
   // Is this entry currently running (timer active)?
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   isRunning!: boolean;
 
   // Billing
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isBillable!: boolean;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
@@ -57,7 +57,7 @@ export class TimeEntry {
   totalAmount?: number;
 
   // Currency code (ISO 4217)
-  @Column({ length: 3, default: 'PLN' })
+  @Column({ type: 'varchar', length: 3, default: 'PLN' })
   currency!: string;
 
   // Status workflow
@@ -77,7 +77,7 @@ export class TimeEntry {
   tags?: string[];
 
   // Multi-tenant
-  @Column()
+  @Column({ type: 'uuid' })
   companyId!: string;
 
   @ManyToOne(() => Company, { onDelete: 'CASCADE' })
@@ -85,7 +85,7 @@ export class TimeEntry {
   company!: Company;
 
   // Owner of the time entry
-  @Column()
+  @Column({ type: 'uuid' })
   userId!: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
@@ -93,7 +93,7 @@ export class TimeEntry {
   user!: User;
 
   // Optional: Linked client
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   clientId?: string;
 
   @ManyToOne(() => Client, { onDelete: 'SET NULL', nullable: true })
@@ -101,7 +101,7 @@ export class TimeEntry {
   client?: Client;
 
   // Optional: Linked task
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   taskId?: string;
 
   @ManyToOne(() => Task, { onDelete: 'SET NULL', nullable: true })
@@ -109,7 +109,7 @@ export class TimeEntry {
   task?: Task;
 
   // Approval workflow
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   approvedById?: string;
 
   @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
@@ -126,24 +126,24 @@ export class TimeEntry {
   billedAt?: Date;
 
   // Creator (may differ from userId for manager entries)
-  @Column()
+  @Column({ type: 'uuid' })
   createdById!: string;
 
   @ManyToOne(() => User, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'createdById' })
   createdBy!: User;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
   // Entry locking for approved/billed entries
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   isLocked!: boolean;
 
   @Column({ type: 'timestamptz', nullable: true })
   lockedAt?: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   lockedById?: string;
 
   @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })

@@ -1,0 +1,5 @@
+{
+  "name": "@accounting/bun-test-executor",
+  "version": "1.0.0",
+  "executors": "./executors.json"
+}

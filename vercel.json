@@ -1,8 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "installCommand": "npm install --legacy-peer-deps",
-  "buildCommand": "npx nx build web",
+  "installCommand": "bun install",
+  "buildCommand": "bunx nx build web",
   "outputDirectory": "dist/apps/web",
   "rewrites": [
     {

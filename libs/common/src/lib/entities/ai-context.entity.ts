@@ -16,7 +16,7 @@ export class AIContext {
   id!: string;
 
   // System Admin Company pattern - nullable for ADMIN entries
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   companyId!: string | null;
 
   @ManyToOne(() => Company, (company) => company.aiContexts, {
@@ -27,13 +27,13 @@ export class AIContext {
   company!: Company | null;
 
   // File metadata
-  @Column()
+  @Column({ type: 'varchar' })
   filename!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   mimeType!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   filePath!: string;
 
   @Column({ type: 'int' })
@@ -52,11 +52,11 @@ export class AIContext {
   embedding!: number[] | null;
 
   // Status
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
   // Upload metadata
-  @Column()
+  @Column({ type: 'uuid' })
   uploadedById!: string;
 
   @ManyToOne(() => User)
