@@ -1,4 +1,4 @@
-import { useState, useMemo, memo } from 'react';
+import { useState, useMemo } from 'react';
 
 import { format, addDays, subDays, startOfDay, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';

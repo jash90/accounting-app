@@ -52,6 +52,7 @@ export function TimeEntryRow({
   // Update elapsed time every second for running timers
   useEffect(() => {
     if (!entry.isRunning) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync state with entry.isRunning prop
       setElapsedTime('');
       return;
     }
@@ -75,6 +76,7 @@ export function TimeEntryRow({
   }, [entry.isRunning, entry.startTime]);
 
   return (
+    /* eslint-disable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex -- Interactive list item with keyboard support */
     <div
       role="listitem"
       tabIndex={0}

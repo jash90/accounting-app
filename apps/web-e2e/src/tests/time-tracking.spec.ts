@@ -1,6 +1,5 @@
 import { test, expect } from '../fixtures/auth.fixtures';
 import { TimeTrackingPage } from '../pages/modules/TimeTrackingPage';
-import { TestDataFactory } from '../fixtures/data.fixtures';
 
 test.describe('Time Tracking - Timer Operations', () => {
   test('should start a timer', async ({ authenticatedCompanyOwnerPage }) => {
@@ -208,7 +207,7 @@ test.describe('Time Tracking - Manual Time Entries', () => {
     const rowText = await row.textContent();
 
     // Should contain some representation of 2:30 or 2.5h
-    expect(rowText).toMatch(/2[:\.]30|2\.5\s*h|150\s*min/i);
+    expect(rowText).toMatch(/2[:.]30|2\.5\s*h|150\s*min/i);
   });
 });
 

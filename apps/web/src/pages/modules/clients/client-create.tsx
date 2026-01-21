@@ -18,6 +18,7 @@ import {
   CustomFieldsCard,
 } from '@/components/forms/client-form-sections';
 import { Button } from '@/components/ui/button';
+import { Form } from '@/components/ui/form';
 import { useToast } from '@/components/ui/use-toast';
 import { type DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
 import {
@@ -26,10 +27,9 @@ import {
   useFieldDefinitions,
   useCheckDuplicates,
 } from '@/lib/hooks/use-clients';
-import { createClientSchema, CreateClientFormData } from '@/lib/validation/schemas';
 import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
+import { createClientSchema, type CreateClientFormData } from '@/lib/validation/schemas';
 import { type CreateClientDto, type SetCustomFieldValuesDto } from '@/types/dtos';
-import { Form } from '@/components/ui/form';
 
 /**
  * Error fallback component for ClientCreatePage
@@ -148,6 +148,7 @@ function ClientCreateForm() {
     await createClientAndNavigate(data, customFields);
   };
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- React Compiler cannot track all dependencies
   const handleProceedWithDuplicate = useCallback(async () => {
     if (!pendingCreateData) return;
 
@@ -171,6 +172,7 @@ function ClientCreateForm() {
     }
   }, [pendingCreateData, createClient, setCustomFields, navigate, basePath]);
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- React Compiler cannot track all dependencies
   const handleCancelDuplicate = useCallback(() => {
     setDuplicateWarningOpen(false);
     setDuplicateCheckResult(null);

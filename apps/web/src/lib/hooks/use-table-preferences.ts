@@ -175,11 +175,13 @@ export function useTablePreferences(
         ...stored.visibleColumns.filter((id) => !alwaysVisibleColumns.includes(id)),
       ];
 
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync preferences when tableId changes
       setPreferences({
         viewMode: stored.viewMode,
         visibleColumns: mergedVisibleColumns,
       });
     } else {
+       
       setPreferences(defaultPrefs);
     }
   }, [tableId]); // eslint-disable-line react-hooks/exhaustive-deps -- intentionally only re-run when tableId changes

@@ -1,4 +1,4 @@
-import { Page, expect } from '@playwright/test';
+import { Page } from '@playwright/test';
 import { BasePage } from '../base/BasePage';
 import { ToastComponent } from '../components/ToastComponent';
 
