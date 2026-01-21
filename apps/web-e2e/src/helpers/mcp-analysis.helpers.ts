@@ -8,7 +8,8 @@ export class MCPAnalysisHelper {
    * Sequential MCP: Systematic screenshot analysis
    * Uses sequential-thinking to analyze design systematically
    */
-  async analyzeWithSequential(screenshots: ScreenshotMetadata[]): Promise<Issue[]> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- screenshots parameter reserved for future MCP integration
+  async analyzeWithSequential(_screenshots: ScreenshotMetadata[]): Promise<Issue[]> {
     console.log('🔄 Starting Sequential MCP analysis...');
 
     const issues: Issue[] = [];
@@ -151,7 +152,6 @@ export class MCPAnalysisHelper {
         document.querySelectorAll('button, a, input').forEach((el) => {
           const styles = window.getComputedStyle(el);
           const outline = styles.outline;
-          const outlineOffset = styles.outlineOffset;
 
           if (!outline || outline === 'none') {
             problems.push({

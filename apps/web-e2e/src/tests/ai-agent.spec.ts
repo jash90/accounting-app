@@ -196,7 +196,8 @@ test.describe('AI Agent - Data Isolation', () => {
     await ownerAIPage.waitForChatInterface();
     await ownerAIPage.createNewConversation();
 
-    const ownerConversations = await ownerAIPage.getConversationTitles();
+    // Verify conversation was created successfully
+    await ownerAIPage.expectConversationVisible('New Chat');
 
     // Check employee can't see owner's conversations
     const employeeAIPage = new AIAgentChatPage(employeePage);

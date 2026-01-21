@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 import { BasePage } from '../base/BasePage';
 import { NavigationComponent } from '../components/NavigationComponent';
 

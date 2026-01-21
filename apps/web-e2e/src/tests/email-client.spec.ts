@@ -2,7 +2,6 @@ import { test, expect } from '../fixtures/auth.fixtures';
 import { EmailInboxPage } from '../pages/email/EmailInboxPage';
 import { EmailComposePage } from '../pages/email/EmailComposePage';
 import { EmailDraftsPage } from '../pages/email/EmailDraftsPage';
-import { EmailMessagePage } from '../pages/email/EmailMessagePage';
 
 test.describe('Email Client Module - Employee Access', () => {
   test.describe('Inbox View', () => {
@@ -279,7 +278,6 @@ test.describe('Email Client Module - Employee Access', () => {
 
 test.describe('Message Detail View', () => {
   test('should navigate to message detail page', async ({ authenticatedEmployeePage }) => {
-    const messagePage = new EmailMessagePage(authenticatedEmployeePage);
     // Navigate directly to a message URL pattern - will show message view or empty state
     await authenticatedEmployeePage.goto('/modules/email-client/message/test-id');
 

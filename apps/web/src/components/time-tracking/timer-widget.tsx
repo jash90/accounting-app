@@ -77,6 +77,7 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
       return () => clearInterval(interval);
     } else {
       if (mountedRef.current) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: reset elapsed when timer stops
         setElapsedSeconds(0);
       }
     }
@@ -85,6 +86,7 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
   // Sync form state with active timer
   useEffect(() => {
     if (activeTimer) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync form state with timer data
       setDescription(activeTimer.description || '');
       setClientId(activeTimer.clientId || '');
       setIsBillable(activeTimer.isBillable);

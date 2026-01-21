@@ -89,6 +89,7 @@ export default function EmailCompose() {
       toast({ title: 'Sukces', description: 'Odpowiedź AI została wygenerowana' });
       aiStream.reset();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Only trigger on draftId and isStreaming changes
   }, [aiStream.draftId, aiStream.isStreaming]);
 
   // Show error if streaming fails
@@ -100,7 +101,15 @@ export default function EmailCompose() {
         variant: 'destructive',
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Only trigger on error changes
   }, [aiStream.error]);
+
+  const handleGenerateAiReply = (messageUid: number) => {
+    // Clear content first to show skeleton
+    setContent('');
+    // Start streaming - text will appear progressively in textarea
+    aiStream.startStream({ messageUid });
+  };
 
   // Load draft data or reply state
   useEffect(() => {
@@ -126,14 +135,8 @@ export default function EmailCompose() {
         handleGenerateAiReply(locationState.messageUid);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleGenerateAiReply is stable
   }, [existingDraft, locationState]);
-
-  const handleGenerateAiReply = (messageUid: number) => {
-    // Clear content first to show skeleton
-    setContent('');
-    // Start streaming - text will appear progressively in textarea
-    aiStream.startStream({ messageUid });
-  };
 
   // Attachment handlers
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -158,7 +161,7 @@ export default function EmailCompose() {
           title: 'Sukces',
           description: `Przesłano "${file.name}"`,
         });
-      } catch (error) {
+      } catch {
         toast({
           title: 'Błąd',
           description: `Nie udało się przesłać "${file.name}"`,
@@ -216,7 +219,7 @@ export default function EmailCompose() {
 
       toast({ title: 'Sukces', description: 'Wiadomość została wysłana' });
       emailNav.toInbox();
-    } catch (error) {
+    } catch {
       toast({
         title: 'Błąd',
         description: 'Nie udało się wysłać wiadomości',
@@ -260,7 +263,7 @@ export default function EmailCompose() {
         emailNav.toComposeWithQuery(`draftId=${newDraft.id}`, { replace: true });
         toast({ title: 'Sukces', description: 'Szkic zapisany' });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Błąd',
         description: 'Nie udało się zapisać szkicu',
@@ -433,6 +436,7 @@ export default function EmailCompose() {
             <Label>Załączniki</Label>
 
             {/* Drag & Drop Zone */}
+            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions -- Keyboard accessible via file input below */}
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}

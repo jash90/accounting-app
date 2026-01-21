@@ -12,6 +12,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Register accepts dynamic user data structure
   register: (userData: any) => void;
   logout: () => void;
 }
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (currentUser) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync user state with query result
       setUser(currentUser);
     } else if (!token) {
       setUser(null);
@@ -82,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Register accepts dynamic user data structure
   const register = (userData: any) => {
     registerMutation(userData, {
       onSuccess: (data) => {

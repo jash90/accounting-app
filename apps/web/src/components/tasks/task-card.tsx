@@ -27,7 +27,7 @@ interface TaskCardProps {
 export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
   ({ task, onClick, isDragging = false, showStatus = false, className }, ref) => {
     const labels = task.labels?.map((la) => la.label).filter(Boolean) || [];
-    const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+    const _hasSubtasks = task.subtasks && task.subtasks.length > 0;
     const commentCount = task.comments?.length || 0;
     const dependencyCount = task.dependencies?.length || 0;
 
@@ -65,6 +65,7 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
       >
         <CardContent className="p-3 space-y-2">
           {/* Labels */}
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- TaskLabel type mismatch with TaskLabelAssignment */}
           {labels.length > 0 && <TaskLabelList labels={labels as any} size="sm" maxVisible={2} />}
 
           {/* Title */}

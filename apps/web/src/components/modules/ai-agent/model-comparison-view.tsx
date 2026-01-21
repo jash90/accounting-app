@@ -34,6 +34,32 @@ function getCostTierColor(costPer1kInput: number): string {
   return 'text-red-600';
 }
 
+function ComparisonRow({
+  label,
+  values,
+  highlight = false,
+}: {
+  label: string;
+  values: React.ReactNode[];
+  highlight?: boolean;
+}) {
+  return (
+    <tr className={cn(highlight && 'bg-muted/30')}>
+      <td className="py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap border-r border-border">
+        {label}
+      </td>
+      {values.map((value, i) => (
+        <td
+          key={i}
+          className="py-3 px-4 text-sm text-center border-r border-border last:border-r-0"
+        >
+          {value}
+        </td>
+      ))}
+    </tr>
+  );
+}
+
 export function ModelComparisonView({
   models,
   onSelect,
@@ -53,30 +79,6 @@ export function ModelComparisonView({
       </div>
     );
   }
-
-  const ComparisonRow = ({
-    label,
-    values,
-    highlight = false,
-  }: {
-    label: string;
-    values: React.ReactNode[];
-    highlight?: boolean;
-  }) => (
-    <tr className={cn(highlight && 'bg-muted/30')}>
-      <td className="py-3 px-4 text-sm font-medium text-muted-foreground whitespace-nowrap border-r border-border">
-        {label}
-      </td>
-      {values.map((value, i) => (
-        <td
-          key={i}
-          className="py-3 px-4 text-sm text-center border-r border-border last:border-r-0"
-        >
-          {value}
-        </td>
-      ))}
-    </tr>
-  );
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">

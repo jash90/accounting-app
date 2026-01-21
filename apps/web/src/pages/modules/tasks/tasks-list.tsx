@@ -21,16 +21,15 @@ import {
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { DataTable } from '@/components/common/data-table';
 import { PageHeader } from '@/components/common/page-header';
+import {
+  TaskStatusBadge,
+  TaskPriorityBadge,
+  TaskLabelList,
+  TaskFormDialog,
+} from '@/components/tasks';
+import { TaskFilters } from '@/components/tasks/task-filters';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import {
-  useTasks,
-  useCreateTask,
-  useUpdateTask,
-  useDeleteTask,
-  useBulkUpdateStatus,
-} from '@/lib/hooks/use-tasks';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -40,6 +39,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useAuthContext } from '@/contexts/auth-context';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import {
+  useTasks,
+  useCreateTask,
+  useUpdateTask,
+  useDeleteTask,
+  useBulkUpdateStatus,
+} from '@/lib/hooks/use-tasks';
 import {
   type TaskResponseDto,
   type CreateTaskDto,
@@ -47,14 +55,6 @@ import {
   type TaskFiltersDto,
 } from '@/types/dtos';
 import { type TaskStatus, TaskStatusLabels, UserRole } from '@/types/enums';
-import {
-  TaskStatusBadge,
-  TaskPriorityBadge,
-  TaskLabelList,
-  TaskFormDialog,
-} from '@/components/tasks';
-import { TaskFilters } from '@/components/tasks/task-filters';
-import { useAuthContext } from '@/contexts/auth-context';
 
 export default function TasksListPage() {
   const { user } = useAuthContext();
@@ -79,7 +79,7 @@ export default function TasksListPage() {
   const [filters, setFilters] = useState<TaskFiltersDto>({});
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const { data: tasksResponse, isPending } = useTasks(filters);
-  const tasks = tasksResponse?.data ?? [];
+  const tasks = useMemo(() => tasksResponse?.data ?? [], [tasksResponse?.data]);
 
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
@@ -96,6 +96,7 @@ export default function TasksListPage() {
     if (taskId && tasks.length > 0) {
       const task = tasks.find((t) => t.id === taskId);
       if (task) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: sync modal state with URL param
         setEditingTask(task);
         // Clear the URL param after opening the modal
         setSearchParams({}, { replace: true });
@@ -162,6 +163,7 @@ export default function TasksListPage() {
             <span className="font-medium">{row.original.title}</span>
             {row.original.labels && row.original.labels.length > 0 && (
               <TaskLabelList
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TaskLabel type mismatch with mapped labels
                 labels={row.original.labels.map((la) => la.label).filter(Boolean) as any}
                 size="sm"
                 maxVisible={2}

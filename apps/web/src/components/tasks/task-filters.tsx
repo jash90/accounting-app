@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { Search, X, CalendarIcon, Filter } from 'lucide-react';
+import { Search, X, CalendarIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -19,10 +19,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useClients } from '@/lib/hooks/use-clients';
-import { cn } from '@/lib/utils/cn';
-import { TaskStatus, TaskStatusLabels, TaskPriority, TaskPriorityLabels } from '@/types/enums';
-import { TaskFiltersDto } from '@/types/dtos';
 import { useEmployees } from '@/lib/hooks/use-employees';
+import { cn } from '@/lib/utils/cn';
+import { type TaskFiltersDto } from '@/types/dtos';
+import { TaskStatusLabels, TaskPriorityLabels } from '@/types/enums';
 
 interface TaskFiltersProps {
   filters: TaskFiltersDto;

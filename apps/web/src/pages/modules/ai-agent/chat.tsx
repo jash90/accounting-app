@@ -78,6 +78,7 @@ export default function AIAgentChatPage() {
 
   useEffect(() => {
     if (conversations && conversations.length > 0 && !selectedConversationId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: auto-select first conversation on load
       setSelectedConversationId(conversations[0].id);
     }
   }, [conversations, selectedConversationId]);

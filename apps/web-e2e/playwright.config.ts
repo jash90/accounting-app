@@ -86,7 +86,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         // Enable accessibility tree snapshot
-        // @ts-ignore
+        // @ts-expect-error contextOptions is not in the type definition
         contextOptions: {
           strictSelectors: false,
         },

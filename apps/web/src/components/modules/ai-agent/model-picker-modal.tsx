@@ -114,6 +114,7 @@ export function ModelPickerModal({
   // Reset state when modal opens
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: reset form state when modal opens
       setSearchQuery('');
       setCostFilter('all');
       setContextFilter('all');
