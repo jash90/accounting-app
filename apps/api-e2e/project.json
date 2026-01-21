@@ -3,6 +3,7 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "implicitDependencies": ["api"],
   "projectType": "application",
+  "tags": ["type:app", "scope:backend"],
   "targets": {
     "e2e": {
       "executor": "./tools/executors/bun-test:test",
