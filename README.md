@@ -152,9 +152,9 @@ After seeding, use these credentials to log in:
 accounting/
 ├── apps/
 │   ├── api/                    # NestJS backend (port 3000)
-│   └── api-e2e/                # Backend E2E tests
-├── web/                        # React frontend (port 4200)
-├── web-e2e/                    # Frontend E2E tests (Playwright)
+│   ├── api-e2e/                # Backend E2E tests
+│   ├── web/                    # React frontend (port 4200)
+│   └── web-e2e/                # Frontend E2E tests (Playwright)
 ├── libs/
 │   ├── auth/                   # @accounting/auth - JWT authentication
 │   ├── rbac/                   # @accounting/rbac - RBAC system
@@ -321,7 +321,7 @@ TypeScript path aliases configured in `tsconfig.base.json`:
 | `@accounting/rbac` | `libs/rbac` | RBAC system |
 | `@accounting/common` | `libs/common` | Shared entities and enums |
 | `@accounting/modules/*` | `libs/modules/*` | Business modules |
-| `@/*` | `web/src/*` | Frontend source root |
+| `@/*` | `apps/web/src/*` | Frontend source root |
 
 ---
 

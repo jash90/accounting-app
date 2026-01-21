@@ -113,9 +113,9 @@ async findAll(user: User): Promise<Entity[]> {
 workspace/
 ├── apps/
 │   ├── api/              # NestJS backend (port 3000)
-│   └── api-e2e/          # Backend E2E tests
-├── web/                  # React frontend (port 4200)
-├── web-e2e/              # Playwright E2E tests
+│   ├── api-e2e/          # Backend E2E tests
+│   ├── web/              # React frontend (port 4200)
+│   └── web-e2e/          # Playwright E2E tests
 └── libs/
     ├── auth/             # @accounting/auth - JWT authentication
     ├── rbac/             # @accounting/rbac - RBAC system
@@ -145,10 +145,10 @@ libs/modules/[name]/
 │       └── exceptions/       # Custom exceptions
 ```
 
-### Frontend Module (`web/src/pages/modules/[name]/`)
+### Frontend Module (`apps/web/src/pages/modules/[name]/`)
 
 ```
-web/src/
+apps/web/src/
 ├── pages/modules/[name]/     # Page components
 ├── components/forms/         # Form dialogs
 ├── lib/
