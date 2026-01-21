@@ -24,7 +24,9 @@ export class ClientsPage extends BasePage {
   constructor(page: Page) {
     super(page);
     this.clientsTable = page.getByTestId('clients-table');
-    this.addClientButton = page.getByRole('button', { name: /dodaj klienta|add client|nowy klient/i });
+    this.addClientButton = page.getByRole('button', {
+      name: /dodaj klienta|add client|nowy klient/i,
+    });
     this.clientFormDialog = page.getByRole('dialog');
     this.saveClientButton = page.getByRole('button', { name: /zapisz|save/i });
     this.cancelClientButton = page.getByRole('button', { name: /anuluj|cancel/i });
@@ -70,7 +72,10 @@ export class ClientsPage extends BasePage {
     pkdCode?: string;
     amlGroup?: string;
   }): Promise<void> {
-    await this.clientFormDialog.getByLabel(/nazwa|name/i).first().fill(data.name);
+    await this.clientFormDialog
+      .getByLabel(/nazwa|name/i)
+      .first()
+      .fill(data.name);
 
     if (data.nip) {
       await this.clientFormDialog.getByLabel(/nip/i).fill(data.nip);
@@ -94,7 +99,9 @@ export class ClientsPage extends BasePage {
    */
   async selectPkdCode(pkdCode: string): Promise<void> {
     // Try to find the PKD code combobox/select in the dialog
-    const pkdInput = this.clientFormDialog.locator('[data-testid="pkd-code-select"], input[name="pkdCode"], [aria-label*="PKD"]');
+    const pkdInput = this.clientFormDialog.locator(
+      '[data-testid="pkd-code-select"], input[name="pkdCode"], [aria-label*="PKD"]'
+    );
 
     if (await pkdInput.isVisible()) {
       await pkdInput.click();
@@ -114,7 +121,9 @@ export class ClientsPage extends BasePage {
         if (await listItem.isVisible()) {
           await listItem.click();
         } else {
-          throw new Error(`PKD code "${pkdCode}" not found in dropdown. Neither option nor listbox item is visible.`);
+          throw new Error(
+            `PKD code "${pkdCode}" not found in dropdown. Neither option nor listbox item is visible.`
+          );
         }
       }
     }
@@ -124,11 +133,13 @@ export class ClientsPage extends BasePage {
    * Select AML group from dropdown
    */
   async selectAmlGroup(amlGroup: string): Promise<void> {
-    const amlInput = this.clientFormDialog.locator('[data-testid="aml-group-select"], select[name="amlGroup"], [aria-label*="AML"]');
+    const amlInput = this.clientFormDialog.locator(
+      '[data-testid="aml-group-select"], select[name="amlGroup"], [aria-label*="AML"]'
+    );
 
     if (await amlInput.isVisible()) {
       // If it's a select element
-      const tagName = await amlInput.evaluate(el => el.tagName.toLowerCase());
+      const tagName = await amlInput.evaluate((el) => el.tagName.toLowerCase());
       if (tagName === 'select') {
         await amlInput.selectOption({ label: amlGroup });
       } else {
@@ -245,7 +256,7 @@ export class ClientsPage extends BasePage {
    */
   async getClientPkdCode(): Promise<string> {
     const pkdElement = this.page.getByTestId('client-pkd-code');
-    return await pkdElement.textContent() || '';
+    return (await pkdElement.textContent()) || '';
   }
 
   /**
@@ -253,7 +264,7 @@ export class ClientsPage extends BasePage {
    */
   async getClientAmlGroup(): Promise<string> {
     const amlElement = this.page.getByTestId('client-aml-group');
-    return await amlElement.textContent() || '';
+    return (await amlElement.textContent()) || '';
   }
 
   /**

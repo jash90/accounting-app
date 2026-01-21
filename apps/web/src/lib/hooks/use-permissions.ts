@@ -1,12 +1,15 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { permissionsApi } from '../api/endpoints/permissions';
-import { queryKeys } from '../api/query-client';
-import { GrantModuleAccessDto, UpdateModulePermissionDto } from '@/types/dtos';
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthContext } from '@/contexts/auth-context';
+import { type ApiErrorResponse } from '@/types/api';
+import { type GrantModuleAccessDto, type UpdateModulePermissionDto } from '@/types/dtos';
 import { UserRole } from '@/types/enums';
-import { ApiErrorResponse } from '@/types/api';
+
+import { permissionsApi } from '../api/endpoints/permissions';
+import { queryKeys } from '../api/query-client';
 
 /**
  * Permission constants matching backend RBAC system
@@ -17,7 +20,7 @@ export const ModulePermission = {
   DELETE: 'DELETE',
 } as const;
 
-export type ModulePermissionType = typeof ModulePermission[keyof typeof ModulePermission];
+export type ModulePermissionType = (typeof ModulePermission)[keyof typeof ModulePermission];
 
 /**
  * Hook to check current user's permissions for a specific module.
@@ -30,7 +33,7 @@ export type ModulePermissionType = typeof ModulePermission[keyof typeof ModulePe
  * @param moduleSlug - The module identifier (e.g., 'clients')
  * @returns Object with permission flags and helper functions
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- moduleSlug reserved for future per-module permission queries
+
 export function useModulePermissions(_moduleSlug: string) {
   const { user, isAuthenticated } = useAuthContext();
 
@@ -113,10 +116,19 @@ export function useGrantModuleAccess() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ employeeId, moduleSlug, permissions }: { employeeId: string; moduleSlug: string; permissions: GrantModuleAccessDto }) =>
-      permissionsApi.grantModuleAccess(employeeId, moduleSlug, permissions),
+    mutationFn: ({
+      employeeId,
+      moduleSlug,
+      permissions,
+    }: {
+      employeeId: string;
+      moduleSlug: string;
+      permissions: GrantModuleAccessDto;
+    }) => permissionsApi.grantModuleAccess(employeeId, moduleSlug, permissions),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.permissions.byEmployee(variables.employeeId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.permissions.byEmployee(variables.employeeId),
+      });
       toast({
         title: 'Sukces',
         description: 'Dostęp do modułu został przyznany',
@@ -131,7 +143,8 @@ export function useGrantModuleAccess() {
 
         // Check for specific error patterns
         if (errorMessage.includes('does not have access to this module')) {
-          errorMessage = 'Twoja firma nie ma dostępu do tego modułu. Skontaktuj się z administratorem, aby najpierw włączyć ten moduł dla firmy.';
+          errorMessage =
+            'Twoja firma nie ma dostępu do tego modułu. Skontaktuj się z administratorem, aby najpierw włączyć ten moduł dla firmy.';
         } else if (errorMessage.includes('Module not found')) {
           errorMessage = 'Wybrany moduł nie istnieje lub jest nieaktywny.';
         }
@@ -151,10 +164,19 @@ export function useUpdateModulePermission() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ employeeId, moduleSlug, permissions }: { employeeId: string; moduleSlug: string; permissions: UpdateModulePermissionDto }) =>
-      permissionsApi.updateModulePermission(employeeId, moduleSlug, permissions),
+    mutationFn: ({
+      employeeId,
+      moduleSlug,
+      permissions,
+    }: {
+      employeeId: string;
+      moduleSlug: string;
+      permissions: UpdateModulePermissionDto;
+    }) => permissionsApi.updateModulePermission(employeeId, moduleSlug, permissions),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.permissions.byEmployee(variables.employeeId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.permissions.byEmployee(variables.employeeId),
+      });
       toast({
         title: 'Sukces',
         description: 'Uprawnienia zostały zaktualizowane',
@@ -178,7 +200,9 @@ export function useRevokeModuleAccess() {
     mutationFn: ({ employeeId, moduleSlug }: { employeeId: string; moduleSlug: string }) =>
       permissionsApi.revokeModuleAccess(employeeId, moduleSlug),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.permissions.byEmployee(variables.employeeId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.permissions.byEmployee(variables.employeeId),
+      });
       toast({
         title: 'Sukces',
         description: 'Dostęp do modułu został cofnięty',
@@ -193,4 +217,3 @@ export function useRevokeModuleAccess() {
     },
   });
 }
-

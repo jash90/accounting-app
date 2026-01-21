@@ -1,25 +1,15 @@
 import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  createClientSchema,
-  CreateClientFormData,
-} from '@/lib/validation/schemas';
-import {
-  useCreateClient,
-  useSetClientCustomFields,
-  useFieldDefinitions,
-  useCheckDuplicates,
-} from '@/lib/hooks/use-clients';
-import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
-import { CreateClientDto, SetCustomFieldValuesDto } from '@/types/dtos';
-import { DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
-import { PageHeader } from '@/components/common/page-header';
-import { ErrorBoundary } from '@/components/common/error-boundary';
-import { DuplicateWarningDialog } from '@/components/clients/duplicate-warning-dialog';
-import { useToast } from '@/components/ui/use-toast';
+import { ArrowLeft, Plus, Loader2, Users, AlertTriangle } from 'lucide-react';
+
 import { CustomFieldRenderer } from '@/components/clients/custom-field-renderer';
+import { DuplicateWarningDialog } from '@/components/clients/duplicate-warning-dialog';
+import { ErrorBoundary } from '@/components/common/error-boundary';
+import { PageHeader } from '@/components/common/page-header';
 import {
   BasicInfoCard,
   TaxEmploymentCard,
@@ -28,8 +18,18 @@ import {
   CustomFieldsCard,
 } from '@/components/forms/client-form-sections';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
+import { type DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
+import {
+  useCreateClient,
+  useSetClientCustomFields,
+  useFieldDefinitions,
+  useCheckDuplicates,
+} from '@/lib/hooks/use-clients';
+import { createClientSchema, CreateClientFormData } from '@/lib/validation/schemas';
+import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
+import { type CreateClientDto, type SetCustomFieldValuesDto } from '@/types/dtos';
 import { Form } from '@/components/ui/form';
-import { ArrowLeft, Plus, Loader2, Users, AlertTriangle } from 'lucide-react';
 
 /**
  * Error fallback component for ClientCreatePage
@@ -49,9 +49,7 @@ function ClientCreateErrorFallback() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Powrót
         </Button>
-        <Button onClick={() => window.location.reload()}>
-          Odśwież stronę
-        </Button>
+        <Button onClick={() => window.location.reload()}>Odśwież stronę</Button>
       </div>
     </div>
   );
@@ -82,8 +80,13 @@ function ClientCreateForm() {
 
   // Duplicate warning state
   const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
-  const [duplicateCheckResult, setDuplicateCheckResult] = useState<DuplicateCheckResultDto | null>(null);
-  const [pendingCreateData, setPendingCreateData] = useState<{ data: CreateClientDto; customFields?: SetCustomFieldValuesDto } | null>(null);
+  const [duplicateCheckResult, setDuplicateCheckResult] = useState<DuplicateCheckResultDto | null>(
+    null
+  );
+  const [pendingCreateData, setPendingCreateData] = useState<{
+    data: CreateClientDto;
+    customFields?: SetCustomFieldValuesDto;
+  } | null>(null);
 
   const form = useForm<CreateClientFormData>({
     resolver: zodResolver(createClientSchema),
@@ -108,7 +111,10 @@ function ClientCreateForm() {
     }));
   };
 
-  const createClientAndNavigate = async (data: CreateClientDto, customFields?: SetCustomFieldValuesDto) => {
+  const createClientAndNavigate = async (
+    data: CreateClientDto,
+    customFields?: SetCustomFieldValuesDto
+  ) => {
     const newClient = await createClient.mutateAsync(data);
     if (customFields && Object.keys(customFields.values).length > 0) {
       await setCustomFields.mutateAsync({
@@ -119,7 +125,10 @@ function ClientCreateForm() {
     navigate(`${basePath}/list`);
   };
 
-  const handleCreateWithDuplicateCheck = async (data: CreateClientDto, customFields?: SetCustomFieldValuesDto) => {
+  const handleCreateWithDuplicateCheck = async (
+    data: CreateClientDto,
+    customFields?: SetCustomFieldValuesDto
+  ) => {
     // Check for duplicates first
     if (data.nip || data.email) {
       const result = await checkDuplicates.mutateAsync({
@@ -144,7 +153,10 @@ function ClientCreateForm() {
 
     try {
       const newClient = await createClient.mutateAsync(pendingCreateData.data);
-      if (pendingCreateData.customFields && Object.keys(pendingCreateData.customFields.values).length > 0) {
+      if (
+        pendingCreateData.customFields &&
+        Object.keys(pendingCreateData.customFields.values).length > 0
+      ) {
         await setCustomFields.mutateAsync({
           id: newClient.id,
           data: pendingCreateData.customFields,
@@ -165,9 +177,12 @@ function ClientCreateForm() {
     setPendingCreateData(null);
   }, []);
 
-  const handleClientClick = useCallback((clientId: string) => {
-    navigate(`${basePath}/${clientId}`);
-  }, [navigate, basePath]);
+  const handleClientClick = useCallback(
+    (clientId: string) => {
+      navigate(`${basePath}/${clientId}`);
+    },
+    [navigate, basePath]
+  );
 
   const handleSubmit = async (data: CreateClientFormData) => {
     // Validate required custom fields before submission
@@ -187,10 +202,7 @@ function ClientCreateForm() {
     try {
       // Clean up empty strings to undefined
       const cleanedData = Object.fromEntries(
-        Object.entries(data).map(([key, value]) => [
-          key,
-          value === '' ? undefined : value,
-        ])
+        Object.entries(data).map(([key, value]) => [key, value === '' ? undefined : value])
       );
 
       // Prepare custom field values
@@ -203,7 +215,7 @@ function ClientCreateForm() {
         ),
       };
 
-      const hasCustomFieldValues = Object.values(customFieldsData.values).some(v => v !== null);
+      const hasCustomFieldValues = Object.values(customFieldsData.values).some((v) => v !== null);
 
       await handleCreateWithDuplicateCheck(
         cleanedData as CreateClientDto,
@@ -218,7 +230,7 @@ function ClientCreateForm() {
     }
   };
 
-  const renderCustomField = (definition: typeof activeFieldDefinitions[0]) => {
+  const renderCustomField = (definition: (typeof activeFieldDefinitions)[0]) => {
     const value = customFieldValues[definition.id] || '';
 
     return (
@@ -278,9 +290,7 @@ function ClientCreateForm() {
               Anuluj
             </Button>
             <Button type="submit" disabled={createClient.isPending}>
-              {createClient.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {createClient.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <Plus className="mr-2 h-4 w-4" />
               Dodaj klienta
             </Button>

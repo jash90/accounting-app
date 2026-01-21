@@ -45,6 +45,7 @@ const employeeNavItems = [
 ```
 
 **Key Points**:
+
 - Add navigation item for each user role
 - Use consistent icons from Lucide React
 - Match URLs to route configuration
@@ -60,7 +61,7 @@ const navItems = useMemo(() => {
   const items = [...baseNavItems];
 
   // Add Tasks if module is enabled
-  if (modules?.some(m => m.module.slug === 'tasks')) {
+  if (modules?.some((m) => m.module.slug === 'tasks')) {
     items.push({
       title: 'Tasks',
       href: '/modules/tasks',
@@ -125,13 +126,10 @@ export const tasksHandlers = [
 
   // GET /api/modules/tasks/:id - Get single task
   http.get('/api/modules/tasks/:id', ({ params }) => {
-    const task = mockTasks.find(t => t.id === params.id);
+    const task = mockTasks.find((t) => t.id === params.id);
 
     if (!task) {
-      return HttpResponse.json(
-        { message: 'Task not found', statusCode: 404 },
-        { status: 404 }
-      );
+      return HttpResponse.json({ message: 'Task not found', statusCode: 404 }, { status: 404 });
     }
 
     return HttpResponse.json(task);
@@ -169,13 +167,10 @@ export const tasksHandlers = [
   // PATCH /api/modules/tasks/:id - Update task
   http.patch('/api/modules/tasks/:id', async ({ params, request }) => {
     const body = await request.json();
-    const task = mockTasks.find(t => t.id === params.id);
+    const task = mockTasks.find((t) => t.id === params.id);
 
     if (!task) {
-      return HttpResponse.json(
-        { message: 'Task not found', statusCode: 404 },
-        { status: 404 }
-      );
+      return HttpResponse.json({ message: 'Task not found', statusCode: 404 }, { status: 404 });
     }
 
     const updatedTask = {
@@ -189,13 +184,10 @@ export const tasksHandlers = [
 
   // DELETE /api/modules/tasks/:id - Delete task
   http.delete('/api/modules/tasks/:id', ({ params }) => {
-    const taskIndex = mockTasks.findIndex(t => t.id === params.id);
+    const taskIndex = mockTasks.findIndex((t) => t.id === params.id);
 
     if (taskIndex === -1) {
-      return HttpResponse.json(
-        { message: 'Task not found', statusCode: 404 },
-        { status: 404 }
-      );
+      return HttpResponse.json({ message: 'Task not found', statusCode: 404 }, { status: 404 });
     }
 
     return new HttpResponse(null, { status: 204 });
@@ -203,7 +195,7 @@ export const tasksHandlers = [
 
   // GET /api/modules/tasks/status/:status - Filter by status
   http.get('/api/modules/tasks/status/:status', ({ params }) => {
-    const filtered = mockTasks.filter(t => t.status === params.status);
+    const filtered = mockTasks.filter((t) => t.status === params.status);
     return HttpResponse.json(filtered);
   }),
 ];
@@ -223,6 +215,7 @@ export const handlers = [
 ```
 
 **Key Points**:
+
 - Mock all endpoints your module uses
 - Return realistic data structures matching backend DTOs
 - Include error scenarios (404, 403, 400)
@@ -513,12 +506,9 @@ export class TaskService {
   constructor(
     @InjectRepository(Task)
     private taskRepository: Repository<Task>,
-    private configService: ConfigService,
+    private configService: ConfigService
   ) {
-    this.defaultDueDays = this.configService.get<number>(
-      'TASKS_DEFAULT_DUE_DAYS',
-      7
-    );
+    this.defaultDueDays = this.configService.get<number>('TASKS_DEFAULT_DUE_DAYS', 7);
   }
 
   async create(createDto: CreateTaskDto, user: User): Promise<Task> {
@@ -599,12 +589,18 @@ export function handleApiError(error: AxiosError<ApiError>) {
 
 function getErrorTitle(status?: number): string {
   switch (status) {
-    case 400: return 'Validation Error';
-    case 401: return 'Authentication Required';
-    case 403: return 'Access Denied';
-    case 404: return 'Not Found';
-    case 500: return 'Server Error';
-    default: return 'Error';
+    case 400:
+      return 'Validation Error';
+    case 401:
+      return 'Authentication Required';
+    case 403:
+      return 'Access Denied';
+    case 404:
+      return 'Not Found';
+    case 500:
+      return 'Server Error';
+    default:
+      return 'Error';
   }
 }
 ```
@@ -639,13 +635,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
-    const status = exception instanceof HttpException
-      ? exception.getStatus()
-      : HttpStatus.INTERNAL_SERVER_ERROR;
+    const status =
+      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const message = exception instanceof HttpException
-      ? exception.message
-      : 'Internal server error';
+    const message =
+      exception instanceof HttpException ? exception.message : 'Internal server error';
 
     response.status(status).json({
       statusCode: status,
@@ -670,12 +664,14 @@ This guide is part of a comprehensive documentation suite:
 ## Quick Navigation
 
 **Creating a New Module**:
+
 1. **Understand system** → ARCHITECTURE.md
 2. **Follow this tutorial** → MODULE_DEVELOPMENT.md (this document)
 3. **Copy code patterns** → IMPLEMENTATION_PATTERNS.md
 4. **Test with API** → API_ENDPOINTS.md
 
 **Getting Help**:
+
 - Need architecture overview? → ARCHITECTURE.md
 - Need code examples? → IMPLEMENTATION_PATTERNS.md
 - Need API details? → API_ENDPOINTS.md

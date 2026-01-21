@@ -1,11 +1,13 @@
 import { lazy, Suspense } from 'react';
+
 import { Routes as RouterRoutes, Route, Navigate } from 'react-router-dom';
-import { useAuthContext } from '@/contexts/auth-context';
-import { UserRole } from '@/types/enums';
+
 import AdminLayout from '@/components/layouts/admin-layout';
 import CompanyLayout from '@/components/layouts/company-layout';
 import EmployeeLayout from '@/components/layouts/employee-layout';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthContext } from '@/contexts/auth-context';
+import { UserRole } from '@/types/enums';
 
 // Lazy load pages for code splitting
 const LoginPage = lazy(() => import('@/pages/public/login-page'));
@@ -16,7 +18,9 @@ const CompanyModulesPage = lazy(() => import('@/pages/admin/companies/company-mo
 const ModulesListPage = lazy(() => import('@/pages/admin/modules/modules-list'));
 const CompanyDashboard = lazy(() => import('@/pages/company/dashboard'));
 const EmployeesListPage = lazy(() => import('@/pages/company/employees/employees-list'));
-const EmployeePermissionsPage = lazy(() => import('@/pages/company/employees/employee-permissions'));
+const EmployeePermissionsPage = lazy(
+  () => import('@/pages/company/employees/employee-permissions')
+);
 const CompanyModulesListPage = lazy(() => import('@/pages/company/modules/modules-list'));
 const EmployeeDashboard = lazy(() => import('@/pages/employee/dashboard'));
 
@@ -62,12 +66,24 @@ const TasksSettingsPage = lazy(() => import('@/pages/modules/tasks/tasks-setting
 const TaskCreatePage = lazy(() => import('@/pages/modules/tasks/task-create'));
 
 // Time Tracking Pages
-const TimeTrackingDashboardPage = lazy(() => import('@/pages/modules/time-tracking/time-tracking-dashboard'));
-const TimeTrackingEntriesPage = lazy(() => import('@/pages/modules/time-tracking/time-tracking-entries'));
-const TimeTrackingTimesheetDailyPage = lazy(() => import('@/pages/modules/time-tracking/time-tracking-timesheet-daily'));
-const TimeTrackingTimesheetWeeklyPage = lazy(() => import('@/pages/modules/time-tracking/time-tracking-timesheet-weekly'));
-const TimeTrackingReportsPage = lazy(() => import('@/pages/modules/time-tracking/time-tracking-reports'));
-const TimeTrackingSettingsPage = lazy(() => import('@/pages/modules/time-tracking/time-tracking-settings'));
+const TimeTrackingDashboardPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-dashboard')
+);
+const TimeTrackingEntriesPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-entries')
+);
+const TimeTrackingTimesheetDailyPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-timesheet-daily')
+);
+const TimeTrackingTimesheetWeeklyPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-timesheet-weekly')
+);
+const TimeTrackingReportsPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-reports')
+);
+const TimeTrackingSettingsPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-settings')
+);
 
 function PageLoader() {
   return (
@@ -90,9 +106,7 @@ function Unauthorized() {
     <div className="flex h-screen items-center justify-center">
       <div className="text-center">
         <h1 className="text-2xl font-bold mb-4">Unauthorized</h1>
-        <p className="text-muted-foreground">
-          You don&apos;t have permission to access this page.
-        </p>
+        <p className="text-muted-foreground">You don&apos;t have permission to access this page.</p>
       </div>
     </div>
   );
@@ -101,7 +115,7 @@ function Unauthorized() {
 // Protected Route Component
 function ProtectedRoute({
   children,
-  allowedRoles
+  allowedRoles,
 }: {
   children: React.ReactNode;
   allowedRoles?: UserRole[];
@@ -992,7 +1006,6 @@ export default function Routes() {
           }
         />
       </Route>
-
 
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<NotFound />} />

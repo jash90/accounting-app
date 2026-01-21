@@ -1,12 +1,16 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ConditionEvaluatorService } from './condition-evaluator.service';
-import { Client } from '@accounting/common';
+import { Test, type TestingModule } from '@nestjs/testing';
+
 import {
-  SingleCondition,
-  ConditionGroup,
-  AutoAssignCondition,
+  type Client,
+  type SingleCondition,
+  type ConditionGroup,
+  EmploymentType,
+  VatStatus,
+  TaxScheme,
+  ZusStatus,
 } from '@accounting/common';
-import { EmploymentType, VatStatus, TaxScheme, ZusStatus } from '@accounting/common';
+
+import { ConditionEvaluatorService } from './condition-evaluator.service';
 
 describe('ConditionEvaluatorService', () => {
   let service: ConditionEvaluatorService;

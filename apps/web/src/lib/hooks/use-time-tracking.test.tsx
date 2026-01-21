@@ -1,6 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+import { useToast } from '@/components/ui/use-toast';
+
 import {
   useTimeEntries,
   useTimeEntry,
@@ -30,7 +33,6 @@ import {
   timesheetApi,
   timeReportsApi,
 } from '../api/endpoints/time-tracking';
-import { useToast } from '@/components/ui/use-toast';
 
 // Mock the API modules
 vi.mock('../api/endpoints/time-tracking');
@@ -194,7 +196,7 @@ describe('use-time-tracking hooks', () => {
       expect(mockToast).toHaveBeenCalledWith(
         expect.objectContaining({
           title: 'Sukces',
-        }),
+        })
       );
     });
 
@@ -223,7 +225,7 @@ describe('use-time-tracking hooks', () => {
         expect.objectContaining({
           title: 'Błąd',
           variant: 'destructive',
-        }),
+        })
       );
     });
   });
@@ -253,9 +255,7 @@ describe('use-time-tracking hooks', () => {
       expect(timeEntriesApi.update).toHaveBeenCalledWith('entry-123', {
         description: 'Updated',
       });
-      expect(mockToast).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'Sukces' }),
-      );
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Sukces' }));
     });
   });
 
@@ -276,9 +276,7 @@ describe('use-time-tracking hooks', () => {
       });
 
       expect(timeEntriesApi.delete).toHaveBeenCalledWith('entry-123');
-      expect(mockToast).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'Sukces' }),
-      );
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Sukces' }));
     });
   });
 
@@ -306,9 +304,7 @@ describe('use-time-tracking hooks', () => {
       });
 
       expect(timeEntriesApi.submit).toHaveBeenCalledWith('entry-123');
-      expect(mockToast).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'Sukces' }),
-      );
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Sukces' }));
     });
   });
 
@@ -332,9 +328,7 @@ describe('use-time-tracking hooks', () => {
       });
 
       expect(timeEntriesApi.approve).toHaveBeenCalledWith('entry-123');
-      expect(mockToast).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'Sukces' }),
-      );
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Sukces' }));
     });
   });
 
@@ -364,9 +358,7 @@ describe('use-time-tracking hooks', () => {
       expect(timeEntriesApi.reject).toHaveBeenCalledWith('entry-123', {
         rejectionNote: 'Invalid entry',
       });
-      expect(mockToast).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'Sukces' }),
-      );
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Sukces' }));
     });
   });
 
@@ -422,9 +414,7 @@ describe('use-time-tracking hooks', () => {
       });
 
       expect(timerApi.start).toHaveBeenCalledWith({ description: 'New timer' });
-      expect(mockToast).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'Sukces' }),
-      );
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Sukces' }));
     });
 
     it('should show error when timer already running', async () => {
@@ -448,7 +438,7 @@ describe('use-time-tracking hooks', () => {
       expect(mockToast).toHaveBeenCalledWith(
         expect.objectContaining({
           variant: 'destructive',
-        }),
+        })
       );
     });
   });
@@ -473,9 +463,7 @@ describe('use-time-tracking hooks', () => {
       });
 
       expect(timerApi.stop).toHaveBeenCalledWith({ description: 'Final notes' });
-      expect(mockToast).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'Sukces' }),
-      );
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Sukces' }));
     });
 
     it('should stop timer without additional description', async () => {
@@ -543,7 +531,7 @@ describe('use-time-tracking hooks', () => {
         expect.objectContaining({
           title: 'Ostrzeżenie',
           variant: 'destructive',
-        }),
+        })
       );
     });
   });
@@ -565,9 +553,7 @@ describe('use-time-tracking hooks', () => {
       });
 
       expect(timerApi.discard).toHaveBeenCalled();
-      expect(mockToast).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'Sukces' }),
-      );
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Sukces' }));
     });
   });
 
@@ -614,9 +600,7 @@ describe('use-time-tracking hooks', () => {
       expect(timeSettingsApi.update).toHaveBeenCalledWith({
         defaultHourlyRate: 150,
       });
-      expect(mockToast).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'Sukces' }),
-      );
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Sukces' }));
     });
   });
 
@@ -844,9 +828,7 @@ describe('use-time-tracking hooks', () => {
       expect(mockClick).toHaveBeenCalled();
       // Verify cleanup
       expect(mockRevokeObjectURL).toHaveBeenCalledWith('blob:test-url');
-      expect(mockToast).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'Sukces' })
-      );
+      expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Sukces' }));
     });
 
     it('should export report as Excel', async () => {
@@ -1015,7 +997,7 @@ describe('use-time-tracking hooks', () => {
       expect(mockToast).toHaveBeenCalledWith(
         expect.objectContaining({
           description: 'Nie udało się utworzyć wpisu czasu',
-        }),
+        })
       );
     });
 

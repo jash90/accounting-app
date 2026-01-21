@@ -16,10 +16,13 @@ export class EmailMessagePage extends BasePage {
   private readonly forwardButton = 'button:has-text("Forward")';
   private readonly deleteButton = 'button:has-text("Delete")';
   private readonly backButton = 'button:has-text("Back"), [aria-label="Back"]';
-  private readonly aiReplyButton = 'button:has-text("AI Reply"), button:has-text("Generate AI Reply")';
+  private readonly aiReplyButton =
+    'button:has-text("AI Reply"), button:has-text("Generate AI Reply")';
   private readonly attachmentsList = '[data-testid="attachments-list"], .attachments';
-  private readonly attachmentItem = (index: number) => `[data-testid="attachment-${index}"], .attachment-item:nth-child(${index + 1})`;
-  private readonly downloadAttachmentButton = (index: number) => `[data-testid="download-attachment-${index}"], .attachment-item:nth-child(${index + 1}) a`;
+  private readonly attachmentItem = (index: number) =>
+    `[data-testid="attachment-${index}"], .attachment-item:nth-child(${index + 1})`;
+  private readonly downloadAttachmentButton = (index: number) =>
+    `[data-testid="download-attachment-${index}"], .attachment-item:nth-child(${index + 1}) a`;
   private readonly loadingSpinner = '.animate-spin, [data-testid="loading"]';
   private readonly markAsReadButton = 'button:has-text("Mark as Read")';
   private readonly markAsUnreadButton = 'button:has-text("Mark as Unread")';
@@ -40,27 +43,27 @@ export class EmailMessagePage extends BasePage {
 
   async getSubject(): Promise<string> {
     const subject = this.page.locator(this.subjectHeading).first();
-    return await subject.textContent() || '';
+    return (await subject.textContent()) || '';
   }
 
   async getFrom(): Promise<string> {
     const from = this.page.locator(this.fromAddress);
-    return await from.textContent() || '';
+    return (await from.textContent()) || '';
   }
 
   async getTo(): Promise<string> {
     const to = this.page.locator(this.toAddress);
-    return await to.textContent() || '';
+    return (await to.textContent()) || '';
   }
 
   async getDate(): Promise<string> {
     const date = this.page.locator(this.dateReceived);
-    return await date.textContent() || '';
+    return (await date.textContent()) || '';
   }
 
   async getContent(): Promise<string> {
     const content = this.page.locator(this.messageContent);
-    return await content.textContent() || '';
+    return (await content.textContent()) || '';
   }
 
   async clickReply(): Promise<void> {
@@ -113,7 +116,7 @@ export class EmailMessagePage extends BasePage {
 
   async hasAttachments(): Promise<boolean> {
     const attachments = this.page.locator(this.attachmentsList);
-    return await attachments.count() > 0;
+    return (await attachments.count()) > 0;
   }
 
   async markAsRead(): Promise<void> {

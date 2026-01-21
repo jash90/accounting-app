@@ -11,16 +11,20 @@ export class EmailComposePage extends BasePage {
   private readonly ccInput = 'input#cc, [name="cc"]';
   private readonly bccInput = 'input#bcc, [name="bcc"]';
   private readonly subjectInput = 'input#subject, [name="subject"], input[placeholder*="subject"]';
-  private readonly contentInput = 'textarea#content, [name="content"], textarea[placeholder*="message"]';
+  private readonly contentInput =
+    'textarea#content, [name="content"], textarea[placeholder*="message"]';
   private readonly sendButton = 'button:has-text("Send")';
-  private readonly saveDraftButton = 'button:has-text("Save Draft"), button:has-text("Update Draft")';
+  private readonly saveDraftButton =
+    'button:has-text("Save Draft"), button:has-text("Update Draft")';
   private readonly backButton = 'button:has-text("Back"), [aria-label="Back"]';
   private readonly ccBccToggle = 'button:has-text("Add CC/BCC"), button:has-text("Hide CC/BCC")';
   private readonly attachmentZone = '[data-testid="attachment-zone"], .border-dashed';
   private readonly fileInput = 'input[type="file"]';
   private readonly attachmentList = '[data-testid="attachment-list"], .attachment-list';
-  private readonly attachmentItem = (index: number) => `[data-testid="attachment-${index}"], .attachment-item:nth-child(${index + 1})`;
-  private readonly removeAttachmentButton = (index: number) => `[data-testid="remove-attachment-${index}"], .attachment-item:nth-child(${index + 1}) button`;
+  private readonly attachmentItem = (index: number) =>
+    `[data-testid="attachment-${index}"], .attachment-item:nth-child(${index + 1})`;
+  private readonly removeAttachmentButton = (index: number) =>
+    `[data-testid="remove-attachment-${index}"], .attachment-item:nth-child(${index + 1}) button`;
   private readonly aiGeneratedBadge = 'text=AI Generated, [data-testid="ai-badge"]';
   private readonly loadingSpinner = '.animate-spin, [data-testid="loading"]';
 

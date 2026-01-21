@@ -72,7 +72,9 @@ test.describe('Company Owner - Employee Management', () => {
     await authenticatedCompanyOwnerPage.waitForTimeout(1000);
   });
 
-  test('should not create employee for other company', async ({ authenticatedCompanyOwnerPage }) => {
+  test('should not create employee for other company', async ({
+    authenticatedCompanyOwnerPage,
+  }) => {
     const employeesPage = new EmployeesListPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
@@ -232,7 +234,9 @@ test.describe('Company Owner - Permission Management', () => {
     expect(typeof hasRead).toBe('boolean');
   });
 
-  test('should reflect permission changes immediately', async ({ authenticatedCompanyOwnerPage }) => {
+  test('should reflect permission changes immediately', async ({
+    authenticatedCompanyOwnerPage,
+  }) => {
     const employeesPage = new EmployeesListPage(authenticatedCompanyOwnerPage);
     const permissionsPage = new EmployeePermissionsPage(authenticatedCompanyOwnerPage);
 
@@ -263,7 +267,9 @@ test.describe('Company Owner - Company Modules', () => {
     await modulesPage.expectModuleVisible('ai-agent');
   });
 
-  test('should not enable/disable modules (admin only)', async ({ authenticatedCompanyOwnerPage }) => {
+  test('should not enable/disable modules (admin only)', async ({
+    authenticatedCompanyOwnerPage,
+  }) => {
     const modulesPage = new CompanyModulesListPage(authenticatedCompanyOwnerPage);
 
     await modulesPage.goto();

@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useToast } from '@/components/ui/use-toast';
+import { type ApiErrorResponse } from '@/types/api';
+import { type CreateEmployeeDto, type UpdateEmployeeDto } from '@/types/dtos';
+
 import { employeesApi } from '../api/endpoints/employees';
 import { queryKeys } from '../api/query-client';
-import { CreateEmployeeDto, UpdateEmployeeDto } from '@/types/dtos';
-import { useToast } from '@/components/ui/use-toast';
-import { ApiErrorResponse } from '@/types/api';
 
 export function useEmployees() {
   return useQuery({
@@ -90,4 +92,3 @@ export function useDeleteEmployee() {
     },
   });
 }
-

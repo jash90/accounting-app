@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { LucideIcon, ArrowRight } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+import { type LucideIcon, ArrowRight } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils/cn';
 
 export interface ModuleCardProps {

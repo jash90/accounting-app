@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { PageHeader } from '@/components/common/page-header';
+
+import { Mail, Edit, Trash2, Plus, Server, Lock } from 'lucide-react';
+
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { PageHeader } from '@/components/common/page-header';
 import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/use-toast';
 import {
   useUserEmailConfig,
@@ -15,8 +18,10 @@ import {
   useTestSmtp,
   useTestImap,
 } from '@/lib/hooks/use-email-config';
-import { CreateEmailConfigFormData, UpdateEmailConfigFormData } from '@/lib/validation/schemas';
-import { Mail, Edit, Trash2, Plus, Server, Lock } from 'lucide-react';
+import {
+  type CreateEmailConfigFormData,
+  type UpdateEmailConfigFormData,
+} from '@/lib/validation/schemas';
 
 export default function UserEmailConfigPage() {
   const { data: emailConfig, isPending, isError, error } = useUserEmailConfig();
@@ -121,8 +126,8 @@ export default function UserEmailConfigPage() {
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold text-apptax-navy">No Email Configuration</h3>
                 <p className="text-muted-foreground max-w-md">
-                  You haven&apos;t configured your email settings yet. Create a configuration to start sending and
-                  receiving emails through the platform.
+                  You haven&apos;t configured your email settings yet. Create a configuration to
+                  start sending and receiving emails through the platform.
                 </p>
               </div>
               <Button onClick={() => setFormOpen(true)} className="mt-4">
@@ -144,7 +149,9 @@ export default function UserEmailConfigPage() {
               </div>
               <div>
                 <h3 className="font-semibold text-destructive">Error Loading Configuration</h3>
-                <p className="text-sm text-muted-foreground">{error.message || 'Failed to load email configuration'}</p>
+                <p className="text-sm text-muted-foreground">
+                  {error.message || 'Failed to load email configuration'}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -256,8 +263,9 @@ export default function UserEmailConfigPage() {
                     {emailConfig.displayName || 'Email Configuration Active'}
                   </h4>
                   <p className="text-sm text-muted-foreground">
-                    Your email configuration is active and ready to use. Passwords are securely encrypted and stored.
-                    Last updated: {new Date(emailConfig.updatedAt).toLocaleDateString()}
+                    Your email configuration is active and ready to use. Passwords are securely
+                    encrypted and stored. Last updated:{' '}
+                    {new Date(emailConfig.updatedAt).toLocaleDateString()}
                   </p>
                 </div>
               </div>

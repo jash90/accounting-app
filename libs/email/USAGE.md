@@ -23,6 +23,7 @@ npm install
 ```
 
 **Dependencies:**
+
 - `nodemailer` - SMTP email sending
 - `node-imap` - IMAP email reading
 - `mailparser` - Email parsing
@@ -54,7 +55,7 @@ import { EmailSenderService, EmailReaderService } from '@accounting/email';
 export class YourService {
   constructor(
     private readonly emailSender: EmailSenderService,
-    private readonly emailReader: EmailReaderService,
+    private readonly emailReader: EmailReaderService
   ) {}
 }
 ```
@@ -70,6 +71,7 @@ The email module now supports persistent email configuration stored in the datab
 Users can manage their own email configuration through these endpoints:
 
 **Create User Configuration:**
+
 ```bash
 POST /api/email-config/user
 Authorization: Bearer <jwt-token>
@@ -91,12 +93,14 @@ Content-Type: application/json
 ```
 
 **Get User Configuration:**
+
 ```bash
 GET /api/email-config/user
 Authorization: Bearer <jwt-token>
 ```
 
 **Update User Configuration:**
+
 ```bash
 PUT /api/email-config/user
 Authorization: Bearer <jwt-token>
@@ -109,6 +113,7 @@ Content-Type: application/json
 ```
 
 **Delete User Configuration:**
+
 ```bash
 DELETE /api/email-config/user
 Authorization: Bearer <jwt-token>
@@ -119,6 +124,7 @@ Authorization: Bearer <jwt-token>
 Company owners can manage company-wide email configuration:
 
 **Create Company Configuration:**
+
 ```bash
 POST /api/email-config/company
 Authorization: Bearer <jwt-token>
@@ -140,12 +146,14 @@ Content-Type: application/json
 ```
 
 **Get Company Configuration:**
+
 ```bash
 GET /api/email-config/company
 Authorization: Bearer <jwt-token>
 ```
 
 **Update Company Configuration:**
+
 ```bash
 PUT /api/email-config/company
 Authorization: Bearer <jwt-token>
@@ -157,6 +165,7 @@ Content-Type: application/json
 ```
 
 **Delete Company Configuration:**
+
 ```bash
 DELETE /api/email-config/company
 Authorization: Bearer <jwt-token>
@@ -166,16 +175,13 @@ Authorization: Bearer <jwt-token>
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import {
-  EmailConfigurationService,
-  EmailSenderService
-} from '@accounting/email';
+import { EmailConfigurationService, EmailSenderService } from '@accounting/email';
 
 @Injectable()
 export class NotificationService {
   constructor(
     private readonly emailConfigService: EmailConfigurationService,
-    private readonly emailSender: EmailSenderService,
+    private readonly emailSender: EmailSenderService
   ) {}
 
   async sendUserNotification(userId: string, message: string) {
@@ -183,9 +189,7 @@ export class NotificationService {
     const userConfig = await this.emailConfigService.getUserConfig(userId);
 
     // Get decrypted SMTP config for sending
-    const smtpConfig = await this.emailConfigService.getDecryptedSmtpConfig(
-      userConfig.id
-    );
+    const smtpConfig = await this.emailConfigService.getDecryptedSmtpConfig(userConfig.id);
 
     // Send email using user's configuration
     await this.emailSender.sendEmail(smtpConfig, {
@@ -200,9 +204,7 @@ export class NotificationService {
     const companyConfig = await this.emailConfigService.getCompanyConfig(companyId);
 
     // Get decrypted SMTP config
-    const smtpConfig = await this.emailConfigService.getDecryptedSmtpConfig(
-      companyConfig.id
-    );
+    const smtpConfig = await this.emailConfigService.getDecryptedSmtpConfig(companyConfig.id);
 
     // Send email using company's configuration
     await this.emailSender.sendEmail(smtpConfig, {
@@ -240,7 +242,7 @@ import { EmailConfigHelper } from '@accounting/email';
 
 // From direct values
 const config = EmailConfigHelper.createFromLHServer({
-  serverNumber: '123456',      // From mail-server123456.lh.pl
+  serverNumber: '123456', // From mail-server123456.lh.pl
   emailAddress: 'contact@yourdomain.pl',
   password: 'your-password',
 });
@@ -354,7 +356,7 @@ const emails = await this.emailReader.fetchEmails(imapConfig, {
   markAsSeen: false,
 });
 
-emails.forEach(email => {
+emails.forEach((email) => {
   console.log(`From: ${email.from[0].address}`);
   console.log(`Subject: ${email.subject}`);
   console.log(`Date: ${email.date}`);
@@ -386,10 +388,7 @@ for (const email of emails) {
       console.log(`Type: ${attachment.contentType}`);
 
       // Save attachment
-      await fs.promises.writeFile(
-        `/path/to/save/${attachment.filename}`,
-        attachment.content
-      );
+      await fs.promises.writeFile(`/path/to/save/${attachment.filename}`, attachment.content);
     }
   }
 }
@@ -423,11 +422,7 @@ await this.emailReader.deleteEmails(imapConfig, [messageId1, messageId2]);
 
 ```typescript
 const emails = await this.emailReader.fetchEmails(imapConfig, {
-  searchCriteria: [
-    'UNSEEN',
-    ['SINCE', '2024-01-01'],
-    ['FROM', 'important@example.com']
-  ],
+  searchCriteria: ['UNSEEN', ['SINCE', '2024-01-01'], ['FROM', 'important@example.com']],
   limit: 50,
 });
 ```
@@ -444,12 +439,7 @@ import { EmailSenderService, EmailConfigHelper } from '@accounting/email';
 export class CompanyEmailService {
   constructor(private readonly emailSender: EmailSenderService) {}
 
-  async sendCompanyEmail(
-    companyId: string,
-    to: string,
-    subject: string,
-    html: string
-  ) {
+  async sendCompanyEmail(companyId: string, to: string, subject: string, html: string) {
     // Fetch company's email configuration from database
     const companyEmailConfig = await this.getCompanyEmailConfig(companyId);
 
@@ -603,7 +593,9 @@ MAIL_IMAP_HOST=mail-server123456.lh.pl
 const config = EmailConfigHelper.createFromEnv(process.env);
 
 // ❌ DON'T: Hardcode credentials
-const config = { /* hardcoded values */ };
+const config = {
+  /* hardcoded values */
+};
 ```
 
 ### 2. Error Handling
@@ -715,6 +707,7 @@ const logger = new Logger('EmailDebug');
 ## Support
 
 For issues or questions:
+
 1. Check the [main README](./README.md)
 2. Review the [interfaces](./src/lib/interfaces/) for TypeScript definitions
 3. See [service implementations](./src/lib/services/) for advanced usage

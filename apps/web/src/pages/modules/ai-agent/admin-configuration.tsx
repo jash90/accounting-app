@@ -1,21 +1,73 @@
 import { useState, useMemo } from 'react';
-import { toast } from 'sonner';
+
 import { useForm, useWatch } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useAIConfiguration, useCreateAIConfiguration, useUpdateAIConfiguration, useOpenRouterModels, useOpenAIModels, useOpenAIEmbeddingModels, useResetApiKey } from '@/lib/hooks/use-ai-agent';
-import { updateAIConfigurationSchema, UpdateAIConfigurationFormData } from '@/lib/validation/schemas';
-import { Settings, Sparkles, Zap, Eye, Wrench, ExternalLink, Radio, Database, AlertTriangle, KeyRound } from 'lucide-react';
+import {
+  Settings,
+  Sparkles,
+  Zap,
+  Eye,
+  Wrench,
+  ExternalLink,
+  Radio,
+  Database,
+  AlertTriangle,
+  KeyRound,
+} from 'lucide-react';
+import { toast } from 'sonner';
+
 import { ModelPickerModal } from '@/components/modules/ai-agent/model-picker-modal';
-import { OpenRouterModelDto, OpenAIModelDto, AIConfigurationResponseDto, AIProvider } from '@/types/dtos';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  useAIConfiguration,
+  useCreateAIConfiguration,
+  useUpdateAIConfiguration,
+  useOpenRouterModels,
+  useOpenAIModels,
+  useOpenAIEmbeddingModels,
+  useResetApiKey,
+} from '@/lib/hooks/use-ai-agent';
+import {
+  updateAIConfigurationSchema,
+  type UpdateAIConfigurationFormData,
+} from '@/lib/validation/schemas';
+import {
+  type OpenRouterModelDto,
+  type OpenAIModelDto,
+  type AIConfigurationResponseDto,
+  type AIProvider,
+} from '@/types/dtos';
 
 // Fallback models used while loading or if API fails
 const FALLBACK_OPENAI_MODELS: OpenAIModelDto[] = [
@@ -30,9 +82,21 @@ const FALLBACK_OPENAI_MODELS: OpenAIModelDto[] = [
 
 // Fallback embedding models
 const FALLBACK_EMBEDDING_MODELS: OpenAIModelDto[] = [
-  { id: 'text-embedding-3-small', name: 'text-embedding-3-small', description: 'Newest, cheapest, 1536 dims' },
-  { id: 'text-embedding-3-large', name: 'text-embedding-3-large', description: 'Best quality, 3072 dims' },
-  { id: 'text-embedding-ada-002', name: 'text-embedding-ada-002', description: 'Legacy model, 1536 dims' },
+  {
+    id: 'text-embedding-3-small',
+    name: 'text-embedding-3-small',
+    description: 'Newest, cheapest, 1536 dims',
+  },
+  {
+    id: 'text-embedding-3-large',
+    name: 'text-embedding-3-large',
+    description: 'Best quality, 3072 dims',
+  },
+  {
+    id: 'text-embedding-ada-002',
+    name: 'text-embedding-ada-002',
+    description: 'Legacy model, 1536 dims',
+  },
 ];
 
 function formatContextWindow(tokens: number): string {
@@ -64,7 +128,19 @@ interface ConfigurationFormProps {
   isResettingApiKey: boolean;
 }
 
-function ConfigurationForm({ config, openRouterModels, isLoadingModels, openAIModels, isLoadingOpenAIModels, openAIEmbeddingModels, isLoadingEmbeddingModels, onSubmit, isPending, onResetApiKey, isResettingApiKey }: ConfigurationFormProps) {
+function ConfigurationForm({
+  config,
+  openRouterModels,
+  isLoadingModels,
+  openAIModels,
+  isLoadingOpenAIModels,
+  openAIEmbeddingModels,
+  isLoadingEmbeddingModels,
+  onSubmit,
+  isPending,
+  onResetApiKey,
+  isResettingApiKey,
+}: ConfigurationFormProps) {
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
 
@@ -169,10 +245,7 @@ function ConfigurationForm({ config, openRouterModels, isLoadingModels, openAIMo
                 {selectedProvider === 'openai' ? (
                   // OpenAI: Select with predefined list
                   <>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select model" />
@@ -197,9 +270,7 @@ function ConfigurationForm({ config, openRouterModels, isLoadingModels, openAIMo
                         )}
                       </SelectContent>
                     </Select>
-                    <FormDescription>
-                      Select an OpenAI model for your AI assistant
-                    </FormDescription>
+                    <FormDescription>Select an OpenAI model for your AI assistant</FormDescription>
                   </>
                 ) : (
                   // OpenRouter: Model picker
@@ -277,10 +348,7 @@ function ConfigurationForm({ config, openRouterModels, isLoadingModels, openAIMo
                       Choose from hundreds of AI models via OpenRouter
                     </FormDescription>
                     {/* Hidden input to store the value */}
-                    <Input
-                      type="hidden"
-                      {...field}
-                    />
+                    <Input type="hidden" {...field} />
                   </>
                 )}
                 <FormMessage />
@@ -314,14 +382,12 @@ function ConfigurationForm({ config, openRouterModels, isLoadingModels, openAIMo
                         <DialogHeader>
                           <DialogTitle>Reset API Key?</DialogTitle>
                           <DialogDescription>
-                            This will clear the current API key. AI features will be disabled until you configure a new API key.
+                            This will clear the current API key. AI features will be disabled until
+                            you configure a new API key.
                           </DialogDescription>
                         </DialogHeader>
                         <DialogFooter>
-                          <Button
-                            variant="outline"
-                            onClick={() => setShowResetDialog(false)}
-                          >
+                          <Button variant="outline" onClick={() => setShowResetDialog(false)}>
                             Cancel
                           </Button>
                           <Button
@@ -409,9 +475,7 @@ function ConfigurationForm({ config, openRouterModels, isLoadingModels, openAIMo
                       onChange={(e) => field.onChange(parseFloat(e.target.value))}
                     />
                   </FormControl>
-                  <FormDescription>
-                    0 = Focused, 2 = Creative
-                  </FormDescription>
+                  <FormDescription>0 = Focused, 2 = Creative</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -434,9 +498,7 @@ function ConfigurationForm({ config, openRouterModels, isLoadingModels, openAIMo
                       onChange={(e) => field.onChange(parseInt(e.target.value))}
                     />
                   </FormControl>
-                  <FormDescription>
-                    Response length limit
-                  </FormDescription>
+                  <FormDescription>Response length limit</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -455,14 +517,12 @@ function ConfigurationForm({ config, openRouterModels, isLoadingModels, openAIMo
                     Streaming Mode
                   </FormLabel>
                   <FormDescription>
-                    Enable real-time response streaming. AI responses will appear word-by-word instead of all at once.
+                    Enable real-time response streaming. AI responses will appear word-by-word
+                    instead of all at once.
                   </FormDescription>
                 </div>
                 <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
+                  <Switch checked={field.value} onCheckedChange={field.onChange} />
                 </FormControl>
               </FormItem>
             )}
@@ -476,14 +536,17 @@ function ConfigurationForm({ config, openRouterModels, isLoadingModels, openAIMo
               <span className="text-xs text-muted-foreground">(for Knowledge Base)</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Configure a separate API key and model for generating embeddings. Used when uploading documents to the Knowledge Base.
+              Configure a separate API key and model for generating embeddings. Used when uploading
+              documents to the Knowledge Base.
             </p>
 
             {/* Warning about OpenRouter */}
             <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
               <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
               <p className="text-xs text-amber-700 dark:text-amber-400">
-                OpenRouter does not support embeddings. If your main provider is OpenRouter, you must configure a separate OpenAI API key for embeddings to use the Knowledge Base feature.
+                OpenRouter does not support embeddings. If your main provider is OpenRouter, you
+                must configure a separate OpenAI API key for embeddings to use the Knowledge Base
+                feature.
               </p>
             </div>
 
@@ -494,10 +557,7 @@ function ConfigurationForm({ config, openRouterModels, isLoadingModels, openAIMo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Embedding Provider</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select embedding provider" />
@@ -510,9 +570,7 @@ function ConfigurationForm({ config, openRouterModels, isLoadingModels, openAIMo
                       </SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormDescription>
-                    Only OpenAI supports embedding generation
-                  </FormDescription>
+                  <FormDescription>Only OpenAI supports embedding generation</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -525,10 +583,7 @@ function ConfigurationForm({ config, openRouterModels, isLoadingModels, openAIMo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Embedding Model</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select embedding model" />
@@ -553,9 +608,7 @@ function ConfigurationForm({ config, openRouterModels, isLoadingModels, openAIMo
                       )}
                     </SelectContent>
                   </Select>
-                  <FormDescription>
-                    Model used for generating document embeddings
-                  </FormDescription>
+                  <FormDescription>Model used for generating document embeddings</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -572,7 +625,11 @@ function ConfigurationForm({ config, openRouterModels, isLoadingModels, openAIMo
                     <Input
                       {...field}
                       type="password"
-                      placeholder={config?.hasEmbeddingApiKey ? '●●●●●●●● (configured)' : 'Enter separate API key (optional)'}
+                      placeholder={
+                        config?.hasEmbeddingApiKey
+                          ? '●●●●●●●● (configured)'
+                          : 'Enter separate API key (optional)'
+                      }
                     />
                   </FormControl>
                   <FormDescription>
@@ -621,8 +678,12 @@ export default function AdminConfigurationPage() {
   const updateConfig = useUpdateAIConfiguration();
   const resetApiKey = useResetApiKey();
   const { data: openRouterModels = [], isLoading: isLoadingModels } = useOpenRouterModels();
-  const { data: openAIModels = FALLBACK_OPENAI_MODELS, isLoading: isLoadingOpenAIModels } = useOpenAIModels();
-  const { data: openAIEmbeddingModels = FALLBACK_EMBEDDING_MODELS, isLoading: isLoadingEmbeddingModels } = useOpenAIEmbeddingModels();
+  const { data: openAIModels = FALLBACK_OPENAI_MODELS, isLoading: isLoadingOpenAIModels } =
+    useOpenAIModels();
+  const {
+    data: openAIEmbeddingModels = FALLBACK_EMBEDDING_MODELS,
+    isLoading: isLoadingEmbeddingModels,
+  } = useOpenAIEmbeddingModels();
 
   const handleSubmit = async (data: UpdateAIConfigurationFormData) => {
     // Remove apiKey from data if it's empty (don't update key)
@@ -770,10 +831,12 @@ export default function AdminConfigurationPage() {
               </h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="font-medium">Provider:</span> {config.embeddingProvider || 'openai'}
+                  <span className="font-medium">Provider:</span>{' '}
+                  {config.embeddingProvider || 'openai'}
                 </div>
                 <div>
-                  <span className="font-medium">Model:</span> {config.embeddingModel || 'text-embedding-ada-002'}
+                  <span className="font-medium">Model:</span>{' '}
+                  {config.embeddingModel || 'text-embedding-ada-002'}
                 </div>
                 <div className="col-span-2">
                   <span className="font-medium">API Key:</span>{' '}
@@ -789,7 +852,8 @@ export default function AdminConfigurationPage() {
             {/* Meta Information */}
             <div className="border-t pt-4 text-sm text-muted-foreground">
               <span className="font-medium">Last Updated:</span>{' '}
-              {new Date(config.updatedAt).toLocaleString()} by {config.updatedBy?.firstName || config.createdBy.firstName}
+              {new Date(config.updatedAt).toLocaleString()} by{' '}
+              {config.updatedBy?.firstName || config.createdBy.firstName}
             </div>
           </CardContent>
         </Card>

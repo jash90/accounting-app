@@ -29,7 +29,8 @@ export const KNOWN_PROVIDERS: KnownProvider[] = [
     documentationUrl: 'https://support.google.com/mail/answer/7126229',
     requiresAppPassword: true,
     requiresOAuth: true,
-    notes: 'Requires App Password or OAuth2. Enable "Less secure apps" or use App Passwords with 2FA.',
+    notes:
+      'Requires App Password or OAuth2. Enable "Less secure apps" or use App Passwords with 2FA.',
   },
 
   // Microsoft (Outlook, Hotmail, Live)
@@ -48,7 +49,8 @@ export const KNOWN_PROVIDERS: KnownProvider[] = [
     },
     provider: 'Microsoft',
     displayName: 'Outlook.com',
-    documentationUrl: 'https://support.microsoft.com/en-us/office/pop-imap-and-smtp-settings-8361e398-8af4-4e97-b147-6c6c4ac95353',
+    documentationUrl:
+      'https://support.microsoft.com/en-us/office/pop-imap-and-smtp-settings-8361e398-8af4-4e97-b147-6c6c4ac95353',
     requiresAppPassword: true,
     notes: 'May require App Password with 2FA enabled.',
   },
@@ -159,7 +161,16 @@ export const KNOWN_PROVIDERS: KnownProvider[] = [
 
   // Onet
   {
-    domains: ['onet.pl', 'onet.eu', 'op.pl', 'poczta.onet.pl', 'vip.onet.pl', 'autograf.pl', 'buziaczek.pl', 'spoko.pl'],
+    domains: [
+      'onet.pl',
+      'onet.eu',
+      'op.pl',
+      'poczta.onet.pl',
+      'vip.onet.pl',
+      'autograf.pl',
+      'buziaczek.pl',
+      'spoko.pl',
+    ],
     smtp: {
       host: 'smtp.poczta.onet.pl',
       port: 465,

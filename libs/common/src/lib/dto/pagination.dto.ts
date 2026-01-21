@@ -89,7 +89,7 @@ export function createPaginatedResponse<T>(
   data: T[],
   total: number,
   page: number,
-  limit: number,
+  limit: number
 ): PaginatedResponseDto<T> {
   return new PaginatedResponseDto(data, total, page, limit);
 }

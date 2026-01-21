@@ -1,28 +1,10 @@
 import { useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+
 import { useForm } from 'react-hook-form';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import {
-  TaskStatus,
-  TaskStatusLabels,
-  TaskPriority,
-  TaskPriorityLabels,
-  UserRole,
-} from '@/types/enums';
-import { CreateTaskDto } from '@/types/dtos';
-import {
-  useCreateTask,
-  useTaskLabels,
-  useTaskAssignees,
-  useTaskClients,
-} from '@/lib/hooks/use-tasks';
-import { useAuthContext } from '@/contexts/auth-context';
-import { PageHeader } from '@/components/common/page-header';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
 import {
   Form,
   FormControl,
@@ -39,11 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { Combobox } from '@/components/ui/combobox';
@@ -51,6 +29,27 @@ import { cn } from '@/lib/utils/cn';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { CalendarIcon, ArrowLeft, Plus, X, Loader2, CheckSquare } from 'lucide-react';
+import { z } from 'zod';
+import { PageHeader } from '@/components/common/page-header';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useAuthContext } from '@/contexts/auth-context';
+import {
+  useCreateTask,
+  useTaskLabels,
+  useTaskAssignees,
+  useTaskClients,
+} from '@/lib/hooks/use-tasks';
+import { type CreateTaskDto } from '@/types/dtos';
+import {
+  TaskStatus,
+  TaskStatusLabels,
+  TaskPriority,
+  TaskPriorityLabels,
+  UserRole,
+} from '@/types/enums';
 
 const taskFormSchema = z.object({
   title: z.string().min(1, 'Tytuł jest wymagany').max(255),
@@ -184,11 +183,7 @@ export default function TaskCreatePage() {
                       <FormItem>
                         <FormLabel>Tytuł *</FormLabel>
                         <FormControl>
-                          <Input
-                            placeholder="Wpisz tytuł zadania"
-                            className="text-lg"
-                            {...field}
-                          />
+                          <Input placeholder="Wpisz tytuł zadania" className="text-lg" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -209,9 +204,7 @@ export default function TaskCreatePage() {
                             {...field}
                           />
                         </FormControl>
-                        <FormDescription>
-                          Możesz użyć formatowania Markdown
-                        </FormDescription>
+                        <FormDescription>Możesz użyć formatowania Markdown</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -469,9 +462,7 @@ export default function TaskCreatePage() {
                             {...field}
                             value={field.value ?? ''}
                             onChange={(e) =>
-                              field.onChange(
-                                e.target.value ? parseInt(e.target.value, 10) : null
-                              )
+                              field.onChange(e.target.value ? parseInt(e.target.value, 10) : null)
                             }
                           />
                         </FormControl>
@@ -494,9 +485,7 @@ export default function TaskCreatePage() {
                               variant={field.value === points ? 'default' : 'outline'}
                               size="sm"
                               className="min-w-[40px]"
-                              onClick={() =>
-                                field.onChange(field.value === points ? null : points)
-                              }
+                              onClick={() => field.onChange(field.value === points ? null : points)}
                             >
                               {points}
                             </Button>
@@ -522,9 +511,7 @@ export default function TaskCreatePage() {
               Anuluj
             </Button>
             <Button type="submit" disabled={createTask.isPending}>
-              {createTask.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {createTask.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <Plus className="mr-2 h-4 w-4" />
               Utwórz zadanie
             </Button>

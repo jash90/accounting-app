@@ -76,7 +76,7 @@ function migratePreferences(stored: StoredPreferences): StoredPreferences | null
   if (import.meta.env.DEV) {
     console.warn(
       `Unknown preferences version ${version}, resetting to defaults. ` +
-      `Current version: ${PREFERENCES_VERSION}`
+        `Current version: ${PREFERENCES_VERSION}`
     );
   }
   return null;
@@ -115,10 +115,7 @@ function saveToStorage(tableId: string, preferences: TablePreferences): void {
   } catch (error) {
     // Storage quota may be exceeded - warn user in development
     if (import.meta.env.DEV) {
-      console.warn(
-        'Failed to save table preferences - storage quota may be exceeded.',
-        error
-      );
+      console.warn('Failed to save table preferences - storage quota may be exceeded.', error);
     }
     // In production, silently fail but could optionally notify user
     // via toast or other mechanism if critical
@@ -144,9 +141,7 @@ export function useTablePreferences(
     const stored = loadFromStorage(tableId);
     if (stored) {
       // Ensure always-visible columns are included
-      const alwaysVisibleColumns = columns
-        .filter((col) => col.alwaysVisible)
-        .map((col) => col.id);
+      const alwaysVisibleColumns = columns.filter((col) => col.alwaysVisible).map((col) => col.id);
 
       // Preserve user's column order by filtering stored columns first,
       // then prepending always-visible columns that may be missing
@@ -173,9 +168,7 @@ export function useTablePreferences(
     const stored = loadFromStorage(tableId);
     if (stored) {
       // Ensure always-visible columns are included
-      const alwaysVisibleColumns = columns
-        .filter((col) => col.alwaysVisible)
-        .map((col) => col.id);
+      const alwaysVisibleColumns = columns.filter((col) => col.alwaysVisible).map((col) => col.id);
 
       const mergedVisibleColumns = [
         ...alwaysVisibleColumns,
@@ -198,29 +191,32 @@ export function useTablePreferences(
     }));
   }, []);
 
-  const toggleColumn = useCallback((columnId: string) => {
-    // Check if column is always visible
-    const column = columns.find((col) => col.id === columnId);
-    if (column?.alwaysVisible) {
-      return; // Cannot toggle always-visible columns
-    }
-
-    setPreferences((prev) => {
-      const isCurrentlyVisible = prev.visibleColumns.includes(columnId);
-
-      if (isCurrentlyVisible) {
-        return {
-          ...prev,
-          visibleColumns: prev.visibleColumns.filter((id) => id !== columnId),
-        };
+  const toggleColumn = useCallback(
+    (columnId: string) => {
+      // Check if column is always visible
+      const column = columns.find((col) => col.id === columnId);
+      if (column?.alwaysVisible) {
+        return; // Cannot toggle always-visible columns
       }
 
-      return {
-        ...prev,
-        visibleColumns: [...prev.visibleColumns, columnId],
-      };
-    });
-  }, [columns]);
+      setPreferences((prev) => {
+        const isCurrentlyVisible = prev.visibleColumns.includes(columnId);
+
+        if (isCurrentlyVisible) {
+          return {
+            ...prev,
+            visibleColumns: prev.visibleColumns.filter((id) => id !== columnId),
+          };
+        }
+
+        return {
+          ...prev,
+          visibleColumns: [...prev.visibleColumns, columnId],
+        };
+      });
+    },
+    [columns]
+  );
 
   const isColumnVisible = useCallback(
     (columnId: string) => preferences.visibleColumns.includes(columnId),

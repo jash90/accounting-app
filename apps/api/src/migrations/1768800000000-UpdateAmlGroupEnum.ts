@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
 /**
  * MIGRATION: UpdateAmlGroupEnum - Adds STANDARD and ELEVATED values to AML group enum
@@ -47,7 +47,10 @@ export class UpdateAmlGroupEnum1768800000000 implements MigrationInterface {
         SELECT enumlabel FROM pg_enum
         WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'clients_amlgroup_enum');
       `);
-      console.log('[UpdateAmlGroupEnum] Current enum values:', enumValues?.map((e: { enumlabel: string }) => e.enumlabel).join(', '));
+      console.log(
+        '[UpdateAmlGroupEnum] Current enum values:',
+        enumValues?.map((e: { enumlabel: string }) => e.enumlabel).join(', ')
+      );
 
       // Migrate existing MEDIUM values to STANDARD
       // Note: This requires recreating the enum since PostgreSQL doesn't allow renaming enum values directly
@@ -60,7 +63,9 @@ export class UpdateAmlGroupEnum1768800000000 implements MigrationInterface {
       `);
 
       if (mediumCount[0]?.count > 0) {
-        console.log(`[UpdateAmlGroupEnum] Found ${mediumCount[0].count} clients with MEDIUM value, migrating to STANDARD...`);
+        console.log(
+          `[UpdateAmlGroupEnum] Found ${mediumCount[0].count} clients with MEDIUM value, migrating to STANDARD...`
+        );
         console.log('[UpdateAmlGroupEnum] Starting transactional data migration...');
 
         // Wrap data migration in a transaction for atomicity
@@ -98,7 +103,9 @@ export class UpdateAmlGroupEnum1768800000000 implements MigrationInterface {
           const verifyCount = await queryRunner.query(`
             SELECT COUNT(*) as count FROM "clients" WHERE "amlGroupEnum" = 'STANDARD';
           `);
-          console.log(`[UpdateAmlGroupEnum] Verified: ${verifyCount[0]?.count || 0} clients now have STANDARD value`);
+          console.log(
+            `[UpdateAmlGroupEnum] Verified: ${verifyCount[0]?.count || 0} clients now have STANDARD value`
+          );
 
           // Drop temporary column
           await queryRunner.query(`
@@ -140,21 +147,29 @@ export class UpdateAmlGroupEnum1768800000000 implements MigrationInterface {
 
       // BLOCK ROLLBACK if ELEVATED or STANDARD values exist to prevent data loss
       if (elevated > 0 || standard > 0) {
-        console.error(`[UpdateAmlGroupEnum] ❌ ROLLBACK BLOCKED: Found ${elevated} ELEVATED and ${standard} STANDARD values.`);
-        console.error(`[UpdateAmlGroupEnum]    Rolling back would lose the distinction between these AML groups.`);
+        console.error(
+          `[UpdateAmlGroupEnum] ❌ ROLLBACK BLOCKED: Found ${elevated} ELEVATED and ${standard} STANDARD values.`
+        );
+        console.error(
+          `[UpdateAmlGroupEnum]    Rolling back would lose the distinction between these AML groups.`
+        );
         console.error(`[UpdateAmlGroupEnum]    `);
         console.error(`[UpdateAmlGroupEnum]    RECOVERY PROCEDURE:`);
         console.error(`[UpdateAmlGroupEnum]    1. Create audit backup first:`);
-        console.error(`[UpdateAmlGroupEnum]       CREATE TABLE clients_aml_backup AS SELECT id, amlGroupEnum FROM clients WHERE amlGroupEnum IN ('STANDARD', 'ELEVATED');`);
+        console.error(
+          `[UpdateAmlGroupEnum]       CREATE TABLE clients_aml_backup AS SELECT id, amlGroupEnum FROM clients WHERE amlGroupEnum IN ('STANDARD', 'ELEVATED');`
+        );
         console.error(`[UpdateAmlGroupEnum]    2. Manually update affected clients:`);
-        console.error(`[UpdateAmlGroupEnum]       UPDATE clients SET amlGroupEnum = 'MEDIUM' WHERE amlGroupEnum IN ('STANDARD', 'ELEVATED');`);
+        console.error(
+          `[UpdateAmlGroupEnum]       UPDATE clients SET amlGroupEnum = 'MEDIUM' WHERE amlGroupEnum IN ('STANDARD', 'ELEVATED');`
+        );
         console.error(`[UpdateAmlGroupEnum]    3. Re-run migration rollback`);
         console.error(`[UpdateAmlGroupEnum]    4. Restore from backup if needed after data review`);
 
         throw new Error(
           `ROLLBACK BLOCKED: Found ${elevated} ELEVATED and ${standard} STANDARD values. ` +
-          'This migration is one-way when new enum values are in use. ' +
-          'Manual data migration required before rollback. See logs for recovery procedure.'
+            'This migration is one-way when new enum values are in use. ' +
+            'Manual data migration required before rollback. See logs for recovery procedure.'
         );
       }
 
@@ -197,7 +212,10 @@ export class UpdateAmlGroupEnum1768800000000 implements MigrationInterface {
           SELECT enumlabel FROM pg_enum
           WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'clients_amlgroup_enum');
         `);
-        console.log('[UpdateAmlGroupEnum] Restored enum values:', enumValues?.map((e: { enumlabel: string }) => e.enumlabel).join(', '));
+        console.log(
+          '[UpdateAmlGroupEnum] Restored enum values:',
+          enumValues?.map((e: { enumlabel: string }) => e.enumlabel).join(', ')
+        );
 
         // Drop temporary column
         await queryRunner.query(`
@@ -207,7 +225,10 @@ export class UpdateAmlGroupEnum1768800000000 implements MigrationInterface {
         await queryRunner.commitTransaction();
         console.log('[UpdateAmlGroupEnum] Migration DOWN (rollback) completed successfully');
       } catch (txError) {
-        console.error('[UpdateAmlGroupEnum] Rollback data migration failed, undoing changes...', txError);
+        console.error(
+          '[UpdateAmlGroupEnum] Rollback data migration failed, undoing changes...',
+          txError
+        );
         await queryRunner.rollbackTransaction();
         throw txError;
       }

@@ -5,12 +5,14 @@
 ## Code Organization
 
 **DO**:
+
 - One class per file
 - Clear file naming (kebab-case)
 - Consistent directory structure
 - Export through index.ts
 
 **DON'T**:
+
 - Multiple classes in one file
 - Inconsistent naming
 - Deep nesting (>3 levels)
@@ -19,6 +21,7 @@
 ## Security
 
 **DO**:
+
 - Always filter by `companyId`
 - Verify ownership before modify/delete
 - Use validation decorators
@@ -26,6 +29,7 @@
 - Use parameterized queries (TypeORM does this)
 
 **DON'T**:
+
 - Trust user input without validation
 - Skip ownership checks
 - Use string concatenation in queries
@@ -36,6 +40,7 @@
 For modules handling API keys, credentials, or other sensitive data:
 
 **DO**:
+
 - **Encrypt at rest**: Use AES-256-GCM with random salt and IV for API keys
 - **Validate encryption key**: Check environment variable exists at startup (`OnModuleInit`)
 - **Use `hasApiKey` pattern**: Return boolean instead of actual key in responses
@@ -44,6 +49,7 @@ For modules handling API keys, credentials, or other sensitive data:
 - **Environment-based keys**: Store encryption keys only in environment variables
 
 **DON'T**:
+
 - Store API keys in plaintext
 - Return encrypted data in API responses
 - Log sensitive values (even encrypted ones)
@@ -56,14 +62,14 @@ For modules handling API keys, credentials, or other sensitive data:
 export class ConfigurationResponseDto {
   @Expose() id: string;
   @Expose() provider: string;
-  @Exclude() apiKey: string;        // Never exposed
-  @Expose() hasApiKey: boolean;     // Safe boolean indicator
+  @Exclude() apiKey: string; // Never exposed
+  @Expose() hasApiKey: boolean; // Safe boolean indicator
 }
 
 // BAD: Exposing sensitive data
 export class BadConfigDto {
-  apiKey: string;                   // Exposes encrypted value
-  encryptedApiKey: string;          // Still reveals format
+  apiKey: string; // Exposes encrypted value
+  encryptedApiKey: string; // Still reveals format
 }
 ```
 
@@ -72,6 +78,7 @@ export class BadConfigDto {
 For modules with usage tracking and limits:
 
 **DO**:
+
 - Check limits **before** expensive operations
 - Use atomic upsert for usage tracking (prevent race conditions)
 - Implement warning thresholds (alert at 80%)
@@ -80,6 +87,7 @@ For modules with usage tracking and limits:
 - Use composite unique indexes for daily aggregation
 
 **DON'T**:
+
 - Check limits only after consuming resources
 - Allow unlimited usage without quotas
 - Expose internal limit details in errors
@@ -89,12 +97,14 @@ For modules with usage tracking and limits:
 ## Performance
 
 **DO**:
+
 - Add indexes on frequently queried columns
 - Use pagination for large datasets
 - Load relations selectively
 - Use `@Index()` decorator
 
 **DON'T**:
+
 - Load all data without pagination
 - Load unnecessary relations
 - Create N+1 query problems
@@ -103,12 +113,14 @@ For modules with usage tracking and limits:
 ## Error Handling
 
 **DO**:
+
 - Use NestJS exceptions
 - Provide clear error messages
 - Log errors appropriately
 - Return proper HTTP status codes
 
 **DON'T**:
+
 - Use generic `throw new Error()`
 - Expose sensitive information in errors
 - Swallow errors silently

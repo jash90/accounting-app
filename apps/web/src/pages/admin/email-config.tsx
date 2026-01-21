@@ -1,12 +1,15 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+
+import { Mail, Edit, Trash2, Plus, Server, Lock, AlertCircle, Shield, User } from 'lucide-react';
+
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { PageHeader } from '@/components/common/page-header';
+import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PageHeader } from '@/components/common/page-header';
-import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
 import {
   useUserEmailConfig,
   useCreateUserEmailConfig,
@@ -21,9 +24,11 @@ import {
   useTestSystemAdminSmtp,
   useTestSystemAdminImap,
 } from '@/lib/hooks/use-email-config';
-import { CreateEmailConfigFormData, UpdateEmailConfigFormData } from '@/lib/validation/schemas';
-import { Mail, Edit, Trash2, Plus, Server, Lock, AlertCircle, Shield, User } from 'lucide-react';
-import { EmailConfigResponseDto } from '@/types/dtos';
+import {
+  type CreateEmailConfigFormData,
+  type UpdateEmailConfigFormData,
+} from '@/lib/validation/schemas';
+import { type EmailConfigResponseDto } from '@/types/dtos';
 
 // Reusable Email Config Display Component
 function EmailConfigDisplay({
@@ -239,7 +244,8 @@ function EmailConfigDisplay({
                       : 'Twoja osobista konfiguracja email jest aktywna i gotowa do użycia. Hasła są bezpiecznie zaszyfrowane.'}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Ostatnia aktualizacja: {new Date(emailConfig.updatedAt).toLocaleDateString('pl-PL')}
+                    Ostatnia aktualizacja:{' '}
+                    {new Date(emailConfig.updatedAt).toLocaleDateString('pl-PL')}
                   </p>
                 </div>
               </div>
@@ -336,8 +342,13 @@ export default function AdminEmailConfigPage() {
                 Jako administrator masz dostęp do dwóch konfiguracji email:
               </p>
               <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
-                <li><strong>Mój email</strong> - Twoja osobista konfiguracja email</li>
-                <li><strong>Email System Admin</strong> - Współdzielona konfiguracja dla wszystkich administratorów systemu</li>
+                <li>
+                  <strong>Mój email</strong> - Twoja osobista konfiguracja email
+                </li>
+                <li>
+                  <strong>Email System Admin</strong> - Współdzielona konfiguracja dla wszystkich
+                  administratorów systemu
+                </li>
               </ul>
             </div>
           </div>

@@ -1,12 +1,11 @@
 import { useEffect } from 'react';
+
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -23,10 +22,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { createUserSchema, updateUserSchema, CreateUserFormData, UpdateUserFormData } from '@/lib/validation/schemas';
-import { UserDto, UserRole } from '@/types/dtos';
 import { useCompanies } from '@/lib/hooks/use-companies';
+import {
+  createUserSchema,
+  updateUserSchema,
+  type CreateUserFormData,
+  type UpdateUserFormData,
+} from '@/lib/validation/schemas';
+import { type UserDto, UserRole } from '@/types/dtos';
 
 interface UserFormDialogProps {
   open: boolean;
@@ -58,15 +61,17 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
   // Reset form when dialog opens or user changes
   useEffect(() => {
     if (open) {
-      form.reset(user || {
-        email: '',
-        password: '',
-        firstName: '',
-        lastName: '',
-        role: UserRole.EMPLOYEE,
-        companyId: '',
-        companyName: '',
-      });
+      form.reset(
+        user || {
+          email: '',
+          password: '',
+          firstName: '',
+          lastName: '',
+          role: UserRole.EMPLOYEE,
+          companyId: '',
+          companyName: '',
+        }
+      );
     }
   }, [open, user, form]);
 
@@ -196,7 +201,9 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={companiesLoading ? "Ładowanie firm..." : "Wybierz firmę"} />
+                          <SelectValue
+                            placeholder={companiesLoading ? 'Ładowanie firm...' : 'Wybierz firmę'}
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -232,4 +239,3 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
     </Dialog>
   );
 }
-

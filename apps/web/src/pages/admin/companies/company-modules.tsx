@@ -1,13 +1,20 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useCompany, useCompanyModules, useGrantModuleToCompany, useRevokeModuleFromCompany } from '@/lib/hooks/use-companies';
-import { useModules } from '@/lib/hooks/use-modules';
+
+import { ArrowLeft, Package, Building2 } from 'lucide-react';
+
 import { PageHeader } from '@/components/common/page-header';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Package, Building2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
+import {
+  useCompany,
+  useCompanyModules,
+  useGrantModuleToCompany,
+  useRevokeModuleFromCompany,
+} from '@/lib/hooks/use-companies';
+import { useModules } from '@/lib/hooks/use-modules';
 
 export default function CompanyModulesPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,7 +22,9 @@ export default function CompanyModulesPage() {
 
   const { data: company, isPending: companyLoading } = useCompany(id || '');
   const { data: allModules = [], isPending: modulesLoading } = useModules();
-  const { data: companyModuleAccesses = [], isPending: accessesLoading } = useCompanyModules(id || '');
+  const { data: companyModuleAccesses = [], isPending: accessesLoading } = useCompanyModules(
+    id || ''
+  );
 
   const grantModule = useGrantModuleToCompany();
   const revokeModule = useRevokeModuleFromCompany();
@@ -126,9 +135,11 @@ export default function CompanyModulesPage() {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        isAiModule ? 'bg-apptax-ai-gradient ai-glow' : 'bg-apptax-gradient'
-                      }`}>
+                      <div
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                          isAiModule ? 'bg-apptax-ai-gradient ai-glow' : 'bg-apptax-gradient'
+                        }`}
+                      >
                         <Package className="h-5 w-5 text-white" />
                       </div>
                       <div>
@@ -144,14 +155,14 @@ export default function CompanyModulesPage() {
                       {isEnabled ? 'Włączony' : 'Wyłączony'}
                     </Badge>
                   </div>
-                  <CardDescription className="text-xs mt-2">
-                    {module.description}
-                  </CardDescription>
+                  <CardDescription className="text-xs mt-2">{module.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">
-                      {isEnabled ? 'Ten moduł jest dostępny dla firmy' : 'Włącz ten moduł dla firmy'}
+                      {isEnabled
+                        ? 'Ten moduł jest dostępny dla firmy'
+                        : 'Włącz ten moduł dla firmy'}
                     </span>
                     <Switch
                       checked={isEnabled}

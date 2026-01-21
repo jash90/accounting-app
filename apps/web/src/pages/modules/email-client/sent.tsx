@@ -1,9 +1,13 @@
 import { useState, useMemo } from 'react';
+
+import { Link } from 'react-router-dom';
+
+import { RefreshCw, Send, ChevronLeft, ChevronRight } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
 import { useFolder, useFolders } from '@/lib/hooks/use-email-client';
 import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
-import { Button } from '@/components/ui/button';
-import { RefreshCw, Send, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+
 import { EmailListSkeleton } from './components/email-inbox-skeleton';
 import { EmailSidebar } from './components/email-sidebar';
 
@@ -22,12 +26,14 @@ function findSentFolder(folders: string[] | undefined): string {
   ];
 
   for (const name of sentNames) {
-    const found = folders.find(f => f.toLowerCase() === name.toLowerCase());
+    const found = folders.find((f) => f.toLowerCase() === name.toLowerCase());
     if (found) return found;
   }
 
   // Partial match fallback
-  const partial = folders.find(f => f.toLowerCase().includes('sent') || f.toLowerCase().includes('wysłan'));
+  const partial = folders.find(
+    (f) => f.toLowerCase().includes('sent') || f.toLowerCase().includes('wysłan')
+  );
   return partial || 'Sent';
 }
 
@@ -44,9 +50,7 @@ export default function EmailSent() {
   // Sort emails by date (newest first) and paginate
   const sortedEmails = useMemo(() => {
     if (!emails) return [];
-    return [...emails].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+    return [...emails].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [emails]);
 
   const totalPages = Math.ceil(sortedEmails.length / pageSize);
@@ -64,9 +68,7 @@ export default function EmailSent() {
         <div className="border-b p-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Wysłane</h1>
-            <p className="text-sm text-muted-foreground">
-              {emails?.length || 0} wiadomości
-            </p>
+            <p className="text-sm text-muted-foreground">{emails?.length || 0} wiadomości</p>
           </div>
           <Button
             onClick={() => {
@@ -128,8 +130,7 @@ export default function EmailSent() {
           <div className="border-t px-4 py-3 flex items-center justify-between">
             <span className="text-sm text-muted-foreground">
               {(currentPage - 1) * pageSize + 1}-
-              {Math.min(currentPage * pageSize, sortedEmails.length)} z{' '}
-              {sortedEmails.length}
+              {Math.min(currentPage * pageSize, sortedEmails.length)} z {sortedEmails.length}
             </span>
             <div className="flex gap-2">
               <Button

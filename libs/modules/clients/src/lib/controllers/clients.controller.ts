@@ -21,9 +21,7 @@ import {
   FileTypeValidator,
   BadRequestException,
 } from '@nestjs/common';
-import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -32,7 +30,11 @@ import {
   ApiParam,
   ApiExtraModels,
 } from '@nestjs/swagger';
+
+import { Request, Response } from 'express';
+
 import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { User, PaginationQueryDto } from '@accounting/common';
 import {
   ModuleAccessGuard,
   PermissionGuard,
@@ -41,25 +43,7 @@ import {
   OwnerOrAdminGuard,
   OwnerOrAdmin,
 } from '@accounting/rbac';
-import { User, UserRole, PaginationQueryDto } from '@accounting/common';
-import { ClientsService } from '../services/clients.service';
-import { CustomFieldsService } from '../services/custom-fields.service';
-import { ClientChangelogService } from '../services/client-changelog.service';
-import {
-  DeleteRequestService,
-  CreateDeleteRequestDto,
-} from '../services/delete-request.service';
-import { DuplicateDetectionService } from '../services/duplicate-detection.service';
-import { ClientStatisticsService } from '../services/statistics.service';
-import { ClientExportService } from '../services/export.service';
-import {
-  CreateClientDto,
-  UpdateClientDto,
-  ClientFiltersDto,
-  SetCustomFieldValuesDto,
-  CustomFieldFilterDto,
-  CustomFieldFilterOperator,
-} from '../dto/client.dto';
+
 import {
   BulkDeleteClientsDto,
   BulkRestoreClientsDto,
@@ -68,10 +52,6 @@ import {
   CheckDuplicatesDto,
   DuplicateCheckResultDto,
 } from '../dto/bulk-operations.dto';
-import {
-  ClientStatisticsDto,
-  ClientStatisticsWithRecentDto,
-} from '../dto/statistics.dto';
 import {
   ClientResponseDto,
   PaginatedClientsResponseDto,
@@ -82,6 +62,22 @@ import {
   SuccessMessageResponseDto,
   ErrorResponseDto,
 } from '../dto/client-response.dto';
+import {
+  CreateClientDto,
+  UpdateClientDto,
+  ClientFiltersDto,
+  SetCustomFieldValuesDto,
+  CustomFieldFilterDto,
+  CustomFieldFilterOperator,
+} from '../dto/client.dto';
+import { ClientStatisticsDto, ClientStatisticsWithRecentDto } from '../dto/statistics.dto';
+import { ClientChangelogService } from '../services/client-changelog.service';
+import { ClientsService } from '../services/clients.service';
+import { CustomFieldsService } from '../services/custom-fields.service';
+import { DeleteRequestService, CreateDeleteRequestDto } from '../services/delete-request.service';
+import { DuplicateDetectionService } from '../services/duplicate-detection.service';
+import { ClientExportService } from '../services/export.service';
+import { ClientStatisticsService } from '../services/statistics.service';
 
 /**
  * Controller for managing clients within the clients module.
@@ -103,7 +99,7 @@ import {
   BulkOperationResultDto,
   DuplicateCheckResultDto,
   ClientStatisticsDto,
-  ClientStatisticsWithRecentDto,
+  ClientStatisticsWithRecentDto
 )
 @Controller('modules/clients')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
@@ -116,7 +112,7 @@ export class ClientsController {
     private readonly deleteRequestService: DeleteRequestService,
     private readonly duplicateDetectionService: DuplicateDetectionService,
     private readonly statisticsService: ClientStatisticsService,
-    private readonly exportService: ClientExportService,
+    private readonly exportService: ClientExportService
   ) {}
 
   /**
@@ -139,7 +135,7 @@ export class ClientsController {
   searchPkdCodes(
     @Query('search') search?: string,
     @Query('section') section?: string,
-    @Query('limit') limit?: number,
+    @Query('limit') limit?: number
   ) {
     return this.clientsService.searchPkdCodes(search, section, limit ?? 50);
   }
@@ -168,7 +164,7 @@ export class ClientsController {
   @ApiOperation({
     summary: 'Get all clients',
     description:
-      'Retrieves a paginated list of clients belonging to the authenticated user\'s company. ' +
+      "Retrieves a paginated list of clients belonging to the authenticated user's company. " +
       'Supports filtering by various criteria including search text, employment type, VAT status, tax scheme, and ZUS status. ' +
       'Results are paginated with configurable page size.',
   })
@@ -192,7 +188,7 @@ export class ClientsController {
   async findAll(
     @CurrentUser() user: User,
     @Query() filters: ClientFiltersDto,
-    @Req() req: Request,
+    @Req() req: Request
   ) {
     // Parse custom field filters from query params with customField_ prefix
     const customFieldFilters = this.parseCustomFieldFilters(req.query);
@@ -212,9 +208,7 @@ export class ClientsController {
    *   customField_ghi789=eq:true
    *   customField_jkl012=in:VALUE1,VALUE2
    */
-  private parseCustomFieldFilters(
-    query: Record<string, unknown>,
-  ): CustomFieldFilterDto[] {
+  private parseCustomFieldFilters(query: Record<string, unknown>): CustomFieldFilterDto[] {
     const customFieldFilters: CustomFieldFilterDto[] = [];
     const prefix = 'customField_';
     const validOperators = Object.values(CustomFieldFilterOperator);
@@ -242,7 +236,8 @@ export class ClientsController {
 
           // For 'in' and 'contains_any' operators, split by comma
           const parsedValue =
-            operator === CustomFieldFilterOperator.IN || operator === CustomFieldFilterOperator.CONTAINS_ANY
+            operator === CustomFieldFilterOperator.IN ||
+            operator === CustomFieldFilterOperator.CONTAINS_ANY
               ? value.split(',').map((v) => v.trim())
               : value;
 
@@ -285,10 +280,7 @@ export class ClientsController {
     type: ErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
-  async getAllHistory(
-    @CurrentUser() user: User,
-    @Query() pagination: PaginationQueryDto,
-  ) {
+  async getAllHistory(@CurrentUser() user: User, @Query() pagination: PaginationQueryDto) {
     return this.clientChangelogService.getCompanyChangelog(user, pagination);
   }
 
@@ -338,16 +330,8 @@ export class ClientsController {
     type: ErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
-  async checkDuplicates(
-    @Body() dto: CheckDuplicatesDto,
-    @CurrentUser() user: User,
-  ) {
-    return this.duplicateDetectionService.checkDuplicates(
-      user,
-      dto.nip,
-      dto.email,
-      dto.excludeId,
-    );
+  async checkDuplicates(@Body() dto: CheckDuplicatesDto, @CurrentUser() user: User) {
+    return this.duplicateDetectionService.checkDuplicates(user, dto.nip, dto.email, dto.excludeId);
   }
 
   /**
@@ -378,10 +362,7 @@ export class ClientsController {
   @UseGuards(OwnerOrAdminGuard)
   @OwnerOrAdmin()
   @RequirePermission('clients', 'delete')
-  async bulkDelete(
-    @Body() dto: BulkDeleteClientsDto,
-    @CurrentUser() user: User,
-  ) {
+  async bulkDelete(@Body() dto: BulkDeleteClientsDto, @CurrentUser() user: User) {
     return this.clientsService.bulkDelete(dto, user);
   }
 
@@ -411,10 +392,7 @@ export class ClientsController {
     type: ErrorResponseDto,
   })
   @RequirePermission('clients', 'write')
-  async bulkRestore(
-    @Body() dto: BulkRestoreClientsDto,
-    @CurrentUser() user: User,
-  ) {
+  async bulkRestore(@Body() dto: BulkRestoreClientsDto, @CurrentUser() user: User) {
     return this.clientsService.bulkRestore(dto, user);
   }
 
@@ -444,10 +422,7 @@ export class ClientsController {
     type: ErrorResponseDto,
   })
   @RequirePermission('clients', 'write')
-  async bulkEdit(
-    @Body() dto: BulkEditClientsDto,
-    @CurrentUser() user: User,
-  ) {
+  async bulkEdit(@Body() dto: BulkEditClientsDto, @CurrentUser() user: User) {
     return this.clientsService.bulkEdit(dto, user);
   }
 
@@ -479,7 +454,7 @@ export class ClientsController {
   async exportToCsv(
     @Query() filters: ClientFiltersDto,
     @CurrentUser() user: User,
-    @Res() res: Response,
+    @Res() res: Response
   ) {
     const csvBuffer = await this.exportService.exportToCsv(filters, user);
     const filename = `clients-export-${new Date().toISOString().split('T')[0]}.csv`;
@@ -555,14 +530,16 @@ export class ClientsController {
           // 5MB limit
           new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
           // Only accept CSV files (text/csv or application/vnd.ms-excel for older clients)
-          new FileTypeValidator({ fileType: /^(text\/csv|application\/vnd\.ms-excel|text\/plain)$/ }),
+          new FileTypeValidator({
+            fileType: /^(text\/csv|application\/vnd\.ms-excel|text\/plain)$/,
+          }),
         ],
         fileIsRequired: true,
         errorHttpStatusCode: 400,
-      }),
+      })
     )
     file: Express.Multer.File,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     if (!file) {
       throw new BadRequestException('Plik jest wymagany');
@@ -580,7 +557,7 @@ export class ClientsController {
     summary: 'Get a client by ID',
     description:
       'Retrieves detailed information about a specific client. ' +
-      'The client must belong to the authenticated user\'s company.',
+      "The client must belong to the authenticated user's company.",
   })
   @ApiParam({
     name: 'id',
@@ -610,10 +587,7 @@ export class ClientsController {
     type: ErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
-  async findOne(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
-  ) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.clientsService.findOne(id, user);
   }
 
@@ -624,7 +598,7 @@ export class ClientsController {
   @ApiOperation({
     summary: 'Create a new client',
     description:
-      'Creates a new client associated with the authenticated user\'s company. ' +
+      "Creates a new client associated with the authenticated user's company. " +
       'The client name is required, all other fields are optional. ' +
       'A changelog entry will be automatically created for this operation.',
   })
@@ -699,7 +673,7 @@ export class ClientsController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateClientDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.clientsService.update(id, dto, user);
   }
@@ -734,7 +708,8 @@ export class ClientsController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - Only Company Owners and Admins can delete clients directly. Employees must use /delete-request.',
+    description:
+      'Forbidden - Only Company Owners and Admins can delete clients directly. Employees must use /delete-request.',
     type: ErrorResponseDto,
   })
   @ApiResponse({
@@ -745,10 +720,7 @@ export class ClientsController {
   @UseGuards(OwnerOrAdminGuard)
   @OwnerOrAdmin()
   @RequirePermission('clients', 'delete')
-  async remove(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
-  ) {
+  async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     await this.clientsService.remove(id, user);
     return { message: 'Client deleted successfully' };
   }
@@ -800,7 +772,7 @@ export class ClientsController {
   async requestDelete(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreateDeleteRequestDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.deleteRequestService.createDeleteRequest(id, dto, user);
   }
@@ -844,10 +816,7 @@ export class ClientsController {
     type: ErrorResponseDto,
   })
   @RequirePermission('clients', 'write')
-  async restore(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
-  ) {
+  async restore(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.clientsService.restore(id, user);
   }
 
@@ -884,10 +853,7 @@ export class ClientsController {
     type: ErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
-  async getChangelog(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
-  ) {
+  async getChangelog(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.clientChangelogService.getClientChangelog(id, user);
   }
 
@@ -924,10 +890,7 @@ export class ClientsController {
     type: ErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
-  async getCustomFields(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
-  ) {
+  async getCustomFields(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.customFieldsService.getClientCustomFields(id, user);
   }
 
@@ -978,13 +941,8 @@ export class ClientsController {
   async setCustomFields(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: SetCustomFieldValuesDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
-    return this.customFieldsService.setMultipleCustomFieldValues(
-      id,
-      dto.values,
-      user,
-    );
+    return this.customFieldsService.setMultipleCustomFieldValues(id, dto.values, user);
   }
-
 }

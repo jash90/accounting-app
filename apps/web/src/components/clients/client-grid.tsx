@@ -1,7 +1,7 @@
-import { ClientResponseDto } from '@/types/dtos';
-import { ClientFieldDefinition } from '@/types/entities';
 import { ClientCard } from '@/components/clients/client-card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { type ClientResponseDto } from '@/types/dtos';
+import { type ClientFieldDefinition } from '@/types/entities';
 
 interface ClientGridProps {
   clients: ClientResponseDto[];
@@ -70,7 +70,9 @@ export function ClientGrid({
           client={client}
           basePath={basePath}
           isSelected={selectedIds.has(client.id)}
-          onSelect={onSelectionChange ? (selected) => handleSelectClient(client, selected) : undefined}
+          onSelect={
+            onSelectionChange ? (selected) => handleSelectClient(client, selected) : undefined
+          }
           onEdit={onEditClient ? () => onEditClient(client) : undefined}
           onDelete={onDeleteClient ? () => onDeleteClient(client) : undefined}
           onRestore={onRestoreClient ? () => onRestoreClient(client) : undefined}

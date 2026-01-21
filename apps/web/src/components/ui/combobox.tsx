@@ -1,14 +1,12 @@
 import * as React from 'react';
 import { useId } from 'react';
+
 import { Check, ChevronsUpDown, X } from 'lucide-react';
-import { cn } from '@/lib/utils/cn';
+
 import { Button } from '@/components/ui/button';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils/cn';
 
 export interface ComboboxOption {
   value: string;
@@ -52,9 +50,7 @@ export function Combobox({
   const filteredOptions = React.useMemo(() => {
     if (!search) return options;
     const searchLower = search.toLowerCase();
-    return options.filter((option) =>
-      option.label.toLowerCase().includes(searchLower)
-    );
+    return options.filter((option) => option.label.toLowerCase().includes(searchLower));
   }, [options, search]);
 
   // Reset highlighted index when filtered options change
@@ -81,15 +77,11 @@ export function Combobox({
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setHighlightedIndex((prev) =>
-          prev < filteredOptions.length - 1 ? prev + 1 : 0
-        );
+        setHighlightedIndex((prev) => (prev < filteredOptions.length - 1 ? prev + 1 : 0));
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setHighlightedIndex((prev) =>
-          prev > 0 ? prev - 1 : filteredOptions.length - 1
-        );
+        setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : filteredOptions.length - 1));
         break;
       case 'Enter':
         e.preventDefault();
@@ -120,9 +112,7 @@ export function Combobox({
               className
             )}
           >
-            <span className="truncate">
-              {selectedOption ? selectedOption.label : placeholder}
-            </span>
+            <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
             <ChevronsUpDown className="h-4 w-4 opacity-50 absolute right-3" aria-hidden="true" />
           </Button>
         </PopoverTrigger>
@@ -167,9 +157,7 @@ export function Combobox({
         </div>
         <div className="max-h-[200px] overflow-y-auto">
           {filteredOptions.length === 0 ? (
-            <div className="py-6 text-center text-sm text-muted-foreground">
-              {emptyText}
-            </div>
+            <div className="py-6 text-center text-sm text-muted-foreground">{emptyText}</div>
           ) : (
             <div className="p-1" role="listbox" aria-label={placeholder}>
               {filteredOptions.map((option, index) => (

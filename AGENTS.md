@@ -47,7 +47,7 @@ Controllers must apply guards in this exact order:
 export class ItemsController {
   @Get()
   @RequirePermission(Permission.READ)
-  async findAll(@CurrentUser() user: User) { }
+  async findAll(@CurrentUser() user: User) {}
 }
 ```
 
@@ -98,10 +98,10 @@ bun run lint:web         # Lint frontend
 
 ## Test Credentials
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | `admin@system.com` | `Admin123!` |
-| Owner | `owner@acme.com` | `Owner123!` |
+| Role     | Email               | Password       |
+| -------- | ------------------- | -------------- |
+| Admin    | `admin@system.com`  | `Admin123!`    |
+| Owner    | `owner@acme.com`    | `Owner123!`    |
 | Employee | `employee@acme.com` | `Employee123!` |
 
 ## Path Aliases
@@ -207,11 +207,11 @@ return (
 
 ## Role Hierarchy
 
-| Role | Access Scope | Business Data |
-|------|--------------|---------------|
-| **ADMIN** | System-wide (companies, modules) | Via System Admin Company only |
-| **COMPANY_OWNER** | Own company + employees | Full access to enabled modules |
-| **EMPLOYEE** | Granted permissions only | Filtered by companyId |
+| Role              | Access Scope                     | Business Data                  |
+| ----------------- | -------------------------------- | ------------------------------ |
+| **ADMIN**         | System-wide (companies, modules) | Via System Admin Company only  |
+| **COMPANY_OWNER** | Own company + employees          | Full access to enabled modules |
+| **EMPLOYEE**      | Granted permissions only         | Filtered by companyId          |
 
 ## API Structure
 
@@ -250,8 +250,8 @@ export abstract class AIProviderService {
 }
 
 // Implementations
-export class OpenAIProviderService extends AIProviderService { }
-export class OpenRouterProviderService extends AIProviderService { }
+export class OpenAIProviderService extends AIProviderService {}
+export class OpenRouterProviderService extends AIProviderService {}
 ```
 
 ## Common Mistakes to Avoid
@@ -265,13 +265,13 @@ export class OpenRouterProviderService extends AIProviderService { }
 
 ## Documentation References
 
-| Document | Purpose |
-|----------|---------|
+| Document                     | Purpose                             |
+| ---------------------------- | ----------------------------------- |
 | `docs/ARCHITECTURE_GUIDE.md` | System design, entity relationships |
-| `docs/MODULE_DEVELOPMENT.md` | Complete module creation tutorial |
-| `docs/API_DOCUMENTATION.md` | Backend API reference |
-| `docs/FRONTEND_GUIDE.md` | React patterns, components |
-| `docs/DESIGN_SYSTEM.md` | UI components, styling |
+| `docs/MODULE_DEVELOPMENT.md` | Complete module creation tutorial   |
+| `docs/API_DOCUMENTATION.md`  | Backend API reference               |
+| `docs/FRONTEND_GUIDE.md`     | React patterns, components          |
+| `docs/DESIGN_SYSTEM.md`      | UI components, styling              |
 
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->

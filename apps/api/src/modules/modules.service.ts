@@ -7,7 +7,9 @@ import {
   Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository, EntityManager } from 'typeorm';
+
 import {
   User,
   Company,
@@ -19,6 +21,7 @@ import {
   PermissionTargetType,
 } from '@accounting/common';
 import { RBACService, ModuleDiscoveryService, DiscoveredModule } from '@accounting/rbac';
+
 import { CreateModuleDto, UpdateModuleDto, GrantModuleAccessDto } from './dto';
 
 @Injectable()
@@ -36,7 +39,7 @@ export class ModulesService {
     private companyRepository: Repository<Company>,
     private rbacService: RBACService,
     @Optional()
-    private moduleDiscoveryService?: ModuleDiscoveryService,
+    private moduleDiscoveryService?: ModuleDiscoveryService
   ) {}
 
   // ==================== Module CRUD Operations ====================
@@ -81,7 +84,9 @@ export class ModulesService {
    */
   async getModuleByIdentifier(user: User, identifier: string) {
     // Check if identifier is UUID (ID) or slug
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      identifier
+    );
 
     if (user.role === UserRole.ADMIN) {
       if (isUUID) {
@@ -226,35 +231,37 @@ export class ModulesService {
     }
 
     // Use transaction to ensure atomicity
-    return this.companyModuleAccessRepository.manager.transaction(async (manager: EntityManager) => {
-      // 1. Disable the module access for the company
-      access.isEnabled = false;
-      await manager.save(CompanyModuleAccess, access);
+    return this.companyModuleAccessRepository.manager.transaction(
+      async (manager: EntityManager) => {
+        // 1. Disable the module access for the company
+        access.isEnabled = false;
+        await manager.save(CompanyModuleAccess, access);
 
-      // 2. Find all employees in the company
-      const employees = await manager.find(User, {
-        where: {
-          companyId: company.id,
-          role: UserRole.EMPLOYEE,
-        },
-        select: ['id'],
-      });
+        // 2. Find all employees in the company
+        const employees = await manager.find(User, {
+          where: {
+            companyId: company.id,
+            role: UserRole.EMPLOYEE,
+          },
+          select: ['id'],
+        });
 
-      // 3. If there are employees, delete their permissions for this module
-      if (employees.length > 0) {
-        const employeeIds = employees.map((emp) => emp.id);
+        // 3. If there are employees, delete their permissions for this module
+        if (employees.length > 0) {
+          const employeeIds = employees.map((emp) => emp.id);
 
-        await manager
-          .createQueryBuilder()
-          .delete()
-          .from(UserModulePermission)
-          .where('moduleId = :moduleId', { moduleId: module.id })
-          .andWhere('userId IN (:...userIds)', { userIds: employeeIds })
-          .execute();
+          await manager
+            .createQueryBuilder()
+            .delete()
+            .from(UserModulePermission)
+            .where('moduleId = :moduleId', { moduleId: module.id })
+            .andWhere('userId IN (:...userIds)', { userIds: employeeIds })
+            .execute();
+        }
+
+        return access;
       }
-
-      return access;
-    });
+    );
   }
 
   /**
@@ -364,15 +371,17 @@ export class ModulesService {
     grantModuleAccessDto: GrantModuleAccessDto
   ) {
     // Use transaction to prevent race conditions
-    return this.userModulePermissionRepository.manager.transaction(async (manager: EntityManager) => {
-      return this.grantModuleToEmployeeWithTransaction(
-        companyId,
-        employeeId,
-        moduleSlug,
-        grantModuleAccessDto,
-        manager
-      );
-    });
+    return this.userModulePermissionRepository.manager.transaction(
+      async (manager: EntityManager) => {
+        return this.grantModuleToEmployeeWithTransaction(
+          companyId,
+          employeeId,
+          moduleSlug,
+          grantModuleAccessDto,
+          manager
+        );
+      }
+    );
   }
 
   async updateEmployeeModulePermissions(
@@ -406,7 +415,9 @@ export class ModulesService {
     });
 
     if (!existingPermission) {
-      throw new NotFoundException('Employee does not have access to this module. Use grant endpoint instead.');
+      throw new NotFoundException(
+        'Employee does not have access to this module. Use grant endpoint instead.'
+      );
     }
 
     // Update the permissions
@@ -415,30 +426,32 @@ export class ModulesService {
 
   async revokeModuleFromEmployee(companyId: string, employeeId: string, moduleSlug: string) {
     // Use transaction for consistency
-    return this.userModulePermissionRepository.manager.transaction(async (manager: EntityManager) => {
-      const employee = await this.userRepository.findOne({
-        where: { id: employeeId, companyId, role: UserRole.EMPLOYEE },
-      });
+    return this.userModulePermissionRepository.manager.transaction(
+      async (manager: EntityManager) => {
+        const employee = await this.userRepository.findOne({
+          where: { id: employeeId, companyId, role: UserRole.EMPLOYEE },
+        });
 
-      if (!employee) {
-        throw new NotFoundException('Employee not found');
+        if (!employee) {
+          throw new NotFoundException('Employee not found');
+        }
+
+        const module = await this.getModuleBySlugDirect(moduleSlug);
+
+        const permission = await manager.findOne(UserModulePermission, {
+          where: {
+            userId: employee.id,
+            moduleId: module.id,
+          },
+        });
+
+        if (permission) {
+          await manager.remove(UserModulePermission, permission);
+        }
+
+        return { message: 'Module access revoked successfully' };
       }
-
-      const module = await this.getModuleBySlugDirect(moduleSlug);
-
-      const permission = await manager.findOne(UserModulePermission, {
-        where: {
-          userId: employee.id,
-          moduleId: module.id,
-        },
-      });
-
-      if (permission) {
-        await manager.remove(UserModulePermission, permission);
-      }
-
-      return { message: 'Module access revoked successfully' };
-    });
+    );
   }
 
   // ==================== Unified Permission Management ====================
@@ -482,12 +495,7 @@ export class ModulesService {
         permissions: dto.permissions,
       };
 
-      return this.grantModuleToEmployee(
-        user.companyId,
-        dto.targetId,
-        dto.moduleSlug,
-        grantDto
-      );
+      return this.grantModuleToEmployee(user.companyId, dto.targetId, dto.moduleSlug, grantDto);
     }
   }
 
@@ -517,11 +525,7 @@ export class ModulesService {
         throw new ForbiddenException('Company owner must belong to a company');
       }
 
-      return this.revokeModuleFromEmployee(
-        user.companyId,
-        dto.targetId,
-        dto.moduleSlug
-      );
+      return this.revokeModuleFromEmployee(user.companyId, dto.targetId, dto.moduleSlug);
     }
   }
 

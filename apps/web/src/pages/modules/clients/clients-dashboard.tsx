@@ -1,9 +1,10 @@
 import { Users, Settings, UserCheck, UserX, Building2 } from 'lucide-react';
+
+import { NavigationCard } from '@/components/ui/navigation-card';
+import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useClients } from '@/lib/hooks/use-clients';
 import { UserRole } from '@/types/enums';
-import { NavigationCard } from '@/components/ui/navigation-card';
-import { StatCard } from '@/components/ui/stat-card';
 
 export default function ClientsDashboardPage() {
   const { user } = useAuthContext();
@@ -63,9 +64,7 @@ export default function ClientsDashboardPage() {
           Moduł Klienci
           <div className="w-3 h-3 rounded-full bg-apptax-teal" />
         </h1>
-        <p className="text-muted-foreground mt-1">
-          Zarządzanie klientami biura rachunkowego
-        </p>
+        <p className="text-muted-foreground mt-1">Zarządzanie klientami biura rachunkowego</p>
       </div>
 
       {/* Statistics Cards */}

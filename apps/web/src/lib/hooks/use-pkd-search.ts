@@ -1,7 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
-import { clientsApi } from '../api/endpoints/clients';
+
+import { useQuery } from '@tanstack/react-query';
+
 import { useDebounce } from './use-debounce';
+import { clientsApi } from '../api/endpoints/clients';
 
 const PKD_SEARCH_DEBOUNCE_MS = 300;
 const PKD_SEARCH_STALE_TIME = 5 * 60 * 1000; // 5 minutes

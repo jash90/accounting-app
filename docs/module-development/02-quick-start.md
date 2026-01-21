@@ -163,6 +163,7 @@ nx generate @nx/node:library ai-agent --directory=libs/modules/ai-agent
 ### Key Files for Complex Module (AI Agent)
 
 **Backend:**
+
 - ✅ Entities: `libs/common/src/lib/entities/ai-*.entity.ts` (6 entities)
 - ✅ Provider Interface: `libs/modules/ai-agent/src/lib/services/ai-provider.interface.ts`
 - ✅ Provider Implementations: `*-provider.service.ts` (OpenAI, OpenRouter)
@@ -172,6 +173,7 @@ nx generate @nx/node:library ai-agent --directory=libs/modules/ai-agent
 - ✅ Module: `libs/modules/ai-agent/src/lib/ai-agent.module.ts`
 
 **Frontend:**
+
 - ✅ Pages: `web/src/pages/modules/ai-agent/*.tsx` (chat, config, usage, context)
 - ✅ API Client: `web/src/lib/api/endpoints/ai-agent.ts`
 - ✅ Hooks: `web/src/lib/hooks/use-ai-agent.ts`
@@ -179,16 +181,16 @@ nx generate @nx/node:library ai-agent --directory=libs/modules/ai-agent
 
 ### Key Differences from Simple Module
 
-| Aspect | Simple (Tasks) | Complex (AI Agent) |
-|--------|---------------|-------------------|
-| Entities | 1 entity | 6 entities |
-| Controllers | 1 controller | 3 controllers |
-| Services | 1 service | 8 services |
-| Encryption | None | AES-256-GCM for API keys |
-| File Upload | None | PDF/TXT with validation |
-| Vector Search | None | pgvector embeddings |
-| Rate Limiting | None | Token-based limits |
-| External APIs | None | OpenAI, OpenRouter |
+| Aspect        | Simple (Tasks) | Complex (AI Agent)       |
+| ------------- | -------------- | ------------------------ |
+| Entities      | 1 entity       | 6 entities               |
+| Controllers   | 1 controller   | 3 controllers            |
+| Services      | 1 service      | 8 services               |
+| Encryption    | None           | AES-256-GCM for API keys |
+| File Upload   | None           | PDF/TXT with validation  |
+| Vector Search | None           | pgvector embeddings      |
+| Rate Limiting | None           | Token-based limits       |
+| External APIs | None           | OpenAI, OpenRouter       |
 
 ---
 

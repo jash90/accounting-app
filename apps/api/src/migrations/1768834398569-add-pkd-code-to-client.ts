@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
 /**
  * MIGRATION: AddPkdCodeToClient
@@ -24,15 +24,11 @@ export class AddPkdCodeToClient1768834398569 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Add pkdCode column to clients table
     // Max length of 10 accommodates format XX.XX.Z with some buffer
-    await queryRunner.query(
-      `ALTER TABLE "clients" ADD "pkdCode" character varying(10)`
-    );
+    await queryRunner.query(`ALTER TABLE "clients" ADD "pkdCode" character varying(10)`);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Remove the pkdCode column
-    await queryRunner.query(
-      `ALTER TABLE "clients" DROP COLUMN "pkdCode"`
-    );
+    await queryRunner.query(`ALTER TABLE "clients" DROP COLUMN "pkdCode"`);
   }
 }

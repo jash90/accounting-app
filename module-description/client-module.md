@@ -77,9 +77,9 @@ Employees have limited access based on owner configuration.
 | --------------------- | ---------------------------------------- |
 | Client List           | Shared with owner and other employees    |
 | Change History        | Read access (shared view)                |
-| Client Create         | ✅ Allowed                                |
-| Client Update         | ✅ Allowed                                |
-| Client Delete         | ❌ Requires owner approval                |
+| Client Create         | ✅ Allowed                               |
+| Client Update         | ✅ Allowed                               |
+| Client Delete         | ❌ Requires owner approval               |
 | Icon Display          | Read-only (visible but not configurable) |
 | Notification Settings | Only if enabled by owner                 |
 
@@ -442,7 +442,7 @@ Base path: `/api/modules/clients`
 | ------ | ------------------------------------------------ | ----------------------------- | ------------ |
 | GET    | `/api/modules/clients/settings/notifications`    | Get notification settings     | Admin, Owner |
 | PUT    | `/api/modules/clients/settings/notifications`    | Update notification settings  | Admin, Owner |
-| GET    | `/api/modules/clients/settings/notifications/me` | Get own notification prefs    | All*         |
-| PUT    | `/api/modules/clients/settings/notifications/me` | Update own notification prefs | All*         |
+| GET    | `/api/modules/clients/settings/notifications/me` | Get own notification prefs    | All\*        |
+| PUT    | `/api/modules/clients/settings/notifications/me` | Update own notification prefs | All\*        |
 
-*Employee access depends on owner configuration
+\*Employee access depends on owner configuration

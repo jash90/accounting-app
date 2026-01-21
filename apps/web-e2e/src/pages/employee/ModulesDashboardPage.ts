@@ -10,10 +10,13 @@ export class ModulesDashboardPage extends BasePage {
 
   // Selectors
   private readonly heading = 'h1:has-text("Modules"), h1:has-text("My Modules")';
-  private readonly moduleCard = (moduleName: string) => `[data-testid="module-${moduleName}"], a:has-text("${moduleName}"), div:has-text("${moduleName}")`;
+  private readonly moduleCard = (moduleName: string) =>
+    `[data-testid="module-${moduleName}"], a:has-text("${moduleName}"), div:has-text("${moduleName}")`;
   private readonly modulesList = '[data-testid="modules-list"], .modules-grid';
-  private readonly emptyState = '[data-testid="empty-state"], div:has-text("No modules"), div:has-text("Coming soon")';
-  private readonly accessButton = (moduleName: string) => `a[href*="${moduleName}"], button:has-text("Access"):near(text="${moduleName}")`;
+  private readonly emptyState =
+    '[data-testid="empty-state"], div:has-text("No modules"), div:has-text("Coming soon")';
+  private readonly accessButton = (moduleName: string) =>
+    `a[href*="${moduleName}"], button:has-text("Access"):near(text="${moduleName}")`;
 
   constructor(page: Page) {
     super(page);
@@ -91,7 +94,9 @@ export class ModulesDashboardPage extends BasePage {
       return 0;
     }
 
-    const modules = await this.page.locator(`${this.modulesList} > *, [data-testid^="module-"]`).all();
+    const modules = await this.page
+      .locator(`${this.modulesList} > *, [data-testid^="module-"]`)
+      .all();
     return modules.length;
   }
 

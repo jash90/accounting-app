@@ -1,33 +1,21 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import {
-  TimeEntry,
-  TimeSettings,
-  Company,
-  User,
-  Client,
-  Task,
-} from '@accounting/common';
+
+import { TimeEntry, TimeSettings, Company, User, Client, Task } from '@accounting/common';
 import { CommonModule } from '@accounting/common/backend';
 import { RBACModule } from '@accounting/rbac';
+
+import { TimeEntriesController } from './controllers/time-entries.controller';
+import { TimeReportsController } from './controllers/time-reports.controller';
+import { TimeSettingsController } from './controllers/time-settings.controller';
+import { TimeCalculationService } from './services/time-calculation.service';
 import { TimeEntriesService } from './services/time-entries.service';
 import { TimeSettingsService } from './services/time-settings.service';
-import { TimeCalculationService } from './services/time-calculation.service';
 import { TimesheetService } from './services/timesheet.service';
-import { TimeEntriesController } from './controllers/time-entries.controller';
-import { TimeSettingsController } from './controllers/time-settings.controller';
-import { TimeReportsController } from './controllers/time-reports.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      TimeEntry,
-      TimeSettings,
-      Company,
-      User,
-      Client,
-      Task,
-    ]),
+    TypeOrmModule.forFeature([TimeEntry, TimeSettings, Company, User, Client, Task]),
     CommonModule,
     RBACModule,
   ],
@@ -37,17 +25,7 @@ import { TimeReportsController } from './controllers/time-reports.controller';
     TimeSettingsController,
     TimeEntriesController,
   ],
-  providers: [
-    TimeEntriesService,
-    TimeSettingsService,
-    TimeCalculationService,
-    TimesheetService,
-  ],
-  exports: [
-    TimeEntriesService,
-    TimeSettingsService,
-    TimeCalculationService,
-    TimesheetService,
-  ],
+  providers: [TimeEntriesService, TimeSettingsService, TimeCalculationService, TimesheetService],
+  exports: [TimeEntriesService, TimeSettingsService, TimeCalculationService, TimesheetService],
 })
 export class TimeTrackingModule {}

@@ -1,24 +1,25 @@
-import apiClient from '../client';
+import { type PaginatedResponse } from '@/types/api';
 import {
-  CreateTaskDto,
-  UpdateTaskDto,
-  TaskFiltersDto,
-  TaskResponseDto,
-  ReorderTasksDto,
-  BulkUpdateStatusDto,
-  KanbanBoardDto,
-  CalendarTaskDto,
-  CreateTaskLabelDto,
-  UpdateTaskLabelDto,
-  TaskLabelResponseDto,
-  AssignLabelDto,
-  CreateTaskCommentDto,
-  UpdateTaskCommentDto,
-  TaskCommentResponseDto,
-  CreateTaskDependencyDto,
-  TaskDependencyResponseDto,
+  type CreateTaskDto,
+  type UpdateTaskDto,
+  type TaskFiltersDto,
+  type TaskResponseDto,
+  type ReorderTasksDto,
+  type BulkUpdateStatusDto,
+  type KanbanBoardDto,
+  type CalendarTaskDto,
+  type CreateTaskLabelDto,
+  type UpdateTaskLabelDto,
+  type TaskLabelResponseDto,
+  type AssignLabelDto,
+  type CreateTaskCommentDto,
+  type UpdateTaskCommentDto,
+  type TaskCommentResponseDto,
+  type CreateTaskDependencyDto,
+  type TaskDependencyResponseDto,
 } from '@/types/dtos';
-import { PaginatedResponse } from '@/types/api';
+
+import apiClient from '../client';
 
 const BASE_URL = '/api/modules/tasks';
 
@@ -73,7 +74,9 @@ export const tasksApi = {
   },
 
   // Kanban view
-  getKanbanBoard: async (filters?: Omit<TaskFiltersDto, 'page' | 'limit'>): Promise<KanbanBoardDto> => {
+  getKanbanBoard: async (
+    filters?: Omit<TaskFiltersDto, 'page' | 'limit'>
+  ): Promise<KanbanBoardDto> => {
     const { data } = await apiClient.get<{
       columns: Array<{
         status: string;
@@ -179,7 +182,10 @@ export const taskLabelsApi = {
   },
 
   // Assign label to task
-  assignToTask: async (taskId: string, assignData: AssignLabelDto): Promise<{ message: string }> => {
+  assignToTask: async (
+    taskId: string,
+    assignData: AssignLabelDto
+  ): Promise<{ message: string }> => {
     const { data } = await apiClient.post<{ message: string }>(
       `${BASE_URL}/${taskId}/labels`,
       assignData
@@ -196,11 +202,16 @@ export const taskLabelsApi = {
 // Task Comments API
 export const taskCommentsApi = {
   getByTaskId: async (taskId: string): Promise<TaskCommentResponseDto[]> => {
-    const { data } = await apiClient.get<TaskCommentResponseDto[]>(`${BASE_URL}/${taskId}/comments`);
+    const { data } = await apiClient.get<TaskCommentResponseDto[]>(
+      `${BASE_URL}/${taskId}/comments`
+    );
     return data;
   },
 
-  create: async (taskId: string, commentData: CreateTaskCommentDto): Promise<TaskCommentResponseDto> => {
+  create: async (
+    taskId: string,
+    commentData: CreateTaskCommentDto
+  ): Promise<TaskCommentResponseDto> => {
     const { data } = await apiClient.post<TaskCommentResponseDto>(
       `${BASE_URL}/${taskId}/comments`,
       commentData
@@ -208,7 +219,10 @@ export const taskCommentsApi = {
     return data;
   },
 
-  update: async (commentId: string, commentData: UpdateTaskCommentDto): Promise<TaskCommentResponseDto> => {
+  update: async (
+    commentId: string,
+    commentData: UpdateTaskCommentDto
+  ): Promise<TaskCommentResponseDto> => {
     const { data } = await apiClient.patch<TaskCommentResponseDto>(
       `${BASE_URL}/comments/${commentId}`,
       commentData
@@ -244,7 +258,10 @@ export const taskDependenciesApi = {
     return data;
   },
 
-  create: async (taskId: string, dependencyData: CreateTaskDependencyDto): Promise<TaskDependencyResponseDto> => {
+  create: async (
+    taskId: string,
+    dependencyData: CreateTaskDependencyDto
+  ): Promise<TaskDependencyResponseDto> => {
     const { data } = await apiClient.post<TaskDependencyResponseDto>(
       `${BASE_URL}/${taskId}/dependencies`,
       dependencyData

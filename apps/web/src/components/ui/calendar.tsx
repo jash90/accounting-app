@@ -1,18 +1,15 @@
 'use client';
 
 import * as React from 'react';
-import { DayPicker, DayPickerProps } from 'react-day-picker';
+
+import { DayPicker, type DayPickerProps } from 'react-day-picker';
+
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-import { cn } from '@/lib/utils/cn';
 import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils/cn';
 
-function Calendar({
-  className,
-  classNames,
-  showOutsideDays = true,
-  ...props
-}: DayPickerProps) {
+function Calendar({ className, classNames, showOutsideDays = true, ...props }: DayPickerProps) {
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
@@ -33,8 +30,7 @@ function Calendar({
         ),
         month_grid: 'w-full border-collapse',
         weekdays: 'flex',
-        weekday:
-          'text-muted-foreground w-9 font-normal text-[0.8rem] text-center',
+        weekday: 'text-muted-foreground w-9 font-normal text-[0.8rem] text-center',
         week: 'flex w-full mt-2',
         day: cn(
           'relative p-0 text-center text-sm focus-within:relative focus-within:z-20',
@@ -49,13 +45,11 @@ function Calendar({
         range_end: 'day-range-end rounded-r-md',
         selected:
           'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-md',
-        today:
-          'bg-accent text-accent-foreground font-semibold',
+        today: 'bg-accent text-accent-foreground font-semibold',
         outside:
           'text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground',
         disabled: 'text-muted-foreground opacity-50',
-        range_middle:
-          'aria-selected:bg-accent aria-selected:text-accent-foreground rounded-none',
+        range_middle: 'aria-selected:bg-accent aria-selected:text-accent-foreground rounded-none',
         hidden: 'invisible',
         ...classNames,
       }}

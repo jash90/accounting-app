@@ -1,7 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
+
 import { useSidebar } from '@/contexts/navigation-context';
-import { NavItem } from './types';
 import { cn } from '@/lib/utils/cn';
+
+import { type NavItem } from './types';
 
 interface SidebarItemProps {
   item: NavItem;
@@ -22,7 +24,7 @@ export function SidebarItem({ item }: SidebarItemProps) {
         isActive
           ? 'bg-apptax-blue text-white shadow-apptax-sm'
           : 'text-white/70 hover:bg-white/10 hover:text-white',
-        !isOpen && 'justify-center px-2',
+        !isOpen && 'justify-center px-2'
       )}
     >
       <Icon className="h-5 w-5 flex-shrink-0" />

@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
 /**
  * MIGRATION: AddTimeEntryLocking
@@ -57,7 +57,9 @@ export class AddTimeEntryLocking1768970000000 implements MigrationInterface {
       WHERE "isLocked" = true
     `);
 
-    console.log('[AddTimeEntryLocking] Migration complete. Added isLocked, lockedAt, lockedById columns.');
+    console.log(
+      '[AddTimeEntryLocking] Migration complete. Added isLocked, lockedAt, lockedById columns.'
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

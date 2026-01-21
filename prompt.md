@@ -1,6 +1,7 @@
 # Prompt dla Claude Code: Backend w Nx Monorepo z NestJS i RBAC
 
 ## Cel projektu
+
 Stwórz kompletny backend w architekturze Nx monorepo wykorzystujący NestJS z zaawansowanym systemem autoryzacji opartym na rolach (RBAC) i modułach.
 
 ---
@@ -44,6 +45,7 @@ Stwórz kompletny backend w architekturze Nx monorepo wykorzystujący NestJS z z
 **Zadanie**: Skonfiguruj Nx workspace z NestJS według najlepszych praktyk.
 
 ### Wymagania struktury:
+
 ```
 workspace/
 ├── apps/
@@ -93,12 +95,14 @@ workspace/
 ```
 
 **Komendy do wykonania**:
+
 1. Zainicjalizuj Nx workspace z NestJS preset
 2. Wygeneruj główną aplikację `api`
 3. Wygeneruj biblioteki używając Nx generators
 4. Skonfiguruj TypeScript paths w `tsconfig.base.json`
 
 **Kryteria sukcesu**:
+
 - Projekt kompiluje się bez błędów
 - Wszystkie ścieżki importów działają
 - `nx serve api` uruchamia serwer deweloperski
@@ -113,6 +117,7 @@ workspace/
 ### Wymagane Entity:
 
 #### 1. User Entity
+
 ```typescript
 - id: UUID
 - email: string (unique)
@@ -127,6 +132,7 @@ workspace/
 ```
 
 #### 2. Company Entity
+
 ```typescript
 - id: UUID
 - name: string
@@ -137,6 +143,7 @@ workspace/
 ```
 
 #### 3. Module Entity (reprezentuje moduły systemu)
+
 ```typescript
 - id: UUID
 - name: string
@@ -147,6 +154,7 @@ workspace/
 ```
 
 #### 4. CompanyModuleAccess Entity (many-to-many)
+
 ```typescript
 - id: UUID
 - companyId: UUID
@@ -156,6 +164,7 @@ workspace/
 ```
 
 #### 5. UserModulePermission Entity (many-to-many)
+
 ```typescript
 - id: UUID
 - userId: UUID
@@ -166,6 +175,7 @@ workspace/
 ```
 
 #### 6. SimpleText Entity (testowy moduł)
+
 ```typescript
 - id: UUID
 - companyId: UUID
@@ -176,6 +186,7 @@ workspace/
 ```
 
 **Kryteria sukcesu**:
+
 - Wszystkie relacje są prawidłowo zdefiniowane
 - Migrations są automatycznie generowane
 - Seeder danych testowych działa poprawnie
@@ -210,6 +221,7 @@ workspace/
    - `@CurrentUser()` - dostęp do zalogowanego użytkownika
 
 5. **DTOs**:
+
    ```typescript
    RegisterDto {
      email: string (email validation)
@@ -233,6 +245,7 @@ workspace/
    ```
 
 **Kryteria sukcesu**:
+
 - Hasła są hashowane używając bcrypt
 - JWT tokeny zawierają: userId, email, role, companyId
 - Refresh tokens działają poprawnie
@@ -248,26 +261,33 @@ workspace/
 ### Komponenty systemu RBAC:
 
 #### 1. RBAC Service
+
 ```typescript
 class RBACService {
   // Sprawdzanie czy użytkownik ma dostęp do modułu
-  async canAccessModule(userId: string, moduleSlug: string): Promise<boolean>
-  
+  async canAccessModule(userId: string, moduleSlug: string): Promise<boolean>;
+
   // Sprawdzanie konkretnych uprawnień
-  async hasPermission(userId: string, moduleSlug: string, permission: string): Promise<boolean>
-  
+  async hasPermission(userId: string, moduleSlug: string, permission: string): Promise<boolean>;
+
   // Przyznawanie dostępu do modułu (dla ADMIN -> Company, dla COMPANY_OWNER -> Employee)
-  async grantModuleAccess(granterId: string, targetId: string, moduleSlug: string, permissions: string[]): Promise<void>
-  
+  async grantModuleAccess(
+    granterId: string,
+    targetId: string,
+    moduleSlug: string,
+    permissions: string[]
+  ): Promise<void>;
+
   // Odbieranie dostępu
-  async revokeModuleAccess(granterId: string, targetId: string, moduleSlug: string): Promise<void>
-  
+  async revokeModuleAccess(granterId: string, targetId: string, moduleSlug: string): Promise<void>;
+
   // Listowanie dostępnych modułów dla użytkownika
-  async getAvailableModules(userId: string): Promise<Module[]>
+  async getAvailableModules(userId: string): Promise<Module[]>;
 }
 ```
 
 #### 2. Module Access Guard
+
 ```typescript
 @Injectable()
 class ModuleAccessGuard implements CanActivate {
@@ -280,6 +300,7 @@ class ModuleAccessGuard implements CanActivate {
 ```
 
 #### 3. Decorators
+
 ```typescript
 @RequireModule('module-slug') // Wymaga dostępu do konkretnego modułu
 @RequirePermission('module-slug', 'write') // Wymaga konkretnego uprawnienia
@@ -289,6 +310,7 @@ class ModuleAccessGuard implements CanActivate {
 ### Logika Biznesowa RBAC:
 
 **ADMIN**:
+
 - Widzi wszystkie firmy w systemie
 - Może zarządzać użytkownikami (CRUD operations)
 - Może włączać/wyłączać moduły dla firm (`CompanyModuleAccess`)
@@ -296,6 +318,7 @@ class ModuleAccessGuard implements CanActivate {
 - Endpointy: `/admin/companies`, `/admin/users`, `/admin/modules/assign`
 
 **COMPANY_OWNER**:
+
 - Widzi tylko swoją firmę i swoich pracowników
 - Może zarządzać pracownikami swojej firmy
 - Widzi wszystkie moduły, ale ma dostęp tylko do tych aktywowanych przez admina
@@ -304,12 +327,14 @@ class ModuleAccessGuard implements CanActivate {
 - Endpointy: `/company/employees`, `/company/modules`, `/modules/:slug/*`
 
 **EMPLOYEE**:
+
 - Widzi listę współpracowników
 - Ma dostęp tylko do modułów przyznanych przez właściciela firmy
 - Może używać modułów zgodnie z przyznanymi uprawnieniami (read/write/delete)
 - Endpointy: `/company/employees` (readonly), `/modules/:slug/*` (zgodnie z uprawnieniami)
 
 **Kryteria sukcesu**:
+
 - System RBAC jest w pełni funkcjonalny dla wszystkich 3 ról
 - Guards prawidłowo blokują nieautoryzowany dostęp
 - Można dynamicznie przyznawać i odbierać dostęp
@@ -325,6 +350,7 @@ class ModuleAccessGuard implements CanActivate {
 ### Endpointy dla ADMIN:
 
 #### 1. Zarządzanie Użytkownikami
+
 ```typescript
 GET    /admin/users                    # Lista wszystkich użytkowników
 GET    /admin/users/:id                # Szczegóły użytkownika
@@ -335,6 +361,7 @@ PATCH  /admin/users/:id/activate       # Aktywacja/deaktywacja
 ```
 
 #### 2. Zarządzanie Firmami
+
 ```typescript
 GET    /admin/companies                # Lista firm
 GET    /admin/companies/:id            # Szczegóły firmy z właścicielem
@@ -345,6 +372,7 @@ GET    /admin/companies/:id/employees  # Pracownicy firmy
 ```
 
 #### 3. Zarządzanie Modułami
+
 ```typescript
 GET    /admin/modules                              # Lista wszystkich modułów
 GET    /admin/modules/:id                          # Szczegóły modułu
@@ -357,6 +385,7 @@ DELETE /admin/companies/:id/modules/:moduleId     # Odebranie dostępu do moduł
 ```
 
 **Kryteria sukcesu**:
+
 - Wszystkie endpointy są chronione `@Roles(UserRole.ADMIN)`
 - Walidacja DTOs dla wszystkich operacji
 - Proper error handling (404, 403, 409)
@@ -371,6 +400,7 @@ DELETE /admin/companies/:id/modules/:moduleId     # Odebranie dostępu do moduł
 ### Endpointy dla COMPANY_OWNER:
 
 #### 1. Zarządzanie Pracownikami
+
 ```typescript
 GET    /company/employees               # Lista pracowników swojej firmy
 GET    /company/employees/:id           # Szczegóły pracownika
@@ -380,6 +410,7 @@ DELETE /company/employees/:id           # Usunięcie pracownika
 ```
 
 #### 2. Zarządzanie Dostępem do Modułów
+
 ```typescript
 GET    /company/modules                           # Moduły dostępne dla firmy
 GET    /company/modules/:slug                     # Szczegóły modułu
@@ -391,12 +422,14 @@ DELETE /company/employees/:id/modules/:slug       # Odebranie dostępu
 ```
 
 **Logika biznesowa**:
+
 - Właściciel widzi tylko moduły aktywowane przez admina
 - Nie może przyznać pracownikowi dostępu do modułu, do którego sam nie ma dostępu
 - Ma automatycznie pełne uprawnienia do wszystkich aktywnych modułów
 - Może tworzyć tylko pracowników przypisanych do swojej firmy
 
 **Kryteria sukcesu**:
+
 - Guard sprawdza czy użytkownik jest właścicielem firmy
 - Nie można zarządzać pracownikami innej firmy
 - System blokuje przyznawanie dostępu do nieaktywnych modułów
@@ -411,6 +444,7 @@ DELETE /company/employees/:id/modules/:slug       # Odebranie dostępu
 ### Funkcjonalność Simple Text Module:
 
 #### 1. Endpoints
+
 ```typescript
 GET    /modules/simple-text              # Lista tekstów (filtrowane po firmie)
 GET    /modules/simple-text/:id          # Szczegóły tekstu
@@ -420,6 +454,7 @@ DELETE /modules/simple-text/:id          # Usunięcie tekstu
 ```
 
 #### 2. Business Logic
+
 - Każdy tekst należy do konkretnej firmy (`companyId`)
 - ADMIN nie widzi tekstów (nie ma dostępu do danych biznesowych)
 - COMPANY_OWNER widzi wszystkie teksty swojej firmy
@@ -429,12 +464,12 @@ DELETE /modules/simple-text/:id          # Usunięcie tekstu
   - `delete` - może usuwać
 
 #### 3. Guards i Dekoratory
+
 ```typescript
 @Controller('modules/simple-text')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard)
 @RequireModule('simple-text')
 export class SimpleTextController {
-  
   @Get()
   @RequirePermission('simple-text', 'read')
   findAll(@CurrentUser() user: User) {
@@ -456,6 +491,7 @@ export class SimpleTextController {
 ```
 
 #### 4. DTOs
+
 ```typescript
 CreateSimpleTextDto {
   content: string (min 1, max 5000 chars)
@@ -476,6 +512,7 @@ SimpleTextResponseDto {
 ```
 
 **Kryteria sukcesu**:
+
 - Moduł jest zarejestrowany w tabeli `Module`
 - RBAC system działa poprawnie dla wszystkich ról
 - Użytkownicy widzą tylko dane swojej firmy
@@ -491,6 +528,7 @@ SimpleTextResponseDto {
 ### Wymagania:
 
 1. **Konfiguracja Swagger**:
+
    ```typescript
    // main.ts
    const config = new DocumentBuilder()
@@ -506,12 +544,13 @@ SimpleTextResponseDto {
    ```
 
 2. **Dokumentacja Endpointów**:
+
    ```typescript
    @ApiTags('simple-text')
    @ApiBearerAuth()
    @Controller('modules/simple-text')
    export class SimpleTextController {
-     
+
      @Get()
      @ApiOperation({ summary: 'Get all texts for user company' })
      @ApiResponse({ status: 200, type: [SimpleTextResponseDto] })
@@ -528,13 +567,14 @@ SimpleTextResponseDto {
    ```
 
 3. **DTO Annotations**:
+
    ```typescript
    export class CreateSimpleTextDto {
      @ApiProperty({
        description: 'Text content',
        example: 'Hello world!',
        minLength: 1,
-       maxLength: 5000
+       maxLength: 5000,
      })
      @IsString()
      @MinLength(1)
@@ -549,6 +589,7 @@ SimpleTextResponseDto {
    - Dokumentacja error responses (401, 403, 404)
 
 **Kryteria sukcesu**:
+
 - Swagger UI dostępne pod `/api/docs`
 - Wszystkie endpointy są udokumentowane
 - DTOs mają pełne opisy i przykłady
@@ -616,6 +657,7 @@ Employees: [
 ```
 
 **Kryteria sukcesu**:
+
 - Komenda `npm run seed` wykonuje seeders
 - Dane są spójne (relacje działają)
 - Hasła są zahashowane
@@ -628,6 +670,7 @@ Employees: [
 **Zadanie**: Napisz testy jednostkowe i E2E dla kluczowych funkcjonalności.
 
 ### 1. Testy Jednostkowe (Unit Tests):
+
 - `AuthService` - login, register, JWT generation
 - `RBACService` - canAccessModule, hasPermission, grantModuleAccess
 - `SimpleTextService` - CRUD operations
@@ -639,7 +682,6 @@ Employees: [
 
 ```typescript
 describe('RBAC E2E Tests', () => {
-  
   it('ADMIN can list all users', async () => {
     // Login as admin
     // GET /admin/users
@@ -691,6 +733,7 @@ describe('RBAC E2E Tests', () => {
 ```
 
 **Kryteria sukcesu**:
+
 - Minimum 80% code coverage
 - Wszystkie edge cases są przetestowane
 - Testy są atomowe i niezależne
@@ -703,13 +746,16 @@ describe('RBAC E2E Tests', () => {
 **Zadanie**: Przygotuj dokumentację i deployment configuration.
 
 ### 1. README.md
+
 ```markdown
 # RBAC Multi-tenant Backend
 
 ## Opis projektu
+
 Backend API z systemem RBAC (Role-Based Access Control) dla multi-tenant SaaS.
 
 ## Technologie
+
 - Nx Monorepo
 - NestJS
 - TypeORM / Prisma
@@ -718,24 +764,30 @@ Backend API z systemem RBAC (Role-Based Access Control) dla multi-tenant SaaS.
 - Swagger/OpenAPI
 
 ## Struktura ról
+
 - ADMIN - zarządzanie systemem
 - COMPANY_OWNER - zarządzanie firmą i pracownikami
 - EMPLOYEE - dostęp do modułów według uprawnień
 
 ## Instalacja
+
 ...
 
 ## Uruchomienie
+
 ...
 
 ## Testowanie
+
 ...
 
 ## API Dokumentacja
+
 Swagger UI: http://localhost:3000/api/docs
 ```
 
 ### 2. Environment Variables
+
 ```env
 # Database
 DATABASE_URL="postgresql://user:password@localhost:5432/rbac_db"
@@ -755,6 +807,7 @@ CORS_ORIGINS="http://localhost:4200"
 ```
 
 ### 3. Docker Compose (opcjonalnie)
+
 ```yaml
 version: '3.8'
 services:
@@ -765,24 +818,27 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
     ports:
-      - "5432:5432"
-  
+      - '5432:5432'
+
   api:
     build: .
     ports:
-      - "3000:3000"
+      - '3000:3000'
     depends_on:
       - postgres
 ```
 
 ### 4. ARCHITECTURE.md
+
 Dokument opisujący:
+
 - Architekturę systemu RBAC
 - Przepływ autoryzacji
 - Diagram relacji między entity
 - Decision tree dla sprawdzania uprawnień
 
 **Kryteria sukcesu**:
+
 - Dokumentacja jest kompletna i aktualna
 - Projekt można uruchomić według instrukcji
 - Wszystkie zmienne środowiskowe są udokumentowane
@@ -793,42 +849,50 @@ Dokument opisujący:
 ## Podsumowanie - Kryteria Akceptacji
 
 ✅ **Nx Monorepo**:
+
 - Poprawna struktura workspace (apps/libs)
 - Shared libraries działają
 - Build i serve działa bez błędów
 
 ✅ **NestJS Conventions**:
+
 - Proper module structure (module, controller, service, entities, dtos)
 - Dependency Injection używane prawidłowo
 - Guards i Decorators stosowane konsekwentnie
 
 ✅ **RBAC System**:
+
 - 3 role (ADMIN, COMPANY_OWNER, EMPLOYEE) działają zgodnie ze specyfikacją
 - Dynamiczne przyznawanie/odbieranie dostępu do modułów
 - Permission system (read, write, delete) działa
 
 ✅ **Security**:
+
 - JWT authentication zaimplementowane
 - Hasła są hashowane
 - Guards blokują nieautoryzowany dostęp
 - CORS i rate limiting skonfigurowane
 
 ✅ **Swagger/OpenAPI**:
+
 - Wszystkie endpointy udokumentowane
 - Authentication w Swagger UI działa
 - DTOs mają pełne opisy
 
 ✅ **Simple Text Module**:
+
 - Proof of concept modułu biznesowego działa
 - RBAC system zastosowany prawidłowo
 - Użytkownicy widzą tylko dane swojej firmy
 
 ✅ **Testing**:
+
 - Unit tests dla serwisów i guards
 - E2E tests dla kluczowych scenariuszy
 - Minimum 80% coverage
 
 ✅ **Documentation**:
+
 - README.md z instrukcjami
 - ARCHITECTURE.md z diagramami
 - API docs w Swagger

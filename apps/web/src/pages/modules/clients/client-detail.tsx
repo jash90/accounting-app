@@ -1,13 +1,7 @@
+import { useState } from 'react';
+
 import { useParams, useNavigate } from 'react-router-dom';
-import { useClient, useUpdateClient, useSetClientCustomFields } from '@/lib/hooks/use-clients';
-import { useFieldDefinitions, useClientIcons } from '@/lib/hooks/use-clients';
-import { useAuthContext } from '@/contexts/auth-context';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ErrorBoundary } from '@/components/common/error-boundary';
-import { ClientIcon } from '@/types/entities';
+
 import {
   ArrowLeft,
   Edit,
@@ -18,12 +12,25 @@ import {
   Tags,
   AlertTriangle,
 } from 'lucide-react';
-import { useState } from 'react';
 import { ClientFormDialog } from '@/components/forms/client-form-dialog';
 import { ClientChangelog } from '@/components/clients/client-changelog';
 import { ClientTasksList } from '@/components/clients/client-tasks-list';
 import { ClientTaskStatistics } from '@/components/clients/client-task-statistics';
-import { UpdateClientDto } from '@/types/dtos';
+import { ErrorBoundary } from '@/components/common/error-boundary';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthContext } from '@/contexts/auth-context';
+import {
+  useFieldDefinitions,
+  useClientIcons,
+  useClient,
+  useUpdateClient,
+  useSetClientCustomFields,
+} from '@/lib/hooks/use-clients';
+import { type UpdateClientDto } from '@/types/dtos';
+import { ClientIcon } from '@/types/entities';
 import {
   EmploymentTypeLabels,
   VatStatusLabels,
@@ -64,9 +71,7 @@ function ClientDetailErrorFallback() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Powrót
         </Button>
-        <Button onClick={() => window.location.reload()}>
-          Odśwież stronę
-        </Button>
+        <Button onClick={() => window.location.reload()}>Odśwież stronę</Button>
       </div>
     </div>
   );
@@ -160,9 +165,12 @@ function ClientDetailContent() {
   }
 
   // Get assigned icons - use type predicate to properly narrow the type
-  const assignedIcons = (client.iconAssignments?.map((assignment) => {
-    return icons.find((i) => i.id === assignment.iconId);
-  }).filter((icon): icon is ClientIcon => icon !== undefined)) ?? [];
+  const assignedIcons =
+    client.iconAssignments
+      ?.map((assignment) => {
+        return icons.find((i) => i.id === assignment.iconId);
+      })
+      .filter((icon): icon is ClientIcon => icon !== undefined) ?? [];
 
   // Get custom field values
   const customFieldValues = client.customFieldValues || [];
@@ -184,9 +192,7 @@ function ClientDetailContent() {
                 </Badge>
               )}
             </h1>
-            {client.nip && (
-              <p className="text-muted-foreground font-mono">NIP: {client.nip}</p>
-            )}
+            {client.nip && <p className="text-muted-foreground font-mono">NIP: {client.nip}</p>}
           </div>
         </div>
 
@@ -257,9 +263,7 @@ function ClientDetailContent() {
                   label="Status VAT"
                   value={
                     client.vatStatus ? (
-                      <Badge variant="default">
-                        {VatStatusLabels[client.vatStatus]}
-                      </Badge>
+                      <Badge variant="default">{VatStatusLabels[client.vatStatus]}</Badge>
                     ) : null
                   }
                 />
@@ -267,9 +271,7 @@ function ClientDetailContent() {
                   label="Forma opodatkowania"
                   value={
                     client.taxScheme ? (
-                      <Badge variant="secondary">
-                        {TaxSchemeLabels[client.taxScheme]}
-                      </Badge>
+                      <Badge variant="secondary">{TaxSchemeLabels[client.taxScheme]}</Badge>
                     ) : null
                   }
                 />
@@ -277,9 +279,7 @@ function ClientDetailContent() {
                   label="Status ZUS"
                   value={
                     client.zusStatus ? (
-                      <Badge variant="secondary">
-                        {ZusStatusLabels[client.zusStatus]}
-                      </Badge>
+                      <Badge variant="secondary">{ZusStatusLabels[client.zusStatus]}</Badge>
                     ) : null
                   }
                 />
@@ -305,10 +305,7 @@ function ClientDetailContent() {
                   label="Data rozpoczęcia współpracy"
                   value={formatDate(client.cooperationStartDate)}
                 />
-                <InfoItem
-                  label="Data zawieszenia"
-                  value={formatDate(client.suspensionDate)}
-                />
+                <InfoItem label="Data zawieszenia" value={formatDate(client.suspensionDate)} />
               </div>
             </CardContent>
           </Card>
@@ -328,9 +325,7 @@ function ClientDetailContent() {
               </div>
               {client.companySpecificity && (
                 <div className="mb-4">
-                  <p className="text-sm text-muted-foreground mb-1">
-                    Specyfika firmy
-                  </p>
+                  <p className="text-sm text-muted-foreground mb-1">Specyfika firmy</p>
                   <p className="text-apptax-navy whitespace-pre-wrap">
                     {client.companySpecificity}
                   </p>
@@ -338,12 +333,8 @@ function ClientDetailContent() {
               )}
               {client.additionalInfo && (
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">
-                    Dodatkowe uwagi
-                  </p>
-                  <p className="text-apptax-navy whitespace-pre-wrap">
-                    {client.additionalInfo}
-                  </p>
+                  <p className="text-sm text-muted-foreground mb-1">Dodatkowe uwagi</p>
+                  <p className="text-apptax-navy whitespace-pre-wrap">{client.additionalInfo}</p>
                 </div>
               )}
             </CardContent>
@@ -398,17 +389,11 @@ function ClientDetailContent() {
                         className="flex items-center gap-2 px-3 py-1.5 rounded-full border"
                         style={{
                           borderColor: icon.color || '#e5e7eb',
-                          backgroundColor: icon.color
-                            ? `${icon.color}10`
-                            : 'transparent',
+                          backgroundColor: icon.color ? `${icon.color}10` : 'transparent',
                         }}
                       >
                         {icon.filePath && (
-                          <img
-                            src={icon.filePath}
-                            alt={icon.name}
-                            className="w-4 h-4"
-                          />
+                          <img src={icon.filePath} alt={icon.name} className="w-4 h-4" />
                         )}
                         <span className="text-sm">{icon.name}</span>
                       </div>
@@ -434,29 +419,32 @@ function ClientDetailContent() {
           onOpenChange={setEditOpen}
           client={client}
           onSubmit={async (data, customFields) => {
-            updateClient.mutate({
-              id: client.id,
-              data: data as UpdateClientDto,
-            }, {
-              onSuccess: async () => {
-                if (customFields && Object.keys(customFields.values).length > 0) {
-                  try {
-                    await setCustomFields.mutateAsync({
-                      id: client.id,
-                      data: customFields,
-                    });
-                  } catch (error) {
-                    console.error('Failed to update client custom fields:', error);
-                    // Error notification handled by mutation's onError
+            updateClient.mutate(
+              {
+                id: client.id,
+                data: data as UpdateClientDto,
+              },
+              {
+                onSuccess: async () => {
+                  if (customFields && Object.keys(customFields.values).length > 0) {
+                    try {
+                      await setCustomFields.mutateAsync({
+                        id: client.id,
+                        data: customFields,
+                      });
+                    } catch (error) {
+                      console.error('Failed to update client custom fields:', error);
+                      // Error notification handled by mutation's onError
+                    }
                   }
-                }
-                setEditOpen(false);
-              },
-              onError: (error) => {
-                console.error('Failed to update client:', error);
-                // Error notification handled by mutation's onError
-              },
-            });
+                  setEditOpen(false);
+                },
+                onError: (error) => {
+                  console.error('Failed to update client:', error);
+                  // Error notification handled by mutation's onError
+                },
+              }
+            );
           }}
         />
       )}

@@ -16,6 +16,7 @@ This comprehensive guide walks you through creating a new business module in the
 ## Example Module: Tasks
 
 We'll build a task management module that allows:
+
 - Companies to manage their tasks
 - Assigning tasks to employees
 - Setting priorities, due dates, and statuses

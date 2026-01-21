@@ -11,23 +11,18 @@ import {
   ParseUUIDPipe,
   BadRequestException,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiParam,
-} from '@nestjs/swagger';
+
 import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
   PermissionGuard,
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
-import { User } from '@accounting/common';
-import { TimeEntriesService } from '../services/time-entries.service';
+
 import {
   CreateTimeEntryDto,
   UpdateTimeEntryDto,
@@ -38,11 +33,8 @@ import {
   LockTimeEntryDto,
   UnlockTimeEntryDto,
 } from '../dto/time-entry.dto';
-import {
-  StartTimerDto,
-  StopTimerDto,
-  UpdateTimerDto,
-} from '../dto/timer.dto';
+import { StartTimerDto, StopTimerDto, UpdateTimerDto } from '../dto/timer.dto';
+import { TimeEntriesService } from '../services/time-entries.service';
 
 @ApiTags('Time Tracking - Entries')
 @ApiBearerAuth()
@@ -160,7 +152,7 @@ export class TimeEntriesController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateTimeEntryDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.entriesService.update(id, dto, user);
   }
@@ -205,9 +197,9 @@ export class TimeEntriesController {
   @RequirePermission('time-tracking', 'write')
   async submit(
     @Param('id', ParseUUIDPipe) id: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     @Body() dto: SubmitTimeEntryDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.entriesService.submitEntry(id, user);
   }
@@ -223,9 +215,9 @@ export class TimeEntriesController {
   @RequirePermission('time-tracking', 'manage')
   async approve(
     @Param('id', ParseUUIDPipe) id: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     @Body() dto: ApproveTimeEntryDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.entriesService.approveEntry(id, user);
   }
@@ -242,7 +234,7 @@ export class TimeEntriesController {
   async reject(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: RejectTimeEntryDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     if (!dto.rejectionNote?.trim()) {
       throw new BadRequestException('Powód odrzucenia jest wymagany');
@@ -263,7 +255,7 @@ export class TimeEntriesController {
   async lock(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: LockTimeEntryDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.entriesService.lockEntry(id, user, dto.reason);
   }
@@ -281,7 +273,7 @@ export class TimeEntriesController {
   async unlock(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UnlockTimeEntryDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.entriesService.unlockEntry(id, user, dto.reason);
   }

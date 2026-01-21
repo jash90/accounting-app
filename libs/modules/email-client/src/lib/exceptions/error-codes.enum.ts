@@ -50,62 +50,36 @@ export enum EmailClientErrorCode {
  * Human-readable error messages for each error code
  */
 export const EmailClientErrorMessages: Record<EmailClientErrorCode, string> = {
-  [EmailClientErrorCode.EMAIL_CONFIG_MISSING]:
-    'Email configuration not found for this user',
-  [EmailClientErrorCode.EMAIL_CONFIG_INVALID]:
-    'Email configuration is invalid or incomplete',
-  [EmailClientErrorCode.CREDENTIALS_INVALID]:
-    'Email credentials are invalid',
+  [EmailClientErrorCode.EMAIL_CONFIG_MISSING]: 'Email configuration not found for this user',
+  [EmailClientErrorCode.EMAIL_CONFIG_INVALID]: 'Email configuration is invalid or incomplete',
+  [EmailClientErrorCode.CREDENTIALS_INVALID]: 'Email credentials are invalid',
 
-  [EmailClientErrorCode.IMAP_CONNECTION_FAILED]:
-    'Failed to connect to IMAP server',
-  [EmailClientErrorCode.IMAP_AUTHENTICATION_FAILED]:
-    'IMAP authentication failed',
-  [EmailClientErrorCode.IMAP_TIMEOUT]:
-    'IMAP operation timed out (90s limit)',
-  [EmailClientErrorCode.IMAP_SSL_ERROR]:
-    'SSL/TLS error while connecting to IMAP server',
-  [EmailClientErrorCode.IMAP_DISCONNECTED]:
-    'IMAP connection was unexpectedly closed',
+  [EmailClientErrorCode.IMAP_CONNECTION_FAILED]: 'Failed to connect to IMAP server',
+  [EmailClientErrorCode.IMAP_AUTHENTICATION_FAILED]: 'IMAP authentication failed',
+  [EmailClientErrorCode.IMAP_TIMEOUT]: 'IMAP operation timed out (90s limit)',
+  [EmailClientErrorCode.IMAP_SSL_ERROR]: 'SSL/TLS error while connecting to IMAP server',
+  [EmailClientErrorCode.IMAP_DISCONNECTED]: 'IMAP connection was unexpectedly closed',
 
-  [EmailClientErrorCode.SMTP_CONNECTION_FAILED]:
-    'Failed to connect to SMTP server',
-  [EmailClientErrorCode.SMTP_AUTHENTICATION_FAILED]:
-    'SMTP authentication failed',
-  [EmailClientErrorCode.SMTP_SEND_FAILED]:
-    'Failed to send email via SMTP',
+  [EmailClientErrorCode.SMTP_CONNECTION_FAILED]: 'Failed to connect to SMTP server',
+  [EmailClientErrorCode.SMTP_AUTHENTICATION_FAILED]: 'SMTP authentication failed',
+  [EmailClientErrorCode.SMTP_SEND_FAILED]: 'Failed to send email via SMTP',
 
-  [EmailClientErrorCode.DRAFT_NOT_FOUND]:
-    'Email draft not found',
-  [EmailClientErrorCode.DRAFT_ACCESS_DENIED]:
-    'Access denied to this email draft',
-  [EmailClientErrorCode.DRAFT_SAVE_FAILED]:
-    'Failed to save email draft',
-  [EmailClientErrorCode.DRAFT_SYNC_FAILED]:
-    'Failed to sync draft with email server',
+  [EmailClientErrorCode.DRAFT_NOT_FOUND]: 'Email draft not found',
+  [EmailClientErrorCode.DRAFT_ACCESS_DENIED]: 'Access denied to this email draft',
+  [EmailClientErrorCode.DRAFT_SAVE_FAILED]: 'Failed to save email draft',
+  [EmailClientErrorCode.DRAFT_SYNC_FAILED]: 'Failed to sync draft with email server',
 
-  [EmailClientErrorCode.MESSAGE_NOT_FOUND]:
-    'Email message not found',
-  [EmailClientErrorCode.MESSAGE_FETCH_FAILED]:
-    'Failed to fetch email messages',
-  [EmailClientErrorCode.MESSAGE_DELETE_FAILED]:
-    'Failed to delete email message',
-  [EmailClientErrorCode.MESSAGE_MOVE_FAILED]:
-    'Failed to move email message',
+  [EmailClientErrorCode.MESSAGE_NOT_FOUND]: 'Email message not found',
+  [EmailClientErrorCode.MESSAGE_FETCH_FAILED]: 'Failed to fetch email messages',
+  [EmailClientErrorCode.MESSAGE_DELETE_FAILED]: 'Failed to delete email message',
+  [EmailClientErrorCode.MESSAGE_MOVE_FAILED]: 'Failed to move email message',
 
-  [EmailClientErrorCode.ATTACHMENT_TOO_LARGE]:
-    'Attachment exceeds maximum size limit (10MB)',
-  [EmailClientErrorCode.ATTACHMENT_NOT_FOUND]:
-    'Attachment not found',
-  [EmailClientErrorCode.ATTACHMENT_UPLOAD_FAILED]:
-    'Failed to upload attachment',
-  [EmailClientErrorCode.ATTACHMENT_TYPE_NOT_ALLOWED]:
-    'Attachment type is not allowed',
+  [EmailClientErrorCode.ATTACHMENT_TOO_LARGE]: 'Attachment exceeds maximum size limit (10MB)',
+  [EmailClientErrorCode.ATTACHMENT_NOT_FOUND]: 'Attachment not found',
+  [EmailClientErrorCode.ATTACHMENT_UPLOAD_FAILED]: 'Failed to upload attachment',
+  [EmailClientErrorCode.ATTACHMENT_TYPE_NOT_ALLOWED]: 'Attachment type is not allowed',
 
-  [EmailClientErrorCode.AI_NOT_CONFIGURED]:
-    'AI assistant is not configured for email composition',
-  [EmailClientErrorCode.AI_COMPOSE_FAILED]:
-    'AI failed to compose email',
-  [EmailClientErrorCode.AI_REPLY_FAILED]:
-    'AI failed to generate reply',
+  [EmailClientErrorCode.AI_NOT_CONFIGURED]: 'AI assistant is not configured for email composition',
+  [EmailClientErrorCode.AI_COMPOSE_FAILED]: 'AI failed to compose email',
+  [EmailClientErrorCode.AI_REPLY_FAILED]: 'AI failed to generate reply',
 };

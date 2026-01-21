@@ -1,4 +1,5 @@
 import * as React from 'react';
+
 import { cn } from '@/lib/utils/cn';
 
 const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
@@ -71,7 +72,11 @@ const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement>
 >(({ className, ...props }, ref) => (
-  <td ref={ref} className={cn('p-4 align-middle text-gray-700 [&:has([role=checkbox])]:pr-0', className)} {...props} />
+  <td
+    ref={ref}
+    className={cn('p-4 align-middle text-gray-700 [&:has([role=checkbox])]:pr-0', className)}
+    {...props}
+  />
 ));
 TableCell.displayName = 'TableCell';
 

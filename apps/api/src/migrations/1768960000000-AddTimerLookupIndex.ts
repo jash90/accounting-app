@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
 /**
  * MIGRATION: AddTimerLookupIndex - Creates composite index for efficient timer lookups

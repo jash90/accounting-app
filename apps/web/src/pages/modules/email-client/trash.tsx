@@ -1,9 +1,13 @@
 import { useState, useMemo } from 'react';
+
+import { Link } from 'react-router-dom';
+
+import { RefreshCw, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
 import { useFolder, useFolders } from '@/lib/hooks/use-email-client';
 import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
-import { Button } from '@/components/ui/button';
-import { RefreshCw, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+
 import { EmailListSkeleton } from './components/email-inbox-skeleton';
 import { EmailSidebar } from './components/email-sidebar';
 
@@ -23,15 +27,16 @@ function findTrashFolder(folders: string[] | undefined): string {
   ];
 
   for (const name of trashNames) {
-    const found = folders.find(f => f.toLowerCase() === name.toLowerCase());
+    const found = folders.find((f) => f.toLowerCase() === name.toLowerCase());
     if (found) return found;
   }
 
   // Partial match fallback
-  const partial = folders.find(f =>
-    f.toLowerCase().includes('trash') ||
-    f.toLowerCase().includes('deleted') ||
-    f.toLowerCase().includes('kosz')
+  const partial = folders.find(
+    (f) =>
+      f.toLowerCase().includes('trash') ||
+      f.toLowerCase().includes('deleted') ||
+      f.toLowerCase().includes('kosz')
   );
   return partial || 'Trash';
 }
@@ -49,9 +54,7 @@ export default function EmailTrash() {
   // Sort emails by date (newest first) and paginate
   const sortedEmails = useMemo(() => {
     if (!emails) return [];
-    return [...emails].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+    return [...emails].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [emails]);
 
   const totalPages = Math.ceil(sortedEmails.length / pageSize);
@@ -69,9 +72,7 @@ export default function EmailTrash() {
         <div className="border-b p-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Kosz</h1>
-            <p className="text-sm text-muted-foreground">
-              {emails?.length || 0} wiadomości
-            </p>
+            <p className="text-sm text-muted-foreground">{emails?.length || 0} wiadomości</p>
           </div>
           <Button
             onClick={() => {
@@ -118,7 +119,9 @@ export default function EmailTrash() {
                             <span className="h-2 w-2 rounded-full bg-blue-600 shrink-0" />
                           )}
                         </div>
-                        <p className={`text-sm mt-1 truncate ${isUnread ? 'font-semibold' : 'font-medium'}`}>
+                        <p
+                          className={`text-sm mt-1 truncate ${isUnread ? 'font-semibold' : 'font-medium'}`}
+                        >
                           {email.subject || '(Brak tematu)'}
                         </p>
                         <p className="text-sm text-muted-foreground mt-1 truncate">
@@ -141,8 +144,7 @@ export default function EmailTrash() {
           <div className="border-t px-4 py-3 flex items-center justify-between">
             <span className="text-sm text-muted-foreground">
               {(currentPage - 1) * pageSize + 1}-
-              {Math.min(currentPage * pageSize, sortedEmails.length)} z{' '}
-              {sortedEmails.length}
+              {Math.min(currentPage * pageSize, sortedEmails.length)} z {sortedEmails.length}
             </span>
             <div className="flex gap-2">
               <Button

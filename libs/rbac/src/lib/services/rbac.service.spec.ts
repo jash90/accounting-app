@@ -53,7 +53,7 @@ describe('RBACService - companyHasModule helpers', () => {
     service = module.get<RBACService>(RBACService);
     moduleRepository = module.get<Repository<Module>>(getRepositoryToken(Module));
     companyModuleAccessRepository = module.get<Repository<CompanyModuleAccess>>(
-      getRepositoryToken(CompanyModuleAccess),
+      getRepositoryToken(CompanyModuleAccess)
     );
   });
 

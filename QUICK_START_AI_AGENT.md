@@ -12,11 +12,13 @@ pnpm run dev
 ```
 
 This will start:
+
 - **Backend**: http://localhost:3000
 - **Frontend**: http://localhost:4200
 - **Swagger Docs**: http://localhost:3000/docs
 
 ⚠️ **If you see Vite errors related to `@/lib/utils`:**
+
 ```bash
 # Clear cache and restart
 pkill -9 -f node
@@ -29,6 +31,7 @@ pnpm run dev
 ### ADMIN (admin@system.com / Admin123!)
 
 **How to access AI Agent:**
+
 1. After logging in, click **"AI Agent"** in the sidebar
 2. You'll see a dashboard with 3 tiles:
    - **AI Chat** - Start a conversation
@@ -36,6 +39,7 @@ pnpm run dev
    - **Knowledge Base Files** - Upload PDF/TXT/MD files
 
 **Direct URLs:**
+
 - Dashboard: `http://localhost:4200/admin/modules/ai-agent`
 - Chat: `http://localhost:4200/admin/modules/ai-agent/chat`
 - Configuration: `http://localhost:4200/admin/modules/ai-agent/configuration`
@@ -44,6 +48,7 @@ pnpm run dev
 ### COMPANY_OWNER (bartlomiej.zimny@onet.pl / Owner123!)
 
 **How to access AI Agent:**
+
 1. After logging in, click **"AI Agent"** in the sidebar
 2. You'll see a dashboard with 3 tiles:
    - **AI Chat** - Conversations with AI
@@ -51,6 +56,7 @@ pnpm run dev
    - **Knowledge Base Files** - Company RAG files
 
 **Direct URLs:**
+
 - Dashboard: `http://localhost:4200/company/modules/ai-agent`
 - Chat: `http://localhost:4200/company/modules/ai-agent/chat`
 - Token Usage: `http://localhost:4200/company/modules/ai-agent/token-usage`
@@ -59,17 +65,20 @@ pnpm run dev
 ### EMPLOYEE (bartlomiej.zimny@interia.pl / Employee123!)
 
 **How to access AI Agent:**
+
 1. After logging in, click **"AI Agent"** in the sidebar
 2. You'll see a dashboard with a **"Start Chatting"** button
 3. Click to start a conversation with AI
 
 **Direct URLs:**
+
 - Dashboard: `http://localhost:4200/modules/ai-agent`
 - Chat: `http://localhost:4200/modules/ai-agent/chat`
 
 ## Step 3: AI Configuration (IMPORTANT!)
 
 **Before using chat as ADMIN:**
+
 1. Log in as ADMIN
 2. Go to: Admin → AI Agent → Configuration
 3. Fill in the form:
@@ -86,19 +95,25 @@ pnpm run dev
 ## Troubleshooting
 
 ### "System Admin company not found"
+
 ✅ **FIXED!** The seeder now automatically creates the System Admin Company.
 
 ### "AI configuration not found"
+
 ➡️ Log in as ADMIN and configure AI (step 3 above)
 
 ### Configuration saving doesn't work
+
 ✅ **FIXED!**
+
 - Endpoint changed from `/configuration` to `/config`
 - Empty API key handling logic fixed
 - On update, empty API key = keep current key
 
 ### Vite import errors
+
 ➡️ Clear cache:
+
 ```bash
 rm -rf web/node_modules/.vite web/.vite
 pkill -9 -f node
@@ -106,7 +121,9 @@ pnpm run dev
 ```
 
 ### Backend doesn't start
+
 ➡️ Check PostgreSQL:
+
 ```bash
 docker ps | grep postgres
 ```

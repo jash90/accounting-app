@@ -12,14 +12,18 @@ export class EmployeesListPage extends BasePage {
 
   // Selectors
   private readonly heading = 'h1:has-text("Employees")';
-  private readonly createEmployeeButton = 'button:has-text("Create Employee"), button:has-text("Add Employee"), button:has-text("Invite Employee")';
+  private readonly createEmployeeButton =
+    'button:has-text("Create Employee"), button:has-text("Add Employee"), button:has-text("Invite Employee")';
   private readonly searchInput = 'input[placeholder*="Search"], input[type="search"]';
   private readonly employeeTable = 'table, [data-testid="employees-table"]';
   private readonly employeeRow = 'tr[data-testid*="employee-"], tbody tr';
   private readonly employeeEmail = (email: string) => `td:has-text("${email}")`;
-  private readonly editButton = (email: string) => `tr:has(td:has-text("${email}")) button:has-text("Edit"), tr:has(td:has-text("${email}")) [data-testid="edit-button"]`;
-  private readonly deleteButton = (email: string) => `tr:has(td:has-text("${email}")) button:has-text("Delete"), tr:has(td:has-text("${email}")) [data-testid="delete-button"]`;
-  private readonly permissionsButton = (email: string) => `tr:has(td:has-text("${email}")) button:has-text("Permissions"), tr:has(td:has-text("${email}")) [data-testid="permissions-button"], tr:has(td:has-text("${email}")) a[href*="permissions"]`;
+  private readonly editButton = (email: string) =>
+    `tr:has(td:has-text("${email}")) button:has-text("Edit"), tr:has(td:has-text("${email}")) [data-testid="edit-button"]`;
+  private readonly deleteButton = (email: string) =>
+    `tr:has(td:has-text("${email}")) button:has-text("Delete"), tr:has(td:has-text("${email}")) [data-testid="delete-button"]`;
+  private readonly permissionsButton = (email: string) =>
+    `tr:has(td:has-text("${email}")) button:has-text("Permissions"), tr:has(td:has-text("${email}")) [data-testid="permissions-button"], tr:has(td:has-text("${email}")) a[href*="permissions"]`;
   private readonly confirmDeleteButton = 'button:has-text("Confirm"), button:has-text("Delete")';
   private readonly cancelDeleteButton = 'button:has-text("Cancel")';
   private readonly deleteModal = '[role="dialog"]:has-text("Delete"), [data-testid="delete-modal"]';
@@ -29,7 +33,8 @@ export class EmployeesListPage extends BasePage {
   private readonly formModal = '[role="dialog"], [data-testid="employee-form"]';
   private readonly emailInput = 'input[name="email"], input#email';
   private readonly passwordInput = 'input[name="password"], input#password';
-  private readonly submitButton = 'button[type="submit"]:has-text("Create"), button:has-text("Save"), button:has-text("Invite")';
+  private readonly submitButton =
+    'button[type="submit"]:has-text("Create"), button:has-text("Save"), button:has-text("Invite")';
   private readonly cancelFormButton = 'button:has-text("Cancel")';
 
   constructor(page: Page) {

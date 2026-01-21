@@ -14,10 +14,14 @@ export class EmployeePermissionsPage extends BasePage {
   private readonly heading = 'h1:has-text("Permissions"), h1:has-text("Employee Permissions")';
   private readonly employeeEmail = '[data-testid="employee-email"], h2';
   private readonly modulesList = '[data-testid="modules-list"], .modules-list';
-  private readonly moduleCard = (moduleName: string) => `[data-testid="module-${moduleName}"], div:has-text("${moduleName}")`;
-  private readonly readCheckbox = (moduleName: string) => `[data-testid="read-${moduleName}"], input[type="checkbox"][name*="read"]:near(text="${moduleName}")`;
-  private readonly writeCheckbox = (moduleName: string) => `[data-testid="write-${moduleName}"], input[type="checkbox"][name*="write"]:near(text="${moduleName}")`;
-  private readonly deleteCheckbox = (moduleName: string) => `[data-testid="delete-${moduleName}"], input[type="checkbox"][name*="delete"]:near(text="${moduleName}")`;
+  private readonly moduleCard = (moduleName: string) =>
+    `[data-testid="module-${moduleName}"], div:has-text("${moduleName}")`;
+  private readonly readCheckbox = (moduleName: string) =>
+    `[data-testid="read-${moduleName}"], input[type="checkbox"][name*="read"]:near(text="${moduleName}")`;
+  private readonly writeCheckbox = (moduleName: string) =>
+    `[data-testid="write-${moduleName}"], input[type="checkbox"][name*="write"]:near(text="${moduleName}")`;
+  private readonly deleteCheckbox = (moduleName: string) =>
+    `[data-testid="delete-${moduleName}"], input[type="checkbox"][name*="delete"]:near(text="${moduleName}")`;
   private readonly saveButton = 'button:has-text("Save"), button[type="submit"]';
   private readonly backButton = 'button:has-text("Back"), a:has-text("Back")';
 
@@ -178,11 +182,14 @@ export class EmployeePermissionsPage extends BasePage {
   /**
    * Grant permissions and save (full flow)
    */
-  async grantAndSave(moduleName: string, permissions: {
-    read?: boolean;
-    write?: boolean;
-    delete?: boolean;
-  }): Promise<void> {
+  async grantAndSave(
+    moduleName: string,
+    permissions: {
+      read?: boolean;
+      write?: boolean;
+      delete?: boolean;
+    }
+  ): Promise<void> {
     if (permissions.read) await this.grantReadPermission(moduleName);
     if (permissions.write) await this.grantWritePermission(moduleName);
     if (permissions.delete) await this.grantDeletePermission(moduleName);
@@ -193,11 +200,14 @@ export class EmployeePermissionsPage extends BasePage {
   /**
    * Expect permission state
    */
-  async expectPermissions(moduleName: string, expected: {
-    read?: boolean;
-    write?: boolean;
-    delete?: boolean;
-  }): Promise<void> {
+  async expectPermissions(
+    moduleName: string,
+    expected: {
+      read?: boolean;
+      write?: boolean;
+      delete?: boolean;
+    }
+  ): Promise<void> {
     if (expected.read !== undefined) {
       const hasRead = await this.hasReadPermission(moduleName);
       expect(hasRead).toBe(expected.read);
@@ -225,7 +235,10 @@ export class EmployeePermissionsPage extends BasePage {
    * Get all visible module names
    */
   async getVisibleModules(): Promise<string[]> {
-    const moduleCards = await this.page.locator(this.modulesList).locator('[data-testid^="module-"]').all();
+    const moduleCards = await this.page
+      .locator(this.modulesList)
+      .locator('[data-testid^="module-"]')
+      .all();
     const names: string[] = [];
 
     for (const card of moduleCards) {

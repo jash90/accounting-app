@@ -1,32 +1,32 @@
 import {
-  UserRole,
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
-  CustomFieldType,
-  AutoAssignCondition,
-  AmlGroup,
-  TaskStatus,
-  TaskPriority,
-  TaskDependencyType,
-  TimeEntryStatus,
-  TimeRoundingMethod,
-} from './enums';
-import {
-  Client,
-  ClientFieldDefinition,
-  ClientIcon,
-  NotificationSettings,
-  ChangeLog,
-  Task,
-  TaskLabel,
-  TaskComment,
-  TaskDependency,
-  AcceptanceCriterion,
-  TimeEntry,
-  TimeSettings,
+  type Client,
+  type ClientFieldDefinition,
+  type ClientIcon,
+  type NotificationSettings,
+  type ChangeLog,
+  type Task,
+  type TaskLabel,
+  type TaskComment,
+  type TaskDependency,
+  type AcceptanceCriterion,
+  type TimeEntry,
+  type TimeSettings,
 } from './entities';
+import {
+  UserRole,
+  type EmploymentType,
+  type VatStatus,
+  type TaxScheme,
+  type ZusStatus,
+  type CustomFieldType,
+  type AutoAssignCondition,
+  type AmlGroup,
+  type TaskStatus,
+  type TaskPriority,
+  type TaskDependencyType,
+  type TimeEntryStatus,
+  type TimeRoundingMethod,
+} from './enums';
 
 // Re-export for external consumers
 export { UserRole };
@@ -197,13 +197,13 @@ export interface AIConfigurationResponseDto {
   provider: AIProvider;
   model: string;
   systemPrompt: string | null;
-  hasApiKey: boolean;  // API key status indicator (actual key is never returned)
+  hasApiKey: boolean; // API key status indicator (actual key is never returned)
   temperature: number;
   maxTokens: number;
-  enableStreaming: boolean;  // Enable real-time token streaming via SSE
+  enableStreaming: boolean; // Enable real-time token streaming via SSE
   // Embedding configuration (for RAG/Knowledge Base)
   embeddingProvider: AIProvider | null;
-  hasEmbeddingApiKey: boolean;  // Separate embedding API key status indicator
+  hasEmbeddingApiKey: boolean; // Separate embedding API key status indicator
   embeddingModel: string | null;
   createdBy: {
     id: string;
@@ -500,7 +500,6 @@ export interface TestConnectionResultDto {
   success: boolean;
   message: string;
 }
-
 
 // Client DTOs
 export interface CreateClientDto {
@@ -954,4 +953,3 @@ export interface TimeByClientReportDto {
   totalAmount: number;
   entryCount: number;
 }
-

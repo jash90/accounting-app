@@ -69,10 +69,13 @@ test.describe('Authentication Tests', () => {
     await page.waitForLoadState('networkidle');
 
     // Wait for auth to re-initialize (user menu appears when auth is ready)
-    await page.waitForSelector('[data-testid="user-menu-button"], button:has(div[class*="avatar"])', {
-      state: 'visible',
-      timeout: 5000,
-    });
+    await page.waitForSelector(
+      '[data-testid="user-menu-button"], button:has(div[class*="avatar"])',
+      {
+        state: 'visible',
+        timeout: 5000,
+      }
+    );
 
     // Should still be logged in
     await dashboard.expectToBeOnDashboard();
@@ -121,8 +124,13 @@ test.describe('RBAC Enforcement Tests', () => {
       await unauthorizedPage.expectToBeOnUnauthorizedPage();
     } else {
       // Verify access is denied or redirected away from company
-      const accessDenied = await authenticatedAdminPage.getByText(/access denied|forbidden/i).isVisible().catch(() => false);
-      expect(accessDenied || currentURL.includes('admin') || !currentURL.includes('company')).toBe(true);
+      const accessDenied = await authenticatedAdminPage
+        .getByText(/access denied|forbidden/i)
+        .isVisible()
+        .catch(() => false);
+      expect(accessDenied || currentURL.includes('admin') || !currentURL.includes('company')).toBe(
+        true
+      );
     }
   });
 
@@ -132,7 +140,11 @@ test.describe('RBAC Enforcement Tests', () => {
     await authenticatedAdminPage.waitForTimeout(500);
 
     const currentURL = authenticatedAdminPage.url();
-    expect(currentURL.includes('unauthorized') || currentURL.includes('admin') || !currentURL.includes('modules')).toBe(true);
+    expect(
+      currentURL.includes('unauthorized') ||
+        currentURL.includes('admin') ||
+        !currentURL.includes('modules')
+    ).toBe(true);
   });
 
   test('Company Owner should access company routes', async ({ authenticatedCompanyOwnerPage }) => {
@@ -140,16 +152,24 @@ test.describe('RBAC Enforcement Tests', () => {
     await expect(authenticatedCompanyOwnerPage).toHaveURL(/\/company/);
   });
 
-  test('Company Owner should not access admin routes', async ({ authenticatedCompanyOwnerPage }) => {
+  test('Company Owner should not access admin routes', async ({
+    authenticatedCompanyOwnerPage,
+  }) => {
     await authenticatedCompanyOwnerPage.goto('/admin');
     await authenticatedCompanyOwnerPage.waitForLoadState('networkidle');
     await authenticatedCompanyOwnerPage.waitForTimeout(500);
 
     const currentURL = authenticatedCompanyOwnerPage.url();
-    expect(currentURL.includes('unauthorized') || currentURL.includes('company') || !currentURL.includes('admin')).toBe(true);
+    expect(
+      currentURL.includes('unauthorized') ||
+        currentURL.includes('company') ||
+        !currentURL.includes('admin')
+    ).toBe(true);
   });
 
-  test('Company Owner should access employee module routes', async ({ authenticatedCompanyOwnerPage }) => {
+  test('Company Owner should access employee module routes', async ({
+    authenticatedCompanyOwnerPage,
+  }) => {
     await authenticatedCompanyOwnerPage.goto('/modules/ai-agent');
 
     // Company owners should have access to modules
@@ -168,7 +188,11 @@ test.describe('RBAC Enforcement Tests', () => {
     await authenticatedEmployeePage.waitForTimeout(500);
 
     const currentURL = authenticatedEmployeePage.url();
-    expect(currentURL.includes('unauthorized') || currentURL.includes('modules') || !currentURL.includes('admin')).toBe(true);
+    expect(
+      currentURL.includes('unauthorized') ||
+        currentURL.includes('modules') ||
+        !currentURL.includes('admin')
+    ).toBe(true);
   });
 
   test('Employee should not access company owner routes', async ({ authenticatedEmployeePage }) => {
@@ -177,7 +201,11 @@ test.describe('RBAC Enforcement Tests', () => {
     await authenticatedEmployeePage.waitForTimeout(500);
 
     const currentURL = authenticatedEmployeePage.url();
-    expect(currentURL.includes('unauthorized') || currentURL.includes('modules') || !currentURL.includes('company')).toBe(true);
+    expect(
+      currentURL.includes('unauthorized') ||
+        currentURL.includes('modules') ||
+        !currentURL.includes('company')
+    ).toBe(true);
   });
 
   test('should display unauthorized page for forbidden routes', async ({ page }) => {

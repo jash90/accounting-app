@@ -1,17 +1,16 @@
 import { useState, useEffect, useMemo } from 'react';
+
 import { useForm } from 'react-hook-form';
-import { cn } from '@/lib/utils/cn';
-import {
-  TaskStatus,
-  TaskStatusLabels,
-  TaskPriority,
-  TaskPriorityLabels,
-} from '@/types/enums';
-import { TaskFiltersDto } from '@/types/dtos';
-import { useClients } from '@/lib/hooks/use-clients';
-import { useEmployees } from '@/lib/hooks/use-employees';
-import { Input } from '@/components/ui/input';
+
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
+import { Search, X, CalendarIcon, Filter } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Form, FormField, FormItem, FormControl } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -19,16 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { Form, FormField, FormItem, FormControl } from '@/components/ui/form';
-import { Search, X, CalendarIcon, Filter } from 'lucide-react';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { useClients } from '@/lib/hooks/use-clients';
+import { cn } from '@/lib/utils/cn';
+import { TaskStatus, TaskStatusLabels, TaskPriority, TaskPriorityLabels } from '@/types/enums';
+import { TaskFiltersDto } from '@/types/dtos';
+import { useEmployees } from '@/lib/hooks/use-employees';
 
 interface TaskFiltersProps {
   filters: TaskFiltersDto;
@@ -95,10 +89,7 @@ export function TaskFilters({ filters, onFiltersChange, className }: TaskFilters
     onFiltersChange({ ...filters, [field]: newValue });
   };
 
-  const handleDateChange = (
-    field: 'dueDateFrom' | 'dueDateTo',
-    date: Date | undefined
-  ) => {
+  const handleDateChange = (field: 'dueDateFrom' | 'dueDateTo', date: Date | undefined) => {
     onFiltersChange({
       ...filters,
       [field]: date ? format(date, 'yyyy-MM-dd') : undefined,
@@ -294,9 +285,7 @@ export function TaskFilters({ filters, onFiltersChange, className }: TaskFilters
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {field.value
-                        ? format(field.value, 'd MMM', { locale: pl })
-                        : 'Od'}
+                      {field.value ? format(field.value, 'd MMM', { locale: pl }) : 'Od'}
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
@@ -334,9 +323,7 @@ export function TaskFilters({ filters, onFiltersChange, className }: TaskFilters
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {field.value
-                        ? format(field.value, 'd MMM', { locale: pl })
-                        : 'Do'}
+                      {field.value ? format(field.value, 'd MMM', { locale: pl }) : 'Do'}
                     </Button>
                   </FormControl>
                 </PopoverTrigger>

@@ -1,5 +1,7 @@
 import { useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
+
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
@@ -11,6 +13,8 @@ import {
   DollarSign,
   Users,
 } from 'lucide-react';
+
+import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,14 +27,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PageHeader } from '@/components/common/page-header';
 import { useAuthContext } from '@/contexts/auth-context';
+import { useTaskClients } from '@/lib/hooks/use-tasks';
 import {
   useTimeSummaryReport,
   useTimeByClientReport,
   useExportTimeReport,
 } from '@/lib/hooks/use-time-tracking';
-import { useTaskClients } from '@/lib/hooks/use-tasks';
 import { UserRole } from '@/types/enums';
 
 function formatDuration(minutes: number): string {
@@ -43,12 +46,8 @@ export default function TimeTrackingReportsPage() {
   const { user } = useAuthContext();
   const navigate = useNavigate();
 
-  const [startDate, setStartDate] = useState(() =>
-    format(startOfMonth(new Date()), 'yyyy-MM-dd')
-  );
-  const [endDate, setEndDate] = useState(() =>
-    format(endOfMonth(new Date()), 'yyyy-MM-dd')
-  );
+  const [startDate, setStartDate] = useState(() => format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(() => format(endOfMonth(new Date()), 'yyyy-MM-dd'));
   const [groupBy, setGroupBy] = useState<'client' | 'day'>('client');
   const [clientId, setClientId] = useState<string>('');
 
@@ -128,19 +127,11 @@ export default function TimeTrackingReportsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label>Data od</Label>
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Data do</Label>
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Grupuj według</Label>
@@ -275,8 +266,7 @@ export default function TimeTrackingReportsPage() {
                   <h4 className="font-medium flex items-center gap-2">
                     {groupBy === 'client' && <Users className="h-4 w-4" />}
                     {groupBy === 'day' && <Clock className="h-4 w-4" />}
-                    Podział według{' '}
-                    {groupBy === 'client' ? 'klientów' : 'dni'}
+                    Podział według {groupBy === 'client' ? 'klientów' : 'dni'}
                   </h4>
                   <div className="space-y-2">
                     {summaryReport.breakdown.map((item, index) => (
@@ -294,9 +284,7 @@ export default function TimeTrackingReportsPage() {
                           <span>{item.name || 'Bez przypisania'}</span>
                         </div>
                         <div className="flex items-center gap-6 text-sm">
-                          <span className="font-mono">
-                            {formatDuration(item.totalMinutes)}
-                          </span>
+                          <span className="font-mono">{formatDuration(item.totalMinutes)}</span>
                           <span className="text-muted-foreground w-16 text-right">
                             {Math.round(
                               (item.totalMinutes / (summaryReport.totalMinutes || 1)) * 100
@@ -328,9 +316,7 @@ export default function TimeTrackingReportsPage() {
             <Users className="h-5 w-5" />
             Raport wg klientów
           </CardTitle>
-          <CardDescription>
-            Szczegółowy podział czasu i kosztów według klientów
-          </CardDescription>
+          <CardDescription>Szczegółowy podział czasu i kosztów według klientów</CardDescription>
         </CardHeader>
         <CardContent>
           {clientLoading ? (
@@ -348,9 +334,7 @@ export default function TimeTrackingReportsPage() {
                 >
                   <div>
                     <h4 className="font-medium">{client.clientName || 'Bez klienta'}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {client.entriesCount} wpisów
-                    </p>
+                    <p className="text-sm text-muted-foreground">{client.entriesCount} wpisów</p>
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-right">

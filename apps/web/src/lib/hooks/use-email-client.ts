@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
 import apiClient from '../api/client';
 import { tokenStorage } from '../auth/token-storage';
 
@@ -102,12 +104,8 @@ export function useCreateDraft() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (draftData: {
-      to: string[];
-      subject?: string;
-      textContent: string;
-    }) => {
-      const { data} = await apiClient.post<Draft>('/api/modules/email-client/drafts', draftData);
+    mutationFn: async (draftData: { to: string[]; subject?: string; textContent: string }) => {
+      const { data } = await apiClient.post<Draft>('/api/modules/email-client/drafts', draftData);
       return data;
     },
     onSuccess: () => {
@@ -185,7 +183,10 @@ export function useUpdateDraft() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ draftId, data: draftData }: {
+    mutationFn: async ({
+      draftId,
+      data: draftData,
+    }: {
       draftId: string;
       data: {
         to?: string[];
@@ -196,7 +197,10 @@ export function useUpdateDraft() {
         htmlContent?: string;
       };
     }) => {
-      const { data } = await apiClient.patch<Draft>(`/api/modules/email-client/drafts/${draftId}`, draftData);
+      const { data } = await apiClient.patch<Draft>(
+        `/api/modules/email-client/drafts/${draftId}`,
+        draftData
+      );
       return data;
     },
     onSuccess: (_, variables) => {
@@ -242,9 +246,12 @@ export function useFolder(folderName: string | undefined, limit = 50) {
   return useQuery({
     queryKey: ['email-folder', folderName, limit],
     queryFn: async () => {
-      const { data } = await apiClient.get<Email[]>(`/api/modules/email-client/messages/folder/${folderName}`, {
-        params: { limit },
-      });
+      const { data } = await apiClient.get<Email[]>(
+        `/api/modules/email-client/messages/folder/${folderName}`,
+        {
+          params: { limit },
+        }
+      );
       return data;
     },
     enabled: !!folderName,
@@ -259,7 +266,9 @@ export function useMarkAsRead() {
 
   return useMutation({
     mutationFn: async (messageUids: number[]) => {
-      const { data } = await apiClient.patch('/api/modules/email-client/messages/mark-read', { messageUids });
+      const { data } = await apiClient.patch('/api/modules/email-client/messages/mark-read', {
+        messageUids,
+      });
       return data;
     },
     onSuccess: () => {
@@ -302,7 +311,10 @@ export function useGenerateAiDraft() {
       length?: 'short' | 'medium' | 'long';
       customInstructions?: string;
     }) => {
-      const { data } = await apiClient.post<Draft>('/api/modules/email-client/drafts/ai/generate-reply', params);
+      const { data } = await apiClient.post<Draft>(
+        '/api/modules/email-client/drafts/ai/generate-reply',
+        params
+      );
       return data;
     },
     onSuccess: () => {
@@ -399,116 +411,119 @@ export function useGenerateAiDraftStream() {
     };
   }, []);
 
-  const startStream = useCallback(async (params: {
-    messageUid: number;
-    tone?: 'formal' | 'casual' | 'neutral';
-    length?: 'short' | 'medium' | 'long';
-    customInstructions?: string;
-  }) => {
-    // Abort any existing stream
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+  const startStream = useCallback(
+    async (params: {
+      messageUid: number;
+      tone?: 'formal' | 'casual' | 'neutral';
+      length?: 'short' | 'medium' | 'long';
+      customInstructions?: string;
+    }) => {
+      // Abort any existing stream
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
 
-    abortControllerRef.current = new AbortController();
+      abortControllerRef.current = new AbortController();
 
-    setState({
-      isStreaming: true,
-      content: '',
-      error: null,
-      draftId: null,
-    });
-
-    try {
-      // Get auth token using centralized token storage
-      const token = tokenStorage.getAccessToken();
-
-      const response = await fetch('/api/modules/email-client/drafts/ai/generate-reply-stream', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(params),
-        signal: abortControllerRef.current.signal,
+      setState({
+        isStreaming: true,
+        content: '',
+        error: null,
+        draftId: null,
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      try {
+        // Get auth token using centralized token storage
+        const token = tokenStorage.getAccessToken();
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response body');
-      }
+        const response = await fetch('/api/modules/email-client/drafts/ai/generate-reply-stream', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(params),
+          signal: abortControllerRef.current.signal,
+        });
 
-      const decoder = new TextDecoder();
-      let buffer = '';
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error('No response body');
+        }
 
-        buffer += decoder.decode(value, { stream: true });
+        const decoder = new TextDecoder();
+        let buffer = '';
 
-        // Parse SSE events from buffer
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            try {
-              const chunk: StreamChunk = JSON.parse(data);
+          buffer += decoder.decode(value, { stream: true });
 
-              if (chunk.type === 'content' && chunk.content) {
-                setState(prev => ({
-                  ...prev,
-                  content: prev.content + chunk.content,
-                }));
-              } else if (chunk.type === 'done' && chunk.draftId) {
-                setState(prev => ({
-                  ...prev,
-                  isStreaming: false,
-                  draftId: chunk.draftId || null,
-                }));
-                // Invalidate queries to refresh draft lists
-                queryClient.invalidateQueries({ queryKey: ['email-drafts'] });
-                queryClient.invalidateQueries({ queryKey: ['ai-drafts'] });
-              } else if (chunk.type === 'error') {
-                setState(prev => ({
-                  ...prev,
-                  isStreaming: false,
-                  error: chunk.error || 'Unknown error',
-                }));
+          // Parse SSE events from buffer
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              try {
+                const chunk: StreamChunk = JSON.parse(data);
+
+                if (chunk.type === 'content' && chunk.content) {
+                  setState((prev) => ({
+                    ...prev,
+                    content: prev.content + chunk.content,
+                  }));
+                } else if (chunk.type === 'done' && chunk.draftId) {
+                  setState((prev) => ({
+                    ...prev,
+                    isStreaming: false,
+                    draftId: chunk.draftId || null,
+                  }));
+                  // Invalidate queries to refresh draft lists
+                  queryClient.invalidateQueries({ queryKey: ['email-drafts'] });
+                  queryClient.invalidateQueries({ queryKey: ['ai-drafts'] });
+                } else if (chunk.type === 'error') {
+                  setState((prev) => ({
+                    ...prev,
+                    isStreaming: false,
+                    error: chunk.error || 'Unknown error',
+                  }));
+                }
+              } catch {
+                // Ignore parse errors for incomplete data
               }
-            } catch {
-              // Ignore parse errors for incomplete data
             }
           }
         }
-      }
-    } catch (error) {
-      if ((error as Error).name === 'AbortError') {
-        // Stream was intentionally aborted
-        setState(prev => ({ ...prev, isStreaming: false }));
-        return;
-      }
+      } catch (error) {
+        if ((error as Error).name === 'AbortError') {
+          // Stream was intentionally aborted
+          setState((prev) => ({ ...prev, isStreaming: false }));
+          return;
+        }
 
-      setState(prev => ({
-        ...prev,
-        isStreaming: false,
-        error: (error as Error).message || 'Nie udało się wygenerować odpowiedzi AI',
-      }));
-    }
-  }, [queryClient]);
+        setState((prev) => ({
+          ...prev,
+          isStreaming: false,
+          error: (error as Error).message || 'Nie udało się wygenerować odpowiedzi AI',
+        }));
+      }
+    },
+    [queryClient]
+  );
 
   const stopStream = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-    setState(prev => ({ ...prev, isStreaming: false }));
+    setState((prev) => ({ ...prev, isStreaming: false }));
   }, []);
 
   const reset = useCallback(() => {
@@ -576,7 +591,7 @@ export function useResolveConflict() {
     }) => {
       const { data } = await apiClient.post<Draft>(
         `/api/modules/email-client/drafts/${draftId}/resolve-conflict`,
-        { resolution },
+        { resolution }
       );
       return data;
     },
@@ -600,7 +615,9 @@ export function useDeleteAllDrafts() {
 
   return useMutation({
     mutationFn: async () => {
-      const { data } = await apiClient.delete<DeleteAllResult>('/api/modules/email-client/drafts/all');
+      const { data } = await apiClient.delete<DeleteAllResult>(
+        '/api/modules/email-client/drafts/all'
+      );
       return data;
     },
     onSuccess: () => {

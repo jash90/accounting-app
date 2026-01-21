@@ -1,8 +1,9 @@
 import { useSidebar } from '@/contexts/navigation-context';
+import { cn } from '@/lib/utils/cn';
+
 import { SidebarHeader } from './sidebar-header';
 import { SidebarItem } from './sidebar-item';
-import { SidebarProps } from './types';
-import { cn } from '@/lib/utils/cn';
+import { type SidebarProps } from './types';
 
 export function Sidebar({ title, navItems, className }: SidebarProps) {
   const { isOpen } = useSidebar();
@@ -23,10 +24,7 @@ export function Sidebar({ title, navItems, className }: SidebarProps) {
       </nav>
 
       {/* AppTax Footer Branding */}
-      <div className={cn(
-        'p-4 border-t border-white/10',
-        !isOpen && 'p-2'
-      )}>
+      <div className={cn('p-4 border-t border-white/10', !isOpen && 'p-2')}>
         {isOpen ? (
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
@@ -34,11 +32,7 @@ export function Sidebar({ title, navItems, className }: SidebarProps) {
           </div>
         ) : (
           <div className="flex justify-center">
-            <img
-              src="/apptax-logomark.svg"
-              alt="AppTax"
-              className="h-8 w-8"
-            />
+            <img src="/apptax-logomark.svg" alt="AppTax" className="h-8 w-8" />
           </div>
         )}
       </div>

@@ -1,5 +1,12 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, Get, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiOkResponse, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from '../services/auth.service';
 import { RegisterDto } from '../dto/register.dto';
@@ -22,7 +29,10 @@ export class AuthController {
   @ApiResponse({ status: 201, type: AuthResponseDto })
   @ApiResponse({ status: 409, description: 'User already exists' })
   @ApiResponse({ status: 400, description: 'Invalid input' })
-  @ApiResponse({ status: 429, description: 'Too many registration attempts. Please try again later.' })
+  @ApiResponse({
+    status: 429,
+    description: 'Too many registration attempts. Please try again later.',
+  })
   async register(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {
     return this.authService.register(registerDto);
   }
@@ -54,11 +64,13 @@ export class AuthController {
   @Get('me')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get current user', description: 'Retrieve the currently authenticated user profile information' })
+  @ApiOperation({
+    summary: 'Get current user',
+    description: 'Retrieve the currently authenticated user profile information',
+  })
   @ApiOkResponse({ description: 'Returns current authenticated user', type: UserResponseDto })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   async getCurrentUser(@Request() req: any): Promise<UserResponseDto> {
     return req.user;
   }
 }
-

@@ -41,24 +41,25 @@ Every module must have a `module.json` file in its root directory. This file def
 
 ### Configuration Fields
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `$schema` | string | Yes | Path to JSON schema for validation |
-| `slug` | string | Yes | URL-friendly identifier (e.g., `time-tracking`) |
-| `name` | string | Yes | Display name in Polish (e.g., `Logowanie czasu`) |
-| `description` | string | Yes | Description in Polish |
-| `version` | string | Yes | Semantic version (e.g., `1.0.0`) |
-| `isActive` | boolean | Yes | Whether module is enabled by default |
-| `permissions` | string[] | Yes | Available permissions: `read`, `write`, `delete`, `manage` |
-| `defaultPermissions` | string[] | Yes | Permissions granted by default |
-| `icon` | string | Yes | Lucide icon name (e.g., `clock`, `users`, `mail`) |
-| `category` | string | Yes | Category: `ai`, `crm`, `communication`, `productivity` |
-| `dependencies` | string[] | No | Slugs of required modules |
-| `config` | object | No | Module-specific feature flags |
+| Field                | Type     | Required | Description                                                |
+| -------------------- | -------- | -------- | ---------------------------------------------------------- |
+| `$schema`            | string   | Yes      | Path to JSON schema for validation                         |
+| `slug`               | string   | Yes      | URL-friendly identifier (e.g., `time-tracking`)            |
+| `name`               | string   | Yes      | Display name in Polish (e.g., `Logowanie czasu`)           |
+| `description`        | string   | Yes      | Description in Polish                                      |
+| `version`            | string   | Yes      | Semantic version (e.g., `1.0.0`)                           |
+| `isActive`           | boolean  | Yes      | Whether module is enabled by default                       |
+| `permissions`        | string[] | Yes      | Available permissions: `read`, `write`, `delete`, `manage` |
+| `defaultPermissions` | string[] | Yes      | Permissions granted by default                             |
+| `icon`               | string   | Yes      | Lucide icon name (e.g., `clock`, `users`, `mail`)          |
+| `category`           | string   | Yes      | Category: `ai`, `crm`, `communication`, `productivity`     |
+| `dependencies`       | string[] | No       | Slugs of required modules                                  |
+| `config`             | object   | No       | Module-specific feature flags                              |
 
 ### Example module.json Files
 
 **AI Agent Module** (`libs/modules/ai-agent/module.json`):
+
 ```json
 {
   "slug": "ai-agent",
@@ -74,6 +75,7 @@ Every module must have a `module.json` file in its root directory. This file def
 ```
 
 **Clients Module** (`libs/modules/clients/module.json`):
+
 ```json
 {
   "slug": "clients",
@@ -90,6 +92,7 @@ Every module must have a `module.json` file in its root directory. This file def
 ```
 
 **Email Client Module** (`libs/modules/email-client/module.json`):
+
 ```json
 {
   "slug": "email-client",
@@ -111,6 +114,7 @@ Every module must have a `module.json` file in its root directory. This file def
 ## Module Icon Requirements
 
 Every module **MUST** have a unique icon defined in its `module.json` file. Icons are displayed in:
+
 - Sidebar navigation
 - Module list pages (admin and company views)
 - Module cards and tables
@@ -121,32 +125,32 @@ Every module **MUST** have a unique icon defined in its `module.json` file. Icon
 
 Supported in `apps/web/src/lib/utils/module-icons.tsx`:
 
-| Icon Name | Description | Use Case |
-|-----------|-------------|----------|
-| `package` | Default/fallback | Generic module |
-| `users` | People/users | CRM, contacts, employees |
-| `check-square` | Checkbox | Tasks, todos, approvals |
-| `bot` | Robot | AI modules |
-| `mail` | Envelope | Email, messaging |
-| `clock` | Clock | Time tracking, scheduling |
-| `file-text` | Document | Documents, notes |
-| `calculator` | Calculator | Finance, calculations |
-| `calendar` | Calendar | Scheduling, events |
-| `settings` | Gear | Configuration, settings |
-| `briefcase` | Briefcase | Business, projects |
-| `bar-chart-3` | Chart | Analytics, reports |
-| `credit-card` | Credit card | Payments, billing |
-| `folder-open` | Open folder | Files, storage |
+| Icon Name      | Description      | Use Case                  |
+| -------------- | ---------------- | ------------------------- |
+| `package`      | Default/fallback | Generic module            |
+| `users`        | People/users     | CRM, contacts, employees  |
+| `check-square` | Checkbox         | Tasks, todos, approvals   |
+| `bot`          | Robot            | AI modules                |
+| `mail`         | Envelope         | Email, messaging          |
+| `clock`        | Clock            | Time tracking, scheduling |
+| `file-text`    | Document         | Documents, notes          |
+| `calculator`   | Calculator       | Finance, calculations     |
+| `calendar`     | Calendar         | Scheduling, events        |
+| `settings`     | Gear             | Configuration, settings   |
+| `briefcase`    | Briefcase        | Business, projects        |
+| `bar-chart-3`  | Chart            | Analytics, reports        |
+| `credit-card`  | Credit card      | Payments, billing         |
+| `folder-open`  | Open folder      | Files, storage            |
 
 ### Current Module Icons
 
-| Module | Slug | Icon |
-|--------|------|------|
-| Zadania | `tasks` | `check-square` |
-| Klienci | `clients` | `users` |
-| Agent AI | `ai-agent` | `bot` |
-| Klient Email | `email-client` | `mail` |
-| Logowanie czasu | `time-tracking` | `clock` |
+| Module          | Slug            | Icon           |
+| --------------- | --------------- | -------------- |
+| Zadania         | `tasks`         | `check-square` |
+| Klienci         | `clients`       | `users`        |
+| Agent AI        | `ai-agent`      | `bot`          |
+| Klient Email    | `email-client`  | `mail`         |
+| Logowanie czasu | `time-tracking` | `clock`        |
 
 ### Adding a New Icon
 
@@ -236,7 +240,7 @@ export class ClientException extends HttpException {
     public readonly errorCode: ClientErrorCode,
     message: string,
     public readonly context?: ClientExceptionContext,
-    statusCode: HttpStatus = HttpStatus.BAD_REQUEST,
+    statusCode: HttpStatus = HttpStatus.BAD_REQUEST
   ) {
     super(
       {
@@ -246,7 +250,7 @@ export class ClientException extends HttpException {
         context,
         timestamp: new Date().toISOString(),
       },
-      statusCode,
+      statusCode
     );
   }
 }
@@ -261,7 +265,7 @@ export class ClientNotFoundException extends ClientException {
       ClientErrorCode.CLIENT_NOT_FOUND,
       `Client with ID ${clientId} not found`,
       { clientId, companyId },
-      HttpStatus.NOT_FOUND,
+      HttpStatus.NOT_FOUND
     );
   }
 }
@@ -271,15 +275,12 @@ export class ClientNotFoundException extends ClientException {
  * Use when some items in batch fail
  */
 export class ClientBatchOperationException extends ClientException {
-  constructor(
-    failedItems: Array<{ id: string; error: string }>,
-    context?: ClientExceptionContext,
-  ) {
+  constructor(failedItems: Array<{ id: string; error: string }>, context?: ClientExceptionContext) {
     super(
       ClientErrorCode.CLIENT_BATCH_OPERATION_FAILED,
       `Batch operation failed for ${failedItems.length} item(s)`,
       { ...context, additionalInfo: { failedItems } },
-      HttpStatus.MULTI_STATUS,
+      HttpStatus.MULTI_STATUS
     );
   }
 }
@@ -326,11 +327,11 @@ async findOne(id: string, companyId: string): Promise<Client> {
 @Module({
   controllers: [
     // More specific routes must be registered before generic /:id routes
-    TasksLookupController,    // Handles: /tasks/lookups/*
-    TaskLabelsController,     // Handles: /tasks/labels/*
-    TaskCommentsController,   // Handles: /tasks/:taskId/comments/*
+    TasksLookupController, // Handles: /tasks/lookups/*
+    TaskLabelsController, // Handles: /tasks/labels/*
+    TaskCommentsController, // Handles: /tasks/:taskId/comments/*
     TaskDependenciesController, // Handles: /tasks/:taskId/dependencies/*
-    TasksController,          // Handles: /tasks/:id (MUST BE LAST)
+    TasksController, // Handles: /tasks/:id (MUST BE LAST)
   ],
   // ...
 })
@@ -340,6 +341,7 @@ export class TasksModule {}
 ### Why This Matters
 
 Without proper ordering:
+
 - Request to `/tasks/lookups` might match `/:id` route first
 - `lookups` would be interpreted as a task ID
 - Results in "Task not found" errors for valid lookup requests
@@ -402,7 +404,7 @@ import { AIAgentModule } from '@accounting/modules/ai-agent';
     EmailModule,
     StorageModule,
     RBACModule,
-    AIAgentModule,  // Import dependent module
+    AIAgentModule, // Import dependent module
   ],
   // ...
 })
@@ -417,9 +419,7 @@ import { AIConversationService } from '@accounting/modules/ai-agent';
 
 @Injectable()
 export class EmailAiService {
-  constructor(
-    private readonly aiConversationService: AIConversationService,
-  ) {}
+  constructor(private readonly aiConversationService: AIConversationService) {}
 
   async generateEmailDraft(prompt: string, user: User): Promise<string> {
     const response = await this.aiConversationService.sendMessage({
@@ -451,7 +451,7 @@ import { UserRole } from '../enums/user-role.enum';
 export class TenantService {
   constructor(
     @InjectRepository(Company)
-    private readonly companyRepository: Repository<Company>,
+    private readonly companyRepository: Repository<Company>
   ) {}
 
   /**
@@ -487,7 +487,7 @@ export class TasksService {
   constructor(
     private readonly tenantService: TenantService,
     @InjectRepository(Task)
-    private readonly taskRepository: Repository<Task>,
+    private readonly taskRepository: Repository<Task>
   ) {}
 
   async findAll(user: User): Promise<Task[]> {
@@ -604,7 +604,7 @@ export class AIConfigurationService {
   constructor(
     private readonly encryptionService: EncryptionService,
     @InjectRepository(AIConfiguration)
-    private readonly configRepository: Repository<AIConfiguration>,
+    private readonly configRepository: Repository<AIConfiguration>
   ) {}
 
   async saveApiKey(configId: string, apiKey: string): Promise<void> {
@@ -649,11 +649,13 @@ ENCRYPTION_SECRET=your-very-secure-encryption-key-at-least-32-chars
 ### Best Practices
 
 **DO**:
+
 - Use `hasApiKey` pattern in responses (never expose actual key)
 - Use `@Exclude()` decorator on encrypted fields in entities
 - Validate encryption configuration at startup
 
 **DON'T**:
+
 - Return encrypted values in API responses
 - Log decrypted sensitive data
 - Commit `.encryption-key.dev` to version control

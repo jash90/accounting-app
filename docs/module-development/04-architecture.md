@@ -54,6 +54,7 @@ Implementation:
 ```
 
 **Key Differences from Regular Business Data**:
+
 - ✅ ADMINs CAN create/view/modify data (in System Admin company only)
 - ✅ `companyId` is nullable to support system-level entries
 - ✅ Service must inject `Company` repository to find system company
@@ -132,6 +133,7 @@ For modules requiring external integrations, encryption, and multiple related en
 ```
 
 **When to Use Complex Architecture:**
+
 - External API integrations (AI, payment, etc.)
 - Multiple related entities with cascade relationships
 - Sensitive data requiring encryption

@@ -41,11 +41,7 @@ import { SystemCompanyService } from './services/system-company.service';
     // Import RBAC module for guards and decorators
     RBACModule,
   ],
-  controllers: [
-    AIConfigurationController,
-    AIConversationController,
-    TokenUsageController,
-  ],
+  controllers: [AIConfigurationController, AIConversationController, TokenUsageController],
   providers: [
     SystemCompanyService,
     AIConfigurationService,

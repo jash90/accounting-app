@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { describe, it, expect, beforeEach, mock, Mock } from 'bun:test';
 import { AuthService } from './auth.service';
 import { User, Company, UserRole } from '@accounting/common';
@@ -9,8 +8,6 @@ import { ACCESS_JWT_SERVICE, REFRESH_JWT_SERVICE } from '../constants/jwt.consta
 
 describe('AuthService', () => {
   let service: AuthService;
-  let userRepository: Repository<User>;
-  let companyRepository: Repository<Company>;
 
   const mockUserRepository = {
     findOne: mock(() => {}),
@@ -41,7 +38,9 @@ describe('AuthService', () => {
     (mockUserRepository.findOne as Mock<typeof mockUserRepository.findOne>).mockReset();
     (mockUserRepository.create as Mock<typeof mockUserRepository.create>).mockReset();
     (mockUserRepository.save as Mock<typeof mockUserRepository.save>).mockReset();
-    (mockUserRepository.createQueryBuilder as Mock<typeof mockUserRepository.createQueryBuilder>).mockReset();
+    (
+      mockUserRepository.createQueryBuilder as Mock<typeof mockUserRepository.createQueryBuilder>
+    ).mockReset();
     (mockCompanyRepository.findOne as Mock<typeof mockCompanyRepository.findOne>).mockReset();
     (mockAccessJwtService.sign as Mock<typeof mockAccessJwtService.sign>).mockReset();
     (mockAccessJwtService.verify as Mock<typeof mockAccessJwtService.verify>).mockReset();
@@ -71,8 +70,6 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    userRepository = module.get<Repository<User>>(getRepositoryToken(User));
-    companyRepository = module.get<Repository<Company>>(getRepositoryToken(Company));
   });
 
   it('should be defined', () => {
@@ -95,12 +92,18 @@ describe('AuthService', () => {
 
       const mockGetOne = mock(() => Promise.resolve(mockUser));
       const mockWhere = mock(() => ({ getOne: mockGetOne }));
-      (mockUserRepository.createQueryBuilder as Mock<typeof mockUserRepository.createQueryBuilder>).mockImplementation(() => ({
+      (
+        mockUserRepository.createQueryBuilder as Mock<typeof mockUserRepository.createQueryBuilder>
+      ).mockImplementation(() => ({
         where: mockWhere,
         getOne: mockGetOne,
       }));
-      (mockAccessJwtService.sign as Mock<typeof mockAccessJwtService.sign>).mockImplementation(() => 'mock-access-token');
-      (mockRefreshJwtService.sign as Mock<typeof mockRefreshJwtService.sign>).mockImplementation(() => 'mock-refresh-token');
+      (mockAccessJwtService.sign as Mock<typeof mockAccessJwtService.sign>).mockImplementation(
+        () => 'mock-access-token'
+      );
+      (mockRefreshJwtService.sign as Mock<typeof mockRefreshJwtService.sign>).mockImplementation(
+        () => 'mock-refresh-token'
+      );
 
       const result = await service.login({
         email: 'test@example.com',
@@ -115,7 +118,9 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException on invalid credentials', async () => {
       const mockGetOne = mock(() => Promise.resolve(null));
       const mockWhere = mock(() => ({ getOne: mockGetOne }));
-      (mockUserRepository.createQueryBuilder as Mock<typeof mockUserRepository.createQueryBuilder>).mockImplementation(() => ({
+      (
+        mockUserRepository.createQueryBuilder as Mock<typeof mockUserRepository.createQueryBuilder>
+      ).mockImplementation(() => ({
         where: mockWhere,
         getOne: mockGetOne,
       }));
@@ -124,7 +129,7 @@ describe('AuthService', () => {
         service.login({
           email: 'test@example.com',
           password: 'wrong-password',
-        }),
+        })
       ).rejects.toThrow('Invalid credentials');
     });
   });

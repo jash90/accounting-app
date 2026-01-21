@@ -9,11 +9,12 @@ import {
   AlertCircle,
   CheckCircle2,
 } from 'lucide-react';
+
+import { NavigationCard } from '@/components/ui/navigation-card';
+import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useTasks } from '@/lib/hooks/use-tasks';
 import { UserRole, TaskStatus } from '@/types/enums';
-import { NavigationCard } from '@/components/ui/navigation-card';
-import { StatCard } from '@/components/ui/stat-card';
 
 export default function TasksDashboardPage() {
   const { user } = useAuthContext();
@@ -81,8 +82,7 @@ export default function TasksDashboardPage() {
   ];
 
   // Settings option (only for admins and company owners)
-  const showSettings =
-    user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER;
+  const showSettings = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -91,9 +91,7 @@ export default function TasksDashboardPage() {
           Moduł Zadania
           <div className="w-3 h-3 rounded-full bg-apptax-teal" />
         </h1>
-        <p className="text-muted-foreground mt-1">
-          Zarządzanie zadaniami z wieloma widokami
-        </p>
+        <p className="text-muted-foreground mt-1">Zarządzanie zadaniami z wieloma widokami</p>
       </div>
 
       {/* Statistics Cards */}

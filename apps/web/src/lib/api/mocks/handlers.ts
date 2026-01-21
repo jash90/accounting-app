@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw';
 export const handlers = [
   // Auth endpoints
   http.post('/api/auth/login', async ({ request }) => {
-    const { email, password } = await request.json() as { email: string; password: string };
+    const { email, password } = (await request.json()) as { email: string; password: string };
 
     // Mock authentication logic
     if (email && password) {
@@ -21,23 +21,23 @@ export const handlers = [
       });
     }
 
-    return HttpResponse.json(
-      { message: 'Invalid credentials' },
-      { status: 401 }
-    );
+    return HttpResponse.json({ message: 'Invalid credentials' }, { status: 401 });
   }),
 
   http.post('/api/auth/register', async ({ request }) => {
     const userData = await request.json();
-    return HttpResponse.json({
-      access_token: 'mock-access-token',
-      refresh_token: 'mock-refresh-token',
-      user: {
-        id: 'new-user-id',
-        ...userData,
-        isActive: true,
+    return HttpResponse.json(
+      {
+        access_token: 'mock-access-token',
+        refresh_token: 'mock-refresh-token',
+        user: {
+          id: 'new-user-id',
+          ...userData,
+          isActive: true,
+        },
       },
-    }, { status: 201 });
+      { status: 201 }
+    );
   }),
 
   http.post('/api/auth/refresh', async () => {
@@ -83,13 +83,15 @@ export const handlers = [
 
   http.post('/api/admin/users', async ({ request }) => {
     const userData = await request.json();
-    return HttpResponse.json({
-      id: 'new-user-id',
-      ...userData,
-      isActive: true,
-    }, { status: 201 });
+    return HttpResponse.json(
+      {
+        id: 'new-user-id',
+        ...userData,
+        isActive: true,
+      },
+      { status: 201 }
+    );
   }),
 
   // Add more handlers as needed for all 47 endpoints
 ];
-

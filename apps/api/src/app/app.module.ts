@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { TerminusModule } from '@nestjs/terminus';
+import { APP_GUARD } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { TerminusModule } from '@nestjs/terminus';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
 import { join } from 'path';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { HealthController } from './health.controller';
+
+import { AuthModule, JwtAuthGuard } from '@accounting/auth';
 import {
   User,
   Company,
@@ -38,21 +38,24 @@ import {
   TimeEntry,
   TimeSettings,
 } from '@accounting/common';
-import { EmailDraft } from '@accounting/modules/email-client';
-import { AuthModule, JwtAuthGuard } from '@accounting/auth';
-import { AdminModule } from '../admin/admin.module';
-import { CompanyModule } from '../company/company.module';
-import { ModulesModule } from '../modules/modules.module';
-import { AIAgentModule } from '@accounting/modules/ai-agent';
-import { ClientsModule } from '@accounting/modules/clients';
-import { EmailClientModule } from '@accounting/modules/email-client';
-import { TasksModule } from '@accounting/modules/tasks';
-import { TimeTrackingModule } from '@accounting/modules/time-tracking';
-import { SeedersModule } from '../seeders/seeders.module';
-import { EmailConfigModule } from '../email-config/email-config.module';
+import { ChangeLogModule } from '@accounting/infrastructure/change-log';
 import { EmailModule } from '@accounting/infrastructure/email';
 import { StorageModule } from '@accounting/infrastructure/storage';
-import { ChangeLogModule } from '@accounting/infrastructure/change-log';
+import { AIAgentModule } from '@accounting/modules/ai-agent';
+import { ClientsModule } from '@accounting/modules/clients';
+import { EmailDraft, EmailClientModule } from '@accounting/modules/email-client';
+import { TasksModule } from '@accounting/modules/tasks';
+
+import { TimeTrackingModule } from '@accounting/modules/time-tracking';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { HealthController } from './health.controller';
+import { AdminModule } from '../admin/admin.module';
+import { CompanyModule } from '../company/company.module';
+import { EmailConfigModule } from '../email-config/email-config.module';
+import { ModulesModule } from '../modules/modules.module';
+
+import { SeedersModule } from '../seeders/seeders.module';
 
 // Shared entities array to avoid duplication between DATABASE_URL and local config
 const ENTITIES = [

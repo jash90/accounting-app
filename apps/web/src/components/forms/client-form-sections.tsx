@@ -1,15 +1,10 @@
-import { Control, FieldValues } from 'react-hook-form';
+import { type Control, type FieldValues } from 'react-hook-form';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Combobox } from '@/components/ui/combobox';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { GroupedCombobox } from '@/components/ui/grouped-combobox';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -17,9 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Combobox } from '@/components/ui/combobox';
-import { GroupedCombobox } from '@/components/ui/grouped-combobox';
-import { SelectFormField, DateFormField } from './shared-form-fields';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { AmlGroupLabels, GTU_CODES } from '@/lib/constants/polish-labels';
+import { usePkdSearch } from '@/lib/hooks/use-pkd-search';
+import { type ClientFieldDefinition } from '@/types/entities';
 import {
   EmploymentTypeLabels,
   VatStatusLabels,
@@ -27,9 +24,8 @@ import {
   ZusStatusLabels,
   AmlGroup,
 } from '@/types/enums';
-import { AmlGroupLabels, GTU_CODES } from '@/lib/constants/polish-labels';
-import { usePkdSearch } from '@/lib/hooks/use-pkd-search';
-import { ClientFieldDefinition } from '@/types/entities';
+
+import { SelectFormField, DateFormField } from './shared-form-fields';
 
 interface FormSectionProps<T extends FieldValues = FieldValues> {
   control: Control<T>;
@@ -85,11 +81,7 @@ export function BasicInfoCard({ control }: FormSectionProps) {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input
-                    type="email"
-                    placeholder="email@example.com"
-                    {...field}
-                  />
+                  <Input type="email" placeholder="email@example.com" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -117,18 +109,13 @@ export function BasicInfoCard({ control }: FormSectionProps) {
           render={({ field }) => (
             <FormItem className="flex items-center justify-between rounded-lg border p-3">
               <div className="space-y-0.5">
-                <FormLabel className="text-base">
-                  Wyślij email powitalny do klienta
-                </FormLabel>
+                <FormLabel className="text-base">Wyślij email powitalny do klienta</FormLabel>
                 <p className="text-sm text-muted-foreground">
                   Klient otrzyma email z podsumowaniem wprowadzonych danych
                 </p>
               </div>
               <FormControl>
-                <Switch
-                  checked={field.value ?? true}
-                  onCheckedChange={field.onChange}
-                />
+                <Switch checked={field.value ?? true} onCheckedChange={field.onChange} />
               </FormControl>
             </FormItem>
           )}
@@ -325,11 +312,7 @@ export function DatesCard({ control }: FormSectionProps) {
         <CardTitle>Daty</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <DateFormField
-          control={control}
-          name="companyStartDate"
-          label="Data rozpoczęcia firmy"
-        />
+        <DateFormField control={control} name="companyStartDate" label="Data rozpoczęcia firmy" />
 
         <DateFormField
           control={control}
@@ -337,11 +320,7 @@ export function DatesCard({ control }: FormSectionProps) {
           label="Data rozpoczęcia współpracy"
         />
 
-        <DateFormField
-          control={control}
-          name="suspensionDate"
-          label="Data zawieszenia"
-        />
+        <DateFormField control={control} name="suspensionDate" label="Data zawieszenia" />
       </CardContent>
     </Card>
   );
@@ -387,9 +366,7 @@ export function CustomFieldsCard({
                   </label>
                   {renderField(definition)}
                   {definition.isRequired && isEmpty(values[definition.id]) && isSubmitted && (
-                    <p className="text-sm font-medium text-destructive">
-                      To pole jest wymagane
-                    </p>
+                    <p className="text-sm font-medium text-destructive">To pole jest wymagane</p>
                   )}
                 </div>
               );

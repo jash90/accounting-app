@@ -1,25 +1,30 @@
 import { useState } from 'react';
-import { ColumnDef } from '@tanstack/react-table';
-import { useEmployees, useDeleteEmployee } from '@/lib/hooks/use-employees';
-import { useCreateEmployee, useUpdateEmployee } from '@/lib/hooks/use-employees';
-import { PageHeader } from '@/components/common/page-header';
-import { DataTable } from '@/components/common/data-table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Edit, Trash2, Key, Users, UserPlus } from 'lucide-react';
-import { UserDto } from '@/types/dtos';
-import { EmployeeFormDialog } from '@/components/forms/employee-form-dialog';
-import { ConfirmDialog } from '@/components/common/confirm-dialog';
+
 import { useNavigate } from 'react-router-dom';
+
+import { type ColumnDef } from '@tanstack/react-table';
+import { Edit, Trash2, Key, Users, UserPlus } from 'lucide-react';
+
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { DataTable } from '@/components/common/data-table';
+import { PageHeader } from '@/components/common/page-header';
+import { EmployeeFormDialog } from '@/components/forms/employee-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  useEmployees,
+  useDeleteEmployee,
+  useCreateEmployee,
+  useUpdateEmployee,
+} from '@/lib/hooks/use-employees';
+import { type UserDto } from '@/types/dtos';
 
 const columns: ColumnDef<UserDto>[] = [
   {
     accessorKey: 'email',
     header: 'Email',
-    cell: ({ row }) => (
-      <div className="font-medium text-apptax-navy">{row.original.email}</div>
-    ),
+    cell: ({ row }) => <div className="font-medium text-apptax-navy">{row.original.email}</div>,
   },
   {
     accessorKey: 'firstName',

@@ -1,3 +1,10 @@
+import { useNavigate } from 'react-router-dom';
+
+import { User, LogOut, Settings, Mail, Building2 } from 'lucide-react';
+
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,12 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { useAuthContext } from '@/contexts/auth-context';
-import { useNavigate } from 'react-router-dom';
-import { User, LogOut, Settings, Mail, Building2 } from 'lucide-react';
 import { UserRole } from '@/types/enums';
 
 export function UserMenu() {
@@ -45,7 +47,9 @@ export function UserMenu() {
           className="relative h-10 w-10 rounded-full hover:bg-apptax-soft-teal transition-colors"
         >
           <Avatar>
-            <AvatarFallback className="bg-apptax-blue text-white font-semibold">{initials}</AvatarFallback>
+            <AvatarFallback className="bg-apptax-blue text-white font-semibold">
+              {initials}
+            </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -56,7 +60,10 @@ export function UserMenu() {
               {user.firstName} {user.lastName}
             </p>
             <p className="text-xs text-muted-foreground">{user.email}</p>
-            <Badge variant="outline" className="text-xs w-fit mt-1 border-apptax-blue text-apptax-blue">
+            <Badge
+              variant="outline"
+              className="text-xs w-fit mt-1 border-apptax-blue text-apptax-blue"
+            >
               {user.role}
             </Badge>
           </div>

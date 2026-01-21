@@ -1,7 +1,15 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useCompanyTokenUsage } from '@/lib/hooks/use-ai-agent';
 import { TrendingUp, Users, MessageSquare, Coins, Sparkles } from 'lucide-react';
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useCompanyTokenUsage } from '@/lib/hooks/use-ai-agent';
 
 export default function TokenUsagePage() {
   const { data: usage, isLoading } = useCompanyTokenUsage();
@@ -50,9 +58,12 @@ export default function TokenUsagePage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-apptax-navy">{usage.totalTokens.toLocaleString()}</div>
+            <div className="text-3xl font-bold text-apptax-navy">
+              {usage.totalTokens.toLocaleString()}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {usage.totalInputTokens.toLocaleString()} input • {usage.totalOutputTokens.toLocaleString()} output
+              {usage.totalInputTokens.toLocaleString()} input •{' '}
+              {usage.totalOutputTokens.toLocaleString()} output
             </p>
           </CardContent>
         </Card>
@@ -79,7 +90,9 @@ export default function TokenUsagePage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-apptax-navy">{usage.conversationCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">{usage.messageCount} total messages</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {usage.messageCount} total messages
+            </p>
           </CardContent>
         </Card>
 
@@ -92,7 +105,9 @@ export default function TokenUsagePage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-apptax-navy">
-              {usage.userCount > 0 ? Math.round(usage.totalTokens / usage.userCount).toLocaleString() : 0}
+              {usage.userCount > 0
+                ? Math.round(usage.totalTokens / usage.userCount).toLocaleString()
+                : 0}
             </div>
             <p className="text-xs text-muted-foreground mt-1">Tokens per user</p>
           </CardContent>
@@ -113,24 +128,39 @@ export default function TokenUsagePage() {
             <TableHeader>
               <TableRow className="bg-apptax-navy/5 hover:bg-apptax-navy/5">
                 <TableHead className="text-apptax-navy font-semibold">User</TableHead>
-                <TableHead className="text-right text-apptax-navy font-semibold">Total Tokens</TableHead>
+                <TableHead className="text-right text-apptax-navy font-semibold">
+                  Total Tokens
+                </TableHead>
                 <TableHead className="text-right text-apptax-navy font-semibold">Input</TableHead>
                 <TableHead className="text-right text-apptax-navy font-semibold">Output</TableHead>
-                <TableHead className="text-right text-apptax-navy font-semibold">Conversations</TableHead>
-                <TableHead className="text-right text-apptax-navy font-semibold">Messages</TableHead>
+                <TableHead className="text-right text-apptax-navy font-semibold">
+                  Conversations
+                </TableHead>
+                <TableHead className="text-right text-apptax-navy font-semibold">
+                  Messages
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {(usage.users ?? []).map((user) => (
-                <TableRow key={user.userId} className="hover:bg-apptax-soft-teal/30 transition-colors">
+                <TableRow
+                  key={user.userId}
+                  className="hover:bg-apptax-soft-teal/30 transition-colors"
+                >
                   <TableCell className="font-medium text-apptax-navy">
                     {user.firstName} {user.lastName}
                     <br />
                     <span className="text-xs text-muted-foreground">{user.email}</span>
                   </TableCell>
-                  <TableCell className="text-right font-semibold text-apptax-blue">{user.totalTokens.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">{user.totalInputTokens.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">{user.totalOutputTokens.toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-semibold text-apptax-blue">
+                    {user.totalTokens.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {user.totalInputTokens.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {user.totalOutputTokens.toLocaleString()}
+                  </TableCell>
                   <TableCell className="text-right">{user.conversationCount}</TableCell>
                   <TableCell className="text-right">{user.messageCount}</TableCell>
                 </TableRow>

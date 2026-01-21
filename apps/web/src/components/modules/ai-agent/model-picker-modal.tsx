@@ -1,13 +1,11 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+
+import { Search, X, GitCompare, Star, Clock, Loader2, ChevronRight } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
@@ -16,20 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Search,
-  X,
-  GitCompare,
-  Star,
-  Clock,
-  Loader2,
-  ChevronRight,
-} from 'lucide-react';
-import { OpenRouterModelDto } from '@/types/dtos';
-import { cn } from '@/lib/utils/cn';
 import { useModelPreferences } from '@/lib/hooks/use-model-preferences';
-import { ModelDetailPanel } from './model-detail-panel';
+import { cn } from '@/lib/utils/cn';
+import { type OpenRouterModelDto } from '@/types/dtos';
+
 import { ModelComparisonView } from './model-comparison-view';
+import { ModelDetailPanel } from './model-detail-panel';
 import { ModelFavoritesChip } from './model-favorites-chip';
 
 interface ModelPickerModalProps {
@@ -96,15 +86,7 @@ function matchesContextFilter(model: OpenRouterModelDto, filter: ContextFilter):
 }
 
 // Provider display order
-const PROVIDER_ORDER = [
-  'Anthropic',
-  'OpenAI',
-  'Google',
-  'Meta',
-  'Mistral',
-  'Cohere',
-  'DeepSeek',
-];
+const PROVIDER_ORDER = ['Anthropic', 'OpenAI', 'Google', 'Meta', 'Mistral', 'Cohere', 'DeepSeek'];
 
 function getProviderOrder(provider: string): number {
   const index = PROVIDER_ORDER.indexOf(provider);
@@ -127,13 +109,7 @@ export function ModelPickerModal({
   const [viewMode, setViewMode] = useState<ViewMode>('browse');
   const [showFavoritesBar, setShowFavoritesBar] = useState(true);
 
-  const {
-    favorites,
-    recents,
-    toggleFavorite,
-    isFavorite,
-    addRecent,
-  } = useModelPreferences();
+  const { favorites, recents, toggleFavorite, isFavorite, addRecent } = useModelPreferences();
 
   // Reset state when modal opens
   useEffect(() => {
@@ -211,14 +187,17 @@ export function ModelPickerModal({
     });
 
     // Group by provider
-    const grouped = filtered.reduce((acc, model) => {
-      const provider = model.provider || 'Other';
-      if (!acc[provider]) {
-        acc[provider] = [];
-      }
-      acc[provider].push(model);
-      return acc;
-    }, {} as Record<string, OpenRouterModelDto[]>);
+    const grouped = filtered.reduce(
+      (acc, model) => {
+        const provider = model.provider || 'Other';
+        if (!acc[provider]) {
+          acc[provider] = [];
+        }
+        acc[provider].push(model);
+        return acc;
+      },
+      {} as Record<string, OpenRouterModelDto[]>
+    );
 
     // Sort providers by priority
     const sortedProviders = Object.keys(grouped).sort(
@@ -228,9 +207,7 @@ export function ModelPickerModal({
     const sortedGrouped: Record<string, OpenRouterModelDto[]> = {};
     for (const provider of sortedProviders) {
       // Sort models within each provider by popularity/name
-      sortedGrouped[provider] = grouped[provider].sort((a, b) =>
-        a.name.localeCompare(b.name)
-      );
+      sortedGrouped[provider] = grouped[provider].sort((a, b) => a.name.localeCompare(b.name));
     }
 
     return {
@@ -277,21 +254,18 @@ export function ModelPickerModal({
     [addRecent, onSelect, onOpenChange]
   );
 
-  const handleToggleComparison = useCallback(
-    (model: OpenRouterModelDto) => {
-      setComparisonModels((prev) => {
-        const isInComparison = prev.some((m) => m.id === model.id);
-        if (isInComparison) {
-          return prev.filter((m) => m.id !== model.id);
-        }
-        if (prev.length >= 3) {
-          return prev; // Max 3 models
-        }
-        return [...prev, model];
-      });
-    },
-    []
-  );
+  const handleToggleComparison = useCallback((model: OpenRouterModelDto) => {
+    setComparisonModels((prev) => {
+      const isInComparison = prev.some((m) => m.id === model.id);
+      if (isInComparison) {
+        return prev.filter((m) => m.id !== model.id);
+      }
+      if (prev.length >= 3) {
+        return prev; // Max 3 models
+      }
+      return [...prev, model];
+    });
+  }, []);
 
   const handleRemoveFromComparison = useCallback((modelId: string) => {
     setComparisonModels((prev) => prev.filter((m) => m.id !== modelId));
@@ -319,9 +293,7 @@ export function ModelPickerModal({
       <DialogContent className="max-w-5xl h-[80vh] p-0 flex flex-col">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border flex-shrink-0">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-semibold">
-              Wybierz model AI
-            </DialogTitle>
+            <DialogTitle className="text-xl font-semibold">Wybierz model AI</DialogTitle>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">⌘K</kbd>
               <span>Szukaj</span>
@@ -412,10 +384,7 @@ export function ModelPickerModal({
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Select
-                    value={costFilter}
-                    onValueChange={(v) => setCostFilter(v as CostFilter)}
-                  >
+                  <Select value={costFilter} onValueChange={(v) => setCostFilter(v as CostFilter)}>
                     <SelectTrigger className="w-[130px] h-8 text-xs">
                       <SelectValue placeholder="Cost" />
                     </SelectTrigger>
@@ -479,9 +448,7 @@ export function ModelPickerModal({
                           >
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium text-sm truncate">
-                                  {model.name}
-                                </span>
+                                <span className="font-medium text-sm truncate">{model.name}</span>
                                 {isFavorite(model.id) && (
                                   <Star className="w-3 h-3 text-yellow-500 fill-current flex-shrink-0" />
                                 )}

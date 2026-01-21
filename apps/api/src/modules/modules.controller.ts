@@ -25,8 +25,7 @@ import {
   ApiParam,
   ApiBody,
 } from '@nestjs/swagger';
-import { ModulesService } from './modules.service';
-import { CreateModuleDto, UpdateModuleDto } from './dto';
+
 import { CurrentUser, Roles, RolesGuard } from '@accounting/auth';
 import {
   User,
@@ -36,6 +35,9 @@ import {
   UserModulePermissionResponseDto,
   CompanyModuleAccessResponseDto,
 } from '@accounting/common';
+
+import { CreateModuleDto, UpdateModuleDto } from './dto';
+import { ModulesService } from './modules.service';
 
 @ApiTags('Modules')
 @ApiBearerAuth('JWT-auth')
@@ -50,7 +52,8 @@ export class ModulesController {
   @Roles(UserRole.ADMIN, UserRole.COMPANY_OWNER, UserRole.EMPLOYEE)
   @ApiOperation({
     summary: 'Get modules for current user',
-    description: 'Retrieve modules based on user role: ADMIN sees all modules, COMPANY_OWNER sees company modules, EMPLOYEE sees their permitted modules'
+    description:
+      'Retrieve modules based on user role: ADMIN sees all modules, COMPANY_OWNER sees company modules, EMPLOYEE sees their permitted modules',
   })
   @ApiOkResponse({ description: 'List of modules based on user role', type: [ModuleResponseDto] })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
@@ -62,9 +65,15 @@ export class ModulesController {
   @Roles(UserRole.ADMIN, UserRole.COMPANY_OWNER, UserRole.EMPLOYEE)
   @ApiOperation({
     summary: 'Get module by ID or slug',
-    description: 'Retrieve module details by UUID or slug. Access controlled by user role and permissions.'
+    description:
+      'Retrieve module details by UUID or slug. Access controlled by user role and permissions.',
   })
-  @ApiParam({ name: 'identifier', type: 'string', description: 'Module UUID or URL-friendly slug', example: 'ai-agent or 550e8400-e29b-41d4-a716-446655440000' })
+  @ApiParam({
+    name: 'identifier',
+    type: 'string',
+    description: 'Module UUID or URL-friendly slug',
+    example: 'ai-agent or 550e8400-e29b-41d4-a716-446655440000',
+  })
   @ApiOkResponse({ description: 'Module details', type: ModuleResponseDto })
   @ApiNotFoundResponse({ description: 'Module not found or not accessible' })
   @ApiForbiddenResponse({ description: 'Forbidden - No access to this module' })
@@ -78,7 +87,10 @@ export class ModulesController {
   @Post()
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a new module', description: 'Create a new module with specified name, slug, and description' })
+  @ApiOperation({
+    summary: 'Create a new module',
+    description: 'Create a new module with specified name, slug, and description',
+  })
   @ApiBody({ type: CreateModuleDto, description: 'Module creation data' })
   @ApiCreatedResponse({ description: 'Module created successfully', type: ModuleResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
@@ -91,7 +103,10 @@ export class ModulesController {
 
   @Patch(':id')
   @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Update module', description: 'Update module information (name, description, isActive status)' })
+  @ApiOperation({
+    summary: 'Update module',
+    description: 'Update module information (name, description, isActive status)',
+  })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid', description: 'Module unique identifier' })
   @ApiBody({ type: UpdateModuleDto, description: 'Module update data (partial update supported)' })
   @ApiOkResponse({ description: 'Module updated successfully', type: ModuleResponseDto })
@@ -106,7 +121,10 @@ export class ModulesController {
   @Delete(':id')
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete module (soft delete)', description: 'Soft delete a module by setting isActive to false' })
+  @ApiOperation({
+    summary: 'Delete module (soft delete)',
+    description: 'Soft delete a module by setting isActive to false',
+  })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid', description: 'Module unique identifier' })
   @ApiNoContentResponse({ description: 'Module deleted successfully' })
   @ApiNotFoundResponse({ description: 'Module not found' })
@@ -123,7 +141,8 @@ export class ModulesController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Grant or update module permissions',
-    description: 'Unified endpoint to grant/update permissions. ADMIN can manage company access, COMPANY_OWNER can manage employee permissions.'
+    description:
+      'Unified endpoint to grant/update permissions. ADMIN can manage company access, COMPANY_OWNER can manage employee permissions.',
   })
   @ApiBody({ type: ManageModulePermissionDto, description: 'Permission management data' })
   @ApiCreatedResponse({ description: 'Permissions granted/updated successfully' })
@@ -139,7 +158,8 @@ export class ModulesController {
   @Roles(UserRole.ADMIN, UserRole.COMPANY_OWNER)
   @ApiOperation({
     summary: 'Update module permissions',
-    description: 'Update existing permissions. Uses same logic as POST but semantically indicates an update operation.'
+    description:
+      'Update existing permissions. Uses same logic as POST but semantically indicates an update operation.',
   })
   @ApiBody({ type: ManageModulePermissionDto, description: 'Permission update data' })
   @ApiOkResponse({ description: 'Permissions updated successfully' })
@@ -156,9 +176,13 @@ export class ModulesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Revoke module permissions',
-    description: 'Remove module access. ADMIN can revoke company access, COMPANY_OWNER can revoke employee permissions.'
+    description:
+      'Remove module access. ADMIN can revoke company access, COMPANY_OWNER can revoke employee permissions.',
   })
-  @ApiBody({ type: ManageModulePermissionDto, description: 'Permission revocation data (permissions field not required)' })
+  @ApiBody({
+    type: ManageModulePermissionDto,
+    description: 'Permission revocation data (permissions field not required)',
+  })
   @ApiNoContentResponse({ description: 'Permissions revoked successfully' })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions for this operation' })
@@ -174,10 +198,18 @@ export class ModulesController {
   @Roles(UserRole.COMPANY_OWNER)
   @ApiOperation({
     summary: 'Get modules assigned to employee',
-    description: 'Retrieve all module permissions for a specific employee (Company Owner only)'
+    description: 'Retrieve all module permissions for a specific employee (Company Owner only)',
   })
-  @ApiParam({ name: 'employeeId', type: 'string', format: 'uuid', description: 'Employee user unique identifier' })
-  @ApiOkResponse({ description: 'List of employee module permissions', type: [UserModulePermissionResponseDto] })
+  @ApiParam({
+    name: 'employeeId',
+    type: 'string',
+    format: 'uuid',
+    description: 'Employee user unique identifier',
+  })
+  @ApiOkResponse({
+    description: 'List of employee module permissions',
+    type: [UserModulePermissionResponseDto],
+  })
   @ApiNotFoundResponse({ description: 'Employee not found or does not belong to your company' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Company owner role required' })
@@ -194,10 +226,18 @@ export class ModulesController {
   @Roles(UserRole.ADMIN)
   @ApiOperation({
     summary: 'Get modules assigned to company',
-    description: 'Retrieve all module access records for a specific company (Admin only)'
+    description: 'Retrieve all module access records for a specific company (Admin only)',
   })
-  @ApiParam({ name: 'companyId', type: 'string', format: 'uuid', description: 'Company unique identifier' })
-  @ApiOkResponse({ description: 'List of company module access records', type: [CompanyModuleAccessResponseDto] })
+  @ApiParam({
+    name: 'companyId',
+    type: 'string',
+    format: 'uuid',
+    description: 'Company unique identifier',
+  })
+  @ApiOkResponse({
+    description: 'List of company module access records',
+    type: [CompanyModuleAccessResponseDto],
+  })
   @ApiNotFoundResponse({ description: 'Company not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
@@ -209,8 +249,13 @@ export class ModulesController {
 
   @Post('cleanup/orphaned-permissions')
   @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Cleanup orphaned employee permissions for disabled modules', description: 'Remove employee permissions for modules that are no longer active or accessible' })
-  @ApiOkResponse({ description: 'Cleanup completed successfully - returns count of deleted records' })
+  @ApiOperation({
+    summary: 'Cleanup orphaned employee permissions for disabled modules',
+    description: 'Remove employee permissions for modules that are no longer active or accessible',
+  })
+  @ApiOkResponse({
+    description: 'Cleanup completed successfully - returns count of deleted records',
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
   cleanupOrphanedPermissions() {
@@ -223,7 +268,7 @@ export class ModulesController {
   @Roles(UserRole.ADMIN)
   @ApiOperation({
     summary: 'Get discovered modules from file system',
-    description: 'Returns modules discovered from libs/modules/*/module.json files'
+    description: 'Returns modules discovered from libs/modules/*/module.json files',
   })
   @ApiOkResponse({ description: 'List of discovered modules with their configuration' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
@@ -236,7 +281,7 @@ export class ModulesController {
   @Roles(UserRole.ADMIN)
   @ApiOperation({
     summary: 'Get module discovery statistics',
-    description: 'Returns discovery statistics including module count and base path'
+    description: 'Returns discovery statistics including module count and base path',
   })
   @ApiOkResponse({ description: 'Discovery statistics' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
@@ -249,9 +294,11 @@ export class ModulesController {
   @Roles(UserRole.ADMIN)
   @ApiOperation({
     summary: 'Reload modules from file system',
-    description: 'Re-discover modules from libs/modules/*/module.json and sync with database'
+    description: 'Re-discover modules from libs/modules/*/module.json and sync with database',
   })
-  @ApiOkResponse({ description: 'Modules reloaded successfully - returns list of discovered modules' })
+  @ApiOkResponse({
+    description: 'Modules reloaded successfully - returns list of discovered modules',
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
   reloadModules() {
@@ -262,7 +309,7 @@ export class ModulesController {
   @Roles(UserRole.ADMIN, UserRole.COMPANY_OWNER)
   @ApiOperation({
     summary: 'Get available permissions for a module',
-    description: 'Returns the list of available permissions defined for a specific module'
+    description: 'Returns the list of available permissions defined for a specific module',
   })
   @ApiParam({ name: 'moduleSlug', type: 'string', description: 'Module slug', example: 'ai-agent' })
   @ApiOkResponse({ description: 'List of available permissions', type: [String] })
@@ -276,7 +323,7 @@ export class ModulesController {
   @Roles(UserRole.ADMIN, UserRole.COMPANY_OWNER)
   @ApiOperation({
     summary: 'Get default permissions for a module',
-    description: 'Returns the default permissions that are granted to new employees'
+    description: 'Returns the default permissions that are granted to new employees',
   })
   @ApiParam({ name: 'moduleSlug', type: 'string', description: 'Module slug', example: 'ai-agent' })
   @ApiOkResponse({ description: 'List of default permissions', type: [String] })

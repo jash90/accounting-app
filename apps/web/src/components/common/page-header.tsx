@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { type ReactNode } from 'react';
 
 interface PageHeaderProps {
   title: string;
@@ -20,9 +20,7 @@ export function PageHeader({ title, description, action, icon, titleAction }: Pa
           )}
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-apptax-navy">{title}</h1>
-            {description && (
-              <p className="text-muted-foreground mt-1 text-sm">{description}</p>
-            )}
+            {description && <p className="text-muted-foreground mt-1 text-sm">{description}</p>}
           </div>
           {titleAction && <div className="flex-shrink-0">{titleAction}</div>}
         </div>

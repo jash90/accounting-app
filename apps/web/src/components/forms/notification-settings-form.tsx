@@ -1,6 +1,12 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
+
+import { useForm } from 'react-hook-form';
+
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Bell, BellOff } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -9,15 +15,12 @@ import {
   FormItem,
   FormLabel,
 } from '@/components/ui/form';
-import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bell, BellOff } from 'lucide-react';
 import {
   notificationSettingsSchema,
-  NotificationSettingsFormData,
+  type NotificationSettingsFormData,
 } from '@/lib/validation/schemas';
-import { NotificationSettingsResponseDto } from '@/types/dtos';
+import { type NotificationSettingsResponseDto } from '@/types/dtos';
 
 interface NotificationSettingsFormProps {
   settings: NotificationSettingsResponseDto | null | undefined;
@@ -56,9 +59,7 @@ export function NotificationSettingsForm({
   };
 
   const hasAnyNotification =
-    form.watch('receiveOnCreate') ||
-    form.watch('receiveOnUpdate') ||
-    form.watch('receiveOnDelete');
+    form.watch('receiveOnCreate') || form.watch('receiveOnUpdate') || form.watch('receiveOnDelete');
 
   return (
     <Card>
@@ -90,10 +91,7 @@ export function NotificationSettingsForm({
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}
@@ -111,10 +109,7 @@ export function NotificationSettingsForm({
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}
@@ -132,10 +127,7 @@ export function NotificationSettingsForm({
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}

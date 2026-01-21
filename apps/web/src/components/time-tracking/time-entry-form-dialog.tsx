@@ -1,8 +1,12 @@
 import { useEffect } from 'react';
+
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { format, parseISO, parse } from 'date-fns';
+import { z } from 'zod';
+
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -11,17 +15,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Form,
   FormControl,
@@ -30,36 +23,49 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
-  useCreateTimeEntry,
-  useUpdateTimeEntry,
-} from '@/lib/hooks/use-time-tracking';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { useTaskClients } from '@/lib/hooks/use-tasks';
-import { CreateTimeEntryDto, TimeEntryResponseDto } from '@/types/dtos';
+import { useCreateTimeEntry, useUpdateTimeEntry } from '@/lib/hooks/use-time-tracking';
+import { type CreateTimeEntryDto, type TimeEntryResponseDto } from '@/types/dtos';
 
 /**
  * Zod validation schema for time entry form.
  * Provides client-side validation for time entries.
  */
-const timeEntryFormSchema = z.object({
-  description: z.string().max(255, 'Opis może mieć maksymalnie 255 znaków').optional(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Nieprawidłowy format daty'),
-  startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Nieprawidłowy format czasu'),
-  endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Nieprawidłowy format czasu').optional().or(z.literal('')),
-  clientId: z.string().optional(),
-  isBillable: z.boolean(),
-  hourlyRate: z.string().optional().refine(
-    (val) => !val || !isNaN(parseFloat(val)),
-    { message: 'Stawka musi być liczbą' }
-  ),
-  tags: z.string().max(500, 'Tagi mogą mieć maksymalnie 500 znaków').optional(),
-}).refine(
-  (data) => {
-    if (!data.endTime) return true;
-    return data.startTime < data.endTime;
-  },
-  { message: 'Czas zakończenia musi być późniejszy niż czas rozpoczęcia', path: ['endTime'] }
-);
+const timeEntryFormSchema = z
+  .object({
+    description: z.string().max(255, 'Opis może mieć maksymalnie 255 znaków').optional(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Nieprawidłowy format daty'),
+    startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Nieprawidłowy format czasu'),
+    endTime: z
+      .string()
+      .regex(/^\d{2}:\d{2}$/, 'Nieprawidłowy format czasu')
+      .optional()
+      .or(z.literal('')),
+    clientId: z.string().optional(),
+    isBillable: z.boolean(),
+    hourlyRate: z
+      .string()
+      .optional()
+      .refine((val) => !val || !isNaN(parseFloat(val)), { message: 'Stawka musi być liczbą' }),
+    tags: z.string().max(500, 'Tagi mogą mieć maksymalnie 500 znaków').optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.endTime) return true;
+      return data.startTime < data.endTime;
+    },
+    { message: 'Czas zakończenia musi być późniejszy niż czas rozpoczęcia', path: ['endTime'] }
+  );
 
 type FormData = z.infer<typeof timeEntryFormSchema>;
 
@@ -69,11 +75,7 @@ interface TimeEntryFormDialogProps {
   entry?: TimeEntryResponseDto | null;
 }
 
-export function TimeEntryFormDialog({
-  open,
-  onOpenChange,
-  entry,
-}: TimeEntryFormDialogProps) {
+export function TimeEntryFormDialog({ open, onOpenChange, entry }: TimeEntryFormDialogProps) {
   const createEntry = useCreateTimeEntry();
   const updateEntry = useUpdateTimeEntry();
   const { data: clientsData } = useTaskClients();
@@ -140,7 +142,12 @@ export function TimeEntryFormDialog({
       clientId: data.clientId && data.clientId !== '__none__' ? data.clientId : undefined,
       isBillable: data.isBillable,
       hourlyRate: data.hourlyRate ? parseFloat(data.hourlyRate) : undefined,
-      tags: data.tags ? data.tags.split(',').map((t) => t.trim()).filter(Boolean) : undefined,
+      tags: data.tags
+        ? data.tags
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : undefined,
     };
 
     if (entry) {
@@ -173,9 +180,7 @@ export function TimeEntryFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>
-            {entry ? 'Edytuj wpis czasu' : 'Nowy wpis czasu'}
-          </DialogTitle>
+          <DialogTitle>{entry ? 'Edytuj wpis czasu' : 'Nowy wpis czasu'}</DialogTitle>
           <DialogDescription>
             {entry ? 'Zaktualizuj dane wpisu czasu.' : 'Dodaj nowy wpis czasu ręcznie.'}
           </DialogDescription>
@@ -190,10 +195,7 @@ export function TimeEntryFormDialog({
                 <FormItem>
                   <FormLabel>Opis</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Opisz wykonaną pracę..."
-                      {...field}
-                    />
+                    <Textarea placeholder="Opisz wykonaną pracę..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -278,12 +280,7 @@ export function TimeEntryFormDialog({
                   <FormItem>
                     <FormLabel>Stawka godzinowa (PLN)</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="np. 150.00"
-                        {...field}
-                      />
+                      <Input type="number" step="0.01" placeholder="np. 150.00" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -311,25 +308,16 @@ export function TimeEntryFormDialog({
               render={({ field }) => (
                 <FormItem className="flex items-center gap-2 space-y-0">
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
-                  <FormLabel className="cursor-pointer">
-                    Wpis rozliczalny
-                  </FormLabel>
+                  <FormLabel className="cursor-pointer">Wpis rozliczalny</FormLabel>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Anuluj
               </Button>
               <Button type="submit" disabled={isLoading}>

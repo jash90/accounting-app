@@ -5,7 +5,11 @@ import type * as ImapTypes from 'node-imap';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const Imap = require('node-imap');
 import { ImapConfig } from '../interfaces/email-config.interface';
-import { ReceivedEmail, FetchEmailsOptions, EmailAddress } from '../interfaces/email-message.interface';
+import {
+  ReceivedEmail,
+  FetchEmailsOptions,
+  EmailAddress,
+} from '../interfaces/email-message.interface';
 
 // TLS validation - secure by default, configurable via env
 const REJECT_UNAUTHORIZED = process.env['EMAIL_REJECT_UNAUTHORIZED'] !== 'false';
@@ -61,7 +65,9 @@ export class EmailReaderService {
             imap.end();
             return reject(err);
           }
-          this.logger.log(`[IMAP] Opened mailbox: "${box.name}", total messages: ${box.messages.total}`);
+          this.logger.log(
+            `[IMAP] Opened mailbox: "${box.name}", total messages: ${box.messages.total}`
+          );
 
           const searchCriteria = this.buildSearchCriteria(options);
 
@@ -123,15 +129,18 @@ export class EmailReaderService {
                 });
 
                 msg.on('body', (stream: NodeJS.ReadableStream) => {
-                  simpleParser(stream as unknown as Source, (err: Error | null, parsed: ParsedMail) => {
-                    if (err) {
-                      this.logger.error(`Error parsing email: ${err.message}`);
-                    } else {
-                      parsedEmail = this.convertParsedMailToReceivedEmail(parsed, seqno);
+                  simpleParser(
+                    stream as unknown as Source,
+                    (err: Error | null, parsed: ParsedMail) => {
+                      if (err) {
+                        this.logger.error(`Error parsing email: ${err.message}`);
+                      } else {
+                        parsedEmail = this.convertParsedMailToReceivedEmail(parsed, seqno);
+                      }
+                      parseComplete = true;
+                      tryComplete();
                     }
-                    parseComplete = true;
-                    tryComplete();
-                  });
+                  );
                 });
               });
               messagePromises.push(messagePromise);
@@ -298,18 +307,21 @@ export class EmailReaderService {
   private sendClientIdentification(imap: InstanceType<typeof Imap>): void {
     try {
       if (imap.serverSupports('ID')) {
-        imap.id({
-          name: 'AccountingEmailClient',
-          version: '1.0.0',
-          vendor: 'Accounting System',
-          'support-url': 'https://accounting.local',
-        }, (err: Error | null, serverInfo: Record<string, string> | null) => {
-          if (err) {
-            this.logger.debug(`[IMAP] ID command failed (non-critical): ${err.message}`);
-          } else if (serverInfo) {
-            this.logger.debug(`[IMAP] Server ID: ${JSON.stringify(serverInfo)}`);
+        imap.id(
+          {
+            name: 'AccountingEmailClient',
+            version: '1.0.0',
+            vendor: 'Accounting System',
+            'support-url': 'https://accounting.local',
+          },
+          (err: Error | null, serverInfo: Record<string, string> | null) => {
+            if (err) {
+              this.logger.debug(`[IMAP] ID command failed (non-critical): ${err.message}`);
+            } else if (serverInfo) {
+              this.logger.debug(`[IMAP] Server ID: ${JSON.stringify(serverInfo)}`);
+            }
           }
-        });
+        );
       }
     } catch {
       // ID command is optional - don't fail if not supported
@@ -343,27 +355,37 @@ export class EmailReaderService {
       flags: [],
       text: parsed.text,
       html: parsed.html ? parsed.html.toString() : undefined,
-      attachments: parsed.attachments?.map((att: { filename?: string; contentType: string; size: number; content: Buffer; contentId?: string }) => ({
-        filename: att.filename || 'unknown',
-        contentType: att.contentType,
-        size: att.size,
-        content: att.content,
-        contentId: att.contentId,
-      })),
+      attachments: parsed.attachments?.map(
+        (att: {
+          filename?: string;
+          contentType: string;
+          size: number;
+          content: Buffer;
+          contentId?: string;
+        }) => ({
+          filename: att.filename || 'unknown',
+          contentType: att.contentType,
+          size: att.size,
+          content: att.content,
+          contentId: att.contentId,
+        })
+      ),
     };
   }
 
   /**
    * Convert mailparser AddressObject to EmailAddress array
    */
-  private convertAddressObject(addressObj: AddressObject | AddressObject[] | undefined): EmailAddress[] {
+  private convertAddressObject(
+    addressObj: AddressObject | AddressObject[] | undefined
+  ): EmailAddress[] {
     if (!addressObj) {
       return [];
     }
 
     const addresses = Array.isArray(addressObj) ? addressObj : [addressObj];
 
-    return addresses.flatMap(addr =>
+    return addresses.flatMap((addr) =>
       addr.value.map((v: { name?: string; address?: string }) => ({
         name: v.name,
         address: v.address || '',
@@ -386,7 +408,12 @@ export class EmailReaderService {
       names.push(fullName);
 
       if (box && typeof box === 'object' && 'children' in box) {
-        names.push(...this.extractMailboxNames((box as ImapTypes.Folder).children as ImapTypes.MailBoxes, fullName));
+        names.push(
+          ...this.extractMailboxNames(
+            (box as ImapTypes.Folder).children as ImapTypes.MailBoxes,
+            fullName
+          )
+        );
       }
     }
 
@@ -421,7 +448,7 @@ export class EmailReaderService {
       ];
 
       for (const sentName of sentNames) {
-        const found = boxes.find(box => box.toLowerCase() === sentName.toLowerCase());
+        const found = boxes.find((box) => box.toLowerCase() === sentName.toLowerCase());
         if (found) {
           this.logger.log(`Found Sent mailbox: ${found}`);
           return found;
@@ -460,7 +487,7 @@ export class EmailReaderService {
     imapConfig: ImapConfig,
     mailboxName: string,
     rawMessage: Buffer,
-    flags: string[] = ['\\Seen'],
+    flags: string[] = ['\\Seen']
   ): Promise<void> {
     return new Promise((resolve, reject) => {
       const imap = this.createImapConnection(imapConfig);
@@ -520,24 +547,24 @@ export class EmailReaderService {
         'Drafts',
         'Draft',
         '[Gmail]/Drafts',
-        '[Gmail]/Wersje robocze',  // Gmail Polish
+        '[Gmail]/Wersje robocze', // Gmail Polish
         'INBOX.Drafts',
         'INBOX/Drafts',
         'INBOX.Robocze',
         'INBOX.Szkice',
-        'Robocze',      // Polish
-        'Szkice',       // Polish alternative
+        'Robocze', // Polish
+        'Szkice', // Polish alternative
         'Wersje robocze', // Polish Gmail-style
-        'Entwürfe',     // German
-        'Borradores',   // Spanish
-        'Brouillons',   // French
-        'Bozze',        // Italian
-        'Concepten',    // Dutch
+        'Entwürfe', // German
+        'Borradores', // Spanish
+        'Brouillons', // French
+        'Bozze', // Italian
+        'Concepten', // Dutch
       ];
 
       // First try exact match (case-insensitive)
       for (const draftName of draftNames) {
-        const found = boxes.find(box => box.toLowerCase() === draftName.toLowerCase());
+        const found = boxes.find((box) => box.toLowerCase() === draftName.toLowerCase());
         if (found) {
           this.logger.log(`Found Drafts mailbox: ${found}`);
           return found;
@@ -545,9 +572,17 @@ export class EmailReaderService {
       }
 
       // Try partial match - look for folders containing 'draft', 'robocz', 'szkic'
-      const partialMatches = ['draft', 'robocz', 'szkic', 'bozz', 'brouillon', 'entwürf', 'borrador'];
+      const partialMatches = [
+        'draft',
+        'robocz',
+        'szkic',
+        'bozz',
+        'brouillon',
+        'entwürf',
+        'borrador',
+      ];
       for (const partial of partialMatches) {
-        const found = boxes.find(box => box.toLowerCase().includes(partial));
+        const found = boxes.find((box) => box.toLowerCase().includes(partial));
         if (found) {
           this.logger.log(`Found Drafts mailbox by partial match: ${found}`);
           return found;
@@ -555,14 +590,18 @@ export class EmailReaderService {
       }
 
       // Not found - try to create the folder
-      this.logger.warn(`Drafts mailbox not found in available folders. Attempting to create 'Drafts'...`);
+      this.logger.warn(
+        `Drafts mailbox not found in available folders. Attempting to create 'Drafts'...`
+      );
       try {
         await this.createMailbox(imapConfig, 'Drafts');
         this.logger.log(`Successfully created 'Drafts' mailbox`);
         return 'Drafts';
       } catch (createError) {
         this.logger.error(`Failed to create Drafts folder: ${(createError as Error).message}`);
-        throw new Error(`Drafts folder not found and could not be created. Available folders: ${boxes.join(', ')}`);
+        throw new Error(
+          `Drafts folder not found and could not be created. Available folders: ${boxes.join(', ')}`
+        );
       }
     } catch (error) {
       const err = error as Error;
@@ -610,7 +649,7 @@ export class EmailReaderService {
    */
   async appendToDrafts(
     imapConfig: ImapConfig,
-    rawMessage: Buffer,
+    rawMessage: Buffer
   ): Promise<{ uid: number; mailbox: string }> {
     const draftsMailbox = await this.findDraftsMailbox(imapConfig);
 
@@ -653,7 +692,7 @@ export class EmailReaderService {
                 resolve({ uid: lastUid, mailbox: draftsMailbox });
               });
             });
-          },
+          }
         );
       });
 
@@ -675,7 +714,7 @@ export class EmailReaderService {
    */
   async fetchDrafts(
     imapConfig: ImapConfig,
-    options: FetchEmailsOptions = {},
+    options: FetchEmailsOptions = {}
   ): Promise<ReceivedEmail[]> {
     const draftsMailbox = await this.findDraftsMailbox(imapConfig);
 
@@ -692,12 +731,8 @@ export class EmailReaderService {
    * @param uid Message UID to delete
    * @param mailbox Mailbox name (optional, will find Drafts if not provided)
    */
-  async deleteDraftFromImap(
-    imapConfig: ImapConfig,
-    uid: number,
-    mailbox?: string,
-  ): Promise<void> {
-    const draftsMailbox = mailbox || await this.findDraftsMailbox(imapConfig);
+  async deleteDraftFromImap(imapConfig: ImapConfig, uid: number, mailbox?: string): Promise<void> {
+    const draftsMailbox = mailbox || (await this.findDraftsMailbox(imapConfig));
 
     return new Promise((resolve, reject) => {
       const imap = this.createImapConnection(imapConfig);
@@ -743,7 +778,7 @@ export class EmailReaderService {
   async updateDraftInImap(
     imapConfig: ImapConfig,
     oldUid: number,
-    rawMessage: Buffer,
+    rawMessage: Buffer
   ): Promise<{ uid: number; mailbox: string }> {
     // Delete old version first
     try {

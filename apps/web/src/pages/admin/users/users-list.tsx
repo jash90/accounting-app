@@ -1,24 +1,23 @@
 import { useState } from 'react';
-import { ColumnDef } from '@tanstack/react-table';
-import { useUsers, useDeleteUser } from '@/lib/hooks/use-users';
-import { useCreateUser, useUpdateUser } from '@/lib/hooks/use-users';
-import { PageHeader } from '@/components/common/page-header';
-import { DataTable } from '@/components/common/data-table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+
+import { type ColumnDef } from '@tanstack/react-table';
 import { Edit, Trash2, Users, UserPlus } from 'lucide-react';
-import { UserDto, UserRole } from '@/types/dtos';
-import { UserFormDialog } from '@/components/forms/user-form-dialog';
+
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { DataTable } from '@/components/common/data-table';
+import { PageHeader } from '@/components/common/page-header';
+import { UserFormDialog } from '@/components/forms/user-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useUsers, useDeleteUser, useCreateUser, useUpdateUser } from '@/lib/hooks/use-users';
+import { type UserDto, UserRole } from '@/types/dtos';
 
 const columns: ColumnDef<UserDto>[] = [
   {
     accessorKey: 'email',
     header: 'Email',
-    cell: ({ row }) => (
-      <div className="font-medium text-apptax-navy">{row.original.email}</div>
-    ),
+    cell: ({ row }) => <div className="font-medium text-apptax-navy">{row.original.email}</div>,
   },
   {
     accessorKey: 'firstName',
@@ -33,7 +32,12 @@ const columns: ColumnDef<UserDto>[] = [
     header: 'Rola',
     cell: ({ row }) => {
       const role = row.original.role;
-      const variant = role === UserRole.ADMIN ? 'destructive' : role === UserRole.COMPANY_OWNER ? 'default' : 'muted';
+      const variant =
+        role === UserRole.ADMIN
+          ? 'destructive'
+          : role === UserRole.COMPANY_OWNER
+            ? 'default'
+            : 'muted';
       return <Badge variant={variant}>{role}</Badge>;
     },
   },

@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AxiosError } from 'axios';
+import { type AxiosError } from 'axios';
+
+import { useToast } from '@/components/ui/use-toast';
+import { type CreateUserDto, type UpdateUserDto } from '@/types/dtos';
+
 import { usersApi } from '../api/endpoints/users';
 import { queryKeys } from '../api/query-client';
-import { CreateUserDto, UpdateUserDto } from '@/types/dtos';
-import { useToast } from '@/components/ui/use-toast';
 
 interface ApiErrorResponse {
   message?: string;
@@ -58,8 +60,7 @@ export function useUpdateUser() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateUserDto }) =>
-      usersApi.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateUserDto }) => usersApi.update(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(variables.id) });
@@ -107,4 +108,3 @@ export function useAvailableOwners() {
     queryFn: usersApi.getAvailableOwners,
   });
 }
-

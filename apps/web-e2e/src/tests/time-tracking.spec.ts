@@ -32,7 +32,9 @@ test.describe('Time Tracking - Timer Operations', () => {
     await timeTrackingPage.expectTimerStopped();
   });
 
-  test('should display elapsed time while timer is running', async ({ authenticatedCompanyOwnerPage }) => {
+  test('should display elapsed time while timer is running', async ({
+    authenticatedCompanyOwnerPage,
+  }) => {
     const timeTrackingPage = new TimeTrackingPage(authenticatedCompanyOwnerPage);
 
     await timeTrackingPage.goto();
@@ -55,7 +57,9 @@ test.describe('Time Tracking - Timer Operations', () => {
     await timeTrackingPage.stopTimer();
   });
 
-  test('should create time entry when timer is stopped', async ({ authenticatedCompanyOwnerPage }) => {
+  test('should create time entry when timer is stopped', async ({
+    authenticatedCompanyOwnerPage,
+  }) => {
     const timeTrackingPage = new TimeTrackingPage(authenticatedCompanyOwnerPage);
     const description = `E2E Timer Entry ${Date.now()}`;
 
@@ -86,7 +90,9 @@ test.describe('Time Tracking - Timer Operations', () => {
     await timeTrackingPage.expectTimerRunning();
 
     // Start button should not be visible while timer is running
-    const startButton = authenticatedCompanyOwnerPage.getByRole('button', { name: /start|rozpocznij/i });
+    const startButton = authenticatedCompanyOwnerPage.getByRole('button', {
+      name: /start|rozpocznij/i,
+    });
     await expect(startButton).not.toBeVisible();
 
     // Cleanup
@@ -156,7 +162,9 @@ test.describe('Time Tracking - Manual Time Entries', () => {
     await timeTrackingPage.expectEntryNotInList(description);
   });
 
-  test('should validate time entry form - end time after start time', async ({ authenticatedCompanyOwnerPage }) => {
+  test('should validate time entry form - end time after start time', async ({
+    authenticatedCompanyOwnerPage,
+  }) => {
     const timeTrackingPage = new TimeTrackingPage(authenticatedCompanyOwnerPage);
 
     await timeTrackingPage.goto();
@@ -173,11 +181,13 @@ test.describe('Time Tracking - Manual Time Entries', () => {
     await timeTrackingPage.saveEntry();
 
     // Check for validation error message
-    const errorText = authenticatedCompanyOwnerPage.getByText(/czas końcowy|end time.*after|przed czasem/i);
+    const errorText = authenticatedCompanyOwnerPage.getByText(
+      /czas końcowy|end time.*after|przed czasem/i
+    );
     const isStillInDialog = await timeTrackingPage.entryFormDialog.isVisible();
 
     // Either validation error shows or dialog stays open
-    expect(await errorText.isVisible() || isStillInDialog).toBe(true);
+    expect((await errorText.isVisible()) || isStillInDialog).toBe(true);
   });
 
   test('should calculate duration automatically', async ({ authenticatedCompanyOwnerPage }) => {
@@ -203,7 +213,9 @@ test.describe('Time Tracking - Manual Time Entries', () => {
 });
 
 test.describe('Time Tracking - Views', () => {
-  test('should switch between daily, weekly, and list views', async ({ authenticatedCompanyOwnerPage }) => {
+  test('should switch between daily, weekly, and list views', async ({
+    authenticatedCompanyOwnerPage,
+  }) => {
     const timeTrackingPage = new TimeTrackingPage(authenticatedCompanyOwnerPage);
 
     await timeTrackingPage.goto();

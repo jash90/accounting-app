@@ -26,7 +26,9 @@ export class TestHelpers {
    * Generate random string
    */
   static randomString(length = 10): string {
-    return Math.random().toString(36).substring(2, 2 + length);
+    return Math.random()
+      .toString(36)
+      .substring(2, 2 + length);
   }
 
   /**
@@ -54,10 +56,7 @@ export class TestHelpers {
    * Set local storage value
    */
   static async setLocalStorage(page: Page, key: string, value: string): Promise<void> {
-    await page.evaluate(
-      ({ k, v }) => localStorage.setItem(k, v),
-      { k: key, v: value }
-    );
+    await page.evaluate(({ k, v }) => localStorage.setItem(k, v), { k: key, v: value });
   }
 
   /**
@@ -78,10 +77,7 @@ export class TestHelpers {
    * Set session storage value
    */
   static async setSessionStorage(page: Page, key: string, value: string): Promise<void> {
-    await page.evaluate(
-      ({ k, v }) => sessionStorage.setItem(k, v),
-      { k: key, v: value }
-    );
+    await page.evaluate(({ k, v }) => sessionStorage.setItem(k, v), { k: key, v: value });
   }
 
   /**
@@ -101,11 +97,7 @@ export class TestHelpers {
   /**
    * Execute with retry
    */
-  static async retry<T>(
-    fn: () => Promise<T>,
-    maxAttempts = 3,
-    delay = 1000
-  ): Promise<T> {
+  static async retry<T>(fn: () => Promise<T>, maxAttempts = 3, delay = 1000): Promise<T> {
     let lastError: Error | undefined;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -141,7 +133,11 @@ export class TestHelpers {
   /**
    * Get element attribute
    */
-  static async getAttribute(page: Page, selector: string, attribute: string): Promise<string | null> {
+  static async getAttribute(
+    page: Page,
+    selector: string,
+    attribute: string
+  ): Promise<string | null> {
     return await page.locator(selector).getAttribute(attribute);
   }
 

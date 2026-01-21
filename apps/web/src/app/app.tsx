@@ -1,12 +1,15 @@
+import { BrowserRouter } from 'react-router-dom';
+
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { BrowserRouter } from 'react-router-dom';
-import { queryClient } from '@/lib/api/query-client';
+import { Toaster as SonnerToaster } from 'sonner';
+
+import { ErrorBoundary } from '@/components/common/error-boundary';
+import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/auth-context';
 import { NavigationProvider } from '@/contexts/navigation-context';
-import { Toaster } from '@/components/ui/toaster';
-import { Toaster as SonnerToaster } from 'sonner';
-import { ErrorBoundary } from '@/components/common/error-boundary';
+import { queryClient } from '@/lib/api/query-client';
+
 import Routes from './routes';
 
 function App() {

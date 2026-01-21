@@ -12,7 +12,8 @@ export class CompanyFormPage extends BasePage {
   private readonly formHeading = 'h2:has-text("Create Company"), h2:has-text("Edit Company")';
   private readonly nameInput = 'input[name="name"], input#name';
   private readonly descriptionInput = 'textarea[name="description"], input[name="description"]';
-  private readonly submitButton = 'button[type="submit"]:has-text("Create"), button:has-text("Save"), button:has-text("Submit")';
+  private readonly submitButton =
+    'button[type="submit"]:has-text("Create"), button:has-text("Save"), button:has-text("Submit")';
   private readonly cancelButton = 'button:has-text("Cancel")';
   private readonly nameError = '[data-testid="name-error"], .error:has-text("name")';
 

@@ -1,6 +1,6 @@
 import { memo } from 'react';
+
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -8,8 +8,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { type ClientFieldDefinition } from '@/types/entities';
 import { CustomFieldType } from '@/types/enums';
-import { ClientFieldDefinition } from '@/types/entities';
 
 interface CustomFieldRendererProps {
   definition: ClientFieldDefinition;
@@ -89,11 +90,7 @@ export const CustomFieldRenderer = memo(function CustomFieldRenderer({
 
     case CustomFieldType.ENUM:
       return (
-        <Select
-          value={value}
-          onValueChange={onChange}
-          disabled={disabled}
-        >
+        <Select value={value} onValueChange={onChange} disabled={disabled}>
           <SelectTrigger id={inputId} aria-label={definition.label}>
             <SelectValue placeholder="Wybierz..." />
           </SelectTrigger>

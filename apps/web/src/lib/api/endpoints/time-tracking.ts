@@ -1,23 +1,24 @@
-import apiClient from '../client';
+import { type PaginatedResponse } from '@/types/api';
 import {
-  CreateTimeEntryDto,
-  UpdateTimeEntryDto,
-  TimeEntryFiltersDto,
-  TimeEntryResponseDto,
-  StartTimerDto,
-  StopTimerDto,
-  UpdateTimerDto,
-  SubmitTimeEntryDto,
-  ApproveTimeEntryDto,
-  RejectTimeEntryDto,
-  UpdateTimeSettingsDto,
-  TimeSettingsResponseDto,
-  DailyTimesheetDto,
-  WeeklyTimesheetDto,
-  TimeSummaryReportDto,
-  TimeByClientReportDto,
+  type CreateTimeEntryDto,
+  type UpdateTimeEntryDto,
+  type TimeEntryFiltersDto,
+  type TimeEntryResponseDto,
+  type StartTimerDto,
+  type StopTimerDto,
+  type UpdateTimerDto,
+  type SubmitTimeEntryDto,
+  type ApproveTimeEntryDto,
+  type RejectTimeEntryDto,
+  type UpdateTimeSettingsDto,
+  type TimeSettingsResponseDto,
+  type DailyTimesheetDto,
+  type WeeklyTimesheetDto,
+  type TimeSummaryReportDto,
+  type TimeByClientReportDto,
 } from '@/types/dtos';
-import { PaginatedResponse } from '@/types/api';
+
+import apiClient from '../client';
 
 const BASE_URL = '/api/modules/time-tracking';
 
@@ -26,10 +27,15 @@ const BASE_URL = '/api/modules/time-tracking';
 // ============================================
 
 export const timeEntriesApi = {
-  getAll: async (filters?: TimeEntryFiltersDto): Promise<PaginatedResponse<TimeEntryResponseDto>> => {
-    const { data } = await apiClient.get<PaginatedResponse<TimeEntryResponseDto>>(`${BASE_URL}/entries`, {
-      params: filters,
-    });
+  getAll: async (
+    filters?: TimeEntryFiltersDto
+  ): Promise<PaginatedResponse<TimeEntryResponseDto>> => {
+    const { data } = await apiClient.get<PaginatedResponse<TimeEntryResponseDto>>(
+      `${BASE_URL}/entries`,
+      {
+        params: filters,
+      }
+    );
     return data;
   },
 
@@ -44,7 +50,10 @@ export const timeEntriesApi = {
   },
 
   update: async (id: string, entryData: UpdateTimeEntryDto): Promise<TimeEntryResponseDto> => {
-    const { data } = await apiClient.patch<TimeEntryResponseDto>(`${BASE_URL}/entries/${id}`, entryData);
+    const { data } = await apiClient.patch<TimeEntryResponseDto>(
+      `${BASE_URL}/entries/${id}`,
+      entryData
+    );
     return data;
   },
 
@@ -54,17 +63,26 @@ export const timeEntriesApi = {
 
   // Approval workflow
   submit: async (id: string, dto?: SubmitTimeEntryDto): Promise<TimeEntryResponseDto> => {
-    const { data } = await apiClient.post<TimeEntryResponseDto>(`${BASE_URL}/entries/${id}/submit`, dto || {});
+    const { data } = await apiClient.post<TimeEntryResponseDto>(
+      `${BASE_URL}/entries/${id}/submit`,
+      dto || {}
+    );
     return data;
   },
 
   approve: async (id: string, dto?: ApproveTimeEntryDto): Promise<TimeEntryResponseDto> => {
-    const { data } = await apiClient.post<TimeEntryResponseDto>(`${BASE_URL}/entries/${id}/approve`, dto || {});
+    const { data } = await apiClient.post<TimeEntryResponseDto>(
+      `${BASE_URL}/entries/${id}/approve`,
+      dto || {}
+    );
     return data;
   },
 
   reject: async (id: string, dto: RejectTimeEntryDto): Promise<TimeEntryResponseDto> => {
-    const { data } = await apiClient.post<TimeEntryResponseDto>(`${BASE_URL}/entries/${id}/reject`, dto);
+    const { data } = await apiClient.post<TimeEntryResponseDto>(
+      `${BASE_URL}/entries/${id}/reject`,
+      dto
+    );
     return data;
   },
 };
@@ -75,22 +93,33 @@ export const timeEntriesApi = {
 
 export const timerApi = {
   start: async (dto: StartTimerDto): Promise<TimeEntryResponseDto> => {
-    const { data } = await apiClient.post<TimeEntryResponseDto>(`${BASE_URL}/entries/timer/start`, dto);
+    const { data } = await apiClient.post<TimeEntryResponseDto>(
+      `${BASE_URL}/entries/timer/start`,
+      dto
+    );
     return data;
   },
 
   stop: async (dto?: StopTimerDto): Promise<TimeEntryResponseDto> => {
-    const { data } = await apiClient.post<TimeEntryResponseDto>(`${BASE_URL}/entries/timer/stop`, dto || {});
+    const { data } = await apiClient.post<TimeEntryResponseDto>(
+      `${BASE_URL}/entries/timer/stop`,
+      dto || {}
+    );
     return data;
   },
 
   getActive: async (): Promise<TimeEntryResponseDto | null> => {
-    const { data } = await apiClient.get<TimeEntryResponseDto | null>(`${BASE_URL}/entries/timer/active`);
+    const { data } = await apiClient.get<TimeEntryResponseDto | null>(
+      `${BASE_URL}/entries/timer/active`
+    );
     return data;
   },
 
   update: async (dto: UpdateTimerDto): Promise<TimeEntryResponseDto> => {
-    const { data } = await apiClient.patch<TimeEntryResponseDto>(`${BASE_URL}/entries/timer/active`, dto);
+    const { data } = await apiClient.patch<TimeEntryResponseDto>(
+      `${BASE_URL}/entries/timer/active`,
+      dto
+    );
     return data;
   },
 
@@ -110,7 +139,10 @@ export const timeSettingsApi = {
   },
 
   update: async (settingsData: UpdateTimeSettingsDto): Promise<TimeSettingsResponseDto> => {
-    const { data } = await apiClient.patch<TimeSettingsResponseDto>(`${BASE_URL}/settings`, settingsData);
+    const { data } = await apiClient.patch<TimeSettingsResponseDto>(
+      `${BASE_URL}/settings`,
+      settingsData
+    );
     return data;
   },
 };

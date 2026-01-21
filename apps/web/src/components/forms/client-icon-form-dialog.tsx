@@ -1,12 +1,13 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+
+import { useForm } from 'react-hook-form';
+
+import { zodResolver } from '@hookform/resolvers/zod';
+
+import { AutoAssignConditionBuilder } from '@/components/clients/auto-assign-condition-builder';
+import { IconSelector } from '@/components/clients/icon-selector';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -16,17 +17,14 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import {
   createClientIconSchema,
   updateClientIconSchema,
-  CreateClientIconFormData,
-  UpdateClientIconFormData,
+  type CreateClientIconFormData,
+  type UpdateClientIconFormData,
 } from '@/lib/validation/schemas';
-import { ClientIconResponseDto } from '@/types/dtos';
-import { IconType, AutoAssignCondition } from '@/types/enums';
-import { IconSelector } from '@/components/clients/icon-selector';
-import { AutoAssignConditionBuilder } from '@/components/clients/auto-assign-condition-builder';
+import { type ClientIconResponseDto } from '@/types/dtos';
+import { IconType, type AutoAssignCondition } from '@/types/enums';
 
 interface ClientIconFormDialogProps {
   open: boolean;
@@ -116,9 +114,7 @@ export function ClientIconFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? 'Edytuj ikonę' : 'Dodaj ikonę'}
-          </DialogTitle>
+          <DialogTitle>{isEditing ? 'Edytuj ikonę' : 'Dodaj ikonę'}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -144,7 +140,10 @@ export function ClientIconFormDialog({
                   iconType: iconType || IconType.LUCIDE,
                   iconValue: iconValue,
                   color: color,
-                  file: 'file' in form.getValues() ? (form.getValues() as { file?: File }).file : undefined,
+                  file:
+                    'file' in form.getValues()
+                      ? (form.getValues() as { file?: File }).file
+                      : undefined,
                 }}
                 onChange={(value) => {
                   form.setValue('iconType', value.iconType as 'lucide' | 'custom' | 'emoji');
@@ -155,13 +154,14 @@ export function ClientIconFormDialog({
                   if (value.file) {
                     // Both Create and Update schemas include file field
                     // Using explicit key assertion since both FormData types have this field
-                    form.setValue('file' as keyof (CreateClientIconFormData & UpdateClientIconFormData), value.file);
+                    form.setValue(
+                      'file' as keyof (CreateClientIconFormData & UpdateClientIconFormData),
+                      value.file
+                    );
                   }
                 }}
               />
-              <FormMessage>
-                {form.formState.errors.iconValue?.message}
-              </FormMessage>
+              <FormMessage>{form.formState.errors.iconValue?.message}</FormMessage>
             </FormItem>
 
             <AutoAssignConditionBuilder
@@ -170,11 +170,7 @@ export function ClientIconFormDialog({
             />
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              >
+              <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
                 Anuluj
               </Button>
               <Button

@@ -112,7 +112,9 @@ test.describe('AI Agent Chat', () => {
     await aiAgentPage.expectNoNestedButtonWarnings();
   });
 
-  test('should disable input when no conversation is selected', async ({ authenticatedEmployeePage: page }) => {
+  test('should disable input when no conversation is selected', async ({
+    authenticatedEmployeePage: page,
+  }) => {
     // Fresh page without selecting conversation
     const freshPage = new AIAgentChatPage(page);
     await freshPage.goto();
@@ -154,7 +156,9 @@ test.describe('AI Agent - Admin Role', () => {
 });
 
 test.describe('AI Agent - Company Owner Role', () => {
-  test('company owner should access AI Agent chat', async ({ authenticatedCompanyOwnerPage: page }) => {
+  test('company owner should access AI Agent chat', async ({
+    authenticatedCompanyOwnerPage: page,
+  }) => {
     const aiAgentPage = new AIAgentChatPage(page);
     await aiAgentPage.goto();
     await aiAgentPage.waitForChatInterface();
@@ -162,7 +166,9 @@ test.describe('AI Agent - Company Owner Role', () => {
     await aiAgentPage.expectToBeOnChatPage();
   });
 
-  test('company owner should create and use conversations', async ({ authenticatedCompanyOwnerPage: page }) => {
+  test('company owner should create and use conversations', async ({
+    authenticatedCompanyOwnerPage: page,
+  }) => {
     const aiAgentPage = new AIAgentChatPage(page);
     aiAgentPage.startConsoleMonitoring();
     await aiAgentPage.goto();

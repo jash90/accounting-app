@@ -22,7 +22,7 @@ export class TokenLimitService {
     private userRepository: Repository<User>,
     @Inject(forwardRef(() => TokenUsageService))
     private tokenUsageService: TokenUsageService,
-    private systemCompanyService: SystemCompanyService,
+    private systemCompanyService: SystemCompanyService
   ) {}
 
   /**
@@ -38,7 +38,7 @@ export class TokenLimitService {
   async setCompanyLimit(
     companyId: string,
     setDto: SetTokenLimitDto,
-    user: User,
+    user: User
   ): Promise<TokenLimit> {
     if (user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Only admins can set company limits');
@@ -72,11 +72,7 @@ export class TokenLimitService {
   /**
    * Set user-specific limit (COMPANY_OWNER only)
    */
-  async setUserLimit(
-    userId: string,
-    setDto: SetTokenLimitDto,
-    user: User,
-  ): Promise<TokenLimit> {
+  async setUserLimit(userId: string, setDto: SetTokenLimitDto, user: User): Promise<TokenLimit> {
     if (user.role !== UserRole.COMPANY_OWNER) {
       throw new ForbiddenException('Only company owners can set user limits');
     }
@@ -141,7 +137,7 @@ export class TokenLimitService {
       const userUsage = await this.tokenUsageService.getUserMonthlyTotal(user);
       if (userUsage >= userLimit.monthlyLimit) {
         throw new BadRequestException(
-          `Monthly token limit exceeded (${userUsage}/${userLimit.monthlyLimit}). Please contact your administrator.`,
+          `Monthly token limit exceeded (${userUsage}/${userLimit.monthlyLimit}). Please contact your administrator.`
         );
       }
     }
@@ -155,7 +151,7 @@ export class TokenLimitService {
       const companyUsage = await this.tokenUsageService.getCompanyMonthlyTotal(companyId);
       if (companyUsage >= companyLimit.monthlyLimit) {
         throw new BadRequestException(
-          `Company monthly token limit exceeded (${companyUsage}/${companyLimit.monthlyLimit}). Please contact your administrator.`,
+          `Company monthly token limit exceeded (${companyUsage}/${companyLimit.monthlyLimit}). Please contact your administrator.`
         );
       }
     }
@@ -195,7 +191,8 @@ export class TokenLimitService {
             currentUsage: userUsage,
             usagePercentage: (userUsage / userLimit.monthlyLimit) * 100,
             isExceeded: userUsage >= userLimit.monthlyLimit,
-            isWarning: userUsage >= (userLimit.monthlyLimit * userLimit.warningThresholdPercentage) / 100,
+            isWarning:
+              userUsage >= (userLimit.monthlyLimit * userLimit.warningThresholdPercentage) / 100,
           }
         : null,
       companyLimit: companyLimit
@@ -204,7 +201,9 @@ export class TokenLimitService {
             currentUsage: companyUsage,
             usagePercentage: (companyUsage / companyLimit.monthlyLimit) * 100,
             isExceeded: companyUsage >= companyLimit.monthlyLimit,
-            isWarning: companyUsage >= (companyLimit.monthlyLimit * companyLimit.warningThresholdPercentage) / 100,
+            isWarning:
+              companyUsage >=
+              (companyLimit.monthlyLimit * companyLimit.warningThresholdPercentage) / 100,
           }
         : null,
     };

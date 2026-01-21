@@ -47,4 +47,3 @@ export class UserModulePermission {
   @CreateDateColumn()
   createdAt!: Date;
 }
-

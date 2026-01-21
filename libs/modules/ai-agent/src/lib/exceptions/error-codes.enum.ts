@@ -42,49 +42,30 @@ export enum AIAgentErrorCode {
  * Human-readable error messages for each error code
  */
 export const AIAgentErrorMessages: Record<AIAgentErrorCode, string> = {
-  [AIAgentErrorCode.CONFIGURATION_NOT_FOUND]:
-    'AI configuration not found for this company',
-  [AIAgentErrorCode.CONFIGURATION_INVALID]:
-    'AI configuration is invalid or incomplete',
+  [AIAgentErrorCode.CONFIGURATION_NOT_FOUND]: 'AI configuration not found for this company',
+  [AIAgentErrorCode.CONFIGURATION_INVALID]: 'AI configuration is invalid or incomplete',
   [AIAgentErrorCode.CONFIGURATION_ALREADY_EXISTS]:
     'AI configuration already exists for this company',
 
-  [AIAgentErrorCode.API_KEY_MISSING]:
-    'API key is required but not configured',
-  [AIAgentErrorCode.API_KEY_INVALID]:
-    'The provided API key is invalid or rejected by the provider',
-  [AIAgentErrorCode.API_KEY_EXPIRED]:
-    'The API key has expired and needs to be renewed',
+  [AIAgentErrorCode.API_KEY_MISSING]: 'API key is required but not configured',
+  [AIAgentErrorCode.API_KEY_INVALID]: 'The provided API key is invalid or rejected by the provider',
+  [AIAgentErrorCode.API_KEY_EXPIRED]: 'The API key has expired and needs to be renewed',
 
-  [AIAgentErrorCode.PROVIDER_ERROR]:
-    'An error occurred while communicating with the AI provider',
-  [AIAgentErrorCode.PROVIDER_UNAVAILABLE]:
-    'The AI provider service is currently unavailable',
-  [AIAgentErrorCode.PROVIDER_RATE_LIMITED]:
-    'Rate limit exceeded for the AI provider',
-  [AIAgentErrorCode.PROVIDER_MODEL_NOT_FOUND]:
-    'The specified AI model was not found',
+  [AIAgentErrorCode.PROVIDER_ERROR]: 'An error occurred while communicating with the AI provider',
+  [AIAgentErrorCode.PROVIDER_UNAVAILABLE]: 'The AI provider service is currently unavailable',
+  [AIAgentErrorCode.PROVIDER_RATE_LIMITED]: 'Rate limit exceeded for the AI provider',
+  [AIAgentErrorCode.PROVIDER_MODEL_NOT_FOUND]: 'The specified AI model was not found',
 
-  [AIAgentErrorCode.CONVERSATION_NOT_FOUND]:
-    'Conversation not found',
-  [AIAgentErrorCode.CONVERSATION_ACCESS_DENIED]:
-    'Access denied to this conversation',
-  [AIAgentErrorCode.MESSAGE_SEND_FAILED]:
-    'Failed to send message to AI',
+  [AIAgentErrorCode.CONVERSATION_NOT_FOUND]: 'Conversation not found',
+  [AIAgentErrorCode.CONVERSATION_ACCESS_DENIED]: 'Access denied to this conversation',
+  [AIAgentErrorCode.MESSAGE_SEND_FAILED]: 'Failed to send message to AI',
 
-  [AIAgentErrorCode.TOKEN_LIMIT_EXCEEDED]:
-    'Token limit exceeded for this billing period',
-  [AIAgentErrorCode.TOKEN_LIMIT_NOT_SET]:
-    'Token limit has not been configured',
-  [AIAgentErrorCode.TOKEN_USAGE_ERROR]:
-    'Error tracking token usage',
+  [AIAgentErrorCode.TOKEN_LIMIT_EXCEEDED]: 'Token limit exceeded for this billing period',
+  [AIAgentErrorCode.TOKEN_LIMIT_NOT_SET]: 'Token limit has not been configured',
+  [AIAgentErrorCode.TOKEN_USAGE_ERROR]: 'Error tracking token usage',
 
-  [AIAgentErrorCode.CONTEXT_UPLOAD_FAILED]:
-    'Failed to upload context document',
-  [AIAgentErrorCode.CONTEXT_NOT_FOUND]:
-    'Context document not found',
-  [AIAgentErrorCode.CONTEXT_PROCESSING_ERROR]:
-    'Error processing context document',
-  [AIAgentErrorCode.CONTEXT_TOO_LARGE]:
-    'Context document exceeds maximum size limit',
+  [AIAgentErrorCode.CONTEXT_UPLOAD_FAILED]: 'Failed to upload context document',
+  [AIAgentErrorCode.CONTEXT_NOT_FOUND]: 'Context document not found',
+  [AIAgentErrorCode.CONTEXT_PROCESSING_ERROR]: 'Error processing context document',
+  [AIAgentErrorCode.CONTEXT_TOO_LARGE]: 'Context document exceeds maximum size limit',
 };

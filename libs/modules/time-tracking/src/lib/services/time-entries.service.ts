@@ -1,6 +1,8 @@
 import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Brackets, In, Not, IsNull, LessThanOrEqual, MoreThanOrEqual, DataSource, EntityManager } from 'typeorm';
+
+import { Repository, In, DataSource, EntityManager } from 'typeorm';
+
 import {
   TimeEntry,
   TimeEntryStatus,
@@ -13,14 +15,11 @@ import {
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
-import {
-  CreateTimeEntryDto,
-  UpdateTimeEntryDto,
-  TimeEntryFiltersDto,
-} from '../dto/time-entry.dto';
-import { StartTimerDto, StopTimerDto, UpdateTimerDto } from '../dto/timer.dto';
+
 import { TimeCalculationService } from './time-calculation.service';
 import { TimeSettingsService } from './time-settings.service';
+import { CreateTimeEntryDto, UpdateTimeEntryDto, TimeEntryFiltersDto } from '../dto/time-entry.dto';
+import { StartTimerDto, StopTimerDto, UpdateTimerDto } from '../dto/timer.dto';
 import {
   TimeEntryNotFoundException,
   TimerAlreadyRunningException,
@@ -50,14 +49,11 @@ export class TimeEntriesService {
     private readonly tenantService: TenantService,
     private readonly calculationService: TimeCalculationService,
     private readonly settingsService: TimeSettingsService,
-    private readonly dataSource: DataSource,
+    private readonly dataSource: DataSource
   ) {}
 
   private escapeLikePattern(pattern: string): string {
-    return pattern
-      .replace(/\\/g, '\\\\')
-      .replace(/%/g, '\\%')
-      .replace(/_/g, '\\_');
+    return pattern.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
   }
 
   /**
@@ -80,7 +76,7 @@ export class TimeEntriesService {
 
   async findAll(
     user: User,
-    filters?: TimeEntryFiltersDto,
+    filters?: TimeEntryFiltersDto
   ): Promise<PaginatedResponseDto<TimeEntry>> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
     const page = filters?.page ?? 1;
@@ -152,10 +148,7 @@ export class TimeEntriesService {
     const isActive = filters?.isActive ?? true;
     queryBuilder.andWhere('entry.isActive = :isActive', { isActive });
 
-    queryBuilder
-      .orderBy('entry.startTime', 'DESC')
-      .skip(skip)
-      .take(limit);
+    queryBuilder.orderBy('entry.startTime', 'DESC').skip(skip).take(limit);
 
     const [data, total] = await queryBuilder.getManyAndCount();
 
@@ -210,7 +203,7 @@ export class TimeEntriesService {
       durationMinutes = this.calculationService.roundDuration(
         durationMinutes,
         settings.roundingMethod,
-        settings.roundingIntervalMinutes,
+        settings.roundingIntervalMinutes
       );
     }
 
@@ -222,7 +215,13 @@ export class TimeEntriesService {
 
     // Calculate total amount
     let totalAmount: number | undefined;
-    if (durationMinutes !== undefined && durationMinutes !== null && hourlyRate !== undefined && hourlyRate !== null && dto.isBillable !== false) {
+    if (
+      durationMinutes !== undefined &&
+      durationMinutes !== null &&
+      hourlyRate !== undefined &&
+      hourlyRate !== null &&
+      dto.isBillable !== false
+    ) {
       totalAmount = this.calculationService.calculateTotalAmount(durationMinutes, hourlyRate);
     }
 
@@ -256,17 +255,13 @@ export class TimeEntriesService {
       'TimeEntry',
       savedEntry.id,
       this.sanitizeForLog(savedEntry),
-      user,
+      user
     );
 
     return this.findOne(savedEntry.id, user);
   }
 
-  async update(
-    id: string,
-    dto: UpdateTimeEntryDto,
-    user: User,
-  ): Promise<TimeEntry> {
+  async update(id: string, dto: UpdateTimeEntryDto, user: User): Promise<TimeEntry> {
     // First fetch entry without lock for validation checks
     const entry = await this.findOne(id, user);
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
@@ -324,7 +319,14 @@ export class TimeEntriesService {
 
       // Check for overlapping entries with lock if times are being changed
       if (needsOverlapCheck) {
-        await this.checkOverlapWithLock(manager, lockedEntry.userId, companyId, startTime, endTime || null, id);
+        await this.checkOverlapWithLock(
+          manager,
+          lockedEntry.userId,
+          companyId,
+          startTime,
+          endTime || null,
+          id
+        );
       }
 
       // Recalculate duration if times changed
@@ -339,7 +341,7 @@ export class TimeEntriesService {
         durationMinutes = this.calculationService.roundDuration(
           durationMinutes,
           roundingConfig.method,
-          roundingConfig.interval,
+          roundingConfig.interval
         );
       }
 
@@ -368,7 +370,7 @@ export class TimeEntriesService {
       savedEntry.id,
       oldValues,
       this.sanitizeForLog(savedEntry),
-      user,
+      user
     );
 
     return this.findOne(id, user);
@@ -443,7 +445,11 @@ export class TimeEntriesService {
       return this.findOne(savedEntry.id, user);
     } catch (error) {
       // Handle unique constraint violation from the partial index (PostgreSQL error 23505)
-      if (error instanceof Error && 'code' in error && (error as { code: string }).code === '23505') {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error as { code: string }).code === '23505'
+      ) {
         this.logger.warn(`Concurrent timer start detected for user ${user.id}`);
         throw new TimerAlreadyRunningException();
       }
@@ -473,7 +479,7 @@ export class TimeEntriesService {
       const endTime = new Date();
       let durationMinutes = this.calculationService.calculateDuration(
         runningEntry.startTime,
-        endTime,
+        endTime
       );
 
       // Apply rounding
@@ -510,7 +516,7 @@ export class TimeEntriesService {
     });
 
     this.logger.log(
-      `Timer stopped for user ${user.id} (entry ${savedEntry.id}, duration: ${savedEntry.durationMinutes}m)`,
+      `Timer stopped for user ${user.id} (entry ${savedEntry.id}, duration: ${savedEntry.durationMinutes}m)`
     );
 
     return this.findOne(savedEntry.id, user);
@@ -600,10 +606,7 @@ export class TimeEntriesService {
     }
 
     if (entry.status !== TimeEntryStatus.DRAFT) {
-      throw new TimeEntryInvalidStatusException(
-        entry.status,
-        TimeEntryStatus.SUBMITTED,
-      );
+      throw new TimeEntryInvalidStatusException(entry.status, TimeEntryStatus.SUBMITTED);
     }
 
     entry.status = TimeEntryStatus.SUBMITTED;
@@ -623,10 +626,7 @@ export class TimeEntriesService {
     const entry = await this.findOne(id, user);
 
     if (entry.status !== TimeEntryStatus.SUBMITTED) {
-      throw new TimeEntryInvalidStatusException(
-        entry.status,
-        TimeEntryStatus.APPROVED,
-      );
+      throw new TimeEntryInvalidStatusException(entry.status, TimeEntryStatus.APPROVED);
     }
 
     entry.status = TimeEntryStatus.APPROVED;
@@ -651,10 +651,7 @@ export class TimeEntriesService {
     const entry = await this.findOne(id, user);
 
     if (entry.status !== TimeEntryStatus.SUBMITTED) {
-      throw new TimeEntryInvalidStatusException(
-        entry.status,
-        TimeEntryStatus.REJECTED,
-      );
+      throw new TimeEntryInvalidStatusException(entry.status, TimeEntryStatus.REJECTED);
     }
 
     entry.status = TimeEntryStatus.REJECTED;
@@ -669,7 +666,10 @@ export class TimeEntriesService {
     return this.findOne(id, user);
   }
 
-  async bulkApprove(entryIds: string[], user: User): Promise<{ approved: number; notFound: number }> {
+  async bulkApprove(
+    entryIds: string[],
+    user: User
+  ): Promise<{ approved: number; notFound: number }> {
     // Defense-in-depth: validate authorization at service level
     this.ensureCanManageEntries(user);
 
@@ -697,7 +697,7 @@ export class TimeEntriesService {
         isLocked: true,
         lockedAt: new Date(),
         lockedById: user.id,
-      },
+      }
     );
 
     return {
@@ -709,7 +709,7 @@ export class TimeEntriesService {
   async bulkReject(
     entryIds: string[],
     rejectionNote: string,
-    user: User,
+    user: User
   ): Promise<{ rejected: number; notFound: number }> {
     // Defense-in-depth: validate authorization at service level
     this.ensureCanManageEntries(user);
@@ -736,7 +736,7 @@ export class TimeEntriesService {
         rejectionNote,
         approvedById: user.id,
         approvedAt: new Date(),
-      },
+      }
     );
 
     return {
@@ -773,7 +773,7 @@ export class TimeEntriesService {
       savedEntry.id,
       oldValues,
       this.sanitizeForLog(savedEntry),
-      user,
+      user
     );
 
     this.logger.log(`Time entry ${id} locked by ${user.id}${reason ? `: ${reason}` : ''}`);
@@ -807,7 +807,7 @@ export class TimeEntriesService {
       savedEntry.id,
       oldValues,
       this.sanitizeForLog(savedEntry),
-      user,
+      user
     );
 
     this.logger.log(`Time entry ${id} unlocked by ${user.id}${reason ? `: ${reason}` : ''}`);
@@ -848,7 +848,7 @@ export class TimeEntriesService {
     companyId: string,
     startTime: Date,
     endTime: Date | null,
-    excludeEntryId?: string,
+    excludeEntryId?: string
   ): Promise<void> {
     // SQL-based range overlap detection: (start1 < end2) AND (end1 > start2)
     // This is much more efficient than fetching all entries and checking in JS
@@ -892,7 +892,7 @@ export class TimeEntriesService {
     companyId: string,
     startTime: Date,
     endTime: Date | null,
-    excludeEntryId?: string,
+    excludeEntryId?: string
   ): Promise<void> {
     const queryBuilder = manager
       .createQueryBuilder(TimeEntry, 'entry')

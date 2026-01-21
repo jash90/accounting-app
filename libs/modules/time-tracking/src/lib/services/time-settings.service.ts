@@ -1,12 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
-import {
-  TimeSettings,
-  TimeRoundingMethod,
-  User,
-} from '@accounting/common';
+
+import { TimeSettings, TimeRoundingMethod, User } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
+
 import { UpdateTimeSettingsDto } from '../dto/time-settings.dto';
 
 interface CacheEntry {
@@ -36,7 +35,7 @@ export class TimeSettingsService {
   constructor(
     @InjectRepository(TimeSettings)
     private readonly settingsRepository: Repository<TimeSettings>,
-    private readonly tenantService: TenantService,
+    private readonly tenantService: TenantService
   ) {}
 
   /**
@@ -117,7 +116,7 @@ export class TimeSettingsService {
     if (!settings) {
       throw new Error(
         `Failed to retrieve or create time settings for company ${companyId}. ` +
-          `This may indicate a database connectivity issue or data corruption.`,
+          `This may indicate a database connectivity issue or data corruption.`
       );
     }
 
@@ -134,10 +133,7 @@ export class TimeSettingsService {
    * Update settings for the current company.
    * Invalidates the cache for this company.
    */
-  async updateSettings(
-    dto: UpdateTimeSettingsDto,
-    user: User,
-  ): Promise<TimeSettings> {
+  async updateSettings(dto: UpdateTimeSettingsDto, user: User): Promise<TimeSettings> {
     const settings = await this.getSettings(user);
     const companyId = settings.companyId;
 
@@ -176,9 +172,7 @@ export class TimeSettingsService {
   /**
    * Get rounding configuration
    */
-  async getRoundingConfig(
-    user: User,
-  ): Promise<{ method: TimeRoundingMethod; interval: number }> {
+  async getRoundingConfig(user: User): Promise<{ method: TimeRoundingMethod; interval: number }> {
     const settings = await this.getSettings(user);
     return {
       method: settings.roundingMethod,

@@ -1,14 +1,12 @@
 import * as React from 'react';
+
 import { Check, ChevronsUpDown, X, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils/cn';
+
 import { Button } from '@/components/ui/button';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils/cn';
 
 export interface GroupedComboboxOption {
   value: string;
@@ -62,9 +60,7 @@ export function GroupedCombobox({
   const filteredOptions = React.useMemo(() => {
     if (!search) return options;
     const searchLower = search.toLowerCase();
-    return options.filter((option) =>
-      option.label.toLowerCase().includes(searchLower)
-    );
+    return options.filter((option) => option.label.toLowerCase().includes(searchLower));
   }, [options, search]);
 
   // Group filtered options by their group key
@@ -79,8 +75,8 @@ export function GroupedCombobox({
 
     // Return groups in the order defined by groups prop, filtering out empty groups
     return groups
-      .filter(group => grouped.has(group.key))
-      .map(group => ({
+      .filter((group) => grouped.has(group.key))
+      .map((group) => ({
         ...group,
         options: grouped.get(group.key) || [],
       }));
@@ -88,15 +84,15 @@ export function GroupedCombobox({
 
   // Flatten options for keyboard navigation and create index mapping
   const { flatOptions, optionIndexMap } = React.useMemo(() => {
-    const flat = groupedOptions.flatMap(group => group.options);
+    const flat = groupedOptions.flatMap((group) => group.options);
     const indexMap = new Map<string, number>();
     flat.forEach((option, index) => {
       // Warn about duplicate values in development mode
       if (process.env.NODE_ENV === 'development' && indexMap.has(option.value)) {
         console.warn(
           `[GroupedCombobox] Duplicate option value detected: "${option.value}". ` +
-          'This may cause unexpected behavior with keyboard navigation and selection. ' +
-          'Ensure all option values are unique.'
+            'This may cause unexpected behavior with keyboard navigation and selection. ' +
+            'Ensure all option values are unique.'
         );
       }
       indexMap.set(option.value, index);
@@ -126,15 +122,11 @@ export function GroupedCombobox({
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setHighlightedIndex((prev) =>
-            prev < flatOptions.length - 1 ? prev + 1 : 0
-          );
+          setHighlightedIndex((prev) => (prev < flatOptions.length - 1 ? prev + 1 : 0));
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setHighlightedIndex((prev) =>
-            prev > 0 ? prev - 1 : flatOptions.length - 1
-          );
+          setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : flatOptions.length - 1));
           break;
         case 'Enter':
           e.preventDefault();
@@ -177,7 +169,9 @@ export function GroupedCombobox({
         >
           <span className="truncate">
             {selectedOption
-              ? (formatDisplayValue ? formatDisplayValue(selectedOption) : selectedOption.label)
+              ? formatDisplayValue
+                ? formatDisplayValue(selectedOption)
+                : selectedOption.label
               : placeholder}
           </span>
           <div className="flex items-center gap-1 ml-2 shrink-0">
@@ -233,9 +227,7 @@ export function GroupedCombobox({
               Ładowanie...
             </div>
           ) : groupedOptions.length === 0 ? (
-            <div className="py-6 text-center text-sm text-muted-foreground">
-              {emptyText}
-            </div>
+            <div className="py-6 text-center text-sm text-muted-foreground">{emptyText}</div>
           ) : (
             <div className="p-1" role="listbox" aria-label="Opcje wyboru">
               {groupedOptions.map((group) => (

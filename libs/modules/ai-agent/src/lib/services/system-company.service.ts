@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  OnModuleInit,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Company } from '@accounting/common';
@@ -21,7 +16,7 @@ export class SystemCompanyService implements OnModuleInit {
 
   constructor(
     @InjectRepository(Company)
-    private companyRepository: Repository<Company>,
+    private companyRepository: Repository<Company>
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -30,7 +25,7 @@ export class SystemCompanyService implements OnModuleInit {
     } catch (error) {
       this.logger.warn(
         'Could not initialize system company cache on startup. Will retry on first access.',
-        error instanceof Error ? error.message : error,
+        error instanceof Error ? error.message : error
       );
     }
   }
@@ -65,9 +60,7 @@ export class SystemCompanyService implements OnModuleInit {
     await this.initializeCache();
 
     if (!this.cachedSystemCompany) {
-      throw new NotFoundException(
-        'System Admin company not found. Please run: npm run seed',
-      );
+      throw new NotFoundException('System Admin company not found. Please run: npm run seed');
     }
 
     return this.cachedSystemCompany;

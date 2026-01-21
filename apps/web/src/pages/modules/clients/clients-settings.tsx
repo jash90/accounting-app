@@ -1,5 +1,16 @@
 import { useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
+
+import { ArrowLeft, Plus, Edit, Trash2, Settings, Tags, Image } from 'lucide-react';
+
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { PageHeader } from '@/components/common/page-header';
+import { ClientIconFormDialog } from '@/components/forms/client-icon-form-dialog';
+import { FieldDefinitionFormDialog } from '@/components/forms/field-definition-form-dialog';
+import { NotificationSettingsForm } from '@/components/forms/notification-settings-form';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   useFieldDefinitions,
   useCreateFieldDefinition,
@@ -13,11 +24,7 @@ import {
   useCreateNotificationSettings,
   useUpdateNotificationSettings,
 } from '@/lib/hooks/use-clients';
-import { useAuthContext } from '@/contexts/auth-context';
-import { UserRole } from '@/types/enums';
-import { PageHeader } from '@/components/common/page-header';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { UserRole, CustomFieldType } from '@/types/enums';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -28,33 +35,20 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useAuthContext } from '@/contexts/auth-context';
 import {
-  ArrowLeft,
-  Plus,
-  Edit,
-  Trash2,
-  Settings,
-  Tags,
-  Image,
-} from 'lucide-react';
-import { FieldDefinitionFormDialog } from '@/components/forms/field-definition-form-dialog';
-import { ClientIconFormDialog } from '@/components/forms/client-icon-form-dialog';
-import { NotificationSettingsForm } from '@/components/forms/notification-settings-form';
-import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import {
-  ClientFieldDefinitionResponseDto,
-  ClientIconResponseDto,
-  CreateClientFieldDefinitionDto,
-  UpdateClientFieldDefinitionDto,
-  UpdateClientIconDto,
-  NotificationSettingsFormData,
+  type ClientFieldDefinitionResponseDto,
+  type ClientIconResponseDto,
+  type CreateClientFieldDefinitionDto,
+  type UpdateClientFieldDefinitionDto,
+  type UpdateClientIconDto,
+  type NotificationSettingsFormData,
 } from '@/types/dtos';
-import { CustomFieldType } from '@/types/enums';
 import {
-  CreateClientFieldDefinitionFormData,
-  UpdateClientFieldDefinitionFormData,
-  CreateClientIconFormData,
-  UpdateClientIconFormData,
+  type CreateClientFieldDefinitionFormData,
+  type UpdateClientFieldDefinitionFormData,
+  type CreateClientIconFormData,
+  type UpdateClientIconFormData,
 } from '@/lib/validation/schemas';
 
 const FIELD_TYPE_LABELS: Record<CustomFieldType, string> = {
@@ -110,7 +104,9 @@ export default function ClientsSettingsPage() {
   const createNotificationSettings = useCreateNotificationSettings();
   const updateNotificationSettings = useUpdateNotificationSettings();
 
-  const handleFieldSubmit = (data: CreateClientFieldDefinitionFormData | UpdateClientFieldDefinitionFormData) => {
+  const handleFieldSubmit = (
+    data: CreateClientFieldDefinitionFormData | UpdateClientFieldDefinitionFormData
+  ) => {
     if (editingField) {
       updateFieldDefinition.mutate(
         {
@@ -190,9 +186,7 @@ export default function ClientsSettingsPage() {
                 <Tags className="h-5 w-5" />
                 Pola niestandardowe
               </CardTitle>
-              <CardDescription>
-                Definiuj dodatkowe pola dla kart klientów
-              </CardDescription>
+              <CardDescription>Definiuj dodatkowe pola dla kart klientów</CardDescription>
             </div>
             <Button onClick={() => setCreateFieldOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
@@ -232,9 +226,7 @@ export default function ClientsSettingsPage() {
                       {field.name}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">
-                        {FIELD_TYPE_LABELS[field.fieldType]}
-                      </Badge>
+                      <Badge variant="secondary">{FIELD_TYPE_LABELS[field.fieldType]}</Badge>
                     </TableCell>
                     <TableCell>
                       {field.isRequired ? (
@@ -307,9 +299,7 @@ export default function ClientsSettingsPage() {
               ))}
             </div>
           ) : icons.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              Brak zdefiniowanych ikon
-            </p>
+            <p className="text-center text-muted-foreground py-8">Brak zdefiniowanych ikon</p>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {icons.map((icon) => (
@@ -330,9 +320,7 @@ export default function ClientsSettingsPage() {
                       }}
                     />
                   )}
-                  <span className="text-sm font-medium text-center">
-                    {icon.name}
-                  </span>
+                  <span className="text-sm font-medium text-center">{icon.name}</span>
                   {!icon.isActive && (
                     <Badge variant="outline" className="text-xs">
                       Nieaktywna
@@ -372,10 +360,7 @@ export default function ClientsSettingsPage() {
         <NotificationSettingsForm
           settings={notificationSettings}
           onSubmit={handleNotificationSubmit}
-          isLoading={
-            createNotificationSettings.isPending ||
-            updateNotificationSettings.isPending
-          }
+          isLoading={createNotificationSettings.isPending || updateNotificationSettings.isPending}
         />
       )}
 

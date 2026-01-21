@@ -1,7 +1,8 @@
-import { cn } from '@/lib/utils/cn';
-import { TaskLabel } from '@/types/entities';
-import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils/cn';
+import { type TaskLabel } from '@/types/entities';
 
 interface TaskLabelBadgeProps {
   label: TaskLabel;
@@ -20,21 +21,14 @@ export function TaskLabelBadge({ label, size = 'md', onRemove, className }: Task
   return (
     <Badge
       variant="secondary"
-      className={cn(
-        sizeClasses[size],
-        'font-medium inline-flex items-center gap-1',
-        className
-      )}
+      className={cn(sizeClasses[size], 'font-medium inline-flex items-center gap-1', className)}
       style={{
         backgroundColor: `${label.color}20`,
         color: label.color,
         borderColor: label.color,
       }}
     >
-      <span
-        className="w-2 h-2 rounded-full"
-        style={{ backgroundColor: label.color }}
-      />
+      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: label.color }} />
       {label.name}
       {onRemove && (
         <button

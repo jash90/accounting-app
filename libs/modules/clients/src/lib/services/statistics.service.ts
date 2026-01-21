@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository, MoreThanOrEqual } from 'typeorm';
+
 import {
   Client,
   User,
@@ -11,6 +13,7 @@ import {
   ZusStatus,
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
+
 import {
   ClientStatisticsDto,
   ClientStatisticsWithRecentDto,
@@ -25,7 +28,7 @@ export class ClientStatisticsService {
     private readonly clientRepository: Repository<Client>,
     @InjectRepository(ChangeLog)
     private readonly changeLogRepository: Repository<ChangeLog>,
-    private readonly tenantService: TenantService,
+    private readonly tenantService: TenantService
   ) {}
 
   /**
@@ -180,12 +183,13 @@ export class ClientStatisticsService {
 
     // Get client names for the changelog entries
     const clientIds = [...new Set(recentLogs.map((log) => log.entityId))];
-    const clients = clientIds.length > 0
-      ? await this.clientRepository.find({
-          where: clientIds.map((id) => ({ id, companyId })),
-          select: ['id', 'name'],
-        })
-      : [];
+    const clients =
+      clientIds.length > 0
+        ? await this.clientRepository.find({
+            where: clientIds.map((id) => ({ id, companyId })),
+            select: ['id', 'name'],
+          })
+        : [];
     const clientNameMap = new Map(clients.map((c) => [c.id, c.name]));
 
     const recentActivity: RecentActivityDto[] = recentLogs.map((log) => ({
@@ -194,7 +198,8 @@ export class ClientStatisticsService {
       action: log.action,
       entityName: clientNameMap.get(log.entityId) || 'Nieznany klient',
       changedByName: log.changedBy
-        ? `${log.changedBy.firstName ?? ''} ${log.changedBy.lastName ?? ''}`.trim() || log.changedBy.email
+        ? `${log.changedBy.firstName ?? ''} ${log.changedBy.lastName ?? ''}`.trim() ||
+          log.changedBy.email
         : undefined,
       createdAt: log.createdAt,
     }));

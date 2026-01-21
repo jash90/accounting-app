@@ -1,5 +1,7 @@
 import * as React from 'react';
+
 import { cva, type VariantProps } from 'class-variance-authority';
+
 import { cn } from '@/lib/utils/cn';
 
 const cardVariants = cva(
@@ -8,10 +10,12 @@ const cardVariants = cva(
     variants: {
       variant: {
         default: 'border-gray-100 shadow-apptax-sm hover:shadow-apptax-md',
-        branded: 'border-apptax-soft-teal/50 shadow-apptax-sm hover:shadow-apptax-md hover:border-apptax-teal/50',
+        branded:
+          'border-apptax-soft-teal/50 shadow-apptax-sm hover:shadow-apptax-md hover:border-apptax-teal/50',
         outline: 'border-apptax-soft-teal bg-transparent shadow-none hover:bg-apptax-soft-teal/20',
         ai: 'border-apptax-teal/30 shadow-apptax-sm hover:shadow-apptax-md ai-glow',
-        interactive: 'border-apptax-soft-teal/30 shadow-apptax-sm hover:shadow-apptax-md hover:border-apptax-blue hover:-translate-y-1 cursor-pointer',
+        interactive:
+          'border-apptax-soft-teal/30 shadow-apptax-sm hover:shadow-apptax-md hover:border-apptax-blue hover:-translate-y-1 cursor-pointer',
         elevated: 'border-transparent shadow-apptax-md hover:shadow-lg',
         flat: 'border-apptax-soft-teal/30 shadow-none',
       },
@@ -23,16 +27,11 @@ const cardVariants = cva(
 );
 
 export interface CardProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof cardVariants> {}
+  extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof cardVariants> {}
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(cardVariants({ variant }), className)}
-      {...props}
-    />
+    <div ref={ref} className={cn(cardVariants({ variant }), className)} {...props} />
   )
 );
 Card.displayName = 'Card';
@@ -48,7 +47,10 @@ const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HT
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn('text-xl font-semibold leading-none tracking-tight text-apptax-navy', className)}
+      className={cn(
+        'text-xl font-semibold leading-none tracking-tight text-apptax-navy',
+        className
+      )}
       {...props}
     />
   )

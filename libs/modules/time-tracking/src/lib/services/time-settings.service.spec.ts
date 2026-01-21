@@ -1,15 +1,13 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { TimeSettingsService } from './time-settings.service';
-import {
-  TimeSettings,
-  TimeRoundingMethod,
-  User,
-  UserRole,
-} from '@accounting/common';
+
+import { type Repository } from 'typeorm';
+
+import { TimeSettings, TimeRoundingMethod, type User, UserRole } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
-import { UpdateTimeSettingsDto } from '../dto/time-settings.dto';
+
+import { TimeSettingsService } from './time-settings.service';
+import { type UpdateTimeSettingsDto } from '../dto/time-settings.dto';
 
 describe('TimeSettingsService', () => {
   let service: TimeSettingsService;
@@ -129,7 +127,7 @@ describe('TimeSettingsService', () => {
           maximumEntryMinutes: 0,
           enableDailyReminder: false,
           lockEntriesAfterDays: 0,
-        }),
+        })
       );
     });
 
@@ -172,7 +170,7 @@ describe('TimeSettingsService', () => {
       expect(settingsRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
           updatedById: mockOwner.id,
-        }),
+        })
       );
     });
 
@@ -187,7 +185,7 @@ describe('TimeSettingsService', () => {
 
       const result = await service.updateSettings(
         { roundingMethod: TimeRoundingMethod.DOWN },
-        mockOwner as User,
+        mockOwner as User
       );
 
       // Should keep existing values not in update DTO
@@ -322,7 +320,7 @@ describe('TimeSettingsService', () => {
       expect(settingsRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           companyId: differentCompanyId,
-        }),
+        })
       );
     });
   });

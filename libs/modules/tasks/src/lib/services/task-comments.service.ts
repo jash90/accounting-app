@@ -1,14 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
-import {
-  Task,
-  TaskComment,
-  User,
-} from '@accounting/common';
+
+import { Task, TaskComment, User } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
-import { TaskNotFoundException, TaskCommentNotFoundException } from '../exceptions';
+
 import { CreateTaskCommentDto, UpdateTaskCommentDto } from '../dto/task-comment.dto';
+import { TaskNotFoundException, TaskCommentNotFoundException } from '../exceptions';
 
 @Injectable()
 export class TaskCommentsService {
@@ -17,7 +16,7 @@ export class TaskCommentsService {
     private readonly taskRepository: Repository<Task>,
     @InjectRepository(TaskComment)
     private readonly commentRepository: Repository<TaskComment>,
-    private readonly tenantService: TenantService,
+    private readonly tenantService: TenantService
   ) {}
 
   async findAllForTask(taskId: string, user: User): Promise<TaskComment[]> {

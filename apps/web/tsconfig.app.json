@@ -3,15 +3,17 @@
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
     "jsx": "react-jsx",
-    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "target": "ES2024",
+    "target": "ES2022",
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
     "baseUrl": "../..",
     "paths": {
       "@/*": ["apps/web/src/*"]

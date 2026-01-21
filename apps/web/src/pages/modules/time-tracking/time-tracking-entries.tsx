@@ -1,12 +1,15 @@
 import { useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
+
 import { ArrowLeft, Clock, Plus, List, Calendar, CalendarDays } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
 import { PageHeader } from '@/components/common/page-header';
+import { TimeEntriesList, TimeEntryFormDialog, TimerWidget } from '@/components/time-tracking';
+import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import { UserRole } from '@/types/enums';
-import { TimeEntriesList, TimeEntryFormDialog, TimerWidget } from '@/components/time-tracking';
 
 export default function TimeTrackingEntriesPage() {
   const { user } = useAuthContext();
@@ -78,10 +81,7 @@ export default function TimeTrackingEntriesPage() {
       <TimeEntriesList showHeader={false} />
 
       {/* Create Dialog */}
-      <TimeEntryFormDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-      />
+      <TimeEntryFormDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
     </div>
   );
 }

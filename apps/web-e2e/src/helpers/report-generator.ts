@@ -8,18 +8,14 @@ export class ReportGenerator {
    */
   static generateMarkdownReport(analyses: DesignAnalysis[]): string {
     const totalIssues = analyses.reduce((sum, a) => sum + a.metrics.totalIssues, 0);
-    const totalCritical = analyses.reduce(
-      (sum, a) => sum + a.metrics.criticalIssues,
-      0
-    );
+    const totalCritical = analyses.reduce((sum, a) => sum + a.metrics.criticalIssues, 0);
     const totalHigh = analyses.reduce((sum, a) => sum + a.metrics.highIssues, 0);
     const totalMedium = analyses.reduce((sum, a) => sum + a.metrics.mediumIssues, 0);
     const totalLow = analyses.reduce((sum, a) => sum + a.metrics.lowIssues, 0);
     const totalWCAG = analyses.reduce((sum, a) => sum + a.metrics.wcagViolations, 0);
 
     const avgCompliance =
-      analyses.reduce((sum, a) => sum + a.metrics.wcagComplianceRate, 0) /
-      analyses.length;
+      analyses.reduce((sum, a) => sum + a.metrics.wcagComplianceRate, 0) / analyses.length;
 
     let report = `# Design Analysis Report - Accounting Application\n\n`;
     report += `**Generated**: ${new Date().toLocaleString()}\n\n`;
@@ -144,23 +140,18 @@ export class ReportGenerator {
   ): Issue[] {
     const issues: Issue[] = [];
     analyses.forEach((analysis) => {
-      analysis.issues
-        .filter((i) => i.severity === severity)
-        .forEach((i) => issues.push(i));
+      analysis.issues.filter((i) => i.severity === severity).forEach((i) => issues.push(i));
     });
     return issues;
   }
 
-  private static groupWCAGViolations(
-    analyses: DesignAnalysis[]
-  ): Record<string, number> {
+  private static groupWCAGViolations(analyses: DesignAnalysis[]): Record<string, number> {
     const violations: Record<string, number> = {};
 
     analyses.forEach((analysis) => {
       analysis.issues.forEach((issue) => {
         if (issue.wcagViolation) {
-          violations[issue.wcagViolation] =
-            (violations[issue.wcagViolation] || 0) + 1;
+          violations[issue.wcagViolation] = (violations[issue.wcagViolation] || 0) + 1;
         }
       });
     });
@@ -171,10 +162,7 @@ export class ReportGenerator {
   /**
    * Save report to files
    */
-  static saveReports(
-    analyses: DesignAnalysis[],
-    outputDir: string = 'screenshots/analysis'
-  ): void {
+  static saveReports(analyses: DesignAnalysis[], outputDir: string = 'screenshots/analysis'): void {
     // Ensure output directory exists
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
@@ -200,34 +188,21 @@ export class ReportGenerator {
     // Save recommendations
     const allRecommendations = analyses.flatMap((a) => a.recommendations);
     const recommendationsPath = path.join(outputDir, 'recommendations.json');
-    fs.writeFileSync(
-      recommendationsPath,
-      JSON.stringify(allRecommendations, null, 2)
-    );
+    fs.writeFileSync(recommendationsPath, JSON.stringify(allRecommendations, null, 2));
     console.log(`📄 Recommendations saved: ${recommendationsPath}`);
 
     // Save metrics summary
     const metricsSummary = {
       totalViews: analyses.length,
-      totalScreenshots: analyses.reduce(
-        (sum, a) => sum + a.screenshots.length,
-        0
-      ),
+      totalScreenshots: analyses.reduce((sum, a) => sum + a.screenshots.length, 0),
       totalIssues: analyses.reduce((sum, a) => sum + a.metrics.totalIssues, 0),
-      criticalIssues: analyses.reduce(
-        (sum, a) => sum + a.metrics.criticalIssues,
-        0
-      ),
+      criticalIssues: analyses.reduce((sum, a) => sum + a.metrics.criticalIssues, 0),
       highIssues: analyses.reduce((sum, a) => sum + a.metrics.highIssues, 0),
       mediumIssues: analyses.reduce((sum, a) => sum + a.metrics.mediumIssues, 0),
       lowIssues: analyses.reduce((sum, a) => sum + a.metrics.lowIssues, 0),
-      wcagViolations: analyses.reduce(
-        (sum, a) => sum + a.metrics.wcagViolations,
-        0
-      ),
+      wcagViolations: analyses.reduce((sum, a) => sum + a.metrics.wcagViolations, 0),
       avgWcagCompliance:
-        analyses.reduce((sum, a) => sum + a.metrics.wcagComplianceRate, 0) /
-        analyses.length,
+        analyses.reduce((sum, a) => sum + a.metrics.wcagComplianceRate, 0) / analyses.length,
     };
     const metricsPath = path.join(outputDir, 'metrics.json');
     fs.writeFileSync(metricsPath, JSON.stringify(metricsSummary, null, 2));

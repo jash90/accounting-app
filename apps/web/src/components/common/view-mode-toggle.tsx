@@ -1,7 +1,8 @@
 import { LayoutGrid, List } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+import { type ViewMode } from '@/lib/hooks/use-table-preferences';
 import { cn } from '@/lib/utils/cn';
-import { ViewMode } from '@/lib/hooks/use-table-preferences';
 
 interface ViewModeToggleProps {
   viewMode: ViewMode;
@@ -9,11 +10,7 @@ interface ViewModeToggleProps {
   className?: string;
 }
 
-export function ViewModeToggle({
-  viewMode,
-  onViewModeChange,
-  className,
-}: ViewModeToggleProps) {
+export function ViewModeToggle({ viewMode, onViewModeChange, className }: ViewModeToggleProps) {
   return (
     <div className={cn('inline-flex rounded-lg border border-apptax-soft-teal/50 p-1', className)}>
       <Button

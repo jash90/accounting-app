@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+
 import { Play, Square, Trash2, Clock } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -11,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import { useTaskClients } from '@/lib/hooks/use-tasks';
 import {
   useActiveTimer,
   useStartTimer,
@@ -19,7 +22,6 @@ import {
   useUpdateTimer,
   useDiscardTimer,
 } from '@/lib/hooks/use-time-tracking';
-import { useTaskClients } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
 import { formatDurationSeconds } from '@/lib/utils/time';
 
@@ -148,46 +150,52 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
     }
   }, [activeTimer, description, clientId, isBillable, updateTimer]);
 
-  const handleClientChange = useCallback((value: string) => {
-    const actualValue = value === '__none__' ? '' : value;
-    const previousClientId = clientId;
-    setClientId(actualValue);
-    if (activeTimer?.isRunning) {
-      updateTimer.mutate(
-        {
-          description: description || undefined,
-          clientId: actualValue || undefined,
-          isBillable,
-        },
-        {
-          onError: () => {
-            // Restore the original client on error
-            setClientId(previousClientId);
+  const handleClientChange = useCallback(
+    (value: string) => {
+      const actualValue = value === '__none__' ? '' : value;
+      const previousClientId = clientId;
+      setClientId(actualValue);
+      if (activeTimer?.isRunning) {
+        updateTimer.mutate(
+          {
+            description: description || undefined,
+            clientId: actualValue || undefined,
+            isBillable,
           },
-        }
-      );
-    }
-  }, [activeTimer?.isRunning, clientId, description, isBillable, updateTimer]);
+          {
+            onError: () => {
+              // Restore the original client on error
+              setClientId(previousClientId);
+            },
+          }
+        );
+      }
+    },
+    [activeTimer?.isRunning, clientId, description, isBillable, updateTimer]
+  );
 
-  const handleBillableChange = useCallback((checked: boolean) => {
-    const previousBillable = isBillable;
-    setIsBillable(checked);
-    if (activeTimer?.isRunning) {
-      updateTimer.mutate(
-        {
-          description: description || undefined,
-          clientId: clientId || undefined,
-          isBillable: checked,
-        },
-        {
-          onError: () => {
-            // Restore the original billable state on error
-            setIsBillable(previousBillable);
+  const handleBillableChange = useCallback(
+    (checked: boolean) => {
+      const previousBillable = isBillable;
+      setIsBillable(checked);
+      if (activeTimer?.isRunning) {
+        updateTimer.mutate(
+          {
+            description: description || undefined,
+            clientId: clientId || undefined,
+            isBillable: checked,
           },
-        }
-      );
-    }
-  }, [activeTimer?.isRunning, description, clientId, isBillable, updateTimer]);
+          {
+            onError: () => {
+              // Restore the original billable state on error
+              setIsBillable(previousBillable);
+            },
+          }
+        );
+      }
+    },
+    [activeTimer?.isRunning, description, clientId, isBillable, updateTimer]
+  );
 
   if (isLoading) {
     return (
@@ -218,7 +226,10 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
             >
               {formattedTime}
               {isRunning && (
-                <span className="text-xs font-normal bg-green-100 text-green-700 px-1.5 py-0.5 rounded" aria-label="Timer aktywny">
+                <span
+                  className="text-xs font-normal bg-green-100 text-green-700 px-1.5 py-0.5 rounded"
+                  aria-label="Timer aktywny"
+                >
                   Aktywny
                 </span>
               )}
@@ -285,7 +296,10 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
               {formattedTime}
             </div>
             {isRunning && (
-              <span className="text-xs font-medium bg-green-100 text-green-700 px-2 py-1 rounded" aria-label="Timer aktywny">
+              <span
+                className="text-xs font-medium bg-green-100 text-green-700 px-2 py-1 rounded"
+                aria-label="Timer aktywny"
+              >
                 Aktywny
               </span>
             )}

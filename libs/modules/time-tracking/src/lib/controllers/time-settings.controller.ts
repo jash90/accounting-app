@@ -1,26 +1,17 @@
-import {
-  Controller,
-  Get,
-  Patch,
-  Body,
-  UseGuards,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+
 import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
   PermissionGuard,
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
-import { User } from '@accounting/common';
-import { TimeSettingsService } from '../services/time-settings.service';
+
 import { UpdateTimeSettingsDto } from '../dto/time-settings.dto';
+import { TimeSettingsService } from '../services/time-settings.service';
 
 @ApiTags('Time Tracking - Settings')
 @ApiBearerAuth()
@@ -46,15 +37,13 @@ export class TimeSettingsController {
   @Patch()
   @ApiOperation({
     summary: 'Update time tracking settings',
-    description: 'Updates the time tracking settings for the current company. Requires manage permission.',
+    description:
+      'Updates the time tracking settings for the current company. Requires manage permission.',
   })
   @ApiResponse({ status: 200, description: 'Settings updated' })
   @ApiResponse({ status: 400, description: 'Validation error' })
   @RequirePermission('time-tracking', 'manage')
-  async updateSettings(
-    @Body() dto: UpdateTimeSettingsDto,
-    @CurrentUser() user: User,
-  ) {
+  async updateSettings(@Body() dto: UpdateTimeSettingsDto, @CurrentUser() user: User) {
     return this.settingsService.updateSettings(dto, user);
   }
 }

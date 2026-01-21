@@ -100,11 +100,15 @@ export class APIHelper {
   /**
    * Grant permission via API
    */
-  async grantPermission(employeeId: number, moduleId: number, permissions: {
-    read?: boolean;
-    write?: boolean;
-    delete?: boolean;
-  }): Promise<void> {
+  async grantPermission(
+    employeeId: number,
+    moduleId: number,
+    permissions: {
+      read?: boolean;
+      write?: boolean;
+      delete?: boolean;
+    }
+  ): Promise<void> {
     if (!this.apiContext) await this.init();
 
     await this.apiContext!.post(`/api/company/employees/${employeeId}/permissions`, {

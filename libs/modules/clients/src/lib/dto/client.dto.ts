@@ -1,3 +1,6 @@
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+
+import { Type, Transform } from 'class-transformer';
 import {
   IsString,
   IsOptional,
@@ -19,8 +22,7 @@ import {
   ValidationOptions,
   ValidationArguments,
 } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+
 import {
   EmploymentType,
   VatStatus,
@@ -220,13 +222,18 @@ export class CustomFieldFilterDto {
         .replace(/<[^>]*>/g, '') // Remove HTML tags
         .replace(/[<>'"]/g, (char) => {
           // HTML encode dangerous characters (except &)
-          const entities: Record<string, string> = { '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' };
+          const entities: Record<string, string> = {
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;',
+          };
           return entities[char] || char;
         })
         .trim();
     };
     if (Array.isArray(value)) {
-      return value.map(v => typeof v === 'string' ? sanitizeString(v) : v);
+      return value.map((v) => (typeof v === 'string' ? sanitizeString(v) : v));
     }
     return typeof value === 'string' ? sanitizeString(value) : value;
   })
@@ -419,7 +426,8 @@ export class SetCustomFieldValuesDto {
   @ApiProperty({
     type: 'object',
     additionalProperties: { type: 'string', nullable: true },
-    description: 'Object mapping field definition IDs to values (max 50 fields, max 1000 chars per value)',
+    description:
+      'Object mapping field definition IDs to values (max 50 fields, max 1000 chars per value)',
   })
   @IsObject()
   @MaxProperties(50, { message: 'Maksymalnie 50 pól niestandardowych' })

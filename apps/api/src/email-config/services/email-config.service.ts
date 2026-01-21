@@ -1,8 +1,11 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
+
 import { EmailConfiguration, Company } from '@accounting/common';
 import { CreateEmailConfigDto, UpdateEmailConfigDto } from '@accounting/email';
+
 import { EncryptionService } from './encryption.service';
 
 @Injectable()
@@ -12,7 +15,7 @@ export class EmailConfigService {
     private emailConfigRepository: Repository<EmailConfiguration>,
     @InjectRepository(Company)
     private companyRepository: Repository<Company>,
-    private encryptionService: EncryptionService,
+    private encryptionService: EncryptionService
   ) {}
 
   /**
@@ -102,7 +105,10 @@ export class EmailConfigService {
   /**
    * Create company email configuration
    */
-  async createCompanyConfig(companyId: string, dto: CreateEmailConfigDto): Promise<EmailConfiguration> {
+  async createCompanyConfig(
+    companyId: string,
+    dto: CreateEmailConfigDto
+  ): Promise<EmailConfiguration> {
     // Check if company already has a configuration
     const existing = await this.emailConfigRepository.findOne({
       where: { companyId },
@@ -160,7 +166,10 @@ export class EmailConfigService {
   /**
    * Update company email configuration
    */
-  async updateCompanyConfig(companyId: string, dto: UpdateEmailConfigDto): Promise<EmailConfiguration> {
+  async updateCompanyConfig(
+    companyId: string,
+    dto: UpdateEmailConfigDto
+  ): Promise<EmailConfiguration> {
     const config = await this.getCompanyConfig(companyId);
 
     // Create a copy to avoid mutating the input DTO

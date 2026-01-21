@@ -11,7 +11,8 @@ export class AdminDashboardPage extends BasePage {
   // Selectors
   private readonly heading = 'h1:has-text("Admin Dashboard")';
   private readonly usersCard = '[data-testid="users-card"], .shadow-sm:has-text("Total Users")';
-  private readonly companiesCard = '[data-testid="companies-card"], .shadow-sm:has-text("Total Companies")';
+  private readonly companiesCard =
+    '[data-testid="companies-card"], .shadow-sm:has-text("Total Companies")';
   private readonly modulesCard = '[data-testid="modules-card"], .shadow-sm:has-text("Modules")';
   private readonly statsContainer = '[data-testid="stats-container"], .stats, .grid';
   private readonly userCount = '[data-testid="user-count"], .text-4xl';

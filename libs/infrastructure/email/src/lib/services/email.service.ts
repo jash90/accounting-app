@@ -46,13 +46,16 @@ export class EmailService implements OnModuleInit {
   private async initializeTransporter(): Promise<void> {
     // Validate credentials before attempting to create transporter
     if (!this.config.auth.user || !this.config.auth.pass) {
-      this.logger.error('SMTP credentials not configured. Set SMTP_USER and SMTP_PASS environment variables.');
+      this.logger.error(
+        'SMTP credentials not configured. Set SMTP_USER and SMTP_PASS environment variables.'
+      );
       return;
     }
 
     try {
       const tlsOptions = {
-        rejectUnauthorized: this.configService.get<string>('SMTP_TLS_REJECT_UNAUTHORIZED', 'true') === 'true',
+        rejectUnauthorized:
+          this.configService.get<string>('SMTP_TLS_REJECT_UNAUTHORIZED', 'true') === 'true',
       };
 
       this.transporter = nodemailer.createTransport({
@@ -122,7 +125,7 @@ export class EmailService implements OnModuleInit {
 
   private async compileTemplate(
     templateName: string,
-    context: Record<string, unknown>,
+    context: Record<string, unknown>
   ): Promise<string> {
     // Security: Validate template name to prevent path traversal attacks
     const safeNamePattern = /^[A-Za-z0-9._-]+$/;
@@ -152,7 +155,7 @@ export class EmailService implements OnModuleInit {
 
   async sendClientCreatedNotification(
     recipients: string[],
-    clientData: { name: string; nip?: string; companyName: string; createdByName: string },
+    clientData: { name: string; nip?: string; companyName: string; createdByName: string }
   ): Promise<boolean> {
     return this.sendEmail({
       to: recipients,
@@ -175,7 +178,7 @@ export class EmailService implements OnModuleInit {
       companyName: string;
       updatedByName: string;
       changes: Array<{ field: string; oldValue: string; newValue: string }>;
-    },
+    }
   ): Promise<boolean> {
     return this.sendEmail({
       to: recipients,
@@ -193,7 +196,7 @@ export class EmailService implements OnModuleInit {
 
   async sendClientDeletedNotification(
     recipients: string[],
-    clientData: { name: string; nip?: string; companyName: string; deletedByName: string },
+    clientData: { name: string; nip?: string; companyName: string; deletedByName: string }
   ): Promise<boolean> {
     return this.sendEmail({
       to: recipients,
@@ -218,7 +221,7 @@ export class EmailService implements OnModuleInit {
       companyName: string;
       createdByName: string;
     },
-    fromEmail?: string,
+    fromEmail?: string
   ): Promise<boolean> {
     return this.sendEmail({
       to: recipients,

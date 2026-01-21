@@ -1,19 +1,22 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, DataSource, QueryRunner, EntityManager } from 'typeorm';
-import { AutoAssignService } from './auto-assign.service';
-import { ConditionEvaluatorService } from './condition-evaluator.service';
+
+import { type Repository, DataSource, type QueryRunner, type EntityManager } from 'typeorm';
+
 import {
   ClientIcon,
   ClientIconAssignment,
-  Client,
+  type Client,
   IconType,
   EmploymentType,
   VatStatus,
   TaxScheme,
   ZusStatus,
-  AutoAssignCondition,
+  type AutoAssignCondition,
 } from '@accounting/common';
+
+import { AutoAssignService } from './auto-assign.service';
+import { ConditionEvaluatorService } from './condition-evaluator.service';
 import { ClientException, ClientErrorCode } from '../exceptions';
 
 describe('AutoAssignService', () => {
@@ -29,50 +32,53 @@ describe('AutoAssignService', () => {
   const mockClientId = 'client-456';
   const mockIconId = 'icon-789';
 
-  const createMockClient = (overrides: Partial<Client> = {}): Client => ({
-    id: mockClientId,
-    companyId: mockCompanyId,
-    name: 'Test Client',
-    nip: '1234567890',
-    email: 'test@example.com',
-    employmentType: EmploymentType.DG,
-    vatStatus: VatStatus.VAT_MONTHLY,
-    taxScheme: TaxScheme.GENERAL,
-    zusStatus: ZusStatus.FULL,
-    isActive: true,
-    receiveEmailCopy: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    ...overrides,
-  } as Client);
+  const createMockClient = (overrides: Partial<Client> = {}): Client =>
+    ({
+      id: mockClientId,
+      companyId: mockCompanyId,
+      name: 'Test Client',
+      nip: '1234567890',
+      email: 'test@example.com',
+      employmentType: EmploymentType.DG,
+      vatStatus: VatStatus.VAT_MONTHLY,
+      taxScheme: TaxScheme.GENERAL,
+      zusStatus: ZusStatus.FULL,
+      isActive: true,
+      receiveEmailCopy: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...overrides,
+    }) as Client;
 
-  const createMockIcon = (overrides: Partial<ClientIcon> = {}): ClientIcon => ({
-    id: mockIconId,
-    companyId: mockCompanyId,
-    name: 'Test Icon',
-    type: IconType.LUCIDE,
-    value: 'star',
-    color: '#FF0000',
-    isActive: true,
-    autoAssignCondition: {
-      logicalOperator: 'and',
-      conditions: [
-        { field: 'employmentType', operator: 'equals', value: EmploymentType.DG },
-      ],
-    },
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    ...overrides,
-  } as ClientIcon);
+  const createMockIcon = (overrides: Partial<ClientIcon> = {}): ClientIcon =>
+    ({
+      id: mockIconId,
+      companyId: mockCompanyId,
+      name: 'Test Icon',
+      type: IconType.LUCIDE,
+      value: 'star',
+      color: '#FF0000',
+      isActive: true,
+      autoAssignCondition: {
+        logicalOperator: 'and',
+        conditions: [{ field: 'employmentType', operator: 'equals', value: EmploymentType.DG }],
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...overrides,
+    }) as ClientIcon;
 
-  const createMockAssignment = (overrides: Partial<ClientIconAssignment> = {}): ClientIconAssignment => ({
-    id: 'assignment-001',
-    clientId: mockClientId,
-    iconId: mockIconId,
-    isAutoAssigned: true,
-    createdAt: new Date(),
-    ...overrides,
-  } as ClientIconAssignment);
+  const createMockAssignment = (
+    overrides: Partial<ClientIconAssignment> = {}
+  ): ClientIconAssignment =>
+    ({
+      id: 'assignment-001',
+      clientId: mockClientId,
+      iconId: mockIconId,
+      isAutoAssigned: true,
+      createdAt: new Date(),
+      ...overrides,
+    }) as ClientIconAssignment;
 
   beforeEach(async () => {
     // Create mock entity manager
@@ -187,7 +193,9 @@ describe('AutoAssignService', () => {
         fail('Expected ClientException to be thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(ClientException);
-        expect((error as ClientException).errorCode).toBe(ClientErrorCode.AUTO_ASSIGN_EVALUATION_FAILED);
+        expect((error as ClientException).errorCode).toBe(
+          ClientErrorCode.AUTO_ASSIGN_EVALUATION_FAILED
+        );
       }
     });
 
@@ -211,15 +219,15 @@ describe('AutoAssignService', () => {
 
       // First find: icons with conditions
       entityManager.find
-        .mockResolvedValueOnce([icon])  // Icons with conditions
-        .mockResolvedValueOnce([])      // Current auto-assignments
-        .mockResolvedValueOnce([]);     // For removeStaleAutoAssignments
+        .mockResolvedValueOnce([icon]) // Icons with conditions
+        .mockResolvedValueOnce([]) // Current auto-assignments
+        .mockResolvedValueOnce([]); // For removeStaleAutoAssignments
 
       conditionEvaluator.evaluate.mockReturnValue(true);
 
       // For addAutoAssignment - no existing assignments
       entityManager.findOne
-        .mockResolvedValueOnce(null)  // No manual assignment
+        .mockResolvedValueOnce(null) // No manual assignment
         .mockResolvedValueOnce(null); // No auto assignment
 
       const createdAssignment = createMockAssignment();
@@ -290,9 +298,7 @@ describe('AutoAssignService', () => {
       conditionEvaluator.evaluate.mockReturnValue(true);
 
       // For addAutoAssignment
-      entityManager.findOne
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(null);
+      entityManager.findOne.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
 
       const newAssignment = createMockAssignment();
       (entityManager.create as jest.Mock).mockReturnValue(newAssignment);
@@ -316,12 +322,12 @@ describe('AutoAssignService', () => {
 
       // First icon throws error, second one succeeds
       conditionEvaluator.evaluate
-        .mockImplementationOnce(() => { throw new Error('Condition error'); })
+        .mockImplementationOnce(() => {
+          throw new Error('Condition error');
+        })
         .mockReturnValueOnce(true);
 
-      entityManager.findOne
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(null);
+      entityManager.findOne.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
 
       const createdAssignment = createMockAssignment({ iconId: 'icon-2' });
       (entityManager.create as jest.Mock).mockReturnValue(createdAssignment);
@@ -364,9 +370,9 @@ describe('AutoAssignService', () => {
 
       // icon1 and icon3 match, icon2 doesn't
       conditionEvaluator.evaluate
-        .mockReturnValueOnce(true)   // icon1 matches
-        .mockReturnValueOnce(false)  // icon2 doesn't match
-        .mockReturnValueOnce(true);  // icon3 matches
+        .mockReturnValueOnce(true) // icon1 matches
+        .mockReturnValueOnce(false) // icon2 doesn't match
+        .mockReturnValueOnce(true); // icon3 matches
 
       entityManager.findOne.mockResolvedValue(null);
 
@@ -401,10 +407,12 @@ describe('AutoAssignService', () => {
     beforeEach(() => {
       capturedCallback = null;
       // Capture setImmediate callback so we can run it synchronously
-      setImmediateSpy = jest.spyOn(global, 'setImmediate').mockImplementation((callback: () => void) => {
-        capturedCallback = callback;
-        return {} as NodeJS.Immediate;
-      });
+      setImmediateSpy = jest
+        .spyOn(global, 'setImmediate')
+        .mockImplementation((callback: () => void) => {
+          capturedCallback = callback;
+          return {} as NodeJS.Immediate;
+        });
     });
 
     afterEach(() => {
@@ -419,7 +427,7 @@ describe('AutoAssignService', () => {
         // Wait for microtasks (promises) to settle
         await new Promise(process.nextTick);
         // Additional wait to ensure all chained promises complete
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       }
     };
 
@@ -471,7 +479,8 @@ describe('AutoAssignService', () => {
 
       const mockClientRepo = {
         count: jest.fn().mockResolvedValue(250),
-        find: jest.fn()
+        find: jest
+          .fn()
           .mockResolvedValueOnce(clients.slice(0, 100))
           .mockResolvedValueOnce(clients.slice(100, 200))
           .mockResolvedValueOnce(clients.slice(200, 250)),
@@ -523,7 +532,7 @@ describe('AutoAssignService', () => {
 
       // Mock addAutoAssignment dependencies
       (assignmentRepository.manager.findOne as jest.Mock)
-        .mockResolvedValueOnce(null)  // No manual
+        .mockResolvedValueOnce(null) // No manual
         .mockResolvedValueOnce(null); // No auto
 
       const createdAssignment = createMockAssignment();
@@ -587,7 +596,9 @@ describe('AutoAssignService', () => {
 
       // First client throws error, second succeeds
       conditionEvaluator.evaluate
-        .mockImplementationOnce(() => { throw new Error('Evaluation error'); })
+        .mockImplementationOnce(() => {
+          throw new Error('Evaluation error');
+        })
         .mockReturnValueOnce(true);
 
       assignmentRepository.findOne.mockResolvedValue(null);
@@ -662,10 +673,10 @@ describe('AutoAssignService', () => {
 
       // Use mockResolvedValueOnce for each sequential call to avoid overwriting
       entityManager.find
-        .mockResolvedValueOnce([icon])  // First call: get icons with conditions
-        .mockResolvedValueOnce([])      // First call: get current assignments
-        .mockResolvedValueOnce([icon])  // Second call: get icons with conditions
-        .mockResolvedValueOnce([]);     // Second call: get current assignments
+        .mockResolvedValueOnce([icon]) // First call: get icons with conditions
+        .mockResolvedValueOnce([]) // First call: get current assignments
+        .mockResolvedValueOnce([icon]) // Second call: get icons with conditions
+        .mockResolvedValueOnce([]); // Second call: get current assignments
 
       conditionEvaluator.evaluate.mockReturnValue(true);
       entityManager.findOne.mockResolvedValue(null);
@@ -784,11 +795,13 @@ describe('AutoAssignService', () => {
         .mockResolvedValueOnce([staleAssignment]);
 
       conditionEvaluator.evaluate
-        .mockReturnValueOnce(true)   // matchingIcon
+        .mockReturnValueOnce(true) // matchingIcon
         .mockReturnValueOnce(false); // nonMatchingIcon
 
       entityManager.findOne.mockResolvedValue(null);
-      (entityManager.create as jest.Mock).mockReturnValue(createMockAssignment({ iconId: 'matching-icon' }));
+      (entityManager.create as jest.Mock).mockReturnValue(
+        createMockAssignment({ iconId: 'matching-icon' })
+      );
       entityManager.save.mockResolvedValue(createMockAssignment());
 
       await service.evaluateAndAssign(client);

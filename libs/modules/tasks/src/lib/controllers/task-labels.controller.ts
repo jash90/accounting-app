@@ -9,24 +9,24 @@ import {
   UseGuards,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiParam,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+
 import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
   PermissionGuard,
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
-import { User } from '@accounting/common';
-import { TaskLabelsService } from '../services/task-labels.service';
+
 import { CreateTaskLabelDto, UpdateTaskLabelDto } from '../dto/task-label.dto';
-import { TaskLabelResponseDto, SuccessMessageResponseDto, ErrorResponseDto } from '../dto/task-response.dto';
+import {
+  TaskLabelResponseDto,
+  SuccessMessageResponseDto,
+  ErrorResponseDto,
+} from '../dto/task-response.dto';
+import { TaskLabelsService } from '../services/task-labels.service';
 
 @ApiTags('Task Labels')
 @ApiBearerAuth()
@@ -73,7 +73,7 @@ export class TaskLabelsController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateTaskLabelDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.labelsService.update(id, dto, user);
   }

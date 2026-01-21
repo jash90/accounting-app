@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
 /**
  * MIGRATION: DropProjectIdFromTimeEntries
@@ -68,7 +68,9 @@ export class DropProjectIdFromTimeEntries1768834398570 implements MigrationInter
       const result = await queryRunner.query(
         `SELECT COUNT(*) as count FROM "time_entries_project_backup"`
       );
-      console.log(`[${this.migrationName}] Backed up ${result[0]?.count || 0} time entry-project associations`);
+      console.log(
+        `[${this.migrationName}] Backed up ${result[0]?.count || 0} time entry-project associations`
+      );
 
       // Step 2: Drop the foreign key constraint
       await queryRunner.query(
@@ -76,18 +78,16 @@ export class DropProjectIdFromTimeEntries1768834398570 implements MigrationInter
       );
 
       // Step 3: Drop the index on (companyId, projectId)
-      await queryRunner.query(
-        `DROP INDEX IF EXISTS "public"."IDX_23cbfc98b81c157d8c8f758925"`
-      );
+      await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_23cbfc98b81c157d8c8f758925"`);
 
       // Step 4: Drop the projectId column
       console.warn(`[${this.migrationName}] Dropping projectId column from time_entries table...`);
-      await queryRunner.query(
-        `ALTER TABLE "time_entries" DROP COLUMN IF EXISTS "projectId"`
-      );
+      await queryRunner.query(`ALTER TABLE "time_entries" DROP COLUMN IF EXISTS "projectId"`);
 
       await queryRunner.commitTransaction();
-      console.log(`[${this.migrationName}] Migration complete. Backup data preserved in time_entries_project_backup table.`);
+      console.log(
+        `[${this.migrationName}] Migration complete. Backup data preserved in time_entries_project_backup table.`
+      );
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -109,15 +109,23 @@ export class DropProjectIdFromTimeEntries1768834398570 implements MigrationInter
       `);
 
       if (!backupExists[0]?.exists) {
-        console.warn(`[${this.migrationName}] ⚠️  WARNING: Backup table 'time_entries_project_backup' does not exist!`);
-        console.warn(`[${this.migrationName}]    projectId column will be recreated but data cannot be restored.`);
-        console.warn(`[${this.migrationName}]    If you need to restore project associations, restore from database backup first.`);
+        console.warn(
+          `[${this.migrationName}] ⚠️  WARNING: Backup table 'time_entries_project_backup' does not exist!`
+        );
+        console.warn(
+          `[${this.migrationName}]    projectId column will be recreated but data cannot be restored.`
+        );
+        console.warn(
+          `[${this.migrationName}]    If you need to restore project associations, restore from database backup first.`
+        );
       } else {
         // Verify backup table has data
         const backupCount = await queryRunner.query(
           `SELECT COUNT(*) as count FROM "time_entries_project_backup"`
         );
-        console.log(`[${this.migrationName}] Backup table found with ${backupCount[0]?.count || 0} records.`);
+        console.log(
+          `[${this.migrationName}] Backup table found with ${backupCount[0]?.count || 0} records.`
+        );
       }
 
       // Step 2: Recreate the projectId column (idempotent - handles case where column already exists)
@@ -138,7 +146,9 @@ export class DropProjectIdFromTimeEntries1768834398570 implements MigrationInter
         const resultRestore = await queryRunner.query(
           `SELECT COUNT(*) as count FROM "time_entries" WHERE "projectId" IS NOT NULL`
         );
-        console.log(`[${this.migrationName}] ✅ Restored ${resultRestore[0]?.count || 0} time entry-project associations`);
+        console.log(
+          `[${this.migrationName}] ✅ Restored ${resultRestore[0]?.count || 0} time entry-project associations`
+        );
       }
 
       // Step 4: Recreate the index
@@ -161,8 +171,12 @@ export class DropProjectIdFromTimeEntries1768834398570 implements MigrationInter
         );
         console.log(`[${this.migrationName}] FK constraint to time_projects recreated.`);
       } else {
-        console.warn(`[${this.migrationName}] time_projects table does not exist - skipping FK constraint creation.`);
-        console.warn(`[${this.migrationName}] Run the DropTimeProjectsTable rollback first to restore the table.`);
+        console.warn(
+          `[${this.migrationName}] time_projects table does not exist - skipping FK constraint creation.`
+        );
+        console.warn(
+          `[${this.migrationName}] Run the DropTimeProjectsTable rollback first to restore the table.`
+        );
       }
 
       await queryRunner.commitTransaction();

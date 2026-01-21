@@ -1,24 +1,20 @@
 import { useState, useMemo, memo } from 'react';
+
 import { format, addDays, subDays, startOfDay, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import {
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Plus,
-  DollarSign,
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Calendar, ChevronLeft, ChevronRight, Clock, Plus, DollarSign } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDailyTimesheet } from '@/lib/hooks/use-time-tracking';
-import { TimeEntryStatusBadge } from './time-entry-status-badge';
-import { TimeEntryFormDialog } from './time-entry-form-dialog';
-import { TimeEntryResponseDto } from '@/types/dtos';
 import { cn } from '@/lib/utils/cn';
 import { formatDuration } from '@/lib/utils/time';
+import { type TimeEntryResponseDto } from '@/types/dtos';
+
+import { TimeEntryFormDialog } from './time-entry-form-dialog';
+import { TimeEntryStatusBadge } from './time-entry-status-badge';
 
 // Constants
 const SKELETON_ITEM_COUNT = 3;
@@ -48,9 +44,7 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
   const { data: timesheet, isPending, error } = useDailyTimesheet(dateString);
 
   const navigateDay = (direction: 'prev' | 'next') => {
-    setSelectedDate((prev) =>
-      direction === 'prev' ? subDays(prev, 1) : addDays(prev, 1)
-    );
+    setSelectedDate((prev) => (direction === 'prev' ? subDays(prev, 1) : addDays(prev, 1)));
   };
 
   const goToToday = () => {
@@ -91,9 +85,7 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-destructive">
-            Nie udało się załadować danych timesheet
-          </p>
+          <p className="text-sm text-destructive">Nie udało się załadować danych timesheet</p>
         </CardContent>
       </Card>
     );
@@ -110,7 +102,12 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
             Timesheet dzienny
           </CardTitle>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigateDay('prev')} aria-label="Poprzedni dzień">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigateDay('prev')}
+              aria-label="Poprzedni dzień"
+            >
               <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             </Button>
             <Button
@@ -121,7 +118,12 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
             >
               {format(selectedDate, 'EEEE, d MMMM', { locale: pl })}
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigateDay('next')} aria-label="Następny dzień">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigateDay('next')}
+              aria-label="Następny dzień"
+            >
               <ChevronRight className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
@@ -165,9 +167,7 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
           {entries.length === 0 ? (
             <div className="text-center py-8">
               <Clock className="h-12 w-12 mx-auto text-muted-foreground/50 mb-2" />
-              <p className="text-sm text-muted-foreground mb-4">
-                Brak wpisów czasu na ten dzień
-              </p>
+              <p className="text-sm text-muted-foreground mb-4">Brak wpisów czasu na ten dzień</p>
               <Button
                 variant="outline"
                 size="sm"
@@ -200,9 +200,7 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
                 >
                   <div className="flex items-center gap-3">
                     <div className="text-center min-w-[80px]">
-                      <div className="text-sm font-mono">
-                        {formatTime(entry.startTime)}
-                      </div>
+                      <div className="text-sm font-mono">{formatTime(entry.startTime)}</div>
                       <div className="text-xs text-muted-foreground">
                         {entry.endTime ? formatTime(entry.endTime) : '...'}
                       </div>
@@ -229,9 +227,7 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
                           </Badge>
                         )}
                         {entry.client && (
-                          <span className="text-xs text-muted-foreground">
-                            {entry.client.name}
-                          </span>
+                          <span className="text-xs text-muted-foreground">{entry.client.name}</span>
                         )}
                       </div>
                     </div>

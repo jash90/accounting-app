@@ -6,11 +6,13 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+
 import { Request, Response } from 'express';
-import { ClientException } from '@accounting/modules/clients';
-import { ClientErrorCode } from '@accounting/modules/clients';
-import { ErrorResponseDto } from '../dto/error-response.dto';
 import { v4 as uuidv4 } from 'uuid';
+
+import { ClientException, ClientErrorCode } from '@accounting/modules/clients';
+
+import { ErrorResponseDto } from '../dto/error-response.dto';
 
 /**
  * Global exception filter that catches all exceptions and normalizes error responses.
@@ -24,10 +26,30 @@ import { v4 as uuidv4 } from 'uuid';
  * Keys that should never be exposed in error responses
  */
 const SENSITIVE_KEYS = new Set([
-  'password', 'secret', 'token', 'apiKey', 'api_key', 'auth', 'authorization',
-  'credential', 'credentials', 'ssn', 'social_security', 'credit_card', 'creditCard',
-  'cvv', 'pin', 'private_key', 'privateKey', 'client_secret', 'clientSecret',
-  'refresh_token', 'refreshToken', 'access_token', 'accessToken', 'jwt',
+  'password',
+  'secret',
+  'token',
+  'apiKey',
+  'api_key',
+  'auth',
+  'authorization',
+  'credential',
+  'credentials',
+  'ssn',
+  'social_security',
+  'credit_card',
+  'creditCard',
+  'cvv',
+  'pin',
+  'private_key',
+  'privateKey',
+  'client_secret',
+  'clientSecret',
+  'refresh_token',
+  'refreshToken',
+  'access_token',
+  'accessToken',
+  'jwt',
 ]);
 
 /**
@@ -35,7 +57,7 @@ const SENSITIVE_KEYS = new Set([
  */
 function sanitizeContext(
   context: Record<string, any> | undefined,
-  maxDepth = 2,
+  maxDepth = 2
 ): Record<string, any> | undefined {
   if (!context || typeof context !== 'object') {
     return undefined;
@@ -120,7 +142,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     exception: ClientException,
     errorResponse: ErrorResponseDto,
     request: Request,
-    requestId: string,
+    requestId: string
   ): void {
     errorResponse.statusCode = exception.getStatus();
     errorResponse.message = exception.message;
@@ -128,17 +150,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
     errorResponse.context = sanitizeContext(exception.context);
 
     // Log custom exceptions at warn level (business logic errors)
-    this.logger.warn(
-      `ClientException: ${exception.errorCode} - ${exception.message}`,
-      {
-        requestId,
-        path: request.url,
-        method: request.method,
-        userId: (request as any).user?.id,
-        companyId: (request as any).user?.companyId,
-        context: exception.context,
-      },
-    );
+    this.logger.warn(`ClientException: ${exception.errorCode} - ${exception.message}`, {
+      requestId,
+      path: request.url,
+      method: request.method,
+      userId: (request as any).user?.id,
+      companyId: (request as any).user?.companyId,
+      context: exception.context,
+    });
   }
 
   /**
@@ -149,7 +168,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     exception: HttpException,
     errorResponse: ErrorResponseDto,
     request: Request,
-    requestId: string,
+    requestId: string
   ): void {
     const status = exception.getStatus();
     const exceptionResponse = exception.getResponse();
@@ -197,7 +216,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     exception: unknown,
     errorResponse: ErrorResponseDto,
     request: Request,
-    requestId: string,
+    requestId: string
   ): void {
     const error = exception as Error;
 
@@ -206,20 +225,17 @@ export class AllExceptionsFilter implements ExceptionFilter {
     errorResponse.errorCode = ClientErrorCode.UNKNOWN_ERROR;
 
     // Log unexpected errors at error level with full details for debugging
-    this.logger.error(
-      `Unexpected error: ${error?.message || 'Unknown error'}`,
-      {
-        requestId,
-        path: request.url,
-        method: request.method,
-        userId: (request as any).user?.id,
-        companyId: (request as any).user?.companyId,
-        errorName: error?.name,
-        errorMessage: error?.message,
-        stack: error?.stack,
-        error: error?.toString(),
-      },
-    );
+    this.logger.error(`Unexpected error: ${error?.message || 'Unknown error'}`, {
+      requestId,
+      path: request.url,
+      method: request.method,
+      userId: (request as any).user?.id,
+      companyId: (request as any).user?.companyId,
+      errorName: error?.name,
+      errorMessage: error?.message,
+      stack: error?.stack,
+      error: error?.toString(),
+    });
   }
 
   /**

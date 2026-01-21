@@ -1,20 +1,10 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { ColumnDef } from '@tanstack/react-table';
+
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import {
-  useTasks,
-  useCreateTask,
-  useUpdateTask,
-  useDeleteTask,
-  useBulkUpdateStatus,
-} from '@/lib/hooks/use-tasks';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import { PageHeader } from '@/components/common/page-header';
-import { DataTable } from '@/components/common/data-table';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Checkbox } from '@/components/ui/checkbox';
+
+import { type ColumnDef } from '@tanstack/react-table';
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
 import {
   Plus,
   Edit,
@@ -27,6 +17,22 @@ import {
   Calendar,
   GanttChartSquare,
 } from 'lucide-react';
+
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { DataTable } from '@/components/common/data-table';
+import { PageHeader } from '@/components/common/page-header';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import {
+  useTasks,
+  useCreateTask,
+  useUpdateTask,
+  useDeleteTask,
+  useBulkUpdateStatus,
+} from '@/lib/hooks/use-tasks';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,16 +41,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  TaskResponseDto,
-  CreateTaskDto,
-  UpdateTaskDto,
-  TaskFiltersDto,
+  type TaskResponseDto,
+  type CreateTaskDto,
+  type UpdateTaskDto,
+  type TaskFiltersDto,
 } from '@/types/dtos';
-import {
-  TaskStatus,
-  TaskStatusLabels,
-  UserRole,
-} from '@/types/enums';
+import { type TaskStatus, TaskStatusLabels, UserRole } from '@/types/enums';
 import {
   TaskStatusBadge,
   TaskPriorityBadge,
@@ -52,10 +54,7 @@ import {
   TaskFormDialog,
 } from '@/components/tasks';
 import { TaskFilters } from '@/components/tasks/task-filters';
-import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { useAuthContext } from '@/contexts/auth-context';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
 
 export default function TasksListPage() {
   const { user } = useAuthContext();
@@ -109,9 +108,7 @@ export default function TasksListPage() {
   }, []);
 
   const handleRowSelection = useCallback((taskId: string, selected: boolean) => {
-    setSelectedTasks((prev) =>
-      selected ? [...prev, taskId] : prev.filter((id) => id !== taskId)
-    );
+    setSelectedTasks((prev) => (selected ? [...prev, taskId] : prev.filter((id) => id !== taskId)));
   }, []);
 
   const handleBulkStatusChange = async (status: TaskStatus) => {
@@ -150,9 +147,7 @@ export default function TasksListPage() {
         cell: ({ row }) => (
           <Checkbox
             checked={selectedTasks.includes(row.original.id)}
-            onCheckedChange={(value) =>
-              handleRowSelection(row.original.id, !!value)
-            }
+            onCheckedChange={(value) => handleRowSelection(row.original.id, !!value)}
             aria-label="Zaznacz wiersz"
             onClick={(e) => e.stopPropagation()}
           />
@@ -183,9 +178,7 @@ export default function TasksListPage() {
       {
         accessorKey: 'priority',
         header: 'Priorytet',
-        cell: ({ row }) => (
-          <TaskPriorityBadge priority={row.original.priority} size="sm" />
-        ),
+        cell: ({ row }) => <TaskPriorityBadge priority={row.original.priority} size="sm" />,
       },
       {
         accessorKey: 'dueDate',
@@ -194,8 +187,7 @@ export default function TasksListPage() {
           const dueDate = row.original.dueDate;
           if (!dueDate) return <span className="text-muted-foreground">-</span>;
 
-          const isOverdue =
-            new Date(dueDate) < new Date() && row.original.status !== 'done';
+          const isOverdue = new Date(dueDate) < new Date() && row.original.status !== 'done';
           return (
             <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
               {format(new Date(dueDate), 'd MMM yyyy', { locale: pl })}
@@ -300,25 +292,13 @@ export default function TasksListPage() {
             <Button variant="ghost" size="sm" className="bg-accent">
               <List className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/kanban`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/kanban`)}>
               <LayoutGrid className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/calendar`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/calendar`)}>
               <Calendar className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/timeline`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/timeline`)}>
               <GanttChartSquare className="h-4 w-4" />
             </Button>
           </div>

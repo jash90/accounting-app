@@ -58,9 +58,10 @@ export class UnauthorizedPage extends BasePage {
    */
   async expectUnauthorizedHeading(): Promise<void> {
     const heading = await this.getHeading();
-    const containsUnauthorized = heading.toLowerCase().includes('unauthorized') ||
-                                  heading.includes('403') ||
-                                  heading.toLowerCase().includes('access denied');
+    const containsUnauthorized =
+      heading.toLowerCase().includes('unauthorized') ||
+      heading.includes('403') ||
+      heading.toLowerCase().includes('access denied');
 
     expect(containsUnauthorized).toBe(true);
   }

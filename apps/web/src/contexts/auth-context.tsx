@@ -1,9 +1,11 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+
 import { useQuery } from '@tanstack/react-query';
-import { UserDto } from '@/types/dtos';
-import { tokenStorage } from '@/lib/auth/token-storage';
+
 import { authApi } from '@/lib/api/endpoints/auth';
+import { tokenStorage } from '@/lib/auth/token-storage';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { type UserDto } from '@/types/dtos';
 
 interface AuthContextType {
   user: UserDto | null;
@@ -37,7 +39,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
-  const { data: currentUser, isPending: isLoadingUser, error: queryError } = useQuery({
+  const {
+    data: currentUser,
+    isPending: isLoadingUser,
+    error: queryError,
+  } = useQuery({
     queryKey: ['auth', 'me'],
     queryFn: authApi.getCurrentUser,
     enabled: !!token,
@@ -66,11 +72,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isLoading = !queryError && !!token && (!user || isLoadingUser);
 
   const login = (email: string, password: string) => {
-    loginMutation({ email, password }, {
-      onSuccess: (data) => {
-        setUser(data.user);
-      },
-    });
+    loginMutation(
+      { email, password },
+      {
+        onSuccess: (data) => {
+          setUser(data.user);
+        },
+      }
+    );
   };
 
   const register = (userData: any) => {
@@ -109,4 +118,3 @@ export function useAuthContext() {
   }
   return context;
 }
-

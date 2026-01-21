@@ -10,8 +10,10 @@ export class EmailInboxPage extends BasePage {
   private readonly composeButton = 'button:has-text("Compose"), a:has-text("Compose")';
   private readonly refreshButton = 'button:has-text("Refresh")';
   private readonly emailList = '[data-testid="email-list"], .email-list, table tbody';
-  private readonly emailRow = (index: number) => `tr:nth-child(${index + 1}), [data-testid="email-row-${index}"]`;
-  private readonly emailCheckbox = (index: number) => `tr:nth-child(${index + 1}) input[type="checkbox"]`;
+  private readonly emailRow = (index: number) =>
+    `tr:nth-child(${index + 1}), [data-testid="email-row-${index}"]`;
+  private readonly emailCheckbox = (index: number) =>
+    `tr:nth-child(${index + 1}) input[type="checkbox"]`;
   private readonly markAsReadButton = 'button:has-text("Mark as Read")';
   private readonly deleteButton = 'button:has-text("Delete")';
   private readonly loadingSpinner = '[data-testid="loading"], .animate-spin';
@@ -96,17 +98,17 @@ export class EmailInboxPage extends BasePage {
   async getEmailSubject(index: number): Promise<string> {
     const row = this.page.locator(this.emailRow(index));
     const subject = row.locator('td:nth-child(2), [data-testid="email-subject"]');
-    return await subject.textContent() || '';
+    return (await subject.textContent()) || '';
   }
 
   async getEmailFrom(index: number): Promise<string> {
     const row = this.page.locator(this.emailRow(index));
     const from = row.locator('td:nth-child(1), [data-testid="email-from"]');
-    return await from.textContent() || '';
+    return (await from.textContent()) || '';
   }
 
   async hasUnreadEmails(): Promise<boolean> {
     const unread = this.page.locator(this.unreadBadge);
-    return await unread.count() > 0;
+    return (await unread.count()) > 0;
   }
 }

@@ -1,18 +1,23 @@
-import { useClientChangelog } from '@/lib/hooks/use-clients';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { History, Plus, Edit, Trash2 } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { History, Plus, Edit, Trash2 } from 'lucide-react';
+import { useClientChangelog } from '@/lib/hooks/use-clients';
+import { type ChangeLogResponseDto } from '@/types/dtos';
 import { ChangeAction } from '@/types/enums';
-import { ChangeLogResponseDto } from '@/types/dtos';
+
 import { ChangeDetailRow } from './ChangeDetailRow';
 
 interface ClientChangelogProps {
   clientId: string;
 }
 
-const ACTION_CONFIG: Record<ChangeAction, { label: string; icon: React.ReactNode; variant: 'default' | 'secondary' | 'destructive' }> = {
+const ACTION_CONFIG: Record<
+  ChangeAction,
+  { label: string; icon: React.ReactNode; variant: 'default' | 'secondary' | 'destructive' }
+> = {
   [ChangeAction.CREATE]: {
     label: 'Utworzono',
     icon: <Plus className="h-3 w-3" />,
@@ -36,10 +41,7 @@ function ChangelogEntry({ entry }: { entry: ChangeLogResponseDto }) {
   const newValues = entry.newValues || {};
 
   // Get all changed keys
-  const changedKeys = new Set([
-    ...Object.keys(oldValues),
-    ...Object.keys(newValues),
-  ]);
+  const changedKeys = new Set([...Object.keys(oldValues), ...Object.keys(newValues)]);
 
   return (
     <div className="border-l-2 border-apptax-soft-teal pl-4 pb-4 relative">
@@ -68,28 +70,17 @@ function ChangelogEntry({ entry }: { entry: ChangeLogResponseDto }) {
             const newVal = newValues[key];
             if (oldVal === newVal) return null;
 
-            return (
-              <ChangeDetailRow
-                key={key}
-                fieldKey={key}
-                oldValue={oldVal}
-                newValue={newVal}
-              />
-            );
+            return <ChangeDetailRow key={key} fieldKey={key} oldValue={oldVal} newValue={newVal} />;
           })}
         </div>
       )}
 
       {entry.action === ChangeAction.CREATE && (
-        <p className="text-sm text-muted-foreground">
-          Klient został utworzony
-        </p>
+        <p className="text-sm text-muted-foreground">Klient został utworzony</p>
       )}
 
       {entry.action === ChangeAction.DELETE && (
-        <p className="text-sm text-muted-foreground">
-          Klient został usunięty (dezaktywowany)
-        </p>
+        <p className="text-sm text-muted-foreground">Klient został usunięty (dezaktywowany)</p>
       )}
     </div>
   );
@@ -134,9 +125,7 @@ export function ClientChangelog({ clientId }: ClientChangelogProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-destructive">
-            Nie udało się załadować historii zmian
-          </p>
+          <p className="text-sm text-destructive">Nie udało się załadować historii zmian</p>
         </CardContent>
       </Card>
     );

@@ -1,12 +1,9 @@
 import { useState, useCallback, useMemo } from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { useCalendarTasks, useCreateTask } from '@/lib/hooks/use-tasks';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import { PageHeader } from '@/components/common/page-header';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar } from '@/components/ui/calendar';
-import { Skeleton } from '@/components/ui/skeleton';
+
+import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
+import { pl } from 'date-fns/locale';
 import {
   CheckSquare,
   ArrowLeft,
@@ -18,18 +15,20 @@ import {
   ChevronRight,
   Plus,
 } from 'lucide-react';
-import { CalendarTaskDto, CreateTaskDto, TaskFiltersDto } from '@/types/dtos';
-import {
-  TaskPriority,
-  UserRole,
-} from '@/types/enums';
-import { TaskFormDialog } from '@/components/tasks';
-import { TaskStatusBadge, TaskPriorityBadge } from '@/components/tasks';
+
+import { PageHeader } from '@/components/common/page-header';
+import { TaskFormDialog, TaskStatusBadge, TaskPriorityBadge } from '@/components/tasks';
 import { TaskFilters } from '@/components/tasks/task-filters';
-import { useAuthContext } from '@/contexts/auth-context';
-import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import { useCalendarTasks, useCreateTask } from '@/lib/hooks/use-tasks';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils/cn';
+import { type CalendarTaskDto, type CreateTaskDto, type TaskFiltersDto } from '@/types/dtos';
+import { TaskPriority, UserRole } from '@/types/enums';
+import { useAuthContext } from '@/contexts/auth-context';
 
 export default function TasksCalendarPage() {
   const { user } = useAuthContext();
@@ -111,25 +110,15 @@ export default function TasksCalendarPage() {
 
     if (tasks.length === 0) return null;
 
-    const urgentCount = tasks.filter(
-      (t) => t.priority === TaskPriority.URGENT
-    ).length;
-    const highCount = tasks.filter(
-      (t) => t.priority === TaskPriority.HIGH
-    ).length;
+    const urgentCount = tasks.filter((t) => t.priority === TaskPriority.URGENT).length;
+    const highCount = tasks.filter((t) => t.priority === TaskPriority.HIGH).length;
     const otherCount = tasks.length - urgentCount - highCount;
 
     return (
       <div className="flex gap-0.5 mt-1">
-        {urgentCount > 0 && (
-          <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-        )}
-        {highCount > 0 && (
-          <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-        )}
-        {otherCount > 0 && (
-          <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-        )}
+        {urgentCount > 0 && <div className="w-1.5 h-1.5 rounded-full bg-red-500" />}
+        {highCount > 0 && <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />}
+        {otherCount > 0 && <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
       </div>
     );
   };
@@ -164,28 +153,16 @@ export default function TasksCalendarPage() {
         icon={<CheckSquare className="h-6 w-6" />}
         titleAction={
           <div className="flex items-center gap-1 border rounded-lg p-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/list`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/list`)}>
               <List className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/kanban`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/kanban`)}>
               <LayoutGrid className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="sm" className="bg-accent">
               <CalendarIcon className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/timeline`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/timeline`)}>
               <GanttChartSquare className="h-4 w-4" />
             </Button>
           </div>
@@ -213,11 +190,7 @@ export default function TasksCalendarPage() {
               <Button variant="outline" size="sm" onClick={handleToday}>
                 Dziś
               </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handlePreviousMonth}
-              >
+              <Button variant="outline" size="icon" onClick={handlePreviousMonth}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button variant="outline" size="icon" onClick={handleNextMonth}>
@@ -246,8 +219,7 @@ export default function TasksCalendarPage() {
                   nav: 'hidden',
                   table: 'w-full border-collapse space-y-1',
                   head_row: 'flex',
-                  head_cell:
-                    'text-muted-foreground rounded-md w-full font-normal text-[0.8rem]',
+                  head_cell: 'text-muted-foreground rounded-md w-full font-normal text-[0.8rem]',
                   row: 'flex w-full mt-2',
                   cell: cn(
                     'relative p-0 text-center text-sm focus-within:relative focus-within:z-20 w-full',
@@ -280,9 +252,7 @@ export default function TasksCalendarPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-medium">
-              {selectedDate
-                ? format(selectedDate, 'd MMMM yyyy', { locale: pl })
-                : 'Wybierz dzień'}
+              {selectedDate ? format(selectedDate, 'd MMMM yyyy', { locale: pl }) : 'Wybierz dzień'}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -291,9 +261,7 @@ export default function TasksCalendarPage() {
                 Kliknij na dzień w kalendarzu, aby zobaczyć zadania
               </p>
             ) : selectedDateTasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Brak zadań na ten dzień
-              </p>
+              <p className="text-sm text-muted-foreground">Brak zadań na ten dzień</p>
             ) : (
               <div className="space-y-3">
                 {selectedDateTasks.map((task) => (
@@ -306,9 +274,7 @@ export default function TasksCalendarPage() {
                     onClick={() => navigate(`${basePath}/list?taskId=${task.id}`)}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <span className="font-medium text-sm line-clamp-2">
-                        {task.title}
-                      </span>
+                      <span className="font-medium text-sm line-clamp-2">{task.title}</span>
                     </div>
                     <div className="flex items-center gap-2 mt-2">
                       <TaskStatusBadge status={task.status} size="sm" />

@@ -18,7 +18,9 @@ test.describe('Clients - PKD Code Selection', () => {
     await clientsPage.expectClientInList(clientName);
   });
 
-  test('should search and select PKD code from dropdown', async ({ authenticatedCompanyOwnerPage }) => {
+  test('should search and select PKD code from dropdown', async ({
+    authenticatedCompanyOwnerPage,
+  }) => {
     const clientsPage = new ClientsPage(authenticatedCompanyOwnerPage);
     const clientName = `PKD Search Test ${Date.now()}`;
 
@@ -26,7 +28,10 @@ test.describe('Clients - PKD Code Selection', () => {
     await clientsPage.openAddClientForm();
 
     // Fill basic info
-    await clientsPage.clientFormDialog.getByLabel(/nazwa|name/i).first().fill(clientName);
+    await clientsPage.clientFormDialog
+      .getByLabel(/nazwa|name/i)
+      .first()
+      .fill(clientName);
 
     // Search for PKD code by description
     await clientsPage.selectPkdCode('62.01'); // IT services
@@ -61,7 +66,10 @@ test.describe('Clients - PKD Code Selection', () => {
     await clientsPage.openAddClientForm();
 
     // Fill basic info
-    await clientsPage.clientFormDialog.getByLabel(/nazwa|name/i).first().fill('Invalid PKD Client');
+    await clientsPage.clientFormDialog
+      .getByLabel(/nazwa|name/i)
+      .first()
+      .fill('Invalid PKD Client');
 
     // Try to enter invalid PKD code format (if direct input is allowed)
     const pkdInput = clientsPage.clientFormDialog.locator('input[name="pkdCode"]');
@@ -90,7 +98,9 @@ test.describe('Clients - PKD Code Selection', () => {
     await clientsPage.editClient(clientName);
 
     // Clear the PKD field
-    const clearButton = authenticatedCompanyOwnerPage.locator('[data-testid="pkd-code-clear"], [aria-label="Clear"]');
+    const clearButton = authenticatedCompanyOwnerPage.locator(
+      '[data-testid="pkd-code-clear"], [aria-label="Clear"]'
+    );
     if (await clearButton.isVisible()) {
       await clearButton.click();
       await clientsPage.saveClient();
@@ -148,7 +158,9 @@ test.describe('Clients - AML Group Management', () => {
     expect(currentUrl).toMatch(/amlGroup[=:]HIGH/i);
 
     // Verify displayed results match the filter (if any clients exist)
-    const clientRows = authenticatedCompanyOwnerPage.locator('table tbody tr, [role="row"]:not([role="row"]:first-child)');
+    const clientRows = authenticatedCompanyOwnerPage.locator(
+      'table tbody tr, [role="row"]:not([role="row"]:first-child)'
+    );
     const rowCount = await clientRows.count();
     if (rowCount > 0) {
       // All visible rows should have HIGH risk indicator
@@ -166,7 +178,9 @@ test.describe('Clients - AML Group Management', () => {
     await clientsPage.openAddClientForm();
 
     // Check AML group options are available
-    const amlSelect = clientsPage.clientFormDialog.locator('[data-testid="aml-group-select"], select[name="amlGroup"]');
+    const amlSelect = clientsPage.clientFormDialog.locator(
+      '[data-testid="aml-group-select"], select[name="amlGroup"]'
+    );
 
     if (await amlSelect.isVisible()) {
       await amlSelect.click();
@@ -175,9 +189,9 @@ test.describe('Clients - AML Group Management', () => {
       const options = authenticatedCompanyOwnerPage.getByRole('option');
       const optionTexts = await options.allTextContents();
 
-      expect(optionTexts.some(t => /standard/i.test(t))).toBe(true);
-      expect(optionTexts.some(t => /elevated/i.test(t))).toBe(true);
-      expect(optionTexts.some(t => /high/i.test(t))).toBe(true);
+      expect(optionTexts.some((t) => /standard/i.test(t))).toBe(true);
+      expect(optionTexts.some((t) => /elevated/i.test(t))).toBe(true);
+      expect(optionTexts.some((t) => /high/i.test(t))).toBe(true);
     }
 
     await clientsPage.cancelClient();
@@ -203,7 +217,9 @@ test.describe('Clients - AML Group Management', () => {
 });
 
 test.describe('Clients - PKD and AML Combined', () => {
-  test('should create client with both PKD code and AML group', async ({ authenticatedCompanyOwnerPage }) => {
+  test('should create client with both PKD code and AML group', async ({
+    authenticatedCompanyOwnerPage,
+  }) => {
     const clientsPage = new ClientsPage(authenticatedCompanyOwnerPage);
     const clientName = `Full Client ${Date.now()}`;
 
@@ -220,7 +236,9 @@ test.describe('Clients - PKD and AML Combined', () => {
     await clientsPage.expectClientInList(clientName);
   });
 
-  test('should handle client with high-risk PKD code', async ({ authenticatedCompanyOwnerPage }) => {
+  test('should handle client with high-risk PKD code', async ({
+    authenticatedCompanyOwnerPage,
+  }) => {
     const clientsPage = new ClientsPage(authenticatedCompanyOwnerPage);
     const clientName = `High Risk PKD Client ${Date.now()}`;
 
@@ -267,16 +285,25 @@ test.describe('Clients - Employee Access', () => {
     await clientsPage.expectToBeOnClientsPage();
 
     // Should see clients table element present and visible
-    const clientsTable = authenticatedEmployeePage.locator('table, [role="grid"], [data-testid="clients-list"]');
+    const clientsTable = authenticatedEmployeePage.locator(
+      'table, [role="grid"], [data-testid="clients-list"]'
+    );
     await expect(clientsTable.first()).toBeVisible();
 
     // Table should have header row (indicating proper table structure)
-    const headerRow = authenticatedEmployeePage.locator('table thead tr, [role="rowheader"], [role="columnheader"]');
-    const hasHeader = await headerRow.first().isVisible().catch(() => false);
-    expect(hasHeader || await clientsTable.first().isVisible()).toBe(true);
+    const headerRow = authenticatedEmployeePage.locator(
+      'table thead tr, [role="rowheader"], [role="columnheader"]'
+    );
+    const hasHeader = await headerRow
+      .first()
+      .isVisible()
+      .catch(() => false);
+    expect(hasHeader || (await clientsTable.first().isVisible())).toBe(true);
   });
 
-  test('employee with write permission should create client', async ({ authenticatedEmployeePage }) => {
+  test('employee with write permission should create client', async ({
+    authenticatedEmployeePage,
+  }) => {
     const clientsPage = new ClientsPage(authenticatedEmployeePage);
     const clientName = `Employee Created Client ${Date.now()}`;
 
@@ -285,7 +312,7 @@ test.describe('Clients - Employee Access', () => {
     // Try to create client (may fail if no write permission)
     const addButton = clientsPage.addClientButton;
 
-    if (await addButton.isVisible() && await addButton.isEnabled()) {
+    if ((await addButton.isVisible()) && (await addButton.isEnabled())) {
       await clientsPage.createClient({
         name: clientName,
         pkdCode: '62.01.Z',
@@ -311,7 +338,9 @@ test.describe('Clients - Bulk Operations', () => {
       await checkboxes.nth(1).check();
 
       // Look for bulk actions
-      const bulkActionsButton = authenticatedCompanyOwnerPage.getByRole('button', { name: /akcje|actions|bulk/i });
+      const bulkActionsButton = authenticatedCompanyOwnerPage.getByRole('button', {
+        name: /akcje|actions|bulk/i,
+      });
       if (await bulkActionsButton.isVisible()) {
         await bulkActionsButton.click();
 
@@ -324,7 +353,9 @@ test.describe('Clients - Bulk Operations', () => {
           await clientsPage.selectAmlGroup('ELEVATED');
 
           // Confirm
-          const confirmButton = authenticatedCompanyOwnerPage.getByRole('button', { name: /potwierdź|confirm/i });
+          const confirmButton = authenticatedCompanyOwnerPage.getByRole('button', {
+            name: /potwierdź|confirm/i,
+          });
           await confirmButton.click();
 
           await authenticatedCompanyOwnerPage.waitForLoadState('networkidle');

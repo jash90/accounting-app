@@ -163,7 +163,7 @@ TypeOrmModule.forFeature([YourEntity, User, Company]),  // Include Company
 class CompanyBasicInfoDto {
   id: string;
   name: string;
-  isSystemCompany: boolean;  // Important for UI logic
+  isSystemCompany: boolean; // Important for UI logic
 }
 
 export class YourResponseDto {
@@ -208,9 +208,9 @@ export enum TaskPriority {
 }
 
 @Entity('tasks')
-@Index(['companyId'])           // Index for filtering by company
-@Index(['status'])              // Index for filtering by status
-@Index(['assigneeId'])          // Index for filtering by assignee
+@Index(['companyId']) // Index for filtering by company
+@Index(['status']) // Index for filtering by status
+@Index(['assigneeId']) // Index for filtering by assignee
 export class Task {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -275,17 +275,17 @@ export class Task {
 
 ### Key Features Demonstrated
 
-| Feature | Implementation | Purpose |
-|---------|---------------|---------|
-| **UUID Primary Key** | `@PrimaryGeneratedColumn('uuid')` | Unique, non-sequential IDs |
-| **Enum Columns** | `type: 'enum', enum: TaskStatus` | Type-safe status fields |
-| **Nullable Columns** | `nullable: true` | Optional fields with `null` |
-| **Multi-tenant** | `companyId` + `@ManyToOne` | Data isolation per company |
-| **Audit Trail** | `createdById` + `@ManyToOne` | Track who created records |
-| **Assignment** | `assigneeId` + nullable relation | Optional user assignment |
-| **Timestamps** | `@CreateDateColumn`, `@UpdateDateColumn` | Automatic date tracking |
-| **Database Indexes** | `@Index(['companyId'])` | Query performance optimization |
-| **Cascade Delete** | `onDelete: 'CASCADE'` | Cleanup on parent deletion |
+| Feature              | Implementation                           | Purpose                        |
+| -------------------- | ---------------------------------------- | ------------------------------ |
+| **UUID Primary Key** | `@PrimaryGeneratedColumn('uuid')`        | Unique, non-sequential IDs     |
+| **Enum Columns**     | `type: 'enum', enum: TaskStatus`         | Type-safe status fields        |
+| **Nullable Columns** | `nullable: true`                         | Optional fields with `null`    |
+| **Multi-tenant**     | `companyId` + `@ManyToOne`               | Data isolation per company     |
+| **Audit Trail**      | `createdById` + `@ManyToOne`             | Track who created records      |
+| **Assignment**       | `assigneeId` + nullable relation         | Optional user assignment       |
+| **Timestamps**       | `@CreateDateColumn`, `@UpdateDateColumn` | Automatic date tracking        |
+| **Database Indexes** | `@Index(['companyId'])`                  | Query performance optimization |
+| **Cascade Delete**   | `onDelete: 'CASCADE'`                    | Cleanup on parent deletion     |
 
 ---
 

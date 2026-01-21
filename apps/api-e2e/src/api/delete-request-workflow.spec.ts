@@ -9,7 +9,6 @@ describe('Delete Request Workflow E2E Tests', () => {
   let ownerToken: string;
   let employeeToken: string;
   let testClientId: string;
-  let testDeleteRequestId: string;
 
   // Track created entities for cleanup
   const createdClientIds: string[] = [];
@@ -158,9 +157,7 @@ describe('Delete Request Workflow E2E Tests', () => {
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
-      const pendingRequest = response.body.find(
-        (req: any) => req.id === approvalRequestId,
-      );
+      const pendingRequest = response.body.find((req: any) => req.id === approvalRequestId);
       expect(pendingRequest).toBeDefined();
       expect(pendingRequest.status).toBe('PENDING');
     });
@@ -172,9 +169,7 @@ describe('Delete Request Workflow E2E Tests', () => {
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
-      const myRequest = response.body.find(
-        (req: any) => req.id === approvalRequestId,
-      );
+      const myRequest = response.body.find((req: any) => req.id === approvalRequestId);
       expect(myRequest).toBeDefined();
       expect(myRequest.status).toBe('PENDING');
     });
@@ -293,9 +288,7 @@ describe('Delete Request Workflow E2E Tests', () => {
         .expect(200);
 
       expect(response.body.status).toBe('REJECTED');
-      expect(response.body.rejectionReason).toBe(
-        'Client is still needed for business operations',
-      );
+      expect(response.body.rejectionReason).toBe('Client is still needed for business operations');
       expect(response.body).toHaveProperty('processedById');
       expect(response.body).toHaveProperty('processedAt');
     });
@@ -417,9 +410,7 @@ describe('Delete Request Workflow E2E Tests', () => {
     });
 
     it('should require authentication for all delete request endpoints', async () => {
-      await request(app.getHttpServer())
-        .get('/modules/clients/delete-requests')
-        .expect(401); // Unauthorized
+      await request(app.getHttpServer()).get('/modules/clients/delete-requests').expect(401); // Unauthorized
 
       await request(app.getHttpServer())
         .post(`/modules/clients/${testClientId}/delete-request`)
@@ -479,9 +470,7 @@ describe('Delete Request Workflow E2E Tests', () => {
 
       // Approve the request
       await request(app.getHttpServer())
-        .post(
-          `/modules/clients/delete-requests/${transactionRequestId}/approve`,
-        )
+        .post(`/modules/clients/delete-requests/${transactionRequestId}/approve`)
         .set('Authorization', `Bearer ${ownerToken}`)
         .expect(200);
 

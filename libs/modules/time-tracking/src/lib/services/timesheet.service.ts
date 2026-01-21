@@ -1,19 +1,16 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository, Between, DataSource } from 'typeorm';
-import {
-  TimeEntry,
-  TimeEntryStatus,
-  User,
-  UserRole,
-} from '@accounting/common';
+
+import { TimeEntry, User, UserRole } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
+
 import { TimeCalculationService } from './time-calculation.service';
 import { TimeSettingsService } from './time-settings.service';
 import {
   DailyTimesheetDto,
   WeeklyTimesheetDto,
-  MonthlyTimesheetDto,
   ReportFiltersDto,
   TimesheetGroupBy,
 } from '../dto/timesheet.dto';
@@ -77,7 +74,7 @@ export class TimesheetService {
     private readonly calculationService: TimeCalculationService,
     private readonly settingsService: TimeSettingsService,
     private readonly tenantService: TenantService,
-    private readonly dataSource: DataSource,
+    private readonly dataSource: DataSource
   ) {}
 
   private canViewAllEntries(user: User): boolean {
@@ -88,10 +85,7 @@ export class TimesheetService {
    * Validates that a user belongs to the specified company.
    * Throws NotFoundException if user doesn't exist or doesn't belong to company.
    */
-  private async validateUserBelongsToCompany(
-    userId: string,
-    companyId: string,
-  ): Promise<void> {
+  private async validateUserBelongsToCompany(userId: string, companyId: string): Promise<void> {
     const targetUser = await this.dataSource.getRepository(User).findOne({
       where: { id: userId, companyId, isActive: true },
     });
@@ -100,10 +94,7 @@ export class TimesheetService {
     }
   }
 
-  async getDailyTimesheet(
-    dto: DailyTimesheetDto,
-    user: User,
-  ): Promise<DailyTimesheetResponse> {
+  async getDailyTimesheet(dto: DailyTimesheetDto, user: User): Promise<DailyTimesheetResponse> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
     const date = new Date(dto.date);
     const { startOfDay, endOfDay } = this.calculationService.getDayBounds(date);
@@ -136,16 +127,13 @@ export class TimesheetService {
     };
   }
 
-  async getWeeklyTimesheet(
-    dto: WeeklyTimesheetDto,
-    user: User,
-  ): Promise<WeeklyTimesheetResponse> {
+  async getWeeklyTimesheet(dto: WeeklyTimesheetDto, user: User): Promise<WeeklyTimesheetResponse> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
     const settings = await this.settingsService.getSettings(user);
     const date = new Date(dto.weekStart);
     const { startOfWeek, endOfWeek } = this.calculationService.getWeekBounds(
       date,
-      settings.weekStartDay,
+      settings.weekStartDay
     );
 
     // Determine which user's data to fetch
@@ -204,10 +192,7 @@ export class TimesheetService {
     };
   }
 
-  async getReportSummary(
-    dto: ReportFiltersDto,
-    user: User,
-  ): Promise<ReportSummary> {
+  async getReportSummary(dto: ReportFiltersDto, user: User): Promise<ReportSummary> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
     const startDate = new Date(dto.startDate);
     startDate.setHours(0, 0, 0, 0);
@@ -246,8 +231,14 @@ export class TimesheetService {
       .clone()
       .select('COUNT(*)', 'entriesCount')
       .addSelect('COALESCE(SUM(entry.durationMinutes), 0)', 'totalMinutes')
-      .addSelect('COALESCE(SUM(CASE WHEN entry.isBillable = true THEN entry.durationMinutes ELSE 0 END), 0)', 'billableMinutes')
-      .addSelect('COALESCE(SUM(CASE WHEN entry.isBillable = true THEN entry.totalAmount ELSE 0 END), 0)', 'totalAmount')
+      .addSelect(
+        'COALESCE(SUM(CASE WHEN entry.isBillable = true THEN entry.durationMinutes ELSE 0 END), 0)',
+        'billableMinutes'
+      )
+      .addSelect(
+        'COALESCE(SUM(CASE WHEN entry.isBillable = true THEN entry.totalAmount ELSE 0 END), 0)',
+        'totalAmount'
+      )
       .getRawOne();
 
     const entriesCount = parseInt(summaryResult?.entriesCount ?? '0', 10);
@@ -274,7 +265,7 @@ export class TimesheetService {
       // Log warning if results were truncated
       if (entries.length === MAX_ENTRIES_FOR_GROUPING && entriesCount > MAX_ENTRIES_FOR_GROUPING) {
         this.logger.warn(
-          `Report grouping truncated: ${entriesCount} total entries, only first ${MAX_ENTRIES_FOR_GROUPING} grouped`,
+          `Report grouping truncated: ${entriesCount} total entries, only first ${MAX_ENTRIES_FOR_GROUPING} grouped`
         );
       }
     }
@@ -294,7 +285,7 @@ export class TimesheetService {
   async getClientReport(
     clientId: string,
     dto: ReportFiltersDto,
-    user: User,
+    user: User
   ): Promise<ReportSummary> {
     return this.getReportSummary({ ...dto, clientId }, user);
   }
@@ -325,10 +316,7 @@ export class TimesheetService {
     };
   }
 
-  private groupEntries(
-    entries: TimeEntry[],
-    groupBy: TimesheetGroupBy,
-  ): GroupedReportData[] {
+  private groupEntries(entries: TimeEntry[], groupBy: TimesheetGroupBy): GroupedReportData[] {
     const groupMap = new Map<string, { name: string; entries: TimeEntry[] }>();
 
     for (const entry of entries) {

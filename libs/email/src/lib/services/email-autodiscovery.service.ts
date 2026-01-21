@@ -4,10 +4,7 @@ import { XMLParser } from 'fast-xml-parser';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const Imap = require('imap');
-import {
-  AutodiscoveryResult,
-  DiscoveredConfig,
-} from '../interfaces/autodiscovery.interface';
+import { AutodiscoveryResult, DiscoveredConfig } from '../interfaces/autodiscovery.interface';
 import { DiscoveryCacheService } from './discovery-cache.service';
 import { ProviderLookupService } from './provider-lookup.service';
 import { DnsDiscoveryService } from './dns-discovery.service';
@@ -45,7 +42,7 @@ export class EmailAutodiscoveryService {
   constructor(
     private readonly cacheService: DiscoveryCacheService,
     private readonly providerLookup: ProviderLookupService,
-    private readonly dnsDiscovery: DnsDiscoveryService,
+    private readonly dnsDiscovery: DnsDiscoveryService
   ) {
     // Initialize XML parser with options to handle attributes and preserve structure
     this.xmlParser = new XMLParser({
@@ -330,18 +327,21 @@ export class EmailAutodiscoveryService {
       const outgoing = provider.outgoingServer || provider.OutgoingServer;
       if (outgoing) {
         const servers = Array.isArray(outgoing) ? outgoing : [outgoing];
-        smtpConfig = servers.find((s: Record<string, unknown>) =>
-          s['@_type']?.toString().toLowerCase() === 'smtp' || !s['@_type']
-        ) || servers[0];
+        smtpConfig =
+          servers.find(
+            (s: Record<string, unknown>) =>
+              s['@_type']?.toString().toLowerCase() === 'smtp' || !s['@_type']
+          ) || servers[0];
       }
 
       // Handle incomingServer (IMAP preferred over POP3)
       const incoming = provider.incomingServer || provider.IncomingServer;
       if (incoming) {
         const servers = Array.isArray(incoming) ? incoming : [incoming];
-        imapConfig = servers.find((s: Record<string, unknown>) =>
-          s['@_type']?.toString().toLowerCase() === 'imap'
-        ) || servers[0];
+        imapConfig =
+          servers.find(
+            (s: Record<string, unknown>) => s['@_type']?.toString().toLowerCase() === 'imap'
+          ) || servers[0];
       }
 
       if (!smtpConfig || !imapConfig) {
@@ -416,11 +416,11 @@ export class EmailAutodiscoveryService {
       const protocolList = Array.isArray(protocols) ? protocols : [protocols];
 
       // Find SMTP and IMAP protocol blocks
-      const smtpProtocol = protocolList.find((p: Record<string, unknown>) =>
-        (p.Type || p.type)?.toString().toUpperCase() === 'SMTP'
+      const smtpProtocol = protocolList.find(
+        (p: Record<string, unknown>) => (p.Type || p.type)?.toString().toUpperCase() === 'SMTP'
       );
-      const imapProtocol = protocolList.find((p: Record<string, unknown>) =>
-        (p.Type || p.type)?.toString().toUpperCase() === 'IMAP'
+      const imapProtocol = protocolList.find(
+        (p: Record<string, unknown>) => (p.Type || p.type)?.toString().toUpperCase() === 'IMAP'
       );
 
       if (!smtpProtocol || !imapProtocol) {
@@ -476,7 +476,7 @@ export class EmailAutodiscoveryService {
   private async fetchWithTimeout(
     url: string,
     timeout: number,
-    options: RequestInit = {},
+    options: RequestInit = {}
   ): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);

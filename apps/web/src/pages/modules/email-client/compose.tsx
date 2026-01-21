@@ -1,18 +1,7 @@
 import { useState, useEffect } from 'react';
+
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
-import {
-  useSendEmail,
-  useCreateDraft,
-  useDraft,
-  useUpdateDraft,
-  useGenerateAiDraftStream,
-  useUploadAttachment,
-} from '@/lib/hooks/use-email-client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+
 import {
   Send,
   Save,
@@ -26,12 +15,22 @@ import {
   FileIcon,
   Upload,
 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+  useSendEmail,
+  useCreateDraft,
+  useDraft,
+  useUpdateDraft,
+  useGenerateAiDraftStream,
+  useUploadAttachment,
+} from '@/lib/hooks/use-email-client';
+import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 
 interface LocationState {
   replyTo?: {
@@ -71,7 +70,9 @@ export default function EmailCompose() {
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
   const [showCcBcc, setShowCcBcc] = useState(false);
-  const [attachments, setAttachments] = useState<Array<{ path: string; filename: string; size: number }>>([]);
+  const [attachments, setAttachments] = useState<
+    Array<{ path: string; filename: string; size: number }>
+  >([]);
   const [isDragging, setIsDragging] = useState(false);
 
   // Sync streaming content to textarea
@@ -273,9 +274,7 @@ export default function EmailCompose() {
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
-          <p className="mt-2 text-sm text-muted-foreground">
-            Ładowanie szkicu...
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">Ładowanie szkicu...</p>
         </div>
       </div>
     );
@@ -289,16 +288,10 @@ export default function EmailCompose() {
     <div className="h-full flex flex-col">
       <div className="border-b p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => emailNav.toInbox()}
-          >
+          <Button variant="ghost" size="sm" onClick={() => emailNav.toInbox()}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold">
-            {draftId ? 'Edytuj szkic' : 'Nowa wiadomość'}
-          </h1>
+          <h1 className="text-2xl font-bold">{draftId ? 'Edytuj szkic' : 'Nowa wiadomość'}</h1>
           {existingDraft?.isAiGenerated && (
             <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full flex items-center gap-1">
               <Sparkles className="h-3 w-3" />
@@ -313,12 +306,7 @@ export default function EmailCompose() {
           )}
         </div>
         <div className="flex gap-2">
-          <Button
-            onClick={handleSaveDraft}
-            variant="outline"
-            size="sm"
-            disabled={isSaving}
-          >
+          <Button onClick={handleSaveDraft} variant="outline" size="sm" disabled={isSaving}>
             {isSaving ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -362,9 +350,7 @@ export default function EmailCompose() {
               value={to}
               onChange={(e) => setTo(e.target.value)}
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              Oddziel wiele adresów przecinkami
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Oddziel wiele adresów przecinkami</p>
           </div>
 
           <Collapsible open={showCcBcc} onOpenChange={setShowCcBcc}>
@@ -436,7 +422,7 @@ export default function EmailCompose() {
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 rows={15}
-                className={`font-mono ${(aiStream.isStreaming || locationState?.aiGenerate) ? 'border-purple-300 focus:border-purple-500' : ''}`}
+                className={`font-mono ${aiStream.isStreaming || locationState?.aiGenerate ? 'border-purple-300 focus:border-purple-500' : ''}`}
                 disabled={aiStream.isStreaming || (locationState?.aiGenerate && !content)}
               />
             </div>

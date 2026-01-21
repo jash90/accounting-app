@@ -61,10 +61,7 @@ export class OpenAIProviderService extends AIProviderService {
   /**
    * Execute an operation with retry logic and exponential backoff.
    */
-  private async withRetry<T>(
-    operation: () => Promise<T>,
-    operationName: string,
-  ): Promise<T> {
+  private async withRetry<T>(operation: () => Promise<T>, operationName: string): Promise<T> {
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
@@ -76,14 +73,14 @@ export class OpenAIProviderService extends AIProviderService {
 
         if (!isRetryable || attempt === this.MAX_RETRIES) {
           this.logger.error(
-            `${operationName} failed after ${attempt} attempt(s): ${lastError.message}`,
+            `${operationName} failed after ${attempt} attempt(s): ${lastError.message}`
           );
           throw this.mapToUserFriendlyError(error, operationName);
         }
 
         const delay = this.BASE_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
         this.logger.warn(
-          `${operationName} attempt ${attempt}/${this.MAX_RETRIES} failed, retrying in ${delay}ms: ${lastError.message}`,
+          `${operationName} attempt ${attempt}/${this.MAX_RETRIES} failed, retrying in ${delay}ms: ${lastError.message}`
         );
         await this.sleep(delay);
       }
@@ -118,7 +115,7 @@ export class OpenAIProviderService extends AIProviderService {
     // Retry on network errors
     if (error instanceof Error) {
       const networkErrors = ['ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'ECONNREFUSED'];
-      return networkErrors.some(code => error.message.includes(code));
+      return networkErrors.some((code) => error.message.includes(code));
     }
 
     return false;
@@ -127,7 +124,7 @@ export class OpenAIProviderService extends AIProviderService {
   /**
    * Map OpenAI errors to user-friendly messages.
    */
-  private mapToUserFriendlyError(error: unknown, operationName: string): AIProviderError {
+  private mapToUserFriendlyError(error: unknown, _operationName: string): AIProviderError {
     const technicalDetails = error instanceof Error ? error.message : String(error);
 
     if (error instanceof OpenAI.APIError) {
@@ -136,31 +133,31 @@ export class OpenAIProviderService extends AIProviderService {
           return new AIProviderError(
             'Invalid API key. Please check your AI configuration.',
             technicalDetails,
-            HttpStatus.BAD_REQUEST, // Changed from UNAUTHORIZED to prevent frontend from interpreting as JWT auth failure
+            HttpStatus.BAD_REQUEST // Changed from UNAUTHORIZED to prevent frontend from interpreting as JWT auth failure
           );
         case 402:
           return new AIProviderError(
             'Insufficient credits on OpenAI. Please add credits to your account.',
             technicalDetails,
-            HttpStatus.PAYMENT_REQUIRED,
+            HttpStatus.PAYMENT_REQUIRED
           );
         case 403:
           return new AIProviderError(
             'Access denied. The selected model may require special access permissions.',
             technicalDetails,
-            HttpStatus.FORBIDDEN,
+            HttpStatus.FORBIDDEN
           );
         case 429:
           return new AIProviderError(
             'AI service is temporarily overloaded. Please try again in a moment.',
             technicalDetails,
-            HttpStatus.TOO_MANY_REQUESTS,
+            HttpStatus.TOO_MANY_REQUESTS
           );
         case 400:
           return new AIProviderError(
             'Invalid request to AI service. Please try a different message.',
             technicalDetails,
-            HttpStatus.BAD_REQUEST,
+            HttpStatus.BAD_REQUEST
           );
         case 500:
         case 502:
@@ -169,7 +166,7 @@ export class OpenAIProviderService extends AIProviderService {
           return new AIProviderError(
             'AI service is temporarily unavailable. Please try again later.',
             technicalDetails,
-            HttpStatus.SERVICE_UNAVAILABLE,
+            HttpStatus.SERVICE_UNAVAILABLE
           );
         default:
           // Log unexpected status codes for debugging
@@ -177,7 +174,7 @@ export class OpenAIProviderService extends AIProviderService {
           return new AIProviderError(
             `AI service returned an unexpected error (status: ${error.status || 'unknown'}). Please try again.`,
             technicalDetails,
-            HttpStatus.INTERNAL_SERVER_ERROR,
+            HttpStatus.INTERNAL_SERVER_ERROR
           );
       }
     }
@@ -187,7 +184,7 @@ export class OpenAIProviderService extends AIProviderService {
       return new AIProviderError(
         'Request timed out. Please try a shorter message or try again later.',
         technicalDetails,
-        HttpStatus.GATEWAY_TIMEOUT,
+        HttpStatus.GATEWAY_TIMEOUT
       );
     }
 
@@ -196,14 +193,14 @@ export class OpenAIProviderService extends AIProviderService {
       return new AIProviderError(
         'Unable to connect to AI service. Please check your network connection.',
         technicalDetails,
-        HttpStatus.SERVICE_UNAVAILABLE,
+        HttpStatus.SERVICE_UNAVAILABLE
       );
     }
 
     return new AIProviderError(
       'An unexpected error occurred. Please try again.',
       technicalDetails,
-      HttpStatus.INTERNAL_SERVER_ERROR,
+      HttpStatus.INTERNAL_SERVER_ERROR
     );
   }
 
@@ -211,7 +208,7 @@ export class OpenAIProviderService extends AIProviderService {
    * Sleep helper for retry delays.
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -223,7 +220,7 @@ export class OpenAIProviderService extends AIProviderService {
     const reasoningModelPrefixes = ['o1', 'o3'];
     const lowerModel = model.toLowerCase();
     return reasoningModelPrefixes.some(
-      (prefix) => lowerModel === prefix || lowerModel.startsWith(`${prefix}-`),
+      (prefix) => lowerModel === prefix || lowerModel.startsWith(`${prefix}-`)
     );
   }
 
@@ -232,14 +229,14 @@ export class OpenAIProviderService extends AIProviderService {
     model: string,
     temperature: number,
     maxTokens: number,
-    apiKey: string,
+    apiKey: string
   ): Promise<ChatCompletionResponse> {
     const openai = this.getClient(apiKey);
     const isReasoning = this.isReasoningModel(model);
 
     if (isReasoning) {
       this.logger.debug(
-        `Using reasoning model parameters for ${model} (max_completion_tokens, no temperature)`,
+        `Using reasoning model parameters for ${model} (max_completion_tokens, no temperature)`
       );
     }
 
@@ -277,13 +274,11 @@ export class OpenAIProviderService extends AIProviderService {
     model: string,
     temperature: number,
     maxTokens: number,
-    apiKey: string,
+    apiKey: string
   ): Observable<ChatStreamChunk> {
     // o1/o3 models don't support streaming - fall back to non-streaming
     if (this.isReasoningModel(model)) {
-      this.logger.debug(
-        `Model ${model} doesn't support streaming, using non-streaming fallback`,
-      );
+      this.logger.debug(`Model ${model} doesn't support streaming, using non-streaming fallback`);
       return this.chatWithFallback(messages, model, temperature, maxTokens, apiKey);
     }
 
@@ -291,7 +286,7 @@ export class OpenAIProviderService extends AIProviderService {
       const openai = this.getClient(apiKey);
 
       this.logger.debug(
-        `Starting streaming chat request to OpenAI: model=${model}, messages=${messages.length}`,
+        `Starting streaming chat request to OpenAI: model=${model}, messages=${messages.length}`
       );
 
       openai.chat.completions
@@ -320,9 +315,7 @@ export class OpenAIProviderService extends AIProviderService {
 
               // Check if this is the final chunk
               if (chunk.choices[0]?.finish_reason) {
-                this.logger.debug(
-                  `Streaming complete: totalContent=${totalContent.length} chars`,
-                );
+                this.logger.debug(`Streaming complete: totalContent=${totalContent.length} chars`);
               }
             }
 
@@ -365,7 +358,7 @@ export class OpenAIProviderService extends AIProviderService {
     model: string,
     temperature: number,
     maxTokens: number,
-    apiKey: string,
+    apiKey: string
   ): Observable<ChatStreamChunk> {
     return new Observable((subscriber) => {
       this.chat(messages, model, temperature, maxTokens, apiKey)
@@ -402,7 +395,7 @@ export class OpenAIProviderService extends AIProviderService {
   async generateEmbedding(
     text: string,
     apiKey: string,
-    model: string = 'text-embedding-ada-002',
+    model: string = 'text-embedding-ada-002'
   ): Promise<EmbeddingResponse> {
     const openai = this.getClient(apiKey);
 

@@ -8,7 +8,7 @@
 import { DataSource } from 'typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 
 // Test database configuration
 export const TEST_DB_CONFIG = {
@@ -23,7 +23,7 @@ export const TEST_DB_CONFIG = {
  * Creates a DataSource for integration tests.
  * This connects to a real PostgreSQL database.
  */
-export async function createTestDataSource(entities: any[]): Promise<DataSource> {
+export async function createTestDataSource(entities: unknown[]): Promise<DataSource> {
   const dataSource = new DataSource({
     type: 'postgres',
     ...TEST_DB_CONFIG,
@@ -41,9 +41,9 @@ export async function createTestDataSource(entities: any[]): Promise<DataSource>
  * Creates a NestJS testing module with TypeORM configured for integration tests.
  */
 export async function createIntegrationTestingModule(
-  imports: any[],
-  providers: any[],
-  entities: any[],
+  imports: unknown[],
+  providers: unknown[],
+  entities: unknown[]
 ): Promise<TestingModule> {
   return Test.createTestingModule({
     imports: [
@@ -81,14 +81,16 @@ export class TestDataFactory {
     return `${prefix}-${Date.now()}-${++this.counter}-${Math.random().toString(36).slice(2, 8)}`;
   }
 
-  async createUser(overrides: Partial<{
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    role: string;
-    companyId: string;
-  }> = {}) {
+  async createUser(
+    overrides: Partial<{
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      role: string;
+      companyId: string;
+    }> = {}
+  ) {
     const userRepo = this.dataSource.getRepository('User');
     const uniqueId = this.generateUniqueId('user');
     const user = userRepo.create({
@@ -107,11 +109,13 @@ export class TestDataFactory {
   /**
    * Creates a test company in the database.
    */
-  async createCompany(overrides: Partial<{
-    id: string;
-    name: string;
-    ownerId: string;
-  }> = {}) {
+  async createCompany(
+    overrides: Partial<{
+      id: string;
+      name: string;
+      ownerId: string;
+    }> = {}
+  ) {
     const companyRepo = this.dataSource.getRepository('Company');
     const company = companyRepo.create({
       id: overrides.id || this.generateUniqueId('company'),
@@ -125,15 +129,17 @@ export class TestDataFactory {
   /**
    * Creates a test time entry in the database.
    */
-  async createTimeEntry(overrides: Partial<{
-    id: string;
-    userId: string;
-    companyId: string;
-    description: string;
-    startTime: Date;
-    endTime: Date | null;
-    isRunning: boolean;
-  }> = {}) {
+  async createTimeEntry(
+    overrides: Partial<{
+      id: string;
+      userId: string;
+      companyId: string;
+      description: string;
+      startTime: Date;
+      endTime: Date | null;
+      isRunning: boolean;
+    }> = {}
+  ) {
     if (!overrides.userId) {
       throw new Error('createTimeEntry requires userId to be provided');
     }
@@ -169,9 +175,9 @@ export class TestDataFactory {
  * Utility to run multiple promises concurrently and return results.
  */
 export async function runConcurrently<T>(
-  operations: (() => Promise<T>)[],
+  operations: (() => Promise<T>)[]
 ): Promise<PromiseSettledResult<T>[]> {
-  return Promise.allSettled(operations.map(op => op()));
+  return Promise.allSettled(operations.map((op) => op()));
 }
 
 /**
@@ -179,7 +185,7 @@ export async function runConcurrently<T>(
  */
 export async function waitFor(
   condition: () => Promise<boolean> | boolean,
-  options: { timeout?: number; interval?: number } = {},
+  options: { timeout?: number; interval?: number } = {}
 ): Promise<void> {
   const { timeout = 5000, interval = 100 } = options;
   const start = Date.now();
@@ -188,7 +194,7 @@ export async function waitFor(
     if (await condition()) {
       return;
     }
-    await new Promise(resolve => setTimeout(resolve, interval));
+    await new Promise((resolve) => setTimeout(resolve, interval));
   }
 
   throw new Error(`Timeout waiting for condition after ${timeout}ms`);

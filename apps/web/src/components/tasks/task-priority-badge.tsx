@@ -1,13 +1,8 @@
+import { AlertTriangle, ArrowUp, ArrowRight, ArrowDown, Minus } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils/cn';
 import { TaskPriority, TaskPriorityLabels, TaskPriorityColors } from '@/types/enums';
-import { Badge } from '@/components/ui/badge';
-import {
-  AlertTriangle,
-  ArrowUp,
-  ArrowRight,
-  ArrowDown,
-  Minus,
-} from 'lucide-react';
 
 interface TaskPriorityBadgeProps {
   priority: TaskPriority;
@@ -29,7 +24,10 @@ const iconSizeMap = {
   lg: 16,
 };
 
-const priorityIcons: Record<TaskPriority, React.ComponentType<{ size?: number; className?: string }>> = {
+const priorityIcons: Record<
+  TaskPriority,
+  React.ComponentType<{ size?: number; className?: string }>
+> = {
   [TaskPriority.URGENT]: AlertTriangle,
   [TaskPriority.HIGH]: ArrowUp,
   [TaskPriority.MEDIUM]: ArrowRight,

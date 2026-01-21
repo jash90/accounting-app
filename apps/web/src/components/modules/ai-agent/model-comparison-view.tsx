@@ -1,8 +1,9 @@
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, X, Check, Eye, Wrench, Zap } from 'lucide-react';
-import { OpenRouterModelDto } from '@/types/dtos';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
+import { type OpenRouterModelDto } from '@/types/dtos';
 
 interface ModelComparisonViewProps {
   models: OpenRouterModelDto[];
@@ -67,7 +68,10 @@ export function ModelComparisonView({
         {label}
       </td>
       {values.map((value, i) => (
-        <td key={i} className="py-3 px-4 text-sm text-center border-r border-border last:border-r-0">
+        <td
+          key={i}
+          className="py-3 px-4 text-sm text-center border-r border-border last:border-r-0"
+        >
           {value}
         </td>
       ))}
@@ -96,7 +100,10 @@ export function ModelComparisonView({
                 Właściwość
               </th>
               {models.map((model) => (
-                <th key={model.id} className="py-3 px-4 border-r border-border last:border-r-0 min-w-[200px]">
+                <th
+                  key={model.id}
+                  className="py-3 px-4 border-r border-border last:border-r-0 min-w-[200px]"
+                >
                   <div className="flex items-center justify-between gap-2">
                     <div className="text-left min-w-0">
                       <p className="font-semibold text-foreground truncate">{model.name}</p>
@@ -136,7 +143,9 @@ export function ModelComparisonView({
             <ComparisonRow
               label="Okno kontekstu"
               values={models.map((m) => (
-                <span key={m.id} className="font-medium">{formatContextWindow(m.contextWindow)}</span>
+                <span key={m.id} className="font-medium">
+                  {formatContextWindow(m.contextWindow)}
+                </span>
               ))}
               highlight
             />
@@ -148,7 +157,7 @@ export function ModelComparisonView({
             />
             <ComparisonRow
               label="Wizja"
-              values={models.map((m) => (
+              values={models.map((m) =>
                 m.supportsVision ? (
                   <Badge key={m.id} variant="default" className="gap-1">
                     <Eye className="w-3 h-3" />
@@ -159,12 +168,12 @@ export function ModelComparisonView({
                     <X className="w-3 h-3" />
                   </Badge>
                 )
-              ))}
+              )}
               highlight
             />
             <ComparisonRow
               label="Narzędzia/Funkcje"
-              values={models.map((m) => (
+              values={models.map((m) =>
                 m.supportsFunctionCalling ? (
                   <Badge key={m.id} variant="default" className="gap-1">
                     <Wrench className="w-3 h-3" />
@@ -175,7 +184,7 @@ export function ModelComparisonView({
                     <X className="w-3 h-3" />
                   </Badge>
                 )
-              ))}
+              )}
             />
             <ComparisonRow
               label="ID modelu"

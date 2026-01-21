@@ -1,5 +1,9 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { StorageProvider, StorageResult, STORAGE_PROVIDER } from '../interfaces/storage-provider.interface';
+import {
+  StorageProvider,
+  StorageResult,
+  STORAGE_PROVIDER,
+} from '../interfaces/storage-provider.interface';
 
 @Injectable()
 export class StorageService {
@@ -7,7 +11,7 @@ export class StorageService {
 
   constructor(
     @Inject(STORAGE_PROVIDER)
-    private readonly provider: StorageProvider,
+    private readonly provider: StorageProvider
   ) {}
 
   async uploadFile(file: Express.Multer.File, path: string): Promise<StorageResult> {
@@ -45,7 +49,7 @@ export class StorageService {
   async uploadClientDocument(
     file: Express.Multer.File,
     companyId: string,
-    clientId: string,
+    clientId: string
   ): Promise<StorageResult> {
     return this.uploadFile(file, `clients/${companyId}/${clientId}/documents`);
   }

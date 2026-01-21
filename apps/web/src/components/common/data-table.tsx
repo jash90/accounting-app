@@ -1,15 +1,21 @@
+import { useState, useEffect } from 'react';
+
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
   getSortedRowModel,
   getPaginationRowModel,
-  SortingState,
-  ColumnDef,
-  RowSelectionState,
-  VisibilityState,
+  type SortingState,
+  type ColumnDef,
+  type RowSelectionState,
+  type VisibilityState,
 } from '@tanstack/react-table';
-import { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -18,10 +24,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -125,9 +127,8 @@ export function DataTable<TData, TValue>({
     getPaginationRowModel: enablePagination ? getPaginationRowModel() : undefined,
     onSortingChange: setSorting,
     onRowSelectionChange: (updaterOrValue) => {
-      const newSelection = typeof updaterOrValue === 'function'
-        ? updaterOrValue(rowSelection)
-        : updaterOrValue;
+      const newSelection =
+        typeof updaterOrValue === 'function' ? updaterOrValue(rowSelection) : updaterOrValue;
 
       setRowSelection(newSelection);
 
@@ -172,7 +173,8 @@ export function DataTable<TData, TValue>({
       {selectable && selectedCount > 0 && (
         <div className="px-4 py-2 bg-apptax-soft-teal/20 rounded-lg">
           <p className="text-sm text-apptax-navy">
-            Zaznaczono <span className="font-semibold">{selectedCount}</span> {selectedCount === 1 ? 'element' : selectedCount < 5 ? 'elementy' : 'elementów'}
+            Zaznaczono <span className="font-semibold">{selectedCount}</span>{' '}
+            {selectedCount === 1 ? 'element' : selectedCount < 5 ? 'elementy' : 'elementów'}
           </p>
         </div>
       )}
@@ -184,10 +186,7 @@ export function DataTable<TData, TValue>({
                 <TableHead key={header.id} className="text-apptax-navy font-semibold">
                   {header.isPlaceholder
                     ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                    : flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
               ))}
             </TableRow>
@@ -230,14 +229,9 @@ export function DataTable<TData, TValue>({
             </span>{' '}
             -{' '}
             <span className="font-medium text-apptax-navy">
-              {Math.min(
-                (table.getState().pagination.pageIndex + 1) * pageSize,
-                data.length
-              )}
+              {Math.min((table.getState().pagination.pageIndex + 1) * pageSize, data.length)}
             </span>{' '}
-            z{' '}
-            <span className="font-medium text-apptax-navy">{data.length}</span>{' '}
-            wyników
+            z <span className="font-medium text-apptax-navy">{data.length}</span> wyników
           </p>
           <div className="flex gap-2">
             <Button

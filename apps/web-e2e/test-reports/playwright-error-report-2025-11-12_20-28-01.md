@@ -1,4 +1,5 @@
 # Playwright E2E Test Error Report
+
 **Generated:** 2025-11-12 20:28:01
 **Project:** Accounting Application
 **Test Suite:** web-e2e
@@ -10,17 +11,19 @@
 ## Executive Summary
 
 ### Test Results Overview
-| Metric | Count | Percentage |
-|--------|-------|------------|
-| **Total Tests** | 387 | 100% |
-| **Passed** | 185 | 47.8% |
-| **Failed** | 202 | 52.2% |
-| **Skipped** | 0 | 0% |
-| **Flaky** | 0 | 0% |
+
+| Metric          | Count | Percentage |
+| --------------- | ----- | ---------- |
+| **Total Tests** | 387   | 100%       |
+| **Passed**      | 185   | 47.8%      |
+| **Failed**      | 202   | 52.2%      |
+| **Skipped**     | 0     | 0%         |
+| **Flaky**       | 0     | 0%         |
 
 ### Status: ❌ CRITICAL - High Failure Rate
 
 **Key Findings:**
+
 - 52% failure rate indicates systematic issues across the test suite
 - All failures occurred across 3 browsers (Chromium, Firefox, WebKit)
 - Primary failure pattern: Form validation errors not displaying
@@ -31,14 +34,17 @@
 ## Critical Issues
 
 ### 🔴 Issue #1: Form Validation Error Messages Not Displaying
+
 **Priority:** CRITICAL
 **Affected Tests:** 60+ tests
 **Impact:** Form validation functionality broken across the application
 
 #### Description
+
 Multiple form validation tests are failing because expected error messages are not visible on the page. The tests interact with forms, enter invalid data, and expect validation error messages to appear, but these messages never become visible.
 
 #### Affected Test Categories
+
 1. **Error Handling Tests** (error-handling.spec.ts)
    - Email format validation
    - Password strength validation
@@ -63,16 +69,19 @@ Multiple form validation tests are failing because expected error messages are n
    - Required field validation
 
 #### Error Pattern
+
 ```
 Error: expect(locator).toBeVisible() failed
 ```
 
 #### Example Failure
+
 **Test:** Form Validation Tests › should validate email format on login
 **File:** web-e2e/src/tests/error-handling.spec.ts:10:7
 **Browsers:** Chromium, Firefox, WebKit
 
 **What Happened:**
+
 1. Test navigated to login page
 2. Entered invalid email: "invalid-email"
 3. Entered valid password: "TestPass123!"
@@ -80,6 +89,7 @@ Error: expect(locator).toBeVisible() failed
 5. ❌ Validation error message was NOT visible
 
 #### Page State at Failure
+
 ```yaml
 Login Form:
   - Email Field: "invalid-email" (contains invalid email)
@@ -90,6 +100,7 @@ Login Form:
 ```
 
 #### Root Cause Hypothesis
+
 1. **Frontend Issue**: Validation error messages may not be rendering in the DOM
 2. **Timing Issue**: Error messages may be appearing briefly and then disappearing
 3. **CSS Issue**: Error messages may be rendered but hidden by CSS (opacity: 0, display: none)
@@ -99,14 +110,17 @@ Login Form:
 ---
 
 ### 🔴 Issue #2: Page Reload During Operation Failures
+
 **Priority:** HIGH
 **Affected Tests:** 3 tests (1 per browser)
 **Impact:** State management during navigation
 
 #### Description
+
 Tests that verify state preservation during page reload are failing.
 
 **Failed Tests:**
+
 - `[chromium] › src/tests/error-handling.spec.ts:273:7 › Edge Cases › should handle page reload during operation`
 - `[firefox] › src/tests/error-handling.spec.ts:273:7 › Edge Cases › should handle page reload during operation`
 - `[webkit] › src/tests/error-handling.spec.ts:273:7 › Edge Cases › should handle page reload during operation`
@@ -116,11 +130,13 @@ Tests that verify state preservation during page reload are failing.
 ---
 
 ### 🟡 Issue #3: Security Testing Failures
+
 **Priority:** HIGH
 **Affected Tests:** 9 tests (3 per browser)
 **Impact:** Security vulnerability testing
 
 #### Description
+
 Security-related edge case tests are failing:
 
 1. **SQL Injection Prevention** (3 failures - all browsers)
@@ -138,14 +154,17 @@ Security-related edge case tests are failing:
 ---
 
 ### 🟡 Issue #4: State Management Across Navigation
+
 **Priority:** MEDIUM
 **Affected Tests:** 3 tests (1 per browser)
 **Impact:** User experience during navigation
 
 #### Description
+
 Tests verifying state preservation across page navigation are failing.
 
 **Failed Test:**
+
 - `should preserve state across navigation` (error-handling.spec.ts:354:7)
 - Duration: ~18 seconds per test
 - Browsers: Chromium, Firefox, WebKit
@@ -153,14 +172,17 @@ Tests verifying state preservation across page navigation are failing.
 ---
 
 ### 🟡 Issue #5: Large Form Submission Handling
+
 **Priority:** MEDIUM
 **Affected Tests:** 3 tests (1 per browser)
 **Impact:** Performance with large data sets
 
 #### Description
+
 Tests verifying handling of large form submissions are failing.
 
 **Failed Test:**
+
 - `Performance Edge Cases › should handle large form submissions` (error-handling.spec.ts:398:7)
 - Duration: ~18 seconds per test
 - Browsers: Chromium, Firefox, WebKit
@@ -168,14 +190,17 @@ Tests verifying handling of large form submissions are failing.
 ---
 
 ### 🟡 Issue #6: Network Timeout Handling
+
 **Priority:** MEDIUM
 **Affected Tests:** 3 tests (1 per browser)
 **Impact:** Resilience under poor network conditions
 
 #### Description
+
 Tests verifying network timeout handling are failing.
 
 **Failed Test:**
+
 - `API Error Handling › should handle network timeout` (error-handling.spec.ts:163:7)
 - Duration: ~32 seconds per test (timeout threshold reached)
 - Browsers: Chromium, Firefox, WebKit
@@ -183,14 +208,17 @@ Tests verifying network timeout handling are failing.
 ---
 
 ### 🟢 Issue #7: Offline Mode Handling
+
 **Priority:** LOW
 **Affected Tests:** 3 tests (1 per browser)
 **Impact:** Offline functionality
 
 #### Description
+
 Tests verifying offline mode graceful degradation are failing.
 
 **Failed Test:**
+
 - `Performance Edge Cases › should handle offline mode gracefully` (error-handling.spec.ts:382:7)
 - Duration: ~3 seconds per test
 - Browsers: Chromium, Firefox, WebKit
@@ -198,14 +226,17 @@ Tests verifying offline mode graceful degradation are failing.
 ---
 
 ### 🟢 Issue #8: Concurrent Request Handling
+
 **Priority:** LOW
 **Affected Tests:** 1 test (Chromium only)
 **Impact:** Performance under concurrent load
 
 #### Description
+
 Test verifying concurrent request handling failed in Chromium only.
 
 **Failed Test:**
+
 - `[chromium] › src/tests/error-handling.spec.ts:192:7 › API Error Handling › should handle concurrent requests`
 - Duration: ~2.8 seconds
 - **Note:** Passed in Firefox and WebKit
@@ -227,10 +258,12 @@ The following test categories have good pass rates:
 ## Detailed Failure Analysis by Test File
 
 ### error-handling.spec.ts (30 tests)
+
 **Status:** High failure rate
 **Location:** web-e2e/src/tests/error-handling.spec.ts
 
 #### Form Validation Tests (12 tests total)
+
 - ❌ should validate email format on login (3 browsers) - **9 failures**
 - ❌ should validate password strength (3 browsers) - **9 failures**
 - ❌ should validate required fields (3 browsers) - **9 failures**
@@ -242,6 +275,7 @@ The following test categories have good pass rates:
 - ❌ should clear validation errors on correction (3 browsers) - **9 failures**
 
 #### API Error Handling (9 tests total)
+
 - ✅ should handle 401 Unauthorized response (3 browsers) - **Passing**
 - ❌ should handle 403 Forbidden response (1 browser) - **1 failure** (Chromium only)
 - ✅ should handle 404 Not Found response (3 browsers) - **Passing**
@@ -252,6 +286,7 @@ The following test categories have good pass rates:
 - ✅ should retry on transient failures (3 browsers) - **Passing**
 
 #### Edge Cases (9 tests total)
+
 - ✅ should handle empty list states (3 browsers) - **Passing**
 - ✅ should handle large dataset pagination (3 browsers) - **Passing**
 - ✅ should handle rapid successive requests (3 browsers) - **Passing**
@@ -265,23 +300,27 @@ The following test categories have good pass rates:
 - ❌ should preserve state across navigation (3 browsers) - **9 failures**
 
 #### Performance Edge Cases (3 tests total)
+
 - ✅ should handle slow network conditions (3 browsers) - **Passing**
 - ❌ should handle offline mode gracefully (3 browsers) - **9 failures**
 - ❌ should handle large form submissions (3 browsers) - **9 failures**
 
 ### admin-workflows.spec.ts (30 tests)
+
 **Status:** Moderate failure rate
 **Location:** web-e2e/src/tests/admin-workflows.spec.ts
 
 Many tests in this file are failing due to form validation issues similar to error-handling.spec.ts.
 
 ### company-owner-workflows.spec.ts (28 tests)
+
 **Status:** Moderate failure rate
 **Location:** web-e2e/src/tests/company-owner-workflows.spec.ts
 
 Multiple employee management and permission tests are failing, primarily due to validation error display issues.
 
 ### employee-workflows.spec.ts (16 tests)
+
 **Status:** Lower failure rate
 **Location:** web-e2e/src/tests/employee-workflows.spec.ts
 
@@ -292,16 +331,19 @@ Some module access and CRUD operation tests are failing.
 ## Browser-Specific Analysis
 
 ### Chromium
+
 - **Total Failures:** ~67 tests
 - **Unique Failures:** 1 (concurrent requests handling)
 - **Common Issues:** Same as Firefox and WebKit
 
 ### Firefox
+
 - **Total Failures:** ~67 tests
 - **Unique Failures:** None
 - **Common Issues:** Same as Chromium and WebKit
 
 ### WebKit
+
 - **Total Failures:** ~68 tests
 - **Unique Failures:** None
 - **Common Issues:** Same as Chromium and Firefox
@@ -397,6 +439,7 @@ Some module access and CRUD operation tests are failing.
 ## Test Environment Details
 
 ### Configuration
+
 - **Playwright Version:** 1.56.1
 - **Nx Version:** 22.0.3
 - **Test Framework:** @playwright/test
@@ -405,40 +448,47 @@ Some module access and CRUD operation tests are failing.
 - **API URL:** http://localhost:3000 (assumed)
 
 ### Timeouts
+
 - **Global Timeout:** 60 seconds per test
 - **Assertion Timeout:** 10 seconds
 - **Action Timeout:** 15 seconds
 - **Navigation Timeout:** 30 seconds
 
 ### Test Execution
+
 - **Workers:** 5 parallel workers
 - **Total Duration:** 12.2 minutes
 - **Retries:** 0 (no retries configured for local execution)
 - **CI Retries:** 2 (configured for CI environment)
 
 ### Reports Generated
+
 - **Console Output:** List format
 - **HTML Report:** playwright-report/index.html
 - **JSON Results:** test-results/results.json
 - **JUnit XML:** test-results/junit.xml
-- **Error Contexts:** test-output/*/error-context.md
+- **Error Contexts:** test-output/\*/error-context.md
 
 ---
 
 ## Appendix
 
 ### Error Context Files Location
+
 All error context files are located in:
+
 ```
 /Users/bartlomiejzimny/Projects/accounting/dist/.playwright/web-e2e/test-output/
 ```
 
 Each failed test has its own directory with:
+
 - error-context.md (page snapshot at failure)
 - Screenshots (if configured)
 - Traces (if configured)
 
 ### Key Test Files
+
 1. **error-handling.spec.ts** (30 tests) - Form validation and error scenarios
 2. **auth.spec.ts** (23 tests) - Authentication workflows
 3. **admin-workflows.spec.ts** (30 tests) - Admin user management
@@ -448,6 +498,7 @@ Each failed test has its own directory with:
 7. **admin.spec.ts** - Admin page tests
 
 ### Test Data
+
 - **Admin User:** admin@system.com / Admin123!
 - **Company A Owner:** owner.a@company.com / Owner123!
 - **Company A Employees:** employee1.a@company.com, employee2.a@company.com
@@ -461,6 +512,7 @@ Each failed test has its own directory with:
 The test suite has identified a **critical systematic issue** affecting 52% of tests. The primary root cause appears to be **form validation error messages not displaying correctly** across the application. This affects multiple user workflows including authentication, user management, company management, and employee management.
 
 **Next Steps:**
+
 1. Investigate form validation error display mechanism in the frontend
 2. Verify API validation error response format
 3. Fix form component error message rendering
@@ -468,6 +520,7 @@ The test suite has identified a **critical systematic issue** affecting 52% of t
 5. Address remaining failures in security and edge case tests
 
 **Estimated Fix Time:**
+
 - Critical Issues (Form Validation): 4-8 hours
 - High Priority Issues (Security, Network): 8-16 hours
 - Medium Priority Issues (State, Performance): 16-24 hours

@@ -1,6 +1,33 @@
 import { useState, useMemo, useCallback } from 'react';
-import { ColumnDef } from '@tanstack/react-table';
+
 import { useNavigate } from 'react-router-dom';
+
+import { type ColumnDef } from '@tanstack/react-table';
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Users,
+  Eye,
+  RotateCcw,
+  MoreHorizontal,
+  History,
+  ArrowLeft,
+  Download,
+  BarChart3,
+} from 'lucide-react';
+
+import {
+  BulkActionsToolbar,
+  type BulkEditChanges,
+} from '@/components/clients/bulk-actions-toolbar';
+import { ClientFilters } from '@/components/clients/client-filters';
+import { IconBadgeList } from '@/components/clients/icon-badge';
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { DataTable } from '@/components/common/data-table';
+import { PageHeader } from '@/components/common/page-header';
 import {
   useClients,
   useDeleteClient,
@@ -19,24 +46,10 @@ import {
   useFieldDefinitions,
 } from '@/lib/hooks/use-clients';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import { PageHeader } from '@/components/common/page-header';
-import { DataTable } from '@/components/common/data-table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  Plus,
-  Edit,
-  Trash2,
-  Users,
-  Eye,
-  RotateCcw,
-  MoreHorizontal,
-  History,
-  ArrowLeft,
-  Download,
-  BarChart3,
-} from 'lucide-react';
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,20 +57,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ClientResponseDto, CreateClientDto, UpdateClientDto, ClientFiltersDto } from '@/types/dtos';
+import { useTablePreferences, type ColumnConfig } from '@/lib/hooks/use-table-preferences';
+import {
+  type ClientResponseDto,
+  type CreateClientDto,
+  type UpdateClientDto,
+  type ClientFiltersDto,
+} from '@/types/dtos';
 import { ClientFormDialog } from '@/components/forms/client-form-dialog';
-import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import { ClientFilters } from '@/components/clients/client-filters';
-import { IconBadgeList } from '@/components/clients/icon-badge';
-import { BulkActionsToolbar, BulkEditChanges } from '@/components/clients/bulk-actions-toolbar';
 import { ExportImportDialog } from '@/components/clients/export-import-dialog';
 import { DuplicateWarningDialog } from '@/components/clients/duplicate-warning-dialog';
 import { StatisticsDashboard } from '@/components/clients/statistics-dashboard';
 import { ClientGrid } from '@/components/clients/client-grid';
 import { ViewModeToggle } from '@/components/common/view-mode-toggle';
 import { ColumnVisibilityModal } from '@/components/common/column-visibility-modal';
-import { useTablePreferences, ColumnConfig } from '@/lib/hooks/use-table-preferences';
-import { DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
+import { type DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
 import { useAuthContext } from '@/contexts/auth-context';
 import {
   EmploymentTypeLabels,
@@ -68,8 +82,6 @@ import {
   UserRole,
 } from '@/types/enums';
 import { AmlGroupLabels } from '@/lib/constants/polish-labels';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
 import { toast } from '@/components/ui/use-toast';
 
 export default function ClientsListPage() {
@@ -145,7 +157,15 @@ export default function ClientsListPage() {
       ['name', 'icons', 'nip', 'email', 'phone'].includes(c.id)
     );
     const businessColumns = columnConfig.filter((c) =>
-      ['employmentType', 'vatStatus', 'taxScheme', 'zusStatus', 'amlGroup', 'pkdCode', 'gtuCode'].includes(c.id)
+      [
+        'employmentType',
+        'vatStatus',
+        'taxScheme',
+        'zusStatus',
+        'amlGroup',
+        'pkdCode',
+        'gtuCode',
+      ].includes(c.id)
     );
     const dateColumns = columnConfig.filter((c) =>
       ['cooperationStartDate', 'companyStartDate', 'createdAt'].includes(c.id)
@@ -164,13 +184,8 @@ export default function ClientsListPage() {
     ];
   }, [columnConfig]);
 
-  const {
-    viewMode,
-    visibleColumns,
-    setViewMode,
-    toggleColumn,
-    resetToDefaults,
-  } = useTablePreferences('clients-list', columnConfig);
+  const { viewMode, visibleColumns, setViewMode, toggleColumn, resetToDefaults } =
+    useTablePreferences('clients-list', columnConfig);
 
   const [filters, setFilters] = useState<ClientFiltersDto>({});
   const { data: clientsResponse, isPending } = useClients(filters);
@@ -197,30 +212,53 @@ export default function ClientsListPage() {
   const [showStatistics, setShowStatistics] = useState(false);
   const [exportImportOpen, setExportImportOpen] = useState(false);
   const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
-  const [duplicateCheckResult, setDuplicateCheckResult] = useState<DuplicateCheckResultDto | null>(null);
-  const [pendingCreateData, setPendingCreateData] = useState<{ data: CreateClientDto; customFields?: { values: Record<string, unknown> } } | null>(null);
+  const [duplicateCheckResult, setDuplicateCheckResult] = useState<DuplicateCheckResultDto | null>(
+    null
+  );
+  const [pendingCreateData, setPendingCreateData] = useState<{
+    data: CreateClientDto;
+    customFields?: { values: Record<string, unknown> };
+  } | null>(null);
 
   const handleFiltersChange = useCallback((newFilters: ClientFiltersDto) => {
     setFilters(newFilters);
   }, []);
 
-  const handleBulkDelete = useCallback((clientIds: string[]) => {
-    bulkDelete.mutate({ clientIds }, {
-      onSuccess: () => setSelectedClients([]),
-    });
-  }, [bulkDelete]);
+  const handleBulkDelete = useCallback(
+    (clientIds: string[]) => {
+      bulkDelete.mutate(
+        { clientIds },
+        {
+          onSuccess: () => setSelectedClients([]),
+        }
+      );
+    },
+    [bulkDelete]
+  );
 
-  const handleBulkRestore = useCallback((clientIds: string[]) => {
-    bulkRestore.mutate({ clientIds }, {
-      onSuccess: () => setSelectedClients([]),
-    });
-  }, [bulkRestore]);
+  const handleBulkRestore = useCallback(
+    (clientIds: string[]) => {
+      bulkRestore.mutate(
+        { clientIds },
+        {
+          onSuccess: () => setSelectedClients([]),
+        }
+      );
+    },
+    [bulkRestore]
+  );
 
-  const handleBulkEdit = useCallback((clientIds: string[], changes: BulkEditChanges) => {
-    bulkEdit.mutate({ clientIds, ...changes }, {
-      onSuccess: () => setSelectedClients([]),
-    });
-  }, [bulkEdit]);
+  const handleBulkEdit = useCallback(
+    (clientIds: string[], changes: BulkEditChanges) => {
+      bulkEdit.mutate(
+        { clientIds, ...changes },
+        {
+          onSuccess: () => setSelectedClients([]),
+        }
+      );
+    },
+    [bulkEdit]
+  );
 
   const handleExport = useCallback(async () => {
     try {
@@ -228,16 +266,20 @@ export default function ClientsListPage() {
     } catch (error) {
       toast({
         title: 'Błąd eksportu',
-        description: error instanceof Error ? error.message : 'Nie udało się wyeksportować klientów',
+        description:
+          error instanceof Error ? error.message : 'Nie udało się wyeksportować klientów',
         variant: 'destructive',
       });
     }
   }, [exportClients, filters]);
 
-  const handleImport = useCallback(async (file: File) => {
-    const result = await importClients.mutateAsync(file);
-    return result;
-  }, [importClients]);
+  const handleImport = useCallback(
+    async (file: File) => {
+      const result = await importClients.mutateAsync(file);
+      return result;
+    },
+    [importClients]
+  );
 
   const handleDownloadTemplate = useCallback(async () => {
     try {
@@ -245,42 +287,49 @@ export default function ClientsListPage() {
     } catch (error) {
       toast({
         title: 'Błąd pobierania szablonu',
-        description: error instanceof Error ? error.message : 'Nie udało się pobrać szablonu importu',
+        description:
+          error instanceof Error ? error.message : 'Nie udało się pobrać szablonu importu',
         variant: 'destructive',
       });
     }
   }, [downloadTemplate]);
 
-  const createClientAndClose = useCallback(async (data: CreateClientDto, customFields?: { values: Record<string, unknown> }) => {
-    const newClient = await createClient.mutateAsync(data);
-    if (customFields && Object.keys(customFields.values).length > 0) {
-      await setCustomFields.mutateAsync({
-        id: newClient.id,
-        data: customFields,
-      });
-    }
-    setCreateOpen(false);
-  }, [createClient, setCustomFields]);
-
-  const handleCreateWithDuplicateCheck = useCallback(async (data: CreateClientDto, customFields?: { values: Record<string, unknown> }) => {
-    // Check for duplicates first
-    if (data.nip || data.email) {
-      const result = await checkDuplicates.mutateAsync({
-        nip: data.nip,
-        email: data.email,
-      });
-
-      if (result.hasDuplicates) {
-        setDuplicateCheckResult(result);
-        setPendingCreateData({ data, customFields });
-        setDuplicateWarningOpen(true);
-        return;
+  const createClientAndClose = useCallback(
+    async (data: CreateClientDto, customFields?: { values: Record<string, unknown> }) => {
+      const newClient = await createClient.mutateAsync(data);
+      if (customFields && Object.keys(customFields.values).length > 0) {
+        await setCustomFields.mutateAsync({
+          id: newClient.id,
+          data: customFields,
+        });
       }
-    }
+      setCreateOpen(false);
+    },
+    [createClient, setCustomFields]
+  );
 
-    // No duplicates, proceed with creation
-    await createClientAndClose(data, customFields);
-  }, [checkDuplicates, createClientAndClose]);
+  const handleCreateWithDuplicateCheck = useCallback(
+    async (data: CreateClientDto, customFields?: { values: Record<string, unknown> }) => {
+      // Check for duplicates first
+      if (data.nip || data.email) {
+        const result = await checkDuplicates.mutateAsync({
+          nip: data.nip,
+          email: data.email,
+        });
+
+        if (result.hasDuplicates) {
+          setDuplicateCheckResult(result);
+          setPendingCreateData({ data, customFields });
+          setDuplicateWarningOpen(true);
+          return;
+        }
+      }
+
+      // No duplicates, proceed with creation
+      await createClientAndClose(data, customFields);
+    },
+    [checkDuplicates, createClientAndClose]
+  );
 
   const handleProceedWithDuplicate = useCallback(async () => {
     if (!pendingCreateData) return;
@@ -301,9 +350,12 @@ export default function ClientsListPage() {
     setPendingCreateData(null);
   }, []);
 
-  const handleClientClick = useCallback((clientId: string) => {
-    navigate(`${basePath}/${clientId}`);
-  }, [navigate, basePath]);
+  const handleClientClick = useCallback(
+    (clientId: string) => {
+      navigate(`${basePath}/${clientId}`);
+    },
+    [navigate, basePath]
+  );
 
   const columns: ColumnDef<ClientResponseDto>[] = useMemo(
     () => [
@@ -325,9 +377,12 @@ export default function ClientsListPage() {
         id: 'icons',
         header: 'Ikony',
         cell: ({ row }) => {
-          const icons = row.original.iconAssignments
-            ?.map((assignment) => assignment.icon)
-            .filter((icon): icon is NonNullable<typeof icon> => icon !== undefined && icon !== null) || [];
+          const icons =
+            row.original.iconAssignments
+              ?.map((assignment) => assignment.icon)
+              .filter(
+                (icon): icon is NonNullable<typeof icon> => icon !== undefined && icon !== null
+              ) || [];
 
           if (icons.length === 0) {
             return <span className="text-muted-foreground">-</span>;
@@ -340,9 +395,7 @@ export default function ClientsListPage() {
         accessorKey: 'nip',
         header: 'NIP',
         cell: ({ row }) => (
-          <span className="text-apptax-navy/80 font-mono text-sm">
-            {row.original.nip || '-'}
-          </span>
+          <span className="text-apptax-navy/80 font-mono text-sm">{row.original.nip || '-'}</span>
         ),
       },
       {
@@ -365,10 +418,7 @@ export default function ClientsListPage() {
         cell: ({ row }) => {
           const status = row.original.vatStatus;
           return status ? (
-            <Badge
-              variant={status === VatStatus.NO ? 'outline' : 'default'}
-              className="text-xs"
-            >
+            <Badge variant={status === VatStatus.NO ? 'outline' : 'default'} className="text-xs">
               {VatStatusLabels[status]}
             </Badge>
           ) : (
@@ -403,9 +453,7 @@ export default function ClientsListPage() {
         id: 'phone',
         header: 'Telefon',
         cell: ({ row }) => (
-          <span className="text-apptax-navy/70 text-sm">
-            {row.original.phone || '-'}
-          </span>
+          <span className="text-apptax-navy/70 text-sm">{row.original.phone || '-'}</span>
         ),
       },
       {
@@ -439,20 +487,12 @@ export default function ClientsListPage() {
       {
         id: 'pkdCode',
         header: 'Kod PKD',
-        cell: ({ row }) => (
-          <span className="text-sm font-mono">
-            {row.original.pkdCode || '-'}
-          </span>
-        ),
+        cell: ({ row }) => <span className="text-sm font-mono">{row.original.pkdCode || '-'}</span>,
       },
       {
         id: 'gtuCode',
         header: 'Kod GTU',
-        cell: ({ row }) => (
-          <span className="text-sm font-mono">
-            {row.original.gtuCode || '-'}
-          </span>
-        ),
+        cell: ({ row }) => <span className="text-sm font-mono">{row.original.gtuCode || '-'}</span>,
       },
       {
         id: 'cooperationStartDate',
@@ -460,9 +500,7 @@ export default function ClientsListPage() {
         cell: ({ row }) => {
           const date = row.original.cooperationStartDate;
           return date ? (
-            <span className="text-sm">
-              {format(new Date(date), 'dd.MM.yyyy', { locale: pl })}
-            </span>
+            <span className="text-sm">{format(new Date(date), 'dd.MM.yyyy', { locale: pl })}</span>
           ) : (
             <span className="text-muted-foreground">-</span>
           );
@@ -474,9 +512,7 @@ export default function ClientsListPage() {
         cell: ({ row }) => {
           const date = row.original.companyStartDate;
           return date ? (
-            <span className="text-sm">
-              {format(new Date(date), 'dd.MM.yyyy', { locale: pl })}
-            </span>
+            <span className="text-sm">{format(new Date(date), 'dd.MM.yyyy', { locale: pl })}</span>
           ) : (
             <span className="text-muted-foreground">-</span>
           );
@@ -544,26 +580,24 @@ export default function ClientsListPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => navigate(`${basePath}/${client.id}`)}
-                >
+                <DropdownMenuItem onClick={() => navigate(`${basePath}/${client.id}`)}>
                   <Eye className="mr-2 h-4 w-4" />
                   Szczegóły
                 </DropdownMenuItem>
 
                 {hasWritePermission && client.isActive && (
-                  <DropdownMenuItem onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingClient(client);
-                  }}>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingClient(client);
+                    }}
+                  >
                     <Edit className="mr-2 h-4 w-4" />
                     Edytuj
                   </DropdownMenuItem>
                 )}
 
-                <DropdownMenuItem
-                  onClick={() => navigate(`${basePath}/${client.id}#changelog`)}
-                >
+                <DropdownMenuItem onClick={() => navigate(`${basePath}/${client.id}#changelog`)}>
                   <History className="mr-2 h-4 w-4" />
                   Historia zmian
                 </DropdownMenuItem>
@@ -584,10 +618,12 @@ export default function ClientsListPage() {
                 )}
 
                 {hasWritePermission && !client.isActive && (
-                  <DropdownMenuItem onClick={(e) => {
-                    e.stopPropagation();
-                    setRestoringClient(client);
-                  }}>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRestoringClient(client);
+                    }}
+                  >
                     <RotateCcw className="mr-2 h-4 w-4" />
                     Przywróć
                   </DropdownMenuItem>
@@ -616,10 +652,7 @@ export default function ClientsListPage() {
         icon={<Users className="h-6 w-6" />}
         action={
           <div className="flex items-center gap-2">
-            <ViewModeToggle
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
-            />
+            <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
             <ColumnVisibilityModal
               columns={columnConfig}
               visibleColumns={visibleColumns}
@@ -627,19 +660,11 @@ export default function ClientsListPage() {
               onResetToDefaults={resetToDefaults}
               groups={columnGroups}
             />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowStatistics(!showStatistics)}
-            >
+            <Button variant="outline" size="sm" onClick={() => setShowStatistics(!showStatistics)}>
               <BarChart3 className="mr-2 h-4 w-4" />
               {showStatistics ? 'Ukryj statystyki' : 'Statystyki'}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setExportImportOpen(true)}
-            >
+            <Button variant="outline" size="sm" onClick={() => setExportImportOpen(true)}>
               <Download className="mr-2 h-4 w-4" />
               Export / Import
             </Button>

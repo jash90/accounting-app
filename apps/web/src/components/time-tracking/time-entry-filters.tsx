@@ -1,5 +1,7 @@
 import { X } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -7,9 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { TimeEntryFiltersDto } from '@/types/dtos';
-import { TimeEntryStatus, TimeEntryStatusLabels } from '@/types/enums';
+import { type TimeEntryFiltersDto } from '@/types/dtos';
+import { type TimeEntryStatus, TimeEntryStatusLabels } from '@/types/enums';
 
 interface Client {
   id: string;
@@ -40,10 +41,7 @@ export function TimeEntryFilters({
         <Select
           value={filters.status || '__all__'}
           onValueChange={(value) =>
-            onFilterChange(
-              'status',
-              value === '__all__' ? undefined : (value as TimeEntryStatus)
-            )
+            onFilterChange('status', value === '__all__' ? undefined : (value as TimeEntryStatus))
           }
         >
           <SelectTrigger className="w-[160px]">
@@ -80,17 +78,10 @@ export function TimeEntryFilters({
 
         <Select
           value={
-            filters.isBillable === undefined
-              ? '__all__'
-              : filters.isBillable
-                ? 'true'
-                : 'false'
+            filters.isBillable === undefined ? '__all__' : filters.isBillable ? 'true' : 'false'
           }
           onValueChange={(value) =>
-            onFilterChange(
-              'isBillable',
-              value === '__all__' ? undefined : value === 'true'
-            )
+            onFilterChange('isBillable', value === '__all__' ? undefined : value === 'true')
           }
         >
           <SelectTrigger className="w-[150px]">

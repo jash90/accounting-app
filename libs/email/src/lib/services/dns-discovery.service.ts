@@ -1,10 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as dns from 'dns';
 import { promisify } from 'util';
-import {
-  AutodiscoveryResult,
-  SrvRecord,
-} from '../interfaces/autodiscovery.interface';
+import { AutodiscoveryResult, SrvRecord } from '../interfaces/autodiscovery.interface';
 import { ProviderLookupService } from './provider-lookup.service';
 
 const resolveSrv = promisify(dns.resolveSrv);
@@ -177,9 +174,7 @@ export class DnsDiscoveryService {
   async getMxRecords(domain: string): Promise<Array<{ priority: number; exchange: string }>> {
     try {
       const records = await resolveMx(domain);
-      return records
-        ? records.sort((a, b) => a.priority - b.priority)
-        : [];
+      return records ? records.sort((a, b) => a.priority - b.priority) : [];
     } catch {
       return [];
     }

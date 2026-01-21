@@ -64,6 +64,7 @@ This comprehensive guide walks you through creating a new business module in the
 ### Example Module: Tasks
 
 We'll build a task management module that allows:
+
 - Companies to manage their tasks
 - Assigning tasks to employees
 - Setting priorities, due dates, and statuses
@@ -81,6 +82,7 @@ We'll build a task management module that allows:
 For experienced developers, here's the condensed version:
 
 **Backend Setup:**
+
 ```bash
 # 1. Generate library
 nx generate @nx/node:library tasks --directory=libs/modules/tasks
@@ -122,6 +124,7 @@ npm run migration:run
 ```
 
 **Frontend Setup:**
+
 ```bash
 # 13. Create frontend DTOs in web/src/types/dtos.ts
 #     - CreateTaskDto, UpdateTaskDto, TaskResponseDto
@@ -156,6 +159,7 @@ npm run migration:run
 **Key Files to Create/Modify**:
 
 **Backend:**
+
 - ✅ Entity: `libs/common/src/lib/entities/task.entity.ts`
 - ✅ Backend DTOs: `libs/modules/tasks/src/lib/dto/*.dto.ts`
 - ✅ Service: `libs/modules/tasks/src/lib/services/task.service.ts`
@@ -170,6 +174,7 @@ npm run migration:run
 - ✅ Update: `apps/api/src/main.ts` (Swagger tags)
 
 **Frontend:**
+
 - ✅ Frontend DTOs: `web/src/types/dtos.ts`
 - ✅ Zod Schemas: `web/src/lib/validation/schemas.ts`
 - ✅ API Client: `web/src/lib/api/endpoints/tasks.ts`
@@ -182,8 +187,8 @@ npm run migration:run
 - ✅ Navigation: `web/src/components/layouts/sidebar-nav.tsx` (update)
 - ✅ Permission Hook: `web/src/lib/hooks/use-task-permissions.ts`
 
-
 **Design System:**
+
 - 📖 Reference: `design guides/AppTax-Brand-Quick-Reference.md`
 - 📖 Reference: `design guides/AppTax-Brand-Guidelines.html`
 
@@ -192,6 +197,7 @@ npm run migration:run
 For advanced modules with multiple entities, encryption, file uploads, and external API integrations:
 
 **When to Use Advanced Patterns:**
+
 - Module needs 3+ related entities
 - Sensitive data (API keys, tokens) must be encrypted
 - External service integration (AI providers, payment gateways)
@@ -200,6 +206,7 @@ For advanced modules with multiple entities, encryption, file uploads, and exter
 - Vector search / RAG capabilities
 
 **Backend Setup (Advanced):**
+
 ```bash
 # 1. Generate library
 nx generate @nx/node:library ai-agent --directory=libs/modules/ai-agent
@@ -233,6 +240,7 @@ nx generate @nx/node:library ai-agent --directory=libs/modules/ai-agent
 **Key Files for Complex Module (AI Agent):**
 
 **Backend:**
+
 - ✅ Entities: `libs/common/src/lib/entities/ai-*.entity.ts` (6 entities)
 - ✅ Provider Interface: `libs/modules/ai-agent/src/lib/services/ai-provider.interface.ts`
 - ✅ Provider Implementations: `*-provider.service.ts` (OpenAI, OpenRouter)
@@ -242,6 +250,7 @@ nx generate @nx/node:library ai-agent --directory=libs/modules/ai-agent
 - ✅ Module: `libs/modules/ai-agent/src/lib/ai-agent.module.ts`
 
 **Frontend:**
+
 - ✅ Pages: `web/src/pages/modules/ai-agent/*.tsx` (chat, config, usage, context)
 - ✅ API Client: `web/src/lib/api/endpoints/ai-agent.ts`
 - ✅ Hooks: `web/src/lib/hooks/use-ai-agent.ts`
@@ -249,17 +258,16 @@ nx generate @nx/node:library ai-agent --directory=libs/modules/ai-agent
 
 **Key Differences from Simple Module:**
 
-| Aspect | Simple (Tasks) | Complex (AI Agent) |
-|--------|---------------|-------------------|
-| Entities | 1 entity | 6 entities |
-| Controllers | 1 controller | 3 controllers |
-| Services | 1 service | 8 services |
-| Encryption | None | AES-256-GCM for API keys |
-| File Upload | None | PDF/TXT with validation |
-| Vector Search | None | pgvector embeddings |
-| Rate Limiting | None | Token-based limits |
-| External APIs | None | OpenAI, OpenRouter |
-
+| Aspect        | Simple (Tasks) | Complex (AI Agent)       |
+| ------------- | -------------- | ------------------------ |
+| Entities      | 1 entity       | 6 entities               |
+| Controllers   | 1 controller   | 3 controllers            |
+| Services      | 1 service      | 8 services               |
+| Encryption    | None           | AES-256-GCM for API keys |
+| File Upload   | None           | PDF/TXT with validation  |
+| Vector Search | None           | pgvector embeddings      |
+| Rate Limiting | None           | Token-based limits       |
+| External APIs | None           | OpenAI, OpenRouter       |
 
 ---
 
@@ -361,6 +369,7 @@ Implementation:
 ```
 
 **Key Differences from Regular Business Data**:
+
 - ✅ ADMINs CAN create/view/modify data (in System Admin company only)
 - ✅ `companyId` is nullable to support system-level entries
 - ✅ Service must inject `Company` repository to find system company
@@ -439,6 +448,7 @@ For modules requiring external integrations, encryption, and multiple related en
 ```
 
 **When to Use Complex Architecture:**
+
 - External API integrations (AI, payment, etc.)
 - Multiple related entities with cascade relationships
 - Sensitive data requiring encryption
@@ -455,6 +465,7 @@ For modules requiring external integrations, encryption, and multiple related en
 #### Step 1: Analyze Requirements
 
 **Business Requirements for Tasks Module**:
+
 - ✅ Create, read, update, delete tasks
 - ✅ Assign tasks to employees
 - ✅ Set priority (low, medium, high, urgent)
@@ -464,6 +475,7 @@ For modules requiring external integrations, encryption, and multiple related en
 - ✅ Audit trail (who created, when)
 
 **Data Model**:
+
 ```
 Task
   - id (UUID)
@@ -480,6 +492,7 @@ Task
 ```
 
 **Permissions**:
+
 - `read`: View tasks
 - `write`: Create and update tasks
 - `delete`: Delete tasks
@@ -502,6 +515,7 @@ nx generate @nx/node:library tasks \
 ```
 
 This creates:
+
 ```
 libs/modules/tasks/
 ├── project.json
@@ -524,6 +538,7 @@ mkdir -p libs/modules/tasks/src/lib/dto
 ```
 
 Final structure:
+
 ```
 libs/modules/tasks/
 └── src/
@@ -576,10 +591,10 @@ export enum TaskPriority {
   URGENT = 'urgent',
 }
 
-@Entity('tasks')  // Table name in database
+@Entity('tasks') // Table name in database
 export class Task {
   @PrimaryGeneratedColumn('uuid')
-  id!: string;  // TypeScript non-null assertion
+  id!: string; // TypeScript non-null assertion
 
   // Business fields
   @Column()
@@ -611,8 +626,8 @@ export class Task {
   companyId!: string | null;
 
   @ManyToOne(() => Company, (company) => company.tasks, {
-    nullable: true,  // Important: allows null for system-level entries
-    onDelete: 'CASCADE',  // When company deleted, all tasks deleted
+    nullable: true, // Important: allows null for system-level entries
+    onDelete: 'CASCADE', // When company deleted, all tasks deleted
   })
   @JoinColumn({ name: 'companyId' })
   company!: Company | null;
@@ -643,6 +658,7 @@ export class Task {
 ```
 
 **Key Points**:
+
 - ✅ UUID primary key for security
 - ✅ TypeScript non-null assertions (`!`) for all fields
 - ✅ `companyId` nullable to support System Admin company pattern
@@ -670,7 +686,7 @@ export * from './lib/entities/simple-text.entity';
 
 // Add new entity export
 export * from './lib/entities/task.entity';
-export { TaskStatus, TaskPriority } from './lib/entities/task.entity';  // Export enums
+export { TaskStatus, TaskPriority } from './lib/entities/task.entity'; // Export enums
 ```
 
 #### Step 6: Update Company Entity
@@ -678,7 +694,7 @@ export { TaskStatus, TaskPriority } from './lib/entities/task.entity';  // Expor
 Add relationship in `libs/common/src/lib/entities/company.entity.ts`:
 
 ```typescript
-import { Task } from './task.entity';  // Add import
+import { Task } from './task.entity'; // Add import
 
 @Entity('companies')
 export class Company {
@@ -772,6 +788,7 @@ export class CreateTaskDto {
 ```
 
 **Key Points**:
+
 - ✅ All validation decorators from class-validator
 - ✅ Swagger documentation for API docs
 - ✅ Optional fields marked with `?` and `@IsOptional()`
@@ -838,18 +855,19 @@ export class UpdateTaskDto {
   })
   @IsOptional()
   @IsDateString()
-  dueDate?: string | null;  // Allow null to clear due date
+  dueDate?: string | null; // Allow null to clear due date
 
   @ApiPropertyOptional({
     description: 'User ID to assign task to',
   })
   @IsOptional()
   @IsUUID()
-  assigneeId?: string | null;  // Allow null to unassign
+  assigneeId?: string | null; // Allow null to unassign
 }
 ```
 
 **Key Points**:
+
 - ✅ All fields optional (partial update pattern)
 - ✅ Same validation rules as CreateDto
 - ✅ Allow `null` for fields that can be cleared
@@ -941,6 +959,7 @@ export class TaskResponseDto {
 ```
 
 **Key Points**:
+
 - ✅ Complete API response structure
 - ✅ Nested types for related entities (UserBasicInfoDto, CompanyBasicInfoDto)
 - ✅ Include `company` object with `isSystemCompany` flag for frontend UI logic
@@ -967,7 +986,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Task, User, UserRole, Company } from '@accounting/common';  // Include Company for System Company pattern
+import { Task, User, UserRole, Company } from '@accounting/common'; // Include Company for System Company pattern
 import { CreateTaskDto } from '../dto/create-task.dto';
 import { UpdateTaskDto } from '../dto/update-task.dto';
 
@@ -979,7 +998,7 @@ export class TaskService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     @InjectRepository(Company)
-    private companyRepository: Repository<Company>,  // Required for System Company pattern
+    private companyRepository: Repository<Company> // Required for System Company pattern
   ) {}
 
   /**
@@ -1091,17 +1110,15 @@ export class TaskService {
       }
 
       if (assignee.companyId !== targetCompanyId) {
-        throw new ForbiddenException(
-          'Cannot assign task to user from different company',
-        );
+        throw new ForbiddenException('Cannot assign task to user from different company');
       }
     }
 
     // Create task with automatic company/user association
     const task = this.taskRepository.create({
       ...createTaskDto,
-      companyId: targetCompanyId,  // Auto-set from authenticated user or System Company
-      createdById: user.id,        // Auto-set from authenticated user
+      companyId: targetCompanyId, // Auto-set from authenticated user or System Company
+      createdById: user.id, // Auto-set from authenticated user
       // dueDate is automatically converted from string to Date by TypeORM
     });
 
@@ -1120,19 +1137,12 @@ export class TaskService {
    * - Validates assignee if changed
    * - Partial update supported
    */
-  async update(
-    id: string,
-    updateTaskDto: UpdateTaskDto,
-    user: User,
-  ): Promise<Task> {
+  async update(id: string, updateTaskDto: UpdateTaskDto, user: User): Promise<Task> {
     // Verify ownership and get existing task
     const task = await this.findOne(id, user);
 
     // If assigneeId is being changed, validate new assignee
-    if (
-      updateTaskDto.assigneeId !== undefined &&
-      updateTaskDto.assigneeId !== null
-    ) {
+    if (updateTaskDto.assigneeId !== undefined && updateTaskDto.assigneeId !== null) {
       const assignee = await this.userRepository.findOne({
         where: { id: updateTaskDto.assigneeId },
       });
@@ -1142,9 +1152,7 @@ export class TaskService {
       }
 
       if (assignee.companyId !== user.companyId) {
-        throw new ForbiddenException(
-          'Cannot assign task to user from different company',
-        );
+        throw new ForbiddenException('Cannot assign task to user from different company');
       }
     }
 
@@ -1174,9 +1182,7 @@ export class TaskService {
    */
   async findByStatus(status: string, user: User): Promise<Task[]> {
     if (user.role === UserRole.ADMIN) {
-      throw new ForbiddenException(
-        'Admins do not have access to business module data',
-      );
+      throw new ForbiddenException('Admins do not have access to business module data');
     }
 
     if (!user.companyId) {
@@ -1198,9 +1204,7 @@ export class TaskService {
    */
   async findAssignedToUser(userId: string, user: User): Promise<Task[]> {
     if (user.role === UserRole.ADMIN) {
-      throw new ForbiddenException(
-        'Admins do not have access to business module data',
-      );
+      throw new ForbiddenException('Admins do not have access to business module data');
     }
 
     if (!user.companyId) {
@@ -1220,6 +1224,7 @@ export class TaskService {
 ```
 
 **Key Points**:
+
 - ✅ Repository injection with `@InjectRepository()` (including `Company` for System Company pattern)
 - ✅ Multi-tenant filtering by `companyId`
 - ✅ **System Admin Company Pattern**: ADMINs work with System Company data
@@ -1234,6 +1239,7 @@ export class TaskService {
 - ✅ Additional helper methods (findByStatus, findAssignedToUser)
 
 **Important Note**: When implementing System Admin Company pattern, you must:
+
 1. Import `Company` entity in addition to your main entity
 2. Inject `Company` repository in service constructor
 3. Create `getSystemCompany()` helper method
@@ -1283,11 +1289,11 @@ import { CreateTaskDto } from '../dto/create-task.dto';
 import { UpdateTaskDto } from '../dto/update-task.dto';
 import { TaskResponseDto } from '../dto/task-response.dto';
 
-@ApiTags('tasks')                              // Swagger tag
-@ApiBearerAuth('JWT-auth')                     // Requires JWT
-@Controller('modules/tasks')                    // Route: /modules/tasks
+@ApiTags('tasks') // Swagger tag
+@ApiBearerAuth('JWT-auth') // Requires JWT
+@Controller('modules/tasks') // Route: /modules/tasks
 @UseGuards(ModuleAccessGuard, PermissionGuard) // Apply authorization guards
-@RequireModule('tasks')                         // Require module access
+@RequireModule('tasks') // Require module access
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
@@ -1323,10 +1329,7 @@ export class TaskController {
     enum: ['todo', 'in_progress', 'done', 'cancelled'],
   })
   @ApiResponse({ status: 200, type: [TaskResponseDto] })
-  async findByStatus(
-    @Param('status') status: string,
-    @CurrentUser() user: User,
-  ): Promise<Task[]> {
+  async findByStatus(@Param('status') status: string, @CurrentUser() user: User): Promise<Task[]> {
     return this.taskService.findByStatus(status, user);
   }
 
@@ -1341,7 +1344,7 @@ export class TaskController {
   @ApiResponse({ status: 200, type: [TaskResponseDto] })
   async findAssignedToUser(
     @Param('userId') userId: string,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ): Promise<Task[]> {
     return this.taskService.findAssignedToUser(userId, user);
   }
@@ -1361,10 +1364,7 @@ export class TaskController {
   })
   @ApiResponse({ status: 404, description: 'Task not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
-  async findOne(
-    @Param('id') id: string,
-    @CurrentUser() user: User,
-  ): Promise<Task> {
+  async findOne(@Param('id') id: string, @CurrentUser() user: User): Promise<Task> {
     return this.taskService.findOne(id, user);
   }
 
@@ -1386,10 +1386,7 @@ export class TaskController {
     description: 'Validation error or assignee not found',
   })
   @ApiResponse({ status: 403, description: 'No write permission' })
-  async create(
-    @Body() createTaskDto: CreateTaskDto,
-    @CurrentUser() user: User,
-  ): Promise<Task> {
+  async create(@Body() createTaskDto: CreateTaskDto, @CurrentUser() user: User): Promise<Task> {
     return this.taskService.create(createTaskDto, user);
   }
 
@@ -1411,7 +1408,7 @@ export class TaskController {
   async update(
     @Param('id') id: string,
     @Body() updateTaskDto: UpdateTaskDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ): Promise<Task> {
     return this.taskService.update(id, updateTaskDto, user);
   }
@@ -1428,16 +1425,14 @@ export class TaskController {
   @ApiResponse({ status: 204, description: 'Task deleted successfully' })
   @ApiResponse({ status: 404, description: 'Task not found' })
   @ApiResponse({ status: 403, description: 'No delete permission' })
-  async remove(
-    @Param('id') id: string,
-    @CurrentUser() user: User,
-  ): Promise<void> {
+  async remove(@Param('id') id: string, @CurrentUser() user: User): Promise<void> {
     return this.taskService.remove(id, user);
   }
 }
 ```
 
 **Key Points**:
+
 - ✅ `@Controller()` with route prefix
 - ✅ Guards applied at class level
 - ✅ `@RequireModule()` for module access
@@ -1458,7 +1453,7 @@ Create file: `libs/modules/tasks/src/lib/tasks.module.ts`
 ```typescript
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Task, User, Company } from '@accounting/common';  // Include Company for System Admin pattern
+import { Task, User, Company } from '@accounting/common'; // Include Company for System Admin pattern
 import { RBACModule } from '@accounting/rbac';
 import { TaskController } from './controllers/task.controller';
 import { TaskService } from './services/task.service';
@@ -1474,12 +1469,13 @@ import { TaskService } from './services/task.service';
   ],
   controllers: [TaskController],
   providers: [TaskService],
-  exports: [TaskService],  // Export if needed by other modules
+  exports: [TaskService], // Export if needed by other modules
 })
 export class TasksModule {}
 ```
 
 **Key Points**:
+
 - ✅ Import `TypeOrmModule.forFeature()` with required entities
 - ✅ **Include `Company` entity** when service needs System Admin Company pattern
 - ✅ Import `RBACModule` for authorization
@@ -1487,6 +1483,7 @@ export class TasksModule {}
 - ✅ Export service if other modules need it
 
 **When to include Company entity**:
+
 - ✅ Module implements System Admin Company pattern
 - ✅ Service needs to query for system company (`getSystemCompany()`)
 - ✅ ADMIN users need access to module data
@@ -1513,6 +1510,7 @@ export * from './lib/dto/task-response.dto';
 ```
 
 **Key Points**:
+
 - ✅ Export all public APIs
 - ✅ Allows importing from `@accounting/modules/tasks`
 
@@ -1535,12 +1533,12 @@ import {
   CompanyModuleAccess,
   UserModulePermission,
   SimpleText,
-  Task,  // Add Task entity
+  Task, // Add Task entity
 } from '@accounting/common';
 import { AuthModule } from '@accounting/auth';
 import { RBACModule } from '@accounting/rbac';
 import { SimpleTextModule } from '@accounting/modules/simple-text';
-import { TasksModule } from '@accounting/modules/tasks';  // Import TasksModule
+import { TasksModule } from '@accounting/modules/tasks'; // Import TasksModule
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -1562,16 +1560,16 @@ import { AppService } from './app.service';
           CompanyModuleAccess,
           UserModulePermission,
           SimpleText,
-          Task,  // Register Task entity
+          Task, // Register Task entity
         ],
-        synchronize: false,  // Use migrations in production
+        synchronize: false, // Use migrations in production
         logging: process.env.NODE_ENV === 'development',
       }),
     }),
     AuthModule,
     RBACModule,
     SimpleTextModule,
-    TasksModule,  // Import TasksModule
+    TasksModule, // Import TasksModule
   ],
   controllers: [AppController],
   providers: [AppService],
@@ -1580,6 +1578,7 @@ export class AppModule {}
 ```
 
 **Key Points**:
+
 - ✅ Import `TasksModule`
 - ✅ Add `Task` entity to TypeORM entities array
 - ✅ Module will be automatically registered
@@ -1597,7 +1596,7 @@ import {
   CompanyModuleAccess,
   UserModulePermission,
   SimpleText,
-  Task,  // Import Task entity
+  Task, // Import Task entity
 } from '@accounting/common';
 
 export default new DataSource({
@@ -1614,7 +1613,7 @@ export default new DataSource({
     CompanyModuleAccess,
     UserModulePermission,
     SimpleText,
-    Task,  // Add Task entity
+    Task, // Add Task entity
   ],
   migrations: ['apps/api/src/migrations/*.ts'],
   synchronize: false,
@@ -1622,6 +1621,7 @@ export default new DataSource({
 ```
 
 **Key Points**:
+
 - ✅ Import and register `Task` entity
 - ✅ Required for migrations to work
 
@@ -1739,6 +1739,7 @@ export class AddTaskEntity1234567890123 implements MigrationInterface {
 ```
 
 **Key Points**:
+
 - ✅ Enum types created for status and priority
 - ✅ Table with all columns
 - ✅ Foreign key constraints
@@ -1816,6 +1817,7 @@ npm run seed
 ```
 
 **Key Points**:
+
 - ✅ Module registered in database
 - ✅ Can be assigned to companies by admin
 - ✅ Slug matches decorator in controller
@@ -1838,14 +1840,14 @@ const config = new DocumentBuilder()
       description: 'Enter JWT token',
       in: 'header',
     },
-    'JWT-auth',
+    'JWT-auth'
   )
   .addTag('Health', 'Health check endpoints')
   .addTag('Auth', 'Authentication endpoints')
   .addTag('Admin', 'Admin management endpoints')
   .addTag('Company', 'Company management endpoints')
   .addTag('simple-text', 'Simple Text module endpoints')
-  .addTag('tasks', 'Tasks module endpoints')  // Add new tag
+  .addTag('tasks', 'Tasks module endpoints') // Add new tag
   .build();
 ```
 
@@ -1962,15 +1964,18 @@ async remove(@Param('id') id: string, @CurrentUser() user: User) {
 **Complete Swagger Decorator Reference**:
 
 **Operation Documentation**:
+
 - `@ApiOperation({ summary, description })` - ALWAYS include both summary AND description
 - `@ApiTags('module-name')` - Group endpoints by module
 
 **Request Documentation**:
+
 - `@ApiParam({ name, description, example })` - URL parameters
 - `@ApiQuery({ name, description, required })` - Query parameters
 - `@ApiBody({ type, description, examples })` - Request body with examples
 
 **Response Documentation**:
+
 - `@ApiOkResponse({ description, type })` - 200 OK responses
 - `@ApiCreatedResponse({ description, type })` - 201 Created responses
 - `@ApiNoContentResponse({ description })` - 204 No Content responses
@@ -1980,9 +1985,11 @@ async remove(@Param('id') id: string, @CurrentUser() user: User) {
 - `@ApiUnauthorizedResponse({ description })` - 401 Unauthorized responses
 
 **Security**:
+
 - `@ApiBearerAuth('JWT-auth')` - Require JWT authentication
 
 **Key Points**:
+
 - ✅ Every endpoint should have @ApiOperation with summary AND description
 - ✅ Document all possible response codes
 - ✅ Provide examples in @ApiBody for better developer experience
@@ -1991,6 +1998,7 @@ async remove(@Param('id') id: string, @CurrentUser() user: User) {
 - ✅ Accessible at `http://localhost:3000/api/docs`
 
 **Testing Swagger**:
+
 1. Start API: `npm run dev`
 2. Open browser: `http://localhost:3000/api/docs`
 3. Use "Authorize" button to add JWT token
@@ -2223,9 +2231,7 @@ describe('TaskService', () => {
         role: UserRole.ADMIN,
       } as User;
 
-      await expect(service.findAll(adminUser)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.findAll(adminUser)).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -2287,7 +2293,7 @@ export interface CreateTaskDto {
   description?: string;
   status?: 'todo' | 'in_progress' | 'done' | 'cancelled';
   priority?: 'low' | 'medium' | 'high' | 'urgent';
-  dueDate?: string;  // ISO 8601 date string
+  dueDate?: string; // ISO 8601 date string
   assigneeId?: string;
 }
 
@@ -2333,6 +2339,7 @@ export interface TaskResponseDto {
 ```
 
 **Key Points**:
+
 - ✅ Match backend DTO structure exactly
 - ✅ Include `company` object with `isSystemCompany` for UI logic
 - ✅ Use TypeScript types for type safety
@@ -2348,62 +2355,47 @@ Create/update file: `web/src/lib/validation/schemas.ts`
 import { z } from 'zod';
 
 export const createTaskSchema = z.object({
-  title: z.string()
-    .min(1, 'Title is required')
-    .max(200, 'Title must be less than 200 characters'),
+  title: z.string().min(1, 'Title is required').max(200, 'Title must be less than 200 characters'),
 
-  description: z.string()
-    .max(5000, 'Description must be less than 5000 characters')
-    .optional(),
+  description: z.string().max(5000, 'Description must be less than 5000 characters').optional(),
 
-  status: z.enum(['todo', 'in_progress', 'done', 'cancelled'])
-    .optional(),
+  status: z.enum(['todo', 'in_progress', 'done', 'cancelled']).optional(),
 
-  priority: z.enum(['low', 'medium', 'high', 'urgent'])
-    .optional(),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
 
-  dueDate: z.string()
+  dueDate: z
+    .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
     .optional(),
 
-  assigneeId: z.string()
-    .uuid('Invalid user ID')
-    .optional(),
+  assigneeId: z.string().uuid('Invalid user ID').optional(),
 });
 
 export type CreateTaskFormData = z.infer<typeof createTaskSchema>;
 
 export const updateTaskSchema = z.object({
-  title: z.string()
-    .min(1)
-    .max(200)
-    .optional(),
+  title: z.string().min(1).max(200).optional(),
 
-  description: z.string()
-    .max(5000)
-    .optional(),
+  description: z.string().max(5000).optional(),
 
-  status: z.enum(['todo', 'in_progress', 'done', 'cancelled'])
-    .optional(),
+  status: z.enum(['todo', 'in_progress', 'done', 'cancelled']).optional(),
 
-  priority: z.enum(['low', 'medium', 'high', 'urgent'])
-    .optional(),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
 
-  dueDate: z.string()
+  dueDate: z
+    .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .nullable()
     .optional(),
 
-  assigneeId: z.string()
-    .uuid()
-    .nullable()
-    .optional(),
+  assigneeId: z.string().uuid().nullable().optional(),
 });
 
 export type UpdateTaskFormData = z.infer<typeof updateTaskSchema>;
 ```
 
 **Key Points**:
+
 - ✅ Validation rules match backend DTOs
 - ✅ Use `z.infer<>` for TypeScript type generation
 - ✅ Client-side validation before API calls
@@ -2440,9 +2432,7 @@ export const tasksApi = {
    * Get tasks by status
    */
   getByStatus: async (status: string): Promise<TaskResponseDto[]> => {
-    const { data } = await apiClient.get<TaskResponseDto[]>(
-      `/api/modules/tasks/status/${status}`
-    );
+    const { data } = await apiClient.get<TaskResponseDto[]>(`/api/modules/tasks/status/${status}`);
     return data;
   },
 
@@ -2460,10 +2450,7 @@ export const tasksApi = {
    * Create new task
    */
   create: async (taskData: CreateTaskDto): Promise<TaskResponseDto> => {
-    const { data } = await apiClient.post<TaskResponseDto>(
-      '/api/modules/tasks',
-      taskData
-    );
+    const { data } = await apiClient.post<TaskResponseDto>('/api/modules/tasks', taskData);
     return data;
   },
 
@@ -2471,10 +2458,7 @@ export const tasksApi = {
    * Update existing task
    */
   update: async (id: string, taskData: UpdateTaskDto): Promise<TaskResponseDto> => {
-    const { data } = await apiClient.patch<TaskResponseDto>(
-      `/api/modules/tasks/${id}`,
-      taskData
-    );
+    const { data } = await apiClient.patch<TaskResponseDto>(`/api/modules/tasks/${id}`, taskData);
     return data;
   },
 
@@ -2488,6 +2472,7 @@ export const tasksApi = {
 ```
 
 **Key Points**:
+
 - ✅ Use centralized `apiClient` (axios instance with auth)
 - ✅ Type all requests and responses
 - ✅ Match backend endpoints exactly
@@ -2519,6 +2504,7 @@ export const queryKeys = {
 ```
 
 **Key Points**:
+
 - ✅ Hierarchical query key structure
 - ✅ Type-safe with `as const`
 - ✅ Enables granular cache invalidation
@@ -2554,7 +2540,7 @@ export function useTask(id: string) {
   return useQuery({
     queryKey: queryKeys.tasks.detail(id),
     queryFn: () => tasksApi.getById(id),
-    enabled: !!id,  // Only fetch if ID exists
+    enabled: !!id, // Only fetch if ID exists
   });
 }
 
@@ -2605,8 +2591,7 @@ export function useUpdateTask() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateTaskDto }) =>
-      tasksApi.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateTaskDto }) => tasksApi.update(id, data),
     onSuccess: (_, variables) => {
       // Invalidate both list and specific task
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
@@ -2656,6 +2641,7 @@ export function useDeleteTask() {
 ```
 
 **Key Points**:
+
 - ✅ Separate hook for each operation
 - ✅ Automatic cache invalidation on mutations
 - ✅ Toast notifications for user feedback
@@ -2800,6 +2786,7 @@ export function TaskListPage() {
 ```
 
 **Key Points**:
+
 - ✅ Use existing UI components (DataTable, Button, etc.)
 - ✅ State management for dialogs
 - ✅ Column definitions with custom cells
@@ -2937,6 +2924,7 @@ export function TaskFormDialog({ open, onClose, task }: TaskFormDialogProps) {
 ```
 
 **Key Points**:
+
 - ✅ React Hook Form for form state
 - ✅ Zod validation with zodResolver
 - ✅ Support both create and edit modes
@@ -2969,6 +2957,7 @@ Add routes for different user roles:
 ```
 
 **Key Points**:
+
 - ✅ Same component used across different routes
 - ✅ Different URL patterns for different roles
 - ✅ Consistent user experience regardless of role
@@ -2978,6 +2967,7 @@ Add routes for different user roles:
 ### Phase 13 Summary
 
 **Frontend Architecture**:
+
 ```
 User Interaction
        ↓
@@ -2991,6 +2981,7 @@ User Interaction
 ```
 
 **Key Files Created**:
+
 - ✅ `web/src/types/dtos.ts` - TypeScript types matching backend
 - ✅ `web/src/lib/validation/schemas.ts` - Zod validation schemas
 - ✅ `web/src/lib/api/endpoints/tasks.ts` - API client methods
@@ -3001,6 +2992,7 @@ User Interaction
 - ✅ `web/src/app/routes.tsx` - Routing (updated)
 
 **Testing Frontend**:
+
 1. Start backend: `npm run dev` (in api project)
 2. Start frontend: `npm run dev` (in web project)
 3. Login with different roles to test access
@@ -3161,6 +3153,7 @@ async create(createDto: CreateDto, user: User): Promise<YourEntity> {
 #### Required Changes for System Company Pattern
 
 **1. Entity (`libs/common/src/lib/entities/your-entity.entity.ts`)**:
+
 ```typescript
 @Column({ nullable: true })  // Make nullable
 companyId!: string | null;
@@ -3174,6 +3167,7 @@ company!: Company | null;
 ```
 
 **2. Service Imports**:
+
 ```typescript
 import { Company } from '@accounting/common';  // Add Company import
 
@@ -3186,16 +3180,18 @@ constructor(
 ```
 
 **3. Module (`libs/modules/your-module/src/lib/your-module.module.ts`)**:
+
 ```typescript
 TypeOrmModule.forFeature([YourEntity, User, Company]),  // Include Company
 ```
 
 **4. Response DTO**:
+
 ```typescript
 class CompanyBasicInfoDto {
   id: string;
   name: string;
-  isSystemCompany: boolean;  // Important for UI logic
+  isSystemCompany: boolean; // Important for UI logic
 }
 
 export class YourResponseDto {
@@ -3238,9 +3234,9 @@ export enum TaskPriority {
 }
 
 @Entity('tasks')
-@Index(['companyId'])           // Index for filtering by company
-@Index(['status'])              // Index for filtering by status
-@Index(['assigneeId'])          // Index for filtering by assignee
+@Index(['companyId']) // Index for filtering by company
+@Index(['status']) // Index for filtering by status
+@Index(['assigneeId']) // Index for filtering by assignee
 export class Task {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -3582,6 +3578,7 @@ This section covers advanced patterns demonstrated in the AI Agent module for mo
 ### When to Use Advanced Patterns
 
 Use these patterns when your module needs:
+
 - **Multiple related entities** (3+ entities with complex relationships)
 - **Sensitive data handling** (API keys, credentials, tokens)
 - **External service integration** (third-party APIs, providers)
@@ -3680,7 +3677,7 @@ For entities requiring unique combinations:
 
 ```typescript
 @Entity('token_usage')
-@Index(['companyId', 'date'], { unique: true })  // One record per company per day
+@Index(['companyId', 'date'], { unique: true }) // One record per company per day
 export class TokenUsage {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -3758,7 +3755,7 @@ export class AIConfigurationService implements OnModuleInit {
     const key = process.env.AI_ENCRYPTION_KEY;
     if (!key) {
       throw new Error(
-        'AI_ENCRYPTION_KEY environment variable is required for secure API key storage',
+        'AI_ENCRYPTION_KEY environment variable is required for secure API key storage'
       );
     }
     // Key must be 32 bytes for AES-256
@@ -3771,11 +3768,7 @@ export class AIConfigurationService implements OnModuleInit {
    */
   private encryptApiKey(apiKey: string): string {
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv(
-      this.ALGORITHM,
-      this.ENCRYPTION_KEY,
-      iv,
-    );
+    const cipher = crypto.createCipheriv(this.ALGORITHM, this.ENCRYPTION_KEY, iv);
     let encrypted = cipher.update(apiKey, 'utf8', 'hex');
     encrypted += cipher.final('hex');
     return `${iv.toString('hex')}:${encrypted}`;
@@ -3787,11 +3780,7 @@ export class AIConfigurationService implements OnModuleInit {
   private decryptApiKey(encryptedKey: string): string {
     const [ivHex, encrypted] = encryptedKey.split(':');
     const iv = Buffer.from(ivHex, 'hex');
-    const decipher = crypto.createDecipheriv(
-      this.ALGORITHM,
-      this.ENCRYPTION_KEY,
-      iv,
-    );
+    const decipher = crypto.createDecipheriv(this.ALGORITHM, this.ENCRYPTION_KEY, iv);
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;
@@ -3800,10 +3789,7 @@ export class AIConfigurationService implements OnModuleInit {
   /**
    * Store configuration - encrypt API key before saving
    */
-  async create(
-    createDto: CreateAIConfigurationDto,
-    user: User,
-  ): Promise<AIConfiguration> {
+  async create(createDto: CreateAIConfigurationDto, user: User): Promise<AIConfiguration> {
     const configuration = this.configRepository.create({
       ...createDto,
       companyId: user.companyId,
@@ -3913,13 +3899,10 @@ export abstract class AIProviderService {
     model: string,
     temperature: number,
     maxTokens: number,
-    apiKey: string,
+    apiKey: string
   ): Promise<ChatResponse>;
 
-  abstract generateEmbedding(
-    text: string,
-    apiKey: string,
-  ): Promise<EmbeddingResponse>;
+  abstract generateEmbedding(text: string, apiKey: string): Promise<EmbeddingResponse>;
 
   abstract listModels(apiKey: string): Promise<string[]>;
 }
@@ -3948,7 +3931,7 @@ export class OpenAIProviderService extends AIProviderService {
     model: string,
     temperature: number,
     maxTokens: number,
-    apiKey: string,
+    apiKey: string
   ): Promise<ChatResponse> {
     const client = new OpenAI({ apiKey });
 
@@ -3968,10 +3951,7 @@ export class OpenAIProviderService extends AIProviderService {
     };
   }
 
-  async generateEmbedding(
-    text: string,
-    apiKey: string,
-  ): Promise<EmbeddingResponse> {
+  async generateEmbedding(text: string, apiKey: string): Promise<EmbeddingResponse> {
     const client = new OpenAI({ apiKey });
 
     const response = await client.embeddings.create({
@@ -3989,9 +3969,7 @@ export class OpenAIProviderService extends AIProviderService {
     const client = new OpenAI({ apiKey });
     const response = await client.models.list();
 
-    return response.data
-      .filter((model) => model.id.startsWith('gpt-'))
-      .map((model) => model.id);
+    return response.data.filter((model) => model.id.startsWith('gpt-')).map((model) => model.id);
   }
 }
 ```
@@ -4011,7 +3989,7 @@ export class OpenRouterProviderService extends AIProviderService {
     model: string,
     temperature: number,
     maxTokens: number,
-    apiKey: string,
+    apiKey: string
   ): Promise<ChatResponse> {
     // OpenRouter uses OpenAI-compatible API
     const client = new OpenAI({
@@ -4051,7 +4029,7 @@ export class AIChatService {
   constructor(
     private readonly openAIProvider: OpenAIProviderService,
     private readonly openRouterProvider: OpenRouterProviderService,
-    private readonly configService: AIConfigurationService,
+    private readonly configService: AIConfigurationService
   ) {
     // Register available providers
     this.providers = new Map([
@@ -4072,9 +4050,7 @@ export class AIChatService {
     const provider = this.providers.get(config.provider);
 
     if (!provider) {
-      throw new BadRequestException(
-        `Unsupported AI provider: ${config.provider}`,
-      );
+      throw new BadRequestException(`Unsupported AI provider: ${config.provider}`);
     }
 
     const apiKey = await this.configService.getDecryptedApiKey(companyId);
@@ -4091,7 +4067,7 @@ export class AIChatService {
       config.model,
       config.temperature,
       config.maxTokens,
-      apiKey,
+      apiKey
     );
 
     return response;
@@ -4146,30 +4122,22 @@ export class AIContextController {
       },
       fileFilter: (req, file, cb) => {
         // Validate file types
-        const allowedTypes = [
-          'text/plain',
-          'text/markdown',
-          'application/pdf',
-          'application/json',
-        ];
+        const allowedTypes = ['text/plain', 'text/markdown', 'application/pdf', 'application/json'];
         const allowedExtensions = ['.txt', '.md', '.pdf', '.json'];
 
         const ext = extname(file.originalname).toLowerCase();
-        if (
-          allowedTypes.includes(file.mimetype) ||
-          allowedExtensions.includes(ext)
-        ) {
+        if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(ext)) {
           cb(null, true);
         } else {
           cb(
             new BadRequestException(
-              `File type not allowed. Allowed: ${allowedExtensions.join(', ')}`,
+              `File type not allowed. Allowed: ${allowedExtensions.join(', ')}`
             ),
-            false,
+            false
           );
         }
       },
-    }),
+    })
   )
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -4192,7 +4160,7 @@ export class AIContextController {
   async uploadContext(
     @UploadedFile() file: Express.Multer.File,
     @Body('title') title: string,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     if (!file) {
       throw new BadRequestException('File is required');
@@ -4208,11 +4176,7 @@ export class AIContextController {
 ```typescript
 @Injectable()
 export class AIContextService {
-  async createFromFile(
-    file: Express.Multer.File,
-    title: string,
-    user: User,
-  ): Promise<AIContext> {
+  async createFromFile(file: Express.Multer.File, title: string, user: User): Promise<AIContext> {
     // Read and process file content
     const content = await this.extractContent(file);
 
@@ -4314,16 +4278,13 @@ export class AddPgvector implements MigrationInterface {
 export class AIContextService {
   constructor(
     private readonly configService: AIConfigurationService,
-    private readonly openAIProvider: OpenAIProviderService,
+    private readonly openAIProvider: OpenAIProviderService
   ) {}
 
   /**
    * Generate embedding vector for text
    */
-  private async generateEmbedding(
-    text: string,
-    companyId: string,
-  ): Promise<number[]> {
+  private async generateEmbedding(text: string, companyId: string): Promise<number[]> {
     const apiKey = await this.configService.getDecryptedApiKey(companyId);
 
     const response = await this.openAIProvider.generateEmbedding(text, apiKey);
@@ -4345,7 +4306,7 @@ export class AIContextService {
     query: string,
     companyId: string,
     limit: number = 5,
-    minSimilarity: number = 0.7,
+    minSimilarity: number = 0.7
   ): Promise<AIContext[]> {
     // Generate embedding for query
     const queryEmbedding = await this.generateEmbedding(query, companyId);
@@ -4353,16 +4314,8 @@ export class AIContextService {
     // Use raw query for vector similarity search
     const results = await this.contextRepository
       .createQueryBuilder('context')
-      .select([
-        'context.id',
-        'context.title',
-        'context.content',
-        'context.source',
-      ])
-      .addSelect(
-        `1 - (context.embedding <=> :embedding)`,
-        'similarity',
-      )
+      .select(['context.id', 'context.title', 'context.content', 'context.source'])
+      .addSelect(`1 - (context.embedding <=> :embedding)`, 'similarity')
       .where('context.companyId = :companyId', { companyId })
       .andWhere('context.isActive = true')
       .andWhere('context.embedding IS NOT NULL')
@@ -4505,7 +4458,7 @@ export class TokenUsageService {
   async recordUsage(
     companyId: string,
     promptTokens: number,
-    completionTokens: number,
+    completionTokens: number
   ): Promise<void> {
     const today = new Date().toISOString().split('T')[0];
 
@@ -4529,7 +4482,7 @@ export class TokenUsageService {
           'totalTokens = token_usage.totalTokens + EXCLUDED.totalTokens',
           'requestCount = token_usage.requestCount + 1',
         ],
-        ['companyId', 'date'],
+        ['companyId', 'date']
       )
       .execute();
   }
@@ -4539,7 +4492,7 @@ export class TokenUsageService {
    */
   async checkLimits(
     companyId: string,
-    estimatedTokens: number,
+    estimatedTokens: number
   ): Promise<{ allowed: boolean; reason?: string; usage?: TokenUsageStats }> {
     const limit = await this.getCompanyLimit(companyId);
     if (!limit) {
@@ -4572,7 +4525,7 @@ export class TokenUsageService {
     if (monthlyPercentage >= limit.warningThreshold) {
       // Log warning but allow request
       this.logger.warn(
-        `Company ${companyId} at ${(monthlyPercentage * 100).toFixed(1)}% of monthly limit`,
+        `Company ${companyId} at ${(monthlyPercentage * 100).toFixed(1)}% of monthly limit`
       );
     }
 
@@ -4646,10 +4599,7 @@ AI Agent Controllers:
 export class AIConfigurationController {
   @Post()
   @ApiOperation({ summary: 'Create AI configuration (Admin/Owner only)' })
-  async create(
-    @Body() createDto: CreateAIConfigurationDto,
-    @CurrentUser() user: User,
-  ) {
+  async create(@Body() createDto: CreateAIConfigurationDto, @CurrentUser() user: User) {
     return this.configService.create(createDto, user);
   }
 
@@ -4658,7 +4608,7 @@ export class AIConfigurationController {
   async update(
     @Param('id') id: string,
     @Body() updateDto: UpdateAIConfigurationDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.configService.update(id, updateDto, user);
   }
@@ -4684,10 +4634,7 @@ export class AIConversationController {
   @Post()
   @RequirePermission('ai-agent', Permission.WRITE)
   @ApiOperation({ summary: 'Start new conversation' })
-  async create(
-    @Body() createDto: CreateConversationDto,
-    @CurrentUser() user: User,
-  ) {
+  async create(@Body() createDto: CreateConversationDto, @CurrentUser() user: User) {
     return this.conversationService.create(createDto, user);
   }
 
@@ -4697,7 +4644,7 @@ export class AIConversationController {
   async sendMessage(
     @Param('id') conversationId: string,
     @Body() messageDto: SendMessageDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.chatService.chat(conversationId, messageDto.content, user);
   }
@@ -4766,11 +4713,7 @@ export class TokenUsageController {
     OpenAIProviderService,
     OpenRouterProviderService,
   ],
-  exports: [
-    AIConfigurationService,
-    AIChatService,
-    TokenUsageService,
-  ],
+  exports: [AIConfigurationService, AIChatService, TokenUsageService],
 })
 export class AIAgentModule {}
 ```
@@ -4784,11 +4727,13 @@ export class AIAgentModule {}
 #### "Entity not found in connection"
 
 **Error**:
+
 ```
 EntityMetadataNotFoundError: No metadata for "Task" was found
 ```
 
 **Solution**:
+
 1. Ensure entity is exported from `libs/common/src/index.ts`
 2. Ensure entity is added to TypeORM entities array in `app.module.ts`
 3. Ensure entity is added to `typeorm.config.ts`
@@ -4796,12 +4741,15 @@ EntityMetadataNotFoundError: No metadata for "Task" was found
 #### "Cannot find module '@accounting/modules/tasks'"
 
 **Error**:
+
 ```
 Error: Cannot find module '@accounting/modules/tasks'
 ```
 
 **Solution**:
+
 1. Ensure `tsconfig.base.json` has path mapping:
+
 ```json
 {
   "paths": {
@@ -4809,17 +4757,20 @@ Error: Cannot find module '@accounting/modules/tasks'
   }
 }
 ```
+
 2. Run `nx reset` to clear cache
 3. Restart TypeScript server in your IDE
 
 #### Migration Generation Fails
 
 **Error**:
+
 ```
 Error: No changes in database schema were found
 ```
 
 **Solution**:
+
 1. Ensure entity is registered in `typeorm.config.ts`
 2. Check database connection
 3. Verify entity has `@Entity()` decorator
@@ -4828,11 +4779,13 @@ Error: No changes in database schema were found
 #### "Access denied to module: tasks"
 
 **Error**:
+
 ```
 403 Forbidden - Access denied to module: tasks
 ```
 
 **Solution**:
+
 1. Verify module is registered in database (check seeder)
 2. Admin must grant module to company
 3. Company owner must grant permissions to employee
@@ -4841,6 +4794,7 @@ Error: No changes in database schema were found
 #### "Admins do not have access to business module data"
 
 **Error**:
+
 ```
 403 Forbidden - Admins do not have access to business module data
 ```
@@ -4855,12 +4809,14 @@ This is expected behavior. ADMIN role cannot access business data directly. Use 
 ### Code Organization
 
 ✅ **DO**:
+
 - One class per file
 - Clear file naming (kebab-case)
 - Consistent directory structure
 - Export through index.ts
 
 ❌ **DON'T**:
+
 - Multiple classes in one file
 - Inconsistent naming
 - Deep nesting (>3 levels)
@@ -4869,6 +4825,7 @@ This is expected behavior. ADMIN role cannot access business data directly. Use 
 ### Security
 
 ✅ **DO**:
+
 - Always filter by `companyId`
 - Verify ownership before modify/delete
 - Use validation decorators
@@ -4876,6 +4833,7 @@ This is expected behavior. ADMIN role cannot access business data directly. Use 
 - Use parameterized queries (TypeORM does this)
 
 ❌ **DON'T**:
+
 - Trust user input without validation
 - Skip ownership checks
 - Use string concatenation in queries
@@ -4886,6 +4844,7 @@ This is expected behavior. ADMIN role cannot access business data directly. Use 
 For modules handling API keys, credentials, or other sensitive data:
 
 ✅ **DO**:
+
 - **Encrypt at rest**: Use AES-256-GCM with random salt and IV for API keys
 - **Validate encryption key**: Check environment variable exists at startup (`OnModuleInit`)
 - **Use `hasApiKey` pattern**: Return boolean instead of actual key in responses
@@ -4894,6 +4853,7 @@ For modules handling API keys, credentials, or other sensitive data:
 - **Environment-based keys**: Store encryption keys only in environment variables
 
 ❌ **DON'T**:
+
 - Store API keys in plaintext
 - Return encrypted data in API responses
 - Log sensitive values (even encrypted ones)
@@ -4906,14 +4866,14 @@ For modules handling API keys, credentials, or other sensitive data:
 export class ConfigurationResponseDto {
   @Expose() id: string;
   @Expose() provider: string;
-  @Exclude() apiKey: string;        // Never exposed
-  @Expose() hasApiKey: boolean;     // Safe boolean indicator
+  @Exclude() apiKey: string; // Never exposed
+  @Expose() hasApiKey: boolean; // Safe boolean indicator
 }
 
 // ❌ BAD: Exposing sensitive data
 export class BadConfigDto {
-  apiKey: string;                   // Exposes encrypted value
-  encryptedApiKey: string;          // Still reveals format
+  apiKey: string; // Exposes encrypted value
+  encryptedApiKey: string; // Still reveals format
 }
 ```
 
@@ -4922,6 +4882,7 @@ export class BadConfigDto {
 For modules with usage tracking and limits:
 
 ✅ **DO**:
+
 - Check limits **before** expensive operations
 - Use atomic upsert for usage tracking (prevent race conditions)
 - Implement warning thresholds (alert at 80%)
@@ -4930,6 +4891,7 @@ For modules with usage tracking and limits:
 - Use composite unique indexes for daily aggregation
 
 ❌ **DON'T**:
+
 - Check limits only after consuming resources
 - Allow unlimited usage without quotas
 - Expose internal limit details in errors
@@ -4939,12 +4901,14 @@ For modules with usage tracking and limits:
 ### Performance
 
 ✅ **DO**:
+
 - Add indexes on frequently queried columns
 - Use pagination for large datasets
 - Load relations selectively
 - Use `@Index()` decorator
 
 ❌ **DON'T**:
+
 - Load all data without pagination
 - Load unnecessary relations
 - Create N+1 query problems
@@ -4953,12 +4917,14 @@ For modules with usage tracking and limits:
 ### Error Handling
 
 ✅ **DO**:
+
 - Use NestJS exceptions
 - Provide clear error messages
 - Log errors appropriately
 - Return proper HTTP status codes
 
 ❌ **DON'T**:
+
 - Use generic `throw new Error()`
 - Expose sensitive information in errors
 - Swallow errors silently
@@ -5117,127 +5083,127 @@ async uploadFile(
 
 ### TypeORM Decorators
 
-| Decorator | Purpose |
-|-----------|---------|
-| `@Entity()` | Mark class as entity |
-| `@PrimaryGeneratedColumn()` | Primary key |
-| `@Column()` | Database column |
-| `@CreateDateColumn()` | Auto-set creation time |
-| `@UpdateDateColumn()` | Auto-update modification time |
-| `@DeleteDateColumn()` | Soft delete timestamp |
-| `@ManyToOne()` | Many-to-one relation |
-| `@OneToMany()` | One-to-many relation |
-| `@OneToOne()` | One-to-one relation |
-| `@ManyToMany()` | Many-to-many relation |
-| `@JoinColumn()` | Specify FK column |
-| `@JoinTable()` | For many-to-many |
-| `@Index()` | Create index |
-| `@Unique()` | Unique constraint |
+| Decorator                   | Purpose                       |
+| --------------------------- | ----------------------------- |
+| `@Entity()`                 | Mark class as entity          |
+| `@PrimaryGeneratedColumn()` | Primary key                   |
+| `@Column()`                 | Database column               |
+| `@CreateDateColumn()`       | Auto-set creation time        |
+| `@UpdateDateColumn()`       | Auto-update modification time |
+| `@DeleteDateColumn()`       | Soft delete timestamp         |
+| `@ManyToOne()`              | Many-to-one relation          |
+| `@OneToMany()`              | One-to-many relation          |
+| `@OneToOne()`               | One-to-one relation           |
+| `@ManyToMany()`             | Many-to-many relation         |
+| `@JoinColumn()`             | Specify FK column             |
+| `@JoinTable()`              | For many-to-many              |
+| `@Index()`                  | Create index                  |
+| `@Unique()`                 | Unique constraint             |
 
 ### class-validator Decorators
 
-| Decorator | Purpose |
-|-----------|---------|
-| `@IsString()` | Validate string |
-| `@IsNumber()` | Validate number |
-| `@IsBoolean()` | Validate boolean |
-| `@IsDate()` | Validate date |
-| `@IsEnum()` | Validate enum |
-| `@IsUUID()` | Validate UUID |
-| `@IsEmail()` | Validate email |
-| `@IsUrl()` | Validate URL |
-| `@IsOptional()` | Field is optional |
-| `@MinLength()` | Min string length |
-| `@MaxLength()` | Max string length |
-| `@Min()` | Min number value |
-| `@Max()` | Max number value |
-| `@IsDateString()` | ISO date string |
-| `@IsArray()` | Validate array |
-| `@ArrayMinSize()` | Min array size |
-| `@ArrayMaxSize()` | Max array size |
+| Decorator         | Purpose           |
+| ----------------- | ----------------- |
+| `@IsString()`     | Validate string   |
+| `@IsNumber()`     | Validate number   |
+| `@IsBoolean()`    | Validate boolean  |
+| `@IsDate()`       | Validate date     |
+| `@IsEnum()`       | Validate enum     |
+| `@IsUUID()`       | Validate UUID     |
+| `@IsEmail()`      | Validate email    |
+| `@IsUrl()`        | Validate URL      |
+| `@IsOptional()`   | Field is optional |
+| `@MinLength()`    | Min string length |
+| `@MaxLength()`    | Max string length |
+| `@Min()`          | Min number value  |
+| `@Max()`          | Max number value  |
+| `@IsDateString()` | ISO date string   |
+| `@IsArray()`      | Validate array    |
+| `@ArrayMinSize()` | Min array size    |
+| `@ArrayMaxSize()` | Max array size    |
 
 ### NestJS HTTP Decorators
 
-| Decorator | Purpose |
-|-----------|---------|
-| `@Controller()` | Define controller |
-| `@Get()` | GET endpoint |
-| `@Post()` | POST endpoint |
-| `@Patch()` | PATCH endpoint |
-| `@Put()` | PUT endpoint |
-| `@Delete()` | DELETE endpoint |
-| `@Body()` | Request body |
-| `@Param()` | URL parameter |
-| `@Query()` | Query string |
-| `@Headers()` | Request headers |
-| `@Req()` | Full request object |
-| `@Res()` | Response object |
-| `@HttpCode()` | Set status code |
-| `@UseGuards()` | Apply guards |
-| `@UseInterceptors()` | Apply interceptors |
+| Decorator            | Purpose             |
+| -------------------- | ------------------- |
+| `@Controller()`      | Define controller   |
+| `@Get()`             | GET endpoint        |
+| `@Post()`            | POST endpoint       |
+| `@Patch()`           | PATCH endpoint      |
+| `@Put()`             | PUT endpoint        |
+| `@Delete()`          | DELETE endpoint     |
+| `@Body()`            | Request body        |
+| `@Param()`           | URL parameter       |
+| `@Query()`           | Query string        |
+| `@Headers()`         | Request headers     |
+| `@Req()`             | Full request object |
+| `@Res()`             | Response object     |
+| `@HttpCode()`        | Set status code     |
+| `@UseGuards()`       | Apply guards        |
+| `@UseInterceptors()` | Apply interceptors  |
 
 ### Custom Decorators (RBAC)
 
-| Decorator | Purpose |
-|-----------|---------|
-| `@CurrentUser()` | Get authenticated user |
-| `@RequireModule('slug')` | Require module access |
+| Decorator                                  | Purpose                     |
+| ------------------------------------------ | --------------------------- |
+| `@CurrentUser()`                           | Get authenticated user      |
+| `@RequireModule('slug')`                   | Require module access       |
 | `@RequirePermission('slug', 'permission')` | Require specific permission |
-| `@Roles(...)` | Require user role |
-| `@Public()` | Skip authentication |
+| `@Roles(...)`                              | Require user role           |
+| `@Public()`                                | Skip authentication         |
 
 ### Swagger Decorators
 
-| Decorator | Purpose |
-|-----------|---------|
-| `@ApiTags()` | Group endpoints |
-| `@ApiOperation()` | Endpoint description |
-| `@ApiResponse()` | Response documentation |
-| `@ApiProperty()` | Property documentation |
-| `@ApiPropertyOptional()` | Optional property |
-| `@ApiBearerAuth()` | Require JWT |
-| `@ApiParam()` | URL parameter doc |
-| `@ApiQuery()` | Query parameter doc |
-| `@ApiBody()` | Request body doc |
-| `@ApiConsumes()` | Accept content types (e.g., `multipart/form-data`) |
+| Decorator                | Purpose                                            |
+| ------------------------ | -------------------------------------------------- |
+| `@ApiTags()`             | Group endpoints                                    |
+| `@ApiOperation()`        | Endpoint description                               |
+| `@ApiResponse()`         | Response documentation                             |
+| `@ApiProperty()`         | Property documentation                             |
+| `@ApiPropertyOptional()` | Optional property                                  |
+| `@ApiBearerAuth()`       | Require JWT                                        |
+| `@ApiParam()`            | URL parameter doc                                  |
+| `@ApiQuery()`            | Query parameter doc                                |
+| `@ApiBody()`             | Request body doc                                   |
+| `@ApiConsumes()`         | Accept content types (e.g., `multipart/form-data`) |
 
 ### Advanced TypeORM Patterns
 
-| Pattern | Purpose | Example |
-|---------|---------|---------|
-| `@Index(['col1', 'col2'])` | Composite index | `@Index(['companyId', 'date'])` |
-| `@Index([...], { unique: true })` | Composite unique constraint | `@Index(['companyId', 'date'], { unique: true })` |
-| `@Column({ type: 'jsonb' })` | Flexible JSON storage | `metadata: Record<string, unknown>` |
-| `@Column({ type: 'vector', length: N })` | Vector embeddings (pgvector) | `embedding: number[]` |
-| `cascade: true` | Cascade operations | `@OneToMany(..., { cascade: true })` |
-| `onDelete: 'CASCADE'` | Delete children with parent | `@ManyToOne(..., { onDelete: 'CASCADE' })` |
-| `onDelete: 'SET NULL'` | Nullify on parent delete | `@ManyToOne(..., { onDelete: 'SET NULL' })` |
+| Pattern                                  | Purpose                      | Example                                           |
+| ---------------------------------------- | ---------------------------- | ------------------------------------------------- |
+| `@Index(['col1', 'col2'])`               | Composite index              | `@Index(['companyId', 'date'])`                   |
+| `@Index([...], { unique: true })`        | Composite unique constraint  | `@Index(['companyId', 'date'], { unique: true })` |
+| `@Column({ type: 'jsonb' })`             | Flexible JSON storage        | `metadata: Record<string, unknown>`               |
+| `@Column({ type: 'vector', length: N })` | Vector embeddings (pgvector) | `embedding: number[]`                             |
+| `cascade: true`                          | Cascade operations           | `@OneToMany(..., { cascade: true })`              |
+| `onDelete: 'CASCADE'`                    | Delete children with parent  | `@ManyToOne(..., { onDelete: 'CASCADE' })`        |
+| `onDelete: 'SET NULL'`                   | Nullify on parent delete     | `@ManyToOne(..., { onDelete: 'SET NULL' })`       |
 
 ### File Upload Decorators
 
-| Decorator | Purpose |
-|-----------|---------|
-| `@UseInterceptors(FileInterceptor('field'))` | Single file upload |
+| Decorator                                     | Purpose               |
+| --------------------------------------------- | --------------------- |
+| `@UseInterceptors(FileInterceptor('field'))`  | Single file upload    |
 | `@UseInterceptors(FilesInterceptor('field'))` | Multiple files upload |
-| `@UploadedFile()` | Get uploaded file |
-| `@UploadedFiles()` | Get multiple files |
+| `@UploadedFile()`                             | Get uploaded file     |
+| `@UploadedFiles()`                            | Get multiple files    |
 
 ### class-transformer Decorators (Responses)
 
-| Decorator | Purpose |
-|-----------|---------|
-| `@Expose()` | Include field in serialization |
-| `@Exclude()` | Exclude field from serialization |
-| `@Transform()` | Transform value during serialization |
-| `@Type()` | Specify nested type for transformation |
+| Decorator      | Purpose                                |
+| -------------- | -------------------------------------- |
+| `@Expose()`    | Include field in serialization         |
+| `@Exclude()`   | Exclude field from serialization       |
+| `@Transform()` | Transform value during serialization   |
+| `@Type()`      | Specify nested type for transformation |
 
 ### NestJS Lifecycle Hooks
 
-| Interface | Method | Use Case |
-|-----------|--------|----------|
-| `OnModuleInit` | `onModuleInit()` | Validate env vars, initialize providers |
-| `OnModuleDestroy` | `onModuleDestroy()` | Cleanup resources, close connections |
-| `OnApplicationShutdown` | `onApplicationShutdown()` | Graceful shutdown |
+| Interface               | Method                    | Use Case                                |
+| ----------------------- | ------------------------- | --------------------------------------- |
+| `OnModuleInit`          | `onModuleInit()`          | Validate env vars, initialize providers |
+| `OnModuleDestroy`       | `onModuleDestroy()`       | Cleanup resources, close connections    |
+| `OnApplicationShutdown` | `onApplicationShutdown()` | Graceful shutdown                       |
 
 ---
 
@@ -5500,20 +5466,20 @@ Every module must have a `module.json` file in its root directory. This file def
 
 **Configuration Fields**:
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `$schema` | string | ✅ | Path to JSON schema for validation |
-| `slug` | string | ✅ | URL-friendly identifier (e.g., `time-tracking`) |
-| `name` | string | ✅ | Display name in Polish (e.g., `Logowanie czasu`) |
-| `description` | string | ✅ | Description in Polish |
-| `version` | string | ✅ | Semantic version (e.g., `1.0.0`) |
-| `isActive` | boolean | ✅ | Whether module is enabled by default |
-| `permissions` | string[] | ✅ | Available permissions: `read`, `write`, `delete`, `manage` |
-| `defaultPermissions` | string[] | ✅ | Permissions granted by default |
-| `icon` | string | ✅ | Lucide icon name (e.g., `clock`, `users`, `mail`) |
-| `category` | string | ✅ | Category: `ai`, `crm`, `communication`, `productivity` |
-| `dependencies` | string[] | ❌ | Slugs of required modules |
-| `config` | object | ❌ | Module-specific feature flags |
+| Field                | Type     | Required | Description                                                |
+| -------------------- | -------- | -------- | ---------------------------------------------------------- |
+| `$schema`            | string   | ✅       | Path to JSON schema for validation                         |
+| `slug`               | string   | ✅       | URL-friendly identifier (e.g., `time-tracking`)            |
+| `name`               | string   | ✅       | Display name in Polish (e.g., `Logowanie czasu`)           |
+| `description`        | string   | ✅       | Description in Polish                                      |
+| `version`            | string   | ✅       | Semantic version (e.g., `1.0.0`)                           |
+| `isActive`           | boolean  | ✅       | Whether module is enabled by default                       |
+| `permissions`        | string[] | ✅       | Available permissions: `read`, `write`, `delete`, `manage` |
+| `defaultPermissions` | string[] | ✅       | Permissions granted by default                             |
+| `icon`               | string   | ✅       | Lucide icon name (e.g., `clock`, `users`, `mail`)          |
+| `category`           | string   | ✅       | Category: `ai`, `crm`, `communication`, `productivity`     |
+| `dependencies`       | string[] | ❌       | Slugs of required modules                                  |
+| `config`             | object   | ❌       | Module-specific feature flags                              |
 
 **Example module.json files from existing modules**:
 
@@ -5566,6 +5532,7 @@ Every module must have a `module.json` file in its root directory. This file def
 ### Module Icon Requirements
 
 Every module **MUST** have a unique icon defined in its `module.json` file. Icons are displayed in:
+
 - Sidebar navigation
 - Module list pages (admin and company views)
 - Module cards and tables
@@ -5574,32 +5541,32 @@ Every module **MUST** have a unique icon defined in its `module.json` file. Icon
 
 **Available Icons** (supported in `apps/web/src/lib/utils/module-icons.tsx`):
 
-| Icon Name | Description | Use Case |
-|-----------|-------------|----------|
-| `package` | Default/fallback | Generic module |
-| `users` | People/users | CRM, contacts, employees |
-| `check-square` | Checkbox | Tasks, todos, approvals |
-| `bot` | Robot | AI modules |
-| `mail` | Envelope | Email, messaging |
-| `clock` | Clock | Time tracking, scheduling |
-| `file-text` | Document | Documents, notes |
-| `calculator` | Calculator | Finance, calculations |
-| `calendar` | Calendar | Scheduling, events |
-| `settings` | Gear | Configuration, settings |
-| `briefcase` | Briefcase | Business, projects |
-| `bar-chart-3` | Chart | Analytics, reports |
-| `credit-card` | Credit card | Payments, billing |
-| `folder-open` | Open folder | Files, storage |
+| Icon Name      | Description      | Use Case                  |
+| -------------- | ---------------- | ------------------------- |
+| `package`      | Default/fallback | Generic module            |
+| `users`        | People/users     | CRM, contacts, employees  |
+| `check-square` | Checkbox         | Tasks, todos, approvals   |
+| `bot`          | Robot            | AI modules                |
+| `mail`         | Envelope         | Email, messaging          |
+| `clock`        | Clock            | Time tracking, scheduling |
+| `file-text`    | Document         | Documents, notes          |
+| `calculator`   | Calculator       | Finance, calculations     |
+| `calendar`     | Calendar         | Scheduling, events        |
+| `settings`     | Gear             | Configuration, settings   |
+| `briefcase`    | Briefcase        | Business, projects        |
+| `bar-chart-3`  | Chart            | Analytics, reports        |
+| `credit-card`  | Credit card      | Payments, billing         |
+| `folder-open`  | Open folder      | Files, storage            |
 
 **Current Module Icons**:
 
-| Module | Slug | Icon |
-|--------|------|------|
-| Zadania | `tasks` | `check-square` |
-| Klienci | `clients` | `users` |
-| Agent AI | `ai-agent` | `bot` |
-| Klient Email | `email-client` | `mail` |
-| Logowanie czasu | `time-tracking` | `clock` |
+| Module          | Slug            | Icon           |
+| --------------- | --------------- | -------------- |
+| Zadania         | `tasks`         | `check-square` |
+| Klienci         | `clients`       | `users`        |
+| Agent AI        | `ai-agent`      | `bot`          |
+| Klient Email    | `email-client`  | `mail`         |
+| Logowanie czasu | `time-tracking` | `clock`        |
 
 **Adding a New Icon**:
 
@@ -5624,6 +5591,7 @@ Browse available icons at: https://lucide.dev/icons/
 Production modules use a three-tier exception handling architecture with error codes.
 
 **Structure**:
+
 ```
 libs/modules/{module}/src/lib/exceptions/
 ├── error-codes.enum.ts      # Centralized error codes
@@ -5688,7 +5656,7 @@ export class ClientException extends HttpException {
     public readonly errorCode: ClientErrorCode,
     message: string,
     public readonly context?: ClientExceptionContext,
-    statusCode: HttpStatus = HttpStatus.BAD_REQUEST,
+    statusCode: HttpStatus = HttpStatus.BAD_REQUEST
   ) {
     super(
       {
@@ -5698,7 +5666,7 @@ export class ClientException extends HttpException {
         context,
         timestamp: new Date().toISOString(),
       },
-      statusCode,
+      statusCode
     );
   }
 }
@@ -5713,7 +5681,7 @@ export class ClientNotFoundException extends ClientException {
       ClientErrorCode.CLIENT_NOT_FOUND,
       `Client with ID ${clientId} not found`,
       { clientId, companyId },
-      HttpStatus.NOT_FOUND,
+      HttpStatus.NOT_FOUND
     );
   }
 }
@@ -5723,15 +5691,12 @@ export class ClientNotFoundException extends ClientException {
  * Use when some items in batch fail
  */
 export class ClientBatchOperationException extends ClientException {
-  constructor(
-    failedItems: Array<{ id: string; error: string }>,
-    context?: ClientExceptionContext,
-  ) {
+  constructor(failedItems: Array<{ id: string; error: string }>, context?: ClientExceptionContext) {
     super(
       ClientErrorCode.CLIENT_BATCH_OPERATION_FAILED,
       `Batch operation failed for ${failedItems.length} item(s)`,
       { ...context, additionalInfo: { failedItems } },
-      HttpStatus.MULTI_STATUS,
+      HttpStatus.MULTI_STATUS
     );
   }
 }
@@ -5778,11 +5743,11 @@ async findOne(id: string, companyId: string): Promise<Client> {
 @Module({
   controllers: [
     // More specific routes must be registered before generic /:id routes
-    TasksLookupController,    // Handles: /tasks/lookups/*
-    TaskLabelsController,     // Handles: /tasks/labels/*
-    TaskCommentsController,   // Handles: /tasks/:taskId/comments/*
+    TasksLookupController, // Handles: /tasks/lookups/*
+    TaskLabelsController, // Handles: /tasks/labels/*
+    TaskCommentsController, // Handles: /tasks/:taskId/comments/*
     TaskDependenciesController, // Handles: /tasks/:taskId/dependencies/*
-    TasksController,          // Handles: /tasks/:id (MUST BE LAST)
+    TasksController, // Handles: /tasks/:id (MUST BE LAST)
   ],
   // ...
 })
@@ -5792,6 +5757,7 @@ export class TasksModule {}
 **Why This Matters**:
 
 Without proper ordering:
+
 - Request to `/tasks/lookups` might match `/:id` route first
 - `lookups` would be interpreted as a task ID
 - Results in "Task not found" errors for valid lookup requests
@@ -5854,7 +5820,7 @@ import { AIAgentModule } from '@accounting/modules/ai-agent';
     EmailModule,
     StorageModule,
     RBACModule,
-    AIAgentModule,  // Import dependent module
+    AIAgentModule, // Import dependent module
   ],
   // ...
 })
@@ -5869,9 +5835,7 @@ import { AIConversationService } from '@accounting/modules/ai-agent';
 
 @Injectable()
 export class EmailAiService {
-  constructor(
-    private readonly aiConversationService: AIConversationService,
-  ) {}
+  constructor(private readonly aiConversationService: AIConversationService) {}
 
   async generateEmailDraft(prompt: string, user: User): Promise<string> {
     const response = await this.aiConversationService.sendMessage({
@@ -5903,7 +5867,7 @@ import { UserRole } from '../enums/user-role.enum';
 export class TenantService {
   constructor(
     @InjectRepository(Company)
-    private readonly companyRepository: Repository<Company>,
+    private readonly companyRepository: Repository<Company>
   ) {}
 
   /**
@@ -5939,7 +5903,7 @@ export class TasksService {
   constructor(
     private readonly tenantService: TenantService,
     @InjectRepository(Task)
-    private readonly taskRepository: Repository<Task>,
+    private readonly taskRepository: Repository<Task>
   ) {}
 
   async findAll(user: User): Promise<Task[]> {
@@ -6037,6 +6001,7 @@ The `EncryptionService` from `@accounting/common` provides authenticated encrypt
 **Service Location**: `libs/common/src/lib/services/encryption.service.ts`
 
 **Key Features**:
+
 - **Algorithm**: AES-256-GCM (authenticated encryption)
 - **Format**: `salt:iv:authTag:encryptedData` (all hex-encoded)
 - **Key Derivation**: scrypt with random salt
@@ -6053,7 +6018,7 @@ export class AIConfigurationService {
   constructor(
     private readonly encryptionService: EncryptionService,
     @InjectRepository(AIConfiguration)
-    private readonly configRepository: Repository<AIConfiguration>,
+    private readonly configRepository: Repository<AIConfiguration>
   ) {}
 
   async saveApiKey(configId: string, apiKey: string): Promise<void> {
@@ -6098,11 +6063,13 @@ ENCRYPTION_SECRET=your-very-secure-encryption-key-at-least-32-chars
 **Best Practices**:
 
 ✅ **DO**:
+
 - Use `hasApiKey` pattern in responses (never expose actual key)
 - Use `@Exclude()` decorator on encrypted fields in entities
 - Validate encryption configuration at startup
 
 ❌ **DON'T**:
+
 - Return encrypted values in API responses
 - Log decrypted sensitive data
 - Commit `.encryption-key.dev` to version control
@@ -6306,7 +6273,7 @@ export function useNavigationItems(user: UserDto | null): NavItem[] {
           { label: 'Pulpit', href: '/admin', icon: LayoutDashboard },
           { label: 'Użytkownicy', href: '/admin/users', icon: Users },
           { label: 'Firmy', href: '/admin/companies', icon: Building2 },
-          { label: 'Moduły', href: '/admin/modules', icon: Package },
+          { label: 'Moduły', href: '/admin/modules', icon: Package }
         );
 
         // Add all modules for admin
@@ -6328,7 +6295,7 @@ export function useNavigationItems(user: UserDto | null): NavItem[] {
         baseItems.push(
           { label: 'Pulpit', href: '/company', icon: LayoutDashboard },
           { label: 'Pracownicy', href: '/company/employees', icon: Users },
-          { label: 'Moduły', href: '/company/modules', icon: Package },
+          { label: 'Moduły', href: '/company/modules', icon: Package }
         );
 
         // Add company modules for company owner
@@ -6347,9 +6314,7 @@ export function useNavigationItems(user: UserDto | null): NavItem[] {
 
       case UserRole.EMPLOYEE:
         // Employee base navigation
-        baseItems.push(
-          { label: 'Pulpit', href: '/modules', icon: LayoutDashboard },
-        );
+        baseItems.push({ label: 'Pulpit', href: '/modules', icon: LayoutDashboard });
 
         // Add company modules for employee
         if (companyModules) {
@@ -6442,7 +6407,7 @@ onError: (error: ApiErrorResponse) => {
     description: error.response?.data?.message || 'Wystąpił nieoczekiwany błąd',
     variant: 'destructive',
   });
-}
+};
 ```
 
 ---
@@ -6542,6 +6507,7 @@ const employeeNavItems = [
 ```
 
 **Key Points**:
+
 - ✅ Add navigation item for each user role
 - ✅ Use consistent icons from Lucide React
 - ✅ Match URLs to route configuration
@@ -6557,7 +6523,7 @@ const navItems = useMemo(() => {
   const items = [...baseNavItems];
 
   // Add Tasks if module is enabled
-  if (modules?.some(m => m.module.slug === 'tasks')) {
+  if (modules?.some((m) => m.module.slug === 'tasks')) {
     items.push({
       title: 'Tasks',
       href: '/modules/tasks',
@@ -6622,13 +6588,10 @@ export const tasksHandlers = [
 
   // GET /api/modules/tasks/:id - Get single task
   http.get('/api/modules/tasks/:id', ({ params }) => {
-    const task = mockTasks.find(t => t.id === params.id);
+    const task = mockTasks.find((t) => t.id === params.id);
 
     if (!task) {
-      return HttpResponse.json(
-        { message: 'Task not found', statusCode: 404 },
-        { status: 404 }
-      );
+      return HttpResponse.json({ message: 'Task not found', statusCode: 404 }, { status: 404 });
     }
 
     return HttpResponse.json(task);
@@ -6666,13 +6629,10 @@ export const tasksHandlers = [
   // PATCH /api/modules/tasks/:id - Update task
   http.patch('/api/modules/tasks/:id', async ({ params, request }) => {
     const body = await request.json();
-    const task = mockTasks.find(t => t.id === params.id);
+    const task = mockTasks.find((t) => t.id === params.id);
 
     if (!task) {
-      return HttpResponse.json(
-        { message: 'Task not found', statusCode: 404 },
-        { status: 404 }
-      );
+      return HttpResponse.json({ message: 'Task not found', statusCode: 404 }, { status: 404 });
     }
 
     const updatedTask = {
@@ -6686,13 +6646,10 @@ export const tasksHandlers = [
 
   // DELETE /api/modules/tasks/:id - Delete task
   http.delete('/api/modules/tasks/:id', ({ params }) => {
-    const taskIndex = mockTasks.findIndex(t => t.id === params.id);
+    const taskIndex = mockTasks.findIndex((t) => t.id === params.id);
 
     if (taskIndex === -1) {
-      return HttpResponse.json(
-        { message: 'Task not found', statusCode: 404 },
-        { status: 404 }
-      );
+      return HttpResponse.json({ message: 'Task not found', statusCode: 404 }, { status: 404 });
     }
 
     return new HttpResponse(null, { status: 204 });
@@ -6700,7 +6657,7 @@ export const tasksHandlers = [
 
   // GET /api/modules/tasks/status/:status - Filter by status
   http.get('/api/modules/tasks/status/:status', ({ params }) => {
-    const filtered = mockTasks.filter(t => t.status === params.status);
+    const filtered = mockTasks.filter((t) => t.status === params.status);
     return HttpResponse.json(filtered);
   }),
 ];
@@ -6720,6 +6677,7 @@ export const handlers = [
 ```
 
 **Key Points**:
+
 - ✅ Mock all endpoints your module uses
 - ✅ Return realistic data structures matching backend DTOs
 - ✅ Include error scenarios (404, 403, 400)
@@ -7010,12 +6968,9 @@ export class TaskService {
   constructor(
     @InjectRepository(Task)
     private taskRepository: Repository<Task>,
-    private configService: ConfigService,
+    private configService: ConfigService
   ) {
-    this.defaultDueDays = this.configService.get<number>(
-      'TASKS_DEFAULT_DUE_DAYS',
-      7
-    );
+    this.defaultDueDays = this.configService.get<number>('TASKS_DEFAULT_DUE_DAYS', 7);
   }
 
   async create(createDto: CreateTaskDto, user: User): Promise<Task> {
@@ -7098,12 +7053,18 @@ export function handleApiError(error: AxiosError<ApiError>) {
 
 function getErrorTitle(status?: number): string {
   switch (status) {
-    case 400: return 'Validation Error';
-    case 401: return 'Authentication Required';
-    case 403: return 'Access Denied';
-    case 404: return 'Not Found';
-    case 500: return 'Server Error';
-    default: return 'Error';
+    case 400:
+      return 'Validation Error';
+    case 401:
+      return 'Authentication Required';
+    case 403:
+      return 'Access Denied';
+    case 404:
+      return 'Not Found';
+    case 500:
+      return 'Server Error';
+    default:
+      return 'Error';
   }
 }
 ```
@@ -7138,13 +7099,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
-    const status = exception instanceof HttpException
-      ? exception.getStatus()
-      : HttpStatus.INTERNAL_SERVER_ERROR;
+    const status =
+      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const message = exception instanceof HttpException
-      ? exception.message
-      : 'Internal server error';
+    const message =
+      exception instanceof HttpException ? exception.message : 'Internal server error';
 
     response.status(status).json({
       statusCode: status,
@@ -7167,12 +7126,14 @@ This guide is part of a comprehensive documentation suite:
 ### Quick Navigation
 
 **Creating a New Module**:
+
 1. 📖 **Understand system** → ARCHITECTURE.md
 2. 🔧 **Follow this tutorial** → MODULE_DEVELOPMENT.md (this document)
 3. 💻 **Copy code patterns** → IMPLEMENTATION_PATTERNS.md
 4. 🧪 **Test with API** → API_ENDPOINTS.md
 
 **Getting Help**:
+
 - Need architecture overview? → ARCHITECTURE.md
 - Need code examples? → IMPLEMENTATION_PATTERNS.md
 - Need API details? → API_ENDPOINTS.md

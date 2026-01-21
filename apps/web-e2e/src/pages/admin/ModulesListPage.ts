@@ -102,7 +102,11 @@ export class ModulesListPage extends BasePage {
     const statusElement = this.page.locator(this.statusBadge(moduleName, companyName));
     if (await statusElement.isVisible()) {
       const status = await statusElement.textContent();
-      return status?.toLowerCase().includes('enabled') || status?.toLowerCase().includes('active') || false;
+      return (
+        status?.toLowerCase().includes('enabled') ||
+        status?.toLowerCase().includes('active') ||
+        false
+      );
     }
     return false;
   }

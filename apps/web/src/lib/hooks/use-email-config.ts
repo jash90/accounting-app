@@ -1,9 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useToast } from '@/components/ui/use-toast';
+import { type ApiErrorResponse } from '@/types/api';
+import {
+  type CreateEmailConfigDto,
+  type UpdateEmailConfigDto,
+  type TestSmtpDto,
+  type TestImapDto,
+} from '@/types/dtos';
+
 import { emailConfigApi } from '../api/endpoints/email-config';
 import { queryKeys } from '../api/query-client';
-import { CreateEmailConfigDto, UpdateEmailConfigDto, TestSmtpDto, TestImapDto } from '@/types/dtos';
-import { useToast } from '@/components/ui/use-toast';
-import { ApiErrorResponse } from '@/types/api';
 
 // User Email Configuration Hooks
 
@@ -60,7 +67,8 @@ export function useUpdateUserEmailConfig() {
     onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować konfiguracji email',
+        description:
+          error.response?.data?.message || 'Nie udało się zaktualizować konfiguracji email',
         variant: 'destructive',
       });
     },
@@ -325,7 +333,8 @@ export function useUpdateSystemAdminEmailConfig() {
       toast({
         title: 'Błąd',
         description:
-          error.response?.data?.message || 'Nie udało się zaktualizować konfiguracji email System Admin',
+          error.response?.data?.message ||
+          'Nie udało się zaktualizować konfiguracji email System Admin',
         variant: 'destructive',
       });
     },

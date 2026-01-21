@@ -1,15 +1,14 @@
 import { useDroppable } from '@dnd-kit/core';
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { cn } from '@/lib/utils/cn';
-import { TaskStatus, TaskStatusLabels, TaskStatusColors } from '@/types/enums';
-import { TaskResponseDto } from '@/types/dtos';
-import { SortableTaskCard } from './task-card';
-import { Badge } from '@/components/ui/badge';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Plus } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils/cn';
+import { type TaskResponseDto } from '@/types/dtos';
+import { type TaskStatus, TaskStatusLabels, TaskStatusColors } from '@/types/enums';
+
+import { SortableTaskCard } from './task-card';
 
 interface KanbanColumnProps {
   status: TaskStatus;
@@ -33,20 +32,12 @@ export function KanbanColumn({
   const taskIds = tasks.map((task) => task.id);
 
   return (
-    <div
-      className={cn(
-        'flex flex-col w-[300px] min-w-[300px] bg-muted/50 rounded-lg',
-        className
-      )}
-    >
+    <div className={cn('flex flex-col w-[300px] min-w-[300px] bg-muted/50 rounded-lg', className)}>
       {/* Column Header */}
       <div className="flex items-center justify-between p-3 border-b bg-background/50 rounded-t-lg">
         <div className="flex items-center gap-2">
           <h3 className="font-medium text-sm">{TaskStatusLabels[status]}</h3>
-          <Badge
-            variant="secondary"
-            className={cn(TaskStatusColors[status], 'text-xs')}
-          >
+          <Badge variant="secondary" className={cn(TaskStatusColors[status], 'text-xs')}>
             {tasks.length}
           </Badge>
         </div>

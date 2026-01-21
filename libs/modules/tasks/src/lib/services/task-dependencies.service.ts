@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
-import {
-  Task,
-  TaskDependency,
-  User,
-} from '@accounting/common';
+
+import { Task, TaskDependency, User } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
+
+import { CreateTaskDependencyDto } from '../dto/task-dependency.dto';
 import {
   TaskNotFoundException,
   TaskDependencyNotFoundException,
@@ -14,7 +14,6 @@ import {
   TaskSelfDependencyException,
   TaskDependencyAlreadyExistsException,
 } from '../exceptions';
-import { CreateTaskDependencyDto } from '../dto/task-dependency.dto';
 
 @Injectable()
 export class TaskDependenciesService {
@@ -25,7 +24,7 @@ export class TaskDependenciesService {
     private readonly taskRepository: Repository<Task>,
     @InjectRepository(TaskDependency)
     private readonly dependencyRepository: Repository<TaskDependency>,
-    private readonly tenantService: TenantService,
+    private readonly tenantService: TenantService
   ) {}
 
   async findAllForTask(taskId: string, user: User): Promise<TaskDependency[]> {

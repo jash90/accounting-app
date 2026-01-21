@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import {
-  formatDuration,
-  formatDurationSeconds,
-  parseDurationToMinutes,
-} from './time';
+
+import { formatDuration, formatDurationSeconds, parseDurationToMinutes } from './time';
 
 describe('time utilities', () => {
   describe('formatDuration', () => {

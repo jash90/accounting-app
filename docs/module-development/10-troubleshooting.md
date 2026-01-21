@@ -11,11 +11,13 @@ This section covers common errors encountered during module development and thei
 ### "Entity not found in connection"
 
 **Error**:
+
 ```
 EntityMetadataNotFoundError: No metadata for "Task" was found
 ```
 
 **Solution**:
+
 1. Ensure entity is exported from `libs/common/src/index.ts`
 2. Ensure entity is added to TypeORM entities array in `app.module.ts`
 3. Ensure entity is added to `typeorm.config.ts`
@@ -25,12 +27,15 @@ EntityMetadataNotFoundError: No metadata for "Task" was found
 ### "Cannot find module '@accounting/modules/tasks'"
 
 **Error**:
+
 ```
 Error: Cannot find module '@accounting/modules/tasks'
 ```
 
 **Solution**:
+
 1. Ensure `tsconfig.base.json` has path mapping:
+
 ```json
 {
   "paths": {
@@ -38,6 +43,7 @@ Error: Cannot find module '@accounting/modules/tasks'
   }
 }
 ```
+
 2. Run `nx reset` to clear cache
 3. Restart TypeScript server in your IDE
 
@@ -46,11 +52,13 @@ Error: Cannot find module '@accounting/modules/tasks'
 ### Migration Generation Fails
 
 **Error**:
+
 ```
 Error: No changes in database schema were found
 ```
 
 **Solution**:
+
 1. Ensure entity is registered in `typeorm.config.ts`
 2. Check database connection
 3. Verify entity has `@Entity()` decorator
@@ -61,11 +69,13 @@ Error: No changes in database schema were found
 ### "Access denied to module: tasks"
 
 **Error**:
+
 ```
 403 Forbidden - Access denied to module: tasks
 ```
 
 **Solution**:
+
 1. Verify module is registered in database (check seeder)
 2. Admin must grant module to company
 3. Company owner must grant permissions to employee
@@ -76,6 +86,7 @@ Error: No changes in database schema were found
 ### "Admins do not have access to business module data"
 
 **Error**:
+
 ```
 403 Forbidden - Admins do not have access to business module data
 ```
