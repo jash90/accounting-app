@@ -20,21 +20,21 @@ export class ClientDeleteRequest {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   clientId!: string;
 
   @ManyToOne(() => Client, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'clientId' })
   client!: Client;
 
-  @Column()
+  @Column({ type: 'uuid' })
   companyId!: string;
 
   @ManyToOne(() => Company, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'companyId' })
   company!: Company;
 
-  @Column()
+  @Column({ type: 'uuid' })
   requestedById!: string;
 
   @ManyToOne(() => User)
@@ -51,7 +51,7 @@ export class ClientDeleteRequest {
   @Column({ type: 'text', nullable: true })
   reason?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   processedById?: string;
 
   @ManyToOne(() => User)

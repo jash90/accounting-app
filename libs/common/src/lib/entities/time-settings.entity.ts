@@ -21,7 +21,7 @@ export class TimeSettings {
   id!: string;
 
   // Multi-tenant
-  @Column()
+  @Column({ type: 'uuid' })
   companyId!: string;
 
   @ManyToOne(() => Company, { onDelete: 'CASCADE' })
@@ -45,14 +45,14 @@ export class TimeSettings {
   defaultHourlyRate?: number;
 
   // Currency code (ISO 4217)
-  @Column({ length: 3, default: 'PLN' })
+  @Column({ type: 'varchar', length: 3, default: 'PLN' })
   defaultCurrency!: string;
 
   // Workflow settings
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   requireApproval!: boolean;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   allowOverlappingEntries!: boolean;
 
   // Working hours settings (for timesheet views)
@@ -67,10 +67,10 @@ export class TimeSettings {
   weekStartDay!: number;
 
   // Timer settings
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   allowTimerMode!: boolean;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   allowManualEntry!: boolean;
 
   // Auto-stop timer after X minutes (0 = disabled)
@@ -86,7 +86,7 @@ export class TimeSettings {
   maximumEntryMinutes!: number;
 
   // Reminder settings
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   enableDailyReminder!: boolean;
 
   @Column({ type: 'time', nullable: true })
@@ -97,7 +97,7 @@ export class TimeSettings {
   lockEntriesAfterDays!: number;
 
   // Audit
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   updatedById?: string;
 
   @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })

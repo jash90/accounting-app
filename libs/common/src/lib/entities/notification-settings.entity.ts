@@ -22,7 +22,7 @@ export class NotificationSettings {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   userId!: string;
 
   @ManyToOne(() => User, {
@@ -31,32 +31,32 @@ export class NotificationSettings {
   @JoinColumn({ name: 'userId' })
   user!: User;
 
-  @Column()
+  @Column({ type: 'uuid' })
   companyId!: string;
 
   @ManyToOne(() => Company, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'companyId' })
   company!: Company;
 
-  @Column()
+  @Column({ type: 'varchar' })
   moduleSlug!: string;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   receiveOnCreate!: boolean;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   receiveOnUpdate!: boolean;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   receiveOnDelete!: boolean;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   receiveOnTaskCompleted!: boolean;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   receiveOnTaskOverdue!: boolean;
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   isAdminCopy!: boolean;
 
   @CreateDateColumn()

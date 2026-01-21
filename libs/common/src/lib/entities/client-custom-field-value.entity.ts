@@ -22,7 +22,7 @@ export class ClientCustomFieldValue {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   clientId!: string;
 
   @ManyToOne(() => Client, (client) => client.customFieldValues, {
@@ -31,14 +31,14 @@ export class ClientCustomFieldValue {
   @JoinColumn({ name: 'clientId' })
   client!: Client;
 
-  @Column()
+  @Column({ type: 'uuid' })
   companyId!: string;
 
   @ManyToOne(() => Company, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'companyId' })
   company!: Company;
 
-  @Column()
+  @Column({ type: 'uuid' })
   fieldDefinitionId!: string;
 
   @ManyToOne(() => ClientFieldDefinition, (fd) => fd.values, {
@@ -50,7 +50,7 @@ export class ClientCustomFieldValue {
   @Column({ type: 'text', nullable: true })
   value?: string;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
   @CreateDateColumn()

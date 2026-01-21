@@ -6,17 +6,11 @@
   "tags": [],
   "targets": {
     "test": {
-      "executor": "@nx/jest:jest",
+      "executor": "./tools/executors/bun-test:test",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
-        "jestConfig": "libs/modules/clients/jest.config.ts",
+        "testDir": "src",
         "passWithNoTests": false
-      },
-      "configurations": {
-        "ci": {
-          "ci": true,
-          "codeCoverage": true
-        }
       }
     },
     "lint": {

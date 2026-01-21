@@ -45,52 +45,52 @@ export class EmailConfiguration {
   company!: Company | null;
 
   // SMTP Configuration
-  @Column()
+  @Column({ type: 'varchar' })
   smtpHost!: string;
 
   @Column({ type: 'int' })
   smtpPort!: number;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   smtpSecure!: boolean;
 
-  @Column()
+  @Column({ type: 'varchar' })
   smtpUser!: string;
 
   /**
    * Encrypted SMTP password
    * Use EncryptionService to encrypt before saving and decrypt after reading
    */
-  @Column()
+  @Column({ type: 'varchar' })
   @Exclude()
   smtpPassword!: string;
 
   // IMAP Configuration
-  @Column()
+  @Column({ type: 'varchar' })
   imapHost!: string;
 
   @Column({ type: 'int' })
   imapPort!: number;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   imapTls!: boolean;
 
-  @Column()
+  @Column({ type: 'varchar' })
   imapUser!: string;
 
   /**
    * Encrypted IMAP password
    * Use EncryptionService to encrypt before saving and decrypt after reading
    */
-  @Column()
+  @Column({ type: 'varchar' })
   @Exclude()
   imapPassword!: string;
 
   // Optional metadata
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   displayName?: string;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
   @CreateDateColumn()

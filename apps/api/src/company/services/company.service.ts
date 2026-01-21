@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ConflictException, Logger } from '@nestj
 import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { User, UserRole, Company } from '@accounting/common';
 import { EmailService } from '@accounting/infrastructure/email';
 import { EmailSenderService, EmailConfigurationService } from '@accounting/email';

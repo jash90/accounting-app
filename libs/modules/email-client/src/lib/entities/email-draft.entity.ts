@@ -23,14 +23,14 @@ export class EmailDraft {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   companyId!: string;
 
   @ManyToOne(() => Company, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'companyId' })
   company!: Company;
 
-  @Column()
+  @Column({ type: 'uuid' })
   userId!: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
@@ -38,7 +38,7 @@ export class EmailDraft {
   user!: User;
 
   // Email fields
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   replyToMessageId?: string; // IMAP message UID if this is a reply
 
   @Column('simple-array')
@@ -50,7 +50,7 @@ export class EmailDraft {
   @Column('simple-array', { nullable: true })
   bcc?: string[];
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   subject?: string;
 
   @Column('text')
@@ -64,7 +64,7 @@ export class EmailDraft {
   attachmentPaths?: string[]; // Paths to uploaded files in storage
 
   // AI metadata
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   isAiGenerated!: boolean;
 
   @Column('text', { nullable: true })
@@ -81,7 +81,7 @@ export class EmailDraft {
   @Column({ type: 'bigint', nullable: true })
   imapUid?: number; // IMAP message UID in Drafts folder
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   imapMailbox?: string; // Name of the Drafts mailbox (varies by server)
 
   @Column({ type: 'timestamp', nullable: true })

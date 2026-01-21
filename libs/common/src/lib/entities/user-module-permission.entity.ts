@@ -16,7 +16,7 @@ export class UserModulePermission {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column('uuid')
   userId!: string;
 
   @ManyToOne(() => User, (user) => user.modulePermissions, {
@@ -25,7 +25,7 @@ export class UserModulePermission {
   @JoinColumn({ name: 'userId' })
   user!: User;
 
-  @Column()
+  @Column('uuid')
   moduleId!: string;
 
   @ManyToOne(() => Module, (module) => module.userPermissions, {
@@ -37,7 +37,7 @@ export class UserModulePermission {
   @Column('simple-array')
   permissions!: string[];
 
-  @Column()
+  @Column('uuid')
   grantedById!: string;
 
   @ManyToOne(() => User)

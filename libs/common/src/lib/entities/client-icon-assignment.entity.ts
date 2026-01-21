@@ -19,7 +19,7 @@ export class ClientIconAssignment {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   clientId!: string;
 
   @ManyToOne(() => Client, (client) => client.iconAssignments, {
@@ -28,7 +28,7 @@ export class ClientIconAssignment {
   @JoinColumn({ name: 'clientId' })
   client!: Client;
 
-  @Column()
+  @Column({ type: 'uuid' })
   iconId!: string;
 
   @ManyToOne(() => ClientIcon, (icon) => icon.assignments, {
@@ -37,11 +37,11 @@ export class ClientIconAssignment {
   @JoinColumn({ name: 'iconId' })
   icon!: ClientIcon;
 
-  @Column({ default: 0 })
+  @Column({ type: 'integer', default: 0 })
   displayOrder!: number;
 
   // Flag to indicate if this assignment was automatically created
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   isAutoAssigned!: boolean;
 
   @CreateDateColumn()

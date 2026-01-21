@@ -20,16 +20,16 @@ export class Module {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   name!: string;
 
-  @Column({ unique: true })
+  @Column({ type: 'varchar', unique: true })
   slug!: string;
 
   @Column({ type: 'text', nullable: true })
   description!: string | null;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
   @Column({
@@ -39,7 +39,7 @@ export class Module {
   })
   source!: ModuleSource;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   version!: string | null;
 
   @Column({ type: 'simple-array', nullable: true })
@@ -48,13 +48,13 @@ export class Module {
   @Column({ type: 'simple-array', nullable: true })
   defaultPermissions!: string[] | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   configPath!: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   icon!: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   category!: string | null;
 
   @Column({ type: 'simple-array', nullable: true })

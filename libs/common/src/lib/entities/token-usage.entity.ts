@@ -18,7 +18,7 @@ export class TokenUsage {
   id!: string;
 
   // System Admin Company pattern - nullable for ADMIN entries
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   companyId!: string | null;
 
   @ManyToOne(() => Company, (company) => company.tokenUsages, {
@@ -29,7 +29,7 @@ export class TokenUsage {
   company!: Company | null;
 
   // User tracking
-  @Column()
+  @Column({ type: 'uuid' })
   userId!: string;
 
   @ManyToOne(() => User)
