@@ -26,7 +26,7 @@
     "migration:run:prod": "cd dist/apps/api && node ../../../node_modules/typeorm/cli.js migration:run -d typeorm.prod.config.js",
     "db:migrate:prod": "npm run migration:compile:prod && npm run migration:run:prod",
     "seed:prod": "node dist/apps/api/main.js",
-    "prepare": "husky"
+    "prepare": "if [ -d .git ]; then husky; fi"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
