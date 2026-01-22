@@ -99,6 +99,7 @@
   "devDependencies": {
     "@darraghor/eslint-plugin-nestjs-typed": "^7.1.15",
     "@eslint/js": "^9.39.2",
+    "@ianvs/prettier-plugin-sort-imports": "^4.7.0",
     "@nestjs/schematics": "^11.0.9",
     "@nestjs/testing": "^11.1.8",
     "@nx/devkit": "22.0.3",
