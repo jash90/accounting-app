@@ -1,17 +1,16 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
   Body,
+  Controller,
+  Delete,
+  Get,
   Param,
-  UseGuards,
   ParseUUIDPipe,
+  Patch,
+  Post,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
-
-import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
@@ -19,12 +18,11 @@ import {
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
-
 import { CreateTaskCommentDto, UpdateTaskCommentDto } from '../dto/task-comment.dto';
 import {
   TaskCommentResponseDto,
-  SuccessMessageResponseDto,
-  ErrorResponseDto,
+  TaskErrorResponseDto,
+  TaskSuccessResponseDto,
 } from '../dto/task-response.dto';
 import { TaskCommentsService } from '../services/task-comments.service';
 
@@ -40,7 +38,7 @@ export class TaskCommentsController {
   @ApiOperation({ summary: 'Get all comments for a task' })
   @ApiParam({ name: 'taskId', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'List of comments', type: [TaskCommentResponseDto] })
-  @ApiResponse({ status: 404, description: 'Task not found', type: ErrorResponseDto })
+  @ApiResponse({ status: 404, description: 'Task not found', type: TaskErrorResponseDto })
   @RequirePermission('tasks', 'read')
   async findAll(@Param('taskId', ParseUUIDPipe) taskId: string, @CurrentUser() user: User) {
     return this.commentsService.findAllForTask(taskId, user);
@@ -50,7 +48,7 @@ export class TaskCommentsController {
   @ApiOperation({ summary: 'Add a comment to a task' })
   @ApiParam({ name: 'taskId', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 201, description: 'Comment created', type: TaskCommentResponseDto })
-  @ApiResponse({ status: 404, description: 'Task not found', type: ErrorResponseDto })
+  @ApiResponse({ status: 404, description: 'Task not found', type: TaskErrorResponseDto })
   @RequirePermission('tasks', 'write')
   async create(
     @Param('taskId', ParseUUIDPipe) taskId: string,
@@ -64,7 +62,7 @@ export class TaskCommentsController {
   @ApiOperation({ summary: 'Update a comment' })
   @ApiParam({ name: 'commentId', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Comment updated', type: TaskCommentResponseDto })
-  @ApiResponse({ status: 404, description: 'Comment not found', type: ErrorResponseDto })
+  @ApiResponse({ status: 404, description: 'Comment not found', type: TaskErrorResponseDto })
   @RequirePermission('tasks', 'write')
   async update(
     @Param('commentId', ParseUUIDPipe) commentId: string,
@@ -77,8 +75,8 @@ export class TaskCommentsController {
   @Delete('comments/:commentId')
   @ApiOperation({ summary: 'Delete a comment' })
   @ApiParam({ name: 'commentId', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'Comment deleted', type: SuccessMessageResponseDto })
-  @ApiResponse({ status: 404, description: 'Comment not found', type: ErrorResponseDto })
+  @ApiResponse({ status: 200, description: 'Comment deleted', type: TaskSuccessResponseDto })
+  @ApiResponse({ status: 404, description: 'Comment not found', type: TaskErrorResponseDto })
   @RequirePermission('tasks', 'write')
   async remove(@Param('commentId', ParseUUIDPipe) commentId: string, @CurrentUser() user: User) {
     await this.commentsService.remove(commentId, user);
