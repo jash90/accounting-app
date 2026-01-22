@@ -1,5 +1,5 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
 import { AppModule } from '../src/app/app.module';
 
@@ -27,8 +27,8 @@ describe('RBAC E2E Tests', () => {
       const response = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          email: 'admin@system.com',
-          password: 'Admin123!',
+          email: process.env.SEED_ADMIN_EMAIL ?? '',
+          password: process.env.SEED_ADMIN_PASSWORD ?? '',
         })
         .expect(200);
 
@@ -40,8 +40,8 @@ describe('RBAC E2E Tests', () => {
       const response = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          email: 'bartlomiej.zimny@onet.pl',
-          password: 'Owner123!',
+          email: process.env.SEED_OWNER_EMAIL ?? '',
+          password: process.env.SEED_OWNER_PASSWORD ?? '',
         })
         .expect(200);
 
@@ -53,8 +53,8 @@ describe('RBAC E2E Tests', () => {
       const response = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          email: 'bartlomiej.zimny@interia.pl',
-          password: 'Employee123!',
+          email: process.env.SEED_EMPLOYEE_EMAIL ?? '',
+          password: process.env.SEED_EMPLOYEE_PASSWORD ?? '',
         })
         .expect(200);
 

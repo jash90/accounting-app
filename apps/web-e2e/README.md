@@ -139,13 +139,7 @@ npm run seed
 
 The seed script creates:
 
-- **Admin**: admin@system.com / Admin123!
-- **Company A Owner**: bartlomiej.zimny@onet.pl / Owner123!
-- **Company A Employees**:
-  - bartlomiej.zimny@interia.pl / Employee123! (read + write permissions)
-  - bartlomiej.zimny@interia.pl / Employee123! (read-only)
-- **Company B Owner**: bartlomiej.zimny@onet.pl / Owner123!
-- **Company B Employee**: bartlomiej.zimny@interia.pl / Employee123! (full permissions)
+> **Note**: These are default values. You can configure them in your `.env` file using `SEED_ADMIN_EMAIL`, `SEED_OWNER_EMAIL`, etc.
 
 ## 🧪 Running Tests
 
@@ -320,7 +314,7 @@ Use Playwright Inspector to step through tests:
 ### Creating a New Test File
 
 ```typescript
-import { test, expect } from '../fixtures/auth.fixtures';
+import { expect, test } from '../fixtures/auth.fixtures';
 import { LoginPage } from '../pages/auth/LoginPage';
 
 test.describe('My New Feature Tests', () => {
@@ -352,7 +346,7 @@ test('admin can view users', async ({ authenticatedAdminPage }) => {
 import { TestDataFactory } from '../fixtures/data.fixtures';
 
 const userData = TestDataFactory.createUserData('EMPLOYEE');
-// { email: 'test.employee.123@test.com', password: 'TestPass123!', role: 'EMPLOYEE' }
+// { email: 'test.employee.123@test.com', password: 'TestPass123456!', role: 'EMPLOYEE' }
 
 const companyData = TestDataFactory.createCompanyData();
 // { name: 'Test Company 123', description: '...' }

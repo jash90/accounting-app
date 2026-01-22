@@ -499,12 +499,6 @@ Each failed test has its own directory with:
 
 ### Test Data
 
-- **Admin User:** admin@system.com / Admin123!
-- **Company A Owner:** owner.a@company.com / Owner123!
-- **Company A Employees:** employee1.a@company.com, employee2.a@company.com
-- **Company B Owner:** owner.b@company.com / Owner123!
-- **Company B Employee:** employee1.b@company.com
-
 ---
 
 ## Summary

@@ -1,10 +1,11 @@
-import { test, expect } from '../fixtures/auth.fixtures';
-import { UsersListPage } from '../pages/admin/UsersListPage';
-import { UserFormPage } from '../pages/admin/UserFormPage';
+/* eslint-disable playwright/expect-expect */
+import { expect, test } from '../fixtures/auth.fixtures';
+import { TestDataFactory } from '../fixtures/data.fixtures';
 import { CompaniesListPage } from '../pages/admin/CompaniesListPage';
 import { CompanyFormPage } from '../pages/admin/CompanyFormPage';
 import { ModulesListPage } from '../pages/admin/ModulesListPage';
-import { TestDataFactory } from '../fixtures/data.fixtures';
+import { UserFormPage } from '../pages/admin/UserFormPage';
+import { UsersListPage } from '../pages/admin/UsersListPage';
 
 test.describe('Admin - User Management', () => {
   test('should view users list with pagination', async ({ authenticatedAdminPage }) => {
@@ -45,9 +46,7 @@ test.describe('Admin - User Management', () => {
     await userForm.selectRole('COMPANY_OWNER');
 
     // Select an existing company (Company A)
-    if (await userForm.isCompanySelectVisible()) {
-      await userForm.selectCompany('Company A');
-    }
+    await userForm.selectCompany('Company A');
 
     await userForm.clickSubmit();
     await userForm.toast.expectSuccessToast();
@@ -59,9 +58,8 @@ test.describe('Admin - User Management', () => {
     const usersPage = new UsersListPage(authenticatedAdminPage);
 
     await usersPage.goto();
-    await usersPage.searchUser('admin@system.com');
-
-    await usersPage.expectUserInList('admin@system.com');
+    await usersPage.searchUser(process.env.SEED_ADMIN_EMAIL ?? '');
+    await usersPage.expectUserInList(process.env.SEED_ADMIN_EMAIL ?? '');
   });
 
   test('should filter users by role', async ({ authenticatedAdminPage }) => {
@@ -119,7 +117,7 @@ test.describe('Admin - User Management', () => {
     await usersPage.clickCreateUser();
 
     await userForm.fillEmail('invalid-email');
-    await userForm.fillPassword('TestPass123!');
+    await userForm.fillPassword('TestPass123456!');
     await userForm.selectRole('ADMIN');
     await userForm.clickSubmit();
 
@@ -151,8 +149,8 @@ test.describe('Admin - User Management', () => {
     await usersPage.clickCreateUser();
 
     // Try to create user with existing admin email
-    await userForm.fillEmail('admin@system.com');
-    await userForm.fillPassword('TestPass123!');
+    await userForm.fillEmail(process.env.SEED_ADMIN_EMAIL ?? '');
+    await userForm.fillPassword('TestPass123456!');
     await userForm.selectRole('ADMIN');
     await userForm.clickSubmit();
 

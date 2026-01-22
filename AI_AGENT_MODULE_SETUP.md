@@ -106,7 +106,7 @@ npm run dev
 
 ## 👥 Testing with Different Roles
 
-### ADMIN (admin@system.com / Admin123!)
+### ADMIN (Credentials in .env)
 
 **Available features:**
 
@@ -119,7 +119,7 @@ npm run dev
   - Temperature and Max Tokens
 - `/admin/modules/ai-agent/context` - Upload global RAG files (PDF/TXT/MD)
 
-### COMPANY OWNER (bartlomiej.zimny@onet.pl / Owner123!)
+### COMPANY OWNER (Credentials in .env)
 
 **Available features:**
 
@@ -130,7 +130,7 @@ npm run dev
   - Number of conversations and messages
 - `/company/modules/ai-agent/context` - Manage RAG files for the company
 
-### EMPLOYEE (bartlomiej.zimny@interia.pl / Employee123!)
+### EMPLOYEE (Credentials in .env)
 
 **Available features:**
 

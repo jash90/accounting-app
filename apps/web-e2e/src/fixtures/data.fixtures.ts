@@ -27,7 +27,7 @@ export class TestDataGenerator {
    * Generate test password (meets requirements)
    */
   static generatePassword(): string {
-    return 'TestPass123!';
+    return 'TestPass123456!';
   }
 
   /**
@@ -74,21 +74,21 @@ export const SEEDED_DATA = {
     companyA: {
       name: 'Company A',
       owner: {
-        email: 'bartlomiej.zimny@onet.pl',
-        password: 'Owner123!',
+        email: process.env.SEED_OWNER_EMAIL ?? '',
+        password: process.env.SEED_OWNER_PASSWORD ?? '',
       },
       employees: [
         {
-          email: 'bartlomiej.zimny@interia.pl',
-          password: 'Employee123!',
+          email: process.env.SEED_EMPLOYEE_EMAIL ?? '',
+          password: process.env.SEED_EMPLOYEE_PASSWORD ?? '',
           permissions: {},
         },
       ],
     },
   },
   admin: {
-    email: 'admin@system.com',
-    password: 'Admin123!',
+    email: process.env.SEED_ADMIN_EMAIL ?? '',
+    password: process.env.SEED_ADMIN_PASSWORD ?? '',
   },
   modules: [{ name: 'ai-agent', displayName: 'AI Agent' }],
 };

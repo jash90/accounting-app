@@ -608,31 +608,31 @@ SimpleTextResponseDto {
 // 1. Admin
 {
   email: 'admin@system.com',
-  password: 'Admin123!',
+  password: 'Admin123456!',
   role: UserRole.ADMIN
 }
 
 // 2. Firma A
 Company: 'Tech Startup A'
 Owner: {
-  email: 'bartlomiej.zimny@onet.pl',
-  password: 'Owner123!',
+  email: 'owner@company.pl',
+  password: 'Owner123456!',
   role: UserRole.COMPANY_OWNER
 }
 Employees: [
-  { email: 'bartlomiej.zimny@interia.pl', password: 'Employee123!' },
-  { email: 'bartlomiej.zimny@interia.pl', password: 'Employee123!' }
+  { email: 'employee@company.pl', password: 'Employee123456!' },
+  { email: 'employee@company.pl', password: 'Employee123456!' }
 ]
 
 // 3. Firma B
 Company: 'Consulting B'
 Owner: {
-  email: 'bartlomiej.zimny@onet.pl',
-  password: 'Owner123!',
+  email: 'owner@company.pl',
+  password: 'Owner123456!',
   role: UserRole.COMPANY_OWNER
 }
 Employees: [
-  { email: 'bartlomiej.zimny@interia.pl', password: 'Employee123!' }
+  { email: 'employee@company.pl', password: 'Employee123456!' }
 ]
 
 // 4. Moduły

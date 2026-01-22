@@ -1,6 +1,10 @@
-import { defineConfig, devices } from '@playwright/test';
-import { nxE2EPreset } from '@nx/playwright/preset';
 import { workspaceRoot } from '@nx/devkit';
+import { nxE2EPreset } from '@nx/playwright/preset';
+import { defineConfig, devices } from '@playwright/test';
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config({ path: '../../.env' });
 
 // For CI, you may want to set BASE_URL to the deployed application.
 const baseURL = process.env['BASE_URL'] || 'http://localhost:4200';
@@ -86,7 +90,6 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         // Enable accessibility tree snapshot
-        // @ts-expect-error contextOptions is not in the type definition
         contextOptions: {
           strictSelectors: false,
         },

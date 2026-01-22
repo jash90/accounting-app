@@ -36,8 +36,8 @@ A full-stack multi-tenant SaaS application featuring Role-Based Access Control (
 
 ## ✨ Key Features
 
-| Feature                  | Description                                       |
-| ------------------------ | ------------------------------------------------- |
+| Feature                 | Description                                       |
+| ----------------------- | ------------------------------------------------- |
 | 🔐 **Authentication**    | JWT with secure refresh token rotation            |
 | 👥 **Multi-tenancy**     | Complete data isolation between companies         |
 | 🛡️ **RBAC**              | Three-tier roles with granular module permissions |
@@ -131,11 +131,11 @@ bun run dev
 
 After seeding, use these credentials to log in:
 
-| Role          | Email               | Password       |
-| ------------- | ------------------- | -------------- |
-| Admin         | `admin@system.com`  | `Admin123!`    |
-| Company Owner | `owner@acme.com`    | `Owner123!`    |
-| Employee      | `employee@acme.com` | `Employee123!` |
+| Role          | Email               | Password          |
+| ------------- | ------------------- | ----------------- |
+| Admin         | `admin@system.com`  | `Admin123456!`    |
+| Company Owner | `owner@acme.com`    | `Owner123456!`    |
+| Employee      | `employee@acme.com` | `Employee123456!` |
 
 ### Available URLs
 

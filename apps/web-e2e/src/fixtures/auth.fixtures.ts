@@ -1,6 +1,6 @@
 import { test as base, Page } from '@playwright/test';
-import { LoginPage } from '../pages/auth/LoginPage';
 import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
+import { LoginPage } from '../pages/auth/LoginPage';
 import { CompanyDashboardPage } from '../pages/company/CompanyDashboardPage';
 import { ModulesDashboardPage } from '../pages/employee/ModulesDashboardPage';
 
@@ -104,15 +104,20 @@ export { expect } from '@playwright/test';
  */
 export const TEST_CREDENTIALS = {
   admin: {
-    email: 'admin@system.com',
-    password: 'Admin123!',
+    email: process.env.SEED_ADMIN_EMAIL ?? '',
+    password: process.env.SEED_ADMIN_PASSWORD ?? '',
   },
   companyOwner: {
-    email: 'bartlomiej.zimny@onet.pl',
-    password: 'Owner123!',
+    email: process.env.SEED_OWNER_EMAIL ?? '',
+    password: process.env.SEED_OWNER_PASSWORD ?? '',
   },
   employee: {
-    email: 'bartlomiej.zimny@interia.pl',
-    password: 'Employee123!',
+    email: process.env.SEED_EMPLOYEE_EMAIL ?? '',
+    password: process.env.SEED_EMPLOYEE_PASSWORD ?? '',
+  },
+  // Placeholder for Company B (if seeded)
+  companyBEmployee: {
+    email: 'employee-b@example.com',
+    password: 'password',
   },
 };

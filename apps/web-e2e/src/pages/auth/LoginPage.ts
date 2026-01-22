@@ -1,4 +1,4 @@
-import { Page, expect } from '@playwright/test';
+import { expect, Page } from '@playwright/test';
 import { BasePage } from '../base/BasePage';
 import { ToastComponent } from '../components/ToastComponent';
 
@@ -99,7 +99,10 @@ export class LoginPage extends BasePage {
   /**
    * Login as admin user
    */
-  async loginAsAdmin(email = 'admin@system.com', password = 'Admin123!'): Promise<void> {
+  async loginAsAdmin(
+    email = process.env.SEED_ADMIN_EMAIL ?? '',
+    password = process.env.SEED_ADMIN_PASSWORD ?? ''
+  ): Promise<void> {
     await this.goto();
     await this.loginAndWaitForRedirect(email, password, '/admin');
   }
@@ -108,8 +111,8 @@ export class LoginPage extends BasePage {
    * Login as company owner
    */
   async loginAsCompanyOwner(
-    email = 'bartlomiej.zimny@onet.pl',
-    password = 'Owner123!'
+    email = process.env.SEED_OWNER_EMAIL ?? '',
+    password = process.env.SEED_OWNER_PASSWORD ?? ''
   ): Promise<void> {
     await this.goto();
     await this.loginAndWaitForRedirect(email, password, '/company');
@@ -119,8 +122,8 @@ export class LoginPage extends BasePage {
    * Login as employee
    */
   async loginAsEmployee(
-    email = 'bartlomiej.zimny@interia.pl',
-    password = 'Employee123!'
+    email = process.env.SEED_EMPLOYEE_EMAIL ?? '',
+    password = process.env.SEED_EMPLOYEE_PASSWORD ?? ''
   ): Promise<void> {
     await this.goto();
     await this.loginAndWaitForRedirect(email, password, '/modules');
@@ -248,8 +251,8 @@ export class LoginPage extends BasePage {
    * Check if password is masked
    */
   async expectPasswordMasked(): Promise<void> {
-    const type = await this.page.locator(this.passwordInput).getAttribute('type');
-    expect(type).toBe('password');
+    const type = this.page.locator(this.passwordInput);
+    await expect(type).toHaveAttribute('type', 'password');
   }
 
   /**
