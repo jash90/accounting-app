@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 
-import { Routes as RouterRoutes, Route, Navigate } from 'react-router-dom';
+import { Navigate, Route, Routes as RouterRoutes } from 'react-router-dom';
 
 import AdminLayout from '@/components/layouts/admin-layout';
 import CompanyLayout from '@/components/layouts/company-layout';
@@ -34,8 +34,9 @@ const AdminAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/admin-
 const CompanyAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/company-index'));
 const EmployeeAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/employee-index'));
 
-// Email Configuration Pages
+// Settings Pages
 const UserEmailConfigPage = lazy(() => import('@/pages/settings/email-config'));
+const AccountSettingsPage = lazy(() => import('@/pages/settings/account'));
 const CompanyEmailConfigPage = lazy(() => import('@/pages/company/email-config'));
 const AdminEmailConfigPage = lazy(() => import('@/pages/admin/email-config'));
 
@@ -1002,6 +1003,14 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <UserEmailConfigPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="account"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <AccountSettingsPage />
             </Suspense>
           }
         />

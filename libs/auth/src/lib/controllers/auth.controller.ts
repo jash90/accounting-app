@@ -1,20 +1,25 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Get, Request } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiOkResponse,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { AuthService } from '../services/auth.service';
-import { RegisterDto } from '../dto/register.dto';
-import { LoginDto } from '../dto/login.dto';
-import { AuthResponseDto } from '../dto/auth-response.dto';
-import { RefreshTokenDto } from '../dto/refresh-token.dto';
+
+import { User, UserResponseDto } from '@accounting/common';
+
+import { CurrentUser } from '../decorators/current-user.decorator';
 import { Public } from '../decorators/public.decorator';
-import { UserResponseDto } from '@accounting/common';
+import { AuthResponseDto } from '../dto/auth-response.dto';
+import { ChangePasswordDto } from '../dto/change-password.dto';
+import { LoginDto } from '../dto/login.dto';
+import { RefreshTokenDto } from '../dto/refresh-token.dto';
+import { RegisterDto } from '../dto/register.dto';
+import { AuthService } from '../services/auth.service';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -70,7 +75,27 @@ export class AuthController {
   })
   @ApiOkResponse({ description: 'Returns current authenticated user', type: UserResponseDto })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
-  async getCurrentUser(@Request() req: any): Promise<UserResponseDto> {
-    return req.user;
+  async getCurrentUser(@CurrentUser() user: User): Promise<UserResponseDto> {
+    return user;
+  }
+
+  @Patch('change-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Change password',
+    description: 'Change the password for the currently authenticated user',
+  })
+  @ApiOkResponse({ description: 'Password changed successfully' })
+  @ApiBadRequestResponse({
+    description: 'Current password is incorrect or new password is invalid',
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  async changePassword(
+    @CurrentUser() user: User,
+    @Body() changePasswordDto: ChangePasswordDto
+  ): Promise<{ message: string }> {
+    await this.authService.changePassword(user.id, changePasswordDto);
+    return { message: 'Password changed successfully' };
   }
 }

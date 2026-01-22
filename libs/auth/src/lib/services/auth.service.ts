@@ -1,19 +1,23 @@
 import {
+  BadRequestException,
+  ConflictException,
+  Inject,
   Injectable,
   UnauthorizedException,
-  ConflictException,
-  BadRequestException,
-  Inject,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+
 import * as bcrypt from 'bcryptjs';
-import { User, UserRole, Company } from '@accounting/common';
-import { RegisterDto } from '../dto/register.dto';
-import { LoginDto } from '../dto/login.dto';
-import { AuthResponseDto, UserDto } from '../dto/auth-response.dto';
+import { Repository } from 'typeorm';
+
+import { Company, User, UserRole } from '@accounting/common';
+
 import { ACCESS_JWT_SERVICE, REFRESH_JWT_SERVICE } from '../constants/jwt.constants';
+import { AuthResponseDto, UserDto } from '../dto/auth-response.dto';
+import { ChangePasswordDto } from '../dto/change-password.dto';
+import { LoginDto } from '../dto/login.dto';
+import { RegisterDto } from '../dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -123,8 +127,25 @@ export class AuthService {
     }
   }
 
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(dto.currentPassword, user.password);
+
+    if (!isCurrentPasswordValid) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    user.password = await bcrypt.hash(dto.newPassword, 10);
+    await this.userRepository.save(user);
+  }
+
   private generateTokens(user: User): AuthResponseDto {
-    const payload: Record<string, any> = {
+    const payload: Record<string, string | null> = {
       sub: user.id,
       email: user.email,
       role: user.role,
