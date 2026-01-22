@@ -122,8 +122,20 @@ export class NotificationGateway
   }
 
   handleDisconnect(client: Socket): void {
+    const userId = client.data?.userId;
+    const companyId = client.data?.companyId;
+
+    // Explicitly leave rooms to prevent memory leaks
+    if (userId) {
+      client.leave(`user:${userId}`);
+    }
+    if (companyId) {
+      client.leave(`company:${companyId}`);
+    }
+
     this.logger.log(`Client ${client.id} disconnected`, {
-      userId: client.data?.userId,
+      userId,
+      companyId,
     });
   }
 

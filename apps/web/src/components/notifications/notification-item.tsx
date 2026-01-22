@@ -52,7 +52,7 @@ export function NotificationItem({
   const content = (
     <div
       className={cn(
-        'group relative flex w-full items-start gap-4 p-4 transition-colors hover:bg-muted/50',
+        'relative flex w-full items-start gap-4 p-4 transition-colors hover:bg-muted/50',
         !isRead && 'bg-muted/10'
       )}
     >
@@ -88,7 +88,7 @@ export function NotificationItem({
 
         {actor && (
           <p className="text-xs text-muted-foreground">
-            {actor.firstName} {actor.lastName}
+            {sanitizeText(actor.firstName)} {sanitizeText(actor.lastName)}
           </p>
         )}
       </div>
@@ -98,7 +98,7 @@ export function NotificationItem({
   );
 
   return (
-    <div className="relative border-b last:border-0" data-testid="notification-item">
+    <div className="group relative border-b last:border-0" data-testid="notification-item">
       {actionUrl ? (
         <Link to={actionUrl} className="block w-full text-left">
           {content}

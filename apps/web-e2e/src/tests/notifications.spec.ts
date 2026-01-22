@@ -1,292 +1,280 @@
 /* eslint-disable playwright/no-conditional-in-test */
-import { expect, test } from '@playwright/test';
+import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { NotificationBellComponent } from '../pages/components/NotificationBellComponent';
 import { NotificationsPage } from '../pages/notifications/NotificationsPage';
 
 test.describe('Notifications Module Tests', () => {
   test.describe('Notification Bell Component', () => {
+    let context: BrowserContext;
+    let page: Page;
+    let loginPage: LoginPage;
+    let notificationBell: NotificationBellComponent;
+
+    test.afterEach(async () => {
+      await context.close();
+    });
+
     test('should display notification bell in header for company owner', async ({ browser }) => {
-      const context = await browser.newContext();
-      const page = await context.newPage();
+      context = await browser.newContext();
+      page = await context.newPage();
+      loginPage = new LoginPage(page);
 
-      try {
-        const loginPage = new LoginPage(page);
-        await loginPage.goto();
-        await loginPage.loginAsCompanyOwner();
-        await page.waitForLoadState('networkidle');
+      await loginPage.goto();
+      await loginPage.loginAsCompanyOwner();
+      await page.waitForLoadState('networkidle');
 
-        await expect(page.getByRole('button', { name: /Powiadomienia/i })).toBeVisible();
-      } finally {
-        await context.close();
-      }
+      await expect(page.getByRole('button', { name: /Powiadomienia/i })).toBeVisible();
     });
 
     test('should display notification bell in header for employee', async ({ browser }) => {
-      const context = await browser.newContext();
-      const page = await context.newPage();
+      context = await browser.newContext();
+      page = await context.newPage();
+      loginPage = new LoginPage(page);
 
-      try {
-        const loginPage = new LoginPage(page);
-        await loginPage.goto();
-        await loginPage.loginAsEmployee();
-        await page.waitForLoadState('networkidle');
+      await loginPage.goto();
+      await loginPage.loginAsEmployee();
+      await page.waitForLoadState('networkidle');
 
-        await expect(page.getByRole('button', { name: /Powiadomienia/i })).toBeVisible();
-      } finally {
-        await context.close();
-      }
+      await expect(page.getByRole('button', { name: /Powiadomienia/i })).toBeVisible();
     });
 
     test('should open dropdown when clicking notification bell', async ({ browser }) => {
-      const context = await browser.newContext();
-      const page = await context.newPage();
+      context = await browser.newContext();
+      page = await context.newPage();
+      loginPage = new LoginPage(page);
+      notificationBell = new NotificationBellComponent(page);
 
-      try {
-        const loginPage = new LoginPage(page);
-        await loginPage.goto();
-        await loginPage.loginAsCompanyOwner();
-        await page.waitForLoadState('networkidle');
+      await loginPage.goto();
+      await loginPage.loginAsCompanyOwner();
+      await page.waitForLoadState('networkidle');
 
-        const notificationBell = new NotificationBellComponent(page);
-        await notificationBell.clickBell();
-        await expect(page.locator('[data-testid="notification-dropdown"]')).toBeVisible();
-        await notificationBell.expectDropdownOpen();
-      } finally {
-        await context.close();
-      }
+      await notificationBell.clickBell();
+      await expect(page.locator('[data-testid="notification-dropdown"]')).toBeVisible();
+      await notificationBell.expectDropdownOpen();
     });
 
     test('should close dropdown when pressing Escape', async ({ browser }) => {
-      const context = await browser.newContext();
-      const page = await context.newPage();
+      context = await browser.newContext();
+      page = await context.newPage();
+      loginPage = new LoginPage(page);
+      notificationBell = new NotificationBellComponent(page);
 
-      try {
-        const loginPage = new LoginPage(page);
-        await loginPage.goto();
-        await loginPage.loginAsCompanyOwner();
-        await page.waitForLoadState('networkidle');
+      await loginPage.goto();
+      await loginPage.loginAsCompanyOwner();
+      await page.waitForLoadState('networkidle');
 
-        const notificationBell = new NotificationBellComponent(page);
-        await notificationBell.clickBell();
-        await notificationBell.expectDropdownOpen();
-        await notificationBell.closeDropdown();
-        await expect(page.locator('[data-testid="notification-dropdown"]')).toBeHidden();
-        await notificationBell.expectDropdownClosed();
-      } finally {
-        await context.close();
-      }
+      await notificationBell.clickBell();
+      await notificationBell.expectDropdownOpen();
+      await notificationBell.closeDropdown();
+      await expect(page.locator('[data-testid="notification-dropdown"]')).toBeHidden();
+      await notificationBell.expectDropdownClosed();
     });
 
     test('should show empty state or notifications list', async ({ browser }) => {
-      const context = await browser.newContext();
-      const page = await context.newPage();
+      context = await browser.newContext();
+      page = await context.newPage();
+      loginPage = new LoginPage(page);
+      notificationBell = new NotificationBellComponent(page);
 
-      try {
-        const loginPage = new LoginPage(page);
-        await loginPage.goto();
-        await loginPage.loginAsCompanyOwner();
-        await page.waitForLoadState('networkidle');
+      await loginPage.goto();
+      await loginPage.loginAsCompanyOwner();
+      await page.waitForLoadState('networkidle');
 
-        const notificationBell = new NotificationBellComponent(page);
-        await notificationBell.clickBell();
-        await notificationBell.expectDropdownOpen();
+      await notificationBell.clickBell();
+      await notificationBell.expectDropdownOpen();
 
-        const notificationItems = notificationBell.getNotificationItems();
-        const count = await notificationItems.count();
+      const notificationItems = notificationBell.getNotificationItems();
+      const count = await notificationItems.count();
 
-        if (count > 0) {
-          await expect(notificationItems.first()).toBeVisible();
-        } else {
-          await notificationBell.expectEmptyState();
-          await expect(page.getByText(/brak powiadomień/i)).toBeVisible();
-        }
-      } finally {
-        await context.close();
+      if (count > 0) {
+        await expect(notificationItems.first()).toBeVisible();
+      } else {
+        await notificationBell.expectEmptyState();
+        await expect(page.getByText(/brak powiadomień/i)).toBeVisible();
       }
     });
 
     test('should navigate to notifications page when clicking "See all"', async ({ browser }) => {
-      const context = await browser.newContext();
-      const page = await context.newPage();
+      context = await browser.newContext();
+      page = await context.newPage();
+      loginPage = new LoginPage(page);
+      notificationBell = new NotificationBellComponent(page);
 
-      try {
-        const loginPage = new LoginPage(page);
-        await loginPage.goto();
-        await loginPage.loginAsCompanyOwner();
-        await page.waitForLoadState('networkidle');
+      await loginPage.goto();
+      await loginPage.loginAsCompanyOwner();
+      await page.waitForLoadState('networkidle');
 
-        const notificationBell = new NotificationBellComponent(page);
-        await notificationBell.clickBell();
-        await notificationBell.expectDropdownOpen();
-        await notificationBell.clickSeeAll();
+      await notificationBell.clickBell();
+      await notificationBell.expectDropdownOpen();
+      await notificationBell.clickSeeAll();
 
-        await expect(page).toHaveURL(/\/notifications/);
-      } finally {
-        await context.close();
-      }
+      await expect(page).toHaveURL(/\/notifications/);
     });
   });
 
   test.describe('Notifications Page', () => {
+    let context: BrowserContext;
+    let page: Page;
+    let loginPage: LoginPage;
+    let notificationsPage: NotificationsPage;
+
+    test.afterEach(async () => {
+      await context.close();
+    });
+
     test('should display notifications page with tabs', async ({ browser }) => {
-      const context = await browser.newContext();
-      const page = await context.newPage();
+      context = await browser.newContext();
+      page = await context.newPage();
+      loginPage = new LoginPage(page);
+      notificationsPage = new NotificationsPage(page);
 
-      try {
-        const loginPage = new LoginPage(page);
-        await loginPage.goto();
-        await loginPage.loginAsCompanyOwner();
-        await page.waitForLoadState('networkidle');
+      await loginPage.goto();
+      await loginPage.loginAsCompanyOwner();
+      await page.waitForLoadState('networkidle');
 
-        const notificationsPage = new NotificationsPage(page);
-        await notificationsPage.goto();
-        await notificationsPage.expectToBeOnNotificationsPage();
-        await expect(page.getByRole('tab', { name: /wszystkie/i })).toBeVisible();
-        await notificationsPage.expectTabAllSelected();
-      } finally {
-        await context.close();
-      }
+      await notificationsPage.goto();
+      await notificationsPage.expectToBeOnNotificationsPage();
+      await expect(page.getByRole('tab', { name: /wszystkie/i })).toBeVisible();
+      await notificationsPage.expectTabAllSelected();
     });
 
     test('should switch between All and Unread tabs', async ({ browser }) => {
-      const context = await browser.newContext();
-      const page = await context.newPage();
+      context = await browser.newContext();
+      page = await context.newPage();
+      loginPage = new LoginPage(page);
+      notificationsPage = new NotificationsPage(page);
 
-      try {
-        const loginPage = new LoginPage(page);
-        await loginPage.goto();
-        await loginPage.loginAsCompanyOwner();
-        await page.waitForLoadState('networkidle');
+      await loginPage.goto();
+      await loginPage.loginAsCompanyOwner();
+      await page.waitForLoadState('networkidle');
 
-        const notificationsPage = new NotificationsPage(page);
-        await notificationsPage.goto();
+      await notificationsPage.goto();
 
-        await notificationsPage.expectTabAllSelected();
-        await notificationsPage.clickTabUnread();
-        await expect(page.getByRole('tab', { name: /nieprzeczytane/i })).toHaveAttribute(
-          'aria-selected',
-          'true'
-        );
-        await notificationsPage.expectTabUnreadSelected();
-        await notificationsPage.clickTabAll();
-        await expect(page.getByRole('tab', { name: /wszystkie/i })).toHaveAttribute(
-          'aria-selected',
-          'true'
-        );
-        await notificationsPage.expectTabAllSelected();
-      } finally {
-        await context.close();
-      }
+      await notificationsPage.expectTabAllSelected();
+      await notificationsPage.clickTabUnread();
+      await expect(page.getByRole('tab', { name: /nieprzeczytane/i })).toHaveAttribute(
+        'aria-selected',
+        'true'
+      );
+      await notificationsPage.expectTabUnreadSelected();
+      await notificationsPage.clickTabAll();
+      await expect(page.getByRole('tab', { name: /wszystkie/i })).toHaveAttribute(
+        'aria-selected',
+        'true'
+      );
+      await notificationsPage.expectTabAllSelected();
     });
 
     test('should be accessible for employees', async ({ browser }) => {
-      const context = await browser.newContext();
-      const page = await context.newPage();
+      context = await browser.newContext();
+      page = await context.newPage();
+      loginPage = new LoginPage(page);
+      notificationsPage = new NotificationsPage(page);
 
-      try {
-        const loginPage = new LoginPage(page);
-        await loginPage.goto();
-        await loginPage.loginAsEmployee();
-        await page.waitForLoadState('networkidle');
+      await loginPage.goto();
+      await loginPage.loginAsEmployee();
+      await page.waitForLoadState('networkidle');
 
-        const notificationsPage = new NotificationsPage(page);
-        await notificationsPage.goto();
-        await expect(page).toHaveURL(/\/notifications/);
-        await notificationsPage.expectToBeOnNotificationsPage();
-      } finally {
-        await context.close();
-      }
+      await notificationsPage.goto();
+      await expect(page).toHaveURL(/\/notifications/);
+      await notificationsPage.expectToBeOnNotificationsPage();
     });
   });
 
   test.describe('Notification Generation - Client Module', () => {
+    let context: BrowserContext;
+    let page: Page;
+    let loginPage: LoginPage;
+    let notificationBell: NotificationBellComponent;
+
+    test.afterEach(async () => {
+      await context.close();
+    });
+
     test('should show notification badge count for unread notifications', async ({ browser }) => {
-      const context = await browser.newContext();
-      const page = await context.newPage();
+      context = await browser.newContext();
+      page = await context.newPage();
+      loginPage = new LoginPage(page);
+      notificationBell = new NotificationBellComponent(page);
 
-      try {
-        const loginPage = new LoginPage(page);
-        await loginPage.goto();
-        await loginPage.loginAsEmployee();
-        await page.waitForLoadState('networkidle');
+      await loginPage.goto();
+      await loginPage.loginAsEmployee();
+      await page.waitForLoadState('networkidle');
 
-        const notificationBell = new NotificationBellComponent(page);
-        const badgeCount = await notificationBell.getBadgeCount();
+      const badgeCount = await notificationBell.getBadgeCount();
 
-        if (badgeCount !== null) {
-          expect(badgeCount).toBeGreaterThan(0);
-        }
-      } finally {
-        await context.close();
+      if (badgeCount !== null) {
+        expect(badgeCount).toBeGreaterThan(0);
       }
     });
   });
 
   test.describe('Notification Interactions', () => {
+    let context: BrowserContext;
+    let page: Page;
+    let loginPage: LoginPage;
+    let notificationBell: NotificationBellComponent;
+
+    test.afterEach(async () => {
+      await context.close();
+    });
+
     test('should mark all notifications as read', async ({ browser }) => {
-      const context = await browser.newContext();
-      const page = await context.newPage();
+      context = await browser.newContext();
+      page = await context.newPage();
+      loginPage = new LoginPage(page);
+      notificationBell = new NotificationBellComponent(page);
 
-      try {
-        const loginPage = new LoginPage(page);
-        await loginPage.goto();
-        await loginPage.loginAsEmployee();
-        await page.waitForLoadState('networkidle');
+      await loginPage.goto();
+      await loginPage.loginAsEmployee();
+      await page.waitForLoadState('networkidle');
 
-        const notificationBell = new NotificationBellComponent(page);
-        await notificationBell.clickBell();
-        await notificationBell.expectDropdownOpen();
+      await notificationBell.clickBell();
+      await notificationBell.expectDropdownOpen();
 
-        const markAllButton = page.getByRole('button', { name: /oznacz wszystkie/i });
-        const isMarkAllVisible = await markAllButton.isVisible();
+      const markAllButton = page.getByRole('button', { name: /oznacz wszystkie/i });
+      const isMarkAllVisible = await markAllButton.isVisible();
 
-        if (isMarkAllVisible) {
-          const initialBadge = await notificationBell.getBadgeCount();
-          await markAllButton.click();
+      if (isMarkAllVisible) {
+        const initialBadge = await notificationBell.getBadgeCount();
+        await markAllButton.click();
 
-          if (initialBadge !== null && initialBadge > 0) {
-            await expect(async () => {
-              const newBadge = await notificationBell.getBadgeCount();
-              expect(newBadge === null || newBadge === 0 || newBadge <= initialBadge).toBe(true);
-            }).toPass({ timeout: 5000 });
-          }
+        if (initialBadge !== null && initialBadge > 0) {
+          await expect(async () => {
+            const newBadge = await notificationBell.getBadgeCount();
+            expect(newBadge === null || newBadge === 0 || newBadge <= initialBadge).toBe(true);
+          }).toPass({ timeout: 5000 });
         }
-      } finally {
-        await context.close();
       }
     });
 
     test('should navigate to related entity when clicking notification', async ({ browser }) => {
-      const context = await browser.newContext();
-      const page = await context.newPage();
+      context = await browser.newContext();
+      page = await context.newPage();
+      loginPage = new LoginPage(page);
+      notificationBell = new NotificationBellComponent(page);
 
-      try {
-        const loginPage = new LoginPage(page);
-        await loginPage.goto();
-        await loginPage.loginAsEmployee();
-        await page.waitForLoadState('networkidle');
+      await loginPage.goto();
+      await loginPage.loginAsEmployee();
+      await page.waitForLoadState('networkidle');
 
-        const notificationBell = new NotificationBellComponent(page);
-        await notificationBell.clickBell();
-        await notificationBell.expectDropdownOpen();
+      await notificationBell.clickBell();
+      await notificationBell.expectDropdownOpen();
 
-        const notificationLinks = notificationBell.getNotificationItems();
-        const count = await notificationLinks.count();
+      const notificationLinks = notificationBell.getNotificationItems();
+      const count = await notificationLinks.count();
 
-        if (count > 0) {
-          const href = notificationLinks.first();
-          await expect(href).toHaveAttribute('href', );
+      if (count > 0) {
+        const firstNotification = notificationLinks.first();
+        const hrefValue = await firstNotification.getAttribute('href');
 
-          await notificationLinks.first().click();
+        if (hrefValue) {
+          await expect(firstNotification).toHaveAttribute('href', /.+/);
+          await firstNotification.click();
           await page.waitForLoadState('networkidle');
-
-          if (href) {
-            expect(page.url()).toContain('/modules/');
-          }
+          expect(page.url()).toContain('/modules/');
         }
-      } finally {
-        await context.close();
       }
     });
   });
@@ -383,24 +371,31 @@ test.describe('Notifications Module Tests', () => {
 });
 
 test.describe('Notifications Access Control', () => {
-  test('notifications should be accessible without module permission', async ({ browser }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
+  let context: BrowserContext;
+  let page: Page;
+  let loginPage: LoginPage;
+  let notificationsPage: NotificationsPage;
 
-    try {
-      const loginPage = new LoginPage(page);
-      await loginPage.goto();
-      await loginPage.loginAsEmployee();
-      await page.waitForLoadState('networkidle');
-
-      const notificationsPage = new NotificationsPage(page);
-      await notificationsPage.goto();
-
-      await expect(page).not.toHaveURL(/unauthorized/);
-      await notificationsPage.expectToBeOnNotificationsPage();
-    } finally {
+  test.afterEach(async () => {
+    if (context) {
       await context.close();
     }
+  });
+
+  test('notifications should be accessible without module permission', async ({ browser }) => {
+    context = await browser.newContext();
+    page = await context.newPage();
+    loginPage = new LoginPage(page);
+    notificationsPage = new NotificationsPage(page);
+
+    await loginPage.goto();
+    await loginPage.loginAsEmployee();
+    await page.waitForLoadState('networkidle');
+
+    await notificationsPage.goto();
+
+    await expect(page).not.toHaveURL(/unauthorized/);
+    await notificationsPage.expectToBeOnNotificationsPage();
   });
 
   test('unauthenticated user should be redirected to login', async ({ page }) => {

@@ -87,8 +87,14 @@ export function NotificationSocketProvider({ children }: NotificationSocketProvi
       return;
     }
 
-    // Don't create a new socket if one already exists and is connected
+    // If socket exists and is connected, just re-register listeners with fresh callbacks
+    // This prevents stale closure issues when dependencies change
     if (socketRef.current?.connected) {
+      const existingSocket = socketRef.current;
+      existingSocket.off('notification:new');
+      existingSocket.off('notification:read');
+      existingSocket.on('notification:new', handleNewNotification);
+      existingSocket.on('notification:read', handleNotificationRead);
       return;
     }
 
@@ -148,6 +154,16 @@ export function NotificationSocketProvider({ children }: NotificationSocketProvi
       setIsConnected(false);
     });
 
+    socketInstance.io.on('reconnect_failed', () => {
+      console.error('WebSocket reconnection failed after all attempts');
+      toast({
+        title: 'Nie można połączyć z serwerem',
+        description: 'Odśwież stronę, aby ponowić próbę połączenia',
+        variant: 'destructive',
+        duration: 10000,
+      });
+    });
+
     socketRef.current = socketInstance;
 
     return () => {
@@ -156,6 +172,7 @@ export function NotificationSocketProvider({ children }: NotificationSocketProvi
       socketInstance.off('notification:new');
       socketInstance.off('notification:read');
       socketInstance.off('connect_error');
+      socketInstance.io.off('reconnect_failed');
       socketInstance.disconnect();
       socketRef.current = null;
     };
