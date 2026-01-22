@@ -30,7 +30,9 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+
 import { Request, Response } from 'express';
+
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { PaginationQueryDto, User } from '@accounting/common';
 import {
@@ -41,6 +43,7 @@ import {
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
+
 import {
   BulkDeleteClientsDto,
   BulkEditClientsDto,
@@ -269,12 +272,12 @@ export class ClientsController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - User lacks read permission for clients module',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
   async getAllHistory(@CurrentUser() user: User, @Query() pagination: PaginationQueryDto) {
@@ -299,7 +302,7 @@ export class ClientsController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
   async getStatistics(@CurrentUser() user: User) {
@@ -324,7 +327,7 @@ export class ClientsController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
   async checkDuplicates(@Body() dto: CheckDuplicatesDto, @CurrentUser() user: User) {
@@ -381,12 +384,12 @@ export class ClientsController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - User lacks write permission',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'write')
   async bulkRestore(@Body() dto: BulkRestoreClientsDto, @CurrentUser() user: User) {
@@ -411,12 +414,12 @@ export class ClientsController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - User lacks write permission',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'write')
   async bulkEdit(@Body() dto: BulkEditClientsDto, @CurrentUser() user: User) {
@@ -445,7 +448,7 @@ export class ClientsController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
   async exportToCsv(
@@ -571,7 +574,7 @@ export class ClientsController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -607,7 +610,7 @@ export class ClientsController {
   @ApiResponse({
     status: 400,
     description: 'Bad Request - Validation error in request body',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -837,12 +840,12 @@ export class ClientsController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - User lacks read permission for clients module',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
   async getChangelog(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
@@ -874,12 +877,12 @@ export class ClientsController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - User lacks read permission for clients module',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
   async getCustomFields(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
