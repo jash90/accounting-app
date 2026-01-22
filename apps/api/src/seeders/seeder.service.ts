@@ -1,9 +1,10 @@
-import { EmailConfigurationService } from '@accounting/email';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import * as bcrypt from 'bcryptjs';
 import { DataSource, Repository } from 'typeorm';
+
 import {
   Client,
   ClientFieldDefinition,
@@ -19,9 +20,9 @@ import {
   VatStatus,
   ZusStatus,
 } from '@accounting/common';
+import { EmailConfigurationService } from '@accounting/email';
 import { ModuleDiscoveryService } from '@accounting/rbac';
 
-// eslint-disable-next-line @darraghor/nestjs-typed/injectable-should-be-provided
 @Injectable()
 export class SeederService {
   private readonly logger = new Logger(SeederService.name);
