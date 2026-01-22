@@ -1,80 +1,77 @@
 import {
+  BadRequestException,
+  Body,
   Controller,
+  Delete,
+  FileTypeValidator,
   Get,
+  MaxFileSizeValidator,
+  Param,
+  ParseFilePipe,
+  ParseUUIDPipe,
+  Patch,
   Post,
   Put,
-  Patch,
-  Delete,
-  Body,
-  Param,
   Query,
-  UseGuards,
-  ParseUUIDPipe,
-  Res,
-  UseInterceptors,
-  UploadedFile,
   Req,
+  Res,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
   UsePipes,
   ValidationPipe,
-  ParseFilePipe,
-  MaxFileSizeValidator,
-  FileTypeValidator,
-  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
   ApiBearerAuth,
-  ApiParam,
   ApiExtraModels,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
-
 import { Request, Response } from 'express';
-
-import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
-import { User, PaginationQueryDto } from '@accounting/common';
+import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
+import { PaginationQueryDto, User } from '@accounting/common';
 import {
   ModuleAccessGuard,
+  OwnerOrAdmin,
+  OwnerOrAdminGuard,
   PermissionGuard,
   RequireModule,
   RequirePermission,
-  OwnerOrAdminGuard,
-  OwnerOrAdmin,
 } from '@accounting/rbac';
-
 import {
   BulkDeleteClientsDto,
-  BulkRestoreClientsDto,
   BulkEditClientsDto,
   BulkOperationResultDto,
+  BulkRestoreClientsDto,
   CheckDuplicatesDto,
   DuplicateCheckResultDto,
 } from '../dto/bulk-operations.dto';
 import {
-  ClientResponseDto,
-  PaginatedClientsResponseDto,
   ChangelogEntryResponseDto,
-  PaginatedChangelogResponseDto,
-  DeleteRequestResponseDto,
+  ClientErrorResponseDto,
+  ClientResponseDto,
+  ClientSuccessResponseDto,
   CustomFieldValueResponseDto,
-  SuccessMessageResponseDto,
-  ErrorResponseDto,
+  DeleteRequestResponseDto,
+  PaginatedChangelogResponseDto,
+  PaginatedClientsResponseDto,
 } from '../dto/client-response.dto';
 import {
-  CreateClientDto,
-  UpdateClientDto,
   ClientFiltersDto,
-  SetCustomFieldValuesDto,
+  CreateClientDto,
   CustomFieldFilterDto,
   CustomFieldFilterOperator,
+  SetCustomFieldValuesDto,
+  UpdateClientDto,
 } from '../dto/client.dto';
 import { ClientStatisticsDto, ClientStatisticsWithRecentDto } from '../dto/statistics.dto';
 import { ClientChangelogService } from '../services/client-changelog.service';
 import { ClientsService } from '../services/clients.service';
 import { CustomFieldsService } from '../services/custom-fields.service';
-import { DeleteRequestService, CreateDeleteRequestDto } from '../services/delete-request.service';
+import { CreateDeleteRequestDto, DeleteRequestService } from '../services/delete-request.service';
 import { DuplicateDetectionService } from '../services/duplicate-detection.service';
 import { ClientExportService } from '../services/export.service';
 import { ClientStatisticsService } from '../services/statistics.service';
@@ -95,7 +92,7 @@ import { ClientStatisticsService } from '../services/statistics.service';
   PaginatedChangelogResponseDto,
   DeleteRequestResponseDto,
   CustomFieldValueResponseDto,
-  ErrorResponseDto,
+  ClientErrorResponseDto,
   BulkOperationResultDto,
   DuplicateCheckResultDto,
   ClientStatisticsDto,
@@ -169,19 +166,19 @@ export class ClientsController {
       'Results are paginated with configurable page size.',
   })
   @ApiResponse({
-    status: 200,
-    description: 'Paginated list of clients with metadata',
-    type: PaginatedClientsResponseDto,
-  })
-  @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - User lacks read permission for clients module',
-    type: ErrorResponseDto,
+    description: 'Forbidden - User lacks read permission or client belongs to different company',
+    type: ClientErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Client not found',
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: false }))
@@ -352,12 +349,12 @@ export class ClientsController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - Only Company Owners and Admins can bulk delete',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @UseGuards(OwnerOrAdminGuard)
   @OwnerOrAdmin()
@@ -514,12 +511,12 @@ export class ClientsController {
   @ApiResponse({
     status: 400,
     description: 'Bad Request - Invalid CSV format, data, or file too large',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @UseInterceptors(FileInterceptor('file'))
   @RequirePermission('clients', 'write')
@@ -577,14 +574,14 @@ export class ClientsController {
     type: ErrorResponseDto,
   })
   @ApiResponse({
-    status: 403,
-    description: 'Forbidden - User lacks read permission or client belongs to different company',
-    type: ErrorResponseDto,
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
-    status: 404,
-    description: 'Client not found',
-    type: ErrorResponseDto,
+    status: 403,
+    description: 'Forbidden - User lacks read permission for clients module',
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
   async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
@@ -615,12 +612,12 @@ export class ClientsController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - User lacks write permission for clients module',
-    type: ErrorResponseDto,
+    description: 'Forbidden - User lacks write permission',
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'write')
   async create(@Body() dto: CreateClientDto, @CurrentUser() user: User) {
@@ -652,22 +649,17 @@ export class ClientsController {
   @ApiResponse({
     status: 400,
     description: 'Bad Request - Validation error in request body',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - User lacks write permission or client belongs to different company',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Client not found',
-    type: ErrorResponseDto,
+    description: 'Forbidden - User lacks write permission for clients module',
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'write')
   async update(
@@ -699,23 +691,23 @@ export class ClientsController {
   @ApiResponse({
     status: 200,
     description: 'Client successfully deleted',
-    type: SuccessMessageResponseDto,
+    type: ClientSuccessResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description:
       'Forbidden - Only Company Owners and Admins can delete clients directly. Employees must use /delete-request.',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Client not found',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @UseGuards(OwnerOrAdminGuard)
   @OwnerOrAdmin()
@@ -750,23 +742,23 @@ export class ClientsController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad Request - A pending delete request already exists for this client',
-    type: ErrorResponseDto,
+    description: 'Bad Request - Invalid field definition ID or value type mismatch',
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - User lacks write permission for clients module',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Client not found',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'write')
   async requestDelete(
@@ -803,17 +795,17 @@ export class ClientsController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - User lacks write permission for clients module',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Client not found or not deleted',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'write')
   async restore(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
@@ -919,23 +911,23 @@ export class ClientsController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad Request - Invalid field definition ID or value type mismatch',
-    type: ErrorResponseDto,
+    description: 'Bad Request - Validation error in request body',
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - User lacks write permission for clients module',
-    type: ErrorResponseDto,
+    description: 'Forbidden - User lacks write permission or client belongs to different company',
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Client not found',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'write')
   async setCustomFields(

@@ -1,26 +1,25 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
   Body,
+  Controller,
+  Delete,
+  Get,
   Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
   Query,
   UseGuards,
-  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
   ApiBearerAuth,
-  ApiParam,
   ApiExtraModels,
+  ApiOperation,
+  ApiParam,
   ApiQuery,
+  ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
-
-import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
@@ -28,21 +27,20 @@ import {
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
-
 import {
-  TaskResponseDto,
-  PaginatedTasksResponseDto,
-  KanbanBoardResponseDto,
   ClientTaskStatisticsDto,
-  SuccessMessageResponseDto,
-  ErrorResponseDto,
+  KanbanBoardResponseDto,
+  PaginatedTasksResponseDto,
+  TaskErrorResponseDto,
+  TaskResponseDto,
+  TaskSuccessResponseDto,
 } from '../dto/task-response.dto';
 import {
-  CreateTaskDto,
-  UpdateTaskDto,
-  TaskFiltersDto,
-  ReorderTasksDto,
   BulkUpdateStatusDto,
+  CreateTaskDto,
+  ReorderTasksDto,
+  TaskFiltersDto,
+  UpdateTaskDto,
 } from '../dto/task.dto';
 import { TasksService } from '../services/tasks.service';
 
@@ -53,8 +51,8 @@ import { TasksService } from '../services/tasks.service';
   PaginatedTasksResponseDto,
   KanbanBoardResponseDto,
   ClientTaskStatisticsDto,
-  SuccessMessageResponseDto,
-  ErrorResponseDto
+  TaskSuccessResponseDto,
+  TaskErrorResponseDto
 )
 @Controller('modules/tasks')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
@@ -72,8 +70,8 @@ export class TasksController {
     description: 'Paginated list of tasks',
     type: PaginatedTasksResponseDto,
   })
-  @ApiResponse({ status: 401, description: 'Unauthorized', type: ErrorResponseDto })
-  @ApiResponse({ status: 403, description: 'Forbidden', type: ErrorResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized', type: TaskErrorResponseDto })
+  @ApiResponse({ status: 403, description: 'Forbidden', type: TaskErrorResponseDto })
   @RequirePermission('tasks', 'read')
   async findAll(@CurrentUser() user: User, @Query() filters: TaskFiltersDto) {
     return this.tasksService.findAll(user, filters);
@@ -128,7 +126,7 @@ export class TasksController {
     description: 'Client task statistics',
     type: ClientTaskStatisticsDto,
   })
-  @ApiResponse({ status: 404, description: 'Client not found', type: ErrorResponseDto })
+  @ApiResponse({ status: 404, description: 'Client not found', type: TaskErrorResponseDto })
   @RequirePermission('tasks', 'read')
   async getClientStatistics(
     @Param('clientId', ParseUUIDPipe) clientId: string,
@@ -141,7 +139,7 @@ export class TasksController {
   @ApiOperation({ summary: 'Get task by ID' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Task details', type: TaskResponseDto })
-  @ApiResponse({ status: 404, description: 'Task not found', type: ErrorResponseDto })
+  @ApiResponse({ status: 404, description: 'Task not found', type: TaskErrorResponseDto })
   @RequirePermission('tasks', 'read')
   async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.tasksService.findOne(id, user);
@@ -159,7 +157,7 @@ export class TasksController {
   @Post()
   @ApiOperation({ summary: 'Create a new task' })
   @ApiResponse({ status: 201, description: 'Task created', type: TaskResponseDto })
-  @ApiResponse({ status: 400, description: 'Validation error', type: ErrorResponseDto })
+  @ApiResponse({ status: 400, description: 'Validation error', type: TaskErrorResponseDto })
   @RequirePermission('tasks', 'write')
   async create(@Body() dto: CreateTaskDto, @CurrentUser() user: User) {
     return this.tasksService.create(dto, user);
@@ -170,7 +168,7 @@ export class TasksController {
     summary: 'Reorder tasks',
     description: 'Update the sort order of tasks (for drag & drop)',
   })
-  @ApiResponse({ status: 200, description: 'Tasks reordered', type: SuccessMessageResponseDto })
+  @ApiResponse({ status: 200, description: 'Tasks reordered', type: TaskSuccessResponseDto })
   @RequirePermission('tasks', 'write')
   async reorder(@Body() dto: ReorderTasksDto, @CurrentUser() user: User) {
     await this.tasksService.reorderTasks(dto, user);
@@ -192,7 +190,7 @@ export class TasksController {
   @ApiOperation({ summary: 'Update a task' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Task updated', type: TaskResponseDto })
-  @ApiResponse({ status: 404, description: 'Task not found', type: ErrorResponseDto })
+  @ApiResponse({ status: 404, description: 'Task not found', type: TaskErrorResponseDto })
   @RequirePermission('tasks', 'write')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -205,8 +203,8 @@ export class TasksController {
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a task (soft delete)' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'Task deleted', type: SuccessMessageResponseDto })
-  @ApiResponse({ status: 404, description: 'Task not found', type: ErrorResponseDto })
+  @ApiResponse({ status: 200, description: 'Task deleted', type: TaskSuccessResponseDto })
+  @ApiResponse({ status: 404, description: 'Task not found', type: TaskErrorResponseDto })
   @RequirePermission('tasks', 'delete')
   async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     await this.tasksService.remove(id, user);

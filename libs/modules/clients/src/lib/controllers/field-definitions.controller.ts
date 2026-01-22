@@ -1,42 +1,40 @@
 import {
+  Body,
   Controller,
+  Delete,
   Get,
+  Param,
+  ParseUUIDPipe,
   Post,
   Put,
-  Delete,
-  Body,
-  Param,
   Query,
   UseGuards,
-  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
   ApiBearerAuth,
-  ApiParam,
   ApiExtraModels,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
-
-import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
+  OwnerOrAdmin,
+  OwnerOrAdminGuard,
   PermissionGuard,
   RequireModule,
   RequirePermission,
-  OwnerOrAdminGuard,
-  OwnerOrAdmin,
 } from '@accounting/rbac';
-
-import { SuccessMessageResponseDto, ErrorResponseDto } from '../dto/client-response.dto';
+import { ClientErrorResponseDto, ClientSuccessResponseDto } from '../dto/client-response.dto';
 import {
   CreateFieldDefinitionDto,
-  UpdateFieldDefinitionDto,
   FieldDefinitionQueryDto,
   FieldDefinitionResponseDto,
   PaginatedFieldDefinitionsResponseDto,
+  UpdateFieldDefinitionDto,
 } from '../dto/field-definition.dto';
 import { CustomFieldsService } from '../services/custom-fields.service';
 
@@ -50,7 +48,11 @@ import { CustomFieldsService } from '../services/custom-fields.service';
  */
 @ApiTags('Client Field Definitions')
 @ApiBearerAuth()
-@ApiExtraModels(FieldDefinitionResponseDto, PaginatedFieldDefinitionsResponseDto, ErrorResponseDto)
+@ApiExtraModels(
+  FieldDefinitionResponseDto,
+  PaginatedFieldDefinitionsResponseDto,
+  ClientErrorResponseDto
+)
 @Controller('modules/clients/field-definitions')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('clients')
@@ -76,12 +78,12 @@ export class FieldDefinitionsController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - User lacks read permission for clients module',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
   async findAll(@CurrentUser() user: User, @Query() query: FieldDefinitionQueryDto) {
@@ -113,18 +115,18 @@ export class FieldDefinitionsController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description:
       'Forbidden - User lacks read permission or field definition belongs to different company',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Field definition not found',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
   async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
@@ -150,17 +152,17 @@ export class FieldDefinitionsController {
   @ApiResponse({
     status: 400,
     description: 'Bad Request - Validation error (e.g., ENUM type without enumValues)',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - Only Company Owners and Admins can create field definitions',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @UseGuards(OwnerOrAdminGuard)
   @OwnerOrAdmin()
@@ -195,22 +197,22 @@ export class FieldDefinitionsController {
   @ApiResponse({
     status: 400,
     description: 'Bad Request - Validation error in request body',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - Only Company Owners and Admins can update field definitions',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Field definition not found',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @UseGuards(OwnerOrAdminGuard)
   @OwnerOrAdmin()
@@ -243,22 +245,22 @@ export class FieldDefinitionsController {
   @ApiResponse({
     status: 200,
     description: 'Field definition successfully deleted',
-    type: SuccessMessageResponseDto,
+    type: ClientSuccessResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - Only Company Owners and Admins can delete field definitions',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Field definition not found',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @UseGuards(OwnerOrAdminGuard)
   @OwnerOrAdmin()

@@ -1,22 +1,53 @@
 import {
+  BadRequestException,
+  Body,
   Controller,
+  Delete,
   Get,
+  Param,
+  ParseUUIDPipe,
   Post,
   Put,
-  Delete,
-  Body,
-  Param,
   Query,
+  UploadedFile,
   UseGuards,
   UseInterceptors,
-  UploadedFile,
-  ParseUUIDPipe,
-  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiExtraModels,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-
 import { memoryStorage } from 'multer';
+import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
+import { User } from '@accounting/common';
+import {
+  ModuleAccessGuard,
+  OwnerOrAdmin,
+  OwnerOrAdminGuard,
+  PermissionGuard,
+  RequireModule,
+  RequirePermission,
+} from '@accounting/rbac';
+import { ClientErrorResponseDto, ClientSuccessResponseDto } from '../dto/client-response.dto';
+import {
+  AssignIconDto,
+  CreateIconDto,
+  IconAssignmentResponseDto,
+  IconQueryDto,
+  IconResponseDto,
+  IconUrlResponseDto,
+  PaginatedIconsResponseDto,
+  UpdateIconDto,
+} from '../dto/icon.dto';
+import { ClientIconsService } from '../services/client-icons.service';
 
 // File upload configuration
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
@@ -43,40 +74,6 @@ const multerOptions = {
   limits: { fileSize: MAX_FILE_SIZE },
   fileFilter,
 };
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiConsumes,
-  ApiBody,
-  ApiParam,
-  ApiExtraModels,
-} from '@nestjs/swagger';
-
-import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
-import { User } from '@accounting/common';
-import {
-  ModuleAccessGuard,
-  PermissionGuard,
-  RequireModule,
-  RequirePermission,
-  OwnerOrAdminGuard,
-  OwnerOrAdmin,
-} from '@accounting/rbac';
-
-import { SuccessMessageResponseDto, ErrorResponseDto } from '../dto/client-response.dto';
-import {
-  CreateIconDto,
-  UpdateIconDto,
-  AssignIconDto,
-  IconQueryDto,
-  IconResponseDto,
-  PaginatedIconsResponseDto,
-  IconAssignmentResponseDto,
-  IconUrlResponseDto,
-} from '../dto/icon.dto';
-import { ClientIconsService } from '../services/client-icons.service';
 
 /**
  * Controller for managing client icons within the clients module.
@@ -94,8 +91,8 @@ import { ClientIconsService } from '../services/client-icons.service';
   PaginatedIconsResponseDto,
   IconAssignmentResponseDto,
   IconUrlResponseDto,
-  SuccessMessageResponseDto,
-  ErrorResponseDto
+  ClientSuccessResponseDto,
+  ClientErrorResponseDto
 )
 @Controller('modules/clients/icons')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
@@ -126,12 +123,12 @@ export class IconsController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - User lacks read permission for clients module',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
   async findAll(@CurrentUser() user: User, @Query() query: IconQueryDto) {
@@ -164,17 +161,17 @@ export class IconsController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - User lacks read permission or client belongs to different company',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Client not found',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
   async getClientIcons(
@@ -203,22 +200,22 @@ export class IconsController {
   @ApiResponse({
     status: 400,
     description: 'Bad Request - Icon is already assigned to the client',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - User lacks write permission for clients module',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Icon or client not found',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'write')
   async assignIcon(@Body() dto: AssignIconDto, @CurrentUser() user: User) {
@@ -253,22 +250,22 @@ export class IconsController {
   @ApiResponse({
     status: 200,
     description: 'Icon successfully unassigned from the client',
-    type: SuccessMessageResponseDto,
+    type: ClientSuccessResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - User lacks write permission for clients module',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Assignment not found - icon is not assigned to this client',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'write')
   async unassignIcon(
@@ -310,17 +307,17 @@ export class IconsController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - User lacks read permission or icon belongs to different company',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Icon not found or icon has no uploaded file',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
   async getUrl(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
@@ -354,17 +351,17 @@ export class IconsController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - User lacks read permission or icon belongs to different company',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Icon not found',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'read')
   async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
@@ -440,22 +437,22 @@ export class IconsController {
   @ApiResponse({
     status: 400,
     description: 'Bad Request - Invalid file type or validation error',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - Only Company Owners and Admins can create icons',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 429,
     description: 'Too many icon upload attempts. Please try again later.',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(OwnerOrAdminGuard)
@@ -537,22 +534,22 @@ export class IconsController {
   @ApiResponse({
     status: 400,
     description: 'Bad Request - Invalid file type or validation error',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - Only Company Owners and Admins can update icons',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Icon not found',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @UseGuards(OwnerOrAdminGuard)
   @OwnerOrAdmin()
@@ -588,22 +585,22 @@ export class IconsController {
   @ApiResponse({
     status: 200,
     description: 'Icon successfully deleted',
-    type: SuccessMessageResponseDto,
+    type: ClientSuccessResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - Only Company Owners and Admins can delete icons',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Icon not found',
-    type: ErrorResponseDto,
+    type: ClientErrorResponseDto,
   })
   @UseGuards(OwnerOrAdminGuard)
   @OwnerOrAdmin()

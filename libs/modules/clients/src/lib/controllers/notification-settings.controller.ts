@@ -1,17 +1,16 @@
 import {
+  BadRequestException,
+  Body,
   Controller,
+  Delete,
   Get,
+  Patch,
   Post,
   Put,
-  Patch,
-  Delete,
-  Body,
   UseGuards,
-  BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-
-import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
@@ -19,7 +18,6 @@ import {
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
-
 import { UpdateNotificationSettingsDto } from '../dto/notification-settings.dto';
 import { NotificationSettingsService } from '../services/notification-settings.service';
 
