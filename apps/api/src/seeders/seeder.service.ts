@@ -1,28 +1,27 @@
+import { EmailConfigurationService } from '@accounting/email';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import * as bcrypt from 'bcryptjs';
-import { Repository, DataSource } from 'typeorm';
-
+import { DataSource, Repository } from 'typeorm';
 import {
-  User,
-  Company,
-  Module as ModuleEntity,
-  CompanyModuleAccess,
-  UserModulePermission,
-  UserRole,
   Client,
   ClientFieldDefinition,
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
+  Company,
+  CompanyModuleAccess,
   CustomFieldType,
+  EmploymentType,
+  Module as ModuleEntity,
+  TaxScheme,
+  User,
+  UserModulePermission,
+  UserRole,
+  VatStatus,
+  ZusStatus,
 } from '@accounting/common';
-import { EmailConfigurationService } from '@accounting/email';
 import { ModuleDiscoveryService } from '@accounting/rbac';
 
+// eslint-disable-next-line @darraghor/nestjs-typed/injectable-should-be-provided
 @Injectable()
 export class SeederService {
   private readonly logger = new Logger(SeederService.name);
@@ -84,13 +83,9 @@ export class SeederService {
 
     this.logger.log('Database seeding completed!');
     this.logger.log('Test Users (passwords configured in .env):');
-    this.logger.log(`  Admin: ${this.configService.get('SEED_ADMIN_EMAIL', 'admin@system.com')}`);
-    this.logger.log(
-      `  Company Owner: ${this.configService.get('SEED_OWNER_EMAIL', 'owner@company.pl')}`
-    );
-    this.logger.log(
-      `  Employee: ${this.configService.get('SEED_EMPLOYEE_EMAIL', 'employee@company.pl')}`
-    );
+    this.logger.log(`  Admin: ${this.configService.get('SEED_ADMIN_EMAIL')}`);
+    this.logger.log(`  Company Owner: ${this.configService.get('SEED_OWNER_EMAIL')}`);
+    this.logger.log(`  Employee: ${this.configService.get('SEED_EMPLOYEE_EMAIL')}`);
   }
 
   /**
@@ -183,8 +178,8 @@ export class SeederService {
   }
 
   private async seedAdmin() {
-    const adminEmail = this.configService.get<string>('SEED_ADMIN_EMAIL', 'admin@system.com');
-    const adminPassword = this.configService.get<string>('SEED_ADMIN_PASSWORD', 'Admin123456!');
+    const adminEmail = this.configService.getOrThrow<string>('SEED_ADMIN_EMAIL');
+    const adminPassword = this.configService.getOrThrow<string>('SEED_ADMIN_PASSWORD');
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
     const admin = this.userRepository.create({
       email: adminEmail.toLowerCase(),
@@ -212,8 +207,8 @@ export class SeederService {
   }
 
   private async seedCompanyA() {
-    const ownerEmail = this.configService.get<string>('SEED_OWNER_EMAIL', 'owner@company.pl');
-    const ownerPassword = this.configService.get<string>('SEED_OWNER_PASSWORD', 'Owner123456!');
+    const ownerEmail = this.configService.getOrThrow<string>('SEED_OWNER_EMAIL');
+    const ownerPassword = this.configService.getOrThrow<string>('SEED_OWNER_PASSWORD');
     const hashedPassword = await bcrypt.hash(ownerPassword, 10);
     const ownerA = this.userRepository.create({
       email: ownerEmail.toLowerCase(),
@@ -235,14 +230,8 @@ export class SeederService {
     savedOwnerA.companyId = savedCompanyA.id;
     await this.userRepository.save(savedOwnerA);
 
-    const employeeEmail = this.configService.get<string>(
-      'SEED_EMPLOYEE_EMAIL',
-      'employee@company.pl'
-    );
-    const employeePassword = this.configService.get<string>(
-      'SEED_EMPLOYEE_PASSWORD',
-      'Employee123456!'
-    );
+    const employeeEmail = this.configService.getOrThrow<string>('SEED_EMPLOYEE_EMAIL');
+    const employeePassword = this.configService.getOrThrow<string>('SEED_EMPLOYEE_PASSWORD');
     const employee1Password = await bcrypt.hash(employeePassword, 10);
     const employee1 = this.userRepository.create({
       email: employeeEmail.toLowerCase(),
@@ -514,13 +503,13 @@ export class SeederService {
       smtpHost: 'smtp.poczta.onet.pl',
       smtpPort: 465,
       smtpSecure: true,
-      smtpUser: this.configService.get<string>('SEED_SMTP_USER', ''),
-      smtpPassword: this.configService.get<string>('SEED_SMTP_PASSWORD', ''),
+      smtpUser: this.configService.get<string>('SEED_OWNER_EMAIL', ''),
+      smtpPassword: this.configService.get<string>('SEED_OWNER_PASSWORD', ''),
       imapHost: 'imap.poczta.onet.pl',
       imapPort: 993,
       imapTls: true,
-      imapUser: this.configService.get<string>('SEED_IMAP_USER', ''),
-      imapPassword: this.configService.get<string>('SEED_IMAP_PASSWORD', ''),
+      imapUser: this.configService.get<string>('SEED_OWNER_EMAIL', ''),
+      imapPassword: this.configService.get<string>('SEED_OWNER_PASSWORD', ''),
       displayName: 'Tech Startup A - Company Email',
     };
 

@@ -1,4 +1,5 @@
-import { test, expect } from '../fixtures/auth.fixtures';
+/* eslint-disable playwright/expect-expect */
+import { expect, test } from '../fixtures/auth.fixtures';
 import { ModulesDashboardPage } from '../pages/employee/ModulesDashboardPage';
 
 /**
@@ -11,7 +12,7 @@ import { ModulesDashboardPage } from '../pages/employee/ModulesDashboardPage';
  * - Sidebar toggle functionality
  *
  * Test Data (from seeder):
- * - bartlomiej.zimny@interia.pl: Has access to "AI Agent"
+ * - Employee (from .env): Has access to "AI Agent"
  */
 
 test.describe('Employee Sidebar - Visibility', () => {
@@ -22,15 +23,15 @@ test.describe('Employee Sidebar - Visibility', () => {
     await dashboard.goto();
 
     // Wait for sidebar to be visible
-    const sidebarVisible = await authenticatedEmployeePage.isVisible('aside');
-    expect(sidebarVisible).toBe(true);
+    const sidebar = authenticatedEmployeePage.locator('aside');
+    await expect(sidebar).toBeVisible();
   });
 
   test('should show granted modules in sidebar', async ({ authenticatedEmployeePage }) => {
     const dashboard = new ModulesDashboardPage(authenticatedEmployeePage);
     await dashboard.goto();
 
-    // Employee1.A has permissions for "AI Agent"
+    // Employee (from .env) has read+write permissions for AI Agent
     await dashboard.nav.expectModuleInSidebar('AI Agent');
 
     // Verify it's in the module list
@@ -42,7 +43,7 @@ test.describe('Employee Sidebar - Visibility', () => {
     const dashboard = new ModulesDashboardPage(authenticatedEmployeePage);
     await dashboard.goto();
 
-    // Employee1.A has permissions for AI Agent
+    // Employee (from .env) has read+write permissions for AI Agent
     await dashboard.nav.expectModuleInSidebar('AI Agent');
 
     // Verify it's in the module list
@@ -144,7 +145,7 @@ test.describe('Employee Sidebar - Permissions', () => {
     const dashboard = new ModulesDashboardPage(authenticatedEmployeePage);
     await dashboard.goto();
 
-    // bartlomiej.zimny@interia.pl has read+write permissions for AI Agent
+    // Employee (from .env) has read+write permissions for AI Agent
     await dashboard.nav.expectModuleInSidebar('AI Agent');
 
     const modules = await dashboard.nav.getSidebarModules();
@@ -235,10 +236,10 @@ test.describe('Employee Sidebar - Interaction', () => {
     await dashboard.nav.toggleSidebar();
 
     // Icons should still be visible
-    const iconVisible = await authenticatedEmployeePage.isVisible(
+    const icons = authenticatedEmployeePage.locator(
       'aside nav a svg, aside nav a [class*="lucide"]'
     );
-    expect(iconVisible).toBe(true);
+    await expect(icons.first()).toBeVisible();
 
     // Labels might be hidden or very small
     const width = await dashboard.nav.getSidebarWidth();

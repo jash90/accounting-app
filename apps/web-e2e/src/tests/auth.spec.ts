@@ -1,8 +1,8 @@
-import { test, expect } from '../fixtures/auth.fixtures';
-import { LoginPage } from '../pages/auth/LoginPage';
+/* eslint-disable playwright/expect-expect */
+import { expect, test, TEST_CREDENTIALS } from '../fixtures/auth.fixtures';
 import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
+import { LoginPage } from '../pages/auth/LoginPage';
 import { UnauthorizedPage } from '../pages/auth/UnauthorizedPage';
-import { TEST_CREDENTIALS } from '../fixtures/auth.fixtures';
 
 test.describe('Authentication Tests', () => {
   test('should successfully login with valid admin credentials', async ({ page }) => {
@@ -41,7 +41,7 @@ test.describe('Authentication Tests', () => {
     const loginPage = new LoginPage(page);
 
     await loginPage.goto();
-    await loginPage.loginWithInvalidCredentials('invalid@test.com', 'WrongPassword123!');
+    await loginPage.loginWithInvalidCredentials('invalid@test.com', 'WrongPassword123456!');
 
     await loginPage.expectToRemainOnLoginPage();
     await loginPage.expectFormError();
@@ -51,7 +51,7 @@ test.describe('Authentication Tests', () => {
     const loginPage = new LoginPage(page);
 
     await loginPage.goto();
-    await loginPage.loginWithInvalidCredentials('nonexistent@test.com', 'Password123!');
+    await loginPage.loginWithInvalidCredentials('nonexistent@test.com', 'Password123456!');
 
     await loginPage.expectToRemainOnLoginPage();
   });
@@ -112,26 +112,13 @@ test.describe('RBAC Enforcement Tests', () => {
   });
 
   test('Admin should not access company routes', async ({ authenticatedAdminPage }) => {
-    const unauthorizedPage = new UnauthorizedPage(authenticatedAdminPage);
-
     await authenticatedAdminPage.goto('/company');
     await authenticatedAdminPage.waitForLoadState('networkidle');
     await authenticatedAdminPage.waitForTimeout(500);
 
-    // Should be redirected to unauthorized or stay blocked
+    // Verify access is denied or redirected away from company
     const currentURL = authenticatedAdminPage.url();
-    if (currentURL.includes('unauthorized')) {
-      await unauthorizedPage.expectToBeOnUnauthorizedPage();
-    } else {
-      // Verify access is denied or redirected away from company
-      const accessDenied = await authenticatedAdminPage
-        .getByText(/access denied|forbidden/i)
-        .isVisible()
-        .catch(() => false);
-      expect(accessDenied || currentURL.includes('admin') || !currentURL.includes('company')).toBe(
-        true
-      );
-    }
+    expect(currentURL).not.toContain('/company');
   });
 
   test('Admin should not access employee routes', async ({ authenticatedAdminPage }) => {
@@ -219,9 +206,8 @@ test.describe('RBAC Enforcement Tests', () => {
     // Try to access admin route
     await page.goto('/admin');
 
-    if (page.url().includes('unauthorized')) {
-      await unauthorizedPage.expectUnauthorizedHeading();
-    }
+    await expect(page).toHaveURL(/unauthorized/);
+    await unauthorizedPage.expectUnauthorizedHeading();
   });
 
   test('should show 404 for non-existent routes', async ({ authenticatedAdminPage }) => {

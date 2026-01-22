@@ -40,11 +40,11 @@ bun run lint:web         # Lint frontend
 
 ## Test Credentials
 
-| Role     | Email               | Password       |
-| -------- | ------------------- | -------------- |
-| Admin    | `admin@system.com`  | `Admin123!`    |
-| Owner    | `owner@acme.com`    | `Owner123!`    |
-| Employee | `employee@acme.com` | `Employee123!` |
+| Role     | Email               | Password          |
+| -------- | ------------------- | ----------------- |
+| Admin    | `admin@system.com`  | `Admin123456!`    |
+| Owner    | `owner@acme.com`    | `Owner123456!`    |
+| Employee | `employee@acme.com` | `Employee123456!` |
 
 ## Critical Architecture Constraints
 

@@ -296,13 +296,13 @@ describe('LoginPage', () => {
       const submitButton = screen.getByRole('button', { name: /zaloguj się/i });
 
       await user.type(emailInput, 'test@example.com');
-      await user.type(passwordInput, 'ValidPassword123!');
+      await user.type(passwordInput, 'ValidPassword123456!');
       await user.click(submitButton);
 
       await waitFor(() => {
         expect(mockLogin).toHaveBeenCalledWith({
           email: 'test@example.com',
-          password: 'ValidPassword123!',
+          password: 'ValidPassword123456!',
         });
       });
     });

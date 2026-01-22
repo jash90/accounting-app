@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 test.describe('Admin Pages', () => {
   test.beforeEach(async ({ page }) => {
@@ -6,8 +6,8 @@ test.describe('Admin Pages', () => {
     await page.goto('http://localhost:4200/login');
 
     // Login as admin (assuming seeded data)
-    await page.fill('[name="email"]', 'admin@system.com');
-    await page.fill('[name="password"]', 'Admin123!');
+    await page.fill('[name="email"]', process.env.SEED_ADMIN_EMAIL ?? '');
+    await page.fill('[name="password"]', process.env.SEED_ADMIN_PASSWORD ?? '');
     await page.click('button[type="submit"]');
 
     // Wait for navigation to admin dashboard
@@ -30,7 +30,7 @@ test.describe('Admin Pages', () => {
     await page.click('text=Create User');
 
     await page.fill('[name="email"]', 'newuser@test.com');
-    await page.fill('[name="password"]', 'Password123!');
+    await page.fill('[name="password"]', 'Password123456!');
     await page.fill('[name="firstName"]', 'New');
     await page.fill('[name="lastName"]', 'User');
 

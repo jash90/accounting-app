@@ -1,8 +1,9 @@
-import { test, expect } from '../fixtures/auth.fixtures';
-import { EmployeesListPage } from '../pages/company/EmployeesListPage';
-import { EmployeePermissionsPage } from '../pages/company/EmployeePermissionsPage';
-import { CompanyModulesListPage } from '../pages/company/CompanyModulesListPage';
+/* eslint-disable playwright/expect-expect */
+import { expect, test } from '../fixtures/auth.fixtures';
 import { TestDataFactory } from '../fixtures/data.fixtures';
+import { CompanyModulesListPage } from '../pages/company/CompanyModulesListPage';
+import { EmployeePermissionsPage } from '../pages/company/EmployeePermissionsPage';
+import { EmployeesListPage } from '../pages/company/EmployeesListPage';
 
 test.describe('Company Owner - Employee Management', () => {
   test('should view employees list', async ({ authenticatedCompanyOwnerPage }) => {
@@ -27,9 +28,8 @@ test.describe('Company Owner - Employee Management', () => {
     const employeesPage = new EmployeesListPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.searchEmployee('employee1.a');
-
-    await employeesPage.expectEmployeeInList('bartlomiej.zimny@interia.pl');
+    await employeesPage.searchEmployee('Employee');
+    await employeesPage.expectEmployeeInList(process.env.SEED_EMPLOYEE_EMAIL ?? '');
   });
 
   test('should update employee details', async ({ authenticatedCompanyOwnerPage }) => {
@@ -65,7 +65,7 @@ test.describe('Company Owner - Employee Management', () => {
 
     // Try to submit with invalid email
     await authenticatedCompanyOwnerPage.fill('input[name="email"]', 'invalid-email');
-    await authenticatedCompanyOwnerPage.fill('input[name="password"]', 'TestPass123!');
+    await authenticatedCompanyOwnerPage.fill('input[name="password"]', 'TestPass123456!');
     await authenticatedCompanyOwnerPage.click('button[type="submit"]');
 
     // Should show validation error or stay on form
@@ -82,18 +82,17 @@ test.describe('Company Owner - Employee Management', () => {
     // Owner of Company A should only see/manage Company A employees
     const emails = await employeesPage.getAllEmployeeEmails();
 
-    for (const email of emails) {
-      // All emails should be from Company A (real emails: Onet for owners, Interia for employees)
-      const isCompanyA = email.includes('onet.pl') || email.includes('interia.pl');
-      expect(isCompanyA || email.includes('Company A')).toBe(true);
-    }
+    const allFromCompanyA = emails.every(
+      (email) => email.includes('onet.pl') || email.includes('interia.pl')
+    );
+    expect(allFromCompanyA).toBe(true);
   });
 
   test('should navigate to employee permissions', async ({ authenticatedCompanyOwnerPage }) => {
     const employeesPage = new EmployeesListPage(authenticatedCompanyOwnerPage);
 
     await employeesPage.goto();
-    await employeesPage.goToEmployeePermissions('bartlomiej.zimny@interia.pl');
+    await employeesPage.goToEmployeePermissions(process.env.SEED_EMPLOYEE_EMAIL ?? '');
 
     await expect(authenticatedCompanyOwnerPage).toHaveURL(/permissions/);
   });
@@ -104,7 +103,9 @@ test.describe('Company Owner - Employee Management', () => {
     await employeesPage.goto();
 
     // Should not see Company B employees
-    const hasCompanyBEmployee = await employeesPage.hasEmployee('bartlomiej.zimny@interia.pl');
+    const hasCompanyBEmployee = await employeesPage.hasEmployee(
+      process.env.SEED_EMPLOYEE_EMAIL ?? ''
+    );
     expect(hasCompanyBEmployee).toBe(false);
   });
 });

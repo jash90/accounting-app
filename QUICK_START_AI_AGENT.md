@@ -28,7 +28,7 @@ pnpm run dev
 
 ## Step 2: Test with Different Roles
 
-### ADMIN (admin@system.com / Admin123!)
+### ADMIN (Credentials in .env)
 
 **How to access AI Agent:**
 
@@ -45,7 +45,7 @@ pnpm run dev
 - Configuration: `http://localhost:4200/admin/modules/ai-agent/configuration`
 - Context: `http://localhost:4200/admin/modules/ai-agent/context`
 
-### COMPANY_OWNER (bartlomiej.zimny@onet.pl / Owner123!)
+### COMPANY_OWNER (Credentials in .env)
 
 **How to access AI Agent:**
 
@@ -62,7 +62,7 @@ pnpm run dev
 - Token Usage: `http://localhost:4200/company/modules/ai-agent/token-usage`
 - Context: `http://localhost:4200/company/modules/ai-agent/context`
 
-### EMPLOYEE (bartlomiej.zimny@interia.pl / Employee123!)
+### EMPLOYEE (Credentials in .env)
 
 **How to access AI Agent:**
 
