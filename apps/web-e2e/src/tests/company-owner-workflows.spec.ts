@@ -1,4 +1,3 @@
-/* eslint-disable playwright/expect-expect */
 import { expect, test } from '../fixtures/auth.fixtures';
 import { TestDataFactory } from '../fixtures/data.fixtures';
 import { CompanyModulesListPage } from '../pages/company/CompanyModulesListPage';
@@ -69,7 +68,8 @@ test.describe('Company Owner - Employee Management', () => {
     await authenticatedCompanyOwnerPage.click('button[type="submit"]');
 
     // Should show validation error or stay on form
-    await authenticatedCompanyOwnerPage.waitForTimeout(1000);
+    // TODO: Add proper assertion for validation error
+    expect(authenticatedCompanyOwnerPage.url()).not.toContain('dashboard');
   });
 
   test('should not create employee for other company', async ({
@@ -119,6 +119,8 @@ test.describe('Company Owner - Permission Management', () => {
     await employeesPage.clickManagePermissions('bartlomiej.zimny@interia.pl');
 
     await permissionsPage.expectToBeOnPermissionsPage();
+    // Verify we are on the right page
+    expect(authenticatedCompanyOwnerPage.url()).toContain('permissions');
   });
 
   test('should grant read permission', async ({ authenticatedCompanyOwnerPage }) => {

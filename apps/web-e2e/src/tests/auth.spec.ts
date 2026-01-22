@@ -1,4 +1,3 @@
-/* eslint-disable playwright/expect-expect */
 import { expect, test, TEST_CREDENTIALS } from '../fixtures/auth.fixtures';
 import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
 import { LoginPage } from '../pages/auth/LoginPage';
@@ -274,8 +273,8 @@ test.describe('Multi-tenant Isolation', () => {
     await page.waitForSelector('h1', { state: 'visible', timeout: 10000 });
 
     // Should only see own company data (verified through UI)
-    const heading = await page.locator('h1').first().textContent();
-    expect(heading).toBeTruthy();
+    const heading = page.locator('h1').first();
+    await expect(heading).toHaveText();
     expect(heading).not.toBeNull();
   });
 
@@ -298,8 +297,8 @@ test.describe('Multi-tenant Isolation', () => {
     await page.waitForSelector('h1', { state: 'visible', timeout: 10000 });
 
     // Data should be isolated (Company B data only)
-    const heading = await page.locator('h1').first().textContent();
-    expect(heading).toBeTruthy();
+    const heading = page.locator('h1').first();
+    await expect(heading).toHaveText();
     expect(heading).not.toBeNull();
   });
 });

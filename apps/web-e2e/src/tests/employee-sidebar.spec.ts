@@ -1,4 +1,3 @@
-/* eslint-disable playwright/expect-expect */
 import { expect, test } from '../fixtures/auth.fixtures';
 import { ModulesDashboardPage } from '../pages/employee/ModulesDashboardPage';
 
