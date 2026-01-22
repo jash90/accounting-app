@@ -10,6 +10,25 @@ export const loginSchema = z.object({
 
 export type LoginFormData = z.infer<typeof loginSchema>;
 
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Aktualne hasło jest wymagane'),
+    newPassword: z
+      .string()
+      .min(8, 'Nowe hasło musi mieć co najmniej 8 znaków')
+      .regex(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
+      .regex(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
+      .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę')
+      .regex(/[@$!%*?&]/, 'Hasło musi zawierać znak specjalny (@$!%*?&)'),
+    confirmPassword: z.string().min(1, 'Potwierdzenie hasła jest wymagane'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Hasła nie są identyczne',
+    path: ['confirmPassword'],
+  });
+
+export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
+
 export const registerSchema = z.object({
   email: z.string().email('Nieprawidłowy adres email'),
   password: z
