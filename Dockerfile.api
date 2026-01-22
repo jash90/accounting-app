@@ -26,16 +26,14 @@ RUN bunx tsc apps/api/typeorm.prod.config.ts apps/api/src/migrations/*.ts \
     --skipLibCheck \
     --resolveJsonModule
 
-# Production stage - use Node.js for runtime stability (Bun has crashes with mailparser/imapflow)
+# Production stage - use Node.js for runtime stability (Bun crashes with mailparser/imapflow)
 FROM node:20-alpine AS production
 
 WORKDIR /app
 
-# Copy package files
 COPY package.json ./
 
-# Install production dependencies only with npm
-RUN npm install --omit=dev
+RUN npm install --omit=dev --legacy-peer-deps
 
 # Copy built application (includes pre-compiled migrations)
 COPY --from=builder /app/dist ./dist
