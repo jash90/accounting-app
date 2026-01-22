@@ -120,7 +120,7 @@ export function AutoAssignConditionBuilder({ value, onChange }: AutoAssignCondit
   return (
     <Card className="border-dashed">
       <CardContent className="pt-4 pb-4">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-amber-500" />
             <Label htmlFor="auto-assign-toggle" className="text-sm font-medium">
@@ -131,14 +131,14 @@ export function AutoAssignConditionBuilder({ value, onChange }: AutoAssignCondit
         </div>
 
         {isEnabled && (
-          <div className="space-y-3 pl-6 border-l-2 border-amber-200">
-            <p className="text-xs text-muted-foreground mb-2">
+          <div className="space-y-3 border-l-2 border-amber-200 pl-6">
+            <p className="text-muted-foreground mb-2 text-xs">
               Ikona zostanie automatycznie przypisana do klientów spełniających warunek:
             </p>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Gdy pole</Label>
+                <Label className="text-muted-foreground text-xs">Gdy pole</Label>
                 <Select value={currentField} onValueChange={handleFieldChange}>
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Wybierz pole" />
@@ -154,7 +154,7 @@ export function AutoAssignConditionBuilder({ value, onChange }: AutoAssignCondit
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">ma wartość</Label>
+                <Label className="text-muted-foreground text-xs">ma wartość</Label>
                 <Select
                   value={currentValue}
                   onValueChange={handleValueChange}

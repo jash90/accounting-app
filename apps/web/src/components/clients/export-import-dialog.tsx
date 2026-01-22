@@ -117,10 +117,10 @@ export function ExportImportDialog({
           </TabsList>
 
           <TabsContent value="export" className="space-y-4">
-            <div className="text-center py-8">
-              <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground" />
+            <div className="py-8 text-center">
+              <FileSpreadsheet className="text-muted-foreground mx-auto h-12 w-12" />
               <h3 className="mt-4 text-lg font-medium">Eksport do CSV</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p className="text-muted-foreground mt-2 text-sm">
                 Pobierz listę wszystkich klientów w formacie CSV. Plik będzie zawierał wszystkie
                 aktualnie przefiltrowane dane.
               </p>
@@ -143,7 +143,7 @@ export function ExportImportDialog({
                 <div
                   role="presentation"
                   className={cn(
-                    'border-2 border-dashed rounded-lg p-8 text-center transition-colors',
+                    'rounded-lg border-2 border-dashed p-8 text-center transition-colors',
                     dragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25',
                     selectedFile && 'border-green-500 bg-green-50'
                   )}
@@ -170,7 +170,7 @@ export function ExportImportDialog({
                     <div>
                       <CheckCircle2 className="mx-auto h-10 w-10 text-green-500" />
                       <p className="mt-2 font-medium">{selectedFile.name}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-muted-foreground text-sm">
                         {(selectedFile.size / 1024).toFixed(1)} KB
                       </p>
                       <Button variant="link" size="sm" onClick={() => setSelectedFile(null)}>
@@ -179,8 +179,8 @@ export function ExportImportDialog({
                     </div>
                   ) : (
                     <div>
-                      <Upload className="mx-auto h-10 w-10 text-muted-foreground" />
-                      <p className="mt-2 text-sm text-muted-foreground">
+                      <Upload className="text-muted-foreground mx-auto h-10 w-10" />
+                      <p className="text-muted-foreground mt-2 text-sm">
                         Przeciągnij plik CSV tutaj lub{' '}
                         <button
                           type="button"
@@ -209,7 +209,7 @@ export function ExportImportDialog({
 
                 {isImporting && (
                   <div className="space-y-2">
-                    <p className="text-sm text-center">Importowanie...</p>
+                    <p className="text-center text-sm">Importowanie...</p>
                     <Progress value={undefined} className="w-full" />
                   </div>
                 )}
@@ -245,9 +245,9 @@ export function ExportImportDialog({
                 </Alert>
 
                 {importResult.errors.length > 0 && (
-                  <div className="max-h-40 overflow-y-auto border rounded p-2">
-                    <p className="text-sm font-medium mb-2">Szczegóły błędów:</p>
-                    <ul className="text-sm text-muted-foreground space-y-1">
+                  <div className="max-h-40 overflow-y-auto rounded border p-2">
+                    <p className="mb-2 text-sm font-medium">Szczegóły błędów:</p>
+                    <ul className="text-muted-foreground space-y-1 text-sm">
                       {importResult.errors.map((error, index) => (
                         <li key={index}>
                           Wiersz {error.row}, pole &quot;{error.field}&quot;: {error.message}

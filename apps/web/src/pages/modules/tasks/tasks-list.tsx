@@ -184,7 +184,7 @@ export default function TasksListPage() {
 
           const isOverdue = new Date(dueDate) < new Date() && row.original.status !== 'done';
           return (
-            <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
+            <span className={isOverdue ? 'font-medium text-red-600' : ''}>
               {format(new Date(dueDate), 'd MMM yyyy', { locale: pl })}
             </span>
           );
@@ -215,7 +215,7 @@ export default function TasksListPage() {
         accessorKey: 'client',
         header: 'Klient',
         cell: ({ row }) => (
-          <span className="text-sm truncate max-w-[150px] block">
+          <span className="block max-w-[150px] truncate text-sm">
             {row.original.client?.name || '-'}
           </span>
         ),
@@ -283,7 +283,7 @@ export default function TasksListPage() {
         description="Zarządzaj zadaniami - widok listy"
         icon={<CheckSquare className="h-6 w-6" />}
         titleAction={
-          <div className="flex items-center gap-1 border rounded-lg p-1">
+          <div className="flex items-center gap-1 rounded-lg border p-1">
             <Button variant="ghost" size="sm" className="bg-accent">
               <List className="h-4 w-4" />
             </Button>
@@ -314,11 +314,11 @@ export default function TasksListPage() {
       {selectedTasks.length > 0 && (
         <Card>
           <CardContent className="flex items-center justify-between py-3">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-muted-foreground text-sm">
               Zaznaczono {selectedTasks.length} zadań
             </span>
             <div className="flex items-center gap-2">
-              <span className="text-sm mr-2">Zmień status na:</span>
+              <span className="mr-2 text-sm">Zmień status na:</span>
               {Object.entries(TaskStatusLabels).map(([value, label]) => (
                 <Button
                   key={value}

@@ -155,9 +155,9 @@ export default function AIAgentChatPage() {
 
   if (conversationsLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="flex items-center gap-3 text-apptax-navy">
-          <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow animate-pulse" />
+      <div className="flex h-full items-center justify-center">
+        <div className="text-apptax-navy flex items-center gap-3">
+          <div className="bg-apptax-teal ai-glow h-3 w-3 animate-pulse rounded-full" />
           Ładowanie...
         </div>
       </div>
@@ -166,14 +166,14 @@ export default function AIAgentChatPage() {
 
   return (
     <div className="container mx-auto p-6" data-testid="ai-agent-chat-page">
-      <div className="flex gap-6 h-[calc(100vh-12rem)]">
+      <div className="flex h-[calc(100vh-12rem)] gap-6">
         {/* Conversations Sidebar */}
-        <Card className="w-80 flex flex-col" data-testid="conversations-sidebar">
+        <Card className="flex w-80 flex-col" data-testid="conversations-sidebar">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2" data-testid="conversations-title">
                 Rozmowy
-                <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
+                <div className="bg-apptax-teal ai-glow h-2 w-2 rounded-full" />
               </CardTitle>
               <Button
                 onClick={handleNewConversation}
@@ -203,16 +203,16 @@ export default function AIAgentChatPage() {
                       }
                     }}
                     className={cn(
-                      'w-full text-left p-3 rounded-lg transition-all duration-200 group cursor-pointer',
+                      'group w-full cursor-pointer rounded-lg p-3 text-left transition-all duration-200',
                       selectedConversationId === conv.id
-                        ? 'bg-apptax-blue text-white shadow-apptax-sm'
+                        ? 'bg-apptax-blue shadow-apptax-sm text-white'
                         : 'hover:bg-apptax-soft-teal'
                     )}
                     data-testid="conversation-item"
                   >
                     <div className="flex items-center justify-between">
                       <span
-                        className="font-medium truncate flex-1"
+                        className="flex-1 truncate font-medium"
                         data-testid="conversation-title"
                       >
                         {conv.title}
@@ -225,7 +225,7 @@ export default function AIAgentChatPage() {
                           handleDeleteConversation(conv.id);
                         }}
                         className={cn(
-                          'opacity-0 group-hover:opacity-100 h-7 w-7 p-0',
+                          'h-7 w-7 p-0 opacity-0 group-hover:opacity-100',
                           selectedConversationId === conv.id
                             ? 'hover:bg-white/20'
                             : 'hover:bg-destructive/10'
@@ -242,7 +242,7 @@ export default function AIAgentChatPage() {
                     </div>
                     <p
                       className={cn(
-                        'text-xs mt-1',
+                        'mt-1 text-xs',
                         selectedConversationId === conv.id
                           ? 'text-white/70'
                           : 'text-muted-foreground'
@@ -254,7 +254,7 @@ export default function AIAgentChatPage() {
                 ))}
                 {conversations?.length === 0 && (
                   <p
-                    className="text-muted-foreground text-sm text-center py-8"
+                    className="text-muted-foreground py-8 text-center text-sm"
                     data-testid="no-conversations"
                   >
                     Brak rozmów. Utwórz nową, aby rozpocząć!
@@ -266,10 +266,10 @@ export default function AIAgentChatPage() {
         </Card>
 
         {/* Chat Area */}
-        <Card className="flex-1 flex flex-col" data-testid="chat-area">
+        <Card className="flex flex-1 flex-col" data-testid="chat-area">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2" data-testid="ai-assistant-title">
-              <Sparkles className="h-5 w-5 text-apptax-teal" />
+              <Sparkles className="text-apptax-teal h-5 w-5" />
               Asystent AI
             </CardTitle>
             <CardDescription>
@@ -277,20 +277,20 @@ export default function AIAgentChatPage() {
             </CardDescription>
           </CardHeader>
           <Separator />
-          <CardContent className="flex-1 overflow-hidden p-0 flex flex-col">
+          <CardContent className="flex flex-1 flex-col overflow-hidden p-0">
             {/* Messages */}
             <ScrollArea className="flex-1 p-4" ref={scrollRef}>
               {currentConversation?.messages.length === 0 && (
                 <div
-                  className="flex items-center justify-center h-full text-muted-foreground"
+                  className="text-muted-foreground flex h-full items-center justify-center"
                   data-testid="empty-chat"
                 >
                   <div className="text-center">
-                    <div className="w-16 h-16 rounded-full bg-apptax-ai-gradient flex items-center justify-center mx-auto mb-4">
+                    <div className="bg-apptax-ai-gradient mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
                       <Bot className="h-8 w-8 text-white" />
                     </div>
-                    <p className="text-lg font-medium text-apptax-navy">Rozpocznij rozmowę</p>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-apptax-navy text-lg font-medium">Rozpocznij rozmowę</p>
+                    <p className="text-muted-foreground mt-1 text-sm">
                       Zapytaj asystenta AI o cokolwiek
                     </p>
                   </div>
@@ -311,13 +311,13 @@ export default function AIAgentChatPage() {
                       }
                     >
                       {msg.role === MessageRole.ASSISTANT && (
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-apptax-ai-gradient flex items-center justify-center ai-glow">
+                        <div className="bg-apptax-ai-gradient ai-glow flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
                           <Bot className="h-4 w-4 text-white" />
                         </div>
                       )}
                       <div
                         className={cn(
-                          'rounded-xl px-4 py-3 max-w-[70%]',
+                          'max-w-[70%] rounded-xl px-4 py-3',
                           msg.role === MessageRole.USER
                             ? 'bg-apptax-blue text-white'
                             : 'bg-apptax-soft-teal text-apptax-navy'
@@ -328,7 +328,7 @@ export default function AIAgentChatPage() {
                         </p>
                         <p
                           className={cn(
-                            'text-xs mt-2',
+                            'mt-2 text-xs',
                             msg.role === MessageRole.USER ? 'text-white/70' : 'text-apptax-navy/50'
                           )}
                           data-testid="token-count"
@@ -338,7 +338,7 @@ export default function AIAgentChatPage() {
                         </p>
                       </div>
                       {msg.role === MessageRole.USER && (
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-apptax-navy flex items-center justify-center">
+                        <div className="bg-apptax-navy flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
                           <User className="h-4 w-4 text-white" />
                         </div>
                       )}
@@ -347,13 +347,13 @@ export default function AIAgentChatPage() {
                 {/* Streaming content or thinking indicator */}
                 {isStreaming && streamingContent && (
                   <div className="flex gap-3" data-testid="streaming-message">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-apptax-ai-gradient flex items-center justify-center ai-glow">
+                    <div className="bg-apptax-ai-gradient ai-glow flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
                       <Bot className="h-4 w-4 text-white" />
                     </div>
-                    <div className="bg-apptax-soft-teal rounded-xl px-4 py-3 max-w-[70%]">
-                      <p className="whitespace-pre-wrap text-apptax-navy">{streamingContent}</p>
-                      <p className="text-xs mt-2 text-apptax-navy/50 flex items-center gap-2">
-                        <span className="inline-block w-2 h-2 rounded-full bg-apptax-teal animate-pulse" />
+                    <div className="bg-apptax-soft-teal max-w-[70%] rounded-xl px-4 py-3">
+                      <p className="text-apptax-navy whitespace-pre-wrap">{streamingContent}</p>
+                      <p className="text-apptax-navy/50 mt-2 flex items-center gap-2 text-xs">
+                        <span className="bg-apptax-teal inline-block h-2 w-2 animate-pulse rounded-full" />
                         Przesyłanie...
                       </p>
                     </div>
@@ -361,12 +361,12 @@ export default function AIAgentChatPage() {
                 )}
                 {isSending && !streamingContent && (
                   <div className="flex gap-3" data-testid="thinking-indicator">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-apptax-ai-gradient flex items-center justify-center ai-glow">
-                      <Bot className="h-4 w-4 text-white animate-pulse" />
+                    <div className="bg-apptax-ai-gradient ai-glow flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
+                      <Bot className="h-4 w-4 animate-pulse text-white" />
                     </div>
                     <div className="bg-apptax-soft-teal rounded-xl px-4 py-3">
                       <p className="text-apptax-navy flex items-center gap-2">
-                        <span className="inline-block w-2 h-2 rounded-full bg-apptax-teal animate-pulse" />
+                        <span className="bg-apptax-teal inline-block h-2 w-2 animate-pulse rounded-full" />
                         Myślę...
                       </p>
                     </div>
@@ -377,7 +377,7 @@ export default function AIAgentChatPage() {
 
             {/* Token/Message Info Bar */}
             {currentConversation && (
-              <div className="px-4 py-2 bg-apptax-warm-gray/30 border-t text-xs text-muted-foreground flex items-center justify-between">
+              <div className="bg-apptax-warm-gray/30 text-muted-foreground flex items-center justify-between border-t px-4 py-2 text-xs">
                 <div className="flex items-center gap-4">
                   <span className="flex items-center gap-1">
                     <MessageSquare className="h-3 w-3" />
@@ -392,7 +392,7 @@ export default function AIAgentChatPage() {
                   </span>
                 </div>
                 {rateLimitHit && (
-                  <span className="text-amber-600 flex items-center gap-1">
+                  <span className="flex items-center gap-1 text-amber-600">
                     <AlertCircle className="h-3 w-3" />
                     Osiągnięto limit - poczekaj przed wysłaniem kolejnych wiadomości
                   </span>
@@ -401,7 +401,7 @@ export default function AIAgentChatPage() {
             )}
 
             {/* Input Form */}
-            <div className="p-4 border-t bg-apptax-warm-gray/50" data-testid="message-input-area">
+            <div className="bg-apptax-warm-gray/50 border-t p-4" data-testid="message-input-area">
               <form onSubmit={handleSendMessage} className="flex gap-3">
                 <Input
                   type="text"

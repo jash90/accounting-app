@@ -306,21 +306,21 @@ function EmailComposeForm({
   const isUploading = uploadAttachment.isPending;
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="border-b p-4 flex items-center justify-between">
+    <div className="flex h-full flex-col">
+      <div className="flex items-center justify-between border-b p-4">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={onNavigateToInbox}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-2xl font-bold">{draftId ? 'Edytuj szkic' : 'Nowa wiadomość'}</h1>
           {existingDraft?.isAiGenerated && (
-            <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full flex items-center gap-1">
+            <span className="flex items-center gap-1 rounded-full bg-purple-100 px-2 py-1 text-xs text-purple-800">
               <Sparkles className="h-3 w-3" />
               Wygenerowane przez AI
             </span>
           )}
           {attachments.length > 0 && (
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full flex items-center gap-1">
+            <span className="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800">
               <Paperclip className="h-3 w-3" />
               {attachments.length} {attachments.length === 1 ? 'załącznik' : 'załączniki'}
             </span>
@@ -329,9 +329,9 @@ function EmailComposeForm({
         <div className="flex gap-2">
           <Button onClick={handleSaveDraft} variant="outline" size="sm" disabled={isSaving}>
             {isSaving ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="mr-2 h-4 w-4" />
             )}
             {draftId ? 'Zapisz zmiany' : 'Zapisz szkic'}
           </Button>
@@ -343,26 +343,26 @@ function EmailComposeForm({
               disabled={aiStreamIsStreaming}
             >
               {aiStreamIsStreaming ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <Sparkles className="h-4 w-4 mr-2" />
+                <Sparkles className="mr-2 h-4 w-4" />
               )}
               Wygeneruj AI
             </Button>
           )}
           <Button onClick={handleSend} size="sm" disabled={isSending}>
             {isSending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <Send className="h-4 w-4 mr-2" />
+              <Send className="mr-2 h-4 w-4" />
             )}
             Wyślij
           </Button>
         </div>
       </div>
 
-      <div className="flex-1 p-6 overflow-auto">
-        <div className="max-w-4xl mx-auto space-y-4">
+      <div className="flex-1 overflow-auto p-6">
+        <div className="mx-auto max-w-4xl space-y-4">
           <div>
             <Label htmlFor="to">Do</Label>
             <Input
@@ -371,21 +371,21 @@ function EmailComposeForm({
               value={to}
               onChange={(e) => setTo(e.target.value)}
             />
-            <p className="text-xs text-muted-foreground mt-1">Oddziel wiele adresów przecinkami</p>
+            <p className="text-muted-foreground mt-1 text-xs">Oddziel wiele adresów przecinkami</p>
           </div>
 
           <Collapsible open={showCcBcc} onOpenChange={setShowCcBcc}>
             <CollapsibleTrigger asChild>
               <Button variant="ghost" size="sm" className="text-muted-foreground">
                 {showCcBcc ? (
-                  <ChevronUp className="h-4 w-4 mr-1" />
+                  <ChevronUp className="mr-1 h-4 w-4" />
                 ) : (
-                  <ChevronDown className="h-4 w-4 mr-1" />
+                  <ChevronDown className="mr-1 h-4 w-4" />
                 )}
                 {showCcBcc ? 'Ukryj DW/UDW' : 'Dodaj DW/UDW'}
               </Button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 mt-2">
+            <CollapsibleContent className="mt-2 space-y-4">
               <div>
                 <Label htmlFor="cc">DW (Do wiadomości)</Label>
                 <Input
@@ -418,10 +418,10 @@ function EmailComposeForm({
           </div>
 
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
+            <div className="mb-1.5 flex items-center gap-2">
               <Label htmlFor="content">Wiadomość</Label>
               {(aiStreamIsStreaming || (locationState?.aiGenerate && !content)) && (
-                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                <span className="flex animate-pulse items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-800">
                   <Sparkles className="h-3 w-3" />
                   Generowanie AI...
                 </span>
@@ -429,12 +429,12 @@ function EmailComposeForm({
             </div>
             <div className="relative">
               {(aiStreamIsStreaming || locationState?.aiGenerate) && !displayContent && (
-                <div className="absolute inset-0 bg-background rounded-md border p-3 space-y-2 z-10">
-                  <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
-                  <div className="h-4 bg-muted rounded animate-pulse w-full" />
-                  <div className="h-4 bg-muted rounded animate-pulse w-5/6" />
-                  <div className="h-4 bg-muted rounded animate-pulse w-2/3" />
-                  <div className="h-4 bg-muted rounded animate-pulse w-4/5" />
+                <div className="bg-background absolute inset-0 z-10 space-y-2 rounded-md border p-3">
+                  <div className="bg-muted h-4 w-3/4 animate-pulse rounded" />
+                  <div className="bg-muted h-4 w-full animate-pulse rounded" />
+                  <div className="bg-muted h-4 w-5/6 animate-pulse rounded" />
+                  <div className="bg-muted h-4 w-2/3 animate-pulse rounded" />
+                  <div className="bg-muted h-4 w-4/5 animate-pulse rounded" />
                 </div>
               )}
               <Textarea
@@ -468,7 +468,7 @@ function EmailComposeForm({
                   document.getElementById('file-upload')?.click();
                 }
               }}
-              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+              className={`focus:ring-ring cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors focus:ring-2 focus:ring-offset-2 focus:outline-none ${
                 isDragging
                   ? 'border-primary bg-primary/5'
                   : 'border-muted-foreground/25 hover:border-muted-foreground/50'
@@ -483,19 +483,19 @@ function EmailComposeForm({
               />
               <label
                 htmlFor="file-upload"
-                className="cursor-pointer flex flex-col items-center gap-2"
+                className="flex cursor-pointer flex-col items-center gap-2"
               >
                 {isUploading ? (
-                  <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
+                  <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
                 ) : (
-                  <Upload className="h-8 w-8 text-muted-foreground" />
+                  <Upload className="text-muted-foreground h-8 w-8" />
                 )}
-                <span className="text-sm text-muted-foreground">
+                <span className="text-muted-foreground text-sm">
                   {isUploading
                     ? 'Przesyłanie...'
                     : 'Przeciągnij i upuść pliki tutaj lub kliknij, aby przeglądać'}
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-muted-foreground text-xs">
                   Maksymalny rozmiar pliku: 10MB
                 </span>
               </label>
@@ -507,13 +507,13 @@ function EmailComposeForm({
                 {attachments.map((attachment, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                    className="bg-muted/50 flex items-center justify-between rounded-lg p-3"
                   >
                     <div className="flex items-center gap-3">
-                      <FileIcon className="h-5 w-5 text-muted-foreground" />
+                      <FileIcon className="text-muted-foreground h-5 w-5" />
                       <div>
                         <p className="text-sm font-medium">{attachment.filename}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-muted-foreground text-xs">
                           {formatFileSize(attachment.size)}
                         </p>
                       </div>
@@ -585,10 +585,10 @@ export default function EmailCompose() {
 
   if (isDraftLoading) {
     return (
-      <div className="h-full flex items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
-          <p className="mt-2 text-sm text-muted-foreground">Ładowanie szkicu...</p>
+          <Loader2 className="text-muted-foreground mx-auto h-8 w-8 animate-spin" />
+          <p className="text-muted-foreground mt-2 text-sm">Ładowanie szkicu...</p>
         </div>
       </div>
     );

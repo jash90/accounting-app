@@ -82,7 +82,7 @@ const IconImage = memo(function IconImage({ src, alt }: { src: string; alt: stri
     return null;
   }
 
-  return <img ref={imgRef} src={src} alt={alt} className="w-12 h-12 object-contain" />;
+  return <img ref={imgRef} src={src} alt={alt} className="h-12 w-12 object-contain" />;
 });
 
 export default function ClientsSettingsPage() {
@@ -228,7 +228,7 @@ export default function ClientsSettingsPage() {
               ))}
             </div>
           ) : fieldDefinitions.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
+            <p className="text-muted-foreground py-8 text-center">
               Brak zdefiniowanych pól niestandardowych
             </p>
           ) : (
@@ -248,7 +248,7 @@ export default function ClientsSettingsPage() {
                 {fieldDefinitions.map((field) => (
                   <TableRow key={field.id}>
                     <TableCell className="font-medium">{field.label}</TableCell>
-                    <TableCell className="font-mono text-sm text-muted-foreground">
+                    <TableCell className="text-muted-foreground font-mono text-sm">
                       {field.name}
                     </TableCell>
                     <TableCell>
@@ -319,31 +319,31 @@ export default function ClientsSettingsPage() {
         </CardHeader>
         <CardContent>
           {loadingIcons ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               {[1, 2, 3, 4].map((i) => (
                 <Skeleton key={i} className="h-24 w-full" />
               ))}
             </div>
           ) : icons.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">Brak zdefiniowanych ikon</p>
+            <p className="text-muted-foreground py-8 text-center">Brak zdefiniowanych ikon</p>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
               {icons.map((icon) => (
                 <div
                   key={icon.id}
-                  className="border rounded-lg p-4 flex flex-col items-center gap-2 relative group"
+                  className="group relative flex flex-col items-center gap-2 rounded-lg border p-4"
                   style={{
                     borderColor: icon.color || '#e5e7eb',
                   }}
                 >
                   {icon.filePath && <IconImage src={icon.filePath} alt={icon.name} />}
-                  <span className="text-sm font-medium text-center">{icon.name}</span>
+                  <span className="text-center text-sm font-medium">{icon.name}</span>
                   {!icon.isActive && (
                     <Badge variant="outline" className="text-xs">
                       Nieaktywna
                     </Badge>
                   )}
-                  <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-1 right-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <Button
                       size="icon"
                       variant="ghost"
@@ -356,7 +356,7 @@ export default function ClientsSettingsPage() {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-6 w-6 text-destructive hover:text-destructive"
+                      className="text-destructive hover:text-destructive h-6 w-6"
                       onClick={() => setDeletingIcon(icon)}
                       aria-label={`Usuń ikonę ${icon.name}`}
                     >

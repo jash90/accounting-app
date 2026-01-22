@@ -24,7 +24,7 @@ const columns: ColumnDef<CompanyDto>[] = [
   {
     accessorKey: 'name',
     header: 'Nazwa',
-    cell: ({ row }) => <div className="font-medium text-apptax-navy">{row.original.name}</div>,
+    cell: ({ row }) => <div className="text-apptax-navy font-medium">{row.original.name}</div>,
   },
   {
     accessorKey: 'owner',
@@ -70,38 +70,38 @@ export default function CompaniesListPage() {
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:bg-apptax-soft-teal"
+            className="hover:bg-apptax-soft-teal h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               navigate(`/admin/companies/${row.original.id}/modules`);
             }}
             title="Zarządzaj modułami"
           >
-            <Package className="h-4 w-4 text-apptax-teal" />
+            <Package className="text-apptax-teal h-4 w-4" />
           </Button>
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:bg-apptax-soft-teal"
+            className="hover:bg-apptax-soft-teal h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               setEditingCompany(row.original);
             }}
             title="Edytuj firmę"
           >
-            <Edit className="h-4 w-4 text-apptax-blue" />
+            <Edit className="text-apptax-blue h-4 w-4" />
           </Button>
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:bg-destructive/10"
+            className="hover:bg-destructive/10 h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               setDeletingCompany(row.original);
             }}
             title="Usuń firmę"
           >
-            <Trash2 className="h-4 w-4 text-destructive" />
+            <Trash2 className="text-destructive h-4 w-4" />
           </Button>
         </div>
       ),

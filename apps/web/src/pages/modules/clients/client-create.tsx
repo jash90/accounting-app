@@ -38,10 +38,10 @@ function ClientCreateErrorFallback() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-      <AlertTriangle className="h-16 w-16 text-destructive" />
+    <div className="flex min-h-[400px] flex-col items-center justify-center space-y-4">
+      <AlertTriangle className="text-destructive h-16 w-16" />
       <h2 className="text-xl font-semibold">Wystąpił błąd</h2>
-      <p className="text-muted-foreground text-center max-w-md">
+      <p className="text-muted-foreground max-w-md text-center">
         Nie udało się załadować formularza. Proszę odświeżyć stronę lub spróbować później.
       </p>
       <div className="flex gap-2">
@@ -267,9 +267,9 @@ function ClientCreateForm() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Main content - left column */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="space-y-6 lg:col-span-2">
               <BasicInfoCard control={form.control as unknown as Control<FieldValues>} />
               <TaxEmploymentCard control={form.control as unknown as Control<FieldValues>} />
               <AdditionalInfoCard control={form.control as unknown as Control<FieldValues>} />

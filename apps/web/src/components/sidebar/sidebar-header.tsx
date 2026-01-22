@@ -13,7 +13,7 @@ export function SidebarHeader({ title }: SidebarHeaderProps) {
   return (
     <div
       className={cn(
-        'flex items-center p-4 border-b border-white/10',
+        'flex items-center border-b border-white/10 p-4',
         isOpen ? 'justify-between' : 'justify-center'
       )}
     >
@@ -24,13 +24,13 @@ export function SidebarHeader({ title }: SidebarHeaderProps) {
             <span className="text-sm font-bold text-white">
               App<span className="text-apptax-light-blue">Tax</span>
             </span>
-            <span className="text-[10px] text-white/60 uppercase tracking-wider">{title}</span>
+            <span className="text-[10px] tracking-wider text-white/60 uppercase">{title}</span>
           </div>
         </div>
       )}
       <button
         onClick={toggle}
-        className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+        className="rounded-lg p-2 transition-colors hover:bg-white/10"
         aria-label={isOpen ? 'Zwiń pasek boczny' : 'Rozwiń pasek boczny'}
       >
         {isOpen ? (

@@ -201,7 +201,7 @@ export function TaskFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <DialogTitle>{isEditing ? 'Edytuj zadanie' : 'Nowe zadanie'}</DialogTitle>
@@ -309,7 +309,7 @@ export function TaskFormDialog({
             </div>
 
             {/* Dates */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="startDate"
@@ -333,7 +333,7 @@ export function TaskFormDialog({
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 z-[200]" align="start" sideOffset={4}>
+                      <PopoverContent className="z-[200] w-auto p-0" align="start" sideOffset={4}>
                         <Calendar
                           mode="single"
                           selected={field.value || undefined}
@@ -370,7 +370,7 @@ export function TaskFormDialog({
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 z-[200]" align="start" sideOffset={4}>
+                      <PopoverContent className="z-[200] w-auto p-0" align="start" sideOffset={4}>
                         <Calendar
                           mode="single"
                           selected={field.value || undefined}
@@ -436,7 +436,7 @@ export function TaskFormDialog({
             />
 
             {/* Assignee and Client */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="assigneeId"
@@ -520,7 +520,7 @@ export function TaskFormDialog({
                   );
                 })}
                 {labels.length === 0 && (
-                  <span className="text-sm text-muted-foreground">Brak dostępnych etykiet</span>
+                  <span className="text-muted-foreground text-sm">Brak dostępnych etykiet</span>
                 )}
               </div>
             </FormItem>

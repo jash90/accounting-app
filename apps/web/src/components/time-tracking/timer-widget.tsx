@@ -214,7 +214,7 @@ function TimerForm({
           <div className="flex items-center gap-3">
             <div
               className={cn(
-                'text-xl font-mono font-semibold tabular-nums flex items-center gap-2',
+                'flex items-center gap-2 font-mono text-xl font-semibold tabular-nums',
                 isRunning && 'text-green-600'
               )}
               aria-live="polite"
@@ -223,7 +223,7 @@ function TimerForm({
               {formattedTime}
               {isRunning && (
                 <span
-                  className="text-xs font-normal bg-green-100 text-green-700 px-1.5 py-0.5 rounded"
+                  className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-normal text-green-700"
                   aria-label="Timer aktywny"
                 >
                   Aktywny
@@ -235,7 +235,7 @@ function TimerForm({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               onBlur={handleDescriptionBlur}
-              className="flex-1 h-9"
+              className="h-9 flex-1"
               disabled={startTimer.isPending || stopTimer.isPending}
             />
             {isRunning ? (
@@ -278,12 +278,12 @@ function TimerForm({
 
   return (
     <Card className={cn('w-full', className)}>
-      <CardContent className="p-4 space-y-4">
+      <CardContent className="space-y-4 p-4">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
             <div
               className={cn(
-                'text-3xl font-mono font-semibold tabular-nums min-w-[140px]',
+                'min-w-[140px] font-mono text-3xl font-semibold tabular-nums',
                 isRunning && 'text-green-600'
               )}
               aria-live="polite"
@@ -293,7 +293,7 @@ function TimerForm({
             </div>
             {isRunning && (
               <span
-                className="text-xs font-medium bg-green-100 text-green-700 px-2 py-1 rounded"
+                className="rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-700"
                 aria-label="Timer aktywny"
               >
                 Aktywny
@@ -316,7 +316,7 @@ function TimerForm({
                 disabled={stopTimer.isPending}
                 aria-label="Zatrzymaj timer"
               >
-                <Square className="h-4 w-4 mr-2" aria-hidden="true" />
+                <Square className="mr-2 h-4 w-4" aria-hidden="true" />
                 Stop
               </Button>
               <Button
@@ -335,14 +335,14 @@ function TimerForm({
               className="bg-green-600 hover:bg-green-700"
               aria-label="Rozpocznij timer"
             >
-              <Play className="h-4 w-4 mr-2" aria-hidden="true" />
+              <Play className="mr-2 h-4 w-4" aria-hidden="true" />
               Start
             </Button>
           )}
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex-1 min-w-[200px]">
+          <div className="min-w-[200px] flex-1">
             <Select
               value={clientId || '__none__'}
               onValueChange={handleClientChange}
@@ -395,7 +395,7 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
       <Card className={cn('w-full', className)}>
         <CardContent className="p-4">
           <div className="flex items-center justify-center">
-            <Clock className="h-5 w-5 animate-pulse text-muted-foreground" />
+            <Clock className="text-muted-foreground h-5 w-5 animate-pulse" />
           </div>
         </CardContent>
       </Card>

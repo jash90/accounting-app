@@ -69,7 +69,7 @@ export function IconBadge({ icon, size = 'md', showTooltip = true, className }: 
       case IconType.EMOJI: {
         return (
           <span
-            className={cn('flex items-center justify-center shrink-0', emojiSizeClasses[size])}
+            className={cn('flex shrink-0 items-center justify-center', emojiSizeClasses[size])}
             role="img"
             aria-label={icon.name}
           >
@@ -84,7 +84,7 @@ export function IconBadge({ icon, size = 'md', showTooltip = true, className }: 
           return (
             <div
               className={cn(
-                'rounded-full bg-muted flex items-center justify-center',
+                'bg-muted flex items-center justify-center rounded-full',
                 sizeClasses[size]
               )}
               style={icon.color ? { backgroundColor: icon.color } : undefined}
@@ -98,7 +98,7 @@ export function IconBadge({ icon, size = 'md', showTooltip = true, className }: 
           <img
             src={`/api/modules/clients/icons/${icon.id}/file`}
             alt={icon.name}
-            className={cn('object-contain rounded', sizeClasses[size])}
+            className={cn('rounded object-contain', sizeClasses[size])}
           />
         );
       }
@@ -163,10 +163,10 @@ export function IconBadgeList({
             <TooltipTrigger asChild>
               <div
                 className={cn(
-                  'inline-flex items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-medium',
-                  size === 'sm' && 'w-5 h-5',
-                  size === 'md' && 'w-6 h-6',
-                  size === 'lg' && 'w-8 h-8'
+                  'bg-muted text-muted-foreground inline-flex items-center justify-center rounded-full text-xs font-medium',
+                  size === 'sm' && 'h-5 w-5',
+                  size === 'md' && 'h-6 w-6',
+                  size === 'lg' && 'h-8 w-8'
                 )}
               >
                 +{hiddenCount}

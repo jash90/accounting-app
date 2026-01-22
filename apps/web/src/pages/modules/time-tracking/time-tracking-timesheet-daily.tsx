@@ -31,7 +31,7 @@ export default function TimeTrackingTimesheetDailyPage() {
   const basePath = getBasePath();
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto space-y-6 p-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" onClick={() => navigate(basePath)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -45,7 +45,7 @@ export default function TimeTrackingTimesheetDailyPage() {
         icon={<Calendar className="h-6 w-6" />}
         titleAction={
           <div
-            className="flex items-center gap-1 border rounded-lg p-1"
+            className="flex items-center gap-1 rounded-lg border p-1"
             role="group"
             aria-label="Widok timesheet"
           >

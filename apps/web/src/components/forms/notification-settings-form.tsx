@@ -69,9 +69,9 @@ export function NotificationSettingsForm({
       <CardHeader>
         <div className="flex items-center gap-2">
           {hasAnyNotification ? (
-            <Bell className="h-5 w-5 text-apptax-blue" />
+            <Bell className="text-apptax-blue h-5 w-5" />
           ) : (
-            <BellOff className="h-5 w-5 text-muted-foreground" />
+            <BellOff className="text-muted-foreground h-5 w-5" />
           )}
           <CardTitle>Ustawienia powiadomień</CardTitle>
         </div>

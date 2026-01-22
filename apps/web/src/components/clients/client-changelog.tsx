@@ -44,21 +44,21 @@ function ChangelogEntry({ entry }: { entry: ChangeLogResponseDto }) {
   const changedKeys = new Set([...Object.keys(oldValues), ...Object.keys(newValues)]);
 
   return (
-    <div className="border-l-2 border-apptax-soft-teal pl-4 pb-4 relative">
-      <div className="absolute w-3 h-3 bg-apptax-blue rounded-full -left-[7px] top-0" />
+    <div className="border-apptax-soft-teal relative border-l-2 pb-4 pl-4">
+      <div className="bg-apptax-blue absolute top-0 -left-[7px] h-3 w-3 rounded-full" />
 
-      <div className="flex items-center gap-2 mb-2">
+      <div className="mb-2 flex items-center gap-2">
         <Badge variant={config.variant} className="gap-1">
           {config.icon}
           {config.label}
         </Badge>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-muted-foreground text-xs">
           {new Date(entry.createdAt).toLocaleString('pl-PL')}
         </span>
       </div>
 
       {entry.user && (
-        <p className="text-sm text-muted-foreground mb-2">
+        <p className="text-muted-foreground mb-2 text-sm">
           przez {entry.user.firstName} {entry.user.lastName}
         </p>
       )}
@@ -76,11 +76,11 @@ function ChangelogEntry({ entry }: { entry: ChangeLogResponseDto }) {
       )}
 
       {entry.action === ChangeAction.CREATE && (
-        <p className="text-sm text-muted-foreground">Klient został utworzony</p>
+        <p className="text-muted-foreground text-sm">Klient został utworzony</p>
       )}
 
       {entry.action === ChangeAction.DELETE && (
-        <p className="text-sm text-muted-foreground">Klient został usunięty (dezaktywowany)</p>
+        <p className="text-muted-foreground text-sm">Klient został usunięty (dezaktywowany)</p>
       )}
     </div>
   );
@@ -103,7 +103,7 @@ export function ClientChangelog({ clientId }: ClientChangelogProps) {
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex gap-4">
                 <Skeleton className="h-3 w-3 rounded-full" />
-                <div className="space-y-2 flex-1">
+                <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-3 w-48" />
                 </div>
@@ -125,7 +125,7 @@ export function ClientChangelog({ clientId }: ClientChangelogProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-destructive">Nie udało się załadować historii zmian</p>
+          <p className="text-destructive text-sm">Nie udało się załadować historii zmian</p>
         </CardContent>
       </Card>
     );
@@ -149,7 +149,7 @@ export function ClientChangelog({ clientId }: ClientChangelogProps) {
             </div>
           </ScrollArea>
         ) : (
-          <p className="text-sm text-muted-foreground text-center py-8">
+          <p className="text-muted-foreground py-8 text-center text-sm">
             Brak historii zmian dla tego klienta
           </p>
         )}

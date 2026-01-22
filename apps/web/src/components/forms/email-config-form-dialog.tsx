@@ -215,7 +215,7 @@ export function EmailConfigFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
@@ -247,8 +247,8 @@ export function EmailConfigFormDialog({
             {/* SMTP Configuration Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Send className="h-4 w-4 text-apptax-blue" />
-                <h3 className="text-lg font-semibold text-apptax-navy">
+                <Send className="text-apptax-blue h-4 w-4" />
+                <h3 className="text-apptax-navy text-lg font-semibold">
                   Konfiguracja SMTP (poczta wychodząca)
                 </h3>
               </div>
@@ -295,7 +295,7 @@ export function EmailConfigFormDialog({
               {(form.watch('smtpPort') === 465 || form.watch('smtpPort') === 587) && (
                 <Alert className="border-amber-200 bg-amber-50">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-amber-800 text-sm">
+                  <AlertDescription className="text-sm text-amber-800">
                     Niektórzy dostawcy email wymagają włączenia dostępu SMTP w panelu użytkownika
                     konta email. Jeśli napotkasz błędy uwierzytelniania, sprawdź ustawienia
                     bezpieczeństwa w panelu dostawcy email.
@@ -383,8 +383,8 @@ export function EmailConfigFormDialog({
             {/* IMAP Configuration Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Download className="h-4 w-4 text-apptax-teal" />
-                <h3 className="text-lg font-semibold text-apptax-navy">
+                <Download className="text-apptax-teal h-4 w-4" />
+                <h3 className="text-apptax-navy text-lg font-semibold">
                   Konfiguracja IMAP (poczta przychodząca)
                 </h3>
               </div>
@@ -431,7 +431,7 @@ export function EmailConfigFormDialog({
               {form.watch('imapPort') === 993 && (
                 <Alert className="border-amber-200 bg-amber-50">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-amber-800 text-sm">
+                  <AlertDescription className="text-sm text-amber-800">
                     Niektórzy dostawcy email wymagają włączenia dostępu IMAP w panelu użytkownika
                     konta email. Jeśli napotkasz błędy uwierzytelniania, sprawdź ustawienia
                     bezpieczeństwa w panelu dostawcy email.

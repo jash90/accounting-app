@@ -49,7 +49,7 @@ export function ColumnVisibilityDropdown({
           >
             {column.label}
             {column.alwaysVisible && (
-              <span className="ml-auto text-xs text-muted-foreground">(zawsze)</span>
+              <span className="text-muted-foreground ml-auto text-xs">(zawsze)</span>
             )}
           </DropdownMenuCheckboxItem>
         ))}

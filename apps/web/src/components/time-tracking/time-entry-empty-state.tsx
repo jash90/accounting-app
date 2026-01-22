@@ -6,9 +6,9 @@ interface TimeEntryEmptyStateProps {
 
 export function TimeEntryEmptyState({ hasActiveFilters }: TimeEntryEmptyStateProps) {
   return (
-    <div className="text-center py-6">
-      <Clock className="h-12 w-12 mx-auto text-muted-foreground/50 mb-2" />
-      <p className="text-sm text-muted-foreground">
+    <div className="py-6 text-center">
+      <Clock className="text-muted-foreground/50 mx-auto mb-2 h-12 w-12" />
+      <p className="text-muted-foreground text-sm">
         {hasActiveFilters ? 'Brak wpisów spełniających kryteria filtrowania' : 'Brak wpisów czasu'}
       </p>
     </div>

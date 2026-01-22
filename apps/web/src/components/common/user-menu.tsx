@@ -44,52 +44,52 @@ export function UserMenu() {
         <Button
           data-testid="user-menu-button"
           variant="ghost"
-          className="relative h-10 w-10 rounded-full hover:bg-apptax-soft-teal transition-colors"
+          className="hover:bg-apptax-soft-teal relative h-10 w-10 rounded-full transition-colors"
         >
           <Avatar>
-            <AvatarFallback className="bg-apptax-blue text-white font-semibold">
+            <AvatarFallback className="bg-apptax-blue font-semibold text-white">
               {initials}
             </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 shadow-apptax-md" align="end">
+      <DropdownMenuContent className="shadow-apptax-md w-56" align="end">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-semibold text-apptax-navy">
+            <p className="text-apptax-navy text-sm font-semibold">
               {user.firstName} {user.lastName}
             </p>
-            <p className="text-xs text-muted-foreground">{user.email}</p>
+            <p className="text-muted-foreground text-xs">{user.email}</p>
             <Badge
               variant="outline"
-              className="text-xs w-fit mt-1 border-apptax-blue text-apptax-blue"
+              className="border-apptax-blue text-apptax-blue mt-1 w-fit text-xs"
             >
               {user.role}
             </Badge>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer hover:bg-apptax-soft-teal">
-          <User className="mr-2 h-4 w-4 text-apptax-navy" />
+        <DropdownMenuItem className="hover:bg-apptax-soft-teal cursor-pointer">
+          <User className="text-apptax-navy mr-2 h-4 w-4" />
           Profil
         </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer hover:bg-apptax-soft-teal">
-          <Settings className="mr-2 h-4 w-4 text-apptax-navy" />
+        <DropdownMenuItem className="hover:bg-apptax-soft-teal cursor-pointer">
+          <Settings className="text-apptax-navy mr-2 h-4 w-4" />
           Ustawienia
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => navigate('/settings/email-config')}
-          className="cursor-pointer hover:bg-apptax-soft-teal"
+          className="hover:bg-apptax-soft-teal cursor-pointer"
         >
-          <Mail className="mr-2 h-4 w-4 text-apptax-navy" />
+          <Mail className="text-apptax-navy mr-2 h-4 w-4" />
           Konto email
         </DropdownMenuItem>
         {companyEmailConfigPath && (
           <DropdownMenuItem
             onClick={() => navigate(companyEmailConfigPath)}
-            className="cursor-pointer hover:bg-apptax-soft-teal"
+            className="hover:bg-apptax-soft-teal cursor-pointer"
           >
-            <Building2 className="mr-2 h-4 w-4 text-apptax-navy" />
+            <Building2 className="text-apptax-navy mr-2 h-4 w-4" />
             Konto firmowe email
           </DropdownMenuItem>
         )}
@@ -97,7 +97,7 @@ export function UserMenu() {
         <DropdownMenuItem
           data-testid="logout-button"
           onClick={logout}
-          className="text-destructive cursor-pointer focus:text-destructive focus:bg-destructive/10"
+          className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
         >
           <LogOut className="mr-2 h-4 w-4" />
           Wyloguj

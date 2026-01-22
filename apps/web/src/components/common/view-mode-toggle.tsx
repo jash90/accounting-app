@@ -12,15 +12,15 @@ interface ViewModeToggleProps {
 
 export function ViewModeToggle({ viewMode, onViewModeChange, className }: ViewModeToggleProps) {
   return (
-    <div className={cn('inline-flex rounded-lg border border-apptax-soft-teal/50 p-1', className)}>
+    <div className={cn('border-apptax-soft-teal/50 inline-flex rounded-lg border p-1', className)}>
       <Button
         variant="ghost"
         size="sm"
         onClick={() => onViewModeChange('table')}
         className={cn(
-          'h-8 px-3 rounded-md transition-all',
+          'h-8 rounded-md px-3 transition-all',
           viewMode === 'table'
-            ? 'bg-apptax-blue text-white hover:bg-apptax-blue/90'
+            ? 'bg-apptax-blue hover:bg-apptax-blue/90 text-white'
             : 'hover:bg-apptax-soft-teal/30'
         )}
         aria-label="Widok tabeli"
@@ -33,9 +33,9 @@ export function ViewModeToggle({ viewMode, onViewModeChange, className }: ViewMo
         size="sm"
         onClick={() => onViewModeChange('grid')}
         className={cn(
-          'h-8 px-3 rounded-md transition-all',
+          'h-8 rounded-md px-3 transition-all',
           viewMode === 'grid'
-            ? 'bg-apptax-blue text-white hover:bg-apptax-blue/90'
+            ? 'bg-apptax-blue hover:bg-apptax-blue/90 text-white'
             : 'hover:bg-apptax-soft-teal/30'
         )}
         aria-label="Widok siatki"

@@ -96,7 +96,7 @@ export function AttachmentUpload({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+        className={`rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
           isDragging
             ? 'border-primary bg-primary/5'
             : 'border-muted-foreground/25 hover:border-muted-foreground/50'
@@ -109,18 +109,18 @@ export function AttachmentUpload({
           className="hidden"
           onChange={(e) => handleFileUpload(e.target.files)}
         />
-        <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center gap-2">
+        <label htmlFor="file-upload" className="flex cursor-pointer flex-col items-center gap-2">
           {isUploading ? (
-            <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
+            <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
           ) : (
-            <Upload className="h-8 w-8 text-muted-foreground" />
+            <Upload className="text-muted-foreground h-8 w-8" />
           )}
-          <span className="text-sm text-muted-foreground">
+          <span className="text-muted-foreground text-sm">
             {isUploading
               ? 'Przesyłanie...'
               : 'Przeciągnij i upuść pliki tutaj lub kliknij, aby przeglądać'}
           </span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-muted-foreground text-xs">
             Maksymalny rozmiar pliku: {formatFileSize(maxFileSize)}
           </span>
         </label>

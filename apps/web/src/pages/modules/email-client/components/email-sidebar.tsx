@@ -86,10 +86,10 @@ export function EmailSidebar() {
 
   if (isLoading) {
     return (
-      <aside className="w-48 border-r bg-muted/30 flex-shrink-0">
-        <nav className="p-2 space-y-1">
+      <aside className="bg-muted/30 w-48 flex-shrink-0 border-r">
+        <nav className="space-y-1 p-2">
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
           </div>
         </nav>
       </aside>
@@ -99,8 +99,8 @@ export function EmailSidebar() {
   const sortedFolders = folders ? sortFolders(folders) : [];
 
   return (
-    <aside className="w-48 border-r bg-muted/30 flex-shrink-0">
-      <nav className="p-2 space-y-1">
+    <aside className="bg-muted/30 w-48 flex-shrink-0 border-r">
+      <nav className="space-y-1 p-2">
         {sortedFolders.map((folderName) => {
           const Icon = getFolderIcon(folderName);
           const active = isActive(folderName);
@@ -111,7 +111,7 @@ export function EmailSidebar() {
               key={folderName}
               to={href}
               className={cn(
-                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 active
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'

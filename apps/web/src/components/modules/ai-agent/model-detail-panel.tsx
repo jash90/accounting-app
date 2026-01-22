@@ -51,8 +51,8 @@ export function ModelDetailPanel({
 }: ModelDetailPanelProps) {
   if (!model) {
     return (
-      <div className="w-2/5 border-l border-border p-6 flex items-center justify-center">
-        <div className="text-center text-muted-foreground">
+      <div className="border-border flex w-2/5 items-center justify-center border-l p-6">
+        <div className="text-muted-foreground text-center">
           <p className="text-sm">Wybierz model, aby zobaczyć szczegóły</p>
         </div>
       </div>
@@ -62,54 +62,54 @@ export function ModelDetailPanel({
   const costTier = getCostTier(model.costPer1kInput);
 
   return (
-    <div className="w-2/5 border-l border-border flex flex-col">
+    <div className="border-border flex w-2/5 flex-col border-l">
       {/* Header */}
-      <div className="p-4 border-b border-border">
+      <div className="border-border border-b p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <h3 className="text-lg font-semibold text-foreground truncate">{model.name}</h3>
-            <p className="text-sm text-muted-foreground">{model.provider}</p>
+            <h3 className="text-foreground truncate text-lg font-semibold">{model.name}</h3>
+            <p className="text-muted-foreground text-sm">{model.provider}</p>
           </div>
           <button
             type="button"
             onClick={onToggleFavorite}
             className={cn(
-              'p-2 rounded-lg transition-colors',
+              'rounded-lg p-2 transition-colors',
               isFavorite
                 ? 'text-yellow-500 hover:bg-yellow-500/10'
                 : 'text-muted-foreground hover:bg-muted'
             )}
             title={isFavorite ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}
           >
-            <Star className={cn('w-5 h-5', isFavorite && 'fill-current')} />
+            <Star className={cn('h-5 w-5', isFavorite && 'fill-current')} />
           </button>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 space-y-4 overflow-y-auto p-4">
         {/* Description */}
         {model.description && (
           <div>
-            <p className="text-sm text-muted-foreground">{model.description}</p>
+            <p className="text-muted-foreground text-sm">{model.description}</p>
           </div>
         )}
 
         {/* Cost */}
         <div className="space-y-2">
-          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
             Cennik
           </h4>
           <div className="flex items-center gap-2">
             <Badge variant={costTier.variant}>{costTier.label}</Badge>
           </div>
           <div className="grid grid-cols-2 gap-2 text-sm">
-            <div className="p-2 rounded-md bg-muted/50">
-              <p className="text-xs text-muted-foreground">Wejście</p>
+            <div className="bg-muted/50 rounded-md p-2">
+              <p className="text-muted-foreground text-xs">Wejście</p>
               <p className="font-medium">{formatCost(model.costPer1kInput)}</p>
             </div>
-            <div className="p-2 rounded-md bg-muted/50">
-              <p className="text-xs text-muted-foreground">Wyjście</p>
+            <div className="bg-muted/50 rounded-md p-2">
+              <p className="text-muted-foreground text-xs">Wyjście</p>
               <p className="font-medium">{formatCost(model.costPer1kOutput)}</p>
             </div>
           </div>
@@ -117,16 +117,16 @@ export function ModelDetailPanel({
 
         {/* Context & Tokens */}
         <div className="space-y-2">
-          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
             Limity
           </h4>
           <div className="grid grid-cols-2 gap-2 text-sm">
-            <div className="p-2 rounded-md bg-muted/50">
-              <p className="text-xs text-muted-foreground">Okno kontekstu</p>
+            <div className="bg-muted/50 rounded-md p-2">
+              <p className="text-muted-foreground text-xs">Okno kontekstu</p>
               <p className="font-medium">{formatContextWindow(model.contextWindow)} tokenów</p>
             </div>
-            <div className="p-2 rounded-md bg-muted/50">
-              <p className="text-xs text-muted-foreground">Maks. wyjście</p>
+            <div className="bg-muted/50 rounded-md p-2">
+              <p className="text-muted-foreground text-xs">Maks. wyjście</p>
               <p className="font-medium">{formatContextWindow(model.maxOutputTokens)} tokenów</p>
             </div>
           </div>
@@ -134,7 +134,7 @@ export function ModelDetailPanel({
 
         {/* Capabilities */}
         <div className="space-y-2">
-          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
             Możliwości
           </h4>
           <div className="flex flex-wrap gap-2">
@@ -142,40 +142,40 @@ export function ModelDetailPanel({
               variant={model.supportsVision ? 'default' : 'outline'}
               className={cn('gap-1', !model.supportsVision && 'text-muted-foreground')}
             >
-              <Eye className="w-3 h-3" />
+              <Eye className="h-3 w-3" />
               Wizja
-              {model.supportsVision && <Check className="w-3 h-3 ml-0.5" />}
+              {model.supportsVision && <Check className="ml-0.5 h-3 w-3" />}
             </Badge>
             <Badge
               variant={model.supportsFunctionCalling ? 'default' : 'outline'}
               className={cn('gap-1', !model.supportsFunctionCalling && 'text-muted-foreground')}
             >
-              <Wrench className="w-3 h-3" />
+              <Wrench className="h-3 w-3" />
               Narzędzia
-              {model.supportsFunctionCalling && <Check className="w-3 h-3 ml-0.5" />}
+              {model.supportsFunctionCalling && <Check className="ml-0.5 h-3 w-3" />}
             </Badge>
           </div>
         </div>
 
         {/* Model ID */}
         <div className="space-y-2">
-          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          <h4 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
             ID modelu
           </h4>
-          <code className="block text-xs bg-muted/50 p-2 rounded-md text-muted-foreground break-all">
+          <code className="bg-muted/50 text-muted-foreground block rounded-md p-2 text-xs break-all">
             {model.id}
           </code>
         </div>
       </div>
 
       {/* Actions */}
-      <div className="p-4 border-t border-border space-y-2">
+      <div className="border-border space-y-2 border-t p-4">
         <Button
           type="button"
           onClick={onSelect}
-          className="w-full bg-apptax-blue hover:bg-apptax-blue/90"
+          className="bg-apptax-blue hover:bg-apptax-blue/90 w-full"
         >
-          <Zap className="w-4 h-4 mr-2" />
+          <Zap className="mr-2 h-4 w-4" />
           Wybierz model
         </Button>
         <Button
@@ -185,7 +185,7 @@ export function ModelDetailPanel({
           disabled={comparisonFull && !isInComparison}
           className="w-full"
         >
-          <GitCompare className="w-4 h-4 mr-2" />
+          <GitCompare className="mr-2 h-4 w-4" />
           {isInComparison ? 'Usuń z porównania' : 'Dodaj do porównania'}
           {!isInComparison && comparisonFull && ' (Maks. 3)'}
         </Button>

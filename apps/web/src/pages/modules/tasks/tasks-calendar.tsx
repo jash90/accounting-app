@@ -115,10 +115,10 @@ export default function TasksCalendarPage() {
     const otherCount = tasks.length - urgentCount - highCount;
 
     return (
-      <div className="flex gap-0.5 mt-1">
-        {urgentCount > 0 && <div className="w-1.5 h-1.5 rounded-full bg-red-500" />}
-        {highCount > 0 && <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />}
-        {otherCount > 0 && <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
+      <div className="mt-1 flex gap-0.5">
+        {urgentCount > 0 && <div className="h-1.5 w-1.5 rounded-full bg-red-500" />}
+        {highCount > 0 && <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />}
+        {otherCount > 0 && <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />}
       </div>
     );
   };
@@ -152,7 +152,7 @@ export default function TasksCalendarPage() {
         description="Zarządzaj zadaniami - widok kalendarza"
         icon={<CheckSquare className="h-6 w-6" />}
         titleAction={
-          <div className="flex items-center gap-1 border rounded-lg p-1">
+          <div className="flex items-center gap-1 rounded-lg border p-1">
             <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/list`)}>
               <List className="h-4 w-4" />
             </Button>
@@ -179,7 +179,7 @@ export default function TasksCalendarPage() {
 
       <TaskFilters filters={filters} onFiltersChange={handleFiltersChange} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Calendar */}
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -211,7 +211,7 @@ export default function TasksCalendarPage() {
                 month={currentMonth}
                 onMonthChange={setCurrentMonth}
                 locale={pl}
-                className="rounded-md border w-full"
+                className="w-full rounded-md border"
                 classNames={{
                   months: 'flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0',
                   month: 'space-y-4 w-full',
@@ -264,11 +264,11 @@ export default function TasksCalendarPage() {
           </CardHeader>
           <CardContent>
             {!selectedDate ? (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Kliknij na dzień w kalendarzu, aby zobaczyć zadania
               </p>
             ) : selectedDateTasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Brak zadań na ten dzień</p>
+              <p className="text-muted-foreground text-sm">Brak zadań na ten dzień</p>
             ) : (
               <div className="space-y-3">
                 {selectedDateTasks.map((task) => (
@@ -277,7 +277,7 @@ export default function TasksCalendarPage() {
                     role="button"
                     tabIndex={0}
                     className={cn(
-                      'p-3 rounded-lg border border-l-4 cursor-pointer hover:bg-muted/50 transition-colors',
+                      'hover:bg-muted/50 cursor-pointer rounded-lg border border-l-4 p-3 transition-colors',
                       getPriorityColor(task.priority)
                     )}
                     onClick={() => navigate(`${basePath}/list?taskId=${task.id}`)}
@@ -289,14 +289,14 @@ export default function TasksCalendarPage() {
                     }}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <span className="font-medium text-sm line-clamp-2">{task.title}</span>
+                      <span className="line-clamp-2 text-sm font-medium">{task.title}</span>
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="mt-2 flex items-center gap-2">
                       <TaskStatusBadge status={task.status} size="sm" />
                       <TaskPriorityBadge priority={task.priority} size="sm" />
                     </div>
                     {task.assignee && (
-                      <div className="mt-2 text-xs text-muted-foreground">
+                      <div className="text-muted-foreground mt-2 text-xs">
                         {task.assignee.firstName} {task.assignee.lastName}
                       </div>
                     )}
@@ -314,15 +314,15 @@ export default function TasksCalendarPage() {
           <div className="flex items-center gap-6 text-sm">
             <span className="text-muted-foreground">Legenda:</span>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-red-500" />
+              <div className="h-2 w-2 rounded-full bg-red-500" />
               <span>Pilne</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-orange-500" />
+              <div className="h-2 w-2 rounded-full bg-orange-500" />
               <span>Wysokie</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
+              <div className="h-2 w-2 rounded-full bg-blue-500" />
               <span>Inne</span>
             </div>
           </div>

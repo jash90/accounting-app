@@ -261,7 +261,7 @@ function ConfigurationForm({
                             <SelectItem key={model.id} value={model.id}>
                               <div className="flex items-center gap-2">
                                 <span>{model.name}</span>
-                                <span className="text-xs text-muted-foreground">
+                                <span className="text-muted-foreground text-xs">
                                   ({model.description})
                                 </span>
                               </div>
@@ -276,13 +276,13 @@ function ConfigurationForm({
                   // OpenRouter: Model picker
                   <>
                     {selectedOpenRouterModel ? (
-                      <div className="p-4 border border-border rounded-lg bg-muted/30 space-y-3">
+                      <div className="border-border bg-muted/30 space-y-3 rounded-lg border p-4">
                         <div className="flex items-start justify-between gap-4">
                           <div className="min-w-0">
-                            <h4 className="font-semibold text-foreground truncate">
+                            <h4 className="text-foreground truncate font-semibold">
                               {selectedOpenRouterModel.name}
                             </h4>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-muted-foreground text-sm">
                               {selectedOpenRouterModel.provider}
                             </p>
                           </div>
@@ -303,19 +303,19 @@ function ConfigurationForm({
                             {formatContextWindow(selectedOpenRouterModel.contextWindow)} context
                           </Badge>
                           {selectedOpenRouterModel.supportsVision && (
-                            <Badge variant="secondary" className="text-xs gap-1">
-                              <Eye className="w-3 h-3" />
+                            <Badge variant="secondary" className="gap-1 text-xs">
+                              <Eye className="h-3 w-3" />
                               Vision
                             </Badge>
                           )}
                           {selectedOpenRouterModel.supportsFunctionCalling && (
-                            <Badge variant="secondary" className="text-xs gap-1">
-                              <Wrench className="w-3 h-3" />
+                            <Badge variant="secondary" className="gap-1 text-xs">
+                              <Wrench className="h-3 w-3" />
                               Tools
                             </Badge>
                           )}
                         </div>
-                        <code className="block text-xs text-muted-foreground bg-muted px-2 py-1 rounded break-all">
+                        <code className="text-muted-foreground bg-muted block rounded px-2 py-1 text-xs break-all">
                           {selectedOpenRouterModel.id}
                         </code>
                       </div>
@@ -324,18 +324,18 @@ function ConfigurationForm({
                         type="button"
                         variant="outline"
                         onClick={() => setShowModelPicker(true)}
-                        className="w-full justify-start h-auto py-4"
+                        className="h-auto w-full justify-start py-4"
                         disabled={isLoadingModels}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-apptax-soft-teal rounded-lg flex items-center justify-center">
-                            <Zap className="h-5 w-5 text-apptax-blue" />
+                          <div className="bg-apptax-soft-teal flex h-10 w-10 items-center justify-center rounded-lg">
+                            <Zap className="text-apptax-blue h-5 w-5" />
                           </div>
                           <div className="text-left">
                             <p className="font-medium">
                               {isLoadingModels ? 'Loading models...' : 'Select Model'}
                             </p>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-muted-foreground text-sm">
                               {isLoadingModels
                                 ? 'Please wait...'
                                 : `Browse ${openRouterModels.length} available models`}
@@ -374,7 +374,7 @@ function ConfigurationForm({
                           className="text-destructive hover:text-destructive hover:bg-destructive/10"
                           disabled={isResettingApiKey}
                         >
-                          <KeyRound className="w-3 h-3 mr-1" />
+                          <KeyRound className="mr-1 h-3 w-3" />
                           Reset Key
                         </Button>
                       </DialogTrigger>
@@ -418,15 +418,15 @@ function ConfigurationForm({
                       href="https://openrouter.ai/keys"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-apptax-blue hover:underline inline-flex items-center gap-1 ml-1"
+                      className="text-apptax-blue ml-1 inline-flex items-center gap-1 hover:underline"
                     >
                       Get API key
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="h-3 w-3" />
                     </a>
                   )}
                 </FormDescription>
                 {config?.hasApiKey && (
-                  <p className="text-sm text-green-600 flex items-center gap-1">
+                  <p className="flex items-center gap-1 text-sm text-green-600">
                     <span>✓</span> API Key is configured (hidden for security)
                   </p>
                 )}
@@ -512,8 +512,8 @@ function ConfigurationForm({
             render={({ field }) => (
               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
-                  <FormLabel className="text-base flex items-center gap-2">
-                    <Radio className="h-4 w-4 text-apptax-teal" />
+                  <FormLabel className="flex items-center gap-2 text-base">
+                    <Radio className="text-apptax-teal h-4 w-4" />
                     Streaming Mode
                   </FormLabel>
                   <FormDescription>
@@ -529,20 +529,20 @@ function ConfigurationForm({
           />
 
           {/* Embedding Configuration Section */}
-          <div className="rounded-lg border p-4 space-y-4 bg-muted/30">
+          <div className="bg-muted/30 space-y-4 rounded-lg border p-4">
             <div className="flex items-center gap-2">
-              <Database className="h-5 w-5 text-apptax-teal" />
-              <h3 className="font-semibold text-base">Embedding Configuration</h3>
-              <span className="text-xs text-muted-foreground">(for Knowledge Base)</span>
+              <Database className="text-apptax-teal h-5 w-5" />
+              <h3 className="text-base font-semibold">Embedding Configuration</h3>
+              <span className="text-muted-foreground text-xs">(for Knowledge Base)</span>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               Configure a separate API key and model for generating embeddings. Used when uploading
               documents to the Knowledge Base.
             </p>
 
             {/* Warning about OpenRouter */}
-            <div className="flex items-start gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
-              <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+            <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/20">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
               <p className="text-xs text-amber-700 dark:text-amber-400">
                 OpenRouter does not support embeddings. If your main provider is OpenRouter, you
                 must configure a separate OpenAI API key for embeddings to use the Knowledge Base
@@ -599,7 +599,7 @@ function ConfigurationForm({
                           <SelectItem key={model.id} value={model.id}>
                             <div className="flex items-center gap-2">
                               <span>{model.name}</span>
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-muted-foreground text-xs">
                                 ({model.description})
                               </span>
                             </div>
@@ -638,7 +638,7 @@ function ConfigurationForm({
                       : 'Optional: Use a separate OpenAI API key for embeddings. If not provided, the main API key will be used.'}
                   </FormDescription>
                   {config?.hasEmbeddingApiKey && (
-                    <p className="text-sm text-green-600 flex items-center gap-1">
+                    <p className="flex items-center gap-1 text-sm text-green-600">
                       <span>✓</span> Separate embedding API Key configured
                     </p>
                   )}
@@ -651,9 +651,9 @@ function ConfigurationForm({
           <Button
             type="submit"
             disabled={isPending}
-            className="w-full bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+            className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md w-full transition-all"
           >
-            <Sparkles className="h-4 w-4 mr-2" />
+            <Sparkles className="mr-2 h-4 w-4" />
             {isPending ? 'Saving...' : 'Save Configuration'}
           </Button>
         </form>
@@ -728,9 +728,9 @@ export default function AdminConfigurationPage() {
   // Show loading state while fetching config
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="flex items-center gap-3 text-apptax-navy">
-          <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow animate-pulse" />
+      <div className="flex h-full items-center justify-center">
+        <div className="text-apptax-navy flex items-center gap-3">
+          <div className="bg-apptax-teal ai-glow h-3 w-3 animate-pulse rounded-full" />
           Loading...
         </div>
       </div>
@@ -738,11 +738,11 @@ export default function AdminConfigurationPage() {
   }
 
   return (
-    <div className="container mx-auto p-8 space-y-8">
+    <div className="container mx-auto space-y-8 p-8">
       <div>
-        <h1 className="text-3xl font-bold text-apptax-navy flex items-center gap-3">
+        <h1 className="text-apptax-navy flex items-center gap-3 text-3xl font-bold">
           AI Configuration
-          <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow" />
+          <div className="bg-apptax-teal ai-glow h-3 w-3 rounded-full" />
         </h1>
         <p className="text-muted-foreground mt-1">
           Configure AI provider, model, and system behavior
@@ -752,8 +752,8 @@ export default function AdminConfigurationPage() {
       <Card className="border-apptax-soft-teal/30">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-apptax-soft-teal rounded-lg flex items-center justify-center">
-              <Settings className="h-5 w-5 text-apptax-blue" />
+            <div className="bg-apptax-soft-teal flex h-10 w-10 items-center justify-center rounded-lg">
+              <Settings className="text-apptax-blue h-5 w-5" />
             </div>
             <div>
               <CardTitle className="text-apptax-navy">AI Settings</CardTitle>
@@ -790,7 +790,7 @@ export default function AdminConfigurationPage() {
           <CardContent className="space-y-4">
             {/* Chat Configuration */}
             <div>
-              <h4 className="text-sm font-semibold mb-2 text-muted-foreground">Chat Settings</h4>
+              <h4 className="text-muted-foreground mb-2 text-sm font-semibold">Chat Settings</h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="font-medium">Provider:</span> {config.provider}
@@ -825,7 +825,7 @@ export default function AdminConfigurationPage() {
 
             {/* Embedding Configuration */}
             <div className="border-t pt-4">
-              <h4 className="text-sm font-semibold mb-2 text-muted-foreground flex items-center gap-2">
+              <h4 className="text-muted-foreground mb-2 flex items-center gap-2 text-sm font-semibold">
                 <Database className="h-4 w-4" />
                 Embedding Settings (Knowledge Base)
               </h4>
@@ -850,7 +850,7 @@ export default function AdminConfigurationPage() {
             </div>
 
             {/* Meta Information */}
-            <div className="border-t pt-4 text-sm text-muted-foreground">
+            <div className="text-muted-foreground border-t pt-4 text-sm">
               <span className="font-medium">Last Updated:</span>{' '}
               {new Date(config.updatedAt).toLocaleString()} by{' '}
               {config.updatedBy?.firstName || config.createdBy.firstName}

@@ -17,7 +17,6 @@ import { EmailVerificationService } from './services/email-verification.service'
 import { ImapMailboxService } from './services/imap-mailbox.service';
 import { ProviderLookupService } from './services/provider-lookup.service';
 
-
 /**
  * Email Module providing SMTP and IMAP functionality
  *

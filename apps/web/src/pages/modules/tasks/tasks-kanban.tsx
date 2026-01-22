@@ -119,7 +119,7 @@ export default function TasksKanbanPage() {
         description="Zarządzaj zadaniami - widok Kanban"
         icon={<CheckSquare className="h-6 w-6" />}
         titleAction={
-          <div className="flex items-center gap-1 border rounded-lg p-1">
+          <div className="flex items-center gap-1 rounded-lg border p-1">
             <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/list`)}>
               <List className="h-4 w-4" />
             </Button>
@@ -149,11 +149,11 @@ export default function TasksKanbanPage() {
       {isPending ? (
         <div className="flex gap-4 overflow-x-auto pb-4">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex flex-col w-[300px] min-w-[300px] bg-muted/50 rounded-lg">
-              <div className="p-3 border-b bg-background/50 rounded-t-lg">
+            <div key={i} className="bg-muted/50 flex w-[300px] min-w-[300px] flex-col rounded-lg">
+              <div className="bg-background/50 rounded-t-lg border-b p-3">
                 <Skeleton className="h-5 w-24" />
               </div>
-              <div className="p-2 space-y-2">
+              <div className="space-y-2 p-2">
                 {[1, 2, 3].map((j) => (
                   <Skeleton key={j} className="h-32 w-full" />
                 ))}
@@ -169,7 +169,7 @@ export default function TasksKanbanPage() {
           onAddTask={hasWritePermission ? handleAddTask : undefined}
         />
       ) : (
-        <div className="flex items-center justify-center h-64 text-muted-foreground">
+        <div className="text-muted-foreground flex h-64 items-center justify-center">
           Brak danych do wyświetlenia
         </div>
       )}

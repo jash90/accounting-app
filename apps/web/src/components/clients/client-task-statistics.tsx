@@ -61,7 +61,7 @@ export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Nie udało się załadować statystyk</p>
+          <p className="text-muted-foreground text-sm">Nie udało się załadować statystyk</p>
         </CardContent>
       </Card>
     );
@@ -78,7 +78,7 @@ export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Brak zadań do wyświetlenia</p>
+          <p className="text-muted-foreground text-sm">Brak zadań do wyświetlenia</p>
         </CardContent>
       </Card>
     );
@@ -104,7 +104,7 @@ export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
       <CardContent className="space-y-4">
         {/* Total count */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Wszystkie</span>
+          <span className="text-muted-foreground text-sm">Wszystkie</span>
           <Badge variant="secondary" className="font-semibold">
             {statistics.totalCount}
           </Badge>
@@ -118,7 +118,7 @@ export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
 
             return (
               <div key={status} className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{TaskStatusLabels[status]}</span>
+                <span className="text-muted-foreground text-sm">{TaskStatusLabels[status]}</span>
                 <Badge className={statusColors[status]}>{count}</Badge>
               </div>
             );
@@ -127,8 +127,8 @@ export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
 
         {/* Estimated time */}
         {statistics.totalEstimatedMinutes > 0 && (
-          <div className="flex items-center justify-between pt-2 border-t">
-            <span className="text-sm text-muted-foreground flex items-center gap-1">
+          <div className="flex items-center justify-between border-t pt-2">
+            <span className="text-muted-foreground flex items-center gap-1 text-sm">
               <Clock className="h-3 w-3" />
               Estymowany czas
             </span>
@@ -141,7 +141,7 @@ export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
         {/* Story points */}
         {statistics.totalStoryPoints > 0 && (
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground flex items-center gap-1">
+            <span className="text-muted-foreground flex items-center gap-1 text-sm">
               <Target className="h-3 w-3" />
               Story points
             </span>

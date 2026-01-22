@@ -82,7 +82,7 @@ export const CustomFieldRenderer = memo(function CustomFieldRenderer({
             disabled={disabled}
             aria-label={definition.label}
           />
-          <span className="text-sm text-muted-foreground" aria-hidden="true">
+          <span className="text-muted-foreground text-sm" aria-hidden="true">
             {value === 'true' ? 'Tak' : 'Nie'}
           </span>
         </div>

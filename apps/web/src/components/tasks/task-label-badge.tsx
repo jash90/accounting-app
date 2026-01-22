@@ -21,14 +21,14 @@ export function TaskLabelBadge({ label, size = 'md', onRemove, className }: Task
   return (
     <Badge
       variant="secondary"
-      className={cn(sizeClasses[size], 'font-medium inline-flex items-center gap-1', className)}
+      className={cn(sizeClasses[size], 'inline-flex items-center gap-1 font-medium', className)}
       style={{
         backgroundColor: `${label.color}20`,
         color: label.color,
         borderColor: label.color,
       }}
     >
-      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: label.color }} />
+      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: label.color }} />
       {label.name}
       {onRemove && (
         <button

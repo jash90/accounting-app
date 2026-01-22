@@ -95,18 +95,18 @@ export function ColumnVisibilityModal({
         <div className="space-y-4">
           {/* Search input */}
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
             <Input
               placeholder="Szukaj kolumny..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 pr-8"
+              className="pr-8 pl-8"
             />
             {searchQuery && (
               <Button
                 variant="ghost"
                 size="sm"
-                className="absolute right-1 top-1 h-7 w-7 p-0"
+                className="absolute top-1 right-1 h-7 w-7 p-0"
                 onClick={() => setSearchQuery('')}
               >
                 <X className="h-4 w-4" />
@@ -120,7 +120,7 @@ export function ColumnVisibilityModal({
               {groupedColumns.map((group) => (
                 <div key={group.key} className="space-y-2">
                   {groups && groups.length > 1 && (
-                    <h4 className="text-sm font-medium text-muted-foreground border-b pb-1">
+                    <h4 className="text-muted-foreground border-b pb-1 text-sm font-medium">
                       {group.label}
                     </h4>
                   )}
@@ -133,7 +133,7 @@ export function ColumnVisibilityModal({
                         <div
                           key={column.id}
                           className={cn(
-                            'flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors',
+                            'hover:bg-muted/50 flex items-center justify-between rounded-md px-2 py-1.5 transition-colors',
                             isDisabled && 'opacity-60'
                           )}
                         >
@@ -147,7 +147,7 @@ export function ColumnVisibilityModal({
                             <Label
                               htmlFor={`col-${column.id}`}
                               className={cn(
-                                'text-sm cursor-pointer',
+                                'cursor-pointer text-sm',
                                 isDisabled && 'cursor-not-allowed'
                               )}
                             >
@@ -155,7 +155,7 @@ export function ColumnVisibilityModal({
                             </Label>
                           </div>
                           {isDisabled && (
-                            <span className="text-xs text-muted-foreground">zawsze widoczna</span>
+                            <span className="text-muted-foreground text-xs">zawsze widoczna</span>
                           )}
                         </div>
                       );
@@ -165,7 +165,7 @@ export function ColumnVisibilityModal({
               ))}
 
               {filteredColumns.length === 0 && (
-                <div className="text-center py-6 text-muted-foreground">
+                <div className="text-muted-foreground py-6 text-center">
                   Nie znaleziono kolumn pasujących do wyszukiwania
                 </div>
               )}

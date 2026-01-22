@@ -122,16 +122,16 @@ export function ConditionBuilder({ value, onChange, className }: ConditionBuilde
         <Label className="text-base font-medium">Warunki automatycznego przypisania</Label>
         <div className="flex gap-2">
           <Button type="button" variant="outline" size="sm" onClick={handleAddCondition}>
-            <Plus className="w-4 h-4 mr-1" />
+            <Plus className="mr-1 h-4 w-4" />
             Warunek
           </Button>
           <Button type="button" variant="outline" size="sm" onClick={handleAddGroup}>
-            <FolderPlus className="w-4 h-4 mr-1" />
+            <FolderPlus className="mr-1 h-4 w-4" />
             Grupa
           </Button>
           {value && (
             <Button type="button" variant="ghost" size="sm" onClick={handleClear}>
-              <Trash2 className="w-4 h-4 mr-1" />
+              <Trash2 className="mr-1 h-4 w-4" />
               Wyczyść
             </Button>
           )}
@@ -141,9 +141,9 @@ export function ConditionBuilder({ value, onChange, className }: ConditionBuilde
       {value ? (
         <ConditionRenderer condition={value} onChange={onChange} onRemove={handleClear} isRoot />
       ) : (
-        <div className="text-center py-8 border-2 border-dashed rounded-lg text-muted-foreground">
+        <div className="text-muted-foreground rounded-lg border-2 border-dashed py-8 text-center">
           <p>Brak warunków. Ikona będzie przypisywana tylko ręcznie.</p>
-          <p className="text-sm mt-1">
+          <p className="mt-1 text-sm">
             Kliknij &quot;Warunek&quot; lub &quot;Grupa&quot;, aby dodać automatyczne przypisywanie.
           </p>
         </div>
@@ -266,7 +266,7 @@ function GroupConditionRenderer({
 
   return (
     <Card className={cn(isRoot ? 'border-primary' : 'border-muted')}>
-      <CardContent className="pt-4 space-y-3">
+      <CardContent className="space-y-3 pt-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Spełnij</span>
@@ -288,12 +288,12 @@ function GroupConditionRenderer({
           </div>
           {!isRoot && (
             <Button type="button" variant="ghost" size="icon" onClick={onRemove}>
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="h-4 w-4" />
             </Button>
           )}
         </div>
 
-        <div className="space-y-2 pl-4 border-l-2 border-muted">
+        <div className="border-muted space-y-2 border-l-2 pl-4">
           {group.conditions.map((cond, index) => (
             <ConditionRenderer
               key={cond.id || `fallback-${index}`}
@@ -306,11 +306,11 @@ function GroupConditionRenderer({
 
         <div className="flex gap-2 pl-4">
           <Button type="button" variant="ghost" size="sm" onClick={handleAddCondition}>
-            <Plus className="w-4 h-4 mr-1" />
+            <Plus className="mr-1 h-4 w-4" />
             Warunek
           </Button>
           <Button type="button" variant="ghost" size="sm" onClick={handleAddNestedGroup}>
-            <FolderPlus className="w-4 h-4 mr-1" />
+            <FolderPlus className="mr-1 h-4 w-4" />
             Grupa zagnieżdżona
           </Button>
         </div>
@@ -387,7 +387,7 @@ function SingleConditionRenderer({ condition, onChange, onRemove }: SingleCondit
   const needsSecondValue = condition.operator === 'between';
 
   return (
-    <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+    <div className="bg-muted/50 flex items-center gap-2 rounded-lg p-2">
       {/* Field Select */}
       <Select value={condition.field} onValueChange={handleFieldChange}>
         <SelectTrigger className="w-44">
@@ -433,7 +433,7 @@ function SingleConditionRenderer({ condition, onChange, onRemove }: SingleCondit
       {/* Second Value for 'between' */}
       {needsSecondValue && (
         <>
-          <span className="text-sm text-muted-foreground">i</span>
+          <span className="text-muted-foreground text-sm">i</span>
           <Input
             type={fieldType === 'date' ? 'date' : 'text'}
             value={condition.secondValue?.toString() || ''}
@@ -445,7 +445,7 @@ function SingleConditionRenderer({ condition, onChange, onRemove }: SingleCondit
 
       {/* Remove Button */}
       <Button type="button" variant="ghost" size="icon" onClick={onRemove}>
-        <Trash2 className="w-4 h-4" />
+        <Trash2 className="h-4 w-4" />
       </Button>
     </div>
   );
@@ -501,7 +501,7 @@ function ValueInput({ fieldType, fieldConfig, operator, value, onChange }: Value
                   role="option"
                   aria-selected={isSelected}
                   tabIndex={0}
-                  className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent focus:bg-accent focus:outline-none"
+                  className="hover:bg-accent focus:bg-accent flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm focus:outline-none"
                   onClick={() => handleToggle(opt.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {

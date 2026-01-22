@@ -17,7 +17,7 @@ const columns: ColumnDef<UserDto>[] = [
   {
     accessorKey: 'email',
     header: 'Email',
-    cell: ({ row }) => <div className="font-medium text-apptax-navy">{row.original.email}</div>,
+    cell: ({ row }) => <div className="text-apptax-navy font-medium">{row.original.email}</div>,
   },
   {
     accessorKey: 'firstName',
@@ -80,26 +80,26 @@ export default function UsersListPage() {
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:bg-apptax-soft-teal"
+            className="hover:bg-apptax-soft-teal h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               setEditingUser(row.original);
             }}
             title="Edytuj użytkownika"
           >
-            <Edit className="h-4 w-4 text-apptax-blue" />
+            <Edit className="text-apptax-blue h-4 w-4" />
           </Button>
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:bg-destructive/10"
+            className="hover:bg-destructive/10 h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               setDeletingUser(row.original);
             }}
             title="Usuń użytkownika"
           >
-            <Trash2 className="h-4 w-4 text-destructive" />
+            <Trash2 className="text-destructive h-4 w-4" />
           </Button>
         </div>
       ),

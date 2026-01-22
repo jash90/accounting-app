@@ -57,20 +57,20 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
         role={onClick ? 'button' : undefined}
         aria-label={`Zadanie: ${task.title}${isOverdue ? ' - po terminie' : ''}`}
         className={cn(
-          'hover:shadow-md transition-shadow',
+          'transition-shadow hover:shadow-md',
           onClick && 'cursor-pointer',
           isDragging && 'opacity-50 shadow-lg',
           isOverdue && 'border-red-300',
-          onClick && 'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
+          onClick && 'focus:ring-primary focus:ring-2 focus:ring-offset-2 focus:outline-none',
           className
         )}
       >
-        <CardContent className="p-3 space-y-2">
+        <CardContent className="space-y-2 p-3">
           {/* Labels */}
           {labels.length > 0 && <TaskLabelList labels={labels} size="sm" maxVisible={2} />}
 
           {/* Title */}
-          <h4 className="font-medium text-sm leading-snug line-clamp-2">{task.title}</h4>
+          <h4 className="line-clamp-2 text-sm leading-snug font-medium">{task.title}</h4>
 
           {/* Meta info */}
           <div className="flex items-center justify-between gap-2">
@@ -108,7 +108,7 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
             </div>
 
             {/* Indicators */}
-            <div className="flex items-center gap-1.5 text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-1.5">
               {commentCount > 0 && (
                 <div className="flex items-center gap-0.5 text-xs">
                   <MessageSquare size={12} />
@@ -128,7 +128,7 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
           <div className="flex items-center justify-between pt-1">
             {/* Client */}
             {task.client && (
-              <span className="text-xs text-muted-foreground truncate max-w-[100px]">
+              <span className="text-muted-foreground max-w-[100px] truncate text-xs">
                 {task.client.name}
               </span>
             )}
@@ -140,7 +140,7 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Avatar className="h-6 w-6">
-                      <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs">
                         {getInitials(task.assignee.firstName, task.assignee.lastName)}
                       </AvatarFallback>
                     </Avatar>
@@ -178,14 +178,14 @@ export function SortableTaskCard({ id, ...props }: SortableTaskCardProps) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative group">
+    <div ref={setNodeRef} style={style} className="group relative">
       <div
         {...attributes}
         {...listeners}
         aria-label="Przeciągnij zadanie"
         role="button"
         tabIndex={0}
-        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-grab active:cursor-grabbing p-1 text-muted-foreground hover:text-foreground transition-opacity focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 rounded"
+        className="text-muted-foreground hover:text-foreground focus:ring-primary absolute top-1/2 left-0 -translate-x-2 -translate-y-1/2 cursor-grab rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100 focus:ring-2 focus:ring-offset-1 focus:outline-none active:cursor-grabbing"
       >
         <GripVertical size={16} aria-hidden="true" />
       </div>

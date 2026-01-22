@@ -179,7 +179,7 @@ export default function TasksSettingsPage() {
                   <TableRow key={label.id}>
                     <TableCell>
                       <div
-                        className="w-6 h-6 rounded-full border"
+                        className="h-6 w-6 rounded-full border"
                         style={{ backgroundColor: label.color }}
                       />
                     </TableCell>
@@ -212,8 +212,8 @@ export default function TasksSettingsPage() {
               </TableBody>
             </Table>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Tag className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <div className="text-muted-foreground py-8 text-center">
+              <Tag className="mx-auto mb-4 h-12 w-12 opacity-50" />
               <p>Brak etykiet</p>
               <p className="text-sm">Utwórz pierwszą etykietę, aby kategoryzować zadania</p>
             </div>
@@ -251,7 +251,7 @@ export default function TasksSettingsPage() {
                   <button
                     key={color}
                     type="button"
-                    className={`w-8 h-8 rounded-full border-2 transition-all ${
+                    className={`h-8 w-8 rounded-full border-2 transition-all ${
                       labelColor === color
                         ? 'border-primary scale-110'
                         : 'border-transparent hover:scale-105'
@@ -261,7 +261,7 @@ export default function TasksSettingsPage() {
                   />
                 ))}
               </div>
-              <div className="flex items-center gap-2 mt-2">
+              <div className="mt-2 flex items-center gap-2">
                 <Label htmlFor="custom-color" className="text-sm">
                   Własny:
                 </Label>
@@ -270,16 +270,16 @@ export default function TasksSettingsPage() {
                   type="color"
                   value={labelColor}
                   onChange={(e) => setLabelColor(e.target.value)}
-                  className="w-12 h-8 p-0 border-0"
+                  className="h-8 w-12 border-0 p-0"
                 />
-                <span className="text-sm text-muted-foreground">{labelColor}</span>
+                <span className="text-muted-foreground text-sm">{labelColor}</span>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Podgląd:</span>
+              <span className="text-muted-foreground text-sm">Podgląd:</span>
               <span
-                className="px-2 py-1 rounded-full text-xs font-medium text-white"
+                className="rounded-full px-2 py-1 text-xs font-medium text-white"
                 style={{ backgroundColor: labelColor }}
               >
                 {labelName || 'Etykieta'}

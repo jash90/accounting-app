@@ -167,9 +167,9 @@ export default function TaskCreatePage() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Main content - left column */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="space-y-6 lg:col-span-2">
               <Card>
                 <CardHeader>
                   <CardTitle>Podstawowe informacje</CardTitle>
@@ -225,7 +225,7 @@ export default function TaskCreatePage() {
                         <Badge
                           key={label.id}
                           variant={isSelected ? 'default' : 'outline'}
-                          className="cursor-pointer text-sm py-1.5 px-3"
+                          className="cursor-pointer px-3 py-1.5 text-sm"
                           style={
                             isSelected
                               ? { backgroundColor: label.color, borderColor: label.color }
@@ -239,7 +239,7 @@ export default function TaskCreatePage() {
                       );
                     })}
                     {labels.length === 0 && (
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-muted-foreground text-sm">
                         Brak dostępnych etykiet. Dodaj etykiety w ustawieniach zadań.
                       </span>
                     )}

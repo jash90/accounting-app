@@ -92,21 +92,21 @@ export function TimeEntryRow({
         }
       }}
       className={cn(
-        'flex items-center justify-between p-3 rounded-lg border cursor-pointer',
+        'flex cursor-pointer items-center justify-between rounded-lg border p-3',
         'hover:bg-muted/50 transition-colors',
-        'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+        'focus:ring-ring focus:ring-2 focus:ring-offset-2 focus:outline-none',
         entry.isRunning && 'border-green-300 bg-green-50/50'
       )}
     >
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          {entry.isRunning && <Play className="h-4 w-4 text-green-600 animate-pulse" />}
-          <h4 className="font-medium text-sm truncate">{entry.description || 'Bez opisu'}</h4>
+          {entry.isRunning && <Play className="h-4 w-4 animate-pulse text-green-600" />}
+          <h4 className="truncate text-sm font-medium">{entry.description || 'Bez opisu'}</h4>
         </div>
-        <div className="flex items-center gap-2 mt-1 flex-wrap">
+        <div className="mt-1 flex flex-wrap items-center gap-2">
           <TimeEntryStatusBadge status={entry.status} />
           {entry.client && (
-            <span className="text-xs text-muted-foreground">{entry.client.name}</span>
+            <span className="text-muted-foreground text-xs">{entry.client.name}</span>
           )}
           {entry.isBillable && (
             <Badge variant="secondary" className="text-xs">
@@ -116,9 +116,9 @@ export function TimeEntryRow({
         </div>
       </div>
 
-      <div className="flex items-center gap-4 ml-4">
+      <div className="ml-4 flex items-center gap-4">
         <div className="text-right">
-          <div className="font-mono font-semibold text-sm">
+          <div className="font-mono text-sm font-semibold">
             {entry.isRunning ? (
               <span className="text-green-600" aria-live="polite" aria-atomic="true">
                 {elapsedTime}
@@ -127,7 +127,7 @@ export function TimeEntryRow({
               formatDuration(entry.durationMinutes)
             )}
           </div>
-          <div className="text-xs text-muted-foreground flex items-center gap-1">
+          <div className="text-muted-foreground flex items-center gap-1 text-xs">
             <Calendar className="h-3 w-3" />
             {format(new Date(entry.startTime), 'd MMM yyyy', {
               locale: pl,
@@ -145,16 +145,16 @@ export function TimeEntryRow({
             {entry.status === TimeEntryStatus.DRAFT && (
               <>
                 <DropdownMenuItem onClick={() => onEdit(entry)}>
-                  <Pencil className="h-4 w-4 mr-2" />
+                  <Pencil className="mr-2 h-4 w-4" />
                   Edytuj
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onSubmit(entry)}>
-                  <Send className="h-4 w-4 mr-2" />
+                  <Send className="mr-2 h-4 w-4" />
                   Wyślij do zatwierdzenia
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => onDelete(entry)} className="text-destructive">
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash2 className="mr-2 h-4 w-4" />
                   Usuń
                 </DropdownMenuItem>
               </>
@@ -162,30 +162,30 @@ export function TimeEntryRow({
             {entry.status === TimeEntryStatus.SUBMITTED && (
               <>
                 <DropdownMenuItem onClick={() => onApprove(entry)}>
-                  <CheckCircle className="h-4 w-4 mr-2" />
+                  <CheckCircle className="mr-2 h-4 w-4" />
                   Zatwierdź
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onReject(entry)}>
-                  <XCircle className="h-4 w-4 mr-2" />
+                  <XCircle className="mr-2 h-4 w-4" />
                   Odrzuć
                 </DropdownMenuItem>
               </>
             )}
             {entry.status === TimeEntryStatus.APPROVED && (
               <DropdownMenuItem disabled>
-                <CheckCircle className="h-4 w-4 mr-2" />
+                <CheckCircle className="mr-2 h-4 w-4" />
                 Zatwierdzony
               </DropdownMenuItem>
             )}
             {entry.status === TimeEntryStatus.REJECTED && (
               <>
                 <DropdownMenuItem disabled>
-                  <XCircle className="h-4 w-4 mr-2" />
+                  <XCircle className="mr-2 h-4 w-4" />
                   Odrzucony: {entry.rejectionNote}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => onEdit(entry)}>
-                  <Pencil className="h-4 w-4 mr-2" />
+                  <Pencil className="mr-2 h-4 w-4" />
                   Edytuj i wyślij ponownie
                 </DropdownMenuItem>
               </>

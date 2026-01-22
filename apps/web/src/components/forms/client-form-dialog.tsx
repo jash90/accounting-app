@@ -266,7 +266,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onSubmit }: Clien
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh]">
+      <DialogContent className="max-h-[90vh] sm:max-w-[700px]">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <DialogTitle>{isEditing ? 'Edytuj klienta' : 'Dodaj klienta'}</DialogTitle>
@@ -290,7 +290,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onSubmit }: Clien
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               {/* Basic Information */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-apptax-navy">Dane podstawowe</h3>
+                <h3 className="text-apptax-navy text-sm font-semibold">Dane podstawowe</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -358,7 +358,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onSubmit }: Clien
                           <FormLabel className="text-base">
                             Wyślij email powitalny do klienta
                           </FormLabel>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-muted-foreground text-sm">
                             Klient otrzyma email z podsumowaniem wprowadzonych danych
                           </p>
                         </div>
@@ -373,15 +373,15 @@ export function ClientFormDialog({ open, onOpenChange, client, onSubmit }: Clien
 
               {/* Dates */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-apptax-navy">Daty</h3>
+                <h3 className="text-apptax-navy text-sm font-semibold">Daty</h3>
 
-                <div className="grid grid-cols-3 gap-4 items-end">
+                <div className="grid grid-cols-3 items-end gap-4">
                   <FormField
                     control={form.control}
                     name="companyStartDate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="min-h-[40px] flex items-end">
+                        <FormLabel className="flex min-h-[40px] items-end">
                           Data rozpoczęcia firmy
                         </FormLabel>
                         <FormControl>
@@ -457,7 +457,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onSubmit }: Clien
 
               {/* Tax and Employment */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-apptax-navy">Podatki i zatrudnienie</h3>
+                <h3 className="text-apptax-navy text-sm font-semibold">Podatki i zatrudnienie</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -564,7 +564,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onSubmit }: Clien
 
               {/* Additional Information */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-apptax-navy">Dodatkowe informacje</h3>
+                <h3 className="text-apptax-navy text-sm font-semibold">Dodatkowe informacje</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -678,14 +678,14 @@ export function ClientFormDialog({ open, onOpenChange, client, onSubmit }: Clien
               {/* Custom Fields */}
               {activeFieldDefinitions.length > 0 && (
                 <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-apptax-navy">Pola niestandardowe</h3>
+                  <h3 className="text-apptax-navy text-sm font-semibold">Pola niestandardowe</h3>
 
                   <div className="grid grid-cols-2 gap-4">
                     {activeFieldDefinitions
                       .sort((a, b) => a.displayOrder - b.displayOrder)
                       .map((definition) => (
                         <div key={definition.id} className="space-y-2">
-                          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          <label className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                             {definition.label}
                             {definition.isRequired && ' *'}
                           </label>
@@ -693,7 +693,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onSubmit }: Clien
                           {definition.isRequired &&
                             !customFieldValues[definition.id] &&
                             form.formState.isSubmitted && (
-                              <p className="text-sm font-medium text-destructive">
+                              <p className="text-destructive text-sm font-medium">
                                 To pole jest wymagane
                               </p>
                             )}
@@ -703,7 +703,7 @@ export function ClientFormDialog({ open, onOpenChange, client, onSubmit }: Clien
                 </div>
               )}
 
-              <div className="flex justify-end gap-2 pt-4 border-t">
+              <div className="flex justify-end gap-2 border-t pt-4">
                 <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>
                   Anuluj
                 </Button>

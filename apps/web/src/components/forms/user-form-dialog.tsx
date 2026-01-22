@@ -188,7 +188,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
                     <FormControl>
                       <Input placeholder="Nazwa firmy Sp. z o.o." {...field} />
                     </FormControl>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       Firma zostanie automatycznie utworzona dla tego właściciela.
                     </p>
                     <FormMessage />

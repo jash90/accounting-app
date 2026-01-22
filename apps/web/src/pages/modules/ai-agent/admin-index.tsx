@@ -46,11 +46,11 @@ export default function AdminAIAgentDashboard() {
   ];
 
   return (
-    <div className="container mx-auto p-8 space-y-8">
+    <div className="container mx-auto space-y-8 p-8">
       <div>
-        <h1 className="text-3xl font-bold text-apptax-navy flex items-center gap-3">
+        <h1 className="text-apptax-navy flex items-center gap-3 text-3xl font-bold">
           Moduł Agent AI
-          <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow" />
+          <div className="bg-apptax-teal ai-glow h-3 w-3 rounded-full" />
         </h1>
         <p className="text-muted-foreground mt-1">
           Inteligentny asystent AI z funkcjami RAG i zarządzaniem tokenami
@@ -73,34 +73,34 @@ export default function AdminAIAgentDashboard() {
       <Card className="bg-apptax-warm-gray border-0">
         <CardHeader>
           <CardTitle className="text-apptax-navy flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-apptax-teal" />
+            <Sparkles className="text-apptax-teal h-5 w-5" />
             Szybki start
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-start gap-3">
-            <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
+            <CheckCircle2 className="text-apptax-teal mt-0.5 h-5 w-5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-apptax-navy">1. Skonfiguruj dostawcę AI</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-apptax-navy font-medium">1. Skonfiguruj dostawcę AI</p>
+              <p className="text-muted-foreground text-sm">
                 Ustaw dostawcę AI (OpenAI/OpenRouter) i model w Konfiguracji
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
+            <CheckCircle2 className="text-apptax-teal mt-0.5 h-5 w-5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-apptax-navy">2. Prześlij bazę wiedzy</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-apptax-navy font-medium">2. Prześlij bazę wiedzy</p>
+              <p className="text-muted-foreground text-sm">
                 Dodaj pliki PDF, TXT lub MD, aby wzbogacić odpowiedzi AI o Twoje treści
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
+            <CheckCircle2 className="text-apptax-teal mt-0.5 h-5 w-5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-apptax-navy">3. Rozpocznij czat</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-apptax-navy font-medium">3. Rozpocznij czat</p>
+              <p className="text-muted-foreground text-sm">
                 Zacznij rozmowy z odpowiedziami AI świadomymi kontekstu
               </p>
             </div>

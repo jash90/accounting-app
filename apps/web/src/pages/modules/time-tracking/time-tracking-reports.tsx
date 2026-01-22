@@ -103,7 +103,7 @@ export default function TimeTrackingReportsPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto space-y-6 p-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" onClick={() => navigate(basePath)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -124,7 +124,7 @@ export default function TimeTrackingReportsPage() {
           <CardDescription>Określ zakres dat i kryteria raportu</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <Label>Data od</Label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
@@ -170,7 +170,7 @@ export default function TimeTrackingReportsPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 mt-4">
+          <div className="mt-4 flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => setQuickRange(7)}>
               Ostatnie 7 dni
             </Button>
@@ -204,7 +204,7 @@ export default function TimeTrackingReportsPage() {
               onClick={() => handleExport('csv')}
               disabled={exportReport.isPending}
             >
-              <FileText className="h-4 w-4 mr-1" />
+              <FileText className="mr-1 h-4 w-4" />
               CSV
             </Button>
             <Button
@@ -213,7 +213,7 @@ export default function TimeTrackingReportsPage() {
               onClick={() => handleExport('excel')}
               disabled={exportReport.isPending}
             >
-              <FileSpreadsheet className="h-4 w-4 mr-1" />
+              <FileSpreadsheet className="mr-1 h-4 w-4" />
               Excel
             </Button>
           </div>
@@ -231,27 +231,27 @@ export default function TimeTrackingReportsPage() {
           ) : summaryReport ? (
             <>
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="p-4 bg-muted/50 rounded-lg text-center">
-                  <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+              <div className="mb-6 grid grid-cols-3 gap-4">
+                <div className="bg-muted/50 rounded-lg p-4 text-center">
+                  <div className="text-muted-foreground mb-1 flex items-center justify-center gap-1">
                     <Clock className="h-4 w-4" />
                     <span className="text-xs">Czas całkowity</span>
                   </div>
-                  <p className="text-2xl font-mono font-semibold">
+                  <p className="font-mono text-2xl font-semibold">
                     {formatDuration(summaryReport.totalMinutes)}
                   </p>
                 </div>
-                <div className="p-4 bg-muted/50 rounded-lg text-center">
-                  <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                <div className="bg-muted/50 rounded-lg p-4 text-center">
+                  <div className="text-muted-foreground mb-1 flex items-center justify-center gap-1">
                     <DollarSign className="h-4 w-4" />
                     <span className="text-xs">Rozliczalny</span>
                   </div>
-                  <p className="text-2xl font-mono font-semibold">
+                  <p className="font-mono text-2xl font-semibold">
                     {formatDuration(summaryReport.billableMinutes)}
                   </p>
                 </div>
-                <div className="p-4 bg-muted/50 rounded-lg text-center">
-                  <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                <div className="bg-muted/50 rounded-lg p-4 text-center">
+                  <div className="text-muted-foreground mb-1 flex items-center justify-center gap-1">
                     <DollarSign className="h-4 w-4" />
                     <span className="text-xs">Kwota</span>
                   </div>
@@ -264,7 +264,7 @@ export default function TimeTrackingReportsPage() {
               {/* Breakdown by Client */}
               {summaryReport.byClient && summaryReport.byClient.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="font-medium flex items-center gap-2">
+                  <h4 className="flex items-center gap-2 font-medium">
                     <Users className="h-4 w-4" />
                     Podział według klientów
                   </h4>
@@ -281,7 +281,7 @@ export default function TimeTrackingReportsPage() {
                       ) => (
                         <div
                           key={index}
-                          className="flex items-center justify-between p-3 rounded-lg border"
+                          className="flex items-center justify-between rounded-lg border p-3"
                         >
                           <span>{item.clientName || 'Bez przypisania'}</span>
                           <div className="flex items-center gap-6 text-sm">
@@ -292,7 +292,7 @@ export default function TimeTrackingReportsPage() {
                               )}
                               %
                             </span>
-                            <span className="font-semibold w-24 text-right">
+                            <span className="w-24 text-right font-semibold">
                               {item.totalAmount.toLocaleString('pl-PL')} PLN
                             </span>
                           </div>
@@ -304,7 +304,7 @@ export default function TimeTrackingReportsPage() {
               )}
             </>
           ) : (
-            <p className="text-center text-muted-foreground py-8">
+            <p className="text-muted-foreground py-8 text-center">
               Brak danych dla wybranego okresu
             </p>
           )}
@@ -332,22 +332,22 @@ export default function TimeTrackingReportsPage() {
               {clientReport.map((client) => (
                 <div
                   key={client.clientId || 'no-client'}
-                  className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50"
+                  className="hover:bg-muted/50 flex items-center justify-between rounded-lg border p-4"
                 >
                   <div>
                     <h4 className="font-medium">{client.clientName || 'Bez klienta'}</h4>
-                    <p className="text-sm text-muted-foreground">{client.entryCount} wpisów</p>
+                    <p className="text-muted-foreground text-sm">{client.entryCount} wpisów</p>
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-right">
                       <p className="font-mono font-semibold">
                         {formatDuration(client.totalMinutes)}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-muted-foreground text-xs">
                         {formatDuration(client.billableMinutes)} rozliczalnego
                       </p>
                     </div>
-                    <div className="text-right min-w-[100px]">
+                    <div className="min-w-[100px] text-right">
                       <p className="font-semibold">
                         {client.totalAmount.toLocaleString('pl-PL')} PLN
                       </p>
@@ -357,7 +357,7 @@ export default function TimeTrackingReportsPage() {
               ))}
             </div>
           ) : (
-            <p className="text-center text-muted-foreground py-8">
+            <p className="text-muted-foreground py-8 text-center">
               Brak danych dla wybranego okresu
             </p>
           )}

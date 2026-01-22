@@ -11,23 +11,23 @@ export function Sidebar({ title, navItems, className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'bg-apptax-navy flex flex-col transition-all duration-300 shadow-apptax-lg',
+        'bg-apptax-navy shadow-apptax-lg flex flex-col transition-all duration-300',
         isOpen ? 'w-64' : 'w-16',
         className
       )}
     >
       <SidebarHeader title={title} />
-      <nav className="flex-1 p-2 space-y-1">
+      <nav className="flex-1 space-y-1 p-2">
         {navItems.map((item) => (
           <SidebarItem key={item.href} item={item} />
         ))}
       </nav>
 
       {/* AppTax Footer Branding */}
-      <div className={cn('p-4 border-t border-white/10', !isOpen && 'p-2')}>
+      <div className={cn('border-t border-white/10 p-4', !isOpen && 'p-2')}>
         {isOpen ? (
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
+            <div className="bg-apptax-teal ai-glow h-2 w-2 rounded-full" />
             <span className="text-xs text-white/50">Zasilany AI</span>
           </div>
         ) : (

@@ -178,7 +178,7 @@ export function TimeEntriesList({
           </CardHeader>
         )}
         <CardContent>
-          <p className="text-sm text-destructive">Nie udało się załadować wpisów czasu</p>
+          <p className="text-destructive text-sm">Nie udało się załadować wpisów czasu</p>
         </CardContent>
       </Card>
     );
@@ -205,12 +205,12 @@ export function TimeEntriesList({
                 onClick={() => setShowFilters(!showFilters)}
                 className={cn(hasActiveFilters && 'text-primary')}
               >
-                <Filter className="h-4 w-4 mr-1" />
+                <Filter className="mr-1 h-4 w-4" />
                 Filtry
                 {hasActiveFilters && (
                   <Badge
                     variant="default"
-                    className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+                    className="ml-1 flex h-5 w-5 items-center justify-center p-0 text-xs"
                   >
                     !
                   </Badge>

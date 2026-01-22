@@ -101,8 +101,8 @@ export function BulkActionsToolbar({
 
   return (
     <>
-      <div className="flex items-center gap-2 p-3 bg-apptax-soft-teal/30 rounded-lg border border-apptax-soft-teal">
-        <span className="text-sm font-medium text-apptax-navy">
+      <div className="bg-apptax-soft-teal/30 border-apptax-soft-teal flex items-center gap-2 rounded-lg border p-3">
+        <span className="text-apptax-navy text-sm font-medium">
           Zaznaczono {selectedClients.length}{' '}
           {selectedClients.length === 1
             ? 'klienta'
@@ -166,7 +166,7 @@ export function BulkActionsToolbar({
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-40 overflow-y-auto">
-            <ul className="text-sm text-muted-foreground space-y-1">
+            <ul className="text-muted-foreground space-y-1 text-sm">
               {activeClients.slice(0, 10).map((client) => (
                 <li key={client.id}>• {client.name}</li>
               ))}
@@ -194,7 +194,7 @@ export function BulkActionsToolbar({
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-40 overflow-y-auto">
-            <ul className="text-sm text-muted-foreground space-y-1">
+            <ul className="text-muted-foreground space-y-1 text-sm">
               {inactiveClients.slice(0, 10).map((client) => (
                 <li key={client.id}>• {client.name}</li>
               ))}

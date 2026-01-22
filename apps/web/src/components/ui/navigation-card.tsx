@@ -31,7 +31,7 @@ export function NavigationCard({
     <Card className={cn('flex flex-1 flex-col', className)}>
       <CardHeader className="flex-1 pb-6">
         <div className="flex items-center gap-3 pb-2">
-          <div className={cn('text-white p-3 rounded-xl', gradient)}>
+          <div className={cn('rounded-xl p-3 text-white', gradient)}>
             <Icon className="h-6 w-6" />
           </div>
           <CardTitle className="text-apptax-navy">{title}</CardTitle>

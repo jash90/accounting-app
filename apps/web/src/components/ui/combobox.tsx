@@ -107,13 +107,13 @@ export function Combobox({
             aria-expanded={open}
             disabled={disabled}
             className={cn(
-              'w-full justify-between font-normal pr-14',
+              'w-full justify-between pr-14 font-normal',
               !selectedOption && 'text-muted-foreground',
               className
             )}
           >
             <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
-            <ChevronsUpDown className="h-4 w-4 opacity-50 absolute right-3" aria-hidden="true" />
+            <ChevronsUpDown className="absolute right-3 h-4 w-4 opacity-50" aria-hidden="true" />
           </Button>
         </PopoverTrigger>
         {/* Clear button outside the trigger to avoid nested interactive elements */}
@@ -131,18 +131,18 @@ export function Combobox({
               }
             }}
             disabled={disabled}
-            className="absolute right-8 top-1/2 -translate-y-1/2 rounded-sm hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 disabled:opacity-50"
+            className="hover:bg-accent focus:ring-ring absolute top-1/2 right-8 -translate-y-1/2 rounded-sm focus:ring-2 focus:ring-offset-1 focus:outline-none disabled:opacity-50"
           >
             <X className="h-4 w-4 opacity-50 hover:opacity-100" aria-hidden="true" />
           </button>
         )}
       </div>
       <PopoverContent
-        className="p-0 min-w-0"
+        className="min-w-0 p-0"
         align="start"
         style={{ width: 'var(--radix-popover-trigger-width)' }}
       >
-        <div className="p-2 border-b">
+        <div className="border-b p-2">
           <Input
             placeholder={searchPlaceholder}
             value={search}
@@ -157,7 +157,7 @@ export function Combobox({
         </div>
         <div className="max-h-[200px] overflow-y-auto">
           {filteredOptions.length === 0 ? (
-            <div className="py-6 text-center text-sm text-muted-foreground">{emptyText}</div>
+            <div className="text-muted-foreground py-6 text-center text-sm">{emptyText}</div>
           ) : (
             <div className="p-1" role="listbox" aria-label={placeholder}>
               {filteredOptions.map((option, index) => (
@@ -168,7 +168,7 @@ export function Combobox({
                   aria-selected={value === option.value}
                   onClick={() => handleSelect(option.value)}
                   className={cn(
-                    'relative flex w-full cursor-pointer select-none items-start rounded-sm py-2 px-3 text-sm outline-none transition-colors',
+                    'relative flex w-full cursor-pointer items-start rounded-sm px-3 py-2 text-sm transition-colors outline-none select-none',
                     'hover:bg-accent hover:text-accent-foreground',
                     'focus:bg-accent focus:text-accent-foreground',
                     value === option.value && 'bg-accent/50',
@@ -177,17 +177,17 @@ export function Combobox({
                 >
                   <Check
                     className={cn(
-                      'mr-2 h-4 w-4 shrink-0 mt-0.5',
+                      'mt-0.5 mr-2 h-4 w-4 shrink-0',
                       value === option.value ? 'opacity-100' : 'opacity-0'
                     )}
                   />
-                  <span className="flex-1 whitespace-normal break-words text-left">
+                  <span className="flex-1 text-left break-words whitespace-normal">
                     {option.displayLabel ??
                       (option.label.includes(' - ')
                         ? option.label.split(' - ').slice(1).join(' - ')
                         : option.label)}
                   </span>
-                  <span className="ml-2 shrink-0 font-mono text-xs text-muted-foreground">
+                  <span className="text-muted-foreground ml-2 shrink-0 font-mono text-xs">
                     {option.value}
                   </span>
                 </button>

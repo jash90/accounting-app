@@ -85,11 +85,11 @@ export default function TasksDashboardPage() {
   const showSettings = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER;
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto space-y-6 p-6">
       <div>
-        <h1 className="text-3xl font-bold text-apptax-navy flex items-center gap-3">
+        <h1 className="text-apptax-navy flex items-center gap-3 text-3xl font-bold">
           Moduł Zadania
-          <div className="w-3 h-3 rounded-full bg-apptax-teal" />
+          <div className="bg-apptax-teal h-3 w-3 rounded-full" />
         </h1>
         <p className="text-muted-foreground mt-1">Zarządzanie zadaniami z wieloma widokami</p>
       </div>

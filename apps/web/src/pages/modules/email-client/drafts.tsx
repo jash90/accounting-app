@@ -161,15 +161,15 @@ export default function EmailDrafts() {
   const conflictCount = conflicts?.length || 0;
 
   return (
-    <div className="h-full flex">
+    <div className="flex h-full">
       <EmailSidebar />
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col">
         <div className="border-b p-4">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold">Szkice</h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 {drafts?.length || 0} zapisanych szkiców
                 {conflictCount > 0 && (
                   <span className="ml-2 text-yellow-600">
@@ -186,9 +186,9 @@ export default function EmailDrafts() {
                 disabled={syncDrafts.isPending}
               >
                 {syncDrafts.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <RefreshCw className="h-4 w-4 mr-2" />
+                  <RefreshCw className="mr-2 h-4 w-4" />
                 )}
                 Synchronizuj
               </Button>
@@ -200,9 +200,9 @@ export default function EmailDrafts() {
                   disabled={deleteAllDrafts.isPending}
                 >
                   {deleteAllDrafts.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash2 className="mr-2 h-4 w-4" />
                   )}
                   Usuń wszystkie
                 </Button>
@@ -213,8 +213,8 @@ export default function EmailDrafts() {
 
         <div className="flex-1 overflow-auto">
           {!drafts || drafts.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
-              <Edit className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <div className="text-muted-foreground p-8 text-center">
+              <Edit className="mx-auto mb-4 h-12 w-12 opacity-50" />
               <p>Brak zapisanych szkiców</p>
               <Button
                 variant="outline"
@@ -228,15 +228,15 @@ export default function EmailDrafts() {
           ) : (
             <div className="divide-y">
               {drafts.map((draft) => (
-                <div key={draft.id} className="p-4 hover:bg-muted/50">
+                <div key={draft.id} className="hover:bg-muted/50 p-4">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <SyncStatusIcon status={draft.syncStatus} />
-                        <p className="font-semibold truncate">Do: {draft.to.join(', ')}</p>
+                        <p className="truncate font-semibold">Do: {draft.to.join(', ')}</p>
                         {draft.isAiGenerated && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                            <Sparkles className="h-3 w-3 mr-1" />
+                          <span className="inline-flex items-center rounded bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
+                            <Sparkles className="mr-1 h-3 w-3" />
                             AI
                           </span>
                         )}
@@ -247,22 +247,22 @@ export default function EmailDrafts() {
                             className="h-6 px-2 text-yellow-600 hover:text-yellow-700"
                             onClick={() => openConflictDialog(draft)}
                           >
-                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            <AlertTriangle className="mr-1 h-3 w-3" />
                             Rozwiąż
                           </Button>
                         )}
                       </div>
-                      <p className="font-medium text-sm mt-1 truncate">
+                      <p className="mt-1 truncate text-sm font-medium">
                         {draft.subject || '(Brak tematu)'}
                       </p>
-                      <p className="text-sm text-muted-foreground mt-1 truncate">
+                      <p className="text-muted-foreground mt-1 truncate text-sm">
                         {draft.textContent.substring(0, 100)}...
                       </p>
-                      <p className="text-xs text-muted-foreground mt-2">
+                      <p className="text-muted-foreground mt-2 text-xs">
                         Zaktualizowano: {new Date(draft.updatedAt).toLocaleString('pl-PL')}
                       </p>
                     </div>
-                    <div className="flex gap-2 ml-4">
+                    <div className="ml-4 flex gap-2">
                       <Button
                         size="sm"
                         variant="outline"
@@ -299,7 +299,7 @@ export default function EmailDrafts() {
                 <p className="text-sm font-medium">
                   Szkic: {selectedConflict.subject || '(Brak tematu)'}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Do: {selectedConflict.to.join(', ')}
                 </p>
               </div>
@@ -310,14 +310,14 @@ export default function EmailDrafts() {
                 onClick={() => handleResolveConflict('keep_imap')}
                 disabled={resolveConflict.isPending}
               >
-                {resolveConflict.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {resolveConflict.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Zachowaj wersję z serwera
               </Button>
               <Button
                 onClick={() => handleResolveConflict('keep_local')}
                 disabled={resolveConflict.isPending}
               >
-                {resolveConflict.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {resolveConflict.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Zachowaj wersję lokalną
               </Button>
             </DialogFooter>
@@ -347,7 +347,7 @@ export default function EmailDrafts() {
                 onClick={handleDeleteAll}
                 disabled={deleteAllDrafts.isPending}
               >
-                {deleteAllDrafts.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {deleteAllDrafts.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Usuń wszystkie szkice
               </Button>
             </DialogFooter>
