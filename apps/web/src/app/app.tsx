@@ -9,6 +9,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/auth-context';
 import { NavigationProvider } from '@/contexts/navigation-context';
 import { queryClient } from '@/lib/api/query-client';
+import { NotificationSocketProvider } from '@/lib/contexts/notification-socket-context';
+
 
 import Routes from './routes';
 
@@ -18,11 +20,13 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <AuthProvider>
-            <NavigationProvider>
-              <Routes />
-              <Toaster />
-              <SonnerToaster position="top-right" />
-            </NavigationProvider>
+            <NotificationSocketProvider>
+              <NavigationProvider>
+                <Routes />
+                <Toaster />
+                <SonnerToaster position="top-right" />
+              </NavigationProvider>
+            </NotificationSocketProvider>
           </AuthProvider>
         </BrowserRouter>
 

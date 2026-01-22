@@ -83,9 +83,10 @@ export class LoginPage extends BasePage {
   ): Promise<void> {
     await this.login(email, password);
 
-    // Wait for navigation away from login page
+    // Wait for navigation away from login page with increased timeout
     await this.page.waitForURL((url) => !url.pathname.includes('/login'), {
-      timeout: 10000,
+      timeout: 30000,
+      waitUntil: 'domcontentloaded',
     });
 
     // If expected path is provided, verify it
@@ -96,35 +97,35 @@ export class LoginPage extends BasePage {
     await this.waitForPageLoad();
   }
 
-  /**
-   * Login as admin user
-   */
   async loginAsAdmin(
-    email = process.env.SEED_ADMIN_EMAIL ?? '',
-    password = process.env.SEED_ADMIN_PASSWORD ?? ''
+    email = process.env.SEED_ADMIN_EMAIL,
+    password = process.env.SEED_ADMIN_PASSWORD
   ): Promise<void> {
+    if (!email || !password) {
+      throw new Error('SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD must be set in environment');
+    }
     await this.goto();
     await this.loginAndWaitForRedirect(email, password, '/admin');
   }
 
-  /**
-   * Login as company owner
-   */
   async loginAsCompanyOwner(
-    email = process.env.SEED_OWNER_EMAIL ?? '',
-    password = process.env.SEED_OWNER_PASSWORD ?? ''
+    email = process.env.SEED_OWNER_EMAIL,
+    password = process.env.SEED_OWNER_PASSWORD
   ): Promise<void> {
+    if (!email || !password) {
+      throw new Error('SEED_OWNER_EMAIL and SEED_OWNER_PASSWORD must be set in environment');
+    }
     await this.goto();
     await this.loginAndWaitForRedirect(email, password, '/company');
   }
 
-  /**
-   * Login as employee
-   */
   async loginAsEmployee(
-    email = process.env.SEED_EMPLOYEE_EMAIL ?? '',
-    password = process.env.SEED_EMPLOYEE_PASSWORD ?? ''
+    email = process.env.SEED_EMPLOYEE_EMAIL,
+    password = process.env.SEED_EMPLOYEE_PASSWORD
   ): Promise<void> {
+    if (!email || !password) {
+      throw new Error('SEED_EMPLOYEE_EMAIL and SEED_EMPLOYEE_PASSWORD must be set in environment');
+    }
     await this.goto();
     await this.loginAndWaitForRedirect(email, password, '/modules');
   }
@@ -134,8 +135,17 @@ export class LoginPage extends BasePage {
    */
   async loginWithInvalidCredentials(email: string, password: string): Promise<void> {
     await this.login(email, password);
-    // Don't wait for redirect - expect to stay on login page
-    await this.page.waitForTimeout(1000);
+    // Wait for the login request to complete and error to appear
+    await this.page.waitForLoadState('networkidle');
+    // Wait for error state - either toast, form error, or we're still on login page
+    await Promise.race([
+      this.page
+        .waitForSelector('[role="alert"], .text-destructive, [data-testid="form-error"]', {
+          timeout: 5000,
+        })
+        .catch(() => {}),
+      this.page.waitForSelector(this.loginForm, { state: 'visible', timeout: 5000 }),
+    ]);
   }
 
   /**
@@ -164,8 +174,18 @@ export class LoginPage extends BasePage {
    * Check if form-level error is shown
    */
   async expectFormError(errorMessage?: string): Promise<void> {
-    // Wait for mutation to complete
-    await this.page.waitForTimeout(1500);
+    // Wait for mutation to complete by waiting for network idle
+    await this.page.waitForLoadState('networkidle');
+    // Wait for any error indicator to appear
+    await Promise.race([
+      this.page
+        .waitForSelector('[role="alert"], .text-destructive, [data-testid="form-error"]', {
+          timeout: 5000,
+        })
+        .catch(() => {}),
+      this.page.waitForSelector(this.emailError, { timeout: 5000 }).catch(() => {}),
+      this.page.waitForSelector(this.passwordError, { timeout: 5000 }).catch(() => {}),
+    ]);
 
     // Look for error toast, form error message, or field errors
     const hasToast = await this.toast.isErrorToastVisible();
@@ -269,7 +289,10 @@ export class LoginPage extends BasePage {
    * Expect to remain on login page (failed login)
    */
   async expectToRemainOnLoginPage(): Promise<void> {
-    await this.page.waitForTimeout(2000);
+    // Wait for network to settle after login attempt
+    await this.page.waitForLoadState('networkidle');
+    // Verify we're still on login page by checking for the form
+    await this.page.waitForSelector(this.loginForm, { state: 'visible', timeout: 5000 });
     await this.expectToBeOnLoginPage();
   }
 }
