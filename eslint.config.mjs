@@ -1,21 +1,20 @@
-import js from '@eslint/js';
-import tseslint from 'typescript-eslint';
-import react from 'eslint-plugin-react';
-import reactHooks from 'eslint-plugin-react-hooks';
-import prettier from 'eslint-config-prettier';
-import globals from 'globals';
-import importPlugin from 'eslint-plugin-import';
-import jsxA11y from 'eslint-plugin-jsx-a11y';
-import security from 'eslint-plugin-security';
-
 // New plugins
 import nestjsTypedPlugin from '@darraghor/eslint-plugin-nestjs-typed';
-import trilon from '@trilon/eslint-plugin';
-import pluginQuery from '@tanstack/eslint-plugin-query';
+import js from '@eslint/js';
 import nxPlugin from '@nx/eslint-plugin';
+import pluginQuery from '@tanstack/eslint-plugin-query';
+import trilon from '@trilon/eslint-plugin';
+import prettier from 'eslint-config-prettier';
+import importPlugin from 'eslint-plugin-import';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
+import playwright from 'eslint-plugin-playwright';
+import react from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
 // Note: eslint-plugin-tailwindcss removed - not compatible with Tailwind CSS v4
 import reactRefresh from 'eslint-plugin-react-refresh';
-import playwright from 'eslint-plugin-playwright';
+import security from 'eslint-plugin-security';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
 
 // Extract the classic plugin for flat config usage
 const nestjsTyped = nestjsTypedPlugin.plugin;
@@ -110,11 +109,7 @@ export default tseslint.config(
       'import/order': [
         'warn',
         {
-          groups: [
-            ['builtin', 'external'],
-            ['internal'],
-            ['parent', 'sibling', 'index'],
-          ],
+          groups: [['builtin', 'external'], ['internal'], ['parent', 'sibling', 'index']],
           pathGroups: [
             {
               pattern: '@nestjs/**',
@@ -151,7 +146,8 @@ export default tseslint.config(
 
       // === @darraghor/nestjs-typed ===
       // DI & Injection (warn level - may have false positives with dynamic module registration)
-      '@darraghor/nestjs-typed/injectable-should-be-provided': 'warn',
+      // Disabled due to false positives in Nx monorepo structure (controllers in libs)
+      '@darraghor/nestjs-typed/injectable-should-be-provided': 'off',
       '@darraghor/nestjs-typed/provided-injected-should-match-factory-parameters': 'warn',
 
       // Open API/Swagger
@@ -255,11 +251,7 @@ export default tseslint.config(
       'import/order': [
         'warn',
         {
-          groups: [
-            ['builtin', 'external'],
-            ['internal'],
-            ['parent', 'sibling', 'index'],
-          ],
+          groups: [['builtin', 'external'], ['internal'], ['parent', 'sibling', 'index']],
           pathGroups: [
             {
               pattern: 'react',
