@@ -3,47 +3,49 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { TerminusModule } from '@nestjs/terminus';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { join } from 'path';
 
 import { AuthModule, JwtAuthGuard } from '@accounting/auth';
 import {
-  User,
-  Company,
-  Module as ModuleEntity,
-  CompanyModuleAccess,
-  UserModulePermission,
   AIConfiguration,
+  AIContext,
   AIConversation,
   AIMessage,
-  AIContext,
-  TokenUsage,
-  TokenLimit,
   ChangeLog,
   Client,
-  ClientFieldDefinition,
   ClientCustomFieldValue,
+  ClientDeleteRequest,
+  ClientFieldDefinition,
   ClientIcon,
   ClientIconAssignment,
-  NotificationSettings,
-  ClientDeleteRequest,
+  Company,
+  CompanyModuleAccess,
   EmailConfiguration,
+  Module as ModuleEntity,
+  Notification,
+  NotificationSettings,
   Task,
+  TaskComment,
+  TaskDependency,
   TaskLabel,
   TaskLabelAssignment,
-  TaskDependency,
-  TaskComment,
   TimeEntry,
   TimeSettings,
+  TokenLimit,
+  TokenUsage,
+  User,
+  UserModulePermission,
 } from '@accounting/common';
 import { ChangeLogModule } from '@accounting/infrastructure/change-log';
 import { EmailModule } from '@accounting/infrastructure/email';
 import { StorageModule } from '@accounting/infrastructure/storage';
 import { AIAgentModule } from '@accounting/modules/ai-agent';
 import { ClientsModule } from '@accounting/modules/clients';
-import { EmailDraft, EmailClientModule } from '@accounting/modules/email-client';
+import { EmailClientModule, EmailDraft } from '@accounting/modules/email-client';
+import { NotificationsModule } from '@accounting/modules/notifications';
 import { TasksModule } from '@accounting/modules/tasks';
 import { TimeTrackingModule } from '@accounting/modules/time-tracking';
 
@@ -76,6 +78,7 @@ const ENTITIES = [
   ClientIcon,
   ClientIconAssignment,
   NotificationSettings,
+  Notification,
   ClientDeleteRequest,
   EmailConfiguration,
   EmailDraft,
@@ -94,13 +97,17 @@ const ENTITIES = [
       isGlobal: true,
       envFilePath: '.env',
     }),
-    ThrottlerModule.forRoot([
-      {
-        name: 'default',
-        ttl: 60000, // 1 minute
-        limit: 100, // 100 requests per minute (global limit for all endpoints)
-      },
-    ]),
+    ThrottlerModule.forRoot(
+      process.env.DISABLE_THROTTLER === 'true'
+        ? []
+        : [
+            {
+              name: 'default',
+              ttl: 60000,
+              limit: 100,
+            },
+          ]
+    ),
     TypeOrmModule.forRootAsync({
       useFactory: () => {
         const isProduction = process.env.NODE_ENV === 'production';
@@ -144,6 +151,7 @@ const ENTITIES = [
     EmailClientModule,
     TasksModule,
     TimeTrackingModule,
+    NotificationsModule,
     ModulesModule,
     SeedersModule,
     EmailModule,

@@ -86,6 +86,11 @@ const TimeTrackingSettingsPage = lazy(
   () => import('@/pages/modules/time-tracking/time-tracking-settings')
 );
 
+// Notifications Pages
+const NotificationsInboxPage = lazy(() => import('@/pages/notifications/notifications-inbox'));
+const NotificationsArchivePage = lazy(() => import('@/pages/notifications/notifications-archive'));
+const NotificationSettingsPage = lazy(() => import('@/pages/notifications/notifications-settings'));
+
 function PageLoader() {
   return (
     <div className="flex h-screen items-center justify-center">
@@ -1011,6 +1016,41 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <AccountSettingsPage />
+            </Suspense>
+          }
+        />
+      </Route>
+
+      {/* Notifications Routes - Accessible to all authenticated users */}
+      <Route
+        path="/notifications/*"
+        element={
+          <ProtectedRoute>
+            <EmployeeLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route
+          index
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <NotificationsInboxPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="archive"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <NotificationsArchivePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <NotificationSettingsPage />
             </Suspense>
           }
         />

@@ -14,6 +14,7 @@ export * from './lib/enums/task-priority.enum';
 export * from './lib/enums/task-dependency-type.enum';
 export * from './lib/enums/time-entry-status.enum';
 export * from './lib/enums/time-rounding-method.enum';
+export * from './lib/enums/notification-type.enum';
 
 // Constants
 export * from './lib/constants';
@@ -54,6 +55,7 @@ export * from './lib/entities/task-dependency.entity';
 export * from './lib/entities/task-comment.entity';
 export * from './lib/entities/time-entry.entity';
 export * from './lib/entities/time-settings.entity';
+export * from './lib/entities/notification.entity';
 export { AIProvider } from './lib/entities/ai-configuration.entity';
 export { AIMessageRole } from './lib/entities/ai-message.entity';
 export * from './lib/dto/responses';

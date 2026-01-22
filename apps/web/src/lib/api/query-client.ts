@@ -129,4 +129,13 @@ export const queryKeys = {
         ['time-reports', 'by-client', params] as const,
     },
   },
+  notifications: {
+    all: ['notifications'] as const,
+    list: (filters?: Record<string, unknown>) => ['notifications', 'list', filters] as const,
+    archived: (filters?: Record<string, unknown>) =>
+      ['notifications', 'archived', filters] as const,
+    detail: (id: string) => ['notifications', id] as const,
+    unreadCount: ['notifications', 'unread-count'] as const,
+    settings: ['notifications', 'settings'] as const,
+  },
 };

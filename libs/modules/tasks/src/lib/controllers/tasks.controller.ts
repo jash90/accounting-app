@@ -9,6 +9,7 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -19,14 +20,17 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
-import { User } from '@accounting/common';
+import { NotificationType, User } from '@accounting/common';
+import { NotificationInterceptor, NotifyOn } from '@accounting/modules/notifications';
 import {
   ModuleAccessGuard,
   PermissionGuard,
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
+
 import {
   ClientTaskStatisticsDto,
   KanbanBoardResponseDto,
@@ -56,6 +60,7 @@ import { TasksService } from '../services/tasks.service';
 )
 @Controller('modules/tasks')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
+@UseInterceptors(NotificationInterceptor)
 @RequireModule('tasks')
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
@@ -159,6 +164,13 @@ export class TasksController {
   @ApiResponse({ status: 201, description: 'Task created', type: TaskResponseDto })
   @ApiResponse({ status: 400, description: 'Validation error', type: TaskErrorResponseDto })
   @RequirePermission('tasks', 'write')
+  @NotifyOn({
+    type: NotificationType.TASK_CREATED,
+    titleTemplate: '{{actor.firstName}} utworzył(a) zadanie "{{title}}"',
+    messageTemplate: 'Nowe zadanie zostało utworzone',
+    actionUrlTemplate: '/modules/tasks/list?taskId={{id}}',
+    recipientResolver: 'assignee',
+  })
   async create(@Body() dto: CreateTaskDto, @CurrentUser() user: User) {
     return this.tasksService.create(dto, user);
   }
@@ -192,6 +204,12 @@ export class TasksController {
   @ApiResponse({ status: 200, description: 'Task updated', type: TaskResponseDto })
   @ApiResponse({ status: 404, description: 'Task not found', type: TaskErrorResponseDto })
   @RequirePermission('tasks', 'write')
+  @NotifyOn({
+    type: NotificationType.TASK_UPDATED,
+    titleTemplate: '{{actor.firstName}} zaktualizował(a) zadanie "{{title}}"',
+    actionUrlTemplate: '/modules/tasks/list?taskId={{id}}',
+    recipientResolver: 'assignee',
+  })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateTaskDto,
@@ -206,6 +224,11 @@ export class TasksController {
   @ApiResponse({ status: 200, description: 'Task deleted', type: TaskSuccessResponseDto })
   @ApiResponse({ status: 404, description: 'Task not found', type: TaskErrorResponseDto })
   @RequirePermission('tasks', 'delete')
+  @NotifyOn({
+    type: NotificationType.TASK_DELETED,
+    titleTemplate: '{{actor.firstName}} usunął/usunęła zadanie',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     await this.tasksService.remove(id, user);
     return { message: 'Zadanie zostało usunięte' };

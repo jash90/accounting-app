@@ -47,47 +47,66 @@ export class DropProjectIdFromTimeEntries1768834398570 implements MigrationInter
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.startTransaction();
     try {
-      // Step 1: Create backup table and preserve projectId data
-      console.warn(`[${this.migrationName}] Creating backup of projectId data before removal...`);
-
-      await queryRunner.query(`
-        CREATE TABLE IF NOT EXISTS "time_entries_project_backup" (
-          "timeEntryId" uuid NOT NULL PRIMARY KEY,
-          "projectId" uuid,
-          "backedUpAt" TIMESTAMP DEFAULT NOW()
-        )
+      // Check if projectId column exists before attempting backup
+      const columnExists = await queryRunner.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns
+          WHERE table_schema = 'public'
+          AND table_name = 'time_entries'
+          AND column_name = 'projectId'
+        ) as exists
       `);
 
-      await queryRunner.query(`
-        INSERT INTO "time_entries_project_backup" ("timeEntryId", "projectId")
-        SELECT "id", "projectId" FROM "time_entries" WHERE "projectId" IS NOT NULL
-        ON CONFLICT ("timeEntryId") DO NOTHING
-      `);
+      if (columnExists[0]?.exists) {
+        // Step 1: Create backup table and preserve projectId data
+        console.warn(`[${this.migrationName}] Creating backup of projectId data before removal...`);
 
-      // Log the number of backed up entries
-      const result = await queryRunner.query(
-        `SELECT COUNT(*) as count FROM "time_entries_project_backup"`
-      );
-      console.log(
-        `[${this.migrationName}] Backed up ${result[0]?.count || 0} time entry-project associations`
-      );
+        await queryRunner.query(`
+          CREATE TABLE IF NOT EXISTS "time_entries_project_backup" (
+            "timeEntryId" uuid NOT NULL PRIMARY KEY,
+            "projectId" uuid,
+            "backedUpAt" TIMESTAMP DEFAULT NOW()
+          )
+        `);
 
-      // Step 2: Drop the foreign key constraint
-      await queryRunner.query(
-        `ALTER TABLE "time_entries" DROP CONSTRAINT IF EXISTS "FK_f051d95ecf3cd671445ef0c9be8"`
-      );
+        await queryRunner.query(`
+          INSERT INTO "time_entries_project_backup" ("timeEntryId", "projectId")
+          SELECT "id", "projectId" FROM "time_entries" WHERE "projectId" IS NOT NULL
+          ON CONFLICT ("timeEntryId") DO NOTHING
+        `);
 
-      // Step 3: Drop the index on (companyId, projectId)
-      await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_23cbfc98b81c157d8c8f758925"`);
+        // Log the number of backed up entries
+        const result = await queryRunner.query(
+          `SELECT COUNT(*) as count FROM "time_entries_project_backup"`
+        );
+        console.log(
+          `[${this.migrationName}] Backed up ${result[0]?.count || 0} time entry-project associations`
+        );
 
-      // Step 4: Drop the projectId column
-      console.warn(`[${this.migrationName}] Dropping projectId column from time_entries table...`);
-      await queryRunner.query(`ALTER TABLE "time_entries" DROP COLUMN IF EXISTS "projectId"`);
+        // Step 2: Drop the foreign key constraint
+        await queryRunner.query(
+          `ALTER TABLE "time_entries" DROP CONSTRAINT IF EXISTS "FK_f051d95ecf3cd671445ef0c9be8"`
+        );
+
+        // Step 3: Drop the index on (companyId, projectId)
+        await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_23cbfc98b81c157d8c8f758925"`);
+
+        // Step 4: Drop the projectId column
+        console.warn(
+          `[${this.migrationName}] Dropping projectId column from time_entries table...`
+        );
+        await queryRunner.query(`ALTER TABLE "time_entries" DROP COLUMN IF EXISTS "projectId"`);
+
+        console.log(
+          `[${this.migrationName}] Migration complete. Backup data preserved in time_entries_project_backup table.`
+        );
+      } else {
+        console.log(
+          `[${this.migrationName}] projectId column does not exist - skipping (already migrated).`
+        );
+      }
 
       await queryRunner.commitTransaction();
-      console.log(
-        `[${this.migrationName}] Migration complete. Backup data preserved in time_entries_project_backup table.`
-      );
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;

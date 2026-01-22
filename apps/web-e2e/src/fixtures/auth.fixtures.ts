@@ -36,7 +36,14 @@ export const test = base.extend<AuthFixtures>({
 
     // Wait for page to be fully loaded and auth ready
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for the main navigation to be visible as a reliable indicator the page is ready
+    await page.waitForSelector(
+      'nav, [data-testid="main-navigation"], [data-testid="admin-sidebar"]',
+      {
+        state: 'visible',
+        timeout: 10000,
+      }
+    );
 
     await use(page);
   },
@@ -50,7 +57,14 @@ export const test = base.extend<AuthFixtures>({
 
     // Wait for page to be fully loaded and auth ready
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for the main navigation to be visible as a reliable indicator the page is ready
+    await page.waitForSelector(
+      'nav, [data-testid="main-navigation"], [data-testid="company-sidebar"]',
+      {
+        state: 'visible',
+        timeout: 10000,
+      }
+    );
 
     await use(page);
   },
@@ -64,7 +78,14 @@ export const test = base.extend<AuthFixtures>({
 
     // Wait for page to be fully loaded and auth ready
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for the main navigation to be visible as a reliable indicator the page is ready
+    await page.waitForSelector(
+      'nav, [data-testid="main-navigation"], [data-testid="employee-sidebar"]',
+      {
+        state: 'visible',
+        timeout: 10000,
+      }
+    );
 
     await use(page);
   },
@@ -100,24 +121,43 @@ export const test = base.extend<AuthFixtures>({
 export { expect } from '@playwright/test';
 
 /**
- * Test data credentials
+ * Get environment variable with runtime validation.
+ * Throws an error if the variable is not defined.
  */
+function getRequiredEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(
+      `Required environment variable ${name} is not defined. ` +
+        `Please check your .env file or environment configuration.`
+    );
+  }
+  return value;
+}
+
+/**
+ * Get optional environment variable with a fallback value.
+ */
+function getOptionalEnv(name: string, fallback: string): string {
+  return process.env[name] || fallback;
+}
+
 export const TEST_CREDENTIALS = {
   admin: {
-    email: process.env.SEED_ADMIN_EMAIL ?? '',
-    password: process.env.SEED_ADMIN_PASSWORD ?? '',
+    email: getRequiredEnv('SEED_ADMIN_EMAIL'),
+    password: getRequiredEnv('SEED_ADMIN_PASSWORD'),
   },
   companyOwner: {
-    email: process.env.SEED_OWNER_EMAIL ?? '',
-    password: process.env.SEED_OWNER_PASSWORD ?? '',
+    email: getRequiredEnv('SEED_OWNER_EMAIL'),
+    password: getRequiredEnv('SEED_OWNER_PASSWORD'),
   },
   employee: {
-    email: process.env.SEED_EMPLOYEE_EMAIL ?? '',
-    password: process.env.SEED_EMPLOYEE_PASSWORD ?? '',
+    email: getRequiredEnv('SEED_EMPLOYEE_EMAIL'),
+    password: getRequiredEnv('SEED_EMPLOYEE_PASSWORD'),
   },
-  // Placeholder for Company B (if seeded)
   companyBEmployee: {
-    email: 'employee-b@example.com',
-    password: 'password',
+    // Optional: uses fallback if not defined (for backwards compatibility)
+    email: getOptionalEnv('SEED_COMPANY_B_EMPLOYEE_EMAIL', 'employee.companyb@example.com'),
+    password: getOptionalEnv('SEED_COMPANY_B_EMPLOYEE_PASSWORD', 'EmployeeB123456!'),
   },
 };

@@ -14,7 +14,6 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
-
     "strict": true,
     "strictNullChecks": true,
     "strictFunctionTypes": true,
@@ -29,13 +28,11 @@
     "noPropertyAccessFromIndexSignature": false,
     "useUnknownInCatchVariables": true,
     "exactOptionalPropertyTypes": false,
-
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-
     "paths": {
       "@accounting/api/admin": ["apps/api/src/admin/src/index.ts"],
       "@accounting/auth": ["libs/auth/src/index.ts"],
@@ -52,7 +49,8 @@
       "@accounting/infrastructure/email": ["libs/infrastructure/email/src/index.ts"],
       "@accounting/infrastructure/storage": ["libs/infrastructure/storage/src/index.ts"],
       "@accounting/infrastructure/change-log": ["libs/infrastructure/change-log/src/index.ts"],
-      "@/*": ["apps/web/src/*"]
+      "@/*": ["apps/web/src/*"],
+      "@accounting/modules/notifications": ["libs/modules/notifications/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"]

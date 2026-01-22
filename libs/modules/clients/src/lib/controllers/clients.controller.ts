@@ -34,7 +34,8 @@ import {
 import { Request, Response } from 'express';
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
-import { PaginationQueryDto, User } from '@accounting/common';
+import { NotificationType, PaginationQueryDto, User } from '@accounting/common';
+import { NotificationInterceptor, NotifyOn } from '@accounting/modules/notifications';
 import {
   ModuleAccessGuard,
   OwnerOrAdmin,
@@ -103,6 +104,7 @@ import { ClientStatisticsService } from '../services/statistics.service';
 )
 @Controller('modules/clients')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
+@UseInterceptors(NotificationInterceptor)
 @RequireModule('clients')
 export class ClientsController {
   constructor(
@@ -623,6 +625,12 @@ export class ClientsController {
     type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'write')
+  @NotifyOn({
+    type: NotificationType.CLIENT_CREATED,
+    titleTemplate: '{{actor.firstName}} utworzył(a) klienta "{{name}}"',
+    actionUrlTemplate: '/modules/clients/{{id}}',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async create(@Body() dto: CreateClientDto, @CurrentUser() user: User) {
     return this.clientsService.create(dto, user);
   }
@@ -665,6 +673,12 @@ export class ClientsController {
     type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'write')
+  @NotifyOn({
+    type: NotificationType.CLIENT_UPDATED,
+    titleTemplate: '{{actor.firstName}} zaktualizował(a) klienta "{{name}}"',
+    actionUrlTemplate: '/modules/clients/{{id}}',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateClientDto,
@@ -715,6 +729,11 @@ export class ClientsController {
   @UseGuards(OwnerOrAdminGuard)
   @OwnerOrAdmin()
   @RequirePermission('clients', 'delete')
+  @NotifyOn({
+    type: NotificationType.CLIENT_DELETED,
+    titleTemplate: '{{actor.firstName}} usunął/usunęła klienta',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     await this.clientsService.remove(id, user);
     return { message: 'Client deleted successfully' };
@@ -811,6 +830,12 @@ export class ClientsController {
     type: ClientErrorResponseDto,
   })
   @RequirePermission('clients', 'write')
+  @NotifyOn({
+    type: NotificationType.CLIENT_RESTORED,
+    titleTemplate: '{{actor.firstName}} przywrócił(a) klienta "{{name}}"',
+    actionUrlTemplate: '/modules/clients/{{id}}',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async restore(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.clientsService.restore(id, user);
   }

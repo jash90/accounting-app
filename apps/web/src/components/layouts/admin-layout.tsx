@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 
 import { UserMenu } from '@/components/common/user-menu';
+import { NotificationBell } from '@/components/notifications/notification-bell';
 import { Sidebar } from '@/components/sidebar';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useNavigationItems } from '@/hooks/use-navigation-items';
@@ -20,6 +21,7 @@ export default function AdminLayout() {
           <div className="flex h-16 items-center justify-between px-6">
             <div className="flex-1" />
             <div className="flex items-center gap-3">
+              <NotificationBell />
               <UserMenu />
             </div>
           </div>
