@@ -122,7 +122,7 @@ export function DuplicateWarningDialog({
           )}
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        <DialogFooter className="flex-col gap-2 sm:flex-row">
           <Button variant="outline" onClick={onCancel} className="w-full sm:w-auto">
             Anuluj i sprawdź
           </Button>

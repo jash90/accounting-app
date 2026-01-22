@@ -93,11 +93,11 @@ export function StatisticsDashboard({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Wszyscy klienci</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{statistics.total}</div>
-            <p className="text-xs text-muted-foreground">W bazie danych</p>
+            <p className="text-muted-foreground text-xs">W bazie danych</p>
           </CardContent>
         </Card>
 
@@ -108,7 +108,7 @@ export function StatisticsDashboard({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{statistics.active}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {statistics.total > 0 ? Math.round((statistics.active / statistics.total) * 100) : 0}%
               wszystkich
             </p>
@@ -122,7 +122,7 @@ export function StatisticsDashboard({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{statistics.inactive}</div>
-            <p className="text-xs text-muted-foreground">Dezaktywowani</p>
+            <p className="text-muted-foreground text-xs">Dezaktywowani</p>
           </CardContent>
         </Card>
 
@@ -133,7 +133,7 @@ export function StatisticsDashboard({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{statistics.addedLast30Days}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               W tym miesiącu: {statistics.addedThisMonth}
             </p>
           </CardContent>
@@ -161,7 +161,7 @@ export function StatisticsDashboard({
                   </div>
                 ))}
               {Object.values(statistics.byEmploymentType).every((v) => v === 0) && (
-                <p className="text-sm text-muted-foreground">Brak danych</p>
+                <p className="text-muted-foreground text-sm">Brak danych</p>
               )}
             </div>
           </CardContent>
@@ -185,7 +185,7 @@ export function StatisticsDashboard({
                   </div>
                 ))}
               {Object.values(statistics.byVatStatus).every((v) => v === 0) && (
-                <p className="text-sm text-muted-foreground">Brak danych</p>
+                <p className="text-muted-foreground text-sm">Brak danych</p>
               )}
             </div>
           </CardContent>
@@ -203,14 +203,14 @@ export function StatisticsDashboard({
                 .slice(0, 4)
                 .map(([scheme, count]) => (
                   <div key={scheme} className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground truncate mr-2">
+                    <span className="text-muted-foreground mr-2 truncate">
                       {TaxSchemeLabels[scheme as TaxScheme] || scheme}
                     </span>
                     <Badge variant="secondary">{count}</Badge>
                   </div>
                 ))}
               {Object.values(statistics.byTaxScheme).every((v) => v === 0) && (
-                <p className="text-sm text-muted-foreground">Brak danych</p>
+                <p className="text-muted-foreground text-sm">Brak danych</p>
               )}
             </div>
           </CardContent>
@@ -235,7 +235,7 @@ export function StatisticsDashboard({
                   </div>
                 ))}
               {Object.values(statistics.byZusStatus).every((v) => v === 0) && (
-                <p className="text-sm text-muted-foreground">Brak danych</p>
+                <p className="text-muted-foreground text-sm">Brak danych</p>
               )}
             </div>
           </CardContent>
@@ -248,7 +248,7 @@ export function StatisticsDashboard({
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Ostatnio dodani</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <Clock className="text-muted-foreground h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -257,7 +257,7 @@ export function StatisticsDashboard({
                     key={client.id}
                     role="button"
                     tabIndex={0}
-                    className="flex items-center justify-between text-sm cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded"
+                    className="hover:bg-muted/50 -mx-2 flex cursor-pointer items-center justify-between rounded px-2 py-1 text-sm"
                     onClick={() => onClientClick?.(client.id)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
@@ -268,11 +268,11 @@ export function StatisticsDashboard({
                   >
                     <div>
                       <p className="font-medium">{client.name}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-muted-foreground text-xs">
                         {client.nip || client.email || 'Brak danych kontaktowych'}
                       </p>
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       {format(new Date(client.createdAt), 'd MMM', { locale: pl })}
                     </span>
                   </div>
@@ -286,7 +286,7 @@ export function StatisticsDashboard({
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Ostatnia aktywność</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
+              <Activity className="text-muted-foreground h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -295,7 +295,7 @@ export function StatisticsDashboard({
                     key={activity.id}
                     role="button"
                     tabIndex={0}
-                    className="flex items-center justify-between text-sm cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded"
+                    className="hover:bg-muted/50 -mx-2 flex cursor-pointer items-center justify-between rounded px-2 py-1 text-sm"
                     onClick={() => onClientClick?.(activity.entityId)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
@@ -306,12 +306,12 @@ export function StatisticsDashboard({
                   >
                     <div>
                       <p className="font-medium">{activity.entityName}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-muted-foreground text-xs">
                         {ACTION_LABELS[activity.action] || activity.action}
                         {activity.changedByName && ` przez ${activity.changedByName}`}
                       </p>
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       {format(new Date(activity.createdAt), 'd MMM HH:mm', { locale: pl })}
                     </span>
                   </div>

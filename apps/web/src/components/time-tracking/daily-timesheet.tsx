@@ -85,7 +85,7 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-destructive">Nie udało się załadować danych timesheet</p>
+          <p className="text-destructive text-sm">Nie udało się załadować danych timesheet</p>
         </CardContent>
       </Card>
     );
@@ -132,27 +132,27 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
         <CardContent>
           {/* Summary */}
           {timesheet && (
-            <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-muted/50 rounded-lg">
+            <div className="bg-muted/50 mb-6 grid grid-cols-3 gap-4 rounded-lg p-4">
               <div className="text-center">
-                <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                <div className="text-muted-foreground mb-1 flex items-center justify-center gap-1">
                   <Clock className="h-4 w-4" />
                   <span className="text-xs">Czas całkowity</span>
                 </div>
-                <p className="text-2xl font-mono font-semibold">
+                <p className="font-mono text-2xl font-semibold">
                   {formatDuration(timesheet.summary?.totalMinutes ?? 0)}
                 </p>
               </div>
               <div className="text-center">
-                <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                <div className="text-muted-foreground mb-1 flex items-center justify-center gap-1">
                   <DollarSign className="h-4 w-4" />
                   <span className="text-xs">Rozliczalny</span>
                 </div>
-                <p className="text-2xl font-mono font-semibold">
+                <p className="font-mono text-2xl font-semibold">
                   {formatDuration(timesheet.summary?.billableMinutes ?? 0)}
                 </p>
               </div>
               <div className="text-center">
-                <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+                <div className="text-muted-foreground mb-1 flex items-center justify-center gap-1">
                   <DollarSign className="h-4 w-4" />
                   <span className="text-xs">Kwota</span>
                 </div>
@@ -165,15 +165,15 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
 
           {/* Entries */}
           {entries.length === 0 ? (
-            <div className="text-center py-8">
-              <Clock className="h-12 w-12 mx-auto text-muted-foreground/50 mb-2" />
-              <p className="text-sm text-muted-foreground mb-4">Brak wpisów czasu na ten dzień</p>
+            <div className="py-8 text-center">
+              <Clock className="text-muted-foreground/50 mx-auto mb-2 h-12 w-12" />
+              <p className="text-muted-foreground mb-4 text-sm">Brak wpisów czasu na ten dzień</p>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setDialogState({ mode: 'create' })}
               >
-                <Plus className="h-4 w-4 mr-1" />
+                <Plus className="mr-1 h-4 w-4" />
                 Dodaj wpis
               </Button>
             </div>
@@ -191,35 +191,35 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
                     }
                   }}
                   className={cn(
-                    'w-full flex items-center justify-between p-3 rounded-lg border text-left',
+                    'flex w-full items-center justify-between rounded-lg border p-3 text-left',
                     'hover:bg-muted/50 transition-colors',
-                    'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+                    'focus:ring-ring focus:ring-2 focus:ring-offset-2 focus:outline-none',
                     entry.isRunning && 'border-green-300 bg-green-50/50'
                   )}
                   aria-label={`Wpis: ${entry.description || 'Bez opisu'}${entry.isRunning ? ' - w trakcie' : ''}`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="text-center min-w-[80px]">
-                      <div className="text-sm font-mono">{formatTime(entry.startTime)}</div>
-                      <div className="text-xs text-muted-foreground">
+                    <div className="min-w-[80px] text-center">
+                      <div className="font-mono text-sm">{formatTime(entry.startTime)}</div>
+                      <div className="text-muted-foreground text-xs">
                         {entry.endTime ? formatTime(entry.endTime) : '...'}
                       </div>
                     </div>
-                    <div className="h-10 w-px bg-border" />
+                    <div className="bg-border h-10 w-px" />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">
+                        <span className="text-sm font-medium">
                           {entry.description || 'Bez opisu'}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="mt-1 flex items-center gap-2">
                         {entry.task && (
                           <Badge variant="outline" className="text-xs">
                             {entry.task.title}
                           </Badge>
                         )}
                         {entry.client && (
-                          <span className="text-xs text-muted-foreground">{entry.client.name}</span>
+                          <span className="text-muted-foreground text-xs">{entry.client.name}</span>
                         )}
                       </div>
                     </div>
@@ -228,7 +228,7 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
                   <div className="flex items-center gap-3">
                     <TimeEntryStatusBadge status={entry.status} />
                     <div className="text-right">
-                      <div className="font-mono font-semibold text-sm">
+                      <div className="font-mono text-sm font-semibold">
                         {entry.isRunning ? (
                           <span className="text-green-600">Trwa...</span>
                         ) : (
@@ -236,7 +236,7 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
                         )}
                       </div>
                       {entry.isBillable && entry.totalAmount != null && (
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground text-xs">
                           {parseFloat(String(entry.totalAmount)).toLocaleString('pl-PL')} PLN
                         </div>
                       )}
@@ -249,9 +249,9 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
                 variant="ghost"
                 size="sm"
                 onClick={() => setDialogState({ mode: 'create' })}
-                className="w-full mt-2"
+                className="mt-2 w-full"
               >
-                <Plus className="h-4 w-4 mr-1" />
+                <Plus className="mr-1 h-4 w-4" />
                 Dodaj wpis
               </Button>
             </div>

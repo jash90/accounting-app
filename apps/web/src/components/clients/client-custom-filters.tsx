@@ -168,7 +168,7 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                  className="absolute top-1/2 right-1 h-6 w-6 -translate-y-1/2 p-0"
                   onClick={handleClear}
                 >
                   <X className="h-3 w-3" />
@@ -208,7 +208,7 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                  className="absolute top-1/2 right-1 h-6 w-6 -translate-y-1/2 p-0"
                   onClick={handleClear}
                 >
                   <X className="h-3 w-3" />
@@ -322,7 +322,7 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
         return (
           <div className="space-y-2">
             <Label className="text-xs font-medium">{field.label}</Label>
-            <div className="flex gap-2 items-start">
+            <div className="flex items-start gap-2">
               <Select value={currentOperator} onValueChange={handleOperatorChange}>
                 <SelectTrigger className="w-[120px]">
                   <SelectValue />
@@ -336,14 +336,14 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
                 </SelectContent>
               </Select>
               <div className="flex-1 space-y-1">
-                <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[40px]">
+                <div className="flex min-h-[40px] flex-wrap gap-2 rounded-md border p-2">
                   {enumValues.map((enumValue) => {
                     const isSelected = selectedValues.includes(enumValue);
                     return (
                       <label
                         key={enumValue}
                         className={cn(
-                          'flex items-center gap-1.5 px-2 py-1 rounded text-sm cursor-pointer transition-colors',
+                          'flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-sm transition-colors',
                           isSelected ? 'bg-apptax-blue text-white' : 'bg-muted hover:bg-muted/80'
                         )}
                       >
@@ -367,10 +367,10 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="text-xs h-6"
+                    className="h-6 text-xs"
                     onClick={handleClear}
                   >
-                    <X className="h-3 w-3 mr-1" />
+                    <X className="mr-1 h-3 w-3" />
                     Wyczyść wybór
                   </Button>
                 )}
@@ -474,12 +474,12 @@ export function ClientCustomFilters({ filters, onFiltersChange }: ClientCustomFi
           type="button"
           variant="ghost"
           size="sm"
-          className="w-full flex items-center justify-between py-2 text-sm text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground flex w-full items-center justify-between py-2 text-sm"
         >
           <span className="flex items-center gap-2">
             Pola niestandardowe
             {hasActiveFilters && (
-              <span className="bg-apptax-soft-teal text-apptax-navy text-xs px-1.5 py-0.5 rounded">
+              <span className="bg-apptax-soft-teal text-apptax-navy rounded px-1.5 py-0.5 text-xs">
                 {filters.length}
               </span>
             )}
@@ -490,12 +490,12 @@ export function ClientCustomFilters({ filters, onFiltersChange }: ClientCustomFi
       <CollapsibleContent className="pt-4">
         {isLoading ? (
           <div className="flex items-center justify-center py-4">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-sm text-muted-foreground">Ładowanie pól...</span>
+            <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
+            <span className="text-muted-foreground ml-2 text-sm">Ładowanie pól...</span>
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {activeFieldDefinitions.map((field) => (
                 <CustomFieldFilterControl
                   key={field.id}
@@ -506,7 +506,7 @@ export function ClientCustomFilters({ filters, onFiltersChange }: ClientCustomFi
               ))}
             </div>
             {hasActiveFilters && (
-              <div className="flex justify-end pt-2 border-t">
+              <div className="flex justify-end border-t pt-2">
                 <Button
                   type="button"
                   variant="ghost"
@@ -514,7 +514,7 @@ export function ClientCustomFilters({ filters, onFiltersChange }: ClientCustomFi
                   onClick={handleClearAll}
                   className="text-xs"
                 >
-                  <X className="h-3 w-3 mr-1" />
+                  <X className="mr-1 h-3 w-3" />
                   Wyczyść wszystkie filtry niestandardowe
                 </Button>
               </div>

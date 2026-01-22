@@ -128,7 +128,7 @@ export function QuickAddTaskDialog({
                 },
               })}
             />
-            {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
+            {errors.title && <p className="text-destructive text-sm">{errors.title.message}</p>}
           </div>
 
           {/* Priority */}

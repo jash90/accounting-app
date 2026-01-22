@@ -225,14 +225,14 @@ export function FieldDefinitionFormDialog({
                   </Button>
                 </div>
                 {enumValues.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="mt-2 flex flex-wrap gap-2">
                     {enumValues.map((value) => (
                       <Badge key={value} variant="secondary" className="gap-1">
                         {value}
                         <button
                           type="button"
                           onClick={() => handleRemoveEnumValue(value)}
-                          className="ml-1 hover:text-destructive"
+                          className="hover:text-destructive ml-1"
                           aria-label={`Usuń wartość ${value}`}
                         >
                           <X className="h-3 w-3" />

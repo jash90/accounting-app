@@ -108,7 +108,7 @@ export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps)
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-destructive">Nie udało się załadować danych timesheet</p>
+          <p className="text-destructive text-sm">Nie udało się załadować danych timesheet</p>
         </CardContent>
       </Card>
     );
@@ -143,27 +143,27 @@ export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps)
       <CardContent>
         {/* Weekly Summary */}
         {timesheet && (
-          <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-muted/50 rounded-lg">
+          <div className="bg-muted/50 mb-6 grid grid-cols-3 gap-4 rounded-lg p-4">
             <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+              <div className="text-muted-foreground mb-1 flex items-center justify-center gap-1">
                 <Clock className="h-4 w-4" />
                 <span className="text-xs">Czas całkowity</span>
               </div>
-              <p className="text-2xl font-mono font-semibold">
+              <p className="font-mono text-2xl font-semibold">
                 {formatDuration(timesheet.summary?.totalMinutes ?? 0)}
               </p>
             </div>
             <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+              <div className="text-muted-foreground mb-1 flex items-center justify-center gap-1">
                 <DollarSign className="h-4 w-4" />
                 <span className="text-xs">Rozliczalny</span>
               </div>
-              <p className="text-2xl font-mono font-semibold">
+              <p className="font-mono text-2xl font-semibold">
                 {formatDuration(timesheet.summary?.billableMinutes ?? 0)}
               </p>
             </div>
             <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-muted-foreground mb-1">
+              <div className="text-muted-foreground mb-1 flex items-center justify-center gap-1">
                 <DollarSign className="h-4 w-4" />
                 <span className="text-xs">Kwota</span>
               </div>
@@ -198,14 +198,14 @@ export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps)
                 }}
                 className={cn(
                   'cursor-pointer transition-all hover:shadow-md',
-                  isToday && 'ring-2 ring-primary',
+                  isToday && 'ring-primary ring-2',
                   onDayClick &&
-                    'hover:border-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
+                    'hover:border-primary focus:ring-ring focus:ring-2 focus:ring-offset-2 focus:outline-none'
                 )}
               >
                 <CardContent className="p-3">
-                  <div className="text-center mb-2">
-                    <p className="text-xs text-muted-foreground uppercase">
+                  <div className="mb-2 text-center">
+                    <p className="text-muted-foreground text-xs uppercase">
                       {format(day, 'EEE', { locale: pl })}
                     </p>
                     <p className={cn('text-lg font-semibold', isToday && 'text-primary')}>
@@ -216,11 +216,11 @@ export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps)
                   {hasEntries ? (
                     <div className="space-y-2">
                       <div className="text-center">
-                        <p className="text-lg font-mono font-semibold">
+                        <p className="font-mono text-lg font-semibold">
                           {formatDuration(dayData.totalMinutes ?? 0)}
                         </p>
                       </div>
-                      <div className="flex flex-wrap gap-1 justify-center">
+                      <div className="flex flex-wrap justify-center gap-1">
                         <Badge variant="secondary" className="text-xs">
                           {dayData.entries.length} {pluralizeEntries(dayData.entries.length)}
                         </Badge>
@@ -231,14 +231,14 @@ export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps)
                         )}
                       </div>
                       {dayData.totalAmount > 0 && (
-                        <p className="text-xs text-center text-muted-foreground">
+                        <p className="text-muted-foreground text-center text-xs">
                           {dayData.totalAmount.toLocaleString('pl-PL')} PLN
                         </p>
                       )}
                     </div>
                   ) : (
-                    <div className="text-center py-2">
-                      <p className="text-sm text-muted-foreground">-</p>
+                    <div className="py-2 text-center">
+                      <p className="text-muted-foreground text-sm">-</p>
                     </div>
                   )}
                 </CardContent>

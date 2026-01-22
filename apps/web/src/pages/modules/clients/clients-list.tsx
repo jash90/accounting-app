@@ -369,7 +369,7 @@ export default function ClientsListPage() {
         header: 'Nazwa',
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            <span className="font-medium text-apptax-navy">{row.original.name}</span>
+            <span className="text-apptax-navy font-medium">{row.original.name}</span>
             {!row.original.isActive && (
               <Badge variant="outline" className="text-xs">
                 Nieaktywny
@@ -449,7 +449,7 @@ export default function ClientsListPage() {
         accessorKey: 'email',
         header: 'Email',
         cell: ({ row }) => (
-          <span className="text-apptax-navy/70 text-sm truncate max-w-[200px] block">
+          <span className="text-apptax-navy/70 block max-w-[200px] truncate text-sm">
             {row.original.email || '-'}
           </span>
         ),
@@ -492,12 +492,12 @@ export default function ClientsListPage() {
       {
         id: 'pkdCode',
         header: 'Kod PKD',
-        cell: ({ row }) => <span className="text-sm font-mono">{row.original.pkdCode || '-'}</span>,
+        cell: ({ row }) => <span className="font-mono text-sm">{row.original.pkdCode || '-'}</span>,
       },
       {
         id: 'gtuCode',
         header: 'Kod GTU',
-        cell: ({ row }) => <span className="text-sm font-mono">{row.original.gtuCode || '-'}</span>,
+        cell: ({ row }) => <span className="font-mono text-sm">{row.original.gtuCode || '-'}</span>,
       },
       {
         id: 'cooperationStartDate',
@@ -529,7 +529,7 @@ export default function ClientsListPage() {
         cell: ({ row }) => {
           const date = row.original.createdAt;
           return date ? (
-            <span className="text-sm text-muted-foreground">
+            <span className="text-muted-foreground text-sm">
               {format(new Date(date), 'dd.MM.yyyy', { locale: pl })}
             </span>
           ) : (
@@ -567,7 +567,7 @@ export default function ClientsListPage() {
             return <span className="text-sm">{value}</span>;
           }
 
-          return <span className="text-sm truncate max-w-[150px] block">{value}</span>;
+          return <span className="block max-w-[150px] truncate text-sm">{value}</span>;
         },
       })),
       {

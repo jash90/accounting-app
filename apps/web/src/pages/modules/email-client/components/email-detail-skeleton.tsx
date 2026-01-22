@@ -3,9 +3,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export function EmailDetailSkeleton() {
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="border-b p-4 flex items-center justify-between">
+      <div className="flex items-center justify-between border-b p-4">
         <div className="flex items-center gap-2">
           <Skeleton className="h-8 w-8 rounded bg-gray-200" />
           <Skeleton className="h-6 w-64 bg-gray-200" />
@@ -21,7 +21,7 @@ export function EmailDetailSkeleton() {
       <div className="flex-1 overflow-auto p-6">
         <div>
           {/* Email Headers */}
-          <div className="space-y-3 mb-6">
+          <div className="mb-6 space-y-3">
             <div className="flex items-start gap-4">
               <Skeleton className="h-4 w-16 bg-gray-200" />
               <Skeleton className="h-4 w-48 bg-gray-200" />

@@ -88,7 +88,7 @@ const TimeTrackingSettingsPage = lazy(
 function PageLoader() {
   return (
     <div className="flex h-screen items-center justify-center">
-      <div className="space-y-4 w-full max-w-md p-6">
+      <div className="w-full max-w-md space-y-4 p-6">
         <Skeleton className="h-8 w-3/4" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-5/6" />
@@ -105,7 +105,7 @@ function Unauthorized() {
   return (
     <div className="flex h-screen items-center justify-center">
       <div className="text-center">
-        <h1 className="text-2xl font-bold mb-4">Unauthorized</h1>
+        <h1 className="mb-4 text-2xl font-bold">Unauthorized</h1>
         <p className="text-muted-foreground">You don&apos;t have permission to access this page.</p>
       </div>
     </div>

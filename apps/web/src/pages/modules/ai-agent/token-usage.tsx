@@ -16,9 +16,9 @@ export default function TokenUsagePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="flex items-center gap-3 text-apptax-navy">
-          <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow animate-pulse" />
+      <div className="flex h-full items-center justify-center">
+        <div className="text-apptax-navy flex items-center gap-3">
+          <div className="bg-apptax-teal ai-glow h-3 w-3 animate-pulse rounded-full" />
           Loading...
         </div>
       </div>
@@ -39,77 +39,77 @@ export default function TokenUsagePage() {
   }
 
   return (
-    <div className="container mx-auto p-8 space-y-8">
+    <div className="container mx-auto space-y-8 p-8">
       <div>
-        <h1 className="text-3xl font-bold text-apptax-navy flex items-center gap-3">
+        <h1 className="text-apptax-navy flex items-center gap-3 text-3xl font-bold">
           Token Usage
-          <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow" />
+          <div className="bg-apptax-teal ai-glow h-3 w-3 rounded-full" />
         </h1>
         <p className="text-muted-foreground mt-1">Monitor AI usage across your company</p>
       </div>
 
       {/* Summary Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-white border-apptax-soft-teal/50 hover:shadow-apptax-md transition-all duration-300 hover:-translate-y-1">
+        <Card className="border-apptax-soft-teal/50 hover:shadow-apptax-md bg-white transition-all duration-300 hover:-translate-y-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-apptax-navy">Total Tokens</CardTitle>
-            <div className="w-10 h-10 bg-apptax-soft-teal rounded-lg flex items-center justify-center">
-              <Coins className="h-5 w-5 text-apptax-blue" />
+            <CardTitle className="text-apptax-navy text-sm font-medium">Total Tokens</CardTitle>
+            <div className="bg-apptax-soft-teal flex h-10 w-10 items-center justify-center rounded-lg">
+              <Coins className="text-apptax-blue h-5 w-5" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-apptax-navy">
+            <div className="text-apptax-navy text-3xl font-bold">
               {usage.totalTokens.toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 text-xs">
               {usage.totalInputTokens.toLocaleString()} input •{' '}
               {usage.totalOutputTokens.toLocaleString()} output
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-apptax-soft-teal/50 hover:shadow-apptax-md transition-all duration-300 hover:-translate-y-1">
+        <Card className="border-apptax-soft-teal/50 hover:shadow-apptax-md bg-white transition-all duration-300 hover:-translate-y-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-apptax-navy">Active Users</CardTitle>
-            <div className="w-10 h-10 bg-apptax-soft-teal rounded-lg flex items-center justify-center">
-              <Users className="h-5 w-5 text-apptax-blue" />
+            <CardTitle className="text-apptax-navy text-sm font-medium">Active Users</CardTitle>
+            <div className="bg-apptax-soft-teal flex h-10 w-10 items-center justify-center rounded-lg">
+              <Users className="text-apptax-blue h-5 w-5" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-apptax-navy">{usage.userCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Using AI assistant</p>
+            <div className="text-apptax-navy text-3xl font-bold">{usage.userCount}</div>
+            <p className="text-muted-foreground mt-1 text-xs">Using AI assistant</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-apptax-soft-teal/50 hover:shadow-apptax-md transition-all duration-300 hover:-translate-y-1">
+        <Card className="border-apptax-soft-teal/50 hover:shadow-apptax-md bg-white transition-all duration-300 hover:-translate-y-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-apptax-navy">Conversations</CardTitle>
-            <div className="w-10 h-10 bg-apptax-soft-teal rounded-lg flex items-center justify-center">
-              <MessageSquare className="h-5 w-5 text-apptax-blue" />
+            <CardTitle className="text-apptax-navy text-sm font-medium">Conversations</CardTitle>
+            <div className="bg-apptax-soft-teal flex h-10 w-10 items-center justify-center rounded-lg">
+              <MessageSquare className="text-apptax-blue h-5 w-5" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-apptax-navy">{usage.conversationCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-apptax-navy text-3xl font-bold">{usage.conversationCount}</div>
+            <p className="text-muted-foreground mt-1 text-xs">
               {usage.messageCount} total messages
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-apptax-soft-teal/50 hover:shadow-apptax-md transition-all duration-300 hover:-translate-y-1">
+        <Card className="border-apptax-soft-teal/50 hover:shadow-apptax-md bg-white transition-all duration-300 hover:-translate-y-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-apptax-navy">Avg per User</CardTitle>
-            <div className="w-10 h-10 bg-apptax-soft-teal rounded-lg flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-apptax-teal" />
+            <CardTitle className="text-apptax-navy text-sm font-medium">Avg per User</CardTitle>
+            <div className="bg-apptax-soft-teal flex h-10 w-10 items-center justify-center rounded-lg">
+              <TrendingUp className="text-apptax-teal h-5 w-5" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-apptax-navy">
+            <div className="text-apptax-navy text-3xl font-bold">
               {usage.userCount > 0
                 ? Math.round(usage.totalTokens / usage.userCount).toLocaleString()
                 : 0}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Tokens per user</p>
+            <p className="text-muted-foreground mt-1 text-xs">Tokens per user</p>
           </CardContent>
         </Card>
       </div>
@@ -118,7 +118,7 @@ export default function TokenUsagePage() {
       <Card className="border-apptax-soft-teal/30">
         <CardHeader>
           <CardTitle className="text-apptax-navy flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-apptax-teal" />
+            <Sparkles className="text-apptax-teal h-5 w-5" />
             Usage by User
           </CardTitle>
           <CardDescription>Detailed breakdown of token usage per employee</CardDescription>
@@ -128,15 +128,15 @@ export default function TokenUsagePage() {
             <TableHeader>
               <TableRow className="bg-apptax-navy/5 hover:bg-apptax-navy/5">
                 <TableHead className="text-apptax-navy font-semibold">User</TableHead>
-                <TableHead className="text-right text-apptax-navy font-semibold">
+                <TableHead className="text-apptax-navy text-right font-semibold">
                   Total Tokens
                 </TableHead>
-                <TableHead className="text-right text-apptax-navy font-semibold">Input</TableHead>
-                <TableHead className="text-right text-apptax-navy font-semibold">Output</TableHead>
-                <TableHead className="text-right text-apptax-navy font-semibold">
+                <TableHead className="text-apptax-navy text-right font-semibold">Input</TableHead>
+                <TableHead className="text-apptax-navy text-right font-semibold">Output</TableHead>
+                <TableHead className="text-apptax-navy text-right font-semibold">
                   Conversations
                 </TableHead>
-                <TableHead className="text-right text-apptax-navy font-semibold">
+                <TableHead className="text-apptax-navy text-right font-semibold">
                   Messages
                 </TableHead>
               </TableRow>
@@ -147,12 +147,12 @@ export default function TokenUsagePage() {
                   key={user.userId}
                   className="hover:bg-apptax-soft-teal/30 transition-colors"
                 >
-                  <TableCell className="font-medium text-apptax-navy">
+                  <TableCell className="text-apptax-navy font-medium">
                     {user.firstName} {user.lastName}
                     <br />
-                    <span className="text-xs text-muted-foreground">{user.email}</span>
+                    <span className="text-muted-foreground text-xs">{user.email}</span>
                   </TableCell>
-                  <TableCell className="text-right font-semibold text-apptax-blue">
+                  <TableCell className="text-apptax-blue text-right font-semibold">
                     {user.totalTokens.toLocaleString()}
                   </TableCell>
                   <TableCell className="text-right">
@@ -167,7 +167,7 @@ export default function TokenUsagePage() {
               ))}
               {usage.users.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={6} className="text-muted-foreground py-8 text-center">
                     No usage data available
                   </TableCell>
                 </TableRow>

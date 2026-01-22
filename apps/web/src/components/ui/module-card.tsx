@@ -34,7 +34,7 @@ export function ModuleCard({
   return (
     <Card
       className={cn(
-        'group cursor-pointer hover:border-apptax-blue hover:shadow-apptax-md transition-all duration-300 hover:-translate-y-1 border-apptax-soft-teal/30 flex flex-1 flex-col',
+        'group hover:border-apptax-blue hover:shadow-apptax-md border-apptax-soft-teal/30 flex flex-1 cursor-pointer flex-col transition-all duration-300 hover:-translate-y-1',
         className
       )}
       onClick={() => navigate(targetHref)}
@@ -47,20 +47,20 @@ export function ModuleCard({
         }
       }}
     >
-      <CardHeader className="pb-3 flex-1">
+      <CardHeader className="flex-1 pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div
               className={cn(
-                'w-10 h-10 rounded-lg flex items-center justify-center',
+                'flex h-10 w-10 items-center justify-center rounded-lg',
                 isAiModule ? 'bg-apptax-ai-gradient ai-glow' : 'bg-apptax-gradient'
               )}
             >
               <ModuleIcon className="h-5 w-5 text-white" />
             </div>
-            <CardTitle className="text-lg flex items-center gap-2 text-apptax-navy">
+            <CardTitle className="text-apptax-navy flex items-center gap-2 text-lg">
               {name}
-              {isAiModule && <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />}
+              {isAiModule && <div className="bg-apptax-teal ai-glow h-2 w-2 rounded-full" />}
             </CardTitle>
           </div>
           <Badge variant={isActive ? 'success' : 'muted'}>
@@ -71,12 +71,12 @@ export function ModuleCard({
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between">
-          <code className="px-2 py-1 bg-apptax-soft-teal rounded text-xs text-apptax-navy">
+          <code className="bg-apptax-soft-teal text-apptax-navy rounded px-2 py-1 text-xs">
             {slug}
           </code>
-          <span className="text-apptax-blue text-sm flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="text-apptax-blue flex items-center gap-1 text-sm opacity-0 transition-opacity group-hover:opacity-100">
             Otwórz moduł
-            <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </span>
         </div>
       </CardContent>

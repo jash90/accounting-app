@@ -46,9 +46,9 @@ export function ClientGrid({
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
+      <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {[...Array(8)].map((_, i) => (
-          <Skeleton key={i} className="h-48 w-full rounded-lg bg-apptax-soft-teal/30" />
+          <Skeleton key={i} className="bg-apptax-soft-teal/30 h-48 w-full rounded-lg" />
         ))}
       </div>
     );
@@ -56,14 +56,14 @@ export function ClientGrid({
 
   if (clients.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 px-4">
+      <div className="flex flex-col items-center justify-center px-4 py-16">
         <p className="text-muted-foreground text-center">Brak wyników</p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
+    <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {clients.map((client) => (
         <ClientCard
           key={client.id}

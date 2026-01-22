@@ -208,7 +208,7 @@ import {
   <TableCell>{user.email}</TableCell>
   <TableCell>
     <Button variant="ghost" className="group">
-      <Edit className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+      <Edit className="text-muted-foreground group-hover:text-primary h-4 w-4 transition-colors" />
     </Button>
   </TableCell>
 </TableRow>;
@@ -287,10 +287,10 @@ const columns: ColumnDef<User>[] = [
     cell: ({ row }) => (
       <div className="flex gap-2">
         <Button variant="ghost" className="group">
-          <Edit className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          <Edit className="text-muted-foreground group-hover:text-primary h-4 w-4 transition-colors" />
         </Button>
         <Button variant="ghost" className="group">
-          <Trash2 className="h-4 w-4 text-muted-foreground group-hover:text-destructive transition-colors" />
+          <Trash2 className="text-muted-foreground group-hover:text-destructive h-4 w-4 transition-colors" />
         </Button>
       </div>
     ),
@@ -357,7 +357,7 @@ const columns: ColumnDef<User>[] = [
 
 ```tsx
 // Mobile-first responsive grid
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
   {items.map((item) => (
     <Card key={item.id}>...</Card>
   ))}

@@ -20,8 +20,8 @@ export function TimeEntryPagination({
   }
 
   return (
-    <div className="flex items-center justify-between pt-4 border-t mt-4">
-      <p className="text-sm text-muted-foreground">
+    <div className="mt-4 flex items-center justify-between border-t pt-4">
+      <p className="text-muted-foreground text-sm">
         Strona {currentPage} z {totalPages} ({totalItems} wpisów)
       </p>
       <div className="flex gap-2">
@@ -31,7 +31,7 @@ export function TimeEntryPagination({
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage <= 1}
         >
-          <ChevronLeft className="h-4 w-4 mr-1" />
+          <ChevronLeft className="mr-1 h-4 w-4" />
           Poprzednia
         </Button>
         <Button
@@ -41,7 +41,7 @@ export function TimeEntryPagination({
           disabled={currentPage >= totalPages}
         >
           Następna
-          <ChevronRight className="h-4 w-4 ml-1" />
+          <ChevronRight className="ml-1 h-4 w-4" />
         </Button>
       </div>
     </div>

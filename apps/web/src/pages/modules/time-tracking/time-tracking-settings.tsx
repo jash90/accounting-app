@@ -127,7 +127,7 @@ export default function TimeTrackingSettingsPage() {
 
   if (settingsLoading) {
     return (
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="container mx-auto space-y-6 p-6">
         <Skeleton className="h-10 w-32" />
         <Skeleton className="h-8 w-64" />
         <div className="space-y-6">
@@ -139,7 +139,7 @@ export default function TimeTrackingSettingsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto space-y-6 p-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" onClick={() => navigate(basePath)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -413,7 +413,7 @@ export default function TimeTrackingSettingsPage() {
 
           <div className="flex justify-end">
             <Button type="submit" disabled={updateSettings.isPending}>
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="mr-2 h-4 w-4" />
               {updateSettings.isPending ? 'Zapisywanie...' : 'Zapisz ustawienia'}
             </Button>
           </div>

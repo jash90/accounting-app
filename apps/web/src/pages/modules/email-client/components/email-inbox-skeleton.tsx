@@ -19,9 +19,9 @@ function EmailRowSkeleton() {
       </div>
 
       {/* Email Content Skeleton */}
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0 space-y-2">
+          <div className="min-w-0 flex-1 space-y-2">
             {/* From name */}
             <Skeleton className="h-5 w-40 bg-gray-200" />
             {/* Subject */}
@@ -30,7 +30,7 @@ function EmailRowSkeleton() {
             <Skeleton className="h-4 w-full bg-gray-200" />
           </div>
           {/* Date */}
-          <Skeleton className="h-3 w-20 ml-4 bg-gray-200" />
+          <Skeleton className="ml-4 h-3 w-20 bg-gray-200" />
         </div>
       </div>
     </div>

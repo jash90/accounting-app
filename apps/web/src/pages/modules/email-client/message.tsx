@@ -73,12 +73,12 @@ export default function EmailMessage() {
 
   if (error || !email) {
     return (
-      <div className="h-full flex flex-col items-center justify-center">
-        <Mail className="h-12 w-12 mb-4 text-muted-foreground opacity-50" />
+      <div className="flex h-full flex-col items-center justify-center">
+        <Mail className="text-muted-foreground mb-4 h-12 w-12 opacity-50" />
         <p className="text-muted-foreground mb-4">Nie znaleziono wiadomości</p>
         <Link to={emailNav.getInboxPath()}>
           <Button variant="outline">
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Wróć do skrzynki
           </Button>
         </Link>
@@ -106,9 +106,9 @@ export default function EmailMessage() {
   const isUnread = !email.flags.includes('\\Seen');
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="border-b p-4 flex items-center justify-between">
+      <div className="flex items-center justify-between border-b p-4">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => emailNav.toInbox()}>
             <ArrowLeft className="h-4 w-4" />
@@ -122,11 +122,11 @@ export default function EmailMessage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleReply}>
-            <Reply className="h-4 w-4 mr-2" />
+            <Reply className="mr-2 h-4 w-4" />
             Odpowiedz
           </Button>
           <Button variant="outline" size="sm" onClick={handleAiReply}>
-            <Sparkles className="h-4 w-4 mr-2" />
+            <Sparkles className="mr-2 h-4 w-4" />
             Wygeneruj AI
           </Button>
           <Button
@@ -136,7 +136,7 @@ export default function EmailMessage() {
             disabled={deleteEmails.isPending}
             className="text-destructive hover:text-destructive"
           >
-            <Trash2 className="h-4 w-4 mr-2" />
+            <Trash2 className="mr-2 h-4 w-4" />
             Usuń
           </Button>
         </div>
@@ -146,29 +146,29 @@ export default function EmailMessage() {
       <div className="flex-1 overflow-auto p-6">
         <div>
           {/* Email Headers */}
-          <div className="space-y-3 mb-6">
+          <div className="mb-6 space-y-3">
             <div className="flex items-start gap-4">
-              <span className="text-sm text-muted-foreground w-16 shrink-0">Od:</span>
+              <span className="text-muted-foreground w-16 shrink-0 text-sm">Od:</span>
               <span className="text-sm font-medium">
                 {email.from.map(formatEmailAddress).join(', ')}
               </span>
             </div>
             <div className="flex items-start gap-4">
-              <span className="text-sm text-muted-foreground w-16 shrink-0">Do:</span>
+              <span className="text-muted-foreground w-16 shrink-0 text-sm">Do:</span>
               <span className="text-sm">{email.to.map(formatEmailAddress).join(', ')}</span>
             </div>
             {email.cc && email.cc.length > 0 && (
               <div className="flex items-start gap-4">
-                <span className="text-sm text-muted-foreground w-16 shrink-0">DW:</span>
+                <span className="text-muted-foreground w-16 shrink-0 text-sm">DW:</span>
                 <span className="text-sm">{email.cc.map(formatEmailAddress).join(', ')}</span>
               </div>
             )}
             <div className="flex items-start gap-4">
-              <span className="text-sm text-muted-foreground w-16 shrink-0">Data:</span>
+              <span className="text-muted-foreground w-16 shrink-0 text-sm">Data:</span>
               <span className="text-sm">{formatDate(email.date)}</span>
             </div>
             <div className="flex items-start gap-4">
-              <span className="text-sm text-muted-foreground w-16 shrink-0">Temat:</span>
+              <span className="text-muted-foreground w-16 shrink-0 text-sm">Temat:</span>
               <span className="text-sm font-medium">{email.subject || '(Brak tematu)'}</span>
             </div>
           </div>
@@ -178,8 +178,8 @@ export default function EmailMessage() {
             <>
               <Separator className="my-4" />
               <div className="mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Paperclip className="h-4 w-4 text-muted-foreground" />
+                <div className="mb-2 flex items-center gap-2">
+                  <Paperclip className="text-muted-foreground h-4 w-4" />
                   <span className="text-sm font-medium">
                     {email.attachments.length}{' '}
                     {email.attachments.length === 1 ? 'Załącznik' : 'Załączniki'}
@@ -187,10 +187,10 @@ export default function EmailMessage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {email.attachments.map((attachment, index) => (
-                    <Badge key={index} variant="outline" className="cursor-pointer hover:bg-muted">
+                    <Badge key={index} variant="outline" className="hover:bg-muted cursor-pointer">
                       {attachment.filename || `Załącznik ${index + 1}`}
                       {attachment.size && (
-                        <span className="ml-1 text-muted-foreground">
+                        <span className="text-muted-foreground ml-1">
                           ({Math.round(attachment.size / 1024)}KB)
                         </span>
                       )}
@@ -204,7 +204,7 @@ export default function EmailMessage() {
           <Separator className="my-4" />
 
           {/* Email Body */}
-          <div className="prose prose-sm max-w-none dark:prose-invert">
+          <div className="prose prose-sm dark:prose-invert max-w-none">
             {email.html ? (
               // HTML content - sanitized with DOMPurify to prevent XSS attacks
               <div
@@ -213,14 +213,14 @@ export default function EmailMessage() {
               />
             ) : (
               // Plain text content
-              <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+              <pre className="font-sans text-sm leading-relaxed whitespace-pre-wrap">
                 {email.text}
               </pre>
             )}
           </div>
 
           {/* Mark as read indicator */}
-          <div className="mt-6 pt-4 border-t flex items-center gap-2 text-muted-foreground">
+          <div className="text-muted-foreground mt-6 flex items-center gap-2 border-t pt-4">
             <CheckCheck className="h-4 w-4" />
             <span className="text-xs">
               {email.flags.includes('\\Seen') ? 'Przeczytana' : 'Oznaczona jako przeczytana'}

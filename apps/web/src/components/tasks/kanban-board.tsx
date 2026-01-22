@@ -187,7 +187,7 @@ export function KanbanBoard({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className={cn('flex gap-4 overflow-x-auto pb-4 min-h-[500px]', className)}>
+      <div className={cn('flex min-h-[500px] gap-4 overflow-x-auto pb-4', className)}>
         {statusOrder.map((status) => (
           <KanbanColumn
             key={status}

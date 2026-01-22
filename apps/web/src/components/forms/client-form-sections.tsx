@@ -110,7 +110,7 @@ export function BasicInfoCard({ control }: FormSectionProps) {
             <FormItem className="flex items-center justify-between rounded-lg border p-3">
               <div className="space-y-0.5">
                 <FormLabel className="text-base">Wyślij email powitalny do klienta</FormLabel>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Klient otrzyma email z podsumowaniem wprowadzonych danych
                 </p>
               </div>
@@ -360,13 +360,13 @@ export function CustomFieldsCard({
               const isEmpty = (v: unknown) => v === undefined || v === null || v === '';
               return (
                 <div key={definition.id} className="space-y-2">
-                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  <label className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                     {definition.label}
                     {definition.isRequired && ' *'}
                   </label>
                   {renderField(definition)}
                   {definition.isRequired && isEmpty(values[definition.id]) && isSubmitted && (
-                    <p className="text-sm font-medium text-destructive">To pole jest wymagane</p>
+                    <p className="text-destructive text-sm font-medium">To pole jest wymagane</p>
                   )}
                 </div>
               );

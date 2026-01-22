@@ -147,7 +147,7 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-destructive">Nie udało się załadować zadań</p>
+          <p className="text-destructive text-sm">Nie udało się załadować zadań</p>
         </CardContent>
       </Card>
     );
@@ -175,30 +175,30 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
               onClick={() => setShowFilters(!showFilters)}
               className={cn(hasActiveFilters && 'text-apptax-blue')}
             >
-              <Filter className="h-4 w-4 mr-1" />
+              <Filter className="mr-1 h-4 w-4" />
               Filtry
               {hasActiveFilters && (
                 <Badge
                   variant="default"
-                  className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+                  className="ml-1 flex h-5 w-5 items-center justify-center p-0 text-xs"
                 >
                   !
                 </Badge>
               )}
             </Button>
             <Button variant="ghost" size="sm" onClick={handleViewKanban}>
-              <LayoutGrid className="h-4 w-4 mr-1" />
+              <LayoutGrid className="mr-1 h-4 w-4" />
               Kanban
             </Button>
             <Button variant="outline" size="sm" onClick={() => setAddTaskOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />
+              <Plus className="mr-1 h-4 w-4" />
               Dodaj zadanie
             </Button>
           </div>
         </CardHeader>
 
         {showFilters && (
-          <div className="px-6 pb-4 border-b">
+          <div className="border-b px-6 pb-4">
             <div className="flex flex-wrap items-center gap-3">
               <Select
                 value={filters.status || '__all__'}
@@ -270,7 +270,7 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
                   onClick={clearFilters}
                   className="text-muted-foreground"
                 >
-                  <X className="h-4 w-4 mr-1" />
+                  <X className="mr-1 h-4 w-4" />
                   Wyczyść
                 </Button>
               )}
@@ -280,9 +280,9 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
 
         <CardContent className={cn(!showFilters && 'pt-4')}>
           {tasks.length === 0 ? (
-            <div className="text-center py-6">
-              <CheckSquare className="h-12 w-12 mx-auto text-muted-foreground/50 mb-2" />
-              <p className="text-sm text-muted-foreground">
+            <div className="py-6 text-center">
+              <CheckSquare className="text-muted-foreground/50 mx-auto mb-2 h-12 w-12" />
+              <p className="text-muted-foreground text-sm">
                 {hasActiveFilters
                   ? 'Brak zadań spełniających kryteria filtrowania'
                   : 'Brak zadań przypisanych do tego klienta'}
@@ -319,14 +319,14 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
                       }
                     }}
                     className={cn(
-                      'flex items-center justify-between p-3 rounded-lg border cursor-pointer',
+                      'flex cursor-pointer items-center justify-between rounded-lg border p-3',
                       'hover:bg-muted/50 transition-colors',
                       isOverdue && 'border-red-300 bg-red-50/50'
                     )}
                   >
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm truncate">{task.title}</h4>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="truncate text-sm font-medium">{task.title}</h4>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
                         <TaskStatusBadge status={task.status} size="sm" />
                         <TaskPriorityBadge priority={task.priority} size="sm" showLabel={false} />
                         {task.dueDate && (
@@ -343,21 +343,21 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
                           </span>
                         )}
                         {task.assignee && (
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-muted-foreground text-xs">
                             • {task.assignee.firstName} {task.assignee.lastName?.[0]}.
                           </span>
                         )}
                       </div>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-2" />
+                    <ArrowRight className="text-muted-foreground ml-2 h-4 w-4 flex-shrink-0" />
                   </div>
                 );
               })}
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between pt-4 border-t mt-4">
-                  <p className="text-sm text-muted-foreground">
+                <div className="mt-4 flex items-center justify-between border-t pt-4">
+                  <p className="text-muted-foreground text-sm">
                     Strona {currentPage} z {totalPages} ({tasksData?.meta.total} zadań)
                   </p>
                   <div className="flex gap-2">
@@ -367,7 +367,7 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
                       onClick={() => handleFilterChange('page', currentPage - 1)}
                       disabled={currentPage <= 1}
                     >
-                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      <ChevronLeft className="mr-1 h-4 w-4" />
                       Poprzednia
                     </Button>
                     <Button
@@ -377,7 +377,7 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
                       disabled={currentPage >= totalPages}
                     >
                       Następna
-                      <ChevronRight className="h-4 w-4 ml-1" />
+                      <ChevronRight className="ml-1 h-4 w-4" />
                     </Button>
                   </div>
                 </div>

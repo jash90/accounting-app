@@ -9,7 +9,7 @@ import { SmtpConfig, ImapConfig } from '../interfaces/email-config.interface';
 import { EmailMessage } from '../interfaces/email-message.interface';
 
 // CommonJS import - nodemailer's MailComposer lacks proper ESM exports
- 
+
 const MailComposer = require('nodemailer/lib/mail-composer');
 
 /**

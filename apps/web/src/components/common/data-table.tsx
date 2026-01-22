@@ -160,7 +160,7 @@ export function DataTable<TData, TValue>({
     return (
       <div className="space-y-3 p-4">
         {[...Array(5)].map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full rounded-lg bg-apptax-soft-teal/30" />
+          <Skeleton key={i} className="bg-apptax-soft-teal/30 h-12 w-full rounded-lg" />
         ))}
       </div>
     );
@@ -171,8 +171,8 @@ export function DataTable<TData, TValue>({
   return (
     <div className="space-y-4">
       {selectable && selectedCount > 0 && (
-        <div className="px-4 py-2 bg-apptax-soft-teal/20 rounded-lg">
-          <p className="text-sm text-apptax-navy">
+        <div className="bg-apptax-soft-teal/20 rounded-lg px-4 py-2">
+          <p className="text-apptax-navy text-sm">
             Zaznaczono <span className="font-semibold">{selectedCount}</span>{' '}
             {selectedCount === 1 ? 'element' : selectedCount < 5 ? 'elementy' : 'elementów'}
           </p>
@@ -235,16 +235,16 @@ export function DataTable<TData, TValue>({
 
       {enablePagination && data.length > 0 && (
         <div className="flex items-center justify-between px-2">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Wyświetlanie{' '}
-            <span className="font-medium text-apptax-navy">
+            <span className="text-apptax-navy font-medium">
               {table.getState().pagination.pageIndex * pageSize + 1}
             </span>{' '}
             -{' '}
-            <span className="font-medium text-apptax-navy">
+            <span className="text-apptax-navy font-medium">
               {Math.min((table.getState().pagination.pageIndex + 1) * pageSize, data.length)}
             </span>{' '}
-            z <span className="font-medium text-apptax-navy">{data.length}</span> wyników
+            z <span className="text-apptax-navy font-medium">{data.length}</span> wyników
           </p>
           <div className="flex gap-2">
             <Button
@@ -254,7 +254,7 @@ export function DataTable<TData, TValue>({
               disabled={!table.getCanPreviousPage()}
               className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50 hover:border-apptax-teal"
             >
-              <ChevronLeft className="h-4 w-4 mr-1" />
+              <ChevronLeft className="mr-1 h-4 w-4" />
               Poprzednia
             </Button>
             <Button
@@ -265,7 +265,7 @@ export function DataTable<TData, TValue>({
               className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50 hover:border-apptax-teal"
             >
               Następna
-              <ChevronRight className="h-4 w-4 ml-1" />
+              <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
         </div>

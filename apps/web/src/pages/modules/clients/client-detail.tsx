@@ -48,8 +48,8 @@ function formatDate(date?: Date | string | null): string {
 function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="space-y-1">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="font-medium text-apptax-navy">{value || '-'}</p>
+      <p className="text-muted-foreground text-sm">{label}</p>
+      <p className="text-apptax-navy font-medium">{value || '-'}</p>
     </div>
   );
 }
@@ -61,10 +61,10 @@ function ClientDetailErrorFallback() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-      <AlertTriangle className="h-16 w-16 text-destructive" />
+    <div className="flex min-h-[400px] flex-col items-center justify-center space-y-4">
+      <AlertTriangle className="text-destructive h-16 w-16" />
       <h2 className="text-xl font-semibold">Wystąpił błąd</h2>
-      <p className="text-muted-foreground text-center max-w-md">
+      <p className="text-muted-foreground max-w-md text-center">
         Nie udało się załadować szczegółów klienta. Proszę odświeżyć stronę lub spróbować później.
       </p>
       <div className="flex gap-2">
@@ -120,11 +120,11 @@ function ClientDetailContent() {
   // Handle missing id
   if (!id) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <h1 className="text-2xl font-semibold text-destructive">Błąd</h1>
+      <div className="flex min-h-[50vh] flex-col items-center justify-center">
+        <h1 className="text-destructive text-2xl font-semibold">Błąd</h1>
         <p className="text-muted-foreground mt-2">Nie podano identyfikatora klienta</p>
         <Button onClick={() => navigate(basePath)} className="mt-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Powrót do listy
         </Button>
       </div>
@@ -138,8 +138,8 @@ function ClientDetailContent() {
           <Skeleton className="h-10 w-10" />
           <Skeleton className="h-8 w-64" />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
             <Skeleton className="h-48" />
             <Skeleton className="h-48" />
           </div>
@@ -185,7 +185,7 @@ function ClientDetailContent() {
             Powrót do listy
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-apptax-navy flex items-center gap-2">
+            <h1 className="text-apptax-navy flex items-center gap-2 text-2xl font-bold">
               {client.name}
               {!client.isActive && (
                 <Badge variant="outline" className="ml-2">
@@ -208,8 +208,8 @@ function ClientDetailContent() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
           {/* Basic Information */}
           <Card>
             <CardHeader>
@@ -219,7 +219,7 @@ function ClientDetailContent() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
                 <InfoItem label="Nazwa" value={client.name} />
                 <InfoItem label="NIP" value={client.nip} />
                 <InfoItem
@@ -249,7 +249,7 @@ function ClientDetailContent() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
                 <InfoItem
                   label="Forma zatrudnienia"
                   value={
@@ -297,7 +297,7 @@ function ClientDetailContent() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
                 <InfoItem
                   label="Data rozpoczęcia firmy"
                   value={formatDate(client.companyStartDate)}
@@ -320,13 +320,13 @@ function ClientDetailContent() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-6 mb-6">
+              <div className="mb-6 grid grid-cols-2 gap-6">
                 <InfoItem label="Kod GTU" value={client.gtuCode} />
                 <InfoItem label="Grupa AML" value={client.amlGroup} />
               </div>
               {client.companySpecificity && (
                 <div className="mb-4">
-                  <p className="text-sm text-muted-foreground mb-1">Specyfika firmy</p>
+                  <p className="text-muted-foreground mb-1 text-sm">Specyfika firmy</p>
                   <p className="text-apptax-navy whitespace-pre-wrap">
                     {client.companySpecificity}
                   </p>
@@ -334,7 +334,7 @@ function ClientDetailContent() {
               )}
               {client.additionalInfo && (
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Dodatkowe uwagi</p>
+                  <p className="text-muted-foreground mb-1 text-sm">Dodatkowe uwagi</p>
                   <p className="text-apptax-navy whitespace-pre-wrap">{client.additionalInfo}</p>
                 </div>
               )}
@@ -354,7 +354,7 @@ function ClientDetailContent() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
                   {customFieldValues.map((cfv) => {
                     const definition = fieldDefinitions.find(
                       (fd) => fd.id === cfv.fieldDefinitionId
@@ -387,14 +387,14 @@ function ClientDetailContent() {
                     icon ? (
                       <div
                         key={icon.id}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-full border"
+                        className="flex items-center gap-2 rounded-full border px-3 py-1.5"
                         style={{
                           borderColor: icon.color || '#e5e7eb',
                           backgroundColor: icon.color ? `${icon.color}10` : 'transparent',
                         }}
                       >
                         {icon.filePath && (
-                          <img src={icon.filePath} alt={icon.name} className="w-4 h-4" />
+                          <img src={icon.filePath} alt={icon.name} className="h-4 w-4" />
                         )}
                         <span className="text-sm">{icon.name}</span>
                       </div>

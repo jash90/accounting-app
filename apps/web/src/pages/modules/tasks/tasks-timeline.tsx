@@ -243,7 +243,7 @@ export default function TasksTimelinePage() {
         description="Zarządzaj zadaniami - widok osi czasu"
         icon={<CheckSquare className="h-6 w-6" />}
         titleAction={
-          <div className="flex items-center gap-1 border rounded-lg p-1">
+          <div className="flex items-center gap-1 rounded-lg border p-1">
             <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/list`)}>
               <List className="h-4 w-4" />
             </Button>
@@ -284,14 +284,14 @@ export default function TasksTimelinePage() {
               <Button variant="outline" size="icon" onClick={() => handleNavigate('next')}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <span className="text-sm font-medium ml-2">
+              <span className="ml-2 text-sm font-medium">
                 {format(timelineRange.start, 'd MMM', { locale: pl })} -{' '}
                 {format(timelineRange.end, 'd MMM yyyy', { locale: pl })}
               </span>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Widok:</span>
+              <span className="text-muted-foreground text-sm">Widok:</span>
               <Select value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
@@ -309,9 +309,9 @@ export default function TasksTimelinePage() {
 
       {/* Timeline */}
       <Card>
-        <CardContent className="p-0 overflow-x-auto">
+        <CardContent className="overflow-x-auto p-0">
           {isPending ? (
-            <div className="p-4 space-y-4">
+            <div className="space-y-4 p-4">
               <Skeleton className="h-8 w-full" />
               {[1, 2, 3, 4, 5].map((i) => (
                 <Skeleton key={i} className="h-12 w-full" />
@@ -320,14 +320,14 @@ export default function TasksTimelinePage() {
           ) : (
             <div className="min-w-[800px]">
               {/* Timeline header */}
-              <div className="flex border-b sticky top-0 bg-background z-10">
-                <div className="w-64 min-w-64 p-3 border-r font-medium text-sm">Zadanie</div>
-                <div className="flex-1 flex">
+              <div className="bg-background sticky top-0 z-10 flex border-b">
+                <div className="w-64 min-w-64 border-r p-3 text-sm font-medium">Zadanie</div>
+                <div className="flex flex-1">
                   {timelineHeaders.map((header, index) => (
                     <div
                       key={index}
                       className={cn(
-                        'flex-1 p-2 text-center text-xs border-r',
+                        'flex-1 border-r p-2 text-center text-xs',
                         header.isWeekend && 'bg-muted/50'
                       )}
                     >
@@ -339,7 +339,7 @@ export default function TasksTimelinePage() {
 
               {/* Tasks rows */}
               {tasksWithDates.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">
+                <div className="text-muted-foreground p-8 text-center">
                   Brak zadań z datami do wyświetlenia
                 </div>
               ) : (
@@ -349,14 +349,14 @@ export default function TasksTimelinePage() {
                   return (
                     <div
                       key={task.id}
-                      className="flex border-b hover:bg-muted/30 transition-colors"
+                      className="hover:bg-muted/30 flex border-b transition-colors"
                     >
                       {/* Task info */}
-                      <div className="w-64 min-w-64 p-3 border-r">
+                      <div className="w-64 min-w-64 border-r p-3">
                         <div className="flex items-start gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">{task.title}</p>
-                            <div className="flex items-center gap-2 mt-1">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">{task.title}</p>
+                            <div className="mt-1 flex items-center gap-2">
                               <TaskStatusBadge status={task.status} size="sm" />
                             </div>
                           </div>
@@ -364,7 +364,7 @@ export default function TasksTimelinePage() {
                       </div>
 
                       {/* Timeline bar */}
-                      <div className="flex-1 relative h-16">
+                      <div className="relative h-16 flex-1">
                         {/* Grid lines */}
                         <div className="absolute inset-0 flex">
                           {timelineHeaders.map((header, index) => (
@@ -380,7 +380,7 @@ export default function TasksTimelinePage() {
                           <div
                             role="button"
                             tabIndex={0}
-                            className="absolute top-3 h-10 rounded px-2 flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+                            className="absolute top-3 flex h-10 cursor-pointer items-center rounded px-2 transition-opacity hover:opacity-80"
                             style={{
                               left: barStyle.left,
                               width: barStyle.width,
@@ -396,11 +396,11 @@ export default function TasksTimelinePage() {
                           >
                             <div
                               className={cn(
-                                'w-full h-full rounded flex items-center px-2',
+                                'flex h-full w-full items-center rounded px-2',
                                 getStatusColor(task.status)
                               )}
                             >
-                              <span className="text-xs text-white font-medium truncate">
+                              <span className="truncate text-xs font-medium text-white">
                                 {task.title}
                               </span>
                             </div>
@@ -425,7 +425,7 @@ export default function TasksTimelinePage() {
               .filter(([key]) => key !== TaskStatus.CANCELLED)
               .map(([status, label]) => (
                 <div key={status} className="flex items-center gap-2">
-                  <div className={cn('w-3 h-3 rounded', getStatusColor(status as TaskStatus))} />
+                  <div className={cn('h-3 w-3 rounded', getStatusColor(status as TaskStatus))} />
                   <span>{label}</span>
                 </div>
               ))}

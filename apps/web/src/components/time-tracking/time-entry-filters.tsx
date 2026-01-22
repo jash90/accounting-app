@@ -36,7 +36,7 @@ export function TimeEntryFilters({
   onClearFilters,
 }: TimeEntryFiltersProps) {
   return (
-    <div className="px-6 pb-4 border-b">
+    <div className="border-b px-6 pb-4">
       <div className="flex flex-wrap items-center gap-3">
         <Select
           value={filters.status || '__all__'}
@@ -125,7 +125,7 @@ export function TimeEntryFilters({
             onClick={onClearFilters}
             className="text-muted-foreground"
           >
-            <X className="h-4 w-4 mr-1" />
+            <X className="mr-1 h-4 w-4" />
             Wyczyść
           </Button>
         )}

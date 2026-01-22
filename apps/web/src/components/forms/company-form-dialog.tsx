@@ -116,7 +116,7 @@ export function CompanyFormDialog({
                       </SelectContent>
                     </Select>
                     {!hasAvailableOwners && !ownersLoading && (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-muted-foreground text-sm">
                         Najpierw utwórz użytkownika z rolą &quot;Właściciel firmy&quot;, a następnie
                         utwórz dla niego firmę.
                       </p>

@@ -126,15 +126,15 @@ export const ClientCard = memo(function ClientCard({
   return (
     <Card
       className={cn(
-        'group cursor-pointer transition-all hover:shadow-apptax-md border-apptax-soft-teal/30',
+        'group hover:shadow-apptax-md border-apptax-soft-teal/30 cursor-pointer transition-all',
         'hover:border-apptax-teal/50',
-        isSelected && 'ring-2 ring-apptax-blue border-apptax-blue'
+        isSelected && 'ring-apptax-blue border-apptax-blue ring-2'
       )}
       onClick={handleCardClick}
     >
       <CardContent className="p-4">
         {/* Header row with icons, checkbox and status */}
-        <div className="flex items-start justify-between mb-3">
+        <div className="mb-3 flex items-start justify-between">
           <div className="flex items-center gap-2">
             {onSelect && (
               <div
@@ -158,7 +158,7 @@ export const ClientCard = memo(function ClientCard({
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="h-8 w-8 p-0 opacity-0 transition-opacity group-hover:opacity-100"
                     aria-label="Otwórz menu akcji"
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -221,14 +221,14 @@ export const ClientCard = memo(function ClientCard({
         </div>
 
         {/* Client name with status */}
-        <div className="flex items-center gap-2 mb-2">
-          <h3 className="font-semibold text-apptax-navy text-lg line-clamp-1 flex-1 min-w-0">
+        <div className="mb-2 flex items-center gap-2">
+          <h3 className="text-apptax-navy line-clamp-1 min-w-0 flex-1 text-lg font-semibold">
             {client.name}
           </h3>
           {client.isActive ? (
-            <Badge className="bg-green-100 text-green-700 text-xs shrink-0">Aktywny</Badge>
+            <Badge className="shrink-0 bg-green-100 text-xs text-green-700">Aktywny</Badge>
           ) : (
-            <Badge variant="outline" className="text-xs shrink-0">
+            <Badge variant="outline" className="shrink-0 text-xs">
               Nieaktywny
             </Badge>
           )}
@@ -236,14 +236,14 @@ export const ClientCard = memo(function ClientCard({
 
         {/* NIP */}
         {client.nip && (
-          <div className="flex items-center gap-2 text-sm text-apptax-navy/70 mb-2">
+          <div className="text-apptax-navy/70 mb-2 flex items-center gap-2 text-sm">
             <Building2 className="h-4 w-4 shrink-0" />
             <span className="font-mono">{client.nip}</span>
           </div>
         )}
 
         {/* Badges row */}
-        <div className="flex flex-wrap gap-1.5 mb-3">
+        <div className="mb-3 flex flex-wrap gap-1.5">
           {client.employmentType && (
             <Badge variant="secondary" className="text-xs">
               {EmploymentTypeLabels[client.employmentType]}
@@ -265,7 +265,7 @@ export const ClientCard = memo(function ClientCard({
         </div>
 
         {/* Contact info */}
-        <div className="space-y-1.5 text-sm text-apptax-navy/60">
+        <div className="text-apptax-navy/60 space-y-1.5 text-sm">
           {client.email && (
             <div className="flex items-center gap-2">
               <Mail className="h-3.5 w-3.5 shrink-0" />
@@ -282,11 +282,11 @@ export const ClientCard = memo(function ClientCard({
 
         {/* Custom fields */}
         {visibleCustomFields.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-apptax-soft-teal/30 space-y-1.5 text-sm">
+          <div className="border-apptax-soft-teal/30 mt-3 space-y-1.5 border-t pt-3 text-sm">
             {visibleCustomFields.map((field) => (
               <div key={field.id} className="flex items-center justify-between">
                 <span className="text-apptax-navy/60 truncate">{field.label}:</span>
-                <span className="text-apptax-navy/80 font-medium truncate ml-2">
+                <span className="text-apptax-navy/80 ml-2 truncate font-medium">
                   {formatCustomFieldValue(field)}
                 </span>
               </div>

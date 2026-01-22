@@ -50,7 +50,7 @@ export function TaskPriorityBadge({
       className={cn(
         TaskPriorityColors[priority],
         sizeClasses[size],
-        'font-medium inline-flex items-center gap-1',
+        'inline-flex items-center gap-1 font-medium',
         className
       )}
     >

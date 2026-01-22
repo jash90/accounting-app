@@ -273,18 +273,18 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
           <CollapsibleTrigger asChild>
             <button
               type="button"
-              className="flex items-center gap-2 cursor-pointer select-none w-full text-left"
+              className="flex w-full cursor-pointer items-center gap-2 text-left select-none"
               aria-expanded={filtersOpen}
             >
-              <Filter className="h-4 w-4 text-apptax-blue" aria-hidden="true" />
-              <span className="font-medium text-apptax-navy">Filtry</span>
+              <Filter className="text-apptax-blue h-4 w-4" aria-hidden="true" />
+              <span className="text-apptax-navy font-medium">Filtry</span>
               {hasActiveFilters && (
-                <span className="bg-apptax-blue text-white text-xs px-1.5 py-0.5 rounded">
+                <span className="bg-apptax-blue rounded px-1.5 py-0.5 text-xs text-white">
                   Aktywne
                 </span>
               )}
               <ChevronDown
-                className={cn('h-4 w-4 ml-auto transition-transform', filtersOpen && 'rotate-180')}
+                className={cn('ml-auto h-4 w-4 transition-transform', filtersOpen && 'rotate-180')}
                 aria-hidden="true"
               />
             </button>
@@ -298,16 +298,16 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
                 e.stopPropagation();
                 handleClearFilters();
               }}
-              className="ml-auto text-xs mt-2"
+              className="mt-2 ml-auto text-xs"
             >
-              <X className="h-3 w-3 mr-1" />
+              <X className="mr-1 h-3 w-3" />
               Wyczyść filtry
             </Button>
           )}
           <CollapsibleContent>
             <Form {...form}>
-              <form className="space-y-4 mt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
+              <form className="mt-4 space-y-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7">
                   <FormField
                     control={form.control}
                     name="search"
@@ -316,7 +316,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
                         <FormLabel className="text-xs">Szukaj</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
                             <Input placeholder="Nazwa, NIP, email..." className="pl-8" {...field} />
                           </div>
                         </FormControl>
@@ -481,12 +481,12 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="w-full flex items-center justify-between py-2 text-sm text-muted-foreground hover:text-foreground"
+                      className="text-muted-foreground hover:text-foreground flex w-full items-center justify-between py-2 text-sm"
                     >
                       <span className="flex items-center gap-2">
                         Filtry zaawansowane
                         {hasAdvancedFilters && (
-                          <span className="bg-apptax-blue text-white text-xs px-1.5 py-0.5 rounded">
+                          <span className="bg-apptax-blue rounded px-1.5 py-0.5 text-xs text-white">
                             Aktywne
                           </span>
                         )}
@@ -497,7 +497,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="pt-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                       {/* Date Range: Cooperation Start Date */}
                       <FormField
                         control={form.control}

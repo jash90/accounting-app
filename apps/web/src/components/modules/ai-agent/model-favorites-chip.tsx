@@ -22,17 +22,17 @@ export function ModelFavoritesChip({
       type="button"
       onClick={onClick}
       className={cn(
-        'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors',
-        'border hover:bg-accent/50',
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
+        'hover:bg-accent/50 border',
         isSelected
           ? 'bg-apptax-soft-teal border-apptax-teal text-apptax-navy'
           : 'bg-background border-border text-muted-foreground hover:text-foreground'
       )}
     >
       {type === 'favorite' ? (
-        <Star className="w-3 h-3 fill-current" />
+        <Star className="h-3 w-3 fill-current" />
       ) : (
-        <Clock className="w-3 h-3" />
+        <Clock className="h-3 w-3" />
       )}
       <span className="max-w-[150px] truncate">{modelName}</span>
       {onRemove && type === 'favorite' && (
@@ -50,10 +50,10 @@ export function ModelFavoritesChip({
               onRemove();
             }
           }}
-          className="ml-0.5 p-0.5 rounded-full hover:bg-muted-foreground/20 transition-colors cursor-pointer"
+          className="hover:bg-muted-foreground/20 ml-0.5 cursor-pointer rounded-full p-0.5 transition-colors"
           title="Usuń z ulubionych"
         >
-          <X className="w-3 h-3" />
+          <X className="h-3 w-3" />
         </span>
       )}
     </button>

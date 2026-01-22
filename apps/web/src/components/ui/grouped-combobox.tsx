@@ -174,7 +174,7 @@ export function GroupedCombobox({
                 : selectedOption.label
               : placeholder}
           </span>
-          <div className="flex items-center gap-1 ml-2 shrink-0">
+          <div className="ml-2 flex shrink-0 items-center gap-1">
             {selectedOption && (
               <button
                 type="button"
@@ -188,7 +188,7 @@ export function GroupedCombobox({
                     setSearch('');
                   }
                 }}
-                className="rounded-sm hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+                className="hover:bg-accent focus:ring-ring rounded-sm focus:ring-2 focus:ring-offset-1 focus:outline-none"
               >
                 <X className="h-4 w-4 opacity-50 hover:opacity-100" aria-hidden="true" />
               </button>
@@ -198,12 +198,12 @@ export function GroupedCombobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="p-0 min-w-0"
+        className="min-w-0 p-0"
         align="start"
         sideOffset={4}
         style={{ width: 'var(--radix-popover-trigger-width)' }}
       >
-        <div className="p-2 border-b">
+        <div className="border-b p-2">
           <Input
             placeholder={searchPlaceholder}
             value={search}
@@ -222,19 +222,19 @@ export function GroupedCombobox({
         </div>
         <ScrollArea className="max-h-[300px]">
           {isLoading ? (
-            <div className="py-6 flex items-center justify-center text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            <div className="text-muted-foreground flex items-center justify-center py-6 text-sm">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Ładowanie...
             </div>
           ) : groupedOptions.length === 0 ? (
-            <div className="py-6 text-center text-sm text-muted-foreground">{emptyText}</div>
+            <div className="text-muted-foreground py-6 text-center text-sm">{emptyText}</div>
           ) : (
             <div className="p-1" role="listbox" aria-label="Opcje wyboru">
               {groupedOptions.map((group) => (
                 <div key={group.key} role="group" aria-labelledby={`group-${group.key}`}>
                   <div
                     id={`group-${group.key}`}
-                    className="px-3 py-2 text-xs font-semibold text-muted-foreground bg-muted/50 sticky top-0"
+                    className="text-muted-foreground bg-muted/50 sticky top-0 px-3 py-2 text-xs font-semibold"
                   >
                     {group.label}
                   </div>
@@ -248,7 +248,7 @@ export function GroupedCombobox({
                         aria-selected={value === option.value}
                         onClick={() => handleSelect(option.value)}
                         className={cn(
-                          'relative flex w-full cursor-pointer select-none items-start rounded-sm py-2 px-3 text-sm outline-none transition-colors',
+                          'relative flex w-full cursor-pointer items-start rounded-sm px-3 py-2 text-sm transition-colors outline-none select-none',
                           'hover:bg-accent hover:text-accent-foreground',
                           'focus:bg-accent focus:text-accent-foreground',
                           value === option.value && 'bg-accent/50',
@@ -257,17 +257,17 @@ export function GroupedCombobox({
                       >
                         <Check
                           className={cn(
-                            'mr-2 h-4 w-4 shrink-0 mt-0.5',
+                            'mt-0.5 mr-2 h-4 w-4 shrink-0',
                             value === option.value ? 'opacity-100' : 'opacity-0'
                           )}
                           aria-hidden="true"
                         />
-                        <span className="flex-1 whitespace-normal text-left">
+                        <span className="flex-1 text-left whitespace-normal">
                           {option.label.includes(' - ')
                             ? option.label.split(' - ').slice(1).join(' - ')
                             : option.label}
                         </span>
-                        <span className="ml-2 shrink-0 font-mono text-xs text-muted-foreground">
+                        <span className="text-muted-foreground ml-2 shrink-0 font-mono text-xs">
                           {option.value}
                         </span>
                       </button>

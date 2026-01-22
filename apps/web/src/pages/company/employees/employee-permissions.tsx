@@ -109,15 +109,15 @@ export default function EmployeePermissionsPage() {
   if (employeeLoading || permissionsLoading || _modulesLoading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 bg-apptax-soft-teal/30 rounded w-1/3 animate-pulse" />
+        <div className="bg-apptax-soft-teal/30 h-8 w-1/3 animate-pulse rounded" />
         <div className="space-y-4">
           {[1, 2].map((i) => (
-            <Card key={i} className="animate-pulse border-apptax-soft-teal/30">
+            <Card key={i} className="border-apptax-soft-teal/30 animate-pulse">
               <CardHeader>
-                <div className="h-5 bg-apptax-soft-teal/30 rounded w-1/2" />
+                <div className="bg-apptax-soft-teal/30 h-5 w-1/2 rounded" />
               </CardHeader>
               <CardContent>
-                <div className="h-4 bg-apptax-soft-teal/20 rounded w-3/4" />
+                <div className="bg-apptax-soft-teal/20 h-4 w-3/4 rounded" />
               </CardContent>
             </Card>
           ))}
@@ -156,13 +156,13 @@ export default function EmployeePermissionsPage() {
       />
 
       {employeeModules.length === 0 ? (
-        <Card className="border-dashed border-apptax-soft-teal">
+        <Card className="border-apptax-soft-teal border-dashed">
           <CardContent className="py-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-apptax-soft-teal flex items-center justify-center mx-auto mb-4">
-              <Shield className="h-8 w-8 text-apptax-teal" />
+            <div className="bg-apptax-soft-teal mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+              <Shield className="text-apptax-teal h-8 w-8" />
             </div>
             <p className="text-apptax-navy font-medium">Brak przyznanych dostępów do modułów.</p>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 text-sm">
               Kliknij &quot;Nadaj dostęp do modułu&quot;, aby rozpocząć.
             </p>
           </CardContent>
@@ -185,17 +185,17 @@ export default function EmployeePermissionsPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        className={`flex h-10 w-10 items-center justify-center rounded-lg ${
                           isAiModule ? 'bg-apptax-ai-gradient ai-glow' : 'bg-apptax-gradient'
                         }`}
                       >
                         <Package className="h-5 w-5 text-white" />
                       </div>
                       <div>
-                        <CardTitle className="text-lg flex items-center gap-2 text-apptax-navy">
+                        <CardTitle className="text-apptax-navy flex items-center gap-2 text-lg">
                           {module.name}
                           {isAiModule && (
-                            <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
+                            <div className="bg-apptax-teal ai-glow h-2 w-2 rounded-full" />
                           )}
                         </CardTitle>
                         <CardDescription>{module.description}</CardDescription>
@@ -204,17 +204,17 @@ export default function EmployeePermissionsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-9 w-9 hover:bg-destructive/10"
+                      className="hover:bg-destructive/10 h-9 w-9"
                       onClick={() => handleRevokeAccess(module.slug)}
                       title="Cofnij dostęp do modułu"
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <Trash2 className="text-destructive h-4 w-4" />
                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="text-sm font-semibold text-apptax-navy">Uprawnienia:</div>
+                    <div className="text-apptax-navy text-sm font-semibold">Uprawnienia:</div>
                     <div className="flex flex-wrap gap-6">
                       {[ModulePermission.READ, ModulePermission.WRITE, ModulePermission.DELETE].map(
                         (permission) => {
@@ -233,7 +233,7 @@ export default function EmployeePermissionsPage() {
                               />
                               <label
                                 htmlFor={`${module.slug}-${permission}`}
-                                className="text-sm font-medium cursor-pointer text-apptax-navy/80"
+                                className="text-apptax-navy/80 cursor-pointer text-sm font-medium"
                               >
                                 {permission.charAt(0).toUpperCase() + permission.slice(1)}
                               </label>
@@ -243,7 +243,7 @@ export default function EmployeePermissionsPage() {
                       )}
                     </div>
                     {currentPermissions.length === 0 && (
-                      <p className="text-sm text-muted-foreground">Brak przyznanych uprawnień</p>
+                      <p className="text-muted-foreground text-sm">Brak przyznanych uprawnień</p>
                     )}
                   </div>
                 </CardContent>
@@ -265,18 +265,18 @@ export default function EmployeePermissionsPage() {
             <div>
               <label
                 htmlFor="grant-module-select"
-                className="text-sm font-medium text-apptax-navy mb-2 block"
+                className="text-apptax-navy mb-2 block text-sm font-medium"
               >
                 Moduł
               </label>
               {availableModulesForGrant.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Wszystkie dostępne moduły zostały już przyznane temu pracownikowi.
                 </p>
               ) : (
                 <select
                   id="grant-module-select"
-                  className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-apptax-blue/20 focus:border-apptax-blue"
+                  className="focus:ring-apptax-blue/20 focus:border-apptax-blue w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:ring-2 focus:outline-none"
                   value={selectedModule || ''}
                   onChange={(e) => {
                     setSelectedModule(e.target.value);
@@ -295,7 +295,7 @@ export default function EmployeePermissionsPage() {
 
             {selectedModule && (
               <div>
-                <span className="text-sm font-medium text-apptax-navy mb-2 block">Uprawnienia</span>
+                <span className="text-apptax-navy mb-2 block text-sm font-medium">Uprawnienia</span>
                 <div className="mt-2 space-y-3">
                   {[ModulePermission.READ, ModulePermission.WRITE, ModulePermission.DELETE].map(
                     (permission) => (
@@ -315,7 +315,7 @@ export default function EmployeePermissionsPage() {
                         />
                         <label
                           htmlFor={`grant-${permission}`}
-                          className="text-sm cursor-pointer text-gray-700"
+                          className="cursor-pointer text-sm text-gray-700"
                         >
                           {permission.charAt(0).toUpperCase() + permission.slice(1)}
                         </label>

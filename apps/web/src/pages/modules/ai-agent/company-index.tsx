@@ -32,11 +32,11 @@ export default function CompanyAIAgentDashboard() {
   ];
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto space-y-6 p-6">
       <div>
-        <h1 className="text-3xl font-bold text-apptax-navy flex items-center gap-3">
+        <h1 className="text-apptax-navy flex items-center gap-3 text-3xl font-bold">
           Moduł Agent AI
-          <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow" />
+          <div className="bg-apptax-teal ai-glow h-3 w-3 rounded-full" />
         </h1>
         <p className="text-muted-foreground mt-1">Inteligentny asystent AI dla Twojej firmy</p>
       </div>
@@ -57,32 +57,32 @@ export default function CompanyAIAgentDashboard() {
       <Card className="bg-apptax-warm-gray border-0">
         <CardHeader>
           <CardTitle className="text-apptax-navy flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-apptax-teal" />
+            <Sparkles className="text-apptax-teal h-5 w-5" />
             Funkcje
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-start gap-3">
-            <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
+            <CheckCircle2 className="text-apptax-teal mt-0.5 h-5 w-5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-apptax-navy">Inteligentne rozmowy</p>
-              <p className="text-sm text-muted-foreground">AI uczy się z przesłanych dokumentów</p>
+              <p className="text-apptax-navy font-medium">Inteligentne rozmowy</p>
+              <p className="text-muted-foreground text-sm">AI uczy się z przesłanych dokumentów</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
+            <CheckCircle2 className="text-apptax-teal mt-0.5 h-5 w-5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-apptax-navy">Śledzenie tokenów</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-apptax-navy font-medium">Śledzenie tokenów</p>
+              <p className="text-muted-foreground text-sm">
                 Monitoruj użycie i koszty per pracownik
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <CheckCircle2 className="h-5 w-5 text-apptax-teal mt-0.5 flex-shrink-0" />
+            <CheckCircle2 className="text-apptax-teal mt-0.5 h-5 w-5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-apptax-navy">Technologia RAG</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-apptax-navy font-medium">Technologia RAG</p>
+              <p className="text-muted-foreground text-sm">
                 AI odpowiada na podstawie plików firmy
               </p>
             </div>
