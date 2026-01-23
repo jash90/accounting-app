@@ -70,6 +70,11 @@ export const queryKeys = {
     icons: (clientId: string) => ['clients', clientId, 'icons'] as const,
     customFields: (clientId: string) => ['clients', clientId, 'custom-fields'] as const,
     statistics: ['clients', 'statistics'] as const,
+    suspensions: {
+      byClient: (clientId: string) => ['clients', clientId, 'suspensions'] as const,
+      detail: (clientId: string, suspensionId: string) =>
+        ['clients', clientId, 'suspensions', suspensionId] as const,
+    },
   },
   clientFieldDefinitions: {
     all: ['client-field-definitions'] as const,

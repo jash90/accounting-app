@@ -1,21 +1,24 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import {
+  ChangeLog,
   Client,
-  ClientFieldDefinition,
   ClientCustomFieldValue,
+  ClientDeleteRequest,
+  ClientFieldDefinition,
   ClientIcon,
   ClientIconAssignment,
-  NotificationSettings,
+  ClientSuspension,
   Company,
+  NotificationSettings,
   User,
-  ChangeLog,
-  ClientDeleteRequest,
 } from '@accounting/common';
 import { CommonModule } from '@accounting/common/backend';
 import { EmailModule } from '@accounting/email';
 import { StorageModule } from '@accounting/infrastructure/storage';
+import { NotificationsModule } from '@accounting/modules/notifications';
 import { RBACModule } from '@accounting/rbac';
 
 import { ClientsController } from './controllers/clients.controller';
@@ -23,6 +26,7 @@ import { DeleteRequestsController } from './controllers/delete-requests.controll
 import { FieldDefinitionsController } from './controllers/field-definitions.controller';
 import { IconsController } from './controllers/icons.controller';
 import { NotificationSettingsController } from './controllers/notification-settings.controller';
+import { SuspensionsController } from './controllers/suspensions.controller';
 import { AutoAssignService } from './services/auto-assign.service';
 import { ClientChangelogService } from './services/client-changelog.service';
 import { ClientIconsService } from './services/client-icons.service';
@@ -34,6 +38,8 @@ import { DuplicateDetectionService } from './services/duplicate-detection.servic
 import { ClientExportService } from './services/export.service';
 import { NotificationSettingsService } from './services/notification-settings.service';
 import { ClientStatisticsService } from './services/statistics.service';
+import { SuspensionReminderService } from './services/suspension-reminder.service';
+import { SuspensionService } from './services/suspension.service';
 
 @Module({
   imports: [
@@ -43,16 +49,19 @@ import { ClientStatisticsService } from './services/statistics.service';
       ClientCustomFieldValue,
       ClientIcon,
       ClientIconAssignment,
+      ClientSuspension,
       NotificationSettings,
       Company,
       User,
       ChangeLog,
       ClientDeleteRequest,
     ]),
+    ScheduleModule.forRoot(),
     CommonModule,
     RBACModule,
     StorageModule,
     EmailModule,
+    NotificationsModule,
   ],
   controllers: [
     // More specific routes must be registered before generic /:id routes
@@ -60,6 +69,7 @@ import { ClientStatisticsService } from './services/statistics.service';
     IconsController,
     NotificationSettingsController,
     DeleteRequestsController,
+    SuspensionsController,
     ClientsController,
   ],
   providers: [
@@ -74,6 +84,8 @@ import { ClientStatisticsService } from './services/statistics.service';
     DuplicateDetectionService,
     ClientStatisticsService,
     ClientExportService,
+    SuspensionService,
+    SuspensionReminderService,
   ],
   exports: [
     ClientsService,
@@ -87,6 +99,7 @@ import { ClientStatisticsService } from './services/statistics.service';
     DuplicateDetectionService,
     ClientStatisticsService,
     ClientExportService,
+    SuspensionService,
   ],
 })
 export class ClientsModule {}

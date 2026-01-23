@@ -1,21 +1,22 @@
 import { useState } from 'react';
 
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import {
+  AlertTriangle,
   ArrowLeft,
-  Edit,
-  User,
   Building2,
   Calendar,
+  Edit,
   FileText,
   Tags,
-  AlertTriangle,
+  User,
 } from 'lucide-react';
 
 import { ClientChangelog } from '@/components/clients/client-changelog';
 import { ClientTaskStatistics } from '@/components/clients/client-task-statistics';
 import { ClientTasksList } from '@/components/clients/client-tasks-list';
+import { SuspensionHistoryCard } from '@/components/clients/suspension-history-card';
 import { ErrorBoundary } from '@/components/common/error-boundary';
 import { ClientFormDialog } from '@/components/forms/client-form-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -24,20 +25,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthContext } from '@/contexts/auth-context';
 import {
-  useFieldDefinitions,
-  useClientIcons,
   useClient,
-  useUpdateClient,
+  useClientIcons,
+  useFieldDefinitions,
   useSetClientCustomFields,
+  useUpdateClient,
 } from '@/lib/hooks/use-clients';
 import { type UpdateClientDto } from '@/types/dtos';
 import { type ClientIcon } from '@/types/entities';
 import {
   EmploymentTypeLabels,
-  VatStatusLabels,
   TaxSchemeLabels,
-  ZusStatusLabels,
   UserRole,
+  VatStatusLabels,
+  ZusStatusLabels,
 } from '@/types/enums';
 
 function formatDate(date?: Date | string | null): string {
@@ -408,6 +409,7 @@ function ClientDetailContent() {
 
         <div className="space-y-6">
           <ClientTaskStatistics clientId={clientId} />
+          <SuspensionHistoryCard clientId={clientId} />
           <div id="changelog">
             <ClientChangelog clientId={id} />
           </div>

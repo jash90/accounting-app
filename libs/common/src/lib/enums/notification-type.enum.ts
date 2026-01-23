@@ -33,6 +33,16 @@ export enum NotificationType {
   CLIENT_DELETE_APPROVED = 'client.delete.approved',
   CLIENT_DELETE_REJECTED = 'client.delete.rejected',
 
+  // Suspension
+  CLIENT_SUSPENSION_CREATED = 'client.suspension.created',
+  CLIENT_SUSPENSION_UPDATED = 'client.suspension.updated',
+  CLIENT_SUSPENSION_DELETED = 'client.suspension.deleted',
+  CLIENT_SUSPENSION_START_REMINDER_7D = 'client.suspension.start.reminder.7d',
+  CLIENT_SUSPENSION_START_REMINDER_1D = 'client.suspension.start.reminder.1d',
+  CLIENT_SUSPENSION_END_REMINDER_7D = 'client.suspension.end.reminder.7d',
+  CLIENT_SUSPENSION_END_REMINDER_1D = 'client.suspension.end.reminder.1d',
+  CLIENT_RESUMED = 'client.resumed',
+
   // ========================================
   // TIME TRACKING MODULE
   // ========================================
@@ -104,6 +114,14 @@ export const NotificationTypeLabels: Record<NotificationType, string> = {
   [NotificationType.CLIENT_DELETE_REQUESTED]: 'Żądanie usunięcia klienta',
   [NotificationType.CLIENT_DELETE_APPROVED]: 'Zatwierdzono usunięcie klienta',
   [NotificationType.CLIENT_DELETE_REJECTED]: 'Odrzucono usunięcie klienta',
+  [NotificationType.CLIENT_SUSPENSION_CREATED]: 'Utworzono zawieszenie działalności',
+  [NotificationType.CLIENT_SUSPENSION_UPDATED]: 'Zaktualizowano zawieszenie działalności',
+  [NotificationType.CLIENT_SUSPENSION_DELETED]: 'Usunięto zawieszenie działalności',
+  [NotificationType.CLIENT_SUSPENSION_START_REMINDER_7D]: 'Przypomnienie: zawieszenie za 7 dni',
+  [NotificationType.CLIENT_SUSPENSION_START_REMINDER_1D]: 'Przypomnienie: zawieszenie jutro',
+  [NotificationType.CLIENT_SUSPENSION_END_REMINDER_7D]: 'Przypomnienie: wznowienie za 7 dni',
+  [NotificationType.CLIENT_SUSPENSION_END_REMINDER_1D]: 'Przypomnienie: wznowienie jutro',
+  [NotificationType.CLIENT_RESUMED]: 'Działalność klienta została wznowiona',
 
   // Time Tracking
   [NotificationType.TIME_ENTRY_CREATED]: 'Utworzono wpis czasu',
