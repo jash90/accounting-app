@@ -97,20 +97,20 @@ export function ReliefPeriodFormDialog({
 
   // Reset form when dialog opens/closes or relief period changes
   useEffect(() => {
-    if (open) {
-      if (isEditing && reliefPeriod) {
-        form.reset({
-          startDate: reliefPeriod.startDate ? new Date(reliefPeriod.startDate) : undefined,
-          endDate: reliefPeriod.endDate ? new Date(reliefPeriod.endDate) : undefined,
-          isActive: reliefPeriod.isActive,
-        });
-      } else {
-        form.reset({
-          reliefType: undefined,
-          startDate: undefined,
-          endDate: undefined,
-        });
-      }
+    if (!open) return;
+
+    if (isEditing && reliefPeriod) {
+      form.reset({
+        startDate: reliefPeriod.startDate ? new Date(reliefPeriod.startDate) : undefined,
+        endDate: reliefPeriod.endDate ? new Date(reliefPeriod.endDate) : undefined,
+        isActive: reliefPeriod.isActive,
+      });
+    } else {
+      form.reset({
+        reliefType: undefined,
+        startDate: undefined,
+        endDate: undefined,
+      });
     }
   }, [open, isEditing, reliefPeriod, form]);
 

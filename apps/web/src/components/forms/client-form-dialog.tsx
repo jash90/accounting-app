@@ -112,21 +112,21 @@ export function ClientFormDialog({
 
   // Initialize relief state from existing reliefs
   useEffect(() => {
-    if (existingReliefs.length > 0 && open) {
-      const ulgaNaStart = existingReliefs.find((r) => r.reliefType === ReliefType.ULGA_NA_START);
-      const malyZus = existingReliefs.find((r) => r.reliefType === ReliefType.MALY_ZUS);
+    if (!open || existingReliefs.length === 0) return;
 
-      if (ulgaNaStart) {
-        setUlgaNaStartEnabled(true);
-        setUlgaNaStartStartDate(new Date(ulgaNaStart.startDate));
-        setUlgaNaStartEndDate(new Date(ulgaNaStart.endDate));
-      }
+    const ulgaNaStart = existingReliefs.find((r) => r.reliefType === ReliefType.ULGA_NA_START);
+    const malyZus = existingReliefs.find((r) => r.reliefType === ReliefType.MALY_ZUS);
 
-      if (malyZus) {
-        setMalyZusEnabled(true);
-        setMalyZusStartDate(new Date(malyZus.startDate));
-        setMalyZusEndDate(new Date(malyZus.endDate));
-      }
+    if (ulgaNaStart) {
+      setUlgaNaStartEnabled(true);
+      setUlgaNaStartStartDate(new Date(ulgaNaStart.startDate));
+      setUlgaNaStartEndDate(new Date(ulgaNaStart.endDate));
+    }
+
+    if (malyZus) {
+      setMalyZusEnabled(true);
+      setMalyZusStartDate(new Date(malyZus.startDate));
+      setMalyZusEndDate(new Date(malyZus.endDate));
     }
   }, [existingReliefs, open]);
 
