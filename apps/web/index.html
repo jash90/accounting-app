@@ -9,7 +9,8 @@
     <meta name="description" content="AppTax - AI-powered accounting CRM platform for the Polish market. Combine traditional accounting reliability with innovative AI capabilities." />
     <meta name="theme-color" content="#1E3A5F" />
     <!-- CSP: 'unsafe-inline' for styles (required by Radix UI), fonts self-hosted, connect limited to self, API and WebSocket -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' http://localhost:3000 ws://localhost:3000;" />
+    <!-- For production: Replace __CSP_CONNECT_SRC__ with actual backend URLs during deploy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' http://localhost:3000 ws://localhost:3000 https://*.up.railway.app wss://*.up.railway.app;" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/apptax-favicon.svg" />
