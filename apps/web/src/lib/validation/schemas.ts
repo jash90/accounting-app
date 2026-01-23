@@ -513,3 +513,32 @@ export const notificationSettingsSchema = z.object({
 });
 
 export type NotificationSettingsFormData = z.infer<typeof notificationSettingsSchema>;
+
+// Client Suspension Schemas
+export const createSuspensionSchema = z
+  .object({
+    startDate: z.date({ message: 'Data zawieszenia jest wymagana' }),
+    endDate: z.date({ message: 'Nieprawidłowy format daty odwieszenia' }).optional().nullable(),
+    reason: z.string().max(1000, 'Powód nie może przekraczać 1000 znaków').optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.endDate && data.startDate) {
+        return data.endDate > data.startDate;
+      }
+      return true;
+    },
+    {
+      message: 'Data odwieszenia musi być późniejsza niż data zawieszenia',
+      path: ['endDate'],
+    }
+  );
+
+export type CreateSuspensionFormData = z.infer<typeof createSuspensionSchema>;
+
+export const updateSuspensionSchema = z.object({
+  endDate: z.date({ message: 'Nieprawidłowy format daty odwieszenia' }).optional().nullable(),
+  reason: z.string().max(1000, 'Powód nie może przekraczać 1000 znaków').optional(),
+});
+
+export type UpdateSuspensionFormData = z.infer<typeof updateSuspensionSchema>;

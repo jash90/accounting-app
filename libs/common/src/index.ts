@@ -46,6 +46,7 @@ export * from './lib/entities/client-field-definition.entity';
 export * from './lib/entities/client-custom-field-value.entity';
 export * from './lib/entities/client-icon.entity';
 export * from './lib/entities/client-icon-assignment.entity';
+export * from './lib/entities/client-suspension.entity';
 export * from './lib/entities/notification-settings.entity';
 export * from './lib/entities/client-delete-request.entity';
 export * from './lib/entities/task.entity';
