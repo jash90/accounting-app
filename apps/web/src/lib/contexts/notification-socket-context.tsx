@@ -19,6 +19,48 @@ import { tokenStorage } from '@/lib/auth/token-storage';
 import type { NotificationResponseDto } from '@/types/notifications';
 
 
+// Extend Window interface for runtime config
+declare global {
+  interface Window {
+    __APP_CONFIG__?: {
+      API_BASE_URL?: string;
+      WS_URL?: string;
+    };
+  }
+}
+
+/**
+ * Get WebSocket base URL with runtime config support for Railway deployment.
+ * Priority: Runtime config (Railway) > Build-time env var (DEV only) > API URL fallback > localhost
+ */
+const getWsBaseUrl = (): string => {
+  // Runtime config (injected by Railway at deploy time)
+  if (typeof window !== 'undefined' && window.__APP_CONFIG__?.WS_URL) {
+    const url = window.__APP_CONFIG__.WS_URL;
+    if (url && url !== '__WS_URL__') {
+      return url;
+    }
+  }
+
+  // Runtime API URL - WebSocket usually runs on same server
+  if (typeof window !== 'undefined' && window.__APP_CONFIG__?.API_BASE_URL) {
+    const url = window.__APP_CONFIG__.API_BASE_URL;
+    if (url && url !== '__API_BASE_URL__') {
+      return url;
+    }
+  }
+
+  // Build-time env var - ONLY for local development
+  if (import.meta.env.DEV) {
+    return (
+      import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+    );
+  }
+
+  // Production fallback - use relative URL (same origin)
+  return '';
+};
+
 interface NotificationSocketContextValue {
   isConnected: boolean;
   lastNotification: NotificationResponseDto | null;
@@ -104,19 +146,16 @@ export function NotificationSocketProvider({ children }: NotificationSocketProvi
       socketRef.current = null;
     }
 
-    const socketInstance = io(
-      `${import.meta.env.VITE_WS_URL || 'http://localhost:3000'}/notifications`,
-      {
-        path: '/socket.io',
-        auth: {
-          token: accessToken,
-        },
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-      }
-    );
+    const socketInstance = io(`${getWsBaseUrl()}/notifications`, {
+      path: '/socket.io',
+      auth: {
+        token: accessToken,
+      },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
 
     socketInstance.on('connect', () => {
       setIsConnected(true);
