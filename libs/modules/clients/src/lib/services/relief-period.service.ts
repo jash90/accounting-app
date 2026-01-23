@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { addMonths } from 'date-fns';
-import { Between, Not, Repository } from 'typeorm';
+import { Between, LessThanOrEqual, MoreThan, MoreThanOrEqual, Not, Repository } from 'typeorm';
 
 import {
   Client,
@@ -73,19 +73,21 @@ export class ReliefPeriodService {
       throw new BadRequestException('Data zakończenia musi być późniejsza niż data rozpoczęcia');
     }
 
-    // Check if client already has an active relief of the same type
-    const existingRelief = await this.reliefRepository.findOne({
+    // Check if client already has a relief of the same type with overlapping dates
+    // Overlap check: existing.startDate <= new.endDate AND existing.endDate >= new.startDate
+    const overlappingRelief = await this.reliefRepository.findOne({
       where: {
         clientId,
         companyId,
         reliefType: dto.reliefType,
-        isActive: true,
+        startDate: LessThanOrEqual(endDate),
+        endDate: MoreThanOrEqual(startDate),
       },
     });
 
-    if (existingRelief) {
+    if (overlappingRelief) {
       throw new BadRequestException(
-        `Klient już posiada aktywną ulgę typu "${getReliefTypeLabel(dto.reliefType)}"`
+        `Klient już posiada ulgę typu "${getReliefTypeLabel(dto.reliefType)}" w nakładającym się okresie`
       );
     }
 
@@ -143,7 +145,16 @@ export class ReliefPeriodService {
 
     // Update end date if provided
     if (dto.endDate !== undefined) {
-      relief.endDate = new Date(dto.endDate);
+      const newEndDate = new Date(dto.endDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Validate that endDate is not in the past
+      if (newEndDate < today) {
+        throw new BadRequestException('Data zakończenia nie może być w przeszłości');
+      }
+
+      relief.endDate = newEndDate;
       // Reset notification flags if endDate changed
       relief.endDate7DayReminderSent = false;
       relief.endDate1DayReminderSent = false;
@@ -247,6 +258,7 @@ export class ReliefPeriodService {
 
   /**
    * Get active relief periods for a client by type.
+   * Validates both isActive flag AND actual date range.
    */
   async getActiveReliefByType(
     clientId: string,
@@ -262,6 +274,8 @@ export class ReliefPeriodService {
         companyId,
         reliefType,
         isActive: true,
+        startDate: LessThanOrEqual(today),
+        endDate: MoreThan(today),
       },
     });
   }
