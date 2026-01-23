@@ -20,18 +20,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- Runtime config for production deployment -->
-    <script>
-      (function() {
-        // Only inject config for production (non-localhost)
-        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-          window.__APP_CONFIG__ = {
-            API_BASE_URL: 'https://api-production-02a2.up.railway.app',
-            WS_URL: 'https://api-production-02a2.up.railway.app'
-          };
-        }
-      })();
-    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
