@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { addMonths, format } from 'date-fns';
 
 import { useToast } from '@/components/ui/use-toast';
 import { type ApiErrorResponse } from '@/types/api';
@@ -70,18 +71,15 @@ export function useCreateReliefPeriod() {
         queryKeys.clients.reliefPeriods.byClient(clientId)
       );
 
-      // Calculate endDate if not provided
+      // Calculate endDate if not provided (using non-mutating addMonths from date-fns)
       const startDate = new Date(data.startDate);
       const endDate = data.endDate
         ? new Date(data.endDate)
-        : new Date(
-            startDate.setMonth(startDate.getMonth() + ReliefTypeDurationMonths[data.reliefType])
-          );
+        : addMonths(startDate, ReliefTypeDurationMonths[data.reliefType]);
 
-      // Calculate isActive
+      // Calculate isActive based on dates
       const now = new Date();
-      const startDateObj = new Date(data.startDate);
-      const isActive = startDateObj <= now && endDate > now;
+      const isActive = startDate <= now && endDate > now;
 
       const optimisticReliefPeriod: ReliefPeriodResponseDto = {
         id: `temp-${Date.now()}`,
@@ -91,7 +89,7 @@ export function useCreateReliefPeriod() {
         reliefType: data.reliefType,
         reliefTypeLabel: ReliefTypeLabels[data.reliefType],
         startDate: data.startDate,
-        endDate: data.endDate || endDate.toISOString(),
+        endDate: data.endDate || format(endDate, 'yyyy-MM-dd'),
         daysUntilEnd: null,
         isActive,
         createdById: '',
