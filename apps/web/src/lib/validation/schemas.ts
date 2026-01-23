@@ -542,3 +542,89 @@ export const updateSuspensionSchema = z.object({
 });
 
 export type UpdateSuspensionFormData = z.infer<typeof updateSuspensionSchema>;
+
+// Client Relief Period Schemas
+export const reliefTypeSchema = z.enum(['ULGA_NA_START', 'MALY_ZUS'], {
+  message: 'Typ ulgi jest wymagany',
+});
+
+export type ReliefType = z.infer<typeof reliefTypeSchema>;
+
+export const createReliefPeriodSchema = z
+  .object({
+    reliefType: reliefTypeSchema,
+    startDate: z.date({ message: 'Data rozpoczęcia jest wymagana' }),
+    endDate: z.date({ message: 'Nieprawidłowy format daty zakończenia' }).optional().nullable(),
+  })
+  .refine(
+    (data) => {
+      if (data.endDate && data.startDate) {
+        return data.endDate > data.startDate;
+      }
+      return true;
+    },
+    {
+      message: 'Data zakończenia musi być późniejsza niż data rozpoczęcia',
+      path: ['endDate'],
+    }
+  );
+
+export type CreateReliefPeriodFormData = z.infer<typeof createReliefPeriodSchema>;
+
+export const updateReliefPeriodSchema = z
+  .object({
+    startDate: z.date({ message: 'Nieprawidłowy format daty rozpoczęcia' }).optional(),
+    endDate: z.date({ message: 'Nieprawidłowy format daty zakończenia' }).optional().nullable(),
+    isActive: z.boolean().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.endDate && data.startDate) {
+        return data.endDate > data.startDate;
+      }
+      return true;
+    },
+    {
+      message: 'Data zakończenia musi być późniejsza niż data rozpoczęcia',
+      path: ['endDate'],
+    }
+  );
+
+export type UpdateReliefPeriodFormData = z.infer<typeof updateReliefPeriodSchema>;
+
+// Client form relief section schema (for form state, not API)
+export const clientReliefSectionSchema = z
+  .object({
+    ulgaNaStartEnabled: z.boolean().default(false),
+    ulgaNaStartStartDate: z.date().optional().nullable(),
+    ulgaNaStartEndDate: z.date().optional().nullable(),
+    malyZusEnabled: z.boolean().default(false),
+    malyZusStartDate: z.date().optional().nullable(),
+    malyZusEndDate: z.date().optional().nullable(),
+  })
+  .refine(
+    (data) => {
+      if (data.ulgaNaStartEnabled) {
+        return !!data.ulgaNaStartStartDate;
+      }
+      return true;
+    },
+    {
+      message: 'Data rozpoczęcia jest wymagana gdy ulga jest włączona',
+      path: ['ulgaNaStartStartDate'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.malyZusEnabled) {
+        return !!data.malyZusStartDate;
+      }
+      return true;
+    },
+    {
+      message: 'Data rozpoczęcia jest wymagana gdy ulga jest włączona',
+      path: ['malyZusStartDate'],
+    }
+  );
+
+export type ClientReliefSectionFormData = z.infer<typeof clientReliefSectionSchema>;
