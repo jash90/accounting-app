@@ -1,10 +1,11 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Maximize2 } from 'lucide-react';
+import { addMonths } from 'date-fns';
+import { AlertCircle, Maximize2 } from 'lucide-react';
 
 import { CustomFieldRenderer } from '@/components/clients/custom-field-renderer';
 import { Button } from '@/components/ui/button';
@@ -31,10 +32,11 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { ReliefType, ReliefTypeDurationMonths } from '@/lib/api/endpoints/relief-periods';
 import { AmlGroupLabels, GTU_CODES } from '@/lib/constants/polish-labels';
 import { useFieldDefinitions } from '@/lib/hooks/use-clients';
 import { useModuleCreatePath } from '@/lib/hooks/use-module-base-path';
-import { usePkdSearch, usePkdCode } from '@/lib/hooks/use-pkd-search';
+import { usePkdCode, usePkdSearch } from '@/lib/hooks/use-pkd-search';
 import {
   createClientSchema,
   updateClientSchema,
@@ -44,12 +46,23 @@ import {
 import { type ClientResponseDto, type SetCustomFieldValuesDto } from '@/types/dtos';
 import { type ClientFieldDefinition } from '@/types/entities';
 import {
-  EmploymentTypeLabels,
-  VatStatusLabels,
-  TaxSchemeLabels,
-  ZusStatusLabels,
   AmlGroup,
+  EmploymentTypeLabels,
+  TaxSchemeLabels,
+  VatStatusLabels,
+  ZusStatusLabels,
 } from '@/types/enums';
+
+export interface ReliefPeriodFormData {
+  reliefType: ReliefType;
+  startDate: string;
+  endDate?: string;
+}
+
+export interface ClientReliefsData {
+  ulgaNaStart?: ReliefPeriodFormData;
+  malyZus?: ReliefPeriodFormData;
+}
 
 interface ClientFormDialogProps {
   open: boolean;
@@ -57,11 +70,19 @@ interface ClientFormDialogProps {
   client?: ClientResponseDto;
   onSubmit: (
     data: CreateClientFormData | UpdateClientFormData,
-    customFields?: SetCustomFieldValuesDto
+    customFields?: SetCustomFieldValuesDto,
+    reliefs?: ClientReliefsData
   ) => void;
+  existingReliefs?: { reliefType: ReliefType; startDate: string; endDate: string }[];
 }
 
-export function ClientFormDialog({ open, onOpenChange, client, onSubmit }: ClientFormDialogProps) {
+export function ClientFormDialog({
+  open,
+  onOpenChange,
+  client,
+  onSubmit,
+  existingReliefs = [],
+}: ClientFormDialogProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const createPath = useModuleCreatePath('clients');
@@ -80,6 +101,59 @@ export function ClientFormDialog({ open, onOpenChange, client, onSubmit }: Clien
 
   // Custom field values state
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
+
+  // Relief periods state
+  const [ulgaNaStartEnabled, setUlgaNaStartEnabled] = useState(false);
+  const [ulgaNaStartStartDate, setUlgaNaStartStartDate] = useState<Date | undefined>(undefined);
+  const [ulgaNaStartEndDate, setUlgaNaStartEndDate] = useState<Date | undefined>(undefined);
+  const [malyZusEnabled, setMalyZusEnabled] = useState(false);
+  const [malyZusStartDate, setMalyZusStartDate] = useState<Date | undefined>(undefined);
+  const [malyZusEndDate, setMalyZusEndDate] = useState<Date | undefined>(undefined);
+
+  // Initialize relief state from existing reliefs
+  useEffect(() => {
+    if (existingReliefs.length > 0 && open) {
+      const ulgaNaStart = existingReliefs.find((r) => r.reliefType === ReliefType.ULGA_NA_START);
+      const malyZus = existingReliefs.find((r) => r.reliefType === ReliefType.MALY_ZUS);
+
+      if (ulgaNaStart) {
+        setUlgaNaStartEnabled(true);
+        setUlgaNaStartStartDate(new Date(ulgaNaStart.startDate));
+        setUlgaNaStartEndDate(new Date(ulgaNaStart.endDate));
+      }
+
+      if (malyZus) {
+        setMalyZusEnabled(true);
+        setMalyZusStartDate(new Date(malyZus.startDate));
+        setMalyZusEndDate(new Date(malyZus.endDate));
+      }
+    }
+  }, [existingReliefs, open]);
+
+  // Auto-calculate end dates when start dates change
+  const handleUlgaNaStartStartDateChange = (date: Date | undefined) => {
+    setUlgaNaStartStartDate(date);
+    if (date) {
+      setUlgaNaStartEndDate(addMonths(date, ReliefTypeDurationMonths[ReliefType.ULGA_NA_START]));
+    }
+  };
+
+  const handleMalyZusStartDateChange = (date: Date | undefined) => {
+    setMalyZusStartDate(date);
+    if (date) {
+      setMalyZusEndDate(addMonths(date, ReliefTypeDurationMonths[ReliefType.MALY_ZUS]));
+    }
+  };
+
+  // Reset relief state
+  const resetReliefState = () => {
+    setUlgaNaStartEnabled(false);
+    setUlgaNaStartStartDate(undefined);
+    setUlgaNaStartEndDate(undefined);
+    setMalyZusEnabled(false);
+    setMalyZusStartDate(undefined);
+    setMalyZusEndDate(undefined);
+  };
 
   // Generate default values from client data or empty form
   const getDefaultValues = useCallback(
@@ -196,10 +270,12 @@ export function ClientFormDialog({ open, onOpenChange, client, onSubmit }: Clien
         // Initialize form and custom fields when dialog opens
         form.reset(getDefaultValues(client));
         setCustomFieldValues(getInitialCustomFieldValues(client));
+        // Note: Relief state is initialized via useEffect watching existingReliefs
       } else {
         // Reset on close to prevent stale data
         form.reset(getDefaultValues(undefined));
         setCustomFieldValues({});
+        resetReliefState();
       }
       onOpenChange(newOpen);
     },
@@ -229,6 +305,25 @@ export function ClientFormDialog({ open, onOpenChange, client, onSubmit }: Clien
       return;
     }
 
+    // Validate relief period dates
+    if (ulgaNaStartEnabled && !ulgaNaStartStartDate) {
+      toast({
+        title: 'Brakująca data',
+        description: 'Data rozpoczęcia ulgi na start jest wymagana',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (malyZusEnabled && !malyZusStartDate) {
+      toast({
+        title: 'Brakująca data',
+        description: 'Data rozpoczęcia małego ZUS jest wymagana',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Clean up empty strings to undefined
     const cleanedData = Object.fromEntries(
       Object.entries(data).map(([key, value]) => [key, value === '' ? undefined : value])
@@ -244,11 +339,33 @@ export function ClientFormDialog({ open, onOpenChange, client, onSubmit }: Clien
     // Check if any custom fields have values
     const hasCustomFieldValues = Object.values(customFieldsData.values).some((v) => v !== null);
 
+    // Prepare relief periods data
+    const reliefsData: ClientReliefsData = {};
+
+    if (ulgaNaStartEnabled && ulgaNaStartStartDate) {
+      reliefsData.ulgaNaStart = {
+        reliefType: ReliefType.ULGA_NA_START,
+        startDate: ulgaNaStartStartDate.toISOString(),
+        endDate: ulgaNaStartEndDate?.toISOString(),
+      };
+    }
+
+    if (malyZusEnabled && malyZusStartDate) {
+      reliefsData.malyZus = {
+        reliefType: ReliefType.MALY_ZUS,
+        startDate: malyZusStartDate.toISOString(),
+        endDate: malyZusEndDate?.toISOString(),
+      };
+    }
+
+    const hasReliefs = Object.keys(reliefsData).length > 0;
+
     // Note: Form reset is handled by parent closing dialog on success
     // Do NOT reset here - if mutation fails, user loses their data
     onSubmit(
       cleanedData as CreateClientFormData | UpdateClientFormData,
-      hasCustomFieldValues ? customFieldsData : undefined
+      hasCustomFieldValues ? customFieldsData : undefined,
+      hasReliefs ? reliefsData : undefined
     );
   };
 
@@ -562,6 +679,157 @@ export function ClientFormDialog({ open, onOpenChange, client, onSubmit }: Clien
                 </div>
               </div>
 
+              {/* Relief Periods */}
+              <div className="space-y-4">
+                <h3 className="text-apptax-navy text-sm font-semibold">Ulgi i preferencje ZUS</h3>
+
+                {/* Ulga na start */}
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <label htmlFor="ulga-na-start-switch" className="text-sm font-medium">
+                        Ulga na start
+                      </label>
+                      <p className="text-muted-foreground text-xs">
+                        Zwolnienie ze składek ZUS na 6 miesięcy
+                      </p>
+                    </div>
+                    <Switch
+                      id="ulga-na-start-switch"
+                      checked={ulgaNaStartEnabled}
+                      onCheckedChange={(checked) => {
+                        setUlgaNaStartEnabled(checked);
+                        if (!checked) {
+                          setUlgaNaStartStartDate(undefined);
+                          setUlgaNaStartEndDate(undefined);
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {ulgaNaStartEnabled && (
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div className="space-y-2">
+                        <label htmlFor="ulga-na-start-start-date" className="text-sm font-medium">
+                          Data rozpoczęcia *
+                        </label>
+                        <Input
+                          id="ulga-na-start-start-date"
+                          type="date"
+                          value={
+                            ulgaNaStartStartDate
+                              ? ulgaNaStartStartDate.toISOString().split('T')[0]
+                              : ''
+                          }
+                          onChange={(e) =>
+                            handleUlgaNaStartStartDateChange(
+                              e.target.value ? new Date(e.target.value) : undefined
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label htmlFor="ulga-na-start-end-date" className="text-sm font-medium">
+                          Data zakończenia
+                        </label>
+                        <Input
+                          id="ulga-na-start-end-date"
+                          type="date"
+                          value={
+                            ulgaNaStartEndDate ? ulgaNaStartEndDate.toISOString().split('T')[0] : ''
+                          }
+                          onChange={(e) =>
+                            setUlgaNaStartEndDate(
+                              e.target.value ? new Date(e.target.value) : undefined
+                            )
+                          }
+                        />
+                        <p className="text-muted-foreground text-xs">
+                          Automatycznie obliczone: 6 miesięcy od daty rozpoczęcia
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Mały ZUS */}
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <label htmlFor="maly-zus-switch" className="text-sm font-medium">
+                        Mały ZUS (Mały ZUS Plus)
+                      </label>
+                      <p className="text-muted-foreground text-xs">
+                        Niższe składki ZUS na 36 miesięcy
+                      </p>
+                    </div>
+                    <Switch
+                      id="maly-zus-switch"
+                      checked={malyZusEnabled}
+                      onCheckedChange={(checked) => {
+                        setMalyZusEnabled(checked);
+                        if (!checked) {
+                          setMalyZusStartDate(undefined);
+                          setMalyZusEndDate(undefined);
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {malyZusEnabled && (
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div className="space-y-2">
+                        <label htmlFor="maly-zus-start-date" className="text-sm font-medium">
+                          Data rozpoczęcia *
+                        </label>
+                        <Input
+                          id="maly-zus-start-date"
+                          type="date"
+                          value={
+                            malyZusStartDate ? malyZusStartDate.toISOString().split('T')[0] : ''
+                          }
+                          onChange={(e) =>
+                            handleMalyZusStartDateChange(
+                              e.target.value ? new Date(e.target.value) : undefined
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label htmlFor="maly-zus-end-date" className="text-sm font-medium">
+                          Data zakończenia
+                        </label>
+                        <Input
+                          id="maly-zus-end-date"
+                          type="date"
+                          value={malyZusEndDate ? malyZusEndDate.toISOString().split('T')[0] : ''}
+                          onChange={(e) =>
+                            setMalyZusEndDate(e.target.value ? new Date(e.target.value) : undefined)
+                          }
+                        />
+                        <p className="text-muted-foreground text-xs">
+                          Automatycznie obliczone: 36 miesięcy od daty rozpoczęcia
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Info box about notifications */}
+                {(ulgaNaStartEnabled || malyZusEnabled) && (
+                  <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
+                    <AlertCircle className="mt-0.5 h-4 w-4 text-blue-600" />
+                    <div className="text-xs text-blue-700">
+                      <p className="font-medium">Powiadomienia o wygaśnięciu</p>
+                      <p className="mt-0.5">
+                        System wyśle przypomnienia 7 dni i 1 dzień przed datą zakończenia ulgi do
+                        wszystkich pracowników i właściciela firmy.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Additional Information */}
               <div className="space-y-4">
                 <h3 className="text-apptax-navy text-sm font-semibold">Dodatkowe informacje</h3>
@@ -685,7 +953,10 @@ export function ClientFormDialog({ open, onOpenChange, client, onSubmit }: Clien
                       .sort((a, b) => a.displayOrder - b.displayOrder)
                       .map((definition) => (
                         <div key={definition.id} className="space-y-2">
-                          <label className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          <label
+                            htmlFor={`custom-field-${definition.id}`}
+                            className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
                             {definition.label}
                             {definition.isRequired && ' *'}
                           </label>

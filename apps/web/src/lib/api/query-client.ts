@@ -75,6 +75,11 @@ export const queryKeys = {
       detail: (clientId: string, suspensionId: string) =>
         ['clients', clientId, 'suspensions', suspensionId] as const,
     },
+    reliefPeriods: {
+      byClient: (clientId: string) => ['clients', clientId, 'relief-periods'] as const,
+      detail: (clientId: string, reliefId: string) =>
+        ['clients', clientId, 'relief-periods', reliefId] as const,
+    },
   },
   clientFieldDefinitions: {
     all: ['client-field-definitions'] as const,
