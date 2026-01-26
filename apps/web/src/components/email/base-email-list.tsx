@@ -1,26 +1,27 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { Link } from 'react-router-dom';
 
 import {
-  RefreshCw,
-  Mail,
-  MailOpen,
-  Trash2,
   CheckCheck,
-  Loader2,
   ChevronLeft,
   ChevronRight,
+  Loader2,
+  Mail,
+  MailOpen,
+  RefreshCw,
+  Trash2,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
-import { useMarkAsRead, useDeleteEmails } from '@/lib/hooks/use-email-client';
+import { useDeleteEmails, useMarkAsRead } from '@/lib/hooks/use-email-client';
 import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 
 import { EmailListSkeleton } from '../../pages/modules/email-client/components/email-inbox-skeleton';
 import { EmailSidebar } from '../../pages/modules/email-client/components/email-sidebar';
+import { MobileEmailTabs } from '../../pages/modules/email-client/components/mobile-email-tabs';
 
 interface EmailAddress {
   name?: string;
@@ -176,14 +177,14 @@ export function BaseEmailList({
   const isProcessing = markAsRead.isPending || deleteEmails.isPending;
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full pb-16 md:pb-0">
       <EmailSidebar />
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between border-b p-4">
+        <div className="flex flex-col gap-3 border-b p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
           <div>
-            <h1 className="text-2xl font-bold">{title}</h1>
+            <h1 className="text-xl font-bold sm:text-2xl">{title}</h1>
             <p className="text-muted-foreground text-sm">{emails?.length || 0} wiadomości</p>
           </div>
           <div className="flex gap-2">
@@ -192,12 +193,12 @@ export function BaseEmailList({
               disabled={isRefetching}
               variant="outline"
               size="sm"
-              className="gap-2"
+              className="min-h-[44px] flex-1 gap-2 sm:min-h-0 sm:flex-initial"
             >
               <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
-              Odśwież
+              <span className="sm:inline">Odśwież</span>
             </Button>
-            <Link to={emailNav.getComposePath()}>
+            <Link to={emailNav.getComposePath()} className="hidden sm:block">
               <Button size="sm" className="gap-2">
                 <Mail className="h-4 w-4" />
                 Napisz
@@ -208,7 +209,7 @@ export function BaseEmailList({
 
         {/* Bulk Actions Toolbar */}
         {someSelected && (
-          <div className="bg-muted/50 flex h-12 items-center gap-4 border-b px-4">
+          <div className="bg-muted/50 flex min-h-12 flex-wrap items-center gap-2 border-b px-3 py-2 sm:gap-4 sm:px-4">
             <div className="flex items-center gap-2">
               <Checkbox
                 checked={allSelected}
@@ -217,20 +218,21 @@ export function BaseEmailList({
               />
               <span className="text-sm font-medium">{selectedUids.size} zaznaczono</span>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {unreadSelectedCount > 0 && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleMarkAsRead}
                   disabled={isProcessing}
+                  className="min-h-[44px] sm:min-h-0"
                 >
                   {markAsRead.isPending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
                   ) : (
-                    <CheckCheck className="mr-2 h-4 w-4" />
+                    <CheckCheck className="h-4 w-4 sm:mr-2" />
                   )}
-                  Oznacz jako przeczytane
+                  <span className="hidden sm:inline">Oznacz jako przeczytane</span>
                 </Button>
               )}
               <Button
@@ -238,17 +240,24 @@ export function BaseEmailList({
                 size="sm"
                 onClick={handleDelete}
                 disabled={isProcessing}
-                className="text-destructive hover:text-destructive"
+                className="text-destructive hover:text-destructive min-h-[44px] sm:min-h-0"
               >
                 {deleteEmails.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
                 ) : (
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  <Trash2 className="h-4 w-4 sm:mr-2" />
                 )}
-                Usuń
+                <span className="hidden sm:inline">Usuń</span>
               </Button>
-              <Button variant="ghost" size="sm" onClick={clearSelection} disabled={isProcessing}>
-                Wyczyść zaznaczenie
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearSelection}
+                disabled={isProcessing}
+                className="min-h-[44px] sm:min-h-0"
+              >
+                <span className="hidden sm:inline">Wyczyść zaznaczenie</span>
+                <span className="sm:hidden">Wyczyść</span>
               </Button>
             </div>
           </div>
@@ -344,7 +353,7 @@ export function BaseEmailList({
 
         {/* Pagination */}
         {sortedEmails.length > 0 && (
-          <div className="flex items-center justify-between border-t px-4 py-3">
+          <div className="flex flex-col items-center justify-between gap-3 border-t px-3 py-3 sm:flex-row sm:px-4">
             <span className="text-muted-foreground text-sm">
               {(currentPage - 1) * pageSize + 1}-
               {Math.min(currentPage * pageSize, sortedEmails.length)} z {sortedEmails.length}
@@ -355,25 +364,28 @@ export function BaseEmailList({
                 size="sm"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="gap-1"
+                className="min-h-[44px] min-w-[44px] gap-1 sm:min-h-0"
               >
                 <ChevronLeft className="h-4 w-4" />
-                Poprzednia
+                <span className="hidden sm:inline">Poprzednia</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage >= totalPages}
-                className="gap-1"
+                className="min-h-[44px] min-w-[44px] gap-1 sm:min-h-0"
               >
-                Następna
+                <span className="hidden sm:inline">Następna</span>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
         )}
       </div>
+
+      {/* Mobile bottom tabs */}
+      <MobileEmailTabs />
     </div>
   );
 }

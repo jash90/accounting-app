@@ -1,22 +1,26 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
+  closestCorners,
   DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
-  DragOverlay,
-  closestCorners,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
 } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useIsMobile } from '@/lib/hooks/use-media-query';
 import { cn } from '@/lib/utils/cn';
-import { type TaskResponseDto, type KanbanBoardDto } from '@/types/dtos';
+import { type KanbanBoardDto, type TaskResponseDto } from '@/types/dtos';
 import { TaskStatus } from '@/types/enums';
+
 
 import { KanbanColumn } from './kanban-column';
 import { TaskCard } from './task-card';
@@ -37,6 +41,14 @@ const statusOrder: TaskStatus[] = [
   TaskStatus.DONE,
 ];
 
+const statusLabelsShort: Record<TaskStatus, string> = {
+  [TaskStatus.BACKLOG]: 'Backlog',
+  [TaskStatus.TODO]: 'Do zrobienia',
+  [TaskStatus.IN_PROGRESS]: 'W toku',
+  [TaskStatus.IN_REVIEW]: 'Przegląd',
+  [TaskStatus.DONE]: 'Gotowe',
+};
+
 export function KanbanBoard({
   data,
   onTaskClick,
@@ -46,6 +58,8 @@ export function KanbanBoard({
 }: KanbanBoardProps) {
   const [activeTask, setActiveTask] = useState<TaskResponseDto | null>(null);
   const [localData, setLocalData] = useState<KanbanBoardDto>(data);
+  const [activeTab, setActiveTab] = useState<TaskStatus>(TaskStatus.TODO);
+  const isMobile = useIsMobile();
 
   // Update local data when prop changes
   useEffect(() => {
@@ -56,6 +70,12 @@ export function KanbanBoard({
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -179,6 +199,61 @@ export function KanbanBoard({
     }
   };
 
+  // Mobile tabbed view
+  if (isMobile) {
+    return (
+      <div className={cn('lg:hidden', className)}>
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as TaskStatus)}
+          className="w-full"
+        >
+          <TabsList className="mb-4 w-full overflow-x-auto">
+            {statusOrder.map((status) => {
+              const count = (localData[status] || []).length;
+              return (
+                <TabsTrigger key={status} value={status} className="min-w-[80px] flex-1 text-xs">
+                  {statusLabelsShort[status]}
+                  {count > 0 && (
+                    <span className="ml-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px]">
+                      {count}
+                    </span>
+                  )}
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+          {statusOrder.map((status) => (
+            <TabsContent key={status} value={status} className="mt-0">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCorners}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+              >
+                <KanbanColumn
+                  status={status}
+                  tasks={localData[status] || []}
+                  onTaskClick={onTaskClick}
+                  onAddTask={onAddTask}
+                  className="min-h-[400px] w-full"
+                  hideHeader
+                />
+                <DragOverlay>
+                  {activeTask && (
+                    <TaskCard task={activeTask} isDragging className="rotate-3 shadow-xl" />
+                  )}
+                </DragOverlay>
+              </DndContext>
+            </TabsContent>
+          ))}
+        </Tabs>
+      </div>
+    );
+  }
+
+  // Desktop horizontal scroll view
   return (
     <DndContext
       sensors={sensors}
@@ -187,7 +262,7 @@ export function KanbanBoard({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className={cn('flex min-h-[500px] gap-4 overflow-x-auto pb-4', className)}>
+      <div className={cn('hidden min-h-[500px] gap-4 overflow-x-auto pb-4 lg:flex', className)}>
         {statusOrder.map((status) => (
           <KanbanColumn
             key={status}

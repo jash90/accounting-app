@@ -1,14 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
-  format,
   addWeeks,
-  subWeeks,
-  startOfWeek,
-  endOfWeek,
   eachDayOfInterval,
+  endOfWeek,
+  format,
   isSameDay,
   parseISO,
+  startOfWeek,
+  subWeeks,
 } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { Calendar, ChevronLeft, ChevronRight, Clock, DollarSign } from 'lucide-react';
@@ -116,25 +116,36 @@ export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps)
 
   return (
     <Card className={className}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+      <CardHeader className="flex flex-col gap-3 space-y-0 pb-4 sm:flex-row sm:items-center sm:justify-between">
         <CardTitle className="flex items-center gap-2">
           <Calendar className="h-5 w-5" />
-          Timesheet tygodniowy
+          <span className="hidden sm:inline">Timesheet tygodniowy</span>
+          <span className="sm:hidden">Tydzień</span>
         </CardTitle>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigateWeek('prev')}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigateWeek('prev')}
+            className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button
             variant={isCurrentWeek ? 'default' : 'outline'}
             size="sm"
             onClick={goToThisWeek}
-            className="min-w-[200px]"
+            className="min-h-[44px] min-w-[140px] flex-1 text-xs sm:min-h-0 sm:min-w-[200px] sm:flex-initial sm:text-sm"
           >
             {format(weekStart, 'd MMM', { locale: pl })} -{' '}
             {format(weekEnd, 'd MMM yyyy', { locale: pl })}
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigateWeek('next')}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigateWeek('next')}
+            className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -143,39 +154,39 @@ export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps)
       <CardContent>
         {/* Weekly Summary */}
         {timesheet && (
-          <div className="bg-muted/50 mb-6 grid grid-cols-3 gap-4 rounded-lg p-4">
+          <div className="bg-muted/50 mb-6 grid grid-cols-2 gap-3 rounded-lg p-3 sm:grid-cols-3 sm:gap-4 sm:p-4">
             <div className="text-center">
               <div className="text-muted-foreground mb-1 flex items-center justify-center gap-1">
-                <Clock className="h-4 w-4" />
-                <span className="text-xs">Czas całkowity</span>
+                <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="text-[10px] sm:text-xs">Czas całkowity</span>
               </div>
-              <p className="font-mono text-2xl font-semibold">
+              <p className="font-mono text-lg font-semibold sm:text-2xl">
                 {formatDuration(timesheet.summary?.totalMinutes ?? 0)}
               </p>
             </div>
             <div className="text-center">
               <div className="text-muted-foreground mb-1 flex items-center justify-center gap-1">
-                <DollarSign className="h-4 w-4" />
-                <span className="text-xs">Rozliczalny</span>
+                <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="text-[10px] sm:text-xs">Rozliczalny</span>
               </div>
-              <p className="font-mono text-2xl font-semibold">
+              <p className="font-mono text-lg font-semibold sm:text-2xl">
                 {formatDuration(timesheet.summary?.billableMinutes ?? 0)}
               </p>
             </div>
-            <div className="text-center">
+            <div className="col-span-2 text-center sm:col-span-1">
               <div className="text-muted-foreground mb-1 flex items-center justify-center gap-1">
-                <DollarSign className="h-4 w-4" />
-                <span className="text-xs">Kwota</span>
+                <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="text-[10px] sm:text-xs">Kwota</span>
               </div>
-              <p className="text-2xl font-semibold">
+              <p className="text-lg font-semibold sm:text-2xl">
                 {(timesheet.summary?.totalAmount ?? 0).toLocaleString('pl-PL')} PLN
               </p>
             </div>
           </div>
         )}
 
-        {/* Days Grid */}
-        <div className="grid grid-cols-7 gap-2">
+        {/* Days Grid - Horizontal scroll on mobile, grid on desktop */}
+        <div className="flex gap-2 overflow-x-auto pb-2 sm:grid sm:grid-cols-7 sm:overflow-visible sm:pb-0">
           {weekDays.map((day) => {
             const dayData = getDayData(day);
             const isToday = isSameDay(day, new Date());
@@ -197,7 +208,7 @@ export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps)
                   }
                 }}
                 className={cn(
-                  'cursor-pointer transition-all hover:shadow-md',
+                  'min-w-[100px] flex-shrink-0 cursor-pointer transition-all hover:shadow-md sm:min-w-0 sm:flex-shrink',
                   isToday && 'ring-primary ring-2',
                   onDayClick &&
                     'hover:border-primary focus:ring-ring focus:ring-2 focus:ring-offset-2 focus:outline-none'

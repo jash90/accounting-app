@@ -1,9 +1,16 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
 interface NavigationContextType {
+  // Desktop sidebar state
   isOpen: boolean;
   toggle: () => void;
   setOpen: (open: boolean) => void;
+  // Mobile menu state
+  isMobileMenuOpen: boolean;
+  openMobileMenu: () => void;
+  closeMobileMenu: () => void;
+  toggleMobileMenu: () => void;
 }
 
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
@@ -26,6 +33,7 @@ function getInitialState(): boolean {
 
 export function NavigationProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState<boolean>(getInitialState);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Persist state to localStorage
   useEffect(() => {
@@ -56,13 +64,39 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const toggle = () => {
-    setIsOpen((prev) => !prev);
-  };
+  // Close mobile menu on window resize to desktop
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
 
-  const setOpen = (open: boolean) => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024 && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isMobileMenuOpen]);
+
+  const toggle = useCallback(() => {
+    setIsOpen((prev) => !prev);
+  }, []);
+
+  const setOpen = useCallback((open: boolean) => {
     setIsOpen(open);
-  };
+  }, []);
+
+  const openMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen(true);
+  }, []);
+
+  const closeMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen(false);
+  }, []);
+
+  const toggleMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen((prev) => !prev);
+  }, []);
 
   return (
     <NavigationContext.Provider
@@ -70,6 +104,10 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
         isOpen,
         toggle,
         setOpen,
+        isMobileMenuOpen,
+        openMobileMenu,
+        closeMobileMenu,
+        toggleMobileMenu,
       }}
     >
       {children}
@@ -83,4 +121,17 @@ export function useSidebar() {
     throw new Error('useSidebar must be used within a NavigationProvider');
   }
   return context;
+}
+
+export function useMobileMenu() {
+  const context = useContext(NavigationContext);
+  if (context === undefined) {
+    throw new Error('useMobileMenu must be used within a NavigationProvider');
+  }
+  return {
+    isOpen: context.isMobileMenuOpen,
+    open: context.openMobileMenu,
+    close: context.closeMobileMenu,
+    toggle: context.toggleMobileMenu,
+  };
 }

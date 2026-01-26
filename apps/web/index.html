@@ -5,16 +5,43 @@
     <title>AppTax - AI-Powered Accounting Intelligence</title>
     <base href="/" />
 
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content="AppTax - AI-powered accounting CRM platform for the Polish market. Combine traditional accounting reliability with innovative AI capabilities." />
-    <meta name="theme-color" content="#1E3A5F" />
+
+    <!-- PWA Theme Color -->
+    <meta name="theme-color" content="#1E3A5F" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0F172A" media="(prefers-color-scheme: dark)" />
+
     <!-- CSP: 'unsafe-inline' for styles (required by Radix UI), fonts self-hosted, connect limited to self, API and WebSocket -->
     <!-- For production: Replace __CSP_CONNECT_SRC__ with actual backend URLs during deploy -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' http://localhost:3000 ws://localhost:3000 https://*.up.railway.app wss://*.up.railway.app;" />
 
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/apptax-favicon.svg" />
-    <link rel="apple-touch-icon" href="/apptax-logomark.svg" />
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/icons/apple-touch-icon.png" />
+
+    <!-- Apple PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="AppTax" />
+
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileColor" content="#1E3A5F" />
+    <meta name="msapplication-TileImage" content="/icons/pwa-192x192.png" />
+    <meta name="msapplication-config" content="none" />
+
+    <!-- Mobile Optimization -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="HandheldFriendly" content="true" />
 
     <!-- Inter font is self-hosted via @font-face in styles.css -->
   </head>

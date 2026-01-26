@@ -1,19 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 import {
   flexRender,
   getCoreRowModel,
-  useReactTable,
-  getSortedRowModel,
   getPaginationRowModel,
-  type SortingState,
+  getSortedRowModel,
+  useReactTable,
   type ColumnDef,
   type RowSelectionState,
+  type SortingState,
   type VisibilityState,
 } from '@tanstack/react-table';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -24,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useIsMobile } from '@/lib/hooks/use-media-query';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -38,6 +40,8 @@ interface DataTableProps<TData, TValue> {
   onSelectionChange?: (selectedRows: TData[]) => void;
   getRowId?: (row: TData) => string;
   columnVisibility?: string[];
+  /** Render function for mobile card view */
+  mobileCardRenderer?: (row: TData, index: number) => ReactNode;
 }
 
 export function DataTable<TData, TValue>({
@@ -53,10 +57,12 @@ export function DataTable<TData, TValue>({
   onSelectionChange,
   getRowId,
   columnVisibility: visibleColumnIds,
+  mobileCardRenderer,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const isMobile = useIsMobile();
 
   // Sync columnVisibility from props
   useEffect(() => {
@@ -168,6 +174,11 @@ export function DataTable<TData, TValue>({
 
   const selectedCount = Object.values(rowSelection).filter(Boolean).length;
 
+  // Get current page data for mobile view
+  const paginatedData = enablePagination
+    ? table.getRowModel().rows.map((row) => row.original)
+    : data;
+
   return (
     <div className="space-y-4">
       {selectable && selectedCount > 0 && (
@@ -178,64 +189,96 @@ export function DataTable<TData, TValue>({
           </p>
         </div>
       )}
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="bg-apptax-navy/5 hover:bg-apptax-navy/5">
-              {headerGroup.headers.map((header) => {
-                const sortDirection = header.column.getIsSorted();
-                return (
-                  <TableHead
-                    key={header.id}
-                    className="text-apptax-navy font-semibold"
-                    aria-sort={
-                      sortDirection === 'asc'
-                        ? 'ascending'
-                        : sortDirection === 'desc'
-                          ? 'descending'
-                          : undefined
-                    }
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                onClick={() => onRowClick?.(row.original)}
-                data-state={row.getIsSelected() && 'selected'}
-                className={`hover:bg-apptax-soft-teal/30 transition-colors ${onRowClick ? 'cursor-pointer' : ''} ${row.getIsSelected() ? 'bg-apptax-soft-teal/20' : ''}`}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
+
+      {/* Mobile Card View */}
+      {isMobile && mobileCardRenderer ? (
+        <div className="space-y-3 lg:hidden">
+          {paginatedData.length > 0 ? (
+            paginatedData.map((row, index) =>
+              onRowClick ? (
+                <button
+                  type="button"
+                  key={getRowId ? getRowId(row) : index}
+                  onClick={() => onRowClick(row)}
+                  className="w-full cursor-pointer text-left"
+                >
+                  {mobileCardRenderer(row, index)}
+                </button>
+              ) : (
+                <div key={getRowId ? getRowId(row) : index}>{mobileCardRenderer(row, index)}</div>
+              )
+            )
           ) : (
-            <TableRow>
-              <TableCell colSpan={allColumns.length} className="h-32 text-center">
-                <div className="flex flex-col items-center gap-2">
-                  <p className="text-muted-foreground">Brak wyników</p>
-                </div>
-              </TableCell>
-            </TableRow>
+            <Card>
+              <CardContent className="flex h-32 items-center justify-center">
+                <p className="text-muted-foreground">Brak wyników</p>
+              </CardContent>
+            </Card>
           )}
-        </TableBody>
-      </Table>
+        </div>
+      ) : null}
+
+      {/* Desktop Table View */}
+      <div className={isMobile && mobileCardRenderer ? 'hidden lg:block' : ''}>
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="bg-apptax-navy/5 hover:bg-apptax-navy/5">
+                {headerGroup.headers.map((header) => {
+                  const sortDirection = header.column.getIsSorted();
+                  return (
+                    <TableHead
+                      key={header.id}
+                      className="text-apptax-navy font-semibold"
+                      aria-sort={
+                        sortDirection === 'asc'
+                          ? 'ascending'
+                          : sortDirection === 'desc'
+                            ? 'descending'
+                            : undefined
+                      }
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  onClick={() => onRowClick?.(row.original)}
+                  data-state={row.getIsSelected() && 'selected'}
+                  className={`hover:bg-apptax-soft-teal/30 transition-colors ${onRowClick ? 'cursor-pointer' : ''} ${row.getIsSelected() ? 'bg-apptax-soft-teal/20' : ''}`}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={allColumns.length} className="h-32 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <p className="text-muted-foreground">Brak wyników</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       {enablePagination && data.length > 0 && (
-        <div className="flex items-center justify-between px-2">
-          <p className="text-muted-foreground text-sm">
+        <div className="flex flex-col gap-3 px-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-muted-foreground text-center text-sm sm:text-left">
             Wyświetlanie{' '}
             <span className="text-apptax-navy font-medium">
               {table.getState().pagination.pageIndex * pageSize + 1}
@@ -246,26 +289,26 @@ export function DataTable<TData, TValue>({
             </span>{' '}
             z <span className="text-apptax-navy font-medium">{data.length}</span> wyników
           </p>
-          <div className="flex gap-2">
+          <div className="flex justify-center gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50 hover:border-apptax-teal"
+              className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50 hover:border-apptax-teal min-h-[44px] min-w-[44px]"
             >
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Poprzednia
+              <ChevronLeft className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Poprzednia</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50 hover:border-apptax-teal"
+              className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50 hover:border-apptax-teal min-h-[44px] min-w-[44px]"
             >
-              Następna
-              <ChevronRight className="ml-1 h-4 w-4" />
+              <span className="hidden sm:inline">Następna</span>
+              <ChevronRight className="h-4 w-4 sm:ml-1" />
             </Button>
           </div>
         </div>

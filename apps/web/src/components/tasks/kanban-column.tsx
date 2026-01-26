@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { type TaskResponseDto } from '@/types/dtos';
-import { type TaskStatus, TaskStatusLabels, TaskStatusColors } from '@/types/enums';
+import { TaskStatusColors, TaskStatusLabels, type TaskStatus } from '@/types/enums';
 
 import { SortableTaskCard } from './task-card';
 
@@ -16,6 +16,8 @@ interface KanbanColumnProps {
   onTaskClick: (task: TaskResponseDto) => void;
   onAddTask?: (status: TaskStatus) => void;
   className?: string;
+  /** Hide the column header (used in mobile tabbed view) */
+  hideHeader?: boolean;
 }
 
 export function KanbanColumn({
@@ -24,6 +26,7 @@ export function KanbanColumn({
   onTaskClick,
   onAddTask,
   className,
+  hideHeader = false,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: status,
@@ -34,25 +37,27 @@ export function KanbanColumn({
   return (
     <div className={cn('bg-muted/50 flex w-[300px] min-w-[300px] flex-col rounded-lg', className)}>
       {/* Column Header */}
-      <div className="bg-background/50 flex items-center justify-between rounded-t-lg border-b p-3">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium">{TaskStatusLabels[status]}</h3>
-          <Badge variant="secondary" className={cn(TaskStatusColors[status], 'text-xs')}>
-            {tasks.length}
-          </Badge>
+      {!hideHeader && (
+        <div className="bg-background/50 flex items-center justify-between rounded-t-lg border-b p-3">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-medium">{TaskStatusLabels[status]}</h3>
+            <Badge variant="secondary" className={cn(TaskStatusColors[status], 'text-xs')}>
+              {tasks.length}
+            </Badge>
+          </div>
+          {onAddTask && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={() => onAddTask(status)}
+              aria-label={`Dodaj zadanie do kolumny ${TaskStatusLabels[status]}`}
+            >
+              <Plus size={14} aria-hidden="true" />
+            </Button>
+          )}
         </div>
-        {onAddTask && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={() => onAddTask(status)}
-            aria-label={`Dodaj zadanie do kolumny ${TaskStatusLabels[status]}`}
-          >
-            <Plus size={14} aria-hidden="true" />
-          </Button>
-        )}
-      </div>
+      )}
 
       {/* Cards Container */}
       <div

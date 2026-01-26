@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { format, formatDistanceToNow } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
-  Play,
-  Pencil,
-  Trash2,
-  MoreHorizontal,
   Calendar,
-  Send,
   CheckCircle,
+  MoreHorizontal,
+  Pencil,
+  Play,
+  Send,
+  Trash2,
   XCircle,
 } from 'lucide-react';
 
@@ -92,7 +92,7 @@ export function TimeEntryRow({
         }
       }}
       className={cn(
-        'flex cursor-pointer items-center justify-between rounded-lg border p-3',
+        'flex cursor-pointer flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between',
         'hover:bg-muted/50 transition-colors',
         'focus:ring-ring focus:ring-2 focus:ring-offset-2 focus:outline-none',
         entry.isRunning && 'border-green-300 bg-green-50/50'
@@ -116,8 +116,8 @@ export function TimeEntryRow({
         </div>
       </div>
 
-      <div className="ml-4 flex items-center gap-4">
-        <div className="text-right">
+      <div className="flex items-center justify-between gap-4 sm:ml-4 sm:justify-end">
+        <div className="text-left sm:text-right">
           <div className="font-mono text-sm font-semibold">
             {entry.isRunning ? (
               <span className="text-green-600" aria-live="polite" aria-atomic="true">
@@ -137,7 +137,12 @@ export function TimeEntryRow({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" aria-label="Więcej opcji">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
+              aria-label="Więcej opcji"
+            >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>

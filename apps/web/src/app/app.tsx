@@ -5,6 +5,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster as SonnerToaster } from 'sonner';
 
 import { ErrorBoundary } from '@/components/common/error-boundary';
+import { InstallPrompt, OfflineIndicator, UpdatePrompt } from '@/components/pwa';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/auth-context';
 import { NavigationProvider } from '@/contexts/navigation-context';
@@ -22,9 +23,12 @@ function App() {
           <AuthProvider>
             <NotificationSocketProvider>
               <NavigationProvider>
+                <OfflineIndicator />
                 <Routes />
                 <Toaster />
                 <SonnerToaster position="top-right" />
+                <UpdatePrompt />
+                <InstallPrompt />
               </NavigationProvider>
             </NotificationSocketProvider>
           </AuthProvider>

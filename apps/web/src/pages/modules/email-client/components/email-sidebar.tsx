@@ -1,19 +1,19 @@
 import { Link, useLocation } from 'react-router-dom';
 
 import {
-  Inbox,
-  Send,
-  FileText,
-  Trash2,
   AlertTriangle,
   Archive,
+  FileText,
   Folder,
+  Inbox,
   Loader2,
-  Tag,
+  Send,
   ShoppingBag,
+  Tag,
+  Trash2,
   Users,
+  type LucideIcon,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 
 import { useFolders } from '@/lib/hooks/use-email-client';
 import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
@@ -86,7 +86,7 @@ export function EmailSidebar() {
 
   if (isLoading) {
     return (
-      <aside className="bg-muted/30 w-48 flex-shrink-0 border-r">
+      <aside className="bg-muted/30 hidden w-48 flex-shrink-0 border-r md:block">
         <nav className="space-y-1 p-2">
           <div className="flex items-center justify-center py-8">
             <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
@@ -99,7 +99,7 @@ export function EmailSidebar() {
   const sortedFolders = folders ? sortFolders(folders) : [];
 
   return (
-    <aside className="bg-muted/30 w-48 flex-shrink-0 border-r">
+    <aside className="bg-muted/30 hidden w-48 flex-shrink-0 border-r md:block">
       <nav className="space-y-1 p-2">
         {sortedFolders.map((folderName) => {
           const Icon = getFolderIcon(folderName);
