@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 
-import { User, LogOut, Settings, Mail, Building2 } from 'lucide-react';
+import { Building2, LogOut, Mail, Palette, Settings, User } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -44,52 +44,59 @@ export function UserMenu() {
         <Button
           data-testid="user-menu-button"
           variant="ghost"
-          className="hover:bg-apptax-soft-teal relative h-10 w-10 rounded-full transition-colors"
+          className="hover:bg-accent/10 relative h-10 w-10 rounded-full transition-colors"
         >
           <Avatar>
-            <AvatarFallback className="bg-apptax-blue font-semibold text-white">
+            <AvatarFallback className="bg-primary font-semibold text-primary-foreground">
               {initials}
             </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="shadow-apptax-md w-56" align="end">
+      <DropdownMenuContent className="shadow-md w-56" align="end">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-apptax-navy text-sm font-semibold">
+            <p className="text-foreground text-sm font-semibold">
               {user.firstName} {user.lastName}
             </p>
             <p className="text-muted-foreground text-xs">{user.email}</p>
-            <Badge
-              variant="outline"
-              className="border-apptax-blue text-apptax-blue mt-1 w-fit text-xs"
-            >
+            <Badge variant="outline" className="border-primary text-primary mt-1 w-fit text-xs">
               {user.role}
             </Badge>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="hover:bg-apptax-soft-teal cursor-pointer">
-          <User className="text-apptax-navy mr-2 h-4 w-4" />
+        <DropdownMenuItem className="hover:bg-accent/10 cursor-pointer">
+          <User className="text-foreground mr-2 h-4 w-4" />
           Profil
         </DropdownMenuItem>
-        <DropdownMenuItem className="hover:bg-apptax-soft-teal cursor-pointer">
-          <Settings className="text-apptax-navy mr-2 h-4 w-4" />
-          Ustawienia
+        <DropdownMenuItem
+          onClick={() => navigate('/settings/account')}
+          className="hover:bg-accent/10 cursor-pointer"
+        >
+          <Settings className="text-foreground mr-2 h-4 w-4" />
+          Ustawienia konta
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => navigate('/settings/appearance')}
+          className="hover:bg-accent/10 cursor-pointer"
+        >
+          <Palette className="text-foreground mr-2 h-4 w-4" />
+          Wygląd
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => navigate('/settings/email-config')}
-          className="hover:bg-apptax-soft-teal cursor-pointer"
+          className="hover:bg-accent/10 cursor-pointer"
         >
-          <Mail className="text-apptax-navy mr-2 h-4 w-4" />
+          <Mail className="text-foreground mr-2 h-4 w-4" />
           Konto email
         </DropdownMenuItem>
         {companyEmailConfigPath && (
           <DropdownMenuItem
             onClick={() => navigate(companyEmailConfigPath)}
-            className="hover:bg-apptax-soft-teal cursor-pointer"
+            className="hover:bg-accent/10 cursor-pointer"
           >
-            <Building2 className="text-apptax-navy mr-2 h-4 w-4" />
+            <Building2 className="text-foreground mr-2 h-4 w-4" />
             Konto firmowe email
           </DropdownMenuItem>
         )}

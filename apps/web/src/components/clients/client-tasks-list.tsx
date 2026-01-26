@@ -1,18 +1,18 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
-  CheckSquare,
-  Plus,
-  Calendar,
   ArrowRight,
+  Calendar,
+  CheckSquare,
   ChevronLeft,
   ChevronRight,
-  LayoutGrid,
   Filter,
+  LayoutGrid,
+  Plus,
   X,
 } from 'lucide-react';
 
@@ -30,10 +30,10 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthContext } from '@/contexts/auth-context';
-import { useTasks, useTaskAssignees } from '@/lib/hooks/use-tasks';
+import { useTaskAssignees, useTasks } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
 import { type TaskFiltersDto } from '@/types/dtos';
-import { UserRole, TaskStatus as TaskStatusEnum, TaskPriority } from '@/types/enums';
+import { TaskPriority, TaskStatus as TaskStatusEnum, UserRole } from '@/types/enums';
 
 import { QuickAddTaskDialog } from './quick-add-task-dialog';
 
@@ -173,7 +173,7 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
               variant="ghost"
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
-              className={cn(hasActiveFilters && 'text-apptax-blue')}
+              className={cn(hasActiveFilters && 'text-primary')}
             >
               <Filter className="mr-1 h-4 w-4" />
               Filtry

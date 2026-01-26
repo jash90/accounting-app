@@ -3,15 +3,15 @@ import { memo, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
-  Eye,
+  Building2,
   Edit,
-  Trash2,
-  RotateCcw,
-  MoreHorizontal,
+  Eye,
   History,
   Mail,
+  MoreHorizontal,
   Phone,
-  Building2,
+  RotateCcw,
+  Trash2,
 } from 'lucide-react';
 
 import { IconBadgeList } from '@/components/clients/icon-badge';
@@ -30,11 +30,11 @@ import { cn } from '@/lib/utils/cn';
 import { type ClientResponseDto } from '@/types/dtos';
 import { type ClientFieldDefinition } from '@/types/entities';
 import {
+  CustomFieldType,
   EmploymentTypeLabels,
+  TaxSchemeLabels,
   VatStatus,
   VatStatusLabels,
-  TaxSchemeLabels,
-  CustomFieldType,
 } from '@/types/enums';
 
 interface ClientCardProps {
@@ -126,9 +126,9 @@ export const ClientCard = memo(function ClientCard({
   return (
     <Card
       className={cn(
-        'group hover:shadow-apptax-md border-apptax-soft-teal/30 cursor-pointer transition-all',
-        'hover:border-apptax-teal/50',
-        isSelected && 'ring-apptax-blue border-apptax-blue ring-2'
+        'group hover:shadow-md border-border cursor-pointer transition-all',
+        'hover:border-accent',
+        isSelected && 'ring-primary border-primary ring-2'
       )}
       onClick={handleCardClick}
     >
@@ -222,7 +222,7 @@ export const ClientCard = memo(function ClientCard({
 
         {/* Client name with status */}
         <div className="mb-2 flex items-center gap-2">
-          <h3 className="text-apptax-navy line-clamp-1 min-w-0 flex-1 text-lg font-semibold">
+          <h3 className="text-foreground line-clamp-1 min-w-0 flex-1 text-lg font-semibold">
             {client.name}
           </h3>
           {client.isActive ? (
@@ -236,7 +236,7 @@ export const ClientCard = memo(function ClientCard({
 
         {/* NIP */}
         {client.nip && (
-          <div className="text-apptax-navy/70 mb-2 flex items-center gap-2 text-sm">
+          <div className="text-foreground/70 mb-2 flex items-center gap-2 text-sm">
             <Building2 className="h-4 w-4 shrink-0" />
             <span className="font-mono">{client.nip}</span>
           </div>
@@ -265,7 +265,7 @@ export const ClientCard = memo(function ClientCard({
         </div>
 
         {/* Contact info */}
-        <div className="text-apptax-navy/60 space-y-1.5 text-sm">
+        <div className="text-foreground/60 space-y-1.5 text-sm">
           {client.email && (
             <div className="flex items-center gap-2">
               <Mail className="h-3.5 w-3.5 shrink-0" />
@@ -282,11 +282,11 @@ export const ClientCard = memo(function ClientCard({
 
         {/* Custom fields */}
         {visibleCustomFields.length > 0 && (
-          <div className="border-apptax-soft-teal/30 mt-3 space-y-1.5 border-t pt-3 text-sm">
+          <div className="border-border mt-3 space-y-1.5 border-t pt-3 text-sm">
             {visibleCustomFields.map((field) => (
               <div key={field.id} className="flex items-center justify-between">
-                <span className="text-apptax-navy/60 truncate">{field.label}:</span>
-                <span className="text-apptax-navy/80 ml-2 truncate font-medium">
+                <span className="text-foreground/60 truncate">{field.label}:</span>
+                <span className="text-foreground/80 ml-2 truncate font-medium">
                   {formatCustomFieldValue(field)}
                 </span>
               </div>

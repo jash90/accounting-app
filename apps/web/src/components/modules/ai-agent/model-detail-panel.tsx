@@ -1,4 +1,4 @@
-import { Star, GitCompare, Check, Eye, Wrench, Zap } from 'lucide-react';
+import { Check, Eye, GitCompare, Star, Wrench, Zap } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -170,11 +170,7 @@ export function ModelDetailPanel({
 
       {/* Actions */}
       <div className="border-border space-y-2 border-t p-4">
-        <Button
-          type="button"
-          onClick={onSelect}
-          className="bg-apptax-blue hover:bg-apptax-blue/90 w-full"
-        >
+        <Button type="button" onClick={onSelect} className="bg-primary hover:bg-primary/90 w-full">
           <Zap className="mr-2 h-4 w-4" />
           Wybierz model
         </Button>

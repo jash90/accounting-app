@@ -1,7 +1,20 @@
 import { useState } from 'react';
-
 import { useNavigate, useParams } from 'react-router-dom';
-
+import { ClientChangelog } from '@/components/clients/client-changelog';
+import { ClientTaskStatistics } from '@/components/clients/client-task-statistics';
+import { ClientTasksList } from '@/components/clients/client-tasks-list';
+import { SuspensionHistoryCard } from '@/components/clients/suspension-history-card';
+import { ErrorBoundary } from '@/components/common/error-boundary';
+import { useAuthContext } from '@/contexts/auth-context';
+import { type UpdateClientDto } from '@/types/dtos';
+import { type ClientIcon } from '@/types/entities';
+import {
+  EmploymentTypeLabels,
+  TaxSchemeLabels,
+  UserRole,
+  VatStatusLabels,
+  ZusStatusLabels,
+} from '@/types/enums';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -12,18 +25,6 @@ import {
   Tags,
   User,
 } from 'lucide-react';
-
-import { ClientChangelog } from '@/components/clients/client-changelog';
-import { ClientTaskStatistics } from '@/components/clients/client-task-statistics';
-import { ClientTasksList } from '@/components/clients/client-tasks-list';
-import { SuspensionHistoryCard } from '@/components/clients/suspension-history-card';
-import { ErrorBoundary } from '@/components/common/error-boundary';
-import { ClientFormDialog } from '@/components/forms/client-form-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useAuthContext } from '@/contexts/auth-context';
 import {
   useClient,
   useClientIcons,
@@ -31,15 +32,11 @@ import {
   useSetClientCustomFields,
   useUpdateClient,
 } from '@/lib/hooks/use-clients';
-import { type UpdateClientDto } from '@/types/dtos';
-import { type ClientIcon } from '@/types/entities';
-import {
-  EmploymentTypeLabels,
-  TaxSchemeLabels,
-  UserRole,
-  VatStatusLabels,
-  ZusStatusLabels,
-} from '@/types/enums';
+import { ClientFormDialog } from '@/components/forms/client-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function formatDate(date?: Date | string | null): string {
   if (!date) return '-';
@@ -186,7 +183,7 @@ function ClientDetailContent() {
             Powrót do listy
           </Button>
           <div>
-            <h1 className="text-apptax-navy flex items-center gap-2 text-2xl font-bold">
+            <h1 className="text-foreground flex items-center gap-2 text-2xl font-bold">
               {client.name}
               {!client.isActive && (
                 <Badge variant="outline" className="ml-2">
@@ -199,10 +196,7 @@ function ClientDetailContent() {
         </div>
 
         {client.isActive && (
-          <Button
-            onClick={() => setEditOpen(true)}
-            className="bg-apptax-blue hover:bg-apptax-blue/90"
-          >
+          <Button onClick={() => setEditOpen(true)} className="bg-primary hover:bg-primary/90">
             <Edit className="mr-2 h-4 w-4" />
             Edytuj
           </Button>
@@ -227,10 +221,7 @@ function ClientDetailContent() {
                   label="Email"
                   value={
                     client.email ? (
-                      <a
-                        href={`mailto:${client.email}`}
-                        className="text-apptax-blue hover:underline"
-                      >
+                      <a href={`mailto:${client.email}`} className="text-primary hover:underline">
                         {client.email}
                       </a>
                     ) : null
@@ -328,15 +319,13 @@ function ClientDetailContent() {
               {client.companySpecificity && (
                 <div className="mb-4">
                   <p className="text-muted-foreground mb-1 text-sm">Specyfika firmy</p>
-                  <p className="text-apptax-navy whitespace-pre-wrap">
-                    {client.companySpecificity}
-                  </p>
+                  <p className="text-foreground whitespace-pre-wrap">{client.companySpecificity}</p>
                 </div>
               )}
               {client.additionalInfo && (
                 <div>
                   <p className="text-muted-foreground mb-1 text-sm">Dodatkowe uwagi</p>
-                  <p className="text-apptax-navy whitespace-pre-wrap">{client.additionalInfo}</p>
+                  <p className="text-foreground whitespace-pre-wrap">{client.additionalInfo}</p>
                 </div>
               )}
             </CardContent>

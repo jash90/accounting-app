@@ -30,7 +30,7 @@ export function ColumnVisibilityDropdown({
         <Button
           variant="outline"
           size="sm"
-          className="border-apptax-soft-teal hover:bg-apptax-soft-teal/30 hover:border-apptax-teal"
+          className="border-accent hover:bg-accent/10 hover:border-accent"
         >
           <Settings2 className="mr-2 h-4 w-4" />
           Kolumny
@@ -59,7 +59,7 @@ export function ColumnVisibilityDropdown({
             <DropdownMenuCheckboxItem
               checked={false}
               onCheckedChange={onResetToDefaults}
-              className="text-apptax-blue"
+              className="text-primary"
             >
               Przywróć domyślne
             </DropdownMenuCheckboxItem>

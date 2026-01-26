@@ -1,8 +1,7 @@
+import { cn } from '@/lib/utils/cn';
 import { type LucideIcon } from 'lucide-react';
-
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils/cn';
 
 export interface StatCardProps {
   label: string;
@@ -19,8 +18,8 @@ export function StatCard({
   label,
   value,
   icon: Icon,
-  iconBg = 'bg-apptax-gradient',
-  valueColor = 'text-apptax-navy',
+  iconBg = 'bg-primary',
+  valueColor = 'text-foreground',
   borderColor,
   isLoading = false,
   valueClassName,

@@ -1,24 +1,5 @@
-import { useState, useMemo, useCallback } from 'react';
-
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-import { type ColumnDef } from '@tanstack/react-table';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
-import {
-  Plus,
-  Edit,
-  Trash2,
-  Users,
-  Eye,
-  RotateCcw,
-  MoreHorizontal,
-  History,
-  ArrowLeft,
-  Download,
-  BarChart3,
-} from 'lucide-react';
-
 import {
   BulkActionsToolbar,
   type BulkEditChanges,
@@ -34,6 +15,61 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { DataTable } from '@/components/common/data-table';
 import { PageHeader } from '@/components/common/page-header';
 import { ViewModeToggle } from '@/components/common/view-mode-toggle';
+import { useAuthContext } from '@/contexts/auth-context';
+import { AmlGroupLabels } from '@/lib/constants/polish-labels';
+import {
+  type ClientFiltersDto,
+  type ClientResponseDto,
+  type CreateClientDto,
+  type UpdateClientDto,
+} from '@/types/dtos';
+import {
+  EmploymentTypeLabels,
+  TaxSchemeLabels,
+  UserRole,
+  VatStatus,
+  VatStatusLabels,
+  ZusStatusLabels,
+  type EmploymentType,
+  type TaxScheme,
+  type ZusStatus,
+} from '@/types/enums';
+import { type ColumnDef } from '@tanstack/react-table';
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
+import {
+  ArrowLeft,
+  BarChart3,
+  Download,
+  Edit,
+  Eye,
+  History,
+  MoreHorizontal,
+  Plus,
+  RotateCcw,
+  Trash2,
+  Users,
+} from 'lucide-react';
+import { type DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
+import {
+  useBulkDeleteClients,
+  useBulkEditClients,
+  useBulkRestoreClients,
+  useCheckDuplicates,
+  useClients,
+  useClientStatistics,
+  useCreateClient,
+  useDeleteClient,
+  useDownloadImportTemplate,
+  useExportClients,
+  useFieldDefinitions,
+  useImportClients,
+  useRestoreClient,
+  useSetClientCustomFields,
+  useUpdateClient,
+} from '@/lib/hooks/use-clients';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import { useTablePreferences, type ColumnConfig } from '@/lib/hooks/use-table-preferences';
 import { ClientFormDialog } from '@/components/forms/client-form-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -46,45 +82,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from '@/components/ui/use-toast';
-import { useAuthContext } from '@/contexts/auth-context';
-import { type DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
-import { AmlGroupLabels } from '@/lib/constants/polish-labels';
-import {
-  useClients,
-  useDeleteClient,
-  useRestoreClient,
-  useSetClientCustomFields,
-  useCreateClient,
-  useUpdateClient,
-  useClientStatistics,
-  useCheckDuplicates,
-  useBulkDeleteClients,
-  useBulkRestoreClients,
-  useBulkEditClients,
-  useExportClients,
-  useImportClients,
-  useDownloadImportTemplate,
-  useFieldDefinitions,
-} from '@/lib/hooks/use-clients';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import { useTablePreferences, type ColumnConfig } from '@/lib/hooks/use-table-preferences';
-import {
-  type ClientResponseDto,
-  type CreateClientDto,
-  type UpdateClientDto,
-  type ClientFiltersDto,
-} from '@/types/dtos';
-import {
-  type EmploymentType,
-  EmploymentTypeLabels,
-  VatStatus,
-  VatStatusLabels,
-  type TaxScheme,
-  TaxSchemeLabels,
-  type ZusStatus,
-  ZusStatusLabels,
-  UserRole,
-} from '@/types/enums';
 
 export default function ClientsListPage() {
   const { user } = useAuthContext();
@@ -369,7 +366,7 @@ export default function ClientsListPage() {
         header: 'Nazwa',
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            <span className="text-apptax-navy font-medium">{row.original.name}</span>
+            <span className="text-foreground font-medium">{row.original.name}</span>
             {!row.original.isActive && (
               <Badge variant="outline" className="text-xs">
                 Nieaktywny
@@ -400,7 +397,7 @@ export default function ClientsListPage() {
         accessorKey: 'nip',
         header: 'NIP',
         cell: ({ row }) => (
-          <span className="text-apptax-navy/80 font-mono text-sm">{row.original.nip || '-'}</span>
+          <span className="text-foreground/80 font-mono text-sm">{row.original.nip || '-'}</span>
         ),
       },
       {
@@ -449,7 +446,7 @@ export default function ClientsListPage() {
         accessorKey: 'email',
         header: 'Email',
         cell: ({ row }) => (
-          <span className="text-apptax-navy/70 block max-w-[200px] truncate text-sm">
+          <span className="text-foreground/70 block max-w-[200px] truncate text-sm">
             {row.original.email || '-'}
           </span>
         ),
@@ -458,7 +455,7 @@ export default function ClientsListPage() {
         id: 'phone',
         header: 'Telefon',
         cell: ({ row }) => (
-          <span className="text-apptax-navy/70 text-sm">{row.original.phone || '-'}</span>
+          <span className="text-foreground/70 text-sm">{row.original.phone || '-'}</span>
         ),
       },
       {
@@ -676,7 +673,7 @@ export default function ClientsListPage() {
             {hasWritePermission && (
               <Button
                 onClick={() => setCreateOpen(true)}
-                className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+                className="bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md transition-all"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Dodaj klienta
@@ -710,7 +707,7 @@ export default function ClientsListPage() {
         />
       )}
 
-      <Card className="border-apptax-soft-teal/30">
+      <Card className="border-accent/30">
         <CardContent className="p-0">
           {viewMode === 'table' ? (
             <DataTable

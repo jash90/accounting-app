@@ -11,13 +11,13 @@ export default function CompanyLayout() {
   const navItems = useNavigationItems(user);
 
   return (
-    <div className="bg-apptax-warm-gray flex h-screen overflow-hidden">
+    <div className="bg-muted flex h-screen overflow-hidden">
       <Sidebar title="Firma" navItems={navItems} />
 
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <header className="shadow-apptax-sm border-b border-gray-200 bg-white">
+        <header className="shadow-sm border-b border-border bg-background">
           <div className="flex h-16 items-center justify-between px-6">
             <div className="flex-1" />
             <div className="flex items-center gap-3">

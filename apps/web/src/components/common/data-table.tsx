@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   flexRender,
   getCoreRowModel,
-  useReactTable,
-  getSortedRowModel,
   getPaginationRowModel,
-  type SortingState,
+  getSortedRowModel,
+  useReactTable,
   type ColumnDef,
   type RowSelectionState,
+  type SortingState,
   type VisibilityState,
 } from '@tanstack/react-table';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -160,7 +160,7 @@ export function DataTable<TData, TValue>({
     return (
       <div className="space-y-3 p-4">
         {[...Array(5)].map((_, i) => (
-          <Skeleton key={i} className="bg-apptax-soft-teal/30 h-12 w-full rounded-lg" />
+          <Skeleton key={i} className="bg-accent/10 h-12 w-full rounded-lg" />
         ))}
       </div>
     );
@@ -171,8 +171,8 @@ export function DataTable<TData, TValue>({
   return (
     <div className="space-y-4">
       {selectable && selectedCount > 0 && (
-        <div className="bg-apptax-soft-teal/20 rounded-lg px-4 py-2">
-          <p className="text-apptax-navy text-sm">
+        <div className="bg-accent/10 rounded-lg px-4 py-2">
+          <p className="text-foreground text-sm">
             Zaznaczono <span className="font-semibold">{selectedCount}</span>{' '}
             {selectedCount === 1 ? 'element' : selectedCount < 5 ? 'elementy' : 'elementów'}
           </p>
@@ -181,13 +181,13 @@ export function DataTable<TData, TValue>({
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="bg-apptax-navy/5 hover:bg-apptax-navy/5">
+            <TableRow key={headerGroup.id} className="bg-muted hover:bg-muted">
               {headerGroup.headers.map((header) => {
                 const sortDirection = header.column.getIsSorted();
                 return (
                   <TableHead
                     key={header.id}
-                    className="text-apptax-navy font-semibold"
+                    className="text-foreground font-semibold"
                     aria-sort={
                       sortDirection === 'asc'
                         ? 'ascending'
@@ -212,7 +212,7 @@ export function DataTable<TData, TValue>({
                 key={row.id}
                 onClick={() => onRowClick?.(row.original)}
                 data-state={row.getIsSelected() && 'selected'}
-                className={`hover:bg-apptax-soft-teal/30 transition-colors ${onRowClick ? 'cursor-pointer' : ''} ${row.getIsSelected() ? 'bg-apptax-soft-teal/20' : ''}`}
+                className={`hover:bg-accent/10 transition-colors ${onRowClick ? 'cursor-pointer' : ''} ${row.getIsSelected() ? 'bg-accent/10' : ''}`}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
@@ -237,14 +237,14 @@ export function DataTable<TData, TValue>({
         <div className="flex items-center justify-between px-2">
           <p className="text-muted-foreground text-sm">
             Wyświetlanie{' '}
-            <span className="text-apptax-navy font-medium">
+            <span className="text-foreground font-medium">
               {table.getState().pagination.pageIndex * pageSize + 1}
             </span>{' '}
             -{' '}
-            <span className="text-apptax-navy font-medium">
+            <span className="text-foreground font-medium">
               {Math.min((table.getState().pagination.pageIndex + 1) * pageSize, data.length)}
             </span>{' '}
-            z <span className="text-apptax-navy font-medium">{data.length}</span> wyników
+            z <span className="text-foreground font-medium">{data.length}</span> wyników
           </p>
           <div className="flex gap-2">
             <Button
@@ -252,7 +252,7 @@ export function DataTable<TData, TValue>({
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50 hover:border-apptax-teal"
+              className="border-accent hover:bg-accent/20 hover:border-accent"
             >
               <ChevronLeft className="mr-1 h-4 w-4" />
               Poprzednia
@@ -262,7 +262,7 @@ export function DataTable<TData, TValue>({
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50 hover:border-apptax-teal"
+              className="border-accent hover:bg-accent/20 hover:border-accent"
             >
               Następna
               <ChevronRight className="ml-1 h-4 w-4" />
