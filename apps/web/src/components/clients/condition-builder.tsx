@@ -5,6 +5,7 @@ import { Check, ChevronDown, FolderPlus, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -460,12 +461,21 @@ const SingleConditionRenderer = memo(function SingleConditionRenderer({
       {needsSecondValue && (
         <>
           <span className="text-muted-foreground text-sm">i</span>
-          <Input
-            type={fieldType === 'date' ? 'date' : 'text'}
-            value={condition.secondValue?.toString() || ''}
-            onChange={(e) => handleSecondValueChange(e.target.value)}
-            className="w-32"
-          />
+          {fieldType === 'date' ? (
+            <DatePicker
+              value={condition.secondValue?.toString() || undefined}
+              onChange={(value) => handleSecondValueChange(value || '')}
+              placeholder="Data końcowa"
+              className="w-40"
+            />
+          ) : (
+            <Input
+              type="text"
+              value={condition.secondValue?.toString() || ''}
+              onChange={(e) => handleSecondValueChange(e.target.value)}
+              className="w-32"
+            />
+          )}
         </>
       )}
 
@@ -608,10 +618,10 @@ const ValueInput = memo(function ValueInput({
   // Date input
   if (fieldType === 'date') {
     return (
-      <Input
-        type="date"
-        value={value?.toString() || ''}
-        onChange={(e) => onChange(e.target.value)}
+      <DatePicker
+        value={value?.toString() || undefined}
+        onChange={(newValue) => onChange(newValue || '')}
+        placeholder="Wybierz datę"
         className="w-40"
       />
     );
