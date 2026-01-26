@@ -1,6 +1,6 @@
-import { useCallback } from 'react';
+import { memo, useCallback, useLayoutEffect, useRef } from 'react';
 
-import { Plus, Trash2, FolderPlus, ChevronDown, Check } from 'lucide-react';
+import { Check, ChevronDown, FolderPlus, Plus, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,25 +17,25 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import {
-  CONDITION_FIELDS,
-  OPERATORS_BY_TYPE,
-  ConditionOperatorLabels,
-  LogicalOperatorLabels,
-  EmploymentTypeLabels,
-  VatStatusLabels,
-  TaxSchemeLabels,
-  ZusStatusLabels,
   AmlGroupLabels,
+  CONDITION_FIELDS,
+  ConditionOperatorLabels,
+  EmploymentTypeLabels,
   GTU_CODES,
+  LogicalOperatorLabels,
+  OPERATORS_BY_TYPE,
+  TaxSchemeLabels,
+  VatStatusLabels,
+  ZusStatusLabels,
 } from '@/lib/constants/polish-labels';
 import { cn } from '@/lib/utils/cn';
 import {
+  isConditionGroup,
   type AutoAssignCondition,
-  type SingleCondition,
   type ConditionGroup,
   type ConditionOperator,
   type LogicalOperator,
-  isConditionGroup,
+  type SingleCondition,
 } from '@/types/enums';
 
 // Generate unique ID for condition tracking (stable React keys)
@@ -55,7 +55,11 @@ interface ConditionBuilderProps {
   className?: string;
 }
 
-export function ConditionBuilder({ value, onChange, className }: ConditionBuilderProps) {
+export const ConditionBuilder = memo(function ConditionBuilder({
+  value,
+  onChange,
+  className,
+}: ConditionBuilderProps) {
   const handleAddCondition = useCallback(() => {
     const newCondition: SingleCondition = {
       id: generateConditionId(),
@@ -150,7 +154,7 @@ export function ConditionBuilder({ value, onChange, className }: ConditionBuilde
       )}
     </div>
   );
-}
+});
 
 interface ConditionRendererProps {
   condition: AutoAssignCondition;
@@ -186,37 +190,45 @@ interface GroupConditionRendererProps {
   isRoot?: boolean;
 }
 
-function GroupConditionRenderer({
+const GroupConditionRenderer = memo(function GroupConditionRenderer({
   group,
   onChange,
   onRemove,
   isRoot = false,
 }: GroupConditionRendererProps) {
+  // Store current group in ref for stable callback access
+  // This prevents callback recreation when group object changes
+  const groupRef = useRef(group);
+  useLayoutEffect(() => {
+    groupRef.current = group;
+  });
+
   const handleLogicalOperatorChange = useCallback(
     (operator: LogicalOperator) => {
       onChange({
-        ...group,
+        ...groupRef.current,
         logicalOperator: operator,
       });
     },
-    [group, onChange]
+    [onChange]
   );
 
   const handleConditionChange = useCallback(
     (index: number, newCondition: AutoAssignCondition) => {
-      const newConditions = [...group.conditions];
+      const newConditions = [...groupRef.current.conditions];
       newConditions[index] = newCondition;
       onChange({
-        ...group,
+        ...groupRef.current,
         conditions: newConditions,
       });
     },
-    [group, onChange]
+    [onChange]
   );
 
   const handleConditionRemove = useCallback(
     (index: number) => {
-      const newConditions = group.conditions.filter((_, i) => i !== index);
+      const current = groupRef.current;
+      const newConditions = current.conditions.filter((_, i) => i !== index);
       if (newConditions.length === 0) {
         onRemove();
       } else if (newConditions.length === 1 && isRoot) {
@@ -224,12 +236,12 @@ function GroupConditionRenderer({
         onChange(newConditions[0]);
       } else {
         onChange({
-          ...group,
+          ...current,
           conditions: newConditions,
         });
       }
     },
-    [group, onChange, onRemove, isRoot]
+    [onChange, onRemove, isRoot]
   );
 
   const handleAddCondition = useCallback(() => {
@@ -240,15 +252,16 @@ function GroupConditionRenderer({
       value: '',
     };
     onChange({
-      ...group,
-      conditions: [...group.conditions, newCondition],
+      ...groupRef.current,
+      conditions: [...groupRef.current.conditions, newCondition],
     });
-  }, [group, onChange]);
+  }, [onChange]);
 
   const handleAddNestedGroup = useCallback(() => {
+    const current = groupRef.current;
     const newGroup: ConditionGroup = {
       id: generateConditionId(),
-      logicalOperator: group.logicalOperator === 'and' ? 'or' : 'and',
+      logicalOperator: current.logicalOperator === 'and' ? 'or' : 'and',
       conditions: [
         {
           id: generateConditionId(),
@@ -259,10 +272,10 @@ function GroupConditionRenderer({
       ],
     };
     onChange({
-      ...group,
-      conditions: [...group.conditions, newGroup],
+      ...current,
+      conditions: [...current.conditions, newGroup],
     });
-  }, [group, onChange]);
+  }, [onChange]);
 
   return (
     <Card className={cn(isRoot ? 'border-primary' : 'border-muted')}>
@@ -317,7 +330,7 @@ function GroupConditionRenderer({
       </CardContent>
     </Card>
   );
-}
+});
 
 interface SingleConditionRendererProps {
   condition: SingleCondition;
@@ -325,62 +338,75 @@ interface SingleConditionRendererProps {
   onRemove: () => void;
 }
 
-function SingleConditionRenderer({ condition, onChange, onRemove }: SingleConditionRendererProps) {
+const SingleConditionRenderer = memo(function SingleConditionRenderer({
+  condition,
+  onChange,
+  onRemove,
+}: SingleConditionRendererProps) {
+  // Store current condition in ref for stable callback access
+  // This prevents callback recreation when condition object changes
+  const conditionRef = useRef(condition);
+  useLayoutEffect(() => {
+    conditionRef.current = condition;
+  });
+
   const fieldConfig = CONDITION_FIELDS.find((f) => f.field === condition.field);
   const fieldType = fieldConfig?.type || 'string';
   const availableOperators = OPERATORS_BY_TYPE[fieldType] || OPERATORS_BY_TYPE.string;
 
   const handleFieldChange = useCallback(
     (field: string) => {
+      const current = conditionRef.current;
       const newFieldConfig = CONDITION_FIELDS.find((f) => f.field === field);
       const newType = newFieldConfig?.type || 'string';
       const newOperators = OPERATORS_BY_TYPE[newType] || OPERATORS_BY_TYPE.string;
 
       // Reset operator and value if field type changes
-      const newOperator = newOperators.includes(condition.operator)
-        ? condition.operator
+      const newOperator = newOperators.includes(current.operator)
+        ? current.operator
         : newOperators[0];
 
       onChange({
-        id: condition.id, // Preserve condition ID for stable React keys
+        id: current.id, // Preserve condition ID for stable React keys
         field,
         operator: newOperator,
         value: newType === 'boolean' ? false : '',
       });
     },
-    [condition.id, condition.operator, onChange]
+    [onChange]
   );
 
   const handleOperatorChange = useCallback(
     (operator: ConditionOperator) => {
+      const current = conditionRef.current;
       onChange({
-        ...condition,
+        ...current,
         operator,
         // Clear secondary value if not between
-        secondValue: operator === 'between' ? condition.secondValue : undefined,
+        secondValue: operator === 'between' ? current.secondValue : undefined,
       });
     },
-    [condition, onChange]
+    [onChange]
   );
 
   const handleValueChange = useCallback(
     (value: string | number | boolean | string[]) => {
       onChange({
-        ...condition,
+        ...conditionRef.current,
         value,
       });
     },
-    [condition, onChange]
+    [onChange]
   );
 
   const handleSecondValueChange = useCallback(
     (secondValue: string | number) => {
       onChange({
-        ...condition,
+        ...conditionRef.current,
         secondValue,
       });
     },
-    [condition, onChange]
+    [onChange]
   );
 
   const needsValue = !['isEmpty', 'isNotEmpty'].includes(condition.operator);
@@ -449,7 +475,7 @@ function SingleConditionRenderer({ condition, onChange, onRemove }: SingleCondit
       </Button>
     </div>
   );
-}
+});
 
 interface ValueInputProps {
   fieldType: string;
@@ -459,7 +485,13 @@ interface ValueInputProps {
   onChange: (value: string | number | boolean | string[]) => void;
 }
 
-function ValueInput({ fieldType, fieldConfig, operator, value, onChange }: ValueInputProps) {
+const ValueInput = memo(function ValueInput({
+  fieldType,
+  fieldConfig,
+  operator,
+  value,
+  onChange,
+}: ValueInputProps) {
   // Multi-select for 'in' and 'notIn' operators - use proper multi-select with checkboxes
   if (['in', 'notIn'].includes(operator) && fieldConfig?.type === 'enum') {
     const selectedValues = Array.isArray(value) ? value : [];
@@ -607,7 +639,7 @@ function ValueInput({ fieldType, fieldConfig, operator, value, onChange }: Value
       placeholder="Wartość..."
     />
   );
-}
+});
 
 // Helper function to get enum options based on field
 function getEnumOptions(field: string): { value: string; label: string }[] {
