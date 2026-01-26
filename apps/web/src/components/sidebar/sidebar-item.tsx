@@ -22,8 +22,8 @@ export function SidebarItem({ item }: SidebarItemProps) {
       className={cn(
         'flex items-center gap-3 rounded-lg px-4 py-3 transition-all duration-200',
         isActive
-          ? 'bg-apptax-blue shadow-apptax-sm text-white'
-          : 'text-white/70 hover:bg-white/10 hover:text-white',
+          ? 'bg-sidebar-primary shadow-sm text-sidebar-primary-foreground'
+          : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground',
         !isOpen && 'justify-center px-2'
       )}
     >

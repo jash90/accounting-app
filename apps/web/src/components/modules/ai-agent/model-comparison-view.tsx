@@ -1,4 +1,4 @@
-import { ArrowLeft, X, Check, Eye, Wrench, Zap } from 'lucide-react';
+import { ArrowLeft, Check, Eye, Wrench, X, Zap } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -204,7 +204,7 @@ export function ModelComparisonView({
                 <td key={model.id} className="border-border border-r px-4 py-4 last:border-r-0">
                   <Button
                     onClick={() => onSelect(model.id)}
-                    className="bg-apptax-blue hover:bg-apptax-blue/90 w-full"
+                    className="bg-primary hover:bg-primary/90 w-full"
                   >
                     <Zap className="mr-2 h-4 w-4" />
                     Wybierz

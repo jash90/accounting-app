@@ -13,7 +13,7 @@ export function SidebarHeader({ title }: SidebarHeaderProps) {
   return (
     <div
       className={cn(
-        'flex items-center border-b border-white/10 p-4',
+        'flex items-center border-b border-sidebar-border p-4',
         isOpen ? 'justify-between' : 'justify-center'
       )}
     >
@@ -21,22 +21,24 @@ export function SidebarHeader({ title }: SidebarHeaderProps) {
         <div className="flex items-center gap-3">
           <img src="/apptax-logomark.svg" alt="AppTax" className="h-8 w-8" />
           <div className="flex flex-col">
-            <span className="text-sm font-bold text-white">
-              App<span className="text-apptax-light-blue">Tax</span>
+            <span className="text-sm font-bold text-sidebar-foreground">
+              App<span className="text-sidebar-primary">Tax</span>
             </span>
-            <span className="text-[10px] tracking-wider text-white/60 uppercase">{title}</span>
+            <span className="text-[10px] tracking-wider text-sidebar-foreground/60 uppercase">
+              {title}
+            </span>
           </div>
         </div>
       )}
       <button
         onClick={toggle}
-        className="rounded-lg p-2 transition-colors hover:bg-white/10"
+        className="rounded-lg p-2 transition-colors hover:bg-sidebar-accent"
         aria-label={isOpen ? 'Zwiń pasek boczny' : 'Rozwiń pasek boczny'}
       >
         {isOpen ? (
-          <PanelLeftClose className="h-5 w-5 text-white/70" />
+          <PanelLeftClose className="h-5 w-5 text-sidebar-foreground/70" />
         ) : (
-          <PanelLeftOpen className="h-5 w-5 text-white/70" />
+          <PanelLeftOpen className="h-5 w-5 text-sidebar-foreground/70" />
         )}
       </button>
     </div>

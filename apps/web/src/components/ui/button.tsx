@@ -1,26 +1,24 @@
+/* eslint-disable react-refresh/only-export-components */
 import * as React from 'react';
-
+import { cn } from '@/lib/utils/cn';
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
-
-import { cn } from '@/lib/utils/cn';
 
 const buttonVariants = cva(
   'inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]',
   {
     variants: {
       variant: {
-        default:
-          'bg-apptax-blue text-white hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md',
+        default: 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md',
         destructive:
-          'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-apptax-sm hover:shadow-apptax-md',
+          'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm hover:shadow-md',
         outline:
-          'border-2 border-apptax-blue bg-white text-apptax-blue hover:bg-apptax-soft-teal shadow-apptax-sm hover:shadow-apptax-md',
+          'border-2 border-primary bg-background text-primary hover:bg-accent/10 shadow-sm hover:shadow-md',
         secondary:
-          'bg-apptax-navy text-white hover:bg-apptax-navy/90 shadow-apptax-sm hover:shadow-apptax-md',
-        ghost: 'text-apptax-navy hover:bg-apptax-soft-teal transition-all',
-        link: 'text-apptax-blue underline-offset-4 hover:underline',
-        teal: 'bg-apptax-teal text-white hover:bg-apptax-teal/90 shadow-apptax-sm hover:shadow-apptax-md ai-glow',
+          'bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-sm hover:shadow-md',
+        ghost: 'text-foreground hover:bg-accent/10 transition-all',
+        link: 'text-primary underline-offset-4 hover:underline',
+        teal: 'bg-accent text-accent-foreground hover:bg-accent/90 shadow-sm hover:shadow-md ai-glow',
       },
       size: {
         default: 'h-10 px-5 py-2 min-w-[80px]',

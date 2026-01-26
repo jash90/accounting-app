@@ -1,30 +1,27 @@
 import { useState } from 'react';
-
 import { useNavigate } from 'react-router-dom';
-
-import { type ColumnDef } from '@tanstack/react-table';
-import { Plus, Edit, Trash2, Package, Building2 } from 'lucide-react';
-
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { DataTable } from '@/components/common/data-table';
 import { PageHeader } from '@/components/common/page-header';
+import { type CompanyDto, type CreateCompanyDto, type UpdateCompanyDto } from '@/types/dtos';
+import { type ColumnDef } from '@tanstack/react-table';
+import { Building2, Edit, Package, Plus, Trash2 } from 'lucide-react';
+import {
+  useCompanies,
+  useCreateCompany,
+  useDeleteCompany,
+  useUpdateCompany,
+} from '@/lib/hooks/use-companies';
 import { CompanyFormDialog } from '@/components/forms/company-form-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  useCompanies,
-  useDeleteCompany,
-  useCreateCompany,
-  useUpdateCompany,
-} from '@/lib/hooks/use-companies';
-import { type CompanyDto, type CreateCompanyDto, type UpdateCompanyDto } from '@/types/dtos';
 
 const columns: ColumnDef<CompanyDto>[] = [
   {
     accessorKey: 'name',
     header: 'Nazwa',
-    cell: ({ row }) => <div className="text-apptax-navy font-medium">{row.original.name}</div>,
+    cell: ({ row }) => <div className="text-foreground font-medium">{row.original.name}</div>,
   },
   {
     accessorKey: 'owner',
@@ -70,26 +67,26 @@ export default function CompaniesListPage() {
           <Button
             size="icon"
             variant="ghost"
-            className="hover:bg-apptax-soft-teal h-8 w-8"
+            className="hover:bg-accent/10 h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               navigate(`/admin/companies/${row.original.id}/modules`);
             }}
             title="Zarządzaj modułami"
           >
-            <Package className="text-apptax-teal h-4 w-4" />
+            <Package className="text-accent h-4 w-4" />
           </Button>
           <Button
             size="icon"
             variant="ghost"
-            className="hover:bg-apptax-soft-teal h-8 w-8"
+            className="hover:bg-accent/10 h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               setEditingCompany(row.original);
             }}
             title="Edytuj firmę"
           >
-            <Edit className="text-apptax-blue h-4 w-4" />
+            <Edit className="text-primary h-4 w-4" />
           </Button>
           <Button
             size="icon"
@@ -117,7 +114,7 @@ export default function CompaniesListPage() {
         action={
           <Button
             onClick={() => setCreateOpen(true)}
-            className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+            className="bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md transition-all"
           >
             <Plus className="mr-2 h-4 w-4" />
             Utwórz firmę
@@ -125,7 +122,7 @@ export default function CompaniesListPage() {
         }
       />
 
-      <Card className="border-apptax-soft-teal/30">
+      <Card className="border-border">
         <CardContent className="p-0">
           <DataTable columns={actionColumns} data={companies} isLoading={isPending} />
         </CardContent>

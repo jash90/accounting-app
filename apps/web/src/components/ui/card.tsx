@@ -1,23 +1,21 @@
+/* eslint-disable react-refresh/only-export-components */
 import * as React from 'react';
-
+import { cn } from '@/lib/utils/cn';
 import { cva, type VariantProps } from 'class-variance-authority';
 
-import { cn } from '@/lib/utils/cn';
-
 const cardVariants = cva(
-  'rounded-xl border bg-white text-card-foreground transition-all duration-200',
+  'rounded-xl border bg-card text-card-foreground transition-all duration-200',
   {
     variants: {
       variant: {
-        default: 'border-gray-100 shadow-apptax-sm hover:shadow-apptax-md',
-        branded:
-          'border-apptax-soft-teal/50 shadow-apptax-sm hover:shadow-apptax-md hover:border-apptax-teal/50',
-        outline: 'border-apptax-soft-teal bg-transparent shadow-none hover:bg-apptax-soft-teal/20',
-        ai: 'border-apptax-teal/30 shadow-apptax-sm hover:shadow-apptax-md ai-glow',
+        default: 'border-border shadow-sm hover:shadow-md',
+        branded: 'border-accent/50 shadow-sm hover:shadow-md hover:border-accent',
+        outline: 'border-accent bg-transparent shadow-none hover:bg-accent/20',
+        ai: 'border-accent/30 shadow-sm hover:shadow-md ai-glow',
         interactive:
-          'border-apptax-soft-teal/30 shadow-apptax-sm hover:shadow-apptax-md hover:border-apptax-blue hover:-translate-y-1 cursor-pointer',
-        elevated: 'border-transparent shadow-apptax-md hover:shadow-lg',
-        flat: 'border-apptax-soft-teal/30 shadow-none',
+          'border-accent/30 shadow-sm hover:shadow-md hover:border-primary hover:-translate-y-1 cursor-pointer',
+        elevated: 'border-transparent shadow-md hover:shadow-lg',
+        flat: 'border-accent/30 shadow-none',
       },
     },
     defaultVariants: {
@@ -47,10 +45,7 @@ const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HT
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn(
-        'text-apptax-navy text-xl leading-none font-semibold tracking-tight',
-        className
-      )}
+      className={cn('text-foreground text-xl leading-none font-semibold tracking-tight', className)}
       {...props}
     />
   )

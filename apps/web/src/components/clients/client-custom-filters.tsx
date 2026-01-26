@@ -1,8 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { ChevronDown, CalendarIcon, X, Loader2 } from 'lucide-react';
+import { CalendarIcon, ChevronDown, Loader2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -344,7 +344,7 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
                         key={enumValue}
                         className={cn(
                           'flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-sm transition-colors',
-                          isSelected ? 'bg-apptax-blue text-white' : 'bg-muted hover:bg-muted/80'
+                          isSelected ? 'bg-primary text-white' : 'bg-muted hover:bg-muted/80'
                         )}
                       >
                         <Checkbox
@@ -479,7 +479,7 @@ export function ClientCustomFilters({ filters, onFiltersChange }: ClientCustomFi
           <span className="flex items-center gap-2">
             Pola niestandardowe
             {hasActiveFilters && (
-              <span className="bg-apptax-soft-teal text-apptax-navy rounded px-1.5 py-0.5 text-xs">
+              <span className="bg-accent/10 text-foreground rounded px-1.5 py-0.5 text-xs">
                 {filters.length}
               </span>
             )}

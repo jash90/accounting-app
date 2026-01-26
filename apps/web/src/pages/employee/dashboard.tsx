@@ -1,8 +1,7 @@
 import { Package, Users } from 'lucide-react';
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useEmployees } from '@/lib/hooks/use-employees';
 import { useCompanyModules } from '@/lib/hooks/use-permissions';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function EmployeeDashboard() {
   const { data: employees, isPending: employeesLoading } = useEmployees();
@@ -12,7 +11,7 @@ export default function EmployeeDashboard() {
     <div className="space-y-8">
       {/* Header Section */}
       <div>
-        <h1 className="text-apptax-navy text-3xl font-bold tracking-tight">Panel</h1>
+        <h1 className="text-foreground text-3xl font-bold tracking-tight">Panel</h1>
         <p className="text-muted-foreground mt-2">
           Przegląd Twojego obszaru roboczego i szybki dostęp do modułów
         </p>
@@ -25,18 +24,18 @@ export default function EmployeeDashboard() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Dostępne moduły</CardTitle>
-              <div className="bg-apptax-soft-teal rounded-lg p-2">
-                <Package className="text-apptax-teal h-5 w-5" />
+              <div className="bg-accent/10 rounded-lg p-2">
+                <Package className="text-accent h-5 w-5" />
               </div>
             </div>
             <CardDescription>Moduły, do których masz dostęp</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <p className="text-apptax-blue text-4xl font-bold">
+              <p className="text-primary text-4xl font-bold">
                 {modulesLoading ? '...' : modules?.length || 0}
               </p>
-              <div className="bg-apptax-teal ai-glow h-2 w-2 rounded-full" />
+              <div className="bg-accent ai-glow h-2 w-2 rounded-full" />
             </div>
           </CardContent>
         </Card>
@@ -46,14 +45,14 @@ export default function EmployeeDashboard() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Członkowie zespołu</CardTitle>
-              <div className="bg-apptax-soft-teal rounded-lg p-2">
-                <Users className="text-apptax-blue h-5 w-5" />
+              <div className="bg-accent/10 rounded-lg p-2">
+                <Users className="text-primary h-5 w-5" />
               </div>
             </div>
             <CardDescription>Łączna liczba pracowników w Twojej firmie</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-apptax-blue text-4xl font-bold">
+            <p className="text-primary text-4xl font-bold">
               {employeesLoading ? '...' : employees?.length || 0}
             </p>
           </CardContent>
@@ -61,7 +60,7 @@ export default function EmployeeDashboard() {
       </div>
 
       {/* Welcome Card - Uses accessible gradient with overlay for WCAG AA contrast */}
-      <Card className="bg-apptax-ai-gradient-accessible overflow-hidden border-0 text-white">
+      <Card className="bg-gradient-to-br from-accent to-primary text-white overflow-hidden border-0 text-white">
         <CardContent className="p-8">
           <div className="flex items-start justify-between">
             <div>

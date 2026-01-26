@@ -11,7 +11,7 @@ export function Sidebar({ title, navItems, className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'bg-apptax-navy shadow-apptax-lg flex flex-col transition-all duration-300',
+        'bg-sidebar shadow-lg flex flex-col transition-all duration-300',
         isOpen ? 'w-64' : 'w-16',
         className
       )}
@@ -24,11 +24,11 @@ export function Sidebar({ title, navItems, className }: SidebarProps) {
       </nav>
 
       {/* AppTax Footer Branding */}
-      <div className={cn('border-t border-white/10 p-4', !isOpen && 'p-2')}>
+      <div className={cn('border-t border-sidebar-border p-4', !isOpen && 'p-2')}>
         {isOpen ? (
           <div className="flex items-center gap-2">
-            <div className="bg-apptax-teal ai-glow h-2 w-2 rounded-full" />
-            <span className="text-xs text-white/50">Zasilany AI</span>
+            <div className="bg-sidebar-accent ai-glow h-2 w-2 rounded-full" />
+            <span className="text-xs text-sidebar-foreground/50">Zasilany AI</span>
           </div>
         ) : (
           <div className="flex justify-center">

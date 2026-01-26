@@ -1,10 +1,9 @@
-import { Users, Settings, UserCheck, UserX, Building2 } from 'lucide-react';
-
+import { useAuthContext } from '@/contexts/auth-context';
+import { UserRole } from '@/types/enums';
+import { Building2, Settings, UserCheck, Users, UserX } from 'lucide-react';
+import { useClients } from '@/lib/hooks/use-clients';
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
-import { useAuthContext } from '@/contexts/auth-context';
-import { useClients } from '@/lib/hooks/use-clients';
-import { UserRole } from '@/types/enums';
 
 export default function ClientsDashboardPage() {
   const { user } = useAuthContext();
@@ -39,7 +38,7 @@ export default function ClientsDashboardPage() {
       description: 'Przeglądaj, dodawaj i zarządzaj klientami biura rachunkowego',
       icon: Users,
       href: `${basePath}/list`,
-      gradient: 'bg-apptax-gradient',
+      gradient: 'bg-primary',
       roles: [UserRole.ADMIN, UserRole.COMPANY_OWNER, UserRole.EMPLOYEE],
     },
     {
@@ -47,7 +46,7 @@ export default function ClientsDashboardPage() {
       description: 'Pola niestandardowe, ikony klientów, powiadomienia',
       icon: Settings,
       href: `${basePath}/settings`,
-      gradient: 'bg-apptax-dark-gradient',
+      gradient: 'bg-primary',
       roles: [UserRole.ADMIN, UserRole.COMPANY_OWNER],
     },
   ];
@@ -60,9 +59,9 @@ export default function ClientsDashboardPage() {
   return (
     <div className="container mx-auto space-y-6 p-6">
       <div>
-        <h1 className="text-apptax-navy flex items-center gap-3 text-3xl font-bold">
+        <h1 className="text-foreground flex items-center gap-3 text-3xl font-bold">
           Moduł Klienci
-          <div className="bg-apptax-teal h-3 w-3 rounded-full" />
+          <div className="bg-accent h-3 w-3 rounded-full" />
         </h1>
         <p className="text-muted-foreground mt-1">Zarządzanie klientami biura rachunkowego</p>
       </div>
@@ -73,9 +72,9 @@ export default function ClientsDashboardPage() {
           label="Wszyscy klienci"
           value={totalClients}
           icon={Building2}
-          iconBg="bg-apptax-gradient"
-          valueColor="text-apptax-navy"
-          borderColor="border-apptax-soft-teal/30"
+          iconBg="bg-primary"
+          valueColor="text-foreground"
+          borderColor="border-accent/30"
           isLoading={isPending}
         />
 

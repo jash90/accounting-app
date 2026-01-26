@@ -1,12 +1,12 @@
 import { useState } from 'react';
-
 import { useForm } from 'react-hook-form';
-
+import { PageHeader } from '@/components/common/page-header';
+import { useAuthContext } from '@/contexts/auth-context';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Eye, EyeOff, KeyRound, Shield, User } from 'lucide-react';
-
-import { PageHeader } from '@/components/common/page-header';
+import { authApi } from '@/lib/api/endpoints/auth';
+import { changePasswordSchema, type ChangePasswordFormData } from '@/lib/validation/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -20,9 +20,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { useAuthContext } from '@/contexts/auth-context';
-import { authApi } from '@/lib/api/endpoints/auth';
-import { changePasswordSchema, type ChangePasswordFormData } from '@/lib/validation/schemas';
 
 export default function AccountSettingsPage() {
   const { user } = useAuthContext();
@@ -80,7 +77,7 @@ export default function AccountSettingsPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Shield className="text-apptax-blue h-5 w-5" />
+              <Shield className="text-primary h-5 w-5" />
               <CardTitle>Informacje o koncie</CardTitle>
             </div>
             <CardDescription>Podstawowe informacje o Twoim koncie</CardDescription>
@@ -89,19 +86,19 @@ export default function AccountSettingsPage() {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Email</span>
-                <span className="text-apptax-navy font-medium">{user?.email}</span>
+                <span className="text-foreground font-medium">{user?.email}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Imię</span>
-                <span className="text-apptax-navy font-medium">{user?.firstName}</span>
+                <span className="text-foreground font-medium">{user?.firstName}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Nazwisko</span>
-                <span className="text-apptax-navy font-medium">{user?.lastName}</span>
+                <span className="text-foreground font-medium">{user?.lastName}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Rola</span>
-                <span className="text-apptax-navy font-medium">{user?.role}</span>
+                <span className="text-foreground font-medium">{user?.role}</span>
               </div>
             </div>
           </CardContent>
@@ -110,7 +107,7 @@ export default function AccountSettingsPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <KeyRound className="text-apptax-teal h-5 w-5" />
+              <KeyRound className="text-accent h-5 w-5" />
               <CardTitle>Zmień hasło</CardTitle>
             </div>
             <CardDescription>Zaktualizuj swoje hasło do konta</CardDescription>

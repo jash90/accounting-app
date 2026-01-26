@@ -1,23 +1,39 @@
-import { useState, useMemo } from 'react';
-
+import { useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
-
+import { ModelPickerModal } from '@/components/modules/ai-agent/model-picker-modal';
+import {
+  type AIConfigurationResponseDto,
+  type AIProvider,
+  type OpenAIModelDto,
+  type OpenRouterModelDto,
+} from '@/types/dtos';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
+  AlertTriangle,
+  Database,
+  ExternalLink,
+  Eye,
+  KeyRound,
+  Radio,
   Settings,
   Sparkles,
-  Zap,
-  Eye,
   Wrench,
-  ExternalLink,
-  Radio,
-  Database,
-  AlertTriangle,
-  KeyRound,
+  Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-import { ModelPickerModal } from '@/components/modules/ai-agent/model-picker-modal';
+import {
+  useAIConfiguration,
+  useCreateAIConfiguration,
+  useOpenAIEmbeddingModels,
+  useOpenAIModels,
+  useOpenRouterModels,
+  useResetApiKey,
+  useUpdateAIConfiguration,
+} from '@/lib/hooks/use-ai-agent';
+import {
+  updateAIConfigurationSchema,
+  type UpdateAIConfigurationFormData,
+} from '@/lib/validation/schemas';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,25 +65,6 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  useAIConfiguration,
-  useCreateAIConfiguration,
-  useUpdateAIConfiguration,
-  useOpenRouterModels,
-  useOpenAIModels,
-  useOpenAIEmbeddingModels,
-  useResetApiKey,
-} from '@/lib/hooks/use-ai-agent';
-import {
-  updateAIConfigurationSchema,
-  type UpdateAIConfigurationFormData,
-} from '@/lib/validation/schemas';
-import {
-  type OpenRouterModelDto,
-  type OpenAIModelDto,
-  type AIConfigurationResponseDto,
-  type AIProvider,
-} from '@/types/dtos';
 
 // Fallback models used while loading or if API fails
 const FALLBACK_OPENAI_MODELS: OpenAIModelDto[] = [
@@ -328,8 +325,8 @@ function ConfigurationForm({
                         disabled={isLoadingModels}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="bg-apptax-soft-teal flex h-10 w-10 items-center justify-center rounded-lg">
-                            <Zap className="text-apptax-blue h-5 w-5" />
+                          <div className="bg-accent/10 flex h-10 w-10 items-center justify-center rounded-lg">
+                            <Zap className="text-primary h-5 w-5" />
                           </div>
                           <div className="text-left">
                             <p className="font-medium">
@@ -418,7 +415,7 @@ function ConfigurationForm({
                       href="https://openrouter.ai/keys"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-apptax-blue ml-1 inline-flex items-center gap-1 hover:underline"
+                      className="text-primary ml-1 inline-flex items-center gap-1 hover:underline"
                     >
                       Get API key
                       <ExternalLink className="h-3 w-3" />
@@ -513,7 +510,7 @@ function ConfigurationForm({
               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
                   <FormLabel className="flex items-center gap-2 text-base">
-                    <Radio className="text-apptax-teal h-4 w-4" />
+                    <Radio className="text-accent h-4 w-4" />
                     Streaming Mode
                   </FormLabel>
                   <FormDescription>
@@ -531,7 +528,7 @@ function ConfigurationForm({
           {/* Embedding Configuration Section */}
           <div className="bg-muted/30 space-y-4 rounded-lg border p-4">
             <div className="flex items-center gap-2">
-              <Database className="text-apptax-teal h-5 w-5" />
+              <Database className="text-accent h-5 w-5" />
               <h3 className="text-base font-semibold">Embedding Configuration</h3>
               <span className="text-muted-foreground text-xs">(for Knowledge Base)</span>
             </div>
@@ -651,7 +648,7 @@ function ConfigurationForm({
           <Button
             type="submit"
             disabled={isPending}
-            className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md w-full transition-all"
+            className="bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md w-full transition-all"
           >
             <Sparkles className="mr-2 h-4 w-4" />
             {isPending ? 'Saving...' : 'Save Configuration'}
@@ -729,8 +726,8 @@ export default function AdminConfigurationPage() {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="text-apptax-navy flex items-center gap-3">
-          <div className="bg-apptax-teal ai-glow h-3 w-3 animate-pulse rounded-full" />
+        <div className="text-foreground flex items-center gap-3">
+          <div className="bg-accent ai-glow h-3 w-3 animate-pulse rounded-full" />
           Loading...
         </div>
       </div>
@@ -740,23 +737,23 @@ export default function AdminConfigurationPage() {
   return (
     <div className="container mx-auto space-y-8 p-8">
       <div>
-        <h1 className="text-apptax-navy flex items-center gap-3 text-3xl font-bold">
+        <h1 className="text-foreground flex items-center gap-3 text-3xl font-bold">
           AI Configuration
-          <div className="bg-apptax-teal ai-glow h-3 w-3 rounded-full" />
+          <div className="bg-accent ai-glow h-3 w-3 rounded-full" />
         </h1>
         <p className="text-muted-foreground mt-1">
           Configure AI provider, model, and system behavior
         </p>
       </div>
 
-      <Card className="border-apptax-soft-teal/30">
+      <Card className="border-accent/30">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <div className="bg-apptax-soft-teal flex h-10 w-10 items-center justify-center rounded-lg">
-              <Settings className="text-apptax-blue h-5 w-5" />
+            <div className="bg-accent/10 flex h-10 w-10 items-center justify-center rounded-lg">
+              <Settings className="text-primary h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-apptax-navy">AI Settings</CardTitle>
+              <CardTitle className="text-foreground">AI Settings</CardTitle>
               <CardDescription>
                 Configure the AI provider and model settings for all conversations
               </CardDescription>

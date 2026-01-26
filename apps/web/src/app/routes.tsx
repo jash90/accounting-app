@@ -37,6 +37,7 @@ const EmployeeAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/emp
 // Settings Pages
 const UserEmailConfigPage = lazy(() => import('@/pages/settings/email-config'));
 const AccountSettingsPage = lazy(() => import('@/pages/settings/account'));
+const AppearanceSettingsPage = lazy(() => import('@/pages/settings/appearance'));
 const CompanyEmailConfigPage = lazy(() => import('@/pages/company/email-config'));
 const AdminEmailConfigPage = lazy(() => import('@/pages/admin/email-config'));
 
@@ -1016,6 +1017,14 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <AccountSettingsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="appearance"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <AppearanceSettingsPage />
             </Suspense>
           }
         />

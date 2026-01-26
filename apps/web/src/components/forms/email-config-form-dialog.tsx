@@ -3,25 +3,25 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Mail, Send, Download, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Download, Loader2, Mail, Send } from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
@@ -32,7 +32,7 @@ import {
   type CreateEmailConfigFormData,
   type UpdateEmailConfigFormData,
 } from '@/lib/validation/schemas';
-import { type EmailConfigResponseDto, type TestSmtpDto, type TestImapDto } from '@/types/dtos';
+import { type EmailConfigResponseDto, type TestImapDto, type TestSmtpDto } from '@/types/dtos';
 
 interface EmailConfigFormDialogProps {
   open: boolean;
@@ -247,8 +247,8 @@ export function EmailConfigFormDialog({
             {/* SMTP Configuration Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Send className="text-apptax-blue h-4 w-4" />
-                <h3 className="text-apptax-navy text-lg font-semibold">
+                <Send className="text-primary h-4 w-4" />
+                <h3 className="text-foreground text-lg font-semibold">
                   Konfiguracja SMTP (poczta wychodząca)
                 </h3>
               </div>
@@ -383,8 +383,8 @@ export function EmailConfigFormDialog({
             {/* IMAP Configuration Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Download className="text-apptax-teal h-4 w-4" />
-                <h3 className="text-apptax-navy text-lg font-semibold">
+                <Download className="text-accent h-4 w-4" />
+                <h3 className="text-foreground text-lg font-semibold">
                   Konfiguracja IMAP (poczta przychodząca)
                 </h3>
               </div>
