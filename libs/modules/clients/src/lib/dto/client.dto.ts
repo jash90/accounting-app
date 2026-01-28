@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
 import { Type, Transform } from 'class-transformer';
 import {
+  Allow,
   IsString,
   IsOptional,
   IsEmail,
@@ -72,11 +73,6 @@ export class CreateClientDto {
   @IsOptional()
   @Type(() => Date)
   cooperationStartDate?: Date;
-
-  @ApiPropertyOptional({ description: 'Suspension date' })
-  @IsOptional()
-  @Type(() => Date)
-  suspensionDate?: Date;
 
   @ApiPropertyOptional({ description: 'Company specificity notes' })
   @IsOptional()
@@ -213,6 +209,7 @@ export class CustomFieldFilterDto {
     description: 'Filter value (string or array for IN/CONTAINS_ANY operators)',
     oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
   })
+  @Allow()
   @Transform(({ value }) => {
     // Sanitize value to prevent XSS - strip HTML tags and encode dangerous characters
     // Note: & is a valid business character (e.g., "Smith & Sons") so we preserve it

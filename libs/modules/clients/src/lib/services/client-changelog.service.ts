@@ -531,7 +531,6 @@ export class ClientChangelogService {
       'phone',
       'companyStartDate',
       'cooperationStartDate',
-      'suspensionDate',
       'companySpecificity',
       'additionalInfo',
       'gtuCode',
@@ -575,6 +574,7 @@ export class ClientChangelogService {
 
     // Handle Date strings - only accept ISO-8601 format to avoid false positives
     // Pattern matches: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS (with optional timezone/ms)
+    // eslint-disable-next-line security/detect-unsafe-regex -- False positive: anchored pattern with deterministic char classes
     const isoDatePattern = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?/;
     if (
       typeof oldValue === 'string' &&
@@ -703,7 +703,6 @@ export class ClientChangelogService {
       clientPhone: client.phone,
       companyStartDate: this.formatDatePolish(client.companyStartDate),
       cooperationStartDate: this.formatDatePolish(client.cooperationStartDate),
-      suspensionDate: this.formatDatePolish(client.suspensionDate),
       vatStatusLabel: client.vatStatus ? VatStatusLabels[client.vatStatus] : null,
       taxSchemeLabel: client.taxScheme ? TaxSchemeLabels[client.taxScheme] : null,
       zusStatusLabel: client.zusStatus ? ZusStatusLabels[client.zusStatus] : null,

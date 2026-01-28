@@ -48,12 +48,6 @@ export class ClientResponseDto {
   cooperationStartDate?: Date;
 
   @ApiPropertyOptional({
-    description: 'Suspension date (if suspended)',
-    example: null,
-  })
-  suspensionDate?: Date;
-
-  @ApiPropertyOptional({
     description: 'Company specificity notes',
     example: 'E-commerce business with international sales',
   })

@@ -312,7 +312,6 @@ export const createClientSchema = z.object({
   phone: z.string().max(20).optional(),
   companyStartDate: z.date().optional().nullable(),
   cooperationStartDate: z.date().optional().nullable(),
-  suspensionDate: z.date().optional().nullable(),
   companySpecificity: z.string().optional(),
   additionalInfo: z.string().optional(),
   gtuCode: gtuCodeSchema,

@@ -303,7 +303,7 @@ export function AdditionalInfoCard({ control }: FormSectionProps) {
 }
 
 /**
- * Dates Card - Company Start Date, Cooperation Start Date, Suspension Date
+ * Dates Card - Company Start Date, Cooperation Start Date
  */
 export function DatesCard({ control }: FormSectionProps) {
   return (
@@ -319,8 +319,6 @@ export function DatesCard({ control }: FormSectionProps) {
           name="cooperationStartDate"
           label="Data rozpoczęcia współpracy"
         />
-
-        <DateFormField control={control} name="suspensionDate" label="Data zawieszenia" />
       </CardContent>
     </Card>
   );

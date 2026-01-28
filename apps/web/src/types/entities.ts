@@ -79,7 +79,6 @@ export interface Client {
   phone?: string;
   companyStartDate?: Date;
   cooperationStartDate?: Date;
-  suspensionDate?: Date;
   companySpecificity?: string;
   additionalInfo?: string;
   // Legacy field (kept for backward compatibility)
