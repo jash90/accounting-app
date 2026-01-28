@@ -298,7 +298,7 @@ function ClientDetailContent() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
+              <div className="grid grid-cols-2 gap-6">
                 <InfoItem
                   label="Data rozpoczęcia firmy"
                   value={formatDate(client.companyStartDate)}
@@ -307,7 +307,6 @@ function ClientDetailContent() {
                   label="Data rozpoczęcia współpracy"
                   value={formatDate(client.cooperationStartDate)}
                 />
-                <InfoItem label="Data zawieszenia" value={formatDate(client.suspensionDate)} />
               </div>
             </CardContent>
           </Card>

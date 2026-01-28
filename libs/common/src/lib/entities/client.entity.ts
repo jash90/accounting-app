@@ -55,13 +55,6 @@ export class Client {
   @Column({ type: 'date', nullable: true })
   cooperationStartDate?: Date;
 
-  /**
-   * @deprecated Use the suspensions relation (ClientSuspension[]) for suspension history.
-   * This field is kept for backward compatibility during migration.
-   */
-  @Column({ type: 'date', nullable: true })
-  suspensionDate?: Date;
-
   @Column({ type: 'text', nullable: true })
   companySpecificity?: string;
 

@@ -1,5 +1,6 @@
 import { memo } from 'react';
 
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -62,13 +63,11 @@ export const CustomFieldRenderer = memo(function CustomFieldRenderer({
 
     case CustomFieldType.DATE:
       return (
-        <Input
-          id={inputId}
-          type="date"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+        <DatePicker
+          value={value || undefined}
+          onChange={(newValue) => onChange(newValue || '')}
           disabled={disabled}
-          aria-label={definition.label}
+          placeholder={definition.label}
         />
       );
 

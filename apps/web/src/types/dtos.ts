@@ -520,7 +520,6 @@ export interface CreateClientDto {
   phone?: string;
   companyStartDate?: Date;
   cooperationStartDate?: Date;
-  suspensionDate?: Date;
   companySpecificity?: string;
   additionalInfo?: string;
   gtuCode?: string;

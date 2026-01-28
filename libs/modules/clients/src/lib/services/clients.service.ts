@@ -745,7 +745,6 @@ export class ClientsService {
       phone: client.phone,
       companyStartDate: client.companyStartDate,
       cooperationStartDate: client.cooperationStartDate,
-      suspensionDate: client.suspensionDate,
       companySpecificity: client.companySpecificity,
       additionalInfo: client.additionalInfo,
       // Legacy fields (kept for backward compatibility)

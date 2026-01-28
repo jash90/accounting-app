@@ -133,7 +133,6 @@ export const ClientFieldLabels: Record<string, string> = {
   phone: 'Telefon',
   companyStartDate: 'Data założenia firmy',
   cooperationStartDate: 'Data rozpoczęcia współpracy',
-  suspensionDate: 'Data zawieszenia',
   companySpecificity: 'Specyfika firmy',
   additionalInfo: 'Dodatkowe informacje',
   gtuCodes: 'Kody GTU',
@@ -173,7 +172,6 @@ export const CONDITION_FIELDS = [
   { field: 'isActive', label: 'Aktywny', type: 'boolean' },
   { field: 'companyStartDate', label: 'Data założenia firmy', type: 'date' },
   { field: 'cooperationStartDate', label: 'Data rozpoczęcia współpracy', type: 'date' },
-  { field: 'suspensionDate', label: 'Data zawieszenia', type: 'date' },
 ] as const;
 
 // Operators available for each field type
