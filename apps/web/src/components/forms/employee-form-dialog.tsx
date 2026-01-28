@@ -1,11 +1,9 @@
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -15,9 +13,13 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { createEmployeeSchema, updateUserSchema, CreateEmployeeFormData, UpdateUserFormData } from '@/lib/validation/schemas';
-import { UserDto } from '@/types/dtos';
+import {
+  createEmployeeSchema,
+  updateUserSchema,
+  type CreateEmployeeFormData,
+  type UpdateUserFormData,
+} from '@/lib/validation/schemas';
+import { type UserDto } from '@/types/dtos';
 
 interface EmployeeFormDialogProps {
   open: boolean;
@@ -26,7 +28,12 @@ interface EmployeeFormDialogProps {
   onSubmit: (data: CreateEmployeeFormData | UpdateUserFormData) => void;
 }
 
-export function EmployeeFormDialog({ open, onOpenChange, employee, onSubmit }: EmployeeFormDialogProps) {
+export function EmployeeFormDialog({
+  open,
+  onOpenChange,
+  employee,
+  onSubmit,
+}: EmployeeFormDialogProps) {
   const isEditing = !!employee;
   const schema = isEditing ? updateUserSchema : createEmployeeSchema;
 
@@ -126,4 +133,3 @@ export function EmployeeFormDialog({ open, onOpenChange, employee, onSubmit }: E
     </Dialog>
   );
 }
-

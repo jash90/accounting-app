@@ -14,7 +14,6 @@ import {
 import {
   ApiTags,
   ApiOperation,
-  ApiResponse,
   ApiBearerAuth,
   ApiParam,
   ApiQuery,
@@ -46,14 +45,15 @@ import { TokenLimitResponseDto } from '../dto/token-limit-response.dto';
 export class TokenUsageController {
   constructor(
     private readonly usageService: TokenUsageService,
-    private readonly limitService: TokenLimitService,
+    private readonly limitService: TokenLimitService
   ) {}
 
   @Get('usage/me')
   @RequirePermission('ai-agent', 'read')
   @ApiOperation({
     summary: 'Get my token usage',
-    description: 'Retrieve token usage statistics for the authenticated user. All roles can view their own usage.',
+    description:
+      'Retrieve token usage statistics for the authenticated user. All roles can view their own usage.',
   })
   @ApiQuery({
     name: 'days',
@@ -74,7 +74,7 @@ export class TokenUsageController {
   })
   async getMyUsage(
     @CurrentUser() user: User,
-    @Query('days', new DefaultValuePipe(30), ParseIntPipe) days: number,
+    @Query('days', new DefaultValuePipe(30), ParseIntPipe) days: number
   ) {
     return this.usageService.getMyUsage(user, days);
   }
@@ -83,7 +83,8 @@ export class TokenUsageController {
   @RequirePermission('ai-agent', 'read')
   @ApiOperation({
     summary: 'Get company token usage',
-    description: 'Retrieve token usage statistics for the entire company. **COMPANY_OWNER and ADMIN only**. Shows all users in the company.',
+    description:
+      'Retrieve token usage statistics for the entire company. **COMPANY_OWNER and ADMIN only**. Shows all users in the company.',
   })
   @ApiQuery({
     name: 'days',
@@ -104,7 +105,7 @@ export class TokenUsageController {
   })
   async getCompanyUsage(
     @CurrentUser() user: User,
-    @Query('days', new DefaultValuePipe(30), ParseIntPipe) days: number,
+    @Query('days', new DefaultValuePipe(30), ParseIntPipe) days: number
   ) {
     return this.usageService.getCompanyUsage(user, days);
   }
@@ -113,7 +114,8 @@ export class TokenUsageController {
   @RequirePermission('ai-agent', 'read')
   @ApiOperation({
     summary: 'Get token usage for all companies',
-    description: 'Retrieve aggregated token usage statistics for all companies in the system. **ADMIN only**. Shows company-level breakdown with per-user details.',
+    description:
+      'Retrieve aggregated token usage statistics for all companies in the system. **ADMIN only**. Shows company-level breakdown with per-user details.',
   })
   @ApiQuery({
     name: 'days',
@@ -166,7 +168,7 @@ export class TokenUsageController {
   })
   async getAllCompaniesUsage(
     @CurrentUser() user: User,
-    @Query('days', new DefaultValuePipe(30), ParseIntPipe) days: number,
+    @Query('days', new DefaultValuePipe(30), ParseIntPipe) days: number
   ) {
     return this.usageService.getAllCompaniesUsage(user, days);
   }
@@ -175,7 +177,8 @@ export class TokenUsageController {
   @RequirePermission('ai-agent', 'read')
   @ApiOperation({
     summary: 'Get my token limits',
-    description: 'Retrieve token limits and current usage for the authenticated user. Shows both user-specific and company-wide limits if applicable.',
+    description:
+      'Retrieve token limits and current usage for the authenticated user. Shows both user-specific and company-wide limits if applicable.',
   })
   @ApiOkResponse({
     description: 'Limits and usage retrieved successfully',
@@ -210,7 +213,8 @@ export class TokenUsageController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Set company token limit',
-    description: 'Set or update monthly token limit for a company. **ADMIN only**. This is a company-wide limit that affects all users.',
+    description:
+      'Set or update monthly token limit for a company. **ADMIN only**. This is a company-wide limit that affects all users.',
   })
   @ApiParam({
     name: 'companyId',
@@ -235,7 +239,7 @@ export class TokenUsageController {
   async setCompanyLimit(
     @Param('companyId') companyId: string,
     @Body() setDto: SetTokenLimitDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     const limit = await this.limitService.setCompanyLimit(companyId, setDto, user);
 
@@ -257,7 +261,8 @@ export class TokenUsageController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Set user token limit',
-    description: 'Set or update monthly token limit for a specific user. **COMPANY_OWNER only**. User must belong to the owner\'s company.',
+    description:
+      "Set or update monthly token limit for a specific user. **COMPANY_OWNER only**. User must belong to the owner's company.",
   })
   @ApiParam({
     name: 'userId',
@@ -282,7 +287,7 @@ export class TokenUsageController {
   async setUserLimit(
     @Param('userId') userId: string,
     @Body() setDto: SetTokenLimitDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     const limit = await this.limitService.setUserLimit(userId, setDto, user);
 
@@ -310,7 +315,8 @@ export class TokenUsageController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Set token limit (unified endpoint)',
-    description: 'Set or update monthly token limit for a company or user. Routes to company limit (ADMIN only) or user limit (COMPANY_OWNER only) based on targetType.',
+    description:
+      'Set or update monthly token limit for a company or user. Routes to company limit (ADMIN only) or user limit (COMPANY_OWNER only) based on targetType.',
   })
   @ApiBody({
     type: SetTokenLimitDto,
@@ -326,10 +332,7 @@ export class TokenUsageController {
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing JWT token',
   })
-  async setTokenLimit(
-    @Body() setDto: SetTokenLimitDto,
-    @CurrentUser() user: User,
-  ) {
+  async setTokenLimit(@Body() setDto: SetTokenLimitDto, @CurrentUser() user: User) {
     if (setDto.targetType === 'company') {
       const limit = await this.limitService.setCompanyLimit(setDto.targetId, setDto, user);
       const companyUsage = await this.usageService.getCompanyMonthlyTotal(setDto.targetId);

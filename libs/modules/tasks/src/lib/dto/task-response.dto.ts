@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { TaskStatus, TaskPriority, TaskDependencyType } from '@accounting/common';
+import { TaskDependencyType, TaskPriority, TaskStatus } from '@accounting/common';
 
 export class TaskLabelResponseDto {
   @ApiProperty() id!: string;
@@ -40,7 +40,8 @@ export class TaskResponseDto {
   @ApiPropertyOptional() startDate?: Date;
   @ApiPropertyOptional() estimatedMinutes?: number;
   @ApiPropertyOptional() storyPoints?: number;
-  @ApiPropertyOptional({ type: [AcceptanceCriterionResponseDto] }) acceptanceCriteria?: AcceptanceCriterionResponseDto[];
+  @ApiPropertyOptional({ type: [AcceptanceCriterionResponseDto] })
+  acceptanceCriteria?: AcceptanceCriterionResponseDto[];
   @ApiProperty() sortOrder!: number;
   @ApiProperty() companyId!: string;
   @ApiPropertyOptional() clientId?: string;
@@ -116,11 +117,11 @@ export class ClientTaskStatisticsDto {
   totalStoryPoints!: number;
 }
 
-export class SuccessMessageResponseDto {
+export class TaskSuccessResponseDto {
   @ApiProperty() message!: string;
 }
 
-export class ErrorResponseDto {
+export class TaskErrorResponseDto {
   @ApiProperty() statusCode!: number;
   @ApiProperty() message!: string;
   @ApiPropertyOptional() errorCode?: string;

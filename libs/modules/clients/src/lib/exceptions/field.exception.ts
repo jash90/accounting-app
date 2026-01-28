@@ -1,4 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
+
 import { ClientException } from './client.exception';
 import { ClientErrorCode } from './error-codes.enum';
 
@@ -8,7 +9,7 @@ export class FieldNotFoundException extends ClientException {
       ClientErrorCode.FIELD_NOT_FOUND,
       `Field definition with ID ${fieldId} not found`,
       { additionalInfo: { fieldDefinitionId: fieldId }, companyId },
-      HttpStatus.NOT_FOUND,
+      HttpStatus.NOT_FOUND
     );
   }
 }
@@ -42,12 +43,7 @@ function sanitizeValueForError(value: unknown): unknown {
 }
 
 export class FieldValidationException extends ClientException {
-  constructor(
-    fieldLabel: string,
-    fieldType: string,
-    providedValue: unknown,
-    reason: string,
-  ) {
+  constructor(fieldLabel: string, fieldType: string, providedValue: unknown, reason: string) {
     super(
       ClientErrorCode.FIELD_VALIDATION_FAILED,
       `Validation failed for field "${fieldLabel}": ${reason}`,
@@ -59,7 +55,7 @@ export class FieldValidationException extends ClientException {
           validationError: reason,
         },
       },
-      HttpStatus.BAD_REQUEST,
+      HttpStatus.BAD_REQUEST
     );
   }
 }
@@ -70,7 +66,7 @@ export class FieldRequiredException extends ClientException {
       ClientErrorCode.FIELD_REQUIRED,
       `Field "${fieldLabel}" is required`,
       { additionalInfo: { fieldDefinitionId: fieldId, fieldLabel } },
-      HttpStatus.BAD_REQUEST,
+      HttpStatus.BAD_REQUEST
     );
   }
 }

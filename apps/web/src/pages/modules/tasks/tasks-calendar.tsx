@@ -1,12 +1,9 @@
 import { useState, useCallback, useMemo } from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { useCalendarTasks, useCreateTask } from '@/lib/hooks/use-tasks';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import { PageHeader } from '@/components/common/page-header';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar } from '@/components/ui/calendar';
-import { Skeleton } from '@/components/ui/skeleton';
+
+import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
+import { pl } from 'date-fns/locale';
 import {
   CheckSquare,
   ArrowLeft,
@@ -18,18 +15,20 @@ import {
   ChevronRight,
   Plus,
 } from 'lucide-react';
-import { CalendarTaskDto, CreateTaskDto, TaskFiltersDto } from '@/types/dtos';
-import {
-  TaskPriority,
-  UserRole,
-} from '@/types/enums';
-import { TaskFormDialog } from '@/components/tasks';
-import { TaskStatusBadge, TaskPriorityBadge } from '@/components/tasks';
+
+import { PageHeader } from '@/components/common/page-header';
+import { TaskFormDialog, TaskStatusBadge, TaskPriorityBadge } from '@/components/tasks';
 import { TaskFilters } from '@/components/tasks/task-filters';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthContext } from '@/contexts/auth-context';
-import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import { useCalendarTasks, useCreateTask } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
+import { type CalendarTaskDto, type CreateTaskDto, type TaskFiltersDto } from '@/types/dtos';
+import { TaskPriority, UserRole } from '@/types/enums';
 
 export default function TasksCalendarPage() {
   const { user } = useAuthContext();
@@ -111,25 +110,15 @@ export default function TasksCalendarPage() {
 
     if (tasks.length === 0) return null;
 
-    const urgentCount = tasks.filter(
-      (t) => t.priority === TaskPriority.URGENT
-    ).length;
-    const highCount = tasks.filter(
-      (t) => t.priority === TaskPriority.HIGH
-    ).length;
+    const urgentCount = tasks.filter((t) => t.priority === TaskPriority.URGENT).length;
+    const highCount = tasks.filter((t) => t.priority === TaskPriority.HIGH).length;
     const otherCount = tasks.length - urgentCount - highCount;
 
     return (
-      <div className="flex gap-0.5 mt-1">
-        {urgentCount > 0 && (
-          <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-        )}
-        {highCount > 0 && (
-          <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-        )}
-        {otherCount > 0 && (
-          <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-        )}
+      <div className="mt-1 flex gap-0.5">
+        {urgentCount > 0 && <div className="h-1.5 w-1.5 rounded-full bg-red-500" />}
+        {highCount > 0 && <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />}
+        {otherCount > 0 && <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />}
       </div>
     );
   };
@@ -163,29 +152,17 @@ export default function TasksCalendarPage() {
         description="Zarządzaj zadaniami - widok kalendarza"
         icon={<CheckSquare className="h-6 w-6" />}
         titleAction={
-          <div className="flex items-center gap-1 border rounded-lg p-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/list`)}
-            >
+          <div className="flex items-center gap-1 rounded-lg border p-1">
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/list`)}>
               <List className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/kanban`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/kanban`)}>
               <LayoutGrid className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="sm" className="bg-accent">
               <CalendarIcon className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/timeline`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/timeline`)}>
               <GanttChartSquare className="h-4 w-4" />
             </Button>
           </div>
@@ -202,7 +179,7 @@ export default function TasksCalendarPage() {
 
       <TaskFilters filters={filters} onFiltersChange={handleFiltersChange} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Calendar */}
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -213,11 +190,7 @@ export default function TasksCalendarPage() {
               <Button variant="outline" size="sm" onClick={handleToday}>
                 Dziś
               </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handlePreviousMonth}
-              >
+              <Button variant="outline" size="icon" onClick={handlePreviousMonth}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button variant="outline" size="icon" onClick={handleNextMonth}>
@@ -238,7 +211,7 @@ export default function TasksCalendarPage() {
                 month={currentMonth}
                 onMonthChange={setCurrentMonth}
                 locale={pl}
-                className="rounded-md border w-full"
+                className="w-full rounded-md border"
                 classNames={{
                   months: 'flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0',
                   month: 'space-y-4 w-full',
@@ -246,8 +219,7 @@ export default function TasksCalendarPage() {
                   nav: 'hidden',
                   table: 'w-full border-collapse space-y-1',
                   head_row: 'flex',
-                  head_cell:
-                    'text-muted-foreground rounded-md w-full font-normal text-[0.8rem]',
+                  head_cell: 'text-muted-foreground rounded-md w-full font-normal text-[0.8rem]',
                   row: 'flex w-full mt-2',
                   cell: cn(
                     'relative p-0 text-center text-sm focus-within:relative focus-within:z-20 w-full',
@@ -264,12 +236,19 @@ export default function TasksCalendarPage() {
                   day_disabled: 'text-muted-foreground opacity-50',
                 }}
                 components={{
-                  DayContent: ({ date }) => (
-                    <div className="flex flex-col items-center">
-                      <span>{date.getDate()}</span>
-                      {getDayContent(date)}
-                    </div>
-                  ),
+                  DayButton: (props) => {
+                    const { day, ...buttonProps } = props as {
+                      day: { date: Date };
+                    } & React.ButtonHTMLAttributes<HTMLButtonElement>;
+                    return (
+                      <button {...buttonProps}>
+                        <div className="flex flex-col items-center">
+                          <span>{day.date.getDate()}</span>
+                          {getDayContent(day.date)}
+                        </div>
+                      </button>
+                    );
+                  },
                 }}
               />
             )}
@@ -280,42 +259,44 @@ export default function TasksCalendarPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-medium">
-              {selectedDate
-                ? format(selectedDate, 'd MMMM yyyy', { locale: pl })
-                : 'Wybierz dzień'}
+              {selectedDate ? format(selectedDate, 'd MMMM yyyy', { locale: pl }) : 'Wybierz dzień'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {!selectedDate ? (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Kliknij na dzień w kalendarzu, aby zobaczyć zadania
               </p>
             ) : selectedDateTasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Brak zadań na ten dzień
-              </p>
+              <p className="text-muted-foreground text-sm">Brak zadań na ten dzień</p>
             ) : (
               <div className="space-y-3">
                 {selectedDateTasks.map((task) => (
                   <div
                     key={task.id}
+                    role="button"
+                    tabIndex={0}
                     className={cn(
-                      'p-3 rounded-lg border border-l-4 cursor-pointer hover:bg-muted/50 transition-colors',
+                      'hover:bg-muted/50 cursor-pointer rounded-lg border border-l-4 p-3 transition-colors',
                       getPriorityColor(task.priority)
                     )}
                     onClick={() => navigate(`${basePath}/list?taskId=${task.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        navigate(`${basePath}/list?taskId=${task.id}`);
+                      }
+                    }}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <span className="font-medium text-sm line-clamp-2">
-                        {task.title}
-                      </span>
+                      <span className="line-clamp-2 text-sm font-medium">{task.title}</span>
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="mt-2 flex items-center gap-2">
                       <TaskStatusBadge status={task.status} size="sm" />
                       <TaskPriorityBadge priority={task.priority} size="sm" />
                     </div>
                     {task.assignee && (
-                      <div className="mt-2 text-xs text-muted-foreground">
+                      <div className="text-muted-foreground mt-2 text-xs">
                         {task.assignee.firstName} {task.assignee.lastName}
                       </div>
                     )}
@@ -333,15 +314,15 @@ export default function TasksCalendarPage() {
           <div className="flex items-center gap-6 text-sm">
             <span className="text-muted-foreground">Legenda:</span>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-red-500" />
+              <div className="h-2 w-2 rounded-full bg-red-500" />
               <span>Pilne</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-orange-500" />
+              <div className="h-2 w-2 rounded-full bg-orange-500" />
               <span>Wysokie</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
+              <div className="h-2 w-2 rounded-full bg-blue-500" />
               <span>Inne</span>
             </div>
           </div>

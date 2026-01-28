@@ -1,9 +1,14 @@
+// Module
 export * from './lib/clients.module';
-export { ClientsService } from './lib/services/clients.service';
-export { CustomFieldsService } from './lib/services/custom-fields.service';
-export { ClientIconsService } from './lib/services/client-icons.service';
-export { ClientChangelogService } from './lib/services/client-changelog.service';
-export { NotificationSettingsService } from './lib/services/notification-settings.service';
-export * from './lib/controllers';
-export * from './lib/dto';
+
+// Exceptions
 export * from './lib/exceptions';
+
+// Services
+export * from './lib/services';
+
+// Controllers
+export * from './lib/controllers';
+
+// DTOs
+export * from './lib/dto';

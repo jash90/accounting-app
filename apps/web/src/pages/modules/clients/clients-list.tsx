@@ -1,6 +1,54 @@
 import { useState, useMemo, useCallback } from 'react';
-import { ColumnDef } from '@tanstack/react-table';
+
 import { useNavigate } from 'react-router-dom';
+
+import { type ColumnDef } from '@tanstack/react-table';
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Users,
+  Eye,
+  RotateCcw,
+  MoreHorizontal,
+  History,
+  ArrowLeft,
+  Download,
+  BarChart3,
+} from 'lucide-react';
+
+import {
+  BulkActionsToolbar,
+  type BulkEditChanges,
+} from '@/components/clients/bulk-actions-toolbar';
+import { ClientFilters } from '@/components/clients/client-filters';
+import { ClientGrid } from '@/components/clients/client-grid';
+import { DuplicateWarningDialog } from '@/components/clients/duplicate-warning-dialog';
+import { ExportImportDialog } from '@/components/clients/export-import-dialog';
+import { IconBadgeList } from '@/components/clients/icon-badge';
+import { StatisticsDashboard } from '@/components/clients/statistics-dashboard';
+import { ColumnVisibilityModal } from '@/components/common/column-visibility-modal';
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { DataTable } from '@/components/common/data-table';
+import { PageHeader } from '@/components/common/page-header';
+import { ViewModeToggle } from '@/components/common/view-mode-toggle';
+import { ClientFormDialog } from '@/components/forms/client-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { toast } from '@/components/ui/use-toast';
+import { useAuthContext } from '@/contexts/auth-context';
+import { type DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
+import { AmlGroupLabels } from '@/lib/constants/polish-labels';
 import {
   useClients,
   useDeleteClient,
@@ -16,50 +64,25 @@ import {
   useExportClients,
   useImportClients,
   useDownloadImportTemplate,
+  useFieldDefinitions,
 } from '@/lib/hooks/use-clients';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import { PageHeader } from '@/components/common/page-header';
-import { DataTable } from '@/components/common/data-table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { useTablePreferences, type ColumnConfig } from '@/lib/hooks/use-table-preferences';
 import {
-  Plus,
-  Edit,
-  Trash2,
-  Users,
-  Eye,
-  RotateCcw,
-  MoreHorizontal,
-  History,
-  ArrowLeft,
-  Download,
-  Upload,
-  BarChart3,
-} from 'lucide-react';
+  type ClientResponseDto,
+  type CreateClientDto,
+  type UpdateClientDto,
+  type ClientFiltersDto,
+} from '@/types/dtos';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ClientResponseDto, CreateClientDto, UpdateClientDto, ClientFiltersDto } from '@/types/dtos';
-import { ClientFormDialog } from '@/components/forms/client-form-dialog';
-import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import { ClientFilters } from '@/components/clients/client-filters';
-import { IconBadgeList } from '@/components/clients/icon-badge';
-import { BulkActionsToolbar, BulkEditChanges } from '@/components/clients/bulk-actions-toolbar';
-import { ExportImportDialog } from '@/components/clients/export-import-dialog';
-import { DuplicateWarningDialog } from '@/components/clients/duplicate-warning-dialog';
-import { StatisticsDashboard } from '@/components/clients/statistics-dashboard';
-import { DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
-import { useAuthContext } from '@/contexts/auth-context';
-import {
+  type EmploymentType,
   EmploymentTypeLabels,
   VatStatus,
   VatStatusLabels,
+  type TaxScheme,
   TaxSchemeLabels,
+  type ZusStatus,
+  ZusStatusLabels,
   UserRole,
 } from '@/types/enums';
 
@@ -84,6 +107,91 @@ export default function ClientsListPage() {
 
   const basePath = getBasePath();
 
+  // Fetch custom field definitions
+  const { data: fieldDefinitionsResponse } = useFieldDefinitions({ isActive: true });
+  const fieldDefinitions = useMemo(
+    () => fieldDefinitionsResponse?.data ?? [],
+    [fieldDefinitionsResponse?.data]
+  );
+
+  // Column configuration for table preferences (including custom fields)
+  const columnConfig: ColumnConfig[] = useMemo(() => {
+    const basicColumns: ColumnConfig[] = [
+      { id: 'name', label: 'Nazwa', alwaysVisible: true },
+      { id: 'icons', label: 'Ikony', defaultVisible: true },
+      { id: 'nip', label: 'NIP', defaultVisible: true },
+      { id: 'email', label: 'Email', defaultVisible: true },
+      { id: 'phone', label: 'Telefon', defaultVisible: false },
+    ];
+
+    const businessColumns: ColumnConfig[] = [
+      { id: 'employmentType', label: 'Zatrudnienie', defaultVisible: true },
+      { id: 'vatStatus', label: 'VAT', defaultVisible: true },
+      { id: 'taxScheme', label: 'Opodatkowanie', defaultVisible: true },
+      { id: 'zusStatus', label: 'ZUS', defaultVisible: false },
+      { id: 'amlGroup', label: 'Grupa AML', defaultVisible: false },
+      { id: 'pkdCode', label: 'Kod PKD', defaultVisible: false },
+      { id: 'gtuCode', label: 'Kod GTU', defaultVisible: false },
+    ];
+
+    const dateColumns: ColumnConfig[] = [
+      { id: 'cooperationStartDate', label: 'Data współpracy', defaultVisible: false },
+      { id: 'companyStartDate', label: 'Data założenia firmy', defaultVisible: false },
+      { id: 'createdAt', label: 'Data utworzenia', defaultVisible: false },
+    ];
+
+    // Add custom field columns
+    const customFieldColumns: ColumnConfig[] = fieldDefinitions.map((field) => ({
+      id: `customField_${field.id}`,
+      label: field.label,
+      defaultVisible: false,
+    }));
+
+    return [
+      ...basicColumns,
+      ...businessColumns,
+      ...dateColumns,
+      ...customFieldColumns,
+      { id: 'actions', label: 'Akcje', alwaysVisible: true },
+    ];
+  }, [fieldDefinitions]);
+
+  // Column groups for modal
+  const columnGroups = useMemo(() => {
+    const basicColumns = columnConfig.filter((c) =>
+      ['name', 'icons', 'nip', 'email', 'phone'].includes(c.id)
+    );
+    const businessColumns = columnConfig.filter((c) =>
+      [
+        'employmentType',
+        'vatStatus',
+        'taxScheme',
+        'zusStatus',
+        'amlGroup',
+        'pkdCode',
+        'gtuCode',
+      ].includes(c.id)
+    );
+    const dateColumns = columnConfig.filter((c) =>
+      ['cooperationStartDate', 'companyStartDate', 'createdAt'].includes(c.id)
+    );
+    const customColumns = columnConfig.filter((c) => c.id.startsWith('customField_'));
+    const actionColumns = columnConfig.filter((c) => c.id === 'actions');
+
+    return [
+      { key: 'basic', label: 'Podstawowe', columns: basicColumns },
+      { key: 'business', label: 'Dane biznesowe', columns: businessColumns },
+      { key: 'dates', label: 'Daty', columns: dateColumns },
+      ...(customColumns.length > 0
+        ? [{ key: 'custom', label: 'Pola niestandardowe', columns: customColumns }]
+        : []),
+      { key: 'actions', label: 'Inne', columns: actionColumns },
+    ];
+  }, [columnConfig]);
+
+  const { viewMode, visibleColumns, setViewMode, toggleColumn, resetToDefaults } =
+    useTablePreferences('clients-list', columnConfig);
+
   const [filters, setFilters] = useState<ClientFiltersDto>({});
   const { data: clientsResponse, isPending } = useClients(filters);
   const clients = clientsResponse?.data ?? [];
@@ -106,77 +214,127 @@ export default function ClientsListPage() {
   const [deletingClient, setDeletingClient] = useState<ClientResponseDto | null>(null);
   const [restoringClient, setRestoringClient] = useState<ClientResponseDto | null>(null);
   const [selectedClients, setSelectedClients] = useState<ClientResponseDto[]>([]);
-  const [showStatistics, setShowStatistics] = useState(true);
+  const [showStatistics, setShowStatistics] = useState(false);
   const [exportImportOpen, setExportImportOpen] = useState(false);
   const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
-  const [duplicateCheckResult, setDuplicateCheckResult] = useState<DuplicateCheckResultDto | null>(null);
-  const [pendingCreateData, setPendingCreateData] = useState<{ data: CreateClientDto; customFields?: { values: Record<string, unknown> } } | null>(null);
+  const [duplicateCheckResult, setDuplicateCheckResult] = useState<DuplicateCheckResultDto | null>(
+    null
+  );
+  const [pendingCreateData, setPendingCreateData] = useState<{
+    data: CreateClientDto;
+    customFields?: { values: Record<string, string | null> };
+  } | null>(null);
 
   const handleFiltersChange = useCallback((newFilters: ClientFiltersDto) => {
     setFilters(newFilters);
   }, []);
 
-  const handleBulkDelete = useCallback((clientIds: string[]) => {
-    bulkDelete.mutate({ clientIds }, {
-      onSuccess: () => setSelectedClients([]),
-    });
-  }, [bulkDelete]);
+  const handleBulkDelete = useCallback(
+    (clientIds: string[]) => {
+      bulkDelete.mutate(
+        { clientIds },
+        {
+          onSuccess: () => setSelectedClients([]),
+        }
+      );
+    },
+    [bulkDelete]
+  );
 
-  const handleBulkRestore = useCallback((clientIds: string[]) => {
-    bulkRestore.mutate({ clientIds }, {
-      onSuccess: () => setSelectedClients([]),
-    });
-  }, [bulkRestore]);
+  const handleBulkRestore = useCallback(
+    (clientIds: string[]) => {
+      bulkRestore.mutate(
+        { clientIds },
+        {
+          onSuccess: () => setSelectedClients([]),
+        }
+      );
+    },
+    [bulkRestore]
+  );
 
-  const handleBulkEdit = useCallback((clientIds: string[], changes: BulkEditChanges) => {
-    bulkEdit.mutate({ clientIds, ...changes }, {
-      onSuccess: () => setSelectedClients([]),
-    });
-  }, [bulkEdit]);
+  const handleBulkEdit = useCallback(
+    (clientIds: string[], changes: BulkEditChanges) => {
+      bulkEdit.mutate(
+        { clientIds, ...changes },
+        {
+          onSuccess: () => setSelectedClients([]),
+        }
+      );
+    },
+    [bulkEdit]
+  );
 
   const handleExport = useCallback(async () => {
-    await exportClients.mutateAsync(filters);
+    try {
+      await exportClients.mutateAsync(filters);
+    } catch (error) {
+      toast({
+        title: 'Błąd eksportu',
+        description:
+          error instanceof Error ? error.message : 'Nie udało się wyeksportować klientów',
+        variant: 'destructive',
+      });
+    }
   }, [exportClients, filters]);
 
-  const handleImport = useCallback(async (file: File) => {
-    const result = await importClients.mutateAsync(file);
-    return result;
-  }, [importClients]);
+  const handleImport = useCallback(
+    async (file: File) => {
+      const result = await importClients.mutateAsync(file);
+      return result;
+    },
+    [importClients]
+  );
 
   const handleDownloadTemplate = useCallback(async () => {
-    await downloadTemplate.mutateAsync();
+    try {
+      await downloadTemplate.mutateAsync();
+    } catch (error) {
+      toast({
+        title: 'Błąd pobierania szablonu',
+        description:
+          error instanceof Error ? error.message : 'Nie udało się pobrać szablonu importu',
+        variant: 'destructive',
+      });
+    }
   }, [downloadTemplate]);
 
-  const handleCreateWithDuplicateCheck = useCallback(async (data: CreateClientDto, customFields?: { values: Record<string, unknown> }) => {
-    // Check for duplicates first
-    if (data.nip || data.email) {
-      const result = await checkDuplicates.mutateAsync({
-        nip: data.nip,
-        email: data.email,
-      });
-
-      if (result.hasDuplicates) {
-        setDuplicateCheckResult(result);
-        setPendingCreateData({ data, customFields });
-        setDuplicateWarningOpen(true);
-        return;
+  const createClientAndClose = useCallback(
+    async (data: CreateClientDto, customFields?: { values: Record<string, string | null> }) => {
+      const newClient = await createClient.mutateAsync(data);
+      if (customFields && Object.keys(customFields.values).length > 0) {
+        await setCustomFields.mutateAsync({
+          id: newClient.id,
+          data: customFields,
+        });
       }
-    }
+      setCreateOpen(false);
+    },
+    [createClient, setCustomFields]
+  );
 
-    // No duplicates, proceed with creation
-    await createClientAndClose(data, customFields);
-  }, [checkDuplicates]);
+  const handleCreateWithDuplicateCheck = useCallback(
+    async (data: CreateClientDto, customFields?: { values: Record<string, string | null> }) => {
+      // Check for duplicates first
+      if (data.nip || data.email) {
+        const result = await checkDuplicates.mutateAsync({
+          nip: data.nip,
+          email: data.email,
+        });
 
-  const createClientAndClose = async (data: CreateClientDto, customFields?: { values: Record<string, unknown> }) => {
-    const newClient = await createClient.mutateAsync(data);
-    if (customFields && Object.keys(customFields.values).length > 0) {
-      await setCustomFields.mutateAsync({
-        id: newClient.id,
-        data: customFields,
-      });
-    }
-    setCreateOpen(false);
-  };
+        if (result.hasDuplicates) {
+          setDuplicateCheckResult(result);
+          setPendingCreateData({ data, customFields });
+          setDuplicateWarningOpen(true);
+          return;
+        }
+      }
+
+      // No duplicates, proceed with creation
+      await createClientAndClose(data, customFields);
+    },
+    [checkDuplicates, createClientAndClose]
+  );
 
   const handleProceedWithDuplicate = useCallback(async () => {
     if (!pendingCreateData) return;
@@ -189,7 +347,7 @@ export default function ClientsListPage() {
     } catch {
       // Error handled by mutation
     }
-  }, [pendingCreateData]);
+  }, [pendingCreateData, createClientAndClose]);
 
   const handleCancelDuplicate = useCallback(() => {
     setDuplicateWarningOpen(false);
@@ -197,9 +355,12 @@ export default function ClientsListPage() {
     setPendingCreateData(null);
   }, []);
 
-  const handleClientClick = useCallback((clientId: string) => {
-    navigate(`${basePath}/${clientId}`);
-  }, [navigate, basePath]);
+  const handleClientClick = useCallback(
+    (clientId: string) => {
+      navigate(`${basePath}/${clientId}`);
+    },
+    [navigate, basePath]
+  );
 
   const columns: ColumnDef<ClientResponseDto>[] = useMemo(
     () => [
@@ -208,7 +369,7 @@ export default function ClientsListPage() {
         header: 'Nazwa',
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            <span className="font-medium text-apptax-navy">{row.original.name}</span>
+            <span className="text-apptax-navy font-medium">{row.original.name}</span>
             {!row.original.isActive && (
               <Badge variant="outline" className="text-xs">
                 Nieaktywny
@@ -221,9 +382,12 @@ export default function ClientsListPage() {
         id: 'icons',
         header: 'Ikony',
         cell: ({ row }) => {
-          const icons = row.original.iconAssignments
-            ?.map((assignment) => assignment.icon)
-            .filter((icon): icon is NonNullable<typeof icon> => icon !== undefined && icon !== null) || [];
+          const icons =
+            row.original.iconAssignments
+              ?.map((assignment) => assignment.icon)
+              .filter(
+                (icon): icon is NonNullable<typeof icon> => icon !== undefined && icon !== null
+              ) || [];
 
           if (icons.length === 0) {
             return <span className="text-muted-foreground">-</span>;
@@ -236,9 +400,7 @@ export default function ClientsListPage() {
         accessorKey: 'nip',
         header: 'NIP',
         cell: ({ row }) => (
-          <span className="text-apptax-navy/80 font-mono text-sm">
-            {row.original.nip || '-'}
-          </span>
+          <span className="text-apptax-navy/80 font-mono text-sm">{row.original.nip || '-'}</span>
         ),
       },
       {
@@ -261,10 +423,7 @@ export default function ClientsListPage() {
         cell: ({ row }) => {
           const status = row.original.vatStatus;
           return status ? (
-            <Badge
-              variant={status === VatStatus.NO ? 'outline' : 'default'}
-              className="text-xs"
-            >
+            <Badge variant={status === VatStatus.NO ? 'outline' : 'default'} className="text-xs">
               {VatStatusLabels[status]}
             </Badge>
           ) : (
@@ -290,11 +449,127 @@ export default function ClientsListPage() {
         accessorKey: 'email',
         header: 'Email',
         cell: ({ row }) => (
-          <span className="text-apptax-navy/70 text-sm truncate max-w-[200px] block">
+          <span className="text-apptax-navy/70 block max-w-[200px] truncate text-sm">
             {row.original.email || '-'}
           </span>
         ),
       },
+      {
+        id: 'phone',
+        header: 'Telefon',
+        cell: ({ row }) => (
+          <span className="text-apptax-navy/70 text-sm">{row.original.phone || '-'}</span>
+        ),
+      },
+      {
+        accessorKey: 'zusStatus',
+        header: 'ZUS',
+        cell: ({ row }) => {
+          const status = row.original.zusStatus;
+          return status ? (
+            <Badge variant="secondary" className="text-xs">
+              {ZusStatusLabels[status]}
+            </Badge>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          );
+        },
+      },
+      {
+        id: 'amlGroup',
+        header: 'Grupa AML',
+        cell: ({ row }) => {
+          const group = row.original.amlGroupEnum;
+          return group ? (
+            <Badge variant="outline" className="text-xs">
+              {AmlGroupLabels[group]}
+            </Badge>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          );
+        },
+      },
+      {
+        id: 'pkdCode',
+        header: 'Kod PKD',
+        cell: ({ row }) => <span className="font-mono text-sm">{row.original.pkdCode || '-'}</span>,
+      },
+      {
+        id: 'gtuCode',
+        header: 'Kod GTU',
+        cell: ({ row }) => <span className="font-mono text-sm">{row.original.gtuCode || '-'}</span>,
+      },
+      {
+        id: 'cooperationStartDate',
+        header: 'Data współpracy',
+        cell: ({ row }) => {
+          const date = row.original.cooperationStartDate;
+          return date ? (
+            <span className="text-sm">{format(new Date(date), 'dd.MM.yyyy', { locale: pl })}</span>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          );
+        },
+      },
+      {
+        id: 'companyStartDate',
+        header: 'Data założenia firmy',
+        cell: ({ row }) => {
+          const date = row.original.companyStartDate;
+          return date ? (
+            <span className="text-sm">{format(new Date(date), 'dd.MM.yyyy', { locale: pl })}</span>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          );
+        },
+      },
+      {
+        id: 'createdAt',
+        header: 'Data utworzenia',
+        cell: ({ row }) => {
+          const date = row.original.createdAt;
+          return date ? (
+            <span className="text-muted-foreground text-sm">
+              {format(new Date(date), 'dd.MM.yyyy', { locale: pl })}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          );
+        },
+      },
+      // Custom field columns
+      ...fieldDefinitions.map((field) => ({
+        id: `customField_${field.id}`,
+        header: field.label,
+        cell: ({ row }: { row: { original: ClientResponseDto } }) => {
+          const customFieldValue = row.original.customFieldValues?.find(
+            (cfv) => cfv.fieldDefinitionId === field.id
+          );
+          const value = customFieldValue?.value;
+
+          if (!value) {
+            return <span className="text-muted-foreground">-</span>;
+          }
+
+          // Format based on field type
+          if (field.fieldType === 'BOOLEAN') {
+            return <span>{value === 'true' ? 'Tak' : 'Nie'}</span>;
+          }
+
+          if (field.fieldType === 'DATE') {
+            const dateValue = new Date(value);
+            // Check if date is valid (getTime() returns NaN for invalid dates)
+            if (!isNaN(dateValue.getTime())) {
+              return <span className="text-sm">{dateValue.toLocaleDateString('pl-PL')}</span>;
+            }
+            // Log invalid date for debugging
+            console.error(`Invalid date value for field "${field.label}":`, value);
+            return <span className="text-sm">{value}</span>;
+          }
+
+          return <span className="block max-w-[150px] truncate text-sm">{value}</span>;
+        },
+      })),
       {
         id: 'actions',
         header: 'Akcje',
@@ -310,26 +585,24 @@ export default function ClientsListPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => navigate(`${basePath}/${client.id}`)}
-                >
+                <DropdownMenuItem onClick={() => navigate(`${basePath}/${client.id}`)}>
                   <Eye className="mr-2 h-4 w-4" />
                   Szczegóły
                 </DropdownMenuItem>
 
                 {hasWritePermission && client.isActive && (
-                  <DropdownMenuItem onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingClient(client);
-                  }}>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingClient(client);
+                    }}
+                  >
                     <Edit className="mr-2 h-4 w-4" />
                     Edytuj
                   </DropdownMenuItem>
                 )}
 
-                <DropdownMenuItem
-                  onClick={() => navigate(`${basePath}/${client.id}#changelog`)}
-                >
+                <DropdownMenuItem onClick={() => navigate(`${basePath}/${client.id}#changelog`)}>
                   <History className="mr-2 h-4 w-4" />
                   Historia zmian
                 </DropdownMenuItem>
@@ -350,10 +623,12 @@ export default function ClientsListPage() {
                 )}
 
                 {hasWritePermission && !client.isActive && (
-                  <DropdownMenuItem onClick={(e) => {
-                    e.stopPropagation();
-                    setRestoringClient(client);
-                  }}>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRestoringClient(client);
+                    }}
+                  >
                     <RotateCcw className="mr-2 h-4 w-4" />
                     Przywróć
                   </DropdownMenuItem>
@@ -364,7 +639,7 @@ export default function ClientsListPage() {
         },
       },
     ],
-    [navigate, hasWritePermission, hasDeletePermission, basePath]
+    [navigate, hasWritePermission, hasDeletePermission, basePath, fieldDefinitions]
   );
 
   return (
@@ -382,19 +657,19 @@ export default function ClientsListPage() {
         icon={<Users className="h-6 w-6" />}
         action={
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowStatistics(!showStatistics)}
-            >
+            <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+            <ColumnVisibilityModal
+              columns={columnConfig}
+              visibleColumns={visibleColumns}
+              onToggleColumn={toggleColumn}
+              onResetToDefaults={resetToDefaults}
+              groups={columnGroups}
+            />
+            <Button variant="outline" size="sm" onClick={() => setShowStatistics(!showStatistics)}>
               <BarChart3 className="mr-2 h-4 w-4" />
               {showStatistics ? 'Ukryj statystyki' : 'Statystyki'}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setExportImportOpen(true)}
-            >
+            <Button variant="outline" size="sm" onClick={() => setExportImportOpen(true)}>
               <Download className="mr-2 h-4 w-4" />
               Export / Import
             </Button>
@@ -437,16 +712,34 @@ export default function ClientsListPage() {
 
       <Card className="border-apptax-soft-teal/30">
         <CardContent className="p-0">
-          <DataTable
-            columns={columns}
-            data={clients}
-            isLoading={isPending}
-            onRowClick={(client) => navigate(`${basePath}/${client.id}`)}
-            selectable
-            selectedRows={selectedClients}
-            onSelectionChange={setSelectedClients}
-            getRowId={(row) => row.id}
-          />
+          {viewMode === 'table' ? (
+            <DataTable
+              columns={columns}
+              data={clients}
+              isLoading={isPending}
+              onRowClick={(client) => navigate(`${basePath}/${client.id}`)}
+              selectable
+              selectedRows={selectedClients}
+              onSelectionChange={setSelectedClients}
+              getRowId={(row) => row.id}
+              columnVisibility={visibleColumns}
+            />
+          ) : (
+            <ClientGrid
+              clients={clients}
+              basePath={basePath}
+              isLoading={isPending}
+              selectedClients={selectedClients}
+              onSelectionChange={setSelectedClients}
+              onEditClient={hasWritePermission ? setEditingClient : undefined}
+              onDeleteClient={hasDeletePermission ? setDeletingClient : undefined}
+              onRestoreClient={hasWritePermission ? setRestoringClient : undefined}
+              hasWritePermission={hasWritePermission}
+              hasDeletePermission={hasDeletePermission}
+              fieldDefinitions={fieldDefinitions}
+              visibleColumns={visibleColumns}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -457,7 +750,26 @@ export default function ClientsListPage() {
             onOpenChange={setCreateOpen}
             onSubmit={async (data, customFields) => {
               try {
-                await handleCreateWithDuplicateCheck(data as CreateClientDto, customFields);
+                // Transform form data to CreateClientDto with proper validation
+                const createDto: CreateClientDto = {
+                  name: data.name!,
+                  nip: data.nip || undefined,
+                  email: data.email || undefined,
+                  phone: data.phone || undefined,
+                  companyStartDate: data.companyStartDate ?? undefined,
+                  cooperationStartDate: data.cooperationStartDate ?? undefined,
+                  companySpecificity: data.companySpecificity || undefined,
+                  additionalInfo: data.additionalInfo || undefined,
+                  gtuCode: data.gtuCode || undefined,
+                  pkdCode: data.pkdCode || undefined,
+                  amlGroup: data.amlGroup || undefined,
+                  employmentType: data.employmentType as EmploymentType | undefined,
+                  vatStatus: data.vatStatus as VatStatus | undefined,
+                  taxScheme: data.taxScheme as TaxScheme | undefined,
+                  zusStatus: data.zusStatus as ZusStatus | undefined,
+                  receiveEmailCopy: data.receiveEmailCopy,
+                };
+                await handleCreateWithDuplicateCheck(createDto, customFields);
               } catch {
                 // Error is handled by mutation's onError callback
                 // Dialog stays open so user can retry
@@ -467,6 +779,7 @@ export default function ClientsListPage() {
 
           {editingClient && (
             <ClientFormDialog
+              key={editingClient.id}
               open={!!editingClient}
               onOpenChange={(open) => !open && setEditingClient(null)}
               client={editingClient}

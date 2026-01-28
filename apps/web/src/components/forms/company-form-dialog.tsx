@@ -1,11 +1,9 @@
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -14,6 +12,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -21,11 +20,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { createCompanySchema, updateCompanySchema, CreateCompanyFormData, UpdateCompanyFormData } from '@/lib/validation/schemas';
-import { CompanyDto } from '@/types/dtos';
 import { useAvailableOwners } from '@/lib/hooks/use-users';
+import {
+  createCompanySchema,
+  updateCompanySchema,
+  type CreateCompanyFormData,
+  type UpdateCompanyFormData,
+} from '@/lib/validation/schemas';
+import { type CompanyDto } from '@/types/dtos';
 
 interface CompanyFormDialogProps {
   open: boolean;
@@ -34,7 +36,12 @@ interface CompanyFormDialogProps {
   onSubmit: (data: CreateCompanyFormData | UpdateCompanyFormData) => void;
 }
 
-export function CompanyFormDialog({ open, onOpenChange, company, onSubmit }: CompanyFormDialogProps) {
+export function CompanyFormDialog({
+  open,
+  onOpenChange,
+  company,
+  onSubmit,
+}: CompanyFormDialogProps) {
   const isEditing = !!company;
   const schema = isEditing ? updateCompanySchema : createCompanySchema;
   const { data: availableOwners, isLoading: ownersLoading } = useAvailableOwners();
@@ -87,13 +94,18 @@ export function CompanyFormDialog({ open, onOpenChange, company, onSubmit }: Com
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={ownersLoading ? "Ładowanie właścicieli..." : "Wybierz właściciela"} />
+                          <SelectValue
+                            placeholder={
+                              ownersLoading ? 'Ładowanie właścicieli...' : 'Wybierz właściciela'
+                            }
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {!hasAvailableOwners && !ownersLoading && (
                           <SelectItem value="" disabled>
-                            Brak dostępnych właścicieli. Najpierw utwórz użytkownika typu Właściciel firmy.
+                            Brak dostępnych właścicieli. Najpierw utwórz użytkownika typu Właściciel
+                            firmy.
                           </SelectItem>
                         )}
                         {availableOwners?.map((owner) => (
@@ -104,8 +116,9 @@ export function CompanyFormDialog({ open, onOpenChange, company, onSubmit }: Com
                       </SelectContent>
                     </Select>
                     {!hasAvailableOwners && !ownersLoading && (
-                      <p className="text-sm text-muted-foreground">
-                        Najpierw utwórz użytkownika z rolą &quot;Właściciel firmy&quot;, a następnie utwórz dla niego firmę.
+                      <p className="text-muted-foreground text-sm">
+                        Najpierw utwórz użytkownika z rolą &quot;Właściciel firmy&quot;, a następnie
+                        utwórz dla niego firmę.
                       </p>
                     )}
                     <FormMessage />
@@ -128,4 +141,3 @@ export function CompanyFormDialog({ open, onOpenChange, company, onSubmit }: Com
     </Dialog>
   );
 }
-

@@ -78,14 +78,14 @@ export class ChangeLogService {
 
   constructor(
     @InjectRepository(ChangeLog)
-    private changeLogRepository: Repository<ChangeLog>,
+    private changeLogRepository: Repository<ChangeLog>
   ) {}
 
   async logCreate(
     entityType: string,
     entityId: string,
     data: Record<string, unknown>,
-    user: User,
+    user: User
   ): Promise<ChangeLog> {
     const changes: ChangeDetail[] = Object.entries(data).map(([field, value]) => ({
       field,
@@ -101,7 +101,7 @@ export class ChangeLogService {
     entityId: string,
     oldData: Record<string, unknown>,
     newData: Record<string, unknown>,
-    user: User,
+    user: User
   ): Promise<ChangeLog | null> {
     const changes = this.calculateChanges(oldData, newData);
 
@@ -117,7 +117,7 @@ export class ChangeLogService {
     entityType: string,
     entityId: string,
     data: Record<string, unknown>,
-    user: User,
+    user: User
   ): Promise<ChangeLog> {
     const changes: ChangeDetail[] = Object.entries(data).map(([field, value]) => ({
       field,
@@ -126,6 +126,105 @@ export class ChangeLogService {
     }));
 
     return this.createLog(entityType, entityId, ChangeAction.DELETE, changes, user);
+  }
+
+  /**
+   * Batch log multiple delete operations in a single database call.
+   * Returns array of created change logs.
+   */
+  async logBulkDelete(
+    entityType: string,
+    entries: Array<{ entityId: string; data: Record<string, unknown> }>,
+    user: User
+  ): Promise<ChangeLog[]> {
+    if (entries.length === 0) {
+      return [];
+    }
+
+    const logs = entries.map((entry) => {
+      const changes: ChangeDetail[] = Object.entries(entry.data).map(([field, value]) => {
+        // Apply sensitive field redaction for bulk delete logs
+        if (this.isSensitiveField(field)) {
+          return {
+            field,
+            oldValue: value != null ? REDACTED_VALUE : null,
+            newValue: null,
+          };
+        }
+        return {
+          field,
+          oldValue: this.sanitizeValue(value),
+          newValue: null,
+        };
+      });
+
+      return this.changeLogRepository.create({
+        entityType,
+        entityId: entry.entityId,
+        action: ChangeAction.DELETE,
+        changes,
+        changedById: user.id,
+        companyId: user.companyId,
+      });
+    });
+
+    const saved = await this.changeLogRepository.save(logs);
+
+    this.logger.log(
+      `Bulk change logged: DELETE ${entityType} (${entries.length} entities) by user:${user.id}`
+    );
+
+    return saved;
+  }
+
+  /**
+   * Batch log multiple update operations in a single database call.
+   * Returns array of created change logs (only for entries with actual changes).
+   */
+  async logBulkUpdate(
+    entityType: string,
+    entries: Array<{
+      entityId: string;
+      oldData: Record<string, unknown>;
+      newData: Record<string, unknown>;
+    }>,
+    user: User
+  ): Promise<ChangeLog[]> {
+    if (entries.length === 0) {
+      return [];
+    }
+
+    const logsToCreate: ChangeLog[] = [];
+
+    for (const entry of entries) {
+      const changes = this.calculateChanges(entry.oldData, entry.newData);
+
+      if (changes.length > 0) {
+        logsToCreate.push(
+          this.changeLogRepository.create({
+            entityType,
+            entityId: entry.entityId,
+            action: ChangeAction.UPDATE,
+            changes,
+            changedById: user.id,
+            companyId: user.companyId,
+          })
+        );
+      }
+    }
+
+    if (logsToCreate.length === 0) {
+      this.logger.debug(`No changes detected for bulk update of ${entityType}`);
+      return [];
+    }
+
+    const saved = await this.changeLogRepository.save(logsToCreate);
+
+    this.logger.log(
+      `Bulk change logged: UPDATE ${entityType} (${logsToCreate.length} entities with changes) by user:${user.id}`
+    );
+
+    return saved;
   }
 
   /**
@@ -143,7 +242,7 @@ export class ChangeLogService {
 
   private calculateChanges(
     oldData: Record<string, unknown>,
-    newData: Record<string, unknown>,
+    newData: Record<string, unknown>
   ): ChangeDetail[] {
     const changes: ChangeDetail[] = [];
     const allKeys = new Set([...Object.keys(oldData), ...Object.keys(newData)]);
@@ -210,8 +309,7 @@ export class ChangeLogService {
 
       return keysA.every(
         (key) =>
-          Object.prototype.hasOwnProperty.call(objB, key) &&
-          this.areEqual(objA[key], objB[key]),
+          Object.prototype.hasOwnProperty.call(objB, key) && this.areEqual(objA[key], objB[key])
       );
     }
 
@@ -235,7 +333,7 @@ export class ChangeLogService {
     entityId: string,
     action: ChangeAction,
     changes: ChangeDetail[],
-    user: User,
+    user: User
   ): Promise<ChangeLog> {
     const log = this.changeLogRepository.create({
       entityType,
@@ -249,7 +347,7 @@ export class ChangeLogService {
     const saved = await this.changeLogRepository.save(log);
 
     this.logger.log(
-      `Change logged: ${action} ${entityType}:${entityId} by user:${user.id} (${changes.length} changes)`,
+      `Change logged: ${action} ${entityType}:${entityId} by user:${user.id} (${changes.length} changes)`
     );
 
     return saved;
@@ -258,7 +356,7 @@ export class ChangeLogService {
   async getChangeLogs(
     entityType: string,
     entityId: string,
-    options?: { limit?: number; offset?: number },
+    options?: { limit?: number; offset?: number }
   ): Promise<{ logs: ChangeLog[]; total: number }> {
     const [logs, total] = await this.changeLogRepository.findAndCount({
       where: { entityType, entityId },
@@ -274,7 +372,7 @@ export class ChangeLogService {
   async getCompanyChangeLogs(
     entityType: string,
     companyId: string,
-    options?: { limit?: number; offset?: number },
+    options?: { limit?: number; offset?: number }
   ): Promise<{ logs: ChangeLog[]; total: number }> {
     // Join with changedBy user to filter by company
     const query = this.changeLogRepository
@@ -291,11 +389,7 @@ export class ChangeLogService {
     return { logs, total };
   }
 
-  async getRecentChanges(
-    entityType: string,
-    companyId?: string,
-    limit = 20,
-  ): Promise<ChangeLog[]> {
+  async getRecentChanges(entityType: string, companyId?: string, limit = 20): Promise<ChangeLog[]> {
     const query = this.changeLogRepository
       .createQueryBuilder('log')
       .leftJoinAndSelect('log.changedBy', 'user')

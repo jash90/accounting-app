@@ -27,10 +27,10 @@ export class ClientFieldDefinition {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   name!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   label!: string;
 
   @Column({
@@ -42,19 +42,19 @@ export class ClientFieldDefinition {
   @Column({ type: 'jsonb', nullable: true })
   enumValues?: string[]; // For ENUM type
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   isRequired!: boolean;
 
   @Column({ type: 'jsonb', nullable: true })
   validationRules?: ValidationRule;
 
-  @Column({ default: 0 })
+  @Column({ type: 'integer', default: 0 })
   displayOrder!: number;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
-  @Column()
+  @Column({ type: 'uuid' })
   companyId!: string;
 
   @ManyToOne(() => Company, {
@@ -63,7 +63,7 @@ export class ClientFieldDefinition {
   @JoinColumn({ name: 'companyId' })
   company!: Company;
 
-  @Column()
+  @Column({ type: 'uuid' })
   createdById!: string;
 
   @ManyToOne(() => User)

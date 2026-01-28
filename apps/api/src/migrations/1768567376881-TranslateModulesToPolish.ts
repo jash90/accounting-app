@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
 export class TranslateModulesToPolish1768567376881 implements MigrationInterface {
   name = 'TranslateModulesToPolish1768567376881';

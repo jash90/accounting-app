@@ -1,6 +1,8 @@
 import * as React from 'react';
+
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
+
 import { cn } from '@/lib/utils/cn';
 
 const buttonVariants = cva(
@@ -8,10 +10,14 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-apptax-blue text-white hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md',
-        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-apptax-sm hover:shadow-apptax-md',
-        outline: 'border-2 border-apptax-blue bg-white text-apptax-blue hover:bg-apptax-soft-teal shadow-apptax-sm hover:shadow-apptax-md',
-        secondary: 'bg-apptax-navy text-white hover:bg-apptax-navy/90 shadow-apptax-sm hover:shadow-apptax-md',
+        default:
+          'bg-apptax-blue text-white hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md',
+        destructive:
+          'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-apptax-sm hover:shadow-apptax-md',
+        outline:
+          'border-2 border-apptax-blue bg-white text-apptax-blue hover:bg-apptax-soft-teal shadow-apptax-sm hover:shadow-apptax-md',
+        secondary:
+          'bg-apptax-navy text-white hover:bg-apptax-navy/90 shadow-apptax-sm hover:shadow-apptax-md',
         ghost: 'text-apptax-navy hover:bg-apptax-soft-teal transition-all',
         link: 'text-apptax-blue underline-offset-4 hover:underline',
         teal: 'bg-apptax-teal text-white hover:bg-apptax-teal/90 shadow-apptax-sm hover:shadow-apptax-md ai-glow',
@@ -31,8 +37,7 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
 }
 

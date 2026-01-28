@@ -1,27 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+
 import { XMLParser } from 'fast-xml-parser';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const Imap = require('imap');
-import {
-  AutodiscoveryResult,
-  DiscoveredConfig,
-} from '../interfaces/autodiscovery.interface';
 import { DiscoveryCacheService } from './discovery-cache.service';
-import { ProviderLookupService } from './provider-lookup.service';
 import { DnsDiscoveryService } from './dns-discovery.service';
+import { EmailVerificationService, VerificationResult } from './email-verification.service';
+import { ProviderLookupService } from './provider-lookup.service';
+import { AutodiscoveryResult, DiscoveredConfig } from '../interfaces/autodiscovery.interface';
+import { parseAutoconfigXml } from '../utils/autoconfig-xml.parser';
+import { parseAutodiscoverXml } from '../utils/autodiscover-xml.parser';
+import { fetchWithTimeout } from '../utils/fetch-with-timeout';
 
-// TLS validation - configurable via env, defaults to true in production
-const REJECT_UNAUTHORIZED = process.env['EMAIL_REJECT_UNAUTHORIZED'] !== 'false';
-
-/**
- * Connection verification result
- */
-export interface VerificationResult {
-  smtp: { success: boolean; error?: string };
-  imap: { success: boolean; error?: string };
-}
+// Re-export for backwards compatibility
+export type { VerificationResult } from './email-verification.service';
 
 /**
  * Email Autodiscovery Service
@@ -35,17 +26,53 @@ export interface VerificationResult {
  * 6. MX record heuristics (fallback)
  *
  * Results are cached to improve performance on repeated lookups.
+ *
+ * Security: Includes SSRF protection with domain validation and private IP blocking.
  */
 @Injectable()
 export class EmailAutodiscoveryService {
   private readonly logger = new Logger(EmailAutodiscoveryService.name);
-  private readonly VERIFICATION_TIMEOUT = 10000; // 10 seconds for connection tests
   private readonly xmlParser: XMLParser;
+
+  // Domain validation using simple character-based approach (avoids regex backtracking)
+  // Valid domain: alphanumeric labels separated by dots, labels can contain hyphens but not at start/end
+  private isValidDomainFormat(domain: string): boolean {
+    if (domain.length > 253 || domain.length === 0) return false;
+    const labels = domain.split('.');
+    if (labels.length < 2) return false;
+    for (const label of labels) {
+      if (label.length === 0 || label.length > 63) return false;
+      if (label.startsWith('-') || label.endsWith('-')) return false;
+      for (const char of label) {
+        const code = char.toLowerCase().charCodeAt(0);
+        const isAlphanumeric = (code >= 97 && code <= 122) || (code >= 48 && code <= 57);
+        if (!isAlphanumeric && char !== '-') return false;
+      }
+    }
+    return true;
+  }
+
+  // Blocked hostname patterns to prevent SSRF (RFC1918 and special ranges)
+  private readonly blockedPatterns = [
+    /^localhost$/i,
+    /^127\./,
+    /^10\./,
+    /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
+    /^192\.168\./,
+    /^169\.254\./, // Link-local
+    /^0\./, // Current network
+    /^100\.(6[4-9]|[7-9][0-9]|1[0-2][0-9])\./, // Carrier-grade NAT
+    /^198\.1[89]\./, // Benchmark testing
+    /^::1$/, // IPv6 localhost
+    /^fc00:/i, // IPv6 unique local
+    /^fe80:/i, // IPv6 link-local
+  ];
 
   constructor(
     private readonly cacheService: DiscoveryCacheService,
     private readonly providerLookup: ProviderLookupService,
     private readonly dnsDiscovery: DnsDiscoveryService,
+    private readonly verificationService: EmailVerificationService
   ) {
     // Initialize XML parser with options to handle attributes and preserve structure
     this.xmlParser = new XMLParser({
@@ -70,6 +97,16 @@ export class EmailAutodiscoveryService {
         source: 'known-provider',
         confidence: 'low',
         error: 'Invalid email address format',
+      };
+    }
+
+    // Validate domain format to prevent SSRF
+    if (!this.isValidDomain(domain)) {
+      return {
+        success: false,
+        source: 'known-provider',
+        confidence: 'low',
+        error: 'Invalid or blocked domain format',
       };
     }
 
@@ -168,6 +205,33 @@ export class EmailAutodiscoveryService {
   }
 
   /**
+   * Validate domain format to prevent SSRF attacks
+   * Rejects malformed domains, IP addresses, and special hostnames
+   */
+  private isValidDomain(domain: string): boolean {
+    // Check basic format using safe character-based validation
+    if (!this.isValidDomainFormat(domain)) {
+      this.logger.warn('Invalid domain format', { domain });
+      return false;
+    }
+
+    // Check for blocked hostnames/IPs
+    if (this.isBlockedHostname(domain)) {
+      this.logger.warn('Blocked hostname detected', { domain });
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Check if hostname is in blocked list (private IPs, localhost, etc.)
+   */
+  private isBlockedHostname(hostname: string): boolean {
+    return this.blockedPatterns.some((pattern) => pattern.test(hostname));
+  }
+
+  /**
    * Escapes special XML characters to prevent XML injection
    */
   private escapeXml(str: string): string {
@@ -183,20 +247,20 @@ export class EmailAutodiscoveryService {
    * Try Mozilla Autoconfig XML discovery
    */
   private async tryAutoconfig(domain: string): Promise<AutodiscoveryResult> {
+    // Only use HTTPS for security - HTTP autoconfig is a SSRF risk
     const urls = [
       `https://autoconfig.${domain}/mail/config-v1.1.xml`,
       `https://${domain}/.well-known/autoconfig/mail/config-v1.1.xml`,
-      `http://autoconfig.${domain}/mail/config-v1.1.xml`,
     ];
 
     for (const url of urls) {
       try {
         this.logger.debug('Trying Autoconfig URL', { url });
-        const response = await this.fetchWithTimeout(url, 5000);
+        const response = await fetchWithTimeout(url, 5000);
 
         if (response.ok) {
           const xmlText = await response.text();
-          const config = this.parseAutoconfigXml(xmlText);
+          const config = parseAutoconfigXml(xmlText, this.xmlParser);
 
           if (config) {
             return {
@@ -240,7 +304,7 @@ export class EmailAutodiscoveryService {
     for (const url of urls) {
       try {
         this.logger.debug('Trying Autodiscover URL', { url });
-        const response = await this.fetchWithTimeout(url, 5000, {
+        const response = await fetchWithTimeout(url, 5000, {
           method: 'POST',
           headers: { 'Content-Type': 'text/xml' },
           body,
@@ -248,7 +312,7 @@ export class EmailAutodiscoveryService {
 
         if (response.ok) {
           const xmlText = await response.text();
-          const config = this.parseAutodiscoverXml(xmlText);
+          const config = parseAutodiscoverXml(xmlText, this.xmlParser);
 
           if (config) {
             return {
@@ -280,11 +344,11 @@ export class EmailAutodiscoveryService {
 
     try {
       this.logger.debug('Trying ISPDB URL', { url });
-      const response = await this.fetchWithTimeout(url, 5000);
+      const response = await fetchWithTimeout(url, 5000);
 
       if (response.ok) {
         const xmlText = await response.text();
-        const config = this.parseAutoconfigXml(xmlText);
+        const config = parseAutoconfigXml(xmlText, this.xmlParser);
 
         if (config) {
           return {
@@ -308,193 +372,10 @@ export class EmailAutodiscoveryService {
   }
 
   /**
-   * Parse Mozilla Autoconfig XML response using fast-xml-parser
-   */
-  private parseAutoconfigXml(xml: string): DiscoveredConfig | null {
-    try {
-      const parsed = this.xmlParser.parse(xml);
-      const config = parsed?.clientConfig || parsed?.ClientConfig;
-
-      if (!config) {
-        return null;
-      }
-
-      // Handle emailProvider which may be nested
-      const provider = config.emailProvider || config.EmailProvider || config;
-
-      // Find SMTP (outgoingServer) and IMAP (incomingServer) configurations
-      let smtpConfig: Record<string, unknown> | null = null;
-      let imapConfig: Record<string, unknown> | null = null;
-
-      // Handle outgoingServer (SMTP)
-      const outgoing = provider.outgoingServer || provider.OutgoingServer;
-      if (outgoing) {
-        const servers = Array.isArray(outgoing) ? outgoing : [outgoing];
-        smtpConfig = servers.find((s: Record<string, unknown>) =>
-          s['@_type']?.toString().toLowerCase() === 'smtp' || !s['@_type']
-        ) || servers[0];
-      }
-
-      // Handle incomingServer (IMAP preferred over POP3)
-      const incoming = provider.incomingServer || provider.IncomingServer;
-      if (incoming) {
-        const servers = Array.isArray(incoming) ? incoming : [incoming];
-        imapConfig = servers.find((s: Record<string, unknown>) =>
-          s['@_type']?.toString().toLowerCase() === 'imap'
-        ) || servers[0];
-      }
-
-      if (!smtpConfig || !imapConfig) {
-        return null;
-      }
-
-      // Extract values (handle both direct values and #text for text nodes)
-      const getValue = (obj: Record<string, unknown> | undefined, key: string): string | null => {
-        if (!obj) return null;
-        const val = obj[key];
-        if (typeof val === 'string') return val;
-        if (typeof val === 'number') return String(val);
-        if (val && typeof val === 'object' && '#text' in val) {
-          return String((val as Record<string, unknown>)['#text']);
-        }
-        return null;
-      };
-
-      const smtpHost = getValue(smtpConfig, 'hostname') || getValue(smtpConfig, 'Hostname');
-      const smtpPort = getValue(smtpConfig, 'port') || getValue(smtpConfig, 'Port');
-      const smtpSocket = getValue(smtpConfig, 'socketType') || getValue(smtpConfig, 'SocketType');
-
-      const imapHost = getValue(imapConfig, 'hostname') || getValue(imapConfig, 'Hostname');
-      const imapPort = getValue(imapConfig, 'port') || getValue(imapConfig, 'Port');
-      const imapSocket = getValue(imapConfig, 'socketType') || getValue(imapConfig, 'SocketType');
-
-      if (!smtpHost || !smtpPort || !imapHost || !imapPort) {
-        return null;
-      }
-
-      const displayName = getValue(provider, 'displayName') || getValue(provider, 'DisplayName');
-
-      return {
-        smtp: {
-          host: smtpHost,
-          port: parseInt(smtpPort, 10),
-          secure: smtpSocket?.toUpperCase() === 'SSL',
-          authMethod: 'plain',
-        },
-        imap: {
-          host: imapHost,
-          port: parseInt(imapPort, 10),
-          tls: imapSocket?.toUpperCase() === 'SSL' || imapSocket?.toUpperCase() === 'STARTTLS',
-        },
-        displayName: displayName || undefined,
-      };
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.logger.debug('Failed to parse Autoconfig XML', { error: message });
-      return null;
-    }
-  }
-
-  /**
-   * Parse Microsoft Autodiscover XML response using fast-xml-parser
-   */
-  private parseAutodiscoverXml(xml: string): DiscoveredConfig | null {
-    try {
-      const parsed = this.xmlParser.parse(xml);
-
-      // Navigate to the Account/Protocol section (handle various response formats)
-      const autodiscover = parsed?.Autodiscover || parsed?.autodiscover;
-      const response = autodiscover?.Response || autodiscover?.response;
-      const account = response?.Account || response?.account;
-      const protocols = account?.Protocol || account?.protocol;
-
-      if (!protocols) {
-        return null;
-      }
-
-      // Ensure protocols is an array
-      const protocolList = Array.isArray(protocols) ? protocols : [protocols];
-
-      // Find SMTP and IMAP protocol blocks
-      const smtpProtocol = protocolList.find((p: Record<string, unknown>) =>
-        (p.Type || p.type)?.toString().toUpperCase() === 'SMTP'
-      );
-      const imapProtocol = protocolList.find((p: Record<string, unknown>) =>
-        (p.Type || p.type)?.toString().toUpperCase() === 'IMAP'
-      );
-
-      if (!smtpProtocol || !imapProtocol) {
-        return null;
-      }
-
-      // Extract values helper
-      const getValue = (obj: Record<string, unknown>, key: string): string | null => {
-        const val = obj[key] || obj[key.toLowerCase()] || obj[key.toUpperCase()];
-        if (typeof val === 'string') return val;
-        if (typeof val === 'number') return String(val);
-        if (val && typeof val === 'object' && '#text' in val) {
-          return String((val as Record<string, unknown>)['#text']);
-        }
-        return null;
-      };
-
-      const smtpServer = getValue(smtpProtocol, 'Server');
-      const smtpPort = getValue(smtpProtocol, 'Port');
-      const smtpSSL = getValue(smtpProtocol, 'SSL');
-
-      const imapServer = getValue(imapProtocol, 'Server');
-      const imapPort = getValue(imapProtocol, 'Port');
-      const imapSSL = getValue(imapProtocol, 'SSL');
-
-      if (!smtpServer || !smtpPort || !imapServer || !imapPort) {
-        return null;
-      }
-
-      return {
-        smtp: {
-          host: smtpServer,
-          port: parseInt(smtpPort, 10),
-          secure: smtpSSL?.toLowerCase() === 'on',
-          authMethod: 'plain',
-        },
-        imap: {
-          host: imapServer,
-          port: parseInt(imapPort, 10),
-          tls: imapSSL?.toLowerCase() === 'on',
-        },
-      };
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.logger.debug('Failed to parse Autodiscover XML', { error: message });
-      return null;
-    }
-  }
-
-  /**
-   * Fetch with timeout helper
-   */
-  private async fetchWithTimeout(
-    url: string,
-    timeout: number,
-    options: RequestInit = {},
-  ): Promise<Response> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-    try {
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal,
-      });
-      return response;
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  }
-
-  /**
    * Verify email configuration with actual credentials
    * Tests both SMTP and IMAP connections with full authentication
+   *
+   * Delegates to EmailVerificationService for the actual verification logic.
    *
    * @param config - The discovered email configuration
    * @param credentials - Email and password for authentication
@@ -507,169 +388,6 @@ export class EmailAutodiscoveryService {
     const domain = credentials.email.split('@')[1] || 'unknown';
     this.logger.debug('Verifying config', { domain });
 
-    const [smtpResult, imapResult] = await Promise.allSettled([
-      this.verifySmtp(config, credentials),
-      this.verifyImap(config, credentials),
-    ]);
-
-    return {
-      smtp:
-        smtpResult.status === 'fulfilled'
-          ? smtpResult.value
-          : { success: false, error: smtpResult.reason?.message || 'SMTP verification failed' },
-      imap:
-        imapResult.status === 'fulfilled'
-          ? imapResult.value
-          : { success: false, error: imapResult.reason?.message || 'IMAP verification failed' },
-    };
-  }
-
-  /**
-   * Verify SMTP connection with authentication
-   */
-  private async verifySmtp(
-    config: DiscoveredConfig,
-    credentials: { email: string; password: string }
-  ): Promise<{ success: boolean; error?: string }> {
-    return new Promise((resolve) => {
-      let transport: nodemailer.Transporter | null = null;
-      let resolved = false;
-
-      const timeoutId = setTimeout(() => {
-        if (!resolved) {
-          resolved = true;
-          if (transport) {
-            transport.close();
-          }
-          resolve({ success: false, error: 'SMTP connection timeout' });
-        }
-      }, this.VERIFICATION_TIMEOUT);
-
-      try {
-        transport = nodemailer.createTransport({
-          host: config.smtp.host,
-          port: config.smtp.port,
-          secure: config.smtp.secure,
-          auth: {
-            user: credentials.email,
-            pass: credentials.password,
-          },
-          tls: { rejectUnauthorized: REJECT_UNAUTHORIZED },
-          connectionTimeout: this.VERIFICATION_TIMEOUT,
-          greetingTimeout: 5000,
-        });
-
-        transport.verify((error) => {
-          if (resolved) {
-            transport?.close();
-            return;
-          }
-          resolved = true;
-          clearTimeout(timeoutId);
-          transport?.close();
-
-          if (error) {
-            const errorMessage = this.formatVerificationError(error);
-            this.logger.debug('SMTP verification failed', { error: errorMessage });
-            resolve({ success: false, error: errorMessage });
-          } else {
-            this.logger.debug('SMTP verification successful');
-            resolve({ success: true });
-          }
-        });
-      } catch (error: unknown) {
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timeoutId);
-          const message = error instanceof Error ? error.message : String(error);
-          resolve({ success: false, error: message });
-        }
-      }
-    });
-  }
-
-  /**
-   * Verify IMAP connection with authentication
-   */
-  private async verifyImap(
-    config: DiscoveredConfig,
-    credentials: { email: string; password: string }
-  ): Promise<{ success: boolean; error?: string }> {
-    return new Promise((resolve) => {
-      let resolved = false;
-      let imap: InstanceType<typeof Imap> | null = null;
-
-      const safeResolve = (result: { success: boolean; error?: string }) => {
-        if (resolved) return;
-        resolved = true;
-        clearTimeout(timeoutId);
-        if (imap) {
-          try {
-            imap.end();
-          } catch {
-            // Ignore cleanup errors
-          }
-        }
-        resolve(result);
-      };
-
-      const timeoutId = setTimeout(() => {
-        safeResolve({ success: false, error: 'IMAP connection timeout' });
-      }, this.VERIFICATION_TIMEOUT);
-
-      try {
-        imap = new Imap({
-          user: credentials.email,
-          password: credentials.password,
-          host: config.imap.host,
-          port: config.imap.port,
-          tls: config.imap.tls,
-          tlsOptions: { rejectUnauthorized: REJECT_UNAUTHORIZED },
-          connTimeout: this.VERIFICATION_TIMEOUT,
-          authTimeout: 5000,
-        });
-
-        imap.once('ready', () => {
-          this.logger.debug('IMAP verification successful');
-          safeResolve({ success: true });
-        });
-
-        imap.once('error', (error: Error) => {
-          const errorMessage = this.formatVerificationError(error);
-          this.logger.debug('IMAP verification failed', { error: errorMessage });
-          safeResolve({ success: false, error: errorMessage });
-        });
-
-        imap.connect();
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        safeResolve({ success: false, error: message });
-      }
-    });
-  }
-
-  /**
-   * Format verification error for user-friendly display
-   */
-  private formatVerificationError(error: Error): string {
-    const message = error.message.toLowerCase();
-
-    if (message.includes('auth') || message.includes('535') || message.includes('authentication')) {
-      return 'Authentication failed - please check your email and password';
-    }
-    if (message.includes('timeout') || message.includes('timed out')) {
-      return 'Connection timed out - server may be unreachable';
-    }
-    if (message.includes('enotfound') || message.includes('getaddrinfo')) {
-      return 'Server not found - please check the server address';
-    }
-    if (message.includes('econnrefused')) {
-      return 'Connection refused - server may be down or port may be blocked';
-    }
-    if (message.includes('certificate') || message.includes('ssl') || message.includes('tls')) {
-      return 'SSL/TLS error - security certificate issue';
-    }
-
-    return error.message;
+    return this.verificationService.verifyConfig(config, credentials);
   }
 }

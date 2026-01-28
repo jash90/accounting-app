@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
 import { beforeAll, afterEach, afterAll } from 'vitest';
+
 import { server } from './lib/api/mocks/server';
 
 // Start server before all tests
@@ -10,4 +11,3 @@ afterEach(() => server.resetHandlers());
 
 // Clean up after all tests
 afterAll(() => server.close());
-

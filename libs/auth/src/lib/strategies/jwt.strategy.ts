@@ -18,7 +18,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private configService: ConfigService,
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private userRepository: Repository<User>
   ) {
     const jwtSecret = configService.get<string>('JWT_SECRET') || 'secret';
 
@@ -45,4 +45,3 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return user;
   }
 }
-

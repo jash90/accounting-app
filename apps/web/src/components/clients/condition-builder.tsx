@@ -1,28 +1,14 @@
-import { useCallback } from 'react';
-import { cn } from '@/lib/utils/cn';
-import {
-  AutoAssignCondition,
-  SingleCondition,
-  ConditionGroup,
-  ConditionOperator,
-  LogicalOperator,
-  isConditionGroup,
-} from '@/types/enums';
-import {
-  CONDITION_FIELDS,
-  OPERATORS_BY_TYPE,
-  ConditionOperatorLabels,
-  LogicalOperatorLabels,
-  EmploymentTypeLabels,
-  VatStatusLabels,
-  TaxSchemeLabels,
-  ZusStatusLabels,
-  AmlGroupLabels,
-  GTU_CODES,
-} from '@/lib/constants/polish-labels';
+import { memo, useCallback, useLayoutEffect, useRef } from 'react';
+
+import { Check, ChevronDown, FolderPlus, Plus, Trash2 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -31,14 +17,27 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Card, CardContent } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Plus, Trash2, FolderPlus, ChevronDown, Check } from 'lucide-react';
+  AmlGroupLabels,
+  CONDITION_FIELDS,
+  ConditionOperatorLabels,
+  EmploymentTypeLabels,
+  GTU_CODES,
+  LogicalOperatorLabels,
+  OPERATORS_BY_TYPE,
+  TaxSchemeLabels,
+  VatStatusLabels,
+  ZusStatusLabels,
+} from '@/lib/constants/polish-labels';
+import { cn } from '@/lib/utils/cn';
+import {
+  isConditionGroup,
+  type AutoAssignCondition,
+  type ConditionGroup,
+  type ConditionOperator,
+  type LogicalOperator,
+  type SingleCondition,
+} from '@/types/enums';
 
 // Generate unique ID for condition tracking (stable React keys)
 // Uses crypto.randomUUID() for SSR-safe, collision-resistant IDs
@@ -57,7 +56,7 @@ interface ConditionBuilderProps {
   className?: string;
 }
 
-export function ConditionBuilder({
+export const ConditionBuilder = memo(function ConditionBuilder({
   value,
   onChange,
   className,
@@ -127,32 +126,17 @@ export function ConditionBuilder({
       <div className="flex items-center justify-between">
         <Label className="text-base font-medium">Warunki automatycznego przypisania</Label>
         <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleAddCondition}
-          >
-            <Plus className="w-4 h-4 mr-1" />
+          <Button type="button" variant="outline" size="sm" onClick={handleAddCondition}>
+            <Plus className="mr-1 h-4 w-4" />
             Warunek
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleAddGroup}
-          >
-            <FolderPlus className="w-4 h-4 mr-1" />
+          <Button type="button" variant="outline" size="sm" onClick={handleAddGroup}>
+            <FolderPlus className="mr-1 h-4 w-4" />
             Grupa
           </Button>
           {value && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleClear}
-            >
-              <Trash2 className="w-4 h-4 mr-1" />
+            <Button type="button" variant="ghost" size="sm" onClick={handleClear}>
+              <Trash2 className="mr-1 h-4 w-4" />
               Wyczyść
             </Button>
           )}
@@ -160,23 +144,18 @@ export function ConditionBuilder({
       </div>
 
       {value ? (
-        <ConditionRenderer
-          condition={value}
-          onChange={onChange}
-          onRemove={handleClear}
-          isRoot
-        />
+        <ConditionRenderer condition={value} onChange={onChange} onRemove={handleClear} isRoot />
       ) : (
-        <div className="text-center py-8 border-2 border-dashed rounded-lg text-muted-foreground">
+        <div className="text-muted-foreground rounded-lg border-2 border-dashed py-8 text-center">
           <p>Brak warunków. Ikona będzie przypisywana tylko ręcznie.</p>
-          <p className="text-sm mt-1">
+          <p className="mt-1 text-sm">
             Kliknij &quot;Warunek&quot; lub &quot;Grupa&quot;, aby dodać automatyczne przypisywanie.
           </p>
         </div>
       )}
     </div>
   );
-}
+});
 
 interface ConditionRendererProps {
   condition: AutoAssignCondition;
@@ -202,13 +181,7 @@ function ConditionRenderer({
     );
   }
 
-  return (
-    <SingleConditionRenderer
-      condition={condition}
-      onChange={onChange}
-      onRemove={onRemove}
-    />
-  );
+  return <SingleConditionRenderer condition={condition} onChange={onChange} onRemove={onRemove} />;
 }
 
 interface GroupConditionRendererProps {
@@ -218,37 +191,45 @@ interface GroupConditionRendererProps {
   isRoot?: boolean;
 }
 
-function GroupConditionRenderer({
+const GroupConditionRenderer = memo(function GroupConditionRenderer({
   group,
   onChange,
   onRemove,
   isRoot = false,
 }: GroupConditionRendererProps) {
+  // Store current group in ref for stable callback access
+  // This prevents callback recreation when group object changes
+  const groupRef = useRef(group);
+  useLayoutEffect(() => {
+    groupRef.current = group;
+  });
+
   const handleLogicalOperatorChange = useCallback(
     (operator: LogicalOperator) => {
       onChange({
-        ...group,
+        ...groupRef.current,
         logicalOperator: operator,
       });
     },
-    [group, onChange]
+    [onChange]
   );
 
   const handleConditionChange = useCallback(
     (index: number, newCondition: AutoAssignCondition) => {
-      const newConditions = [...group.conditions];
+      const newConditions = [...groupRef.current.conditions];
       newConditions[index] = newCondition;
       onChange({
-        ...group,
+        ...groupRef.current,
         conditions: newConditions,
       });
     },
-    [group, onChange]
+    [onChange]
   );
 
   const handleConditionRemove = useCallback(
     (index: number) => {
-      const newConditions = group.conditions.filter((_, i) => i !== index);
+      const current = groupRef.current;
+      const newConditions = current.conditions.filter((_, i) => i !== index);
       if (newConditions.length === 0) {
         onRemove();
       } else if (newConditions.length === 1 && isRoot) {
@@ -256,12 +237,12 @@ function GroupConditionRenderer({
         onChange(newConditions[0]);
       } else {
         onChange({
-          ...group,
+          ...current,
           conditions: newConditions,
         });
       }
     },
-    [group, onChange, onRemove, isRoot]
+    [onChange, onRemove, isRoot]
   );
 
   const handleAddCondition = useCallback(() => {
@@ -272,15 +253,16 @@ function GroupConditionRenderer({
       value: '',
     };
     onChange({
-      ...group,
-      conditions: [...group.conditions, newCondition],
+      ...groupRef.current,
+      conditions: [...groupRef.current.conditions, newCondition],
     });
-  }, [group, onChange]);
+  }, [onChange]);
 
   const handleAddNestedGroup = useCallback(() => {
+    const current = groupRef.current;
     const newGroup: ConditionGroup = {
       id: generateConditionId(),
-      logicalOperator: group.logicalOperator === 'and' ? 'or' : 'and',
+      logicalOperator: current.logicalOperator === 'and' ? 'or' : 'and',
       conditions: [
         {
           id: generateConditionId(),
@@ -291,14 +273,14 @@ function GroupConditionRenderer({
       ],
     };
     onChange({
-      ...group,
-      conditions: [...group.conditions, newGroup],
+      ...current,
+      conditions: [...current.conditions, newGroup],
     });
-  }, [group, onChange]);
+  }, [onChange]);
 
   return (
     <Card className={cn(isRoot ? 'border-primary' : 'border-muted')}>
-      <CardContent className="pt-4 space-y-3">
+      <CardContent className="space-y-3 pt-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Spełnij</span>
@@ -319,18 +301,13 @@ function GroupConditionRenderer({
             </span>
           </div>
           {!isRoot && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={onRemove}
-            >
-              <Trash2 className="w-4 h-4" />
+            <Button type="button" variant="ghost" size="icon" onClick={onRemove}>
+              <Trash2 className="h-4 w-4" />
             </Button>
           )}
         </div>
 
-        <div className="space-y-2 pl-4 border-l-2 border-muted">
+        <div className="border-muted space-y-2 border-l-2 pl-4">
           {group.conditions.map((cond, index) => (
             <ConditionRenderer
               key={cond.id || `fallback-${index}`}
@@ -342,29 +319,19 @@ function GroupConditionRenderer({
         </div>
 
         <div className="flex gap-2 pl-4">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleAddCondition}
-          >
-            <Plus className="w-4 h-4 mr-1" />
+          <Button type="button" variant="ghost" size="sm" onClick={handleAddCondition}>
+            <Plus className="mr-1 h-4 w-4" />
             Warunek
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleAddNestedGroup}
-          >
-            <FolderPlus className="w-4 h-4 mr-1" />
+          <Button type="button" variant="ghost" size="sm" onClick={handleAddNestedGroup}>
+            <FolderPlus className="mr-1 h-4 w-4" />
             Grupa zagnieżdżona
           </Button>
         </div>
       </CardContent>
     </Card>
   );
-}
+});
 
 interface SingleConditionRendererProps {
   condition: SingleCondition;
@@ -372,73 +339,82 @@ interface SingleConditionRendererProps {
   onRemove: () => void;
 }
 
-function SingleConditionRenderer({
+const SingleConditionRenderer = memo(function SingleConditionRenderer({
   condition,
   onChange,
   onRemove,
 }: SingleConditionRendererProps) {
+  // Store current condition in ref for stable callback access
+  // This prevents callback recreation when condition object changes
+  const conditionRef = useRef(condition);
+  useLayoutEffect(() => {
+    conditionRef.current = condition;
+  });
+
   const fieldConfig = CONDITION_FIELDS.find((f) => f.field === condition.field);
   const fieldType = fieldConfig?.type || 'string';
   const availableOperators = OPERATORS_BY_TYPE[fieldType] || OPERATORS_BY_TYPE.string;
 
   const handleFieldChange = useCallback(
     (field: string) => {
+      const current = conditionRef.current;
       const newFieldConfig = CONDITION_FIELDS.find((f) => f.field === field);
       const newType = newFieldConfig?.type || 'string';
       const newOperators = OPERATORS_BY_TYPE[newType] || OPERATORS_BY_TYPE.string;
 
       // Reset operator and value if field type changes
-      const newOperator = newOperators.includes(condition.operator)
-        ? condition.operator
+      const newOperator = newOperators.includes(current.operator)
+        ? current.operator
         : newOperators[0];
 
       onChange({
-        id: condition.id, // Preserve condition ID for stable React keys
+        id: current.id, // Preserve condition ID for stable React keys
         field,
         operator: newOperator,
         value: newType === 'boolean' ? false : '',
       });
     },
-    [condition.id, condition.operator, onChange]
+    [onChange]
   );
 
   const handleOperatorChange = useCallback(
     (operator: ConditionOperator) => {
+      const current = conditionRef.current;
       onChange({
-        ...condition,
+        ...current,
         operator,
         // Clear secondary value if not between
-        secondValue: operator === 'between' ? condition.secondValue : undefined,
+        secondValue: operator === 'between' ? current.secondValue : undefined,
       });
     },
-    [condition, onChange]
+    [onChange]
   );
 
   const handleValueChange = useCallback(
     (value: string | number | boolean | string[]) => {
       onChange({
-        ...condition,
+        ...conditionRef.current,
         value,
       });
     },
-    [condition, onChange]
+    [onChange]
   );
 
   const handleSecondValueChange = useCallback(
     (secondValue: string | number) => {
       onChange({
-        ...condition,
+        ...conditionRef.current,
         secondValue,
       });
     },
-    [condition, onChange]
+    [onChange]
   );
 
   const needsValue = !['isEmpty', 'isNotEmpty'].includes(condition.operator);
   const needsSecondValue = condition.operator === 'between';
 
   return (
-    <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+    <div className="bg-muted/50 flex items-center gap-2 rounded-lg p-2">
       {/* Field Select */}
       <Select value={condition.field} onValueChange={handleFieldChange}>
         <SelectTrigger className="w-44">
@@ -484,33 +460,42 @@ function SingleConditionRenderer({
       {/* Second Value for 'between' */}
       {needsSecondValue && (
         <>
-          <span className="text-sm text-muted-foreground">i</span>
-          <Input
-            type={fieldType === 'number' ? 'number' : fieldType === 'date' ? 'date' : 'text'}
-            value={condition.secondValue?.toString() || ''}
-            onChange={(e) => handleSecondValueChange(fieldType === 'number' ? Number(e.target.value) : e.target.value)}
-            className="w-32"
-          />
+          <span className="text-muted-foreground text-sm">i</span>
+          {fieldType === 'date' ? (
+            <DatePicker
+              value={condition.secondValue?.toString() || undefined}
+              onChange={(value) => handleSecondValueChange(value || '')}
+              placeholder="Data końcowa"
+              className="w-40"
+            />
+          ) : (
+            <Input
+              type="text"
+              value={condition.secondValue?.toString() || ''}
+              onChange={(e) => handleSecondValueChange(e.target.value)}
+              className="w-32"
+            />
+          )}
         </>
       )}
 
       {/* Remove Button */}
       <Button type="button" variant="ghost" size="icon" onClick={onRemove}>
-        <Trash2 className="w-4 h-4" />
+        <Trash2 className="h-4 w-4" />
       </Button>
     </div>
   );
-}
+});
 
 interface ValueInputProps {
   fieldType: string;
-  fieldConfig?: typeof CONDITION_FIELDS[number];
+  fieldConfig?: (typeof CONDITION_FIELDS)[number];
   operator: ConditionOperator;
   value?: string | number | boolean | string[];
   onChange: (value: string | number | boolean | string[]) => void;
 }
 
-function ValueInput({
+const ValueInput = memo(function ValueInput({
   fieldType,
   fieldConfig,
   operator,
@@ -532,17 +517,13 @@ function ValueInput({
     return (
       <Popover>
         <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            className="w-48 justify-between font-normal"
-          >
+          <Button variant="outline" role="combobox" className="w-48 justify-between font-normal">
             <span className="truncate">
               {selectedValues.length === 0
                 ? 'Wybierz wartości...'
                 : selectedValues.length === 1
-                ? options.find((o) => o.value === selectedValues[0])?.label
-                : `Wybrano ${selectedValues.length}`}
+                  ? options.find((o) => o.value === selectedValues[0])?.label
+                  : `Wybrano ${selectedValues.length}`}
             </span>
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
@@ -562,7 +543,7 @@ function ValueInput({
                   role="option"
                   aria-selected={isSelected}
                   tabIndex={0}
-                  className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent focus:bg-accent focus:outline-none"
+                  className="hover:bg-accent focus:bg-accent flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm focus:outline-none"
                   onClick={() => handleToggle(opt.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -592,10 +573,7 @@ function ValueInput({
   if (fieldType === 'boolean') {
     return (
       <div className="flex items-center gap-2">
-        <Switch
-          checked={value === true}
-          onCheckedChange={(checked) => onChange(checked)}
-        />
+        <Switch checked={value === true} onCheckedChange={(checked) => onChange(checked)} />
         <span className="text-sm">{value ? 'Tak' : 'Nie'}</span>
       </div>
     );
@@ -604,10 +582,7 @@ function ValueInput({
   // Enum select
   if (fieldType === 'enum' && fieldConfig) {
     return (
-      <Select
-        value={value?.toString() || ''}
-        onValueChange={onChange}
-      >
+      <Select value={value?.toString() || ''} onValueChange={onChange}>
         <SelectTrigger className="w-48">
           <SelectValue placeholder="Wybierz..." />
         </SelectTrigger>
@@ -625,10 +600,7 @@ function ValueInput({
   // Array (GTU codes)
   if (fieldType === 'array' && fieldConfig?.field === 'gtuCodes') {
     return (
-      <Select
-        value={value?.toString() || ''}
-        onValueChange={onChange}
-      >
+      <Select value={value?.toString() || ''} onValueChange={onChange}>
         <SelectTrigger className="w-64">
           <SelectValue placeholder="Wybierz kod GTU..." />
         </SelectTrigger>
@@ -646,10 +618,10 @@ function ValueInput({
   // Date input
   if (fieldType === 'date') {
     return (
-      <Input
-        type="date"
-        value={value?.toString() || ''}
-        onChange={(e) => onChange(e.target.value)}
+      <DatePicker
+        value={value?.toString() || undefined}
+        onChange={(newValue) => onChange(newValue || '')}
+        placeholder="Wybierz datę"
         className="w-40"
       />
     );
@@ -677,7 +649,7 @@ function ValueInput({
       placeholder="Wartość..."
     />
   );
-}
+});
 
 // Helper function to get enum options based on field
 function getEnumOptions(field: string): { value: string; label: string }[] {

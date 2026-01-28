@@ -1,14 +1,21 @@
+import { useState, useEffect } from 'react';
+
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
   getSortedRowModel,
   getPaginationRowModel,
-  SortingState,
-  ColumnDef,
-  RowSelectionState,
+  type SortingState,
+  type ColumnDef,
+  type RowSelectionState,
+  type VisibilityState,
 } from '@tanstack/react-table';
-import { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -17,10 +24,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -34,6 +37,7 @@ interface DataTableProps<TData, TValue> {
   selectedRows?: TData[];
   onSelectionChange?: (selectedRows: TData[]) => void;
   getRowId?: (row: TData) => string;
+  columnVisibility?: string[];
 }
 
 export function DataTable<TData, TValue>({
@@ -48,9 +52,27 @@ export function DataTable<TData, TValue>({
   selectedRows = [],
   onSelectionChange,
   getRowId,
+  columnVisibility: visibleColumnIds,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+  // Sync columnVisibility from props
+  useEffect(() => {
+    if (visibleColumnIds) {
+      const newVisibility: VisibilityState = {};
+      // Hide columns not in the visibleColumnIds list
+      // Prefer col.id over col.accessorKey for consistent column identification
+      columns.forEach((col) => {
+        const colId = col.id || ('accessorKey' in col ? String(col.accessorKey) : undefined);
+        if (colId) {
+          newVisibility[colId] = visibleColumnIds.includes(colId);
+        }
+      });
+      setColumnVisibility(newVisibility);
+    }
+  }, [visibleColumnIds, columns]);
 
   // Sync external selectedRows with internal selection state
   useEffect(() => {
@@ -105,9 +127,8 @@ export function DataTable<TData, TValue>({
     getPaginationRowModel: enablePagination ? getPaginationRowModel() : undefined,
     onSortingChange: setSorting,
     onRowSelectionChange: (updaterOrValue) => {
-      const newSelection = typeof updaterOrValue === 'function'
-        ? updaterOrValue(rowSelection)
-        : updaterOrValue;
+      const newSelection =
+        typeof updaterOrValue === 'function' ? updaterOrValue(rowSelection) : updaterOrValue;
 
       setRowSelection(newSelection);
 
@@ -123,7 +144,9 @@ export function DataTable<TData, TValue>({
     state: {
       sorting,
       rowSelection: selectable ? rowSelection : {},
+      columnVisibility: visibleColumnIds ? columnVisibility : {},
     },
+    onColumnVisibilityChange: setColumnVisibility,
     enableRowSelection: selectable,
     initialState: {
       pagination: {
@@ -137,7 +160,7 @@ export function DataTable<TData, TValue>({
     return (
       <div className="space-y-3 p-4">
         {[...Array(5)].map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full rounded-lg bg-apptax-soft-teal/30" />
+          <Skeleton key={i} className="bg-apptax-soft-teal/30 h-12 w-full rounded-lg" />
         ))}
       </div>
     );
@@ -148,9 +171,10 @@ export function DataTable<TData, TValue>({
   return (
     <div className="space-y-4">
       {selectable && selectedCount > 0 && (
-        <div className="px-4 py-2 bg-apptax-soft-teal/20 rounded-lg">
-          <p className="text-sm text-apptax-navy">
-            Zaznaczono <span className="font-semibold">{selectedCount}</span> {selectedCount === 1 ? 'element' : selectedCount < 5 ? 'elementy' : 'elementów'}
+        <div className="bg-apptax-soft-teal/20 rounded-lg px-4 py-2">
+          <p className="text-apptax-navy text-sm">
+            Zaznaczono <span className="font-semibold">{selectedCount}</span>{' '}
+            {selectedCount === 1 ? 'element' : selectedCount < 5 ? 'elementy' : 'elementów'}
           </p>
         </div>
       )}
@@ -158,16 +182,26 @@ export function DataTable<TData, TValue>({
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="bg-apptax-navy/5 hover:bg-apptax-navy/5">
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id} className="text-apptax-navy font-semibold">
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                </TableHead>
-              ))}
+              {headerGroup.headers.map((header) => {
+                const sortDirection = header.column.getIsSorted();
+                return (
+                  <TableHead
+                    key={header.id}
+                    className="text-apptax-navy font-semibold"
+                    aria-sort={
+                      sortDirection === 'asc'
+                        ? 'ascending'
+                        : sortDirection === 'desc'
+                          ? 'descending'
+                          : undefined
+                    }
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                );
+              })}
             </TableRow>
           ))}
         </TableHeader>
@@ -201,21 +235,16 @@ export function DataTable<TData, TValue>({
 
       {enablePagination && data.length > 0 && (
         <div className="flex items-center justify-between px-2">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Wyświetlanie{' '}
-            <span className="font-medium text-apptax-navy">
+            <span className="text-apptax-navy font-medium">
               {table.getState().pagination.pageIndex * pageSize + 1}
             </span>{' '}
             -{' '}
-            <span className="font-medium text-apptax-navy">
-              {Math.min(
-                (table.getState().pagination.pageIndex + 1) * pageSize,
-                data.length
-              )}
+            <span className="text-apptax-navy font-medium">
+              {Math.min((table.getState().pagination.pageIndex + 1) * pageSize, data.length)}
             </span>{' '}
-            z{' '}
-            <span className="font-medium text-apptax-navy">{data.length}</span>{' '}
-            wyników
+            z <span className="text-apptax-navy font-medium">{data.length}</span> wyników
           </p>
           <div className="flex gap-2">
             <Button
@@ -225,7 +254,7 @@ export function DataTable<TData, TValue>({
               disabled={!table.getCanPreviousPage()}
               className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50 hover:border-apptax-teal"
             >
-              <ChevronLeft className="h-4 w-4 mr-1" />
+              <ChevronLeft className="mr-1 h-4 w-4" />
               Poprzednia
             </Button>
             <Button
@@ -236,7 +265,7 @@ export function DataTable<TData, TValue>({
               className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50 hover:border-apptax-teal"
             >
               Następna
-              <ChevronRight className="h-4 w-4 ml-1" />
+              <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
         </div>

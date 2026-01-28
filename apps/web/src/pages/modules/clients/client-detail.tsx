@@ -1,34 +1,44 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { useClient, useUpdateClient, useSetClientCustomFields } from '@/lib/hooks/use-clients';
-import { useFieldDefinitions, useClientIcons } from '@/lib/hooks/use-clients';
-import { useAuthContext } from '@/contexts/auth-context';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ClientIcon } from '@/types/entities';
+import { useState } from 'react';
+
+import { useNavigate, useParams } from 'react-router-dom';
+
 import {
+  AlertTriangle,
   ArrowLeft,
-  Edit,
-  User,
   Building2,
   Calendar,
+  Edit,
   FileText,
   Tags,
-  CheckSquare,
+  User,
 } from 'lucide-react';
-import { useState } from 'react';
-import { ClientFormDialog } from '@/components/forms/client-form-dialog';
+
 import { ClientChangelog } from '@/components/clients/client-changelog';
-import { ClientTasksList } from '@/components/clients/client-tasks-list';
 import { ClientTaskStatistics } from '@/components/clients/client-task-statistics';
-import { UpdateClientDto } from '@/types/dtos';
+import { ClientTasksList } from '@/components/clients/client-tasks-list';
+import { SuspensionHistoryCard } from '@/components/clients/suspension-history-card';
+import { ErrorBoundary } from '@/components/common/error-boundary';
+import { ClientFormDialog } from '@/components/forms/client-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthContext } from '@/contexts/auth-context';
+import {
+  useClient,
+  useClientIcons,
+  useFieldDefinitions,
+  useSetClientCustomFields,
+  useUpdateClient,
+} from '@/lib/hooks/use-clients';
+import { type UpdateClientDto } from '@/types/dtos';
+import { type ClientIcon } from '@/types/entities';
 import {
   EmploymentTypeLabels,
-  VatStatusLabels,
   TaxSchemeLabels,
-  ZusStatusLabels,
   UserRole,
+  VatStatusLabels,
+  ZusStatusLabels,
 } from '@/types/enums';
 
 function formatDate(date?: Date | string | null): string {
@@ -39,13 +49,45 @@ function formatDate(date?: Date | string | null): string {
 function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="space-y-1">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="font-medium text-apptax-navy">{value || '-'}</p>
+      <p className="text-muted-foreground text-sm">{label}</p>
+      <p className="text-apptax-navy font-medium">{value || '-'}</p>
+    </div>
+  );
+}
+
+/**
+ * Error fallback component for ClientDetailPage
+ */
+function ClientDetailErrorFallback() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="flex min-h-[400px] flex-col items-center justify-center space-y-4">
+      <AlertTriangle className="text-destructive h-16 w-16" />
+      <h2 className="text-xl font-semibold">Wystąpił błąd</h2>
+      <p className="text-muted-foreground max-w-md text-center">
+        Nie udało się załadować szczegółów klienta. Proszę odświeżyć stronę lub spróbować później.
+      </p>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Powrót
+        </Button>
+        <Button onClick={() => window.location.reload()}>Odśwież stronę</Button>
+      </div>
     </div>
   );
 }
 
 export default function ClientDetailPage() {
+  return (
+    <ErrorBoundary fallback={<ClientDetailErrorFallback />}>
+      <ClientDetailContent />
+    </ErrorBoundary>
+  );
+}
+
+function ClientDetailContent() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
@@ -79,11 +121,11 @@ export default function ClientDetailPage() {
   // Handle missing id
   if (!id) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <h1 className="text-2xl font-semibold text-destructive">Błąd</h1>
+      <div className="flex min-h-[50vh] flex-col items-center justify-center">
+        <h1 className="text-destructive text-2xl font-semibold">Błąd</h1>
         <p className="text-muted-foreground mt-2">Nie podano identyfikatora klienta</p>
         <Button onClick={() => navigate(basePath)} className="mt-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Powrót do listy
         </Button>
       </div>
@@ -97,8 +139,8 @@ export default function ClientDetailPage() {
           <Skeleton className="h-10 w-10" />
           <Skeleton className="h-8 w-64" />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
             <Skeleton className="h-48" />
             <Skeleton className="h-48" />
           </div>
@@ -125,9 +167,12 @@ export default function ClientDetailPage() {
   }
 
   // Get assigned icons - use type predicate to properly narrow the type
-  const assignedIcons = (client.iconAssignments?.map((assignment) => {
-    return icons.find((i) => i.id === assignment.iconId);
-  }).filter((icon): icon is ClientIcon => icon !== undefined)) ?? [];
+  const assignedIcons =
+    client.iconAssignments
+      ?.map((assignment) => {
+        return icons.find((i) => i.id === assignment.iconId);
+      })
+      .filter((icon): icon is ClientIcon => icon !== undefined) ?? [];
 
   // Get custom field values
   const customFieldValues = client.customFieldValues || [];
@@ -141,7 +186,7 @@ export default function ClientDetailPage() {
             Powrót do listy
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-apptax-navy flex items-center gap-2">
+            <h1 className="text-apptax-navy flex items-center gap-2 text-2xl font-bold">
               {client.name}
               {!client.isActive && (
                 <Badge variant="outline" className="ml-2">
@@ -149,9 +194,7 @@ export default function ClientDetailPage() {
                 </Badge>
               )}
             </h1>
-            {client.nip && (
-              <p className="text-muted-foreground font-mono">NIP: {client.nip}</p>
-            )}
+            {client.nip && <p className="text-muted-foreground font-mono">NIP: {client.nip}</p>}
           </div>
         </div>
 
@@ -166,8 +209,8 @@ export default function ClientDetailPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
           {/* Basic Information */}
           <Card>
             <CardHeader>
@@ -177,7 +220,7 @@ export default function ClientDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
                 <InfoItem label="Nazwa" value={client.name} />
                 <InfoItem label="NIP" value={client.nip} />
                 <InfoItem
@@ -207,7 +250,7 @@ export default function ClientDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
                 <InfoItem
                   label="Forma zatrudnienia"
                   value={
@@ -222,9 +265,7 @@ export default function ClientDetailPage() {
                   label="Status VAT"
                   value={
                     client.vatStatus ? (
-                      <Badge variant="default">
-                        {VatStatusLabels[client.vatStatus]}
-                      </Badge>
+                      <Badge variant="default">{VatStatusLabels[client.vatStatus]}</Badge>
                     ) : null
                   }
                 />
@@ -232,9 +273,7 @@ export default function ClientDetailPage() {
                   label="Forma opodatkowania"
                   value={
                     client.taxScheme ? (
-                      <Badge variant="secondary">
-                        {TaxSchemeLabels[client.taxScheme]}
-                      </Badge>
+                      <Badge variant="secondary">{TaxSchemeLabels[client.taxScheme]}</Badge>
                     ) : null
                   }
                 />
@@ -242,9 +281,7 @@ export default function ClientDetailPage() {
                   label="Status ZUS"
                   value={
                     client.zusStatus ? (
-                      <Badge variant="secondary">
-                        {ZusStatusLabels[client.zusStatus]}
-                      </Badge>
+                      <Badge variant="secondary">{ZusStatusLabels[client.zusStatus]}</Badge>
                     ) : null
                   }
                 />
@@ -261,7 +298,7 @@ export default function ClientDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 gap-6">
                 <InfoItem
                   label="Data rozpoczęcia firmy"
                   value={formatDate(client.companyStartDate)}
@@ -269,10 +306,6 @@ export default function ClientDetailPage() {
                 <InfoItem
                   label="Data rozpoczęcia współpracy"
                   value={formatDate(client.cooperationStartDate)}
-                />
-                <InfoItem
-                  label="Data zawieszenia"
-                  value={formatDate(client.suspensionDate)}
                 />
               </div>
             </CardContent>
@@ -287,15 +320,13 @@ export default function ClientDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-6 mb-6">
+              <div className="mb-6 grid grid-cols-2 gap-6">
                 <InfoItem label="Kod GTU" value={client.gtuCode} />
                 <InfoItem label="Grupa AML" value={client.amlGroup} />
               </div>
               {client.companySpecificity && (
                 <div className="mb-4">
-                  <p className="text-sm text-muted-foreground mb-1">
-                    Specyfika firmy
-                  </p>
+                  <p className="text-muted-foreground mb-1 text-sm">Specyfika firmy</p>
                   <p className="text-apptax-navy whitespace-pre-wrap">
                     {client.companySpecificity}
                   </p>
@@ -303,12 +334,8 @@ export default function ClientDetailPage() {
               )}
               {client.additionalInfo && (
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">
-                    Dodatkowe uwagi
-                  </p>
-                  <p className="text-apptax-navy whitespace-pre-wrap">
-                    {client.additionalInfo}
-                  </p>
+                  <p className="text-muted-foreground mb-1 text-sm">Dodatkowe uwagi</p>
+                  <p className="text-apptax-navy whitespace-pre-wrap">{client.additionalInfo}</p>
                 </div>
               )}
             </CardContent>
@@ -327,7 +354,7 @@ export default function ClientDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
                   {customFieldValues.map((cfv) => {
                     const definition = fieldDefinitions.find(
                       (fd) => fd.id === cfv.fieldDefinitionId
@@ -360,20 +387,14 @@ export default function ClientDetailPage() {
                     icon ? (
                       <div
                         key={icon.id}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-full border"
+                        className="flex items-center gap-2 rounded-full border px-3 py-1.5"
                         style={{
                           borderColor: icon.color || '#e5e7eb',
-                          backgroundColor: icon.color
-                            ? `${icon.color}10`
-                            : 'transparent',
+                          backgroundColor: icon.color ? `${icon.color}10` : 'transparent',
                         }}
                       >
                         {icon.filePath && (
-                          <img
-                            src={icon.filePath}
-                            alt={icon.name}
-                            className="w-4 h-4"
-                          />
+                          <img src={icon.filePath} alt={icon.name} className="h-4 w-4" />
                         )}
                         <span className="text-sm">{icon.name}</span>
                       </div>
@@ -387,6 +408,7 @@ export default function ClientDetailPage() {
 
         <div className="space-y-6">
           <ClientTaskStatistics clientId={clientId} />
+          <SuspensionHistoryCard clientId={clientId} />
           <div id="changelog">
             <ClientChangelog clientId={id} />
           </div>
@@ -399,27 +421,32 @@ export default function ClientDetailPage() {
           onOpenChange={setEditOpen}
           client={client}
           onSubmit={async (data, customFields) => {
-            updateClient.mutate({
-              id: client.id,
-              data: data as UpdateClientDto,
-            }, {
-              onSuccess: async () => {
-                if (customFields && Object.keys(customFields.values).length > 0) {
-                  try {
-                    await setCustomFields.mutateAsync({
-                      id: client.id,
-                      data: customFields,
-                    });
-                  } catch {
-                    // Custom fields error handled by the hook's onError
+            updateClient.mutate(
+              {
+                id: client.id,
+                data: data as UpdateClientDto,
+              },
+              {
+                onSuccess: async () => {
+                  if (customFields && Object.keys(customFields.values).length > 0) {
+                    try {
+                      await setCustomFields.mutateAsync({
+                        id: client.id,
+                        data: customFields,
+                      });
+                    } catch (error) {
+                      console.error('Failed to update client custom fields:', error);
+                      // Error notification handled by mutation's onError
+                    }
                   }
-                }
-                setEditOpen(false);
-              },
-              onError: () => {
-                // Error already handled by the mutation hook's toast
-              },
-            });
+                  setEditOpen(false);
+                },
+                onError: (error) => {
+                  console.error('Failed to update client:', error);
+                  // Error notification handled by mutation's onError
+                },
+              }
+            );
           }}
         />
       )}

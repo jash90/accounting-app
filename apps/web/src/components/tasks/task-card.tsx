@@ -1,17 +1,22 @@
 import { forwardRef } from 'react';
+
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { cn } from '@/lib/utils/cn';
-import { TaskResponseDto } from '@/types/dtos';
-import { TaskStatusBadge } from './task-status-badge';
-import { TaskPriorityBadge } from './task-priority-badge';
-import { TaskLabelList } from './task-label-badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Calendar, MessageSquare, Link2, GripVertical } from 'lucide-react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import { Calendar, MessageSquare, Link2, GripVertical } from 'lucide-react';
+
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils/cn';
+import { mapTaskLabels } from '@/lib/utils/task-label-mapper';
+import { type TaskResponseDto } from '@/types/dtos';
+import { TaskStatus } from '@/types/enums';
+
+import { TaskLabelList } from './task-label-badge';
+import { TaskPriorityBadge } from './task-priority-badge';
+import { TaskStatusBadge } from './task-status-badge';
 
 interface TaskCardProps {
   task: TaskResponseDto;
@@ -23,8 +28,7 @@ interface TaskCardProps {
 
 export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
   ({ task, onClick, isDragging = false, showStatus = false, className }, ref) => {
-    const labels = task.labels?.map((la) => la.label).filter(Boolean) || [];
-    const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+    const labels = mapTaskLabels(task.labels);
     const commentCount = task.comments?.length || 0;
     const dependencyCount = task.dependencies?.length || 0;
 
@@ -35,27 +39,38 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
     };
 
     const isOverdue =
-      task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
+      task.dueDate && new Date(task.dueDate) < new Date() && task.status !== TaskStatus.DONE;
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        onClick();
+      }
+    };
 
     return (
       <Card
         ref={ref}
         onClick={onClick}
+        onKeyDown={handleKeyDown}
+        tabIndex={onClick ? 0 : undefined}
+        role={onClick ? 'button' : undefined}
+        aria-label={`Zadanie: ${task.title}${isOverdue ? ' - po terminie' : ''}`}
         className={cn(
-          'cursor-pointer hover:shadow-md transition-shadow',
+          'transition-shadow hover:shadow-md',
+          onClick && 'cursor-pointer',
           isDragging && 'opacity-50 shadow-lg',
           isOverdue && 'border-red-300',
+          onClick && 'focus:ring-primary focus:ring-2 focus:ring-offset-2 focus:outline-none',
           className
         )}
       >
-        <CardContent className="p-3 space-y-2">
+        <CardContent className="space-y-2 p-3">
           {/* Labels */}
-          {labels.length > 0 && (
-            <TaskLabelList labels={labels as any} size="sm" maxVisible={2} />
-          )}
+          {labels.length > 0 && <TaskLabelList labels={labels} size="sm" maxVisible={2} />}
 
           {/* Title */}
-          <h4 className="font-medium text-sm leading-snug line-clamp-2">{task.title}</h4>
+          <h4 className="line-clamp-2 text-sm leading-snug font-medium">{task.title}</h4>
 
           {/* Meta info */}
           <div className="flex items-center justify-between gap-2">
@@ -93,7 +108,7 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
             </div>
 
             {/* Indicators */}
-            <div className="flex items-center gap-1.5 text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-1.5">
               {commentCount > 0 && (
                 <div className="flex items-center gap-0.5 text-xs">
                   <MessageSquare size={12} />
@@ -113,7 +128,7 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
           <div className="flex items-center justify-between pt-1">
             {/* Client */}
             {task.client && (
-              <span className="text-xs text-muted-foreground truncate max-w-[100px]">
+              <span className="text-muted-foreground max-w-[100px] truncate text-xs">
                 {task.client.name}
               </span>
             )}
@@ -125,7 +140,7 @@ export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Avatar className="h-6 w-6">
-                      <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs">
                         {getInitials(task.assignee.firstName, task.assignee.lastName)}
                       </AvatarFallback>
                     </Avatar>
@@ -153,14 +168,9 @@ interface SortableTaskCardProps extends TaskCardProps {
 }
 
 export function SortableTaskCard({ id, ...props }: SortableTaskCardProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -168,13 +178,16 @@ export function SortableTaskCard({ id, ...props }: SortableTaskCardProps) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative group">
+    <div ref={setNodeRef} style={style} className="group relative">
       <div
         {...attributes}
         {...listeners}
-        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing p-1 text-muted-foreground hover:text-foreground transition-opacity"
+        aria-label="Przeciągnij zadanie"
+        role="button"
+        tabIndex={0}
+        className="text-muted-foreground hover:text-foreground focus:ring-primary absolute top-1/2 left-0 -translate-x-2 -translate-y-1/2 cursor-grab rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100 focus:ring-2 focus:ring-offset-1 focus:outline-none active:cursor-grabbing"
       >
-        <GripVertical size={16} />
+        <GripVertical size={16} aria-hidden="true" />
       </div>
       <TaskCard {...props} isDragging={isDragging} />
     </div>

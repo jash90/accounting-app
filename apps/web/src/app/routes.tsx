@@ -1,11 +1,13 @@
 import { lazy, Suspense } from 'react';
-import { Routes as RouterRoutes, Route, Navigate } from 'react-router-dom';
-import { useAuthContext } from '@/contexts/auth-context';
-import { UserRole } from '@/types/enums';
+
+import { Navigate, Route, Routes as RouterRoutes } from 'react-router-dom';
+
 import AdminLayout from '@/components/layouts/admin-layout';
 import CompanyLayout from '@/components/layouts/company-layout';
 import EmployeeLayout from '@/components/layouts/employee-layout';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthContext } from '@/contexts/auth-context';
+import { UserRole } from '@/types/enums';
 
 // Lazy load pages for code splitting
 const LoginPage = lazy(() => import('@/pages/public/login-page'));
@@ -16,7 +18,9 @@ const CompanyModulesPage = lazy(() => import('@/pages/admin/companies/company-mo
 const ModulesListPage = lazy(() => import('@/pages/admin/modules/modules-list'));
 const CompanyDashboard = lazy(() => import('@/pages/company/dashboard'));
 const EmployeesListPage = lazy(() => import('@/pages/company/employees/employees-list'));
-const EmployeePermissionsPage = lazy(() => import('@/pages/company/employees/employee-permissions'));
+const EmployeePermissionsPage = lazy(
+  () => import('@/pages/company/employees/employee-permissions')
+);
 const CompanyModulesListPage = lazy(() => import('@/pages/company/modules/modules-list'));
 const EmployeeDashboard = lazy(() => import('@/pages/employee/dashboard'));
 
@@ -30,8 +34,9 @@ const AdminAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/admin-
 const CompanyAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/company-index'));
 const EmployeeAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/employee-index'));
 
-// Email Configuration Pages
+// Settings Pages
 const UserEmailConfigPage = lazy(() => import('@/pages/settings/email-config'));
+const AccountSettingsPage = lazy(() => import('@/pages/settings/account'));
 const CompanyEmailConfigPage = lazy(() => import('@/pages/company/email-config'));
 const AdminEmailConfigPage = lazy(() => import('@/pages/admin/email-config'));
 
@@ -40,6 +45,7 @@ const ClientsDashboardPage = lazy(() => import('@/pages/modules/clients/clients-
 const ClientsListPage = lazy(() => import('@/pages/modules/clients/clients-list'));
 const ClientDetailPage = lazy(() => import('@/pages/modules/clients/client-detail'));
 const ClientsSettingsPage = lazy(() => import('@/pages/modules/clients/clients-settings'));
+const ClientCreatePage = lazy(() => import('@/pages/modules/clients/client-create'));
 
 // Email Client Pages
 const EmailClientIndex = lazy(() => import('@/pages/modules/email-client/index'));
@@ -60,10 +66,35 @@ const TasksTimelinePage = lazy(() => import('@/pages/modules/tasks/tasks-timelin
 const TasksSettingsPage = lazy(() => import('@/pages/modules/tasks/tasks-settings'));
 const TaskCreatePage = lazy(() => import('@/pages/modules/tasks/task-create'));
 
+// Time Tracking Pages
+const TimeTrackingDashboardPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-dashboard')
+);
+const TimeTrackingEntriesPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-entries')
+);
+const TimeTrackingTimesheetDailyPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-timesheet-daily')
+);
+const TimeTrackingTimesheetWeeklyPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-timesheet-weekly')
+);
+const TimeTrackingReportsPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-reports')
+);
+const TimeTrackingSettingsPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-settings')
+);
+
+// Notifications Pages
+const NotificationsInboxPage = lazy(() => import('@/pages/notifications/notifications-inbox'));
+const NotificationsArchivePage = lazy(() => import('@/pages/notifications/notifications-archive'));
+const NotificationSettingsPage = lazy(() => import('@/pages/notifications/notifications-settings'));
+
 function PageLoader() {
   return (
     <div className="flex h-screen items-center justify-center">
-      <div className="space-y-4 w-full max-w-md p-6">
+      <div className="w-full max-w-md space-y-4 p-6">
         <Skeleton className="h-8 w-3/4" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-5/6" />
@@ -80,10 +111,8 @@ function Unauthorized() {
   return (
     <div className="flex h-screen items-center justify-center">
       <div className="text-center">
-        <h1 className="text-2xl font-bold mb-4">Unauthorized</h1>
-        <p className="text-muted-foreground">
-          You don&apos;t have permission to access this page.
-        </p>
+        <h1 className="mb-4 text-2xl font-bold">Unauthorized</h1>
+        <p className="text-muted-foreground">You don&apos;t have permission to access this page.</p>
       </div>
     </div>
   );
@@ -92,7 +121,7 @@ function Unauthorized() {
 // Protected Route Component
 function ProtectedRoute({
   children,
-  allowedRoles
+  allowedRoles,
 }: {
   children: React.ReactNode;
   allowedRoles?: UserRole[];
@@ -240,6 +269,14 @@ export default function Routes() {
           }
         />
         <Route
+          path="modules/clients/create"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientCreatePage />
+            </Suspense>
+          }
+        />
+        <Route
           path="modules/clients/:id"
           element={
             <Suspense fallback={<PageLoader />}>
@@ -377,6 +414,55 @@ export default function Routes() {
             </Suspense>
           }
         />
+        {/* Time Tracking Routes for Admin */}
+        <Route
+          path="modules/time-tracking"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/entries"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingEntriesPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/timesheet/daily"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingTimesheetDailyPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/timesheet/weekly"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingTimesheetWeeklyPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/reports"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingReportsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingSettingsPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -472,6 +558,14 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <ClientsSettingsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/clients/create"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientCreatePage />
             </Suspense>
           }
         />
@@ -613,6 +707,55 @@ export default function Routes() {
             </Suspense>
           }
         />
+        {/* Time Tracking Routes for Company Owner */}
+        <Route
+          path="modules/time-tracking"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/entries"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingEntriesPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/timesheet/daily"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingTimesheetDailyPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/timesheet/weekly"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingTimesheetWeeklyPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/reports"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingReportsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/time-tracking/settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingSettingsPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -660,6 +803,14 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <ClientsListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="clients/create"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ClientCreatePage />
             </Suspense>
           }
         />
@@ -792,6 +943,55 @@ export default function Routes() {
             </Suspense>
           }
         />
+        {/* Time Tracking Routes for Employee */}
+        <Route
+          path="time-tracking"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="time-tracking/entries"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingEntriesPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="time-tracking/timesheet/daily"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingTimesheetDailyPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="time-tracking/timesheet/weekly"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingTimesheetWeeklyPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="time-tracking/reports"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingReportsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="time-tracking/settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TimeTrackingSettingsPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       {/* Settings Routes - Accessible to all authenticated users */}
@@ -811,8 +1011,50 @@ export default function Routes() {
             </Suspense>
           }
         />
+        <Route
+          path="account"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <AccountSettingsPage />
+            </Suspense>
+          }
+        />
       </Route>
 
+      {/* Notifications Routes - Accessible to all authenticated users */}
+      <Route
+        path="/notifications/*"
+        element={
+          <ProtectedRoute>
+            <EmployeeLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route
+          index
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <NotificationsInboxPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="archive"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <NotificationsArchivePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <NotificationSettingsPage />
+            </Suspense>
+          }
+        />
+      </Route>
 
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<NotFound />} />

@@ -1,25 +1,30 @@
 import { useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { ColumnDef } from '@tanstack/react-table';
-import { useCompanies, useDeleteCompany } from '@/lib/hooks/use-companies';
-import { useCreateCompany, useUpdateCompany } from '@/lib/hooks/use-companies';
-import { PageHeader } from '@/components/common/page-header';
-import { DataTable } from '@/components/common/data-table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+
+import { type ColumnDef } from '@tanstack/react-table';
 import { Plus, Edit, Trash2, Package, Building2 } from 'lucide-react';
-import { CompanyDto } from '@/types/dtos';
-import { CompanyFormDialog } from '@/components/forms/company-form-dialog';
+
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { DataTable } from '@/components/common/data-table';
+import { PageHeader } from '@/components/common/page-header';
+import { CompanyFormDialog } from '@/components/forms/company-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  useCompanies,
+  useDeleteCompany,
+  useCreateCompany,
+  useUpdateCompany,
+} from '@/lib/hooks/use-companies';
+import { type CompanyDto, type CreateCompanyDto, type UpdateCompanyDto } from '@/types/dtos';
 
 const columns: ColumnDef<CompanyDto>[] = [
   {
     accessorKey: 'name',
     header: 'Nazwa',
-    cell: ({ row }) => (
-      <div className="font-medium text-apptax-navy">{row.original.name}</div>
-    ),
+    cell: ({ row }) => <div className="text-apptax-navy font-medium">{row.original.name}</div>,
   },
   {
     accessorKey: 'owner',
@@ -65,38 +70,38 @@ export default function CompaniesListPage() {
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:bg-apptax-soft-teal"
+            className="hover:bg-apptax-soft-teal h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               navigate(`/admin/companies/${row.original.id}/modules`);
             }}
             title="Zarządzaj modułami"
           >
-            <Package className="h-4 w-4 text-apptax-teal" />
+            <Package className="text-apptax-teal h-4 w-4" />
           </Button>
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:bg-apptax-soft-teal"
+            className="hover:bg-apptax-soft-teal h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               setEditingCompany(row.original);
             }}
             title="Edytuj firmę"
           >
-            <Edit className="h-4 w-4 text-apptax-blue" />
+            <Edit className="text-apptax-blue h-4 w-4" />
           </Button>
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:bg-destructive/10"
+            className="hover:bg-destructive/10 h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               setDeletingCompany(row.original);
             }}
             title="Usuń firmę"
           >
-            <Trash2 className="h-4 w-4 text-destructive" />
+            <Trash2 className="text-destructive h-4 w-4" />
           </Button>
         </div>
       ),
@@ -130,7 +135,7 @@ export default function CompaniesListPage() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         onSubmit={(data) => {
-          createCompany.mutate(data);
+          createCompany.mutate(data as CreateCompanyDto);
           setCreateOpen(false);
         }}
       />
@@ -141,7 +146,7 @@ export default function CompaniesListPage() {
           onOpenChange={(open) => !open && setEditingCompany(null)}
           company={editingCompany}
           onSubmit={(data) => {
-            updateCompany.mutate({ id: editingCompany.id, data });
+            updateCompany.mutate({ id: editingCompany.id, data: data as UpdateCompanyDto });
             setEditingCompany(null);
           }}
         />

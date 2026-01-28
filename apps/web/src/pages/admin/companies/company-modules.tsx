@@ -1,13 +1,20 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useCompany, useCompanyModules, useGrantModuleToCompany, useRevokeModuleFromCompany } from '@/lib/hooks/use-companies';
-import { useModules } from '@/lib/hooks/use-modules';
+
+import { ArrowLeft, Package, Building2 } from 'lucide-react';
+
 import { PageHeader } from '@/components/common/page-header';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Package, Building2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
+import {
+  useCompany,
+  useCompanyModules,
+  useGrantModuleToCompany,
+  useRevokeModuleFromCompany,
+} from '@/lib/hooks/use-companies';
+import { useModules } from '@/lib/hooks/use-modules';
 
 export default function CompanyModulesPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,7 +22,9 @@ export default function CompanyModulesPage() {
 
   const { data: company, isPending: companyLoading } = useCompany(id || '');
   const { data: allModules = [], isPending: modulesLoading } = useModules();
-  const { data: companyModuleAccesses = [], isPending: accessesLoading } = useCompanyModules(id || '');
+  const { data: companyModuleAccesses = [], isPending: accessesLoading } = useCompanyModules(
+    id || ''
+  );
 
   const grantModule = useGrantModuleToCompany();
   const revokeModule = useRevokeModuleFromCompany();
@@ -40,10 +49,10 @@ export default function CompanyModulesPage() {
   if (companyLoading || modulesLoading || accessesLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-20 w-full bg-apptax-soft-teal/30" />
+        <Skeleton className="bg-apptax-soft-teal/30 h-20 w-full" />
         <div className="grid gap-4 md:grid-cols-2">
-          <Skeleton className="h-40 bg-apptax-soft-teal/30" />
-          <Skeleton className="h-40 bg-apptax-soft-teal/30" />
+          <Skeleton className="bg-apptax-soft-teal/30 h-40" />
+          <Skeleton className="bg-apptax-soft-teal/30 h-40" />
         </div>
       </div>
     );
@@ -53,10 +62,10 @@ export default function CompanyModulesPage() {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-apptax-soft-teal flex items-center justify-center mx-auto mb-4">
-            <Building2 className="h-8 w-8 text-apptax-teal" />
+          <div className="bg-apptax-soft-teal mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+            <Building2 className="text-apptax-teal h-8 w-8" />
           </div>
-          <h1 className="text-2xl font-bold mb-4 text-apptax-navy">Nie znaleziono firmy</h1>
+          <h1 className="text-apptax-navy mb-4 text-2xl font-bold">Nie znaleziono firmy</h1>
           <Button
             onClick={() => navigate('/admin/companies')}
             className="bg-apptax-blue hover:bg-apptax-blue/90"
@@ -92,14 +101,14 @@ export default function CompanyModulesPage() {
       <Card className="border-apptax-soft-teal/30">
         <CardHeader>
           <CardTitle className="text-apptax-navy flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-apptax-teal" />
+            <Building2 className="text-apptax-teal h-5 w-5" />
             Informacje o firmie
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-2 text-sm">
             <div>
-              <span className="font-medium text-apptax-navy">Nazwa:</span>{' '}
+              <span className="text-apptax-navy font-medium">Nazwa:</span>{' '}
               <span className="text-apptax-navy/70">{company.name}</span>
             </div>
           </div>
@@ -108,7 +117,7 @@ export default function CompanyModulesPage() {
 
       {/* Modules Grid */}
       <div>
-        <h2 className="text-2xl font-bold tracking-tight mb-4 text-apptax-navy">Dostępne moduły</h2>
+        <h2 className="text-apptax-navy mb-4 text-2xl font-bold tracking-tight">Dostępne moduły</h2>
         <div className="grid gap-4 md:grid-cols-2">
           {allModules.map((module) => {
             const isEnabled = isModuleEnabled(module.id);
@@ -118,7 +127,7 @@ export default function CompanyModulesPage() {
             return (
               <Card
                 key={module.id}
-                className={`shadow-sm hover:shadow-apptax-md transition-all duration-300 hover:-translate-y-1 border-apptax-soft-teal/30 ${
+                className={`hover:shadow-apptax-md border-apptax-soft-teal/30 shadow-sm transition-all duration-300 hover:-translate-y-1 ${
                   isEnabled ? 'border-apptax-teal/50' : ''
                 }`}
                 data-testid={`module-card-${module.slug}`}
@@ -126,16 +135,18 @@ export default function CompanyModulesPage() {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        isAiModule ? 'bg-apptax-ai-gradient ai-glow' : 'bg-apptax-gradient'
-                      }`}>
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+                          isAiModule ? 'bg-apptax-ai-gradient ai-glow' : 'bg-apptax-gradient'
+                        }`}
+                      >
                         <Package className="h-5 w-5 text-white" />
                       </div>
                       <div>
-                        <CardTitle className="text-lg text-apptax-navy flex items-center gap-2">
+                        <CardTitle className="text-apptax-navy flex items-center gap-2 text-lg">
                           {module.name}
                           {isAiModule && (
-                            <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
+                            <div className="bg-apptax-teal ai-glow h-2 w-2 rounded-full" />
                           )}
                         </CardTitle>
                       </div>
@@ -144,14 +155,14 @@ export default function CompanyModulesPage() {
                       {isEnabled ? 'Włączony' : 'Wyłączony'}
                     </Badge>
                   </div>
-                  <CardDescription className="text-xs mt-2">
-                    {module.description}
-                  </CardDescription>
+                  <CardDescription className="mt-2 text-xs">{module.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      {isEnabled ? 'Ten moduł jest dostępny dla firmy' : 'Włącz ten moduł dla firmy'}
+                    <span className="text-muted-foreground text-sm">
+                      {isEnabled
+                        ? 'Ten moduł jest dostępny dla firmy'
+                        : 'Włącz ten moduł dla firmy'}
                     </span>
                     <Switch
                       checked={isEnabled}
@@ -161,7 +172,7 @@ export default function CompanyModulesPage() {
                     />
                   </div>
                   {!module.isActive && (
-                    <p className="text-xs text-destructive mt-2">
+                    <p className="text-destructive mt-2 text-xs">
                       Ten moduł jest nieaktywny w systemie
                     </p>
                   )}
@@ -174,9 +185,9 @@ export default function CompanyModulesPage() {
         {allModules.length === 0 && (
           <Card className="border-apptax-soft-teal/30">
             <CardContent className="py-10">
-              <div className="text-center text-muted-foreground">
-                <div className="w-16 h-16 rounded-full bg-apptax-soft-teal flex items-center justify-center mx-auto mb-4">
-                  <Package className="h-8 w-8 text-apptax-teal" />
+              <div className="text-muted-foreground text-center">
+                <div className="bg-apptax-soft-teal mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+                  <Package className="text-apptax-teal h-8 w-8" />
                 </div>
                 <p>Brak dostępnych modułów w systemie</p>
               </div>

@@ -39,7 +39,7 @@ export class FileValidationPipe implements PipeTransform {
 
     if (!this.allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException(
-        `Nieprawidłowy typ pliku. Dozwolone typy: ${this.allowedMimeTypes.join(', ')}`,
+        `Nieprawidłowy typ pliku. Dozwolone typy: ${this.allowedMimeTypes.join(', ')}`
       );
     }
 

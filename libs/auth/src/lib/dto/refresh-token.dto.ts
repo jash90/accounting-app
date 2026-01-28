@@ -6,4 +6,3 @@ export class RefreshTokenDto {
   @IsString()
   refresh_token!: string;
 }
-

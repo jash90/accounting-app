@@ -1,5 +1,27 @@
-import { useState } from 'react';
+import { useState, memo, useRef, useEffect } from 'react';
+
 import { useNavigate } from 'react-router-dom';
+
+import { ArrowLeft, Plus, Edit, Trash2, Settings, Tags, Image } from 'lucide-react';
+
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { PageHeader } from '@/components/common/page-header';
+import { ClientIconFormDialog } from '@/components/forms/client-icon-form-dialog';
+import { FieldDefinitionFormDialog } from '@/components/forms/field-definition-form-dialog';
+import { NotificationSettingsForm } from '@/components/forms/notification-settings-form';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useAuthContext } from '@/contexts/auth-context';
 import {
   useFieldDefinitions,
   useCreateFieldDefinition,
@@ -13,49 +35,21 @@ import {
   useCreateNotificationSettings,
   useUpdateNotificationSettings,
 } from '@/lib/hooks/use-clients';
-import { useAuthContext } from '@/contexts/auth-context';
-import { UserRole } from '@/types/enums';
-import { PageHeader } from '@/components/common/page-header';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  ArrowLeft,
-  Plus,
-  Edit,
-  Trash2,
-  Settings,
-  Tags,
-  Image,
-} from 'lucide-react';
-import { FieldDefinitionFormDialog } from '@/components/forms/field-definition-form-dialog';
-import { ClientIconFormDialog } from '@/components/forms/client-icon-form-dialog';
-import { NotificationSettingsForm } from '@/components/forms/notification-settings-form';
-import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import {
-  ClientFieldDefinitionResponseDto,
-  ClientIconResponseDto,
-  CreateClientFieldDefinitionDto,
-  UpdateClientFieldDefinitionDto,
-  UpdateClientIconDto,
-  NotificationSettingsFormData,
-} from '@/types/dtos';
-import { CustomFieldType } from '@/types/enums';
-import {
-  CreateClientFieldDefinitionFormData,
-  UpdateClientFieldDefinitionFormData,
-  CreateClientIconFormData,
-  UpdateClientIconFormData,
+  type CreateClientFieldDefinitionFormData,
+  type UpdateClientFieldDefinitionFormData,
+  type CreateClientIconFormData,
+  type UpdateClientIconFormData,
+  type NotificationSettingsFormData,
 } from '@/lib/validation/schemas';
+import {
+  type ClientFieldDefinitionResponseDto,
+  type ClientIconResponseDto,
+  type CreateClientFieldDefinitionDto,
+  type UpdateClientFieldDefinitionDto,
+  type UpdateClientIconDto,
+} from '@/types/dtos';
+import { UserRole, CustomFieldType } from '@/types/enums';
 
 const FIELD_TYPE_LABELS: Record<CustomFieldType, string> = {
   [CustomFieldType.TEXT]: 'Tekst',
@@ -64,6 +58,32 @@ const FIELD_TYPE_LABELS: Record<CustomFieldType, string> = {
   [CustomFieldType.BOOLEAN]: 'Tak/Nie',
   [CustomFieldType.ENUM]: 'Lista wyboru',
 };
+
+/**
+ * Icon image component with error handling via state
+ * Hides the image if it fails to load instead of showing a broken image
+ * Uses ref + useEffect to attach error handler and avoid lint warnings
+ */
+const IconImage = memo(function IconImage({ src, alt }: { src: string; alt: string }) {
+  const [hasError, setHasError] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    const img = imgRef.current;
+    if (!img) return;
+
+    const handleError = () => setHasError(true);
+    img.addEventListener('error', handleError);
+
+    return () => img.removeEventListener('error', handleError);
+  }, []);
+
+  if (hasError) {
+    return null;
+  }
+
+  return <img ref={imgRef} src={src} alt={alt} className="h-12 w-12 object-contain" />;
+});
 
 export default function ClientsSettingsPage() {
   const navigate = useNavigate();
@@ -110,7 +130,9 @@ export default function ClientsSettingsPage() {
   const createNotificationSettings = useCreateNotificationSettings();
   const updateNotificationSettings = useUpdateNotificationSettings();
 
-  const handleFieldSubmit = (data: CreateClientFieldDefinitionFormData | UpdateClientFieldDefinitionFormData) => {
+  const handleFieldSubmit = (
+    data: CreateClientFieldDefinitionFormData | UpdateClientFieldDefinitionFormData
+  ) => {
     if (editingField) {
       updateFieldDefinition.mutate(
         {
@@ -148,7 +170,7 @@ export default function ClientsSettingsPage() {
             color: formData.color,
             iconType: formData.iconType,
             iconValue: formData.iconValue,
-            autoAssignCondition: formData.autoAssignCondition,
+            autoAssignCondition: formData.autoAssignCondition ?? undefined,
           },
           file: formData.file,
         },
@@ -190,9 +212,7 @@ export default function ClientsSettingsPage() {
                 <Tags className="h-5 w-5" />
                 Pola niestandardowe
               </CardTitle>
-              <CardDescription>
-                Definiuj dodatkowe pola dla kart klientów
-              </CardDescription>
+              <CardDescription>Definiuj dodatkowe pola dla kart klientów</CardDescription>
             </div>
             <Button onClick={() => setCreateFieldOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
@@ -208,7 +228,7 @@ export default function ClientsSettingsPage() {
               ))}
             </div>
           ) : fieldDefinitions.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
+            <p className="text-muted-foreground py-8 text-center">
               Brak zdefiniowanych pól niestandardowych
             </p>
           ) : (
@@ -228,13 +248,11 @@ export default function ClientsSettingsPage() {
                 {fieldDefinitions.map((field) => (
                   <TableRow key={field.id}>
                     <TableCell className="font-medium">{field.label}</TableCell>
-                    <TableCell className="font-mono text-sm text-muted-foreground">
+                    <TableCell className="text-muted-foreground font-mono text-sm">
                       {field.name}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">
-                        {FIELD_TYPE_LABELS[field.fieldType]}
-                      </Badge>
+                      <Badge variant="secondary">{FIELD_TYPE_LABELS[field.fieldType]}</Badge>
                     </TableCell>
                     <TableCell>
                       {field.isRequired ? (
@@ -301,44 +319,31 @@ export default function ClientsSettingsPage() {
         </CardHeader>
         <CardContent>
           {loadingIcons ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               {[1, 2, 3, 4].map((i) => (
                 <Skeleton key={i} className="h-24 w-full" />
               ))}
             </div>
           ) : icons.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              Brak zdefiniowanych ikon
-            </p>
+            <p className="text-muted-foreground py-8 text-center">Brak zdefiniowanych ikon</p>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
               {icons.map((icon) => (
                 <div
                   key={icon.id}
-                  className="border rounded-lg p-4 flex flex-col items-center gap-2 relative group"
+                  className="group relative flex flex-col items-center gap-2 rounded-lg border p-4"
                   style={{
                     borderColor: icon.color || '#e5e7eb',
                   }}
                 >
-                  {icon.filePath && (
-                    <img
-                      src={icon.filePath}
-                      alt={icon.name}
-                      className="w-12 h-12 object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  )}
-                  <span className="text-sm font-medium text-center">
-                    {icon.name}
-                  </span>
+                  {icon.filePath && <IconImage src={icon.filePath} alt={icon.name} />}
+                  <span className="text-center text-sm font-medium">{icon.name}</span>
                   {!icon.isActive && (
                     <Badge variant="outline" className="text-xs">
                       Nieaktywna
                     </Badge>
                   )}
-                  <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-1 right-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <Button
                       size="icon"
                       variant="ghost"
@@ -351,7 +356,7 @@ export default function ClientsSettingsPage() {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-6 w-6 text-destructive hover:text-destructive"
+                      className="text-destructive hover:text-destructive h-6 w-6"
                       onClick={() => setDeletingIcon(icon)}
                       aria-label={`Usuń ikonę ${icon.name}`}
                     >
@@ -372,10 +377,7 @@ export default function ClientsSettingsPage() {
         <NotificationSettingsForm
           settings={notificationSettings}
           onSubmit={handleNotificationSubmit}
-          isLoading={
-            createNotificationSettings.isPending ||
-            updateNotificationSettings.isPending
-          }
+          isLoading={createNotificationSettings.isPending || updateNotificationSettings.isPending}
         />
       )}
 

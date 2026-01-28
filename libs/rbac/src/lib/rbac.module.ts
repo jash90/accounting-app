@@ -12,6 +12,7 @@ import { ModuleDiscoveryService } from './services/module-discovery.service';
 import { ModuleAccessGuard } from './guards/module-access.guard';
 import { PermissionGuard } from './guards/permission.guard';
 import { OwnerOrAdminGuard } from './guards/owner-or-admin.guard';
+import { RequireCompanyGuard } from './guards/require-company.guard';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { OwnerOrAdminGuard } from './guards/owner-or-admin.guard';
     ModuleAccessGuard,
     PermissionGuard,
     OwnerOrAdminGuard,
+    RequireCompanyGuard,
   ],
   exports: [
     ModuleDiscoveryService,
@@ -36,6 +38,7 @@ import { OwnerOrAdminGuard } from './guards/owner-or-admin.guard';
     ModuleAccessGuard,
     PermissionGuard,
     OwnerOrAdminGuard,
+    RequireCompanyGuard,
   ],
 })
 export class RBACModule {}

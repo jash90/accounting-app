@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
 export class AddStreamingToAIConfiguration1700000000004 implements MigrationInterface {
   name = 'AddStreamingToAIConfiguration1700000000004';

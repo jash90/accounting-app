@@ -17,11 +17,11 @@ export class AIConversation {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ default: 'New Conversation' })
+  @Column({ type: 'varchar', default: 'New Conversation' })
   title!: string;
 
   // System Admin Company pattern - nullable for ADMIN entries
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   companyId!: string | null;
 
   @ManyToOne(() => Company, (company) => company.aiConversations, {
@@ -32,7 +32,7 @@ export class AIConversation {
   company!: Company | null;
 
   // Creator
-  @Column()
+  @Column({ type: 'uuid' })
   createdById!: string;
 
   @ManyToOne(() => User)
@@ -52,7 +52,7 @@ export class AIConversation {
   @Column({ type: 'int', default: 0 })
   messageCount!: number;
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   isArchived!: boolean;
 
   // Timestamps

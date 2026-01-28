@@ -1,8 +1,9 @@
-import { cn } from '@/lib/utils/cn';
-import { ClientIcon } from '@/types/entities';
-import { IconType } from '@/types/enums';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import * as LucideIcons from 'lucide-react';
+
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils/cn';
+import { type ClientIcon } from '@/types/entities';
+import { IconType } from '@/types/enums';
 
 interface IconBadgeProps {
   icon: ClientIcon;
@@ -29,12 +30,7 @@ const emojiSizeClasses = {
   lg: 'text-xl',
 };
 
-export function IconBadge({
-  icon,
-  size = 'md',
-  showTooltip = true,
-  className,
-}: IconBadgeProps) {
+export function IconBadge({ icon, size = 'md', showTooltip = true, className }: IconBadgeProps) {
   const renderIcon = () => {
     switch (icon.iconType) {
       case IconType.LUCIDE: {
@@ -46,7 +42,9 @@ export function IconBadge({
           .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
           .join('');
 
-        const LucideIcon = (LucideIcons as Record<string, React.ComponentType<{ size?: number; className?: string }>>)[pascalCaseName];
+        const LucideIcon = (
+          LucideIcons as unknown as Record<string, React.ComponentType<LucideIcons.LucideProps>>
+        )[pascalCaseName];
 
         if (LucideIcon) {
           // Use inline style for color - Tailwind can't detect dynamic classes like text-[${color}]
@@ -71,10 +69,7 @@ export function IconBadge({
       case IconType.EMOJI: {
         return (
           <span
-            className={cn(
-              'flex items-center justify-center shrink-0',
-              emojiSizeClasses[size]
-            )}
+            className={cn('flex shrink-0 items-center justify-center', emojiSizeClasses[size])}
             role="img"
             aria-label={icon.name}
           >
@@ -89,15 +84,12 @@ export function IconBadge({
           return (
             <div
               className={cn(
-                'rounded-full bg-muted flex items-center justify-center',
+                'bg-muted flex items-center justify-center rounded-full',
                 sizeClasses[size]
               )}
               style={icon.color ? { backgroundColor: icon.color } : undefined}
             >
-              <LucideIcons.Image
-                size={iconSizeMap[size] * 0.6}
-                className="text-muted-foreground"
-              />
+              <LucideIcons.Image size={iconSizeMap[size] * 0.6} className="text-muted-foreground" />
             </div>
           );
         }
@@ -106,7 +98,7 @@ export function IconBadge({
           <img
             src={`/api/modules/clients/icons/${icon.id}/file`}
             alt={icon.name}
-            className={cn('object-contain rounded', sizeClasses[size])}
+            className={cn('rounded object-contain', sizeClasses[size])}
           />
         );
       }
@@ -171,10 +163,10 @@ export function IconBadgeList({
             <TooltipTrigger asChild>
               <div
                 className={cn(
-                  'inline-flex items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-medium',
-                  size === 'sm' && 'w-5 h-5',
-                  size === 'md' && 'w-6 h-6',
-                  size === 'lg' && 'w-8 h-8'
+                  'bg-muted text-muted-foreground inline-flex items-center justify-center rounded-full text-xs font-medium',
+                  size === 'sm' && 'h-5 w-5',
+                  size === 'md' && 'h-6 w-6',
+                  size === 'lg' && 'h-8 w-8'
                 )}
               >
                 +{hiddenCount}

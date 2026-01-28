@@ -1,13 +1,13 @@
 import { useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { useTaskLabels, useCreateTaskLabel, useUpdateTaskLabel, useDeleteTaskLabel } from '@/lib/hooks/use-tasks';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
+
+import { Settings, ArrowLeft, Plus, Edit, Trash2, Tag } from 'lucide-react';
+
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -24,17 +27,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Settings,
-  ArrowLeft,
-  Plus,
-  Edit,
-  Trash2,
-  Tag,
-} from 'lucide-react';
-import { TaskLabelResponseDto, CreateTaskLabelDto, UpdateTaskLabelDto } from '@/types/dtos';
-import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { useAuthContext } from '@/contexts/auth-context';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import {
+  useTaskLabels,
+  useCreateTaskLabel,
+  useUpdateTaskLabel,
+  useDeleteTaskLabel,
+} from '@/lib/hooks/use-tasks';
+import {
+  type TaskLabelResponseDto,
+  type CreateTaskLabelDto,
+  type UpdateTaskLabelDto,
+} from '@/types/dtos';
 import { UserRole } from '@/types/enums';
 
 const DEFAULT_COLORS = [
@@ -68,7 +73,8 @@ export default function TasksSettingsPage() {
 
   const basePath = getBasePath();
 
-  const { data: labels, isPending } = useTaskLabels();
+  const { data: labelsResponse, isPending } = useTaskLabels();
+  const labels = labelsResponse?.data ?? [];
   const createLabel = useCreateTaskLabel();
   const updateLabel = useUpdateTaskLabel();
   const deleteLabel = useDeleteTaskLabel();
@@ -142,9 +148,7 @@ export default function TasksSettingsPage() {
                 <Tag className="h-5 w-5" />
                 Etykiety
               </CardTitle>
-              <CardDescription>
-                Twórz i zarządzaj etykietami do kategoryzacji zadań
-              </CardDescription>
+              <CardDescription>Twórz i zarządzaj etykietami do kategoryzacji zadań</CardDescription>
             </div>
             {hasWritePermission && (
               <Button onClick={handleOpenCreateDialog}>
@@ -175,7 +179,7 @@ export default function TasksSettingsPage() {
                   <TableRow key={label.id}>
                     <TableCell>
                       <div
-                        className="w-6 h-6 rounded-full border"
+                        className="h-6 w-6 rounded-full border"
                         style={{ backgroundColor: label.color }}
                       />
                     </TableCell>
@@ -208,8 +212,8 @@ export default function TasksSettingsPage() {
               </TableBody>
             </Table>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Tag className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <div className="text-muted-foreground py-8 text-center">
+              <Tag className="mx-auto mb-4 h-12 w-12 opacity-50" />
               <p>Brak etykiet</p>
               <p className="text-sm">Utwórz pierwszą etykietę, aby kategoryzować zadania</p>
             </div>
@@ -221,9 +225,7 @@ export default function TasksSettingsPage() {
       <Dialog open={labelDialogOpen} onOpenChange={setLabelDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editingLabel ? 'Edytuj etykietę' : 'Nowa etykieta'}
-            </DialogTitle>
+            <DialogTitle>{editingLabel ? 'Edytuj etykietę' : 'Nowa etykieta'}</DialogTitle>
             <DialogDescription>
               {editingLabel
                 ? 'Zmień nazwę lub kolor etykiety'
@@ -249,7 +251,7 @@ export default function TasksSettingsPage() {
                   <button
                     key={color}
                     type="button"
-                    className={`w-8 h-8 rounded-full border-2 transition-all ${
+                    className={`h-8 w-8 rounded-full border-2 transition-all ${
                       labelColor === color
                         ? 'border-primary scale-110'
                         : 'border-transparent hover:scale-105'
@@ -259,7 +261,7 @@ export default function TasksSettingsPage() {
                   />
                 ))}
               </div>
-              <div className="flex items-center gap-2 mt-2">
+              <div className="mt-2 flex items-center gap-2">
                 <Label htmlFor="custom-color" className="text-sm">
                   Własny:
                 </Label>
@@ -268,16 +270,16 @@ export default function TasksSettingsPage() {
                   type="color"
                   value={labelColor}
                   onChange={(e) => setLabelColor(e.target.value)}
-                  className="w-12 h-8 p-0 border-0"
+                  className="h-8 w-12 border-0 p-0"
                 />
-                <span className="text-sm text-muted-foreground">{labelColor}</span>
+                <span className="text-muted-foreground text-sm">{labelColor}</span>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Podgląd:</span>
+              <span className="text-muted-foreground text-sm">Podgląd:</span>
               <span
-                className="px-2 py-1 rounded-full text-xs font-medium text-white"
+                className="rounded-full px-2 py-1 text-xs font-medium text-white"
                 style={{ backgroundColor: labelColor }}
               >
                 {labelName || 'Etykieta'}

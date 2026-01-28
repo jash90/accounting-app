@@ -50,7 +50,8 @@ export const queryKeys = {
       myDetailed: ['ai-agent', 'token-usage', 'me', 'detailed'] as const,
       company: ['ai-agent', 'token-usage', 'company'] as const,
       allCompanies: ['ai-agent', 'token-usage', 'all-companies'] as const,
-      companyById: (companyId: string) => ['ai-agent', 'token-usage', 'company', companyId] as const,
+      companyById: (companyId: string) =>
+        ['ai-agent', 'token-usage', 'company', companyId] as const,
     },
     context: {
       all: ['ai-agent', 'context'] as const,
@@ -69,6 +70,11 @@ export const queryKeys = {
     icons: (clientId: string) => ['clients', clientId, 'icons'] as const,
     customFields: (clientId: string) => ['clients', clientId, 'custom-fields'] as const,
     statistics: ['clients', 'statistics'] as const,
+    suspensions: {
+      byClient: (clientId: string) => ['clients', clientId, 'suspensions'] as const,
+      detail: (clientId: string, suspensionId: string) =>
+        ['clients', clientId, 'suspensions', suspensionId] as const,
+    },
   },
   clientFieldDefinitions: {
     all: ['client-field-definitions'] as const,
@@ -108,5 +114,33 @@ export const queryKeys = {
     detail: (id: string) => ['task-labels', id] as const,
     byTask: (taskId: string) => ['task-labels', 'by-task', taskId] as const,
   },
+  timeTracking: {
+    entries: {
+      all: ['time-entries'] as const,
+      list: (filters?: Record<string, unknown>) => ['time-entries', 'list', filters] as const,
+      detail: (id: string) => ['time-entries', id] as const,
+    },
+    timer: {
+      active: ['time-entries', 'timer', 'active'] as const,
+    },
+    settings: ['time-settings'] as const,
+    timesheet: {
+      daily: (date: string) => ['timesheet', 'daily', date] as const,
+      weekly: (date: string) => ['timesheet', 'weekly', date] as const,
+    },
+    reports: {
+      summary: (params?: Record<string, unknown>) => ['time-reports', 'summary', params] as const,
+      byClient: (params?: Record<string, unknown>) =>
+        ['time-reports', 'by-client', params] as const,
+    },
+  },
+  notifications: {
+    all: ['notifications'] as const,
+    list: (filters?: Record<string, unknown>) => ['notifications', 'list', filters] as const,
+    archived: (filters?: Record<string, unknown>) =>
+      ['notifications', 'archived', filters] as const,
+    detail: (id: string) => ['notifications', id] as const,
+    unreadCount: ['notifications', 'unread-count'] as const,
+    settings: ['notifications', 'settings'] as const,
+  },
 };
-

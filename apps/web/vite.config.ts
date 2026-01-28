@@ -26,16 +26,25 @@ export default defineConfig({
     host: 'localhost',
   },
 
-  plugins: [
-    react(),
-    nxViteTsPaths(),
-    nxCopyAssetsPlugin(['*.md']),
-  ],
+  plugins: [react(), nxViteTsPaths(), nxCopyAssetsPlugin(['*.md'])],
 
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@accounting/common/browser': path.resolve(__dirname, '../../libs/common/src/browser.ts'),
     },
+  },
+
+  // Exclude backend-specific packages from dependency optimization
+  optimizeDeps: {
+    exclude: [
+      '@nestjs/mapped-types',
+      'class-transformer',
+      'class-validator',
+      'typeorm',
+      '@nestjs/common',
+      '@nestjs/core',
+    ],
   },
 
   build: {
@@ -44,6 +53,16 @@ export default defineConfig({
     reportCompressedSize: true,
     commonjsOptions: {
       transformMixedEsModules: true,
+    },
+    rollupOptions: {
+      external: [
+        '@nestjs/mapped-types',
+        'class-transformer/storage',
+        'class-transformer',
+        'typeorm',
+        '@nestjs/common',
+        '@nestjs/core',
+      ],
     },
   },
 

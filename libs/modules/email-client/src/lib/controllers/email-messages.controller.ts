@@ -10,14 +10,14 @@ import {
   UseGuards,
   ParseIntPipe,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
-import { ModuleAccessGuard, PermissionGuard, RequireModule, RequirePermission } from '@accounting/rbac';
+import {
+  ModuleAccessGuard,
+  PermissionGuard,
+  RequireModule,
+  RequirePermission,
+} from '@accounting/rbac';
 import { User } from '@accounting/common';
 import { EmailClientService } from '../services/email-client.service';
 import { EmailAttachmentService } from '../services/email-attachment.service';
@@ -35,7 +35,7 @@ import { EmailAttachmentService } from '../services/email-attachment.service';
 export class EmailMessagesController {
   constructor(
     private readonly emailClientService: EmailClientService,
-    private readonly attachmentService: EmailAttachmentService,
+    private readonly attachmentService: EmailAttachmentService
   ) {}
 
   @Get('inbox')
@@ -45,7 +45,7 @@ export class EmailMessagesController {
   async getInbox(
     @CurrentUser() user: User,
     @Query('limit') limit?: number,
-    @Query('unseenOnly') unseenOnly?: boolean,
+    @Query('unseenOnly') unseenOnly?: boolean
   ) {
     return this.emailClientService.getInbox(user, {
       limit: limit ? parseInt(limit.toString()) : 50,
@@ -68,7 +68,7 @@ export class EmailMessagesController {
   async getFolder(
     @CurrentUser() user: User,
     @Param('folderName') folderName: string,
-    @Query('limit') limit?: number,
+    @Query('limit') limit?: number
   ) {
     return this.emailClientService.getFolder(user, folderName, {
       limit: limit ? parseInt(limit.toString()) : 50,
@@ -80,10 +80,7 @@ export class EmailMessagesController {
   @ApiResponse({ status: 200, description: 'Email details with content' })
   @ApiResponse({ status: 404, description: 'Email not found' })
   @RequirePermission('email-client', 'read')
-  async getEmail(
-    @CurrentUser() user: User,
-    @Param('uid', ParseIntPipe) uid: number,
-  ) {
+  async getEmail(@CurrentUser() user: User, @Param('uid', ParseIntPipe) uid: number) {
     return this.emailClientService.getEmail(user, uid);
   }
 
@@ -93,7 +90,8 @@ export class EmailMessagesController {
   @RequirePermission('email-client', 'write')
   async sendEmail(
     @CurrentUser() user: User,
-    @Body() dto: {
+    @Body()
+    dto: {
       to: string | string[];
       subject: string;
       text?: string;
@@ -101,10 +99,10 @@ export class EmailMessagesController {
       cc?: string | string[];
       bcc?: string | string[];
       attachments?: string[];
-    },
+    }
   ) {
     // Transform attachment paths to EmailAttachment objects with absolute paths
-    const attachments = dto.attachments?.map(relativePath => ({
+    const attachments = dto.attachments?.map((relativePath) => ({
       path: this.attachmentService.getAbsolutePath(relativePath),
       filename: relativePath.split('/').pop() || 'attachment',
     }));
@@ -120,10 +118,7 @@ export class EmailMessagesController {
   @ApiOperation({ summary: 'Mark emails as read' })
   @ApiResponse({ status: 200, description: 'Emails marked as read' })
   @RequirePermission('email-client', 'write')
-  async markAsRead(
-    @CurrentUser() user: User,
-    @Body() dto: { messageUids: number[] },
-  ) {
+  async markAsRead(@CurrentUser() user: User, @Body() dto: { messageUids: number[] }) {
     await this.emailClientService.markAsRead(user, dto.messageUids);
     return { success: true };
   }
@@ -132,10 +127,7 @@ export class EmailMessagesController {
   @ApiOperation({ summary: 'Delete emails (move to trash)' })
   @ApiResponse({ status: 200, description: 'Emails deleted' })
   @RequirePermission('email-client', 'delete')
-  async deleteEmails(
-    @CurrentUser() user: User,
-    @Body() dto: { messageUids: number[] },
-  ) {
+  async deleteEmails(@CurrentUser() user: User, @Body() dto: { messageUids: number[] }) {
     await this.emailClientService.deleteEmail(user, dto.messageUids);
     return { success: true };
   }

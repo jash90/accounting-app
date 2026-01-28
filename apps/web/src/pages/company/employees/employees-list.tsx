@@ -1,25 +1,30 @@
 import { useState } from 'react';
-import { ColumnDef } from '@tanstack/react-table';
-import { useEmployees, useDeleteEmployee } from '@/lib/hooks/use-employees';
-import { useCreateEmployee, useUpdateEmployee } from '@/lib/hooks/use-employees';
-import { PageHeader } from '@/components/common/page-header';
-import { DataTable } from '@/components/common/data-table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Edit, Trash2, Key, Users, UserPlus } from 'lucide-react';
-import { UserDto } from '@/types/dtos';
-import { EmployeeFormDialog } from '@/components/forms/employee-form-dialog';
-import { ConfirmDialog } from '@/components/common/confirm-dialog';
+
 import { useNavigate } from 'react-router-dom';
+
+import { type ColumnDef } from '@tanstack/react-table';
+import { Edit, Trash2, Key, Users, UserPlus } from 'lucide-react';
+
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { DataTable } from '@/components/common/data-table';
+import { PageHeader } from '@/components/common/page-header';
+import { EmployeeFormDialog } from '@/components/forms/employee-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  useEmployees,
+  useDeleteEmployee,
+  useCreateEmployee,
+  useUpdateEmployee,
+} from '@/lib/hooks/use-employees';
+import { type UserDto, type CreateEmployeeDto, type UpdateEmployeeDto } from '@/types/dtos';
 
 const columns: ColumnDef<UserDto>[] = [
   {
     accessorKey: 'email',
     header: 'Email',
-    cell: ({ row }) => (
-      <div className="font-medium text-apptax-navy">{row.original.email}</div>
-    ),
+    cell: ({ row }) => <div className="text-apptax-navy font-medium">{row.original.email}</div>,
   },
   {
     accessorKey: 'firstName',
@@ -61,38 +66,38 @@ export default function EmployeesListPage() {
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:bg-apptax-soft-teal"
+            className="hover:bg-apptax-soft-teal h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               navigate(`/company/employees/${row.original.id}/permissions`);
             }}
             title="Zarządzaj uprawnieniami"
           >
-            <Key className="h-4 w-4 text-apptax-teal" />
+            <Key className="text-apptax-teal h-4 w-4" />
           </Button>
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:bg-apptax-soft-teal"
+            className="hover:bg-apptax-soft-teal h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               setEditingEmployee(row.original);
             }}
             title="Edytuj pracownika"
           >
-            <Edit className="h-4 w-4 text-apptax-blue" />
+            <Edit className="text-apptax-blue h-4 w-4" />
           </Button>
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:bg-destructive/10"
+            className="hover:bg-destructive/10 h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               setDeletingEmployee(row.original);
             }}
             title="Usuń pracownika"
           >
-            <Trash2 className="h-4 w-4 text-destructive" />
+            <Trash2 className="text-destructive h-4 w-4" />
           </Button>
         </div>
       ),
@@ -125,9 +130,13 @@ export default function EmployeesListPage() {
       <EmployeeFormDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        onSubmit={(data) => {
-          createEmployee.mutate(data);
-          setCreateOpen(false);
+        onSubmit={async (data) => {
+          try {
+            await createEmployee.mutateAsync(data as CreateEmployeeDto);
+            setCreateOpen(false);
+          } catch {
+            // Error handled by mutation's onError
+          }
         }}
       />
 
@@ -136,9 +145,16 @@ export default function EmployeesListPage() {
           open={!!editingEmployee}
           onOpenChange={(open) => !open && setEditingEmployee(null)}
           employee={editingEmployee}
-          onSubmit={(data) => {
-            updateEmployee.mutate({ id: editingEmployee.id, data });
-            setEditingEmployee(null);
+          onSubmit={async (data) => {
+            try {
+              await updateEmployee.mutateAsync({
+                id: editingEmployee.id,
+                data: data as UpdateEmployeeDto,
+              });
+              setEditingEmployee(null);
+            } catch {
+              // Error handled by mutation's onError
+            }
           }}
         />
       )}

@@ -1,3 +1,6 @@
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+
+import { Type, Transform } from 'class-transformer';
 import {
   IsString,
   IsOptional,
@@ -13,10 +16,9 @@ import {
   Max,
   ValidateIf,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { Type, Transform } from 'class-transformer';
-import { CustomFieldType, Sanitize } from '@accounting/common';
 import sanitizeHtml from 'sanitize-html';
+
+import { CustomFieldType, Sanitize } from '@accounting/common';
 
 export class CreateFieldDefinitionDto {
   @ApiProperty({ description: 'Field name (internal identifier)', minLength: 1, maxLength: 100 })
@@ -47,12 +49,18 @@ export class CreateFieldDefinitionDto {
     description: 'Values for ENUM field type (required for ENUM/MULTISELECT types, max 50 values)',
     maxItems: 50,
   })
-  @ValidateIf((o) => o.fieldType === CustomFieldType.ENUM || o.fieldType === CustomFieldType.MULTISELECT)
+  @ValidateIf(
+    (o) => o.fieldType === CustomFieldType.ENUM || o.fieldType === CustomFieldType.MULTISELECT
+  )
   @Transform(({ value }) => {
     if (Array.isArray(value)) {
       return value.map((v) =>
         typeof v === 'string'
-          ? sanitizeHtml(v, { allowedTags: [], allowedAttributes: {}, textFilter: (text) => text.trim() })
+          ? sanitizeHtml(v, {
+              allowedTags: [],
+              allowedAttributes: {},
+              textFilter: (text) => text.trim(),
+            })
           : v
       );
     }

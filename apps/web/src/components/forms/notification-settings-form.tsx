@@ -1,6 +1,13 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
+
+import { useForm } from 'react-hook-form';
+import type { Resolver } from 'react-hook-form';
+
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Bell, BellOff } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -9,15 +16,12 @@ import {
   FormItem,
   FormLabel,
 } from '@/components/ui/form';
-import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bell, BellOff } from 'lucide-react';
 import {
   notificationSettingsSchema,
-  NotificationSettingsFormData,
+  type NotificationSettingsFormData,
 } from '@/lib/validation/schemas';
-import { NotificationSettingsResponseDto } from '@/types/dtos';
+import { type NotificationSettingsResponseDto } from '@/types/dtos';
 
 interface NotificationSettingsFormProps {
   settings: NotificationSettingsResponseDto | null | undefined;
@@ -31,7 +35,7 @@ export function NotificationSettingsForm({
   isLoading,
 }: NotificationSettingsFormProps) {
   const form = useForm<NotificationSettingsFormData>({
-    resolver: zodResolver(notificationSettingsSchema),
+    resolver: zodResolver(notificationSettingsSchema) as Resolver<NotificationSettingsFormData>,
     defaultValues: {
       receiveOnCreate: settings?.receiveOnCreate ?? false,
       receiveOnUpdate: settings?.receiveOnUpdate ?? false,
@@ -39,35 +43,35 @@ export function NotificationSettingsForm({
     },
   });
 
+  // Destructure reset for stable reference in useEffect deps
+  const { reset } = form;
+
   // Update form when settings change
   useEffect(() => {
     if (settings) {
-      form.reset({
+      reset({
         receiveOnCreate: settings.receiveOnCreate,
         receiveOnUpdate: settings.receiveOnUpdate,
         receiveOnDelete: settings.receiveOnDelete,
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings]);
+  }, [settings, reset]);
 
   const handleSubmit = (data: NotificationSettingsFormData) => {
     onSubmit(data);
   };
 
   const hasAnyNotification =
-    form.watch('receiveOnCreate') ||
-    form.watch('receiveOnUpdate') ||
-    form.watch('receiveOnDelete');
+    form.watch('receiveOnCreate') || form.watch('receiveOnUpdate') || form.watch('receiveOnDelete');
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
           {hasAnyNotification ? (
-            <Bell className="h-5 w-5 text-apptax-blue" />
+            <Bell className="text-apptax-blue h-5 w-5" />
           ) : (
-            <BellOff className="h-5 w-5 text-muted-foreground" />
+            <BellOff className="text-muted-foreground h-5 w-5" />
           )}
           <CardTitle>Ustawienia powiadomień</CardTitle>
         </div>
@@ -90,10 +94,7 @@ export function NotificationSettingsForm({
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}
@@ -111,10 +112,7 @@ export function NotificationSettingsForm({
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}
@@ -132,10 +130,7 @@ export function NotificationSettingsForm({
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}

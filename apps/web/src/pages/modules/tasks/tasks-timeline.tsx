@@ -1,39 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { useTasks, useCreateTask } from '@/lib/hooks/use-tasks';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import { PageHeader } from '@/components/common/page-header';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  CheckSquare,
-  ArrowLeft,
-  List,
-  LayoutGrid,
-  Calendar,
-  GanttChartSquare,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-} from 'lucide-react';
-import { TaskResponseDto, CreateTaskDto, TaskFiltersDto } from '@/types/dtos';
-import {
-  TaskStatus,
-  TaskStatusLabels,
-  UserRole,
-} from '@/types/enums';
-import { TaskFormDialog } from '@/components/tasks';
-import { TaskStatusBadge } from '@/components/tasks';
-import { TaskFilters } from '@/components/tasks/task-filters';
-import { useAuthContext } from '@/contexts/auth-context';
+
 import {
   format,
   startOfWeek,
@@ -49,7 +17,37 @@ import {
   min,
 } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import {
+  CheckSquare,
+  ArrowLeft,
+  List,
+  LayoutGrid,
+  Calendar,
+  GanttChartSquare,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+} from 'lucide-react';
+
+import { PageHeader } from '@/components/common/page-header';
+import { TaskFormDialog, TaskStatusBadge } from '@/components/tasks';
+import { TaskFilters } from '@/components/tasks/task-filters';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthContext } from '@/contexts/auth-context';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import { useTasks, useCreateTask } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
+import { type TaskResponseDto, type CreateTaskDto, type TaskFiltersDto } from '@/types/dtos';
+import { TaskStatus, TaskStatusLabels, UserRole } from '@/types/enums';
 
 type ViewMode = 'day' | 'week' | 'month';
 
@@ -80,7 +78,7 @@ export default function TasksTimelinePage() {
   const [filters, setFilters] = useState<TaskFiltersDto>({});
 
   const { data: tasksResponse, isPending } = useTasks(filters);
-  const tasks = tasksResponse?.data ?? [];
+  const tasks = useMemo(() => tasksResponse?.data ?? [], [tasksResponse?.data]);
 
   const handleFiltersChange = useCallback((newFilters: TaskFiltersDto) => {
     setFilters(newFilters);
@@ -245,26 +243,14 @@ export default function TasksTimelinePage() {
         description="Zarządzaj zadaniami - widok osi czasu"
         icon={<CheckSquare className="h-6 w-6" />}
         titleAction={
-          <div className="flex items-center gap-1 border rounded-lg p-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/list`)}
-            >
+          <div className="flex items-center gap-1 rounded-lg border p-1">
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/list`)}>
               <List className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/kanban`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/kanban`)}>
               <LayoutGrid className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/calendar`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/calendar`)}>
               <Calendar className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="sm" className="bg-accent">
@@ -289,39 +275,24 @@ export default function TasksTimelinePage() {
         <CardContent className="py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleNavigate('today')}
-              >
+              <Button variant="outline" size="sm" onClick={() => handleNavigate('today')}>
                 Dziś
               </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handleNavigate('prev')}
-              >
+              <Button variant="outline" size="icon" onClick={() => handleNavigate('prev')}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handleNavigate('next')}
-              >
+              <Button variant="outline" size="icon" onClick={() => handleNavigate('next')}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <span className="text-sm font-medium ml-2">
+              <span className="ml-2 text-sm font-medium">
                 {format(timelineRange.start, 'd MMM', { locale: pl })} -{' '}
                 {format(timelineRange.end, 'd MMM yyyy', { locale: pl })}
               </span>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Widok:</span>
-              <Select
-                value={viewMode}
-                onValueChange={(v) => setViewMode(v as ViewMode)}
-              >
+              <span className="text-muted-foreground text-sm">Widok:</span>
+              <Select value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
@@ -338,9 +309,9 @@ export default function TasksTimelinePage() {
 
       {/* Timeline */}
       <Card>
-        <CardContent className="p-0 overflow-x-auto">
+        <CardContent className="overflow-x-auto p-0">
           {isPending ? (
-            <div className="p-4 space-y-4">
+            <div className="space-y-4 p-4">
               <Skeleton className="h-8 w-full" />
               {[1, 2, 3, 4, 5].map((i) => (
                 <Skeleton key={i} className="h-12 w-full" />
@@ -349,16 +320,14 @@ export default function TasksTimelinePage() {
           ) : (
             <div className="min-w-[800px]">
               {/* Timeline header */}
-              <div className="flex border-b sticky top-0 bg-background z-10">
-                <div className="w-64 min-w-64 p-3 border-r font-medium text-sm">
-                  Zadanie
-                </div>
-                <div className="flex-1 flex">
+              <div className="bg-background sticky top-0 z-10 flex border-b">
+                <div className="w-64 min-w-64 border-r p-3 text-sm font-medium">Zadanie</div>
+                <div className="flex flex-1">
                   {timelineHeaders.map((header, index) => (
                     <div
                       key={index}
                       className={cn(
-                        'flex-1 p-2 text-center text-xs border-r',
+                        'flex-1 border-r p-2 text-center text-xs',
                         header.isWeekend && 'bg-muted/50'
                       )}
                     >
@@ -370,7 +339,7 @@ export default function TasksTimelinePage() {
 
               {/* Tasks rows */}
               {tasksWithDates.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">
+                <div className="text-muted-foreground p-8 text-center">
                   Brak zadań z datami do wyświetlenia
                 </div>
               ) : (
@@ -380,16 +349,14 @@ export default function TasksTimelinePage() {
                   return (
                     <div
                       key={task.id}
-                      className="flex border-b hover:bg-muted/30 transition-colors"
+                      className="hover:bg-muted/30 flex border-b transition-colors"
                     >
                       {/* Task info */}
-                      <div className="w-64 min-w-64 p-3 border-r">
+                      <div className="w-64 min-w-64 border-r p-3">
                         <div className="flex items-start gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">
-                              {task.title}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">{task.title}</p>
+                            <div className="mt-1 flex items-center gap-2">
                               <TaskStatusBadge status={task.status} size="sm" />
                             </div>
                           </div>
@@ -397,16 +364,13 @@ export default function TasksTimelinePage() {
                       </div>
 
                       {/* Timeline bar */}
-                      <div className="flex-1 relative h-16">
+                      <div className="relative h-16 flex-1">
                         {/* Grid lines */}
                         <div className="absolute inset-0 flex">
                           {timelineHeaders.map((header, index) => (
                             <div
                               key={index}
-                              className={cn(
-                                'flex-1 border-r',
-                                header.isWeekend && 'bg-muted/30'
-                              )}
+                              className={cn('flex-1 border-r', header.isWeekend && 'bg-muted/30')}
                             />
                           ))}
                         </div>
@@ -414,21 +378,29 @@ export default function TasksTimelinePage() {
                         {/* Task bar */}
                         {barStyle && (
                           <div
-                            className="absolute top-3 h-10 rounded px-2 flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+                            role="button"
+                            tabIndex={0}
+                            className="absolute top-3 flex h-10 cursor-pointer items-center rounded px-2 transition-opacity hover:opacity-80"
                             style={{
                               left: barStyle.left,
                               width: barStyle.width,
                               minWidth: '24px',
                             }}
                             onClick={() => navigate(`${basePath}/list?taskId=${task.id}`)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                navigate(`${basePath}/list?taskId=${task.id}`);
+                              }
+                            }}
                           >
                             <div
                               className={cn(
-                                'w-full h-full rounded flex items-center px-2',
+                                'flex h-full w-full items-center rounded px-2',
                                 getStatusColor(task.status)
                               )}
                             >
-                              <span className="text-xs text-white font-medium truncate">
+                              <span className="truncate text-xs font-medium text-white">
                                 {task.title}
                               </span>
                             </div>
@@ -453,12 +425,7 @@ export default function TasksTimelinePage() {
               .filter(([key]) => key !== TaskStatus.CANCELLED)
               .map(([status, label]) => (
                 <div key={status} className="flex items-center gap-2">
-                  <div
-                    className={cn(
-                      'w-3 h-3 rounded',
-                      getStatusColor(status as TaskStatus)
-                    )}
-                  />
+                  <div className={cn('h-3 w-3 rounded', getStatusColor(status as TaskStatus))} />
                   <span>{label}</span>
                 </div>
               ))}

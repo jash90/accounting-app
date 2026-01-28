@@ -82,7 +82,8 @@ export enum ChangeAction {
 
 export enum AmlGroup {
   LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
+  STANDARD = 'STANDARD',
+  ELEVATED = 'ELEVATED',
   HIGH = 'HIGH',
 }
 
@@ -127,9 +128,7 @@ export interface ConditionGroup {
 export type AutoAssignCondition = SingleCondition | ConditionGroup;
 
 // Type guard to check if condition is a group
-export function isConditionGroup(
-  condition: AutoAssignCondition
-): condition is ConditionGroup {
+export function isConditionGroup(condition: AutoAssignCondition): condition is ConditionGroup {
   return 'logicalOperator' in condition && 'conditions' in condition;
 }
 
@@ -195,4 +194,43 @@ export const TaskDependencyTypeLabels: Record<TaskDependencyType, string> = {
   [TaskDependencyType.BLOCKS]: 'Blokuje',
   [TaskDependencyType.BLOCKED_BY]: 'Zablokowane przez',
   [TaskDependencyType.RELATES_TO]: 'Powiązane z',
+};
+
+// Time Tracking enums
+export enum TimeEntryStatus {
+  DRAFT = 'draft',
+  SUBMITTED = 'submitted',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  BILLED = 'billed',
+}
+
+export const TimeEntryStatusLabels: Record<TimeEntryStatus, string> = {
+  [TimeEntryStatus.DRAFT]: 'Wersja robocza',
+  [TimeEntryStatus.SUBMITTED]: 'Wysłane',
+  [TimeEntryStatus.APPROVED]: 'Zatwierdzone',
+  [TimeEntryStatus.REJECTED]: 'Odrzucone',
+  [TimeEntryStatus.BILLED]: 'Rozliczone',
+};
+
+export const TimeEntryStatusColors: Record<TimeEntryStatus, string> = {
+  [TimeEntryStatus.DRAFT]: 'bg-slate-100 text-slate-700',
+  [TimeEntryStatus.SUBMITTED]: 'bg-blue-100 text-blue-700',
+  [TimeEntryStatus.APPROVED]: 'bg-green-100 text-green-700',
+  [TimeEntryStatus.REJECTED]: 'bg-red-100 text-red-700',
+  [TimeEntryStatus.BILLED]: 'bg-purple-100 text-purple-700',
+};
+
+export enum TimeRoundingMethod {
+  NONE = 'none',
+  UP = 'up',
+  DOWN = 'down',
+  NEAREST = 'nearest',
+}
+
+export const TimeRoundingMethodLabels: Record<TimeRoundingMethod, string> = {
+  [TimeRoundingMethod.NONE]: 'Brak zaokrąglenia',
+  [TimeRoundingMethod.UP]: 'W górę',
+  [TimeRoundingMethod.DOWN]: 'W dół',
+  [TimeRoundingMethod.NEAREST]: 'Do najbliższego',
 };

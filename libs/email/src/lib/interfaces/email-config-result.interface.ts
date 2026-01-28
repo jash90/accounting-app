@@ -3,11 +3,7 @@
  * Provides a standardized format for email autodiscovery results
  */
 
-import {
-  AutodiscoveryResult,
-  DiscoverySource,
-  ConfidenceLevel,
-} from './autodiscovery.interface';
+import { AutodiscoveryResult, DiscoverySource, ConfidenceLevel } from './autodiscovery.interface';
 
 /**
  * Security type for email connections
@@ -165,7 +161,5 @@ export function isHighConfidence(config: DiscoveredEmailConfig): boolean {
  * Type guard to check if a DiscoveredEmailConfig uses SSL for both connections
  */
 export function isFullySsl(config: DiscoveredEmailConfig): boolean {
-  return (
-    config.incoming.security === 'SSL' && config.outgoing.security === 'SSL'
-  );
+  return config.incoming.security === 'SSL' && config.outgoing.security === 'SSL';
 }

@@ -1,28 +1,32 @@
 import {
-  UserRole,
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
-  CustomFieldType,
-  AutoAssignCondition,
-  AmlGroup,
-  TaskStatus,
-  TaskPriority,
-  TaskDependencyType,
-} from './enums';
-import {
-  Client,
-  ClientFieldDefinition,
-  ClientIcon,
-  NotificationSettings,
-  ChangeLog,
-  Task,
-  TaskLabel,
-  TaskComment,
-  TaskDependency,
-  AcceptanceCriterion,
+  type Client,
+  type ClientFieldDefinition,
+  type ClientIcon,
+  type NotificationSettings,
+  type ChangeLog,
+  type Task,
+  type TaskLabel,
+  type TaskComment,
+  type TaskDependency,
+  type AcceptanceCriterion,
+  type TimeEntry,
+  type TimeSettings,
 } from './entities';
+import {
+  UserRole,
+  type EmploymentType,
+  type VatStatus,
+  type TaxScheme,
+  type ZusStatus,
+  type CustomFieldType,
+  type AutoAssignCondition,
+  type AmlGroup,
+  type TaskStatus,
+  type TaskPriority,
+  type TaskDependencyType,
+  type TimeEntryStatus,
+  type TimeRoundingMethod,
+} from './enums';
 
 // Re-export for external consumers
 export { UserRole };
@@ -113,6 +117,7 @@ export interface ModuleDto {
   slug: string;
   description: string;
   isActive: boolean;
+  icon: string | null;
   createdAt: Date;
 }
 
@@ -166,6 +171,17 @@ export interface ManageModulePermissionDto {
   permissions?: string[];
 }
 
+// User Module Permission (returned from getEmployeeModules)
+export interface UserModulePermission {
+  id: string;
+  userId: string;
+  moduleId: string;
+  module: ModuleDto;
+  permissions: string[];
+  grantedById: string;
+  createdAt: Date;
+}
+
 // AI Agent DTOs
 
 // Enums
@@ -192,13 +208,13 @@ export interface AIConfigurationResponseDto {
   provider: AIProvider;
   model: string;
   systemPrompt: string | null;
-  hasApiKey: boolean;  // API key status indicator (actual key is never returned)
+  hasApiKey: boolean; // API key status indicator (actual key is never returned)
   temperature: number;
   maxTokens: number;
-  enableStreaming: boolean;  // Enable real-time token streaming via SSE
+  enableStreaming: boolean; // Enable real-time token streaming via SSE
   // Embedding configuration (for RAG/Knowledge Base)
   embeddingProvider: AIProvider | null;
-  hasEmbeddingApiKey: boolean;  // Separate embedding API key status indicator
+  hasEmbeddingApiKey: boolean; // Separate embedding API key status indicator
   embeddingModel: string | null;
   createdBy: {
     id: string;
@@ -496,7 +512,6 @@ export interface TestConnectionResultDto {
   message: string;
 }
 
-
 // Client DTOs
 export interface CreateClientDto {
   name: string;
@@ -505,11 +520,11 @@ export interface CreateClientDto {
   phone?: string;
   companyStartDate?: Date;
   cooperationStartDate?: Date;
-  suspensionDate?: Date;
   companySpecificity?: string;
   additionalInfo?: string;
   gtuCode?: string;
   gtuCodes?: string[];
+  pkdCode?: string;
   amlGroup?: string;
   amlGroupEnum?: AmlGroup;
   receiveEmailCopy?: boolean;
@@ -521,13 +536,28 @@ export interface CreateClientDto {
 
 export interface UpdateClientDto extends Partial<CreateClientDto> {}
 
+export interface CustomFieldFilter {
+  fieldId: string;
+  operator: string;
+  value: string | string[];
+}
+
 export interface ClientFiltersDto {
   search?: string;
   employmentType?: EmploymentType;
   vatStatus?: VatStatus;
   taxScheme?: TaxScheme;
   zusStatus?: ZusStatus;
+  amlGroupEnum?: AmlGroup;
+  gtuCode?: string;
+  pkdCode?: string;
+  receiveEmailCopy?: boolean;
   isActive?: boolean;
+  cooperationStartDateFrom?: string;
+  cooperationStartDateTo?: string;
+  companyStartDateFrom?: string;
+  companyStartDateTo?: string;
+  customFieldFilters?: CustomFieldFilter[];
 }
 
 export interface SetCustomFieldValuesDto {
@@ -655,7 +685,7 @@ export interface BulkUpdateStatusDto {
   status: TaskStatus;
 }
 
-export interface TaskResponseDto extends Task {
+export interface TaskResponseDto extends Omit<Task, 'createdBy' | 'assignee' | 'client'> {
   createdBy?: {
     id: string;
     email: string;
@@ -718,7 +748,7 @@ export interface UpdateTaskCommentDto {
   content: string;
 }
 
-export interface TaskCommentResponseDto extends TaskComment {
+export interface TaskCommentResponseDto extends Omit<TaskComment, 'author'> {
   author?: {
     id: string;
     email: string;
@@ -733,7 +763,7 @@ export interface CreateTaskDependencyDto {
   dependencyType: TaskDependencyType;
 }
 
-export interface TaskDependencyResponseDto extends TaskDependency {
+export interface TaskDependencyResponseDto extends Omit<TaskDependency, 'task' | 'dependsOnTask'> {
   task?: {
     id: string;
     title: string;
@@ -746,3 +776,193 @@ export interface TaskDependencyResponseDto extends TaskDependency {
   };
 }
 
+// =============================================
+// Time Tracking DTOs
+// =============================================
+
+// Time Entry DTOs
+export interface CreateTimeEntryDto {
+  description?: string;
+  startTime: Date | string;
+  endTime?: Date | string;
+  durationMinutes?: number;
+  isBillable?: boolean;
+  hourlyRate?: number;
+  currency?: string;
+  tags?: string[];
+  clientId?: string;
+  taskId?: string;
+}
+
+export interface UpdateTimeEntryDto extends Partial<CreateTimeEntryDto> {}
+
+export interface TimeEntryFiltersDto {
+  search?: string;
+  status?: TimeEntryStatus;
+  isBillable?: boolean;
+  clientId?: string;
+  taskId?: string;
+  userId?: string;
+  startDate?: Date | string;
+  endDate?: Date | string;
+  isRunning?: boolean;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'ASC' | 'DESC';
+}
+
+export interface TimeEntryResponseDto extends Omit<
+  TimeEntry,
+  'user' | 'client' | 'task' | 'createdBy' | 'approvedBy'
+> {
+  user?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  client?: {
+    id: string;
+    name: string;
+  };
+  task?: {
+    id: string;
+    title: string;
+  };
+  createdBy?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  approvedBy?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+// Timer DTOs
+export interface StartTimerDto {
+  description?: string;
+  clientId?: string;
+  taskId?: string;
+  isBillable?: boolean;
+  tags?: string[];
+}
+
+export interface StopTimerDto {
+  description?: string;
+  isBillable?: boolean;
+}
+
+export interface UpdateTimerDto {
+  description?: string;
+  clientId?: string;
+  taskId?: string;
+  isBillable?: boolean;
+  tags?: string[];
+}
+
+// Approval DTOs
+export interface SubmitTimeEntryDto {}
+
+export interface ApproveTimeEntryDto {}
+
+export interface RejectTimeEntryDto {
+  rejectionNote: string;
+}
+
+// Time Settings DTOs
+export interface UpdateTimeSettingsDto {
+  roundingMethod?: TimeRoundingMethod;
+  roundingIntervalMinutes?: number;
+  defaultHourlyRate?: number;
+  defaultCurrency?: string;
+  requireApproval?: boolean;
+  allowOverlappingEntries?: boolean;
+  workingHoursPerDay?: number;
+  workingHoursPerWeek?: number;
+  weekStartDay?: number;
+  allowTimerMode?: boolean;
+  allowManualEntry?: boolean;
+  autoStopTimerAfterMinutes?: number;
+  minimumEntryMinutes?: number;
+  maximumEntryMinutes?: number;
+  enableDailyReminder?: boolean;
+  dailyReminderTime?: string;
+  lockEntriesAfterDays?: number;
+}
+
+export interface TimeSettingsResponseDto extends Omit<TimeSettings, 'updatedBy'> {
+  updatedBy?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+// Timesheet DTOs
+export interface TimesheetSummary {
+  totalMinutes: number;
+  billableMinutes: number;
+  nonBillableMinutes: number;
+  totalAmount: number;
+  entriesCount: number;
+}
+
+export interface TimesheetDayDto {
+  date: string;
+  entries: TimeEntryResponseDto[];
+  totalMinutes: number;
+  billableMinutes: number;
+  totalAmount: number;
+}
+
+export interface DailyTimesheetDto {
+  date: string;
+  entries: TimeEntryResponseDto[];
+  summary: TimesheetSummary;
+}
+
+export interface WeeklyTimesheetDto {
+  weekStart: string;
+  weekEnd: string;
+  days: TimesheetDayDto[];
+  summary: TimesheetSummary;
+}
+
+// Report DTOs
+export interface TimeSummaryReportDto {
+  periodStart: string;
+  periodEnd: string;
+  totalMinutes: number;
+  billableMinutes: number;
+  nonBillableMinutes: number;
+  totalAmount: number;
+  entryCount: number;
+  byClient?: {
+    clientId: string;
+    clientName: string;
+    totalMinutes: number;
+    totalAmount: number;
+  }[];
+  byUser?: {
+    userId: string;
+    userName: string;
+    totalMinutes: number;
+    totalAmount: number;
+  }[];
+}
+
+export interface TimeByClientReportDto {
+  clientId: string;
+  clientName: string;
+  totalMinutes: number;
+  billableMinutes: number;
+  totalAmount: number;
+  entryCount: number;
+}

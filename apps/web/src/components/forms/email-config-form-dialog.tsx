@@ -1,6 +1,12 @@
 import { useEffect } from 'react';
+
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Mail, Send, Download, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -18,18 +24,15 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Switch } from '@/components/ui/switch';
 import {
   createEmailConfigSchema,
   updateEmailConfigSchema,
-  CreateEmailConfigFormData,
-  UpdateEmailConfigFormData,
+  type CreateEmailConfigFormData,
+  type UpdateEmailConfigFormData,
 } from '@/lib/validation/schemas';
-import { EmailConfigResponseDto, TestSmtpDto, TestImapDto } from '@/types/dtos';
-import { Mail, Send, Download, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { type EmailConfigResponseDto, type TestSmtpDto, type TestImapDto } from '@/types/dtos';
 
 interface EmailConfigFormDialogProps {
   open: boolean;
@@ -212,7 +215,7 @@ export function EmailConfigFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
@@ -233,7 +236,9 @@ export function EmailConfigFormDialog({
                   <FormControl>
                     <Input placeholder="Moje konto email" {...field} />
                   </FormControl>
-                  <FormDescription>Przyjazna nazwa do identyfikacji tej konfiguracji email</FormDescription>
+                  <FormDescription>
+                    Przyjazna nazwa do identyfikacji tej konfiguracji email
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -242,8 +247,10 @@ export function EmailConfigFormDialog({
             {/* SMTP Configuration Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Send className="h-4 w-4 text-apptax-blue" />
-                <h3 className="text-lg font-semibold text-apptax-navy">Konfiguracja SMTP (poczta wychodząca)</h3>
+                <Send className="text-apptax-blue h-4 w-4" />
+                <h3 className="text-apptax-navy text-lg font-semibold">
+                  Konfiguracja SMTP (poczta wychodząca)
+                </h3>
               </div>
               <Separator />
 
@@ -288,9 +295,10 @@ export function EmailConfigFormDialog({
               {(form.watch('smtpPort') === 465 || form.watch('smtpPort') === 587) && (
                 <Alert className="border-amber-200 bg-amber-50">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-amber-800 text-sm">
-                    Niektórzy dostawcy email wymagają włączenia dostępu SMTP w panelu użytkownika konta email.
-                    Jeśli napotkasz błędy uwierzytelniania, sprawdź ustawienia bezpieczeństwa w panelu dostawcy email.
+                  <AlertDescription className="text-sm text-amber-800">
+                    Niektórzy dostawcy email wymagają włączenia dostępu SMTP w panelu użytkownika
+                    konta email. Jeśli napotkasz błędy uwierzytelniania, sprawdź ustawienia
+                    bezpieczeństwa w panelu dostawcy email.
                   </AlertDescription>
                 </Alert>
               )}
@@ -302,7 +310,9 @@ export function EmailConfigFormDialog({
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                     <div className="space-y-0.5">
                       <FormLabel>Użyj SSL/TLS</FormLabel>
-                      <FormDescription>Włącz bezpieczne połączenie (zalecane dla portu 465)</FormDescription>
+                      <FormDescription>
+                        Włącz bezpieczne połączenie (zalecane dla portu 465)
+                      </FormDescription>
                     </div>
                     <FormControl>
                       <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -373,8 +383,10 @@ export function EmailConfigFormDialog({
             {/* IMAP Configuration Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Download className="h-4 w-4 text-apptax-teal" />
-                <h3 className="text-lg font-semibold text-apptax-navy">Konfiguracja IMAP (poczta przychodząca)</h3>
+                <Download className="text-apptax-teal h-4 w-4" />
+                <h3 className="text-apptax-navy text-lg font-semibold">
+                  Konfiguracja IMAP (poczta przychodząca)
+                </h3>
               </div>
               <Separator />
 
@@ -419,9 +431,10 @@ export function EmailConfigFormDialog({
               {form.watch('imapPort') === 993 && (
                 <Alert className="border-amber-200 bg-amber-50">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-amber-800 text-sm">
-                    Niektórzy dostawcy email wymagają włączenia dostępu IMAP w panelu użytkownika konta email.
-                    Jeśli napotkasz błędy uwierzytelniania, sprawdź ustawienia bezpieczeństwa w panelu dostawcy email.
+                  <AlertDescription className="text-sm text-amber-800">
+                    Niektórzy dostawcy email wymagają włączenia dostępu IMAP w panelu użytkownika
+                    konta email. Jeśli napotkasz błędy uwierzytelniania, sprawdź ustawienia
+                    bezpieczeństwa w panelu dostawcy email.
                   </AlertDescription>
                 </Alert>
               )}
@@ -433,7 +446,9 @@ export function EmailConfigFormDialog({
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                     <div className="space-y-0.5">
                       <FormLabel>Użyj TLS</FormLabel>
-                      <FormDescription>Włącz bezpieczne połączenie (zalecane dla portu 993)</FormDescription>
+                      <FormDescription>
+                        Włącz bezpieczne połączenie (zalecane dla portu 993)
+                      </FormDescription>
                     </div>
                     <FormControl>
                       <Switch checked={field.value} onCheckedChange={field.onChange} />

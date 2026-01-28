@@ -55,7 +55,7 @@ describe('/api/admin/companies (cascade deletion)', () => {
       const modulesResponse = await axios.get(`${apiUrl}/api/modules`, {
         headers: { Authorization: `Bearer ${adminToken}` },
       });
-      const module = modulesResponse.data.find(m => m.slug === moduleSlug);
+      const module = modulesResponse.data.find((m) => m.slug === moduleSlug);
       expect(module).toBeDefined();
       const moduleId = module.id;
 
@@ -122,18 +122,17 @@ describe('/api/admin/companies (cascade deletion)', () => {
           headers: { Authorization: `Bearer ${ownerToken}` },
         }
       );
-      const permissionBefore = permissionsBeforeResponse.data.find(p => p.module.slug === moduleSlug);
+      const permissionBefore = permissionsBeforeResponse.data.find(
+        (p) => p.module.slug === moduleSlug
+      );
       expect(permissionBefore).toBeDefined();
       expect(permissionBefore.canRead).toBe(true);
       expect(permissionBefore.canWrite).toBe(true);
 
       // Step 5: Revoke module access from company (as admin)
-      await axios.delete(
-        `${apiUrl}/api/modules/companies/${ownerCompanyId}/${moduleId}`,
-        {
-          headers: { Authorization: `Bearer ${adminToken}` },
-        }
-      );
+      await axios.delete(`${apiUrl}/api/modules/companies/${ownerCompanyId}/${moduleId}`, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
 
       // Step 6: Verify employee permissions are removed
       const permissionsAfterResponse = await axios.get(
@@ -144,7 +143,9 @@ describe('/api/admin/companies (cascade deletion)', () => {
       );
 
       // Employee should no longer have permissions for this module
-      const permissionAfter = permissionsAfterResponse.data.find(p => p.module.slug === moduleSlug);
+      const permissionAfter = permissionsAfterResponse.data.find(
+        (p) => p.module.slug === moduleSlug
+      );
       expect(permissionAfter).toBeUndefined();
 
       // Step 7: Verify company no longer has access to module
@@ -154,7 +155,9 @@ describe('/api/admin/companies (cascade deletion)', () => {
           headers: { Authorization: `Bearer ${adminToken}` },
         }
       );
-      const companyModuleAccess = companyModulesResponse.data.find(m => m.module.slug === moduleSlug);
+      const companyModuleAccess = companyModulesResponse.data.find(
+        (m) => m.module.slug === moduleSlug
+      );
       if (companyModuleAccess) {
         expect(companyModuleAccess.isEnabled).toBe(false);
       }
@@ -197,7 +200,7 @@ describe('/api/admin/companies (cascade deletion)', () => {
         await axios.delete(`${apiUrl}/api/admin/users/${employeeId}`, {
           headers: { Authorization: `Bearer ${adminToken}` },
         });
-      } catch (error) {
+      } catch {
         // Ignore cleanup errors
       }
     }
@@ -207,7 +210,7 @@ describe('/api/admin/companies (cascade deletion)', () => {
         await axios.delete(`${apiUrl}/api/admin/companies/${companyId}`, {
           headers: { Authorization: `Bearer ${adminToken}` },
         });
-      } catch (error) {
+      } catch {
         // Ignore cleanup errors
       }
     }

@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
 export class AddEmailClientModule1768394000000 implements MigrationInterface {
   name = 'AddEmailClientModule1768394000000';

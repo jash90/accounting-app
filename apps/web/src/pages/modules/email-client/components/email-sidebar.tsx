@@ -1,7 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
-import { useFolders } from '@/lib/hooks/use-email-client';
-import { cn } from '@/lib/utils/cn';
+
 import {
   Inbox,
   Send,
@@ -16,6 +14,10 @@ import {
   Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+
+import { useFolders } from '@/lib/hooks/use-email-client';
+import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
+import { cn } from '@/lib/utils/cn';
 
 // Map IMAP folder names to appropriate icons
 function getFolderIcon(folderName: string): LucideIcon {
@@ -34,14 +36,22 @@ function getFolderIcon(folderName: string): LucideIcon {
   if (lower.includes('trash') || lower.includes('kosz') || lower.includes('deleted')) return Trash2;
 
   // Spam/Junk folder variants
-  if (lower.includes('spam') || lower.includes('śmieci') || lower.includes('smieci') || lower.includes('junk')) return AlertTriangle;
+  if (
+    lower.includes('spam') ||
+    lower.includes('śmieci') ||
+    lower.includes('smieci') ||
+    lower.includes('junk')
+  )
+    return AlertTriangle;
 
   // Archive folder variants
   if (lower.includes('archive') || lower.includes('archiwum')) return Archive;
 
   // Special folders (Polish email providers)
-  if (lower.includes('społeczności') || lower.includes('spolecznosci') || lower.includes('social')) return Users;
-  if (lower.includes('oferty') || lower.includes('promotions') || lower.includes('promo')) return ShoppingBag;
+  if (lower.includes('społeczności') || lower.includes('spolecznosci') || lower.includes('social'))
+    return Users;
+  if (lower.includes('oferty') || lower.includes('promotions') || lower.includes('promo'))
+    return ShoppingBag;
   if (lower.includes('kategori') || lower.includes('label')) return Tag;
 
   // Default folder icon
@@ -76,10 +86,10 @@ export function EmailSidebar() {
 
   if (isLoading) {
     return (
-      <aside className="w-48 border-r bg-muted/30 flex-shrink-0">
-        <nav className="p-2 space-y-1">
+      <aside className="bg-muted/30 w-48 flex-shrink-0 border-r">
+        <nav className="space-y-1 p-2">
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
           </div>
         </nav>
       </aside>
@@ -89,8 +99,8 @@ export function EmailSidebar() {
   const sortedFolders = folders ? sortFolders(folders) : [];
 
   return (
-    <aside className="w-48 border-r bg-muted/30 flex-shrink-0">
-      <nav className="p-2 space-y-1">
+    <aside className="bg-muted/30 w-48 flex-shrink-0 border-r">
+      <nav className="space-y-1 p-2">
         {sortedFolders.map((folderName) => {
           const Icon = getFolderIcon(folderName);
           const active = isActive(folderName);
@@ -101,7 +111,7 @@ export function EmailSidebar() {
               key={folderName}
               to={href}
               className={cn(
-                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                 active
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'

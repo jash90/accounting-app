@@ -1,4 +1,11 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Optional, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Optional,
+  Logger,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RBACService } from '../services/rbac.service';
 import { ModuleDiscoveryService } from '../services/module-discovery.service';
@@ -12,7 +19,7 @@ export class ModuleAccessGuard implements CanActivate {
     private rbacService: RBACService,
     private reflector: Reflector,
     @Optional()
-    private moduleDiscoveryService?: ModuleDiscoveryService,
+    private moduleDiscoveryService?: ModuleDiscoveryService
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -52,4 +59,3 @@ export class ModuleAccessGuard implements CanActivate {
     return true;
   }
 }
-

@@ -30,13 +30,13 @@ export class S3StorageProvider implements StorageProvider {
     if (!accessKeyId || !accessKeyId.trim()) {
       throw new Error(
         'S3 storage provider requires S3_ACCESS_KEY environment variable. ' +
-        'Please configure S3 credentials or use local storage provider instead.',
+          'Please configure S3 credentials or use local storage provider instead.'
       );
     }
     if (!secretAccessKey || !secretAccessKey.trim()) {
       throw new Error(
         'S3 storage provider requires S3_SECRET_KEY environment variable. ' +
-        'Please configure S3 credentials or use local storage provider instead.',
+          'Please configure S3 credentials or use local storage provider instead.'
       );
     }
 
@@ -63,7 +63,7 @@ export class S3StorageProvider implements StorageProvider {
           Key: key,
           Body: file.buffer,
           ContentType: file.mimetype,
-        }),
+        })
       );
 
       const url = `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
@@ -90,7 +90,7 @@ export class S3StorageProvider implements StorageProvider {
         new DeleteObjectCommand({
           Bucket: this.bucket,
           Key: key,
-        }),
+        })
       );
 
       this.logger.log(`File deleted from S3: ${key}`);
@@ -125,7 +125,7 @@ export class S3StorageProvider implements StorageProvider {
         new HeadObjectCommand({
           Bucket: this.bucket,
           Key: key,
-        }),
+        })
       );
       return true;
     } catch {

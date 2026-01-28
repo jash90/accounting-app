@@ -1,30 +1,28 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { useToast } from '@/components/ui/use-toast';
+import { type ApiErrorResponse } from '@/types/api';
+import {
+  type CreateTaskDto,
+  type UpdateTaskDto,
+  type TaskFiltersDto,
+  type ReorderTasksDto,
+  type BulkUpdateStatusDto,
+  type CreateTaskLabelDto,
+  type UpdateTaskLabelDto,
+  type CreateTaskCommentDto,
+  type UpdateTaskCommentDto,
+  type CreateTaskDependencyDto,
+} from '@/types/dtos';
+
 import {
   tasksApi,
   taskLabelsApi,
   taskCommentsApi,
   taskDependenciesApi,
-  TaskLabelQueryDto,
-  TaskAssigneeDto,
-  TaskClientDto,
-  ClientTaskStatisticsDto,
+  type TaskLabelQueryDto,
 } from '../api/endpoints/tasks';
 import { queryKeys } from '../api/query-client';
-import {
-  CreateTaskDto,
-  UpdateTaskDto,
-  TaskFiltersDto,
-  ReorderTasksDto,
-  BulkUpdateStatusDto,
-  CreateTaskLabelDto,
-  UpdateTaskLabelDto,
-  AssignLabelDto,
-  CreateTaskCommentDto,
-  UpdateTaskCommentDto,
-  CreateTaskDependencyDto,
-} from '@/types/dtos';
-import { ApiErrorResponse } from '@/types/api';
-import { useToast } from '@/components/ui/use-toast';
 
 // ============================================
 // Task Hooks
@@ -32,7 +30,7 @@ import { useToast } from '@/components/ui/use-toast';
 
 export function useTasks(filters?: TaskFiltersDto) {
   return useQuery({
-    queryKey: queryKeys.tasks.list(filters),
+    queryKey: queryKeys.tasks.list(filters as Record<string, unknown> | undefined),
     queryFn: () => tasksApi.getAll(filters),
   });
 }
@@ -85,6 +83,8 @@ export function useTaskClients() {
   return useQuery({
     queryKey: queryKeys.tasks.lookupClients,
     queryFn: () => tasksApi.getClients(),
+    retry: false, // Don't retry on 403 (module not accessible)
+    throwOnError: false, // Don't throw on error, handle gracefully
   });
 }
 
@@ -102,8 +102,17 @@ export function useCreateTask() {
 
   return useMutation({
     mutationFn: (taskData: CreateTaskDto) => tasksApi.create(taskData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+    onSuccess: (newTask) => {
+      // Invalidate list views that need to show the new task
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'list'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'kanban'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'calendar'], exact: false });
+      // Invalidate statistics if client was assigned
+      if (newTask.clientId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.tasks.clientStatistics(newTask.clientId),
+        });
+      }
       toast({
         title: 'Sukces',
         description: 'Zadanie zostało utworzone',
@@ -124,11 +133,16 @@ export function useUpdateTask() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateTaskDto }) =>
-      tasksApi.update(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+    mutationFn: ({ id, data }: { id: string; data: UpdateTaskDto }) => tasksApi.update(id, data),
+    onSuccess: (_updatedTask, variables) => {
+      // Invalidate the specific task detail
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.id) });
+      // Invalidate list views (status/assignee/client might have changed)
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'list'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'kanban'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'calendar'], exact: false });
+      // Invalidate subtasks if parent changed
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.subtasks(variables.id) });
       toast({
         title: 'Sukces',
         description: 'Zadanie zostało zaktualizowane',
@@ -150,8 +164,12 @@ export function useDeleteTask() {
 
   return useMutation({
     mutationFn: (id: string) => tasksApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+    onSuccess: (_, deletedId) => {
+      // Remove from cache and invalidate list views
+      queryClient.removeQueries({ queryKey: queryKeys.tasks.detail(deletedId) });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'list'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'kanban'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'calendar'], exact: false });
       toast({
         title: 'Sukces',
         description: 'Zadanie zostało usunięte',
@@ -174,7 +192,9 @@ export function useReorderTasks() {
   return useMutation({
     mutationFn: (reorderData: ReorderTasksDto) => tasksApi.reorderTasks(reorderData),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+      // Only invalidate views that show task order
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'kanban'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'list'], exact: false });
     },
     onError: (error: ApiErrorResponse) => {
       toast({
@@ -193,7 +213,14 @@ export function useBulkUpdateStatus() {
   return useMutation({
     mutationFn: (bulkData: BulkUpdateStatusDto) => tasksApi.bulkUpdateStatus(bulkData),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+      // Invalidate detail queries for affected tasks
+      variables.taskIds.forEach((id) => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(id) });
+      });
+      // Invalidate list views
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'list'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'kanban'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'calendar'], exact: false });
       toast({
         title: 'Sukces',
         description: `Zaktualizowano status ${variables.taskIds.length} zadań`,
@@ -307,8 +334,10 @@ export function useAssignTaskLabel() {
     mutationFn: ({ taskId, labelId }: { taskId: string; labelId: string }) =>
       taskLabelsApi.assignToTask(taskId, { labelId }),
     onSuccess: (_, variables) => {
+      // Only invalidate the specific task and list views showing labels
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'list'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'kanban'], exact: false });
       toast({
         title: 'Sukces',
         description: 'Etykieta została przypisana',
@@ -332,8 +361,10 @@ export function useUnassignTaskLabel() {
     mutationFn: ({ taskId, labelId }: { taskId: string; labelId: string }) =>
       taskLabelsApi.unassignFromTask(taskId, labelId),
     onSuccess: (_, variables) => {
+      // Only invalidate the specific task and list views showing labels
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'list'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'kanban'], exact: false });
       toast({
         title: 'Sukces',
         description: 'Etykieta została usunięta z zadania',
@@ -392,7 +423,7 @@ export function useUpdateTaskComment() {
   return useMutation({
     mutationFn: ({
       commentId,
-      taskId,
+      taskId: _taskId,
       data,
     }: {
       commentId: string;
@@ -421,7 +452,7 @@ export function useDeleteTaskComment() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ commentId, taskId }: { commentId: string; taskId: string }) =>
+    mutationFn: ({ commentId, taskId: _taskId }: { commentId: string; taskId: string }) =>
       taskCommentsApi.delete(commentId),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.comments(variables.taskId) });
@@ -476,8 +507,18 @@ export function useCreateTaskDependency() {
     mutationFn: ({ taskId, data }: { taskId: string; data: CreateTaskDependencyDto }) =>
       taskDependenciesApi.create(taskId, data),
     onSuccess: (_, variables) => {
+      // Invalidate dependencies and detail for affected tasks
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.dependencies(variables.taskId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
+      // Also invalidate the dependent task
+      if (variables.data.dependsOnTaskId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.tasks.dependencies(variables.data.dependsOnTaskId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.tasks.detail(variables.data.dependsOnTaskId),
+        });
+      }
       toast({
         title: 'Sukces',
         description: 'Zależność została dodana',
@@ -498,11 +539,12 @@ export function useDeleteTaskDependency() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ dependencyId, taskId }: { dependencyId: string; taskId: string }) =>
+    mutationFn: ({ dependencyId, taskId: _taskId }: { dependencyId: string; taskId: string }) =>
       taskDependenciesApi.delete(dependencyId),
     onSuccess: (_, variables) => {
+      // Invalidate dependencies for the task
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.dependencies(variables.taskId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
       toast({
         title: 'Sukces',
         description: 'Zależność została usunięta',

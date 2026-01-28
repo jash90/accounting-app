@@ -1,6 +1,6 @@
-import { cn } from '@/lib/utils/cn';
-import { TaskStatus, TaskStatusLabels, TaskStatusColors } from '@/types/enums';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils/cn';
+import { type TaskStatus, TaskStatusLabels, TaskStatusColors } from '@/types/enums';
 
 interface TaskStatusBadgeProps {
   status: TaskStatus;

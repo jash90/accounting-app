@@ -20,21 +20,21 @@ export class TaskLabelAssignment {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   taskId!: string;
 
   @ManyToOne(() => Task, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'taskId' })
   task!: Task;
 
-  @Column()
+  @Column({ type: 'uuid' })
   labelId!: string;
 
   @ManyToOne(() => TaskLabel, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'labelId' })
   label!: TaskLabel;
 
-  @Column()
+  @Column({ type: 'uuid' })
   assignedById!: string;
 
   @ManyToOne(() => User)

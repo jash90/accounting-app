@@ -1,5 +1,6 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+
+import { IsString, IsOptional, IsBoolean } from 'class-validator';
 
 export class UpdateCompanyDto {
   @ApiPropertyOptional({ example: 'Acme Corporation LLC', description: 'Updated company name' })
@@ -12,4 +13,3 @@ export class UpdateCompanyDto {
   @IsBoolean()
   isActive?: boolean;
 }
-

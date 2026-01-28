@@ -1,20 +1,10 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { ColumnDef } from '@tanstack/react-table';
+import { useState, useMemo, useCallback } from 'react';
+
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import {
-  useTasks,
-  useCreateTask,
-  useUpdateTask,
-  useDeleteTask,
-  useBulkUpdateStatus,
-} from '@/lib/hooks/use-tasks';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import { PageHeader } from '@/components/common/page-header';
-import { DataTable } from '@/components/common/data-table';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Checkbox } from '@/components/ui/checkbox';
+
+import { type ColumnDef } from '@tanstack/react-table';
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
 import {
   Plus,
   Edit,
@@ -27,24 +17,10 @@ import {
   Calendar,
   GanttChartSquare,
 } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  TaskResponseDto,
-  CreateTaskDto,
-  UpdateTaskDto,
-  TaskFiltersDto,
-} from '@/types/dtos';
-import {
-  TaskStatus,
-  TaskStatusLabels,
-  UserRole,
-} from '@/types/enums';
+
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { DataTable } from '@/components/common/data-table';
+import { PageHeader } from '@/components/common/page-header';
 import {
   TaskStatusBadge,
   TaskPriorityBadge,
@@ -52,10 +28,34 @@ import {
   TaskFormDialog,
 } from '@/components/tasks';
 import { TaskFilters } from '@/components/tasks/task-filters';
-import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAuthContext } from '@/contexts/auth-context';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import {
+  useTasks,
+  useCreateTask,
+  useUpdateTask,
+  useDeleteTask,
+  useBulkUpdateStatus,
+} from '@/lib/hooks/use-tasks';
+import { mapTaskLabels } from '@/lib/utils/task-label-mapper';
+import {
+  type TaskResponseDto,
+  type CreateTaskDto,
+  type UpdateTaskDto,
+  type TaskFiltersDto,
+} from '@/types/dtos';
+import { type TaskStatus, TaskStatusLabels, UserRole } from '@/types/enums';
 
 export default function TasksListPage() {
   const { user } = useAuthContext();
@@ -80,7 +80,7 @@ export default function TasksListPage() {
   const [filters, setFilters] = useState<TaskFiltersDto>({});
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const { data: tasksResponse, isPending } = useTasks(filters);
-  const tasks = tasksResponse?.data ?? [];
+  const tasks = useMemo(() => tasksResponse?.data ?? [], [tasksResponse?.data]);
 
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
@@ -92,26 +92,22 @@ export default function TasksListPage() {
   const [deletingTask, setDeletingTask] = useState<TaskResponseDto | null>(null);
 
   // Handle taskId from URL (from calendar/timeline navigation)
-  useEffect(() => {
-    const taskId = searchParams.get('taskId');
-    if (taskId && tasks.length > 0) {
-      const task = tasks.find((t) => t.id === taskId);
-      if (task) {
-        setEditingTask(task);
-        // Clear the URL param after opening the modal
-        setSearchParams({}, { replace: true });
-      }
-    }
-  }, [searchParams, tasks, setSearchParams]);
+  // Derive the task to edit from URL param
+  const taskIdFromUrl = searchParams.get('taskId');
+  const taskFromUrl = useMemo(() => {
+    if (!taskIdFromUrl || tasks.length === 0) return null;
+    return tasks.find((t) => t.id === taskIdFromUrl) || null;
+  }, [taskIdFromUrl, tasks]);
+
+  // The active editing task is either from local state or derived from URL
+  const activeEditingTask = editingTask || taskFromUrl;
 
   const handleFiltersChange = useCallback((newFilters: TaskFiltersDto) => {
     setFilters(newFilters);
   }, []);
 
   const handleRowSelection = useCallback((taskId: string, selected: boolean) => {
-    setSelectedTasks((prev) =>
-      selected ? [...prev, taskId] : prev.filter((id) => id !== taskId)
-    );
+    setSelectedTasks((prev) => (selected ? [...prev, taskId] : prev.filter((id) => id !== taskId)));
   }, []);
 
   const handleBulkStatusChange = async (status: TaskStatus) => {
@@ -150,9 +146,7 @@ export default function TasksListPage() {
         cell: ({ row }) => (
           <Checkbox
             checked={selectedTasks.includes(row.original.id)}
-            onCheckedChange={(value) =>
-              handleRowSelection(row.original.id, !!value)
-            }
+            onCheckedChange={(value) => handleRowSelection(row.original.id, !!value)}
             aria-label="Zaznacz wiersz"
             onClick={(e) => e.stopPropagation()}
           />
@@ -166,11 +160,7 @@ export default function TasksListPage() {
           <div className="flex flex-col gap-1">
             <span className="font-medium">{row.original.title}</span>
             {row.original.labels && row.original.labels.length > 0 && (
-              <TaskLabelList
-                labels={row.original.labels.map((la) => la.label).filter(Boolean) as any}
-                size="sm"
-                maxVisible={2}
-              />
+              <TaskLabelList labels={mapTaskLabels(row.original.labels)} size="sm" maxVisible={2} />
             )}
           </div>
         ),
@@ -183,9 +173,7 @@ export default function TasksListPage() {
       {
         accessorKey: 'priority',
         header: 'Priorytet',
-        cell: ({ row }) => (
-          <TaskPriorityBadge priority={row.original.priority} size="sm" />
-        ),
+        cell: ({ row }) => <TaskPriorityBadge priority={row.original.priority} size="sm" />,
       },
       {
         accessorKey: 'dueDate',
@@ -194,10 +182,9 @@ export default function TasksListPage() {
           const dueDate = row.original.dueDate;
           if (!dueDate) return <span className="text-muted-foreground">-</span>;
 
-          const isOverdue =
-            new Date(dueDate) < new Date() && row.original.status !== 'done';
+          const isOverdue = new Date(dueDate) < new Date() && row.original.status !== 'done';
           return (
-            <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
+            <span className={isOverdue ? 'font-medium text-red-600' : ''}>
               {format(new Date(dueDate), 'd MMM yyyy', { locale: pl })}
             </span>
           );
@@ -228,7 +215,7 @@ export default function TasksListPage() {
         accessorKey: 'client',
         header: 'Klient',
         cell: ({ row }) => (
-          <span className="text-sm truncate max-w-[150px] block">
+          <span className="block max-w-[150px] truncate text-sm">
             {row.original.client?.name || '-'}
           </span>
         ),
@@ -296,29 +283,17 @@ export default function TasksListPage() {
         description="Zarządzaj zadaniami - widok listy"
         icon={<CheckSquare className="h-6 w-6" />}
         titleAction={
-          <div className="flex items-center gap-1 border rounded-lg p-1">
+          <div className="flex items-center gap-1 rounded-lg border p-1">
             <Button variant="ghost" size="sm" className="bg-accent">
               <List className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/kanban`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/kanban`)}>
               <LayoutGrid className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/calendar`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/calendar`)}>
               <Calendar className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/timeline`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/timeline`)}>
               <GanttChartSquare className="h-4 w-4" />
             </Button>
           </div>
@@ -339,11 +314,11 @@ export default function TasksListPage() {
       {selectedTasks.length > 0 && (
         <Card>
           <CardContent className="flex items-center justify-between py-3">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-muted-foreground text-sm">
               Zaznaczono {selectedTasks.length} zadań
             </span>
             <div className="flex items-center gap-2">
-              <span className="text-sm mr-2">Zmień status na:</span>
+              <span className="mr-2 text-sm">Zmień status na:</span>
               {Object.entries(TaskStatusLabels).map(([value, label]) => (
                 <Button
                   key={value}
@@ -382,17 +357,29 @@ export default function TasksListPage() {
             isLoading={createTask.isPending}
           />
 
-          {editingTask && (
+          {activeEditingTask && (
             <TaskFormDialog
-              open={!!editingTask}
-              onOpenChange={(open) => !open && setEditingTask(null)}
-              task={editingTask}
+              open={!!activeEditingTask}
+              onOpenChange={(open) => {
+                if (!open) {
+                  setEditingTask(null);
+                  // Clear URL param if present
+                  if (taskIdFromUrl) {
+                    setSearchParams({}, { replace: true });
+                  }
+                }
+              }}
+              task={activeEditingTask}
               onSubmit={async (data) => {
                 await updateTask.mutateAsync({
-                  id: editingTask.id,
+                  id: activeEditingTask.id,
                   data: data as UpdateTaskDto,
                 });
                 setEditingTask(null);
+                // Clear URL param if present
+                if (taskIdFromUrl) {
+                  setSearchParams({}, { replace: true });
+                }
               }}
               isLoading={updateTask.isPending}
             />
