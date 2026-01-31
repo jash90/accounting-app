@@ -1,19 +1,21 @@
+import { Exclude } from 'class-transformer';
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
+  CreateDateColumn,
+  Entity,
+  Index,
   JoinColumn,
+  ManyToOne,
   OneToMany,
   OneToOne,
-  CreateDateColumn,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
-  Index,
 } from 'typeorm';
-import { UserRole } from '../enums/user-role.enum';
+
 import { Company } from './company.entity';
-import { UserModulePermission } from './user-module-permission.entity';
 import { EmailConfiguration } from './email-configuration.entity';
+import { UserModulePermission } from './user-module-permission.entity';
+import { UserRole } from '../enums/user-role.enum';
 
 @Entity('users')
 @Index(['companyId']) // For company employee queries
@@ -26,6 +28,7 @@ export class User {
   @Column({ type: 'varchar', unique: true })
   email!: string;
 
+  @Exclude()
   @Column({ type: 'varchar' })
   password!: string;
 

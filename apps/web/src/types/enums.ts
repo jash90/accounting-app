@@ -234,3 +234,109 @@ export const TimeRoundingMethodLabels: Record<TimeRoundingMethod, string> = {
   [TimeRoundingMethod.DOWN]: 'W dół',
   [TimeRoundingMethod.NEAREST]: 'Do najbliższego',
 };
+
+// Offers module enums
+export enum OfferStatus {
+  DRAFT = 'DRAFT',
+  READY = 'READY',
+  SENT = 'SENT',
+  VIEWED = 'VIEWED',
+  ACCEPTED = 'ACCEPTED',
+  REJECTED = 'REJECTED',
+  EXPIRED = 'EXPIRED',
+  CANCELLED = 'CANCELLED',
+}
+
+export const OfferStatusLabels: Record<OfferStatus, string> = {
+  [OfferStatus.DRAFT]: 'Wersja robocza',
+  [OfferStatus.READY]: 'Gotowa',
+  [OfferStatus.SENT]: 'Wysłana',
+  [OfferStatus.VIEWED]: 'Przejrzana',
+  [OfferStatus.ACCEPTED]: 'Zaakceptowana',
+  [OfferStatus.REJECTED]: 'Odrzucona',
+  [OfferStatus.EXPIRED]: 'Wygasła',
+  [OfferStatus.CANCELLED]: 'Anulowana',
+};
+
+export const OfferStatusColors: Record<OfferStatus, string> = {
+  [OfferStatus.DRAFT]: 'bg-slate-100 text-slate-700',
+  [OfferStatus.READY]: 'bg-blue-100 text-blue-700',
+  [OfferStatus.SENT]: 'bg-purple-100 text-purple-700',
+  [OfferStatus.VIEWED]: 'bg-cyan-100 text-cyan-700',
+  [OfferStatus.ACCEPTED]: 'bg-green-100 text-green-700',
+  [OfferStatus.REJECTED]: 'bg-red-100 text-red-700',
+  [OfferStatus.EXPIRED]: 'bg-orange-100 text-orange-700',
+  [OfferStatus.CANCELLED]: 'bg-gray-100 text-gray-700',
+};
+
+export enum LeadStatus {
+  NEW = 'NEW',
+  CONTACTED = 'CONTACTED',
+  QUALIFIED = 'QUALIFIED',
+  PROPOSAL_SENT = 'PROPOSAL_SENT',
+  NEGOTIATION = 'NEGOTIATION',
+  CONVERTED = 'CONVERTED',
+  LOST = 'LOST',
+}
+
+export const LeadStatusLabels: Record<LeadStatus, string> = {
+  [LeadStatus.NEW]: 'Nowy',
+  [LeadStatus.CONTACTED]: 'Skontaktowano',
+  [LeadStatus.QUALIFIED]: 'Zakwalifikowany',
+  [LeadStatus.PROPOSAL_SENT]: 'Wysłano propozycję',
+  [LeadStatus.NEGOTIATION]: 'Negocjacje',
+  [LeadStatus.CONVERTED]: 'Przekonwertowany',
+  [LeadStatus.LOST]: 'Utracony',
+};
+
+export const LeadStatusColors: Record<LeadStatus, string> = {
+  [LeadStatus.NEW]: 'bg-blue-100 text-blue-700',
+  [LeadStatus.CONTACTED]: 'bg-cyan-100 text-cyan-700',
+  [LeadStatus.QUALIFIED]: 'bg-purple-100 text-purple-700',
+  [LeadStatus.PROPOSAL_SENT]: 'bg-indigo-100 text-indigo-700',
+  [LeadStatus.NEGOTIATION]: 'bg-yellow-100 text-yellow-700',
+  [LeadStatus.CONVERTED]: 'bg-green-100 text-green-700',
+  [LeadStatus.LOST]: 'bg-red-100 text-red-700',
+};
+
+export enum LeadSource {
+  WEBSITE = 'WEBSITE',
+  REFERRAL = 'REFERRAL',
+  PHONE = 'PHONE',
+  EMAIL = 'EMAIL',
+  SOCIAL_MEDIA = 'SOCIAL_MEDIA',
+  ADVERTISEMENT = 'ADVERTISEMENT',
+  OTHER = 'OTHER',
+}
+
+export const LeadSourceLabels: Record<LeadSource, string> = {
+  [LeadSource.WEBSITE]: 'Strona internetowa',
+  [LeadSource.REFERRAL]: 'Polecenie',
+  [LeadSource.PHONE]: 'Telefon',
+  [LeadSource.EMAIL]: 'Email',
+  [LeadSource.SOCIAL_MEDIA]: 'Media społecznościowe',
+  [LeadSource.ADVERTISEMENT]: 'Reklama',
+  [LeadSource.OTHER]: 'Inne',
+};
+
+export enum OfferActivityType {
+  CREATED = 'CREATED',
+  UPDATED = 'UPDATED',
+  STATUS_CHANGED = 'STATUS_CHANGED',
+  DOCUMENT_GENERATED = 'DOCUMENT_GENERATED',
+  EMAIL_SENT = 'EMAIL_SENT',
+  VIEWED = 'VIEWED',
+  DUPLICATED = 'DUPLICATED',
+  COMMENT_ADDED = 'COMMENT_ADDED',
+}
+
+export const OfferActivityTypeLabels: Record<OfferActivityType, string> = {
+  [OfferActivityType.CREATED]: 'Utworzono',
+  [OfferActivityType.UPDATED]: 'Zaktualizowano',
+  [OfferActivityType.STATUS_CHANGED]: 'Zmieniono status',
+  [OfferActivityType.DOCUMENT_GENERATED]: 'Wygenerowano dokument',
+  [OfferActivityType.EMAIL_SENT]: 'Wysłano email',
+  [OfferActivityType.VIEWED]: 'Przejrzano',
+  [OfferActivityType.DUPLICATED]: 'Zduplikowano',
+  [OfferActivityType.COMMENT_ADDED]: 'Dodano komentarz',
+};

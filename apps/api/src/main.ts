@@ -1,6 +1,11 @@
-import { ValidationPipe, Logger, type INestApplication } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import {
+  ClassSerializerInterceptor,
+  Logger,
+  ValidationPipe,
+  type INestApplication,
+} from '@nestjs/common';
+import { NestFactory, Reflector } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
@@ -97,6 +102,9 @@ async function bootstrap() {
 
   // Global exception filter for consistent error responses
   app.useGlobalFilters(new AllExceptionsFilter());
+
+  // Global serializer interceptor to respect @Exclude() decorators
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
   // Swagger configuration
   const config = new DocumentBuilder()
