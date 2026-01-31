@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthContext } from '@/contexts/auth-context';
@@ -44,9 +44,11 @@ export function useModulePermissions(_moduleSlug: string) {
         hasReadPermission: false,
         hasWritePermission: false,
         hasDeletePermission: false,
+        hasManagePermission: false,
         canRead: false,
         canWrite: false,
         canDelete: false,
+        canManage: false,
         isAdmin: false,
         isOwner: false,
         isEmployee: false,
@@ -59,10 +61,11 @@ export function useModulePermissions(_moduleSlug: string) {
     const isEmployee = user.role === UserRole.EMPLOYEE;
 
     // ADMIN and COMPANY_OWNER have full permissions
-    // EMPLOYEE has READ and WRITE but NOT DELETE (per module specification)
+    // EMPLOYEE has READ and WRITE but NOT DELETE or MANAGE (per module specification)
     const hasReadPermission = isAdmin || isOwner || isEmployee;
     const hasWritePermission = isAdmin || isOwner || isEmployee;
     const hasDeletePermission = isAdmin || isOwner; // Employees cannot delete
+    const hasManagePermission = isAdmin || isOwner; // Only admin/owner can manage
 
     const checkPermission = (permission: ModulePermissionType): boolean => {
       switch (permission) {
@@ -82,10 +85,12 @@ export function useModulePermissions(_moduleSlug: string) {
       hasReadPermission,
       hasWritePermission,
       hasDeletePermission,
+      hasManagePermission,
       // Aliases for semantic clarity
       canRead: hasReadPermission,
       canWrite: hasWritePermission,
       canDelete: hasDeletePermission,
+      canManage: hasManagePermission,
       // Role flags for edge cases
       isAdmin,
       isOwner,

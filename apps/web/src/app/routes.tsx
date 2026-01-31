@@ -86,6 +86,20 @@ const TimeTrackingSettingsPage = lazy(
   () => import('@/pages/modules/time-tracking/time-tracking-settings')
 );
 
+// Settlements Pages
+const SettlementsDashboardPage = lazy(
+  () => import('@/pages/modules/settlements/settlements-dashboard')
+);
+const SettlementsListPage = lazy(() => import('@/pages/modules/settlements/settlements-list'));
+const SettlementCommentsPage = lazy(
+  () => import('@/pages/modules/settlements/settlement-comments')
+);
+const SettlementAssignPage = lazy(() => import('@/pages/modules/settlements/settlement-assign'));
+const SettlementsTeamPage = lazy(() => import('@/pages/modules/settlements/settlements-team'));
+const SettlementsSettingsPage = lazy(
+  () => import('@/pages/modules/settlements/settlements-settings')
+);
+
 // Notifications Pages
 const NotificationsInboxPage = lazy(() => import('@/pages/notifications/notifications-inbox'));
 const NotificationsArchivePage = lazy(() => import('@/pages/notifications/notifications-archive'));
@@ -463,6 +477,55 @@ export default function Routes() {
             </Suspense>
           }
         />
+        {/* Settlements Routes for Admin */}
+        <Route
+          path="modules/settlements"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SettlementsDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/settlements/list"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SettlementsListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/settlements/:id/comments"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SettlementCommentsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/settlements/:id/assign"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SettlementAssignPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/settlements/team"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SettlementsTeamPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/settlements/settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SettlementsSettingsPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -756,6 +819,55 @@ export default function Routes() {
             </Suspense>
           }
         />
+        {/* Settlements Routes for Company Owner */}
+        <Route
+          path="modules/settlements"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SettlementsDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/settlements/list"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SettlementsListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/settlements/:id/comments"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SettlementCommentsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/settlements/:id/assign"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SettlementAssignPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/settlements/team"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SettlementsTeamPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/settlements/settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SettlementsSettingsPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -989,6 +1101,31 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <TimeTrackingSettingsPage />
+            </Suspense>
+          }
+        />
+        {/* Settlements Routes for Employee */}
+        <Route
+          path="settlements"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SettlementsDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="settlements/list"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SettlementsListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="settlements/:id/comments"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <SettlementCommentsPage />
             </Suspense>
           }
         />

@@ -143,4 +143,17 @@ export const queryKeys = {
     unreadCount: ['notifications', 'unread-count'] as const,
     settings: ['notifications', 'settings'] as const,
   },
+  settlements: {
+    all: ['settlements'] as const,
+    list: (filters?: Record<string, unknown>) => ['settlements', 'list', filters] as const,
+    detail: (id: string) => ['settlements', id] as const,
+    stats: {
+      overview: (month: number, year: number) =>
+        ['settlements', 'stats', 'overview', month, year] as const,
+      employees: (month: number, year: number) =>
+        ['settlements', 'stats', 'employees', month, year] as const,
+      my: (month: number, year: number) => ['settlements', 'stats', 'my', month, year] as const,
+    },
+    comments: (settlementId: string) => ['settlements', settlementId, 'comments'] as const,
+  },
 };
