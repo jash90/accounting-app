@@ -86,6 +86,14 @@ const TimeTrackingSettingsPage = lazy(
   () => import('@/pages/modules/time-tracking/time-tracking-settings')
 );
 
+// Offers Pages
+const OffersDashboardPage = lazy(() => import('@/pages/modules/offers/offers-dashboard'));
+const OffersListPage = lazy(() => import('@/pages/modules/offers/offers-list'));
+const OfferDetailPage = lazy(() => import('@/pages/modules/offers/offer-detail'));
+const LeadsListPage = lazy(() => import('@/pages/modules/offers/leads-list'));
+const LeadDetailPage = lazy(() => import('@/pages/modules/offers/lead-detail'));
+const TemplatesListPage = lazy(() => import('@/pages/modules/offers/templates-list'));
+
 // Notifications Pages
 const NotificationsInboxPage = lazy(() => import('@/pages/notifications/notifications-inbox'));
 const NotificationsArchivePage = lazy(() => import('@/pages/notifications/notifications-archive'));
@@ -463,6 +471,55 @@ export default function Routes() {
             </Suspense>
           }
         />
+        {/* Offers Routes for Admin */}
+        <Route
+          path="modules/offers"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <OffersDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/list"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <OffersListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <OfferDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/leads"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <LeadsListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/leads/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <LeadDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/templates"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TemplatesListPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -756,6 +813,55 @@ export default function Routes() {
             </Suspense>
           }
         />
+        {/* Offers Routes for Company Owner */}
+        <Route
+          path="modules/offers"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <OffersDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/list"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <OffersListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <OfferDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/leads"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <LeadsListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/leads/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <LeadDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/templates"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TemplatesListPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -989,6 +1095,55 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <TimeTrackingSettingsPage />
+            </Suspense>
+          }
+        />
+        {/* Offers Routes for Employee */}
+        <Route
+          path="offers"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <OffersDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="offers/list"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <OffersListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="offers/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <OfferDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="offers/leads"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <LeadsListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="offers/leads/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <LeadDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="offers/templates"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TemplatesListPage />
             </Suspense>
           }
         />

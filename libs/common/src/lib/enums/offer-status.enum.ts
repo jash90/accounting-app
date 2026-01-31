@@ -1,0 +1,10 @@
+export enum OfferStatus {
+  DRAFT = 'DRAFT',
+  READY = 'READY',
+  SENT = 'SENT',
+  VIEWED = 'VIEWED',
+  ACCEPTED = 'ACCEPTED',
+  REJECTED = 'REJECTED',
+  EXPIRED = 'EXPIRED',
+  CANCELLED = 'CANCELLED',
+}

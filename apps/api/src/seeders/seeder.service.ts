@@ -256,12 +256,13 @@ export class SeederService {
   // Modules are now auto-discovered from libs/modules/*/module.json files
 
   private async seedModuleAccess(companyA: Company, modules: ModuleEntity[]) {
-    // Company A: ai-agent, clients, email-client, tasks, time-tracking
+    // Company A: ai-agent, clients, email-client, tasks, time-tracking, offers
     const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
     const clientsModule = modules.find((m) => m.slug === 'clients');
     const emailClientModule = modules.find((m) => m.slug === 'email-client');
     const tasksModule = modules.find((m) => m.slug === 'tasks');
     const timeTrackingModule = modules.find((m) => m.slug === 'time-tracking');
+    const offersModule = modules.find((m) => m.slug === 'offers');
 
     if (aiAgentModule) {
       await this.companyModuleAccessRepository.save(
@@ -312,6 +313,16 @@ export class SeederService {
         })
       );
     }
+
+    if (offersModule) {
+      await this.companyModuleAccessRepository.save(
+        this.companyModuleAccessRepository.create({
+          companyId: companyA.id,
+          moduleId: offersModule.id,
+          isEnabled: true,
+        })
+      );
+    }
   }
 
   private async seedEmployeePermissions(employeesA: User[], modules: ModuleEntity[]) {
@@ -320,6 +331,7 @@ export class SeederService {
     const emailClientModule = modules.find((m) => m.slug === 'email-client');
     const tasksModule = modules.find((m) => m.slug === 'tasks');
     const timeTrackingModule = modules.find((m) => m.slug === 'time-tracking');
+    const offersModule = modules.find((m) => m.slug === 'offers');
 
     // Employee 1A: read, write for all modules
     const employee = employeesA[0];
@@ -385,6 +397,17 @@ export class SeederService {
         this.userModulePermissionRepository.create({
           userId: employee.id,
           moduleId: timeTrackingModule.id,
+          permissions: ['read', 'write'],
+          grantedById,
+        })
+      );
+    }
+
+    if (offersModule) {
+      await this.userModulePermissionRepository.save(
+        this.userModulePermissionRepository.create({
+          userId: employee.id,
+          moduleId: offersModule.id,
           permissions: ['read', 'write'],
           grantedById,
         })

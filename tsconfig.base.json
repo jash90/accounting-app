@@ -50,7 +50,8 @@
       "@accounting/infrastructure/storage": ["libs/infrastructure/storage/src/index.ts"],
       "@accounting/infrastructure/change-log": ["libs/infrastructure/change-log/src/index.ts"],
       "@/*": ["apps/web/src/*"],
-      "@accounting/modules/notifications": ["libs/modules/notifications/src/index.ts"]
+      "@accounting/modules/notifications": ["libs/modules/notifications/src/index.ts"],
+      "@accounting/modules/offers": ["libs/modules/offers/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"]

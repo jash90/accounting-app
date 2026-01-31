@@ -1,0 +1,429 @@
+import { useMemo, useState } from 'react';
+
+import { Link, useNavigate } from 'react-router-dom';
+
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  type SortingState,
+  useReactTable,
+} from '@tanstack/react-table';
+import {
+  ArrowLeft,
+  Eye,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Trash2,
+  UserCheck,
+} from 'lucide-react';
+
+import { LeadFormDialog } from '@/components/forms/lead-form-dialog';
+import { LeadStatusBadge } from '@/components/offers/lead-status-badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useAuthContext } from '@/contexts/auth-context';
+import {
+  useConvertLeadToClient,
+  useCreateLead,
+  useDeleteLead,
+  useLeads,
+  useUpdateLead,
+} from '@/lib/hooks/use-offers';
+import { type LeadFiltersDto, type LeadResponseDto } from '@/types/dtos';
+import {
+  LeadSource,
+  LeadSourceLabels,
+  LeadStatus,
+  LeadStatusLabels,
+  UserRole,
+} from '@/types/enums';
+
+export default function LeadsListPage() {
+  const navigate = useNavigate();
+  const { user } = useAuthContext();
+  const [filters, setFilters] = useState<LeadFiltersDto>({});
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingLead, setEditingLead] = useState<LeadResponseDto | undefined>();
+  const [deletingLeadId, setDeletingLeadId] = useState<string | null>(null);
+  const [convertingLeadId, setConvertingLeadId] = useState<string | null>(null);
+
+  const { data, isPending, refetch } = useLeads(filters);
+  const leads = data?.data ?? [];
+
+  const createMutation = useCreateLead();
+  const updateMutation = useUpdateLead();
+  const deleteMutation = useDeleteLead();
+  const convertMutation = useConvertLeadToClient();
+
+  const getBasePath = () => {
+    switch (user?.role) {
+      case UserRole.ADMIN:
+        return '/admin/modules/offers';
+      case UserRole.COMPANY_OWNER:
+        return '/company/modules/offers';
+      default:
+        return '/modules/offers';
+    }
+  };
+
+  const basePath = getBasePath();
+
+  const columns: ColumnDef<LeadResponseDto>[] = useMemo(
+    () => [
+      {
+        accessorKey: 'name',
+        header: 'Nazwa',
+        cell: ({ row }) => (
+          <Link
+            to={`${basePath}/leads/${row.original.id}`}
+            className="text-apptax-blue hover:underline"
+          >
+            {row.original.name}
+          </Link>
+        ),
+      },
+      {
+        accessorKey: 'email',
+        header: 'Email',
+        cell: ({ row }) => row.original.email || '-',
+      },
+      {
+        accessorKey: 'phone',
+        header: 'Telefon',
+        cell: ({ row }) => row.original.phone || '-',
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row }) => <LeadStatusBadge status={row.original.status} />,
+      },
+      {
+        accessorKey: 'source',
+        header: 'Źródło',
+        cell: ({ row }) => (row.original.source ? LeadSourceLabels[row.original.source] : '-'),
+      },
+      {
+        accessorKey: 'estimatedValue',
+        header: 'Szacowana wartość',
+        cell: ({ row }) =>
+          row.original.estimatedValue
+            ? `${Number(row.original.estimatedValue).toFixed(2)} PLN`
+            : '-',
+      },
+      {
+        accessorKey: 'assignedTo',
+        header: 'Przypisany do',
+        cell: ({ row }) =>
+          row.original.assignedTo
+            ? `${row.original.assignedTo.firstName} ${row.original.assignedTo.lastName}`
+            : '-',
+      },
+      {
+        accessorKey: 'createdAt',
+        header: 'Data utworzenia',
+        cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString('pl-PL'),
+      },
+      {
+        id: 'actions',
+        cell: ({ row }) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate(`${basePath}/leads/${row.original.id}`)}>
+                <Eye className="mr-2 h-4 w-4" />
+                Szczegóły
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setEditingLead(row.original)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Edytuj
+              </DropdownMenuItem>
+              {row.original.status !== LeadStatus.CONVERTED &&
+                row.original.status !== LeadStatus.LOST && (
+                  <DropdownMenuItem onClick={() => setConvertingLeadId(row.original.id)}>
+                    <UserCheck className="mr-2 h-4 w-4" />
+                    Przekonwertuj na klienta
+                  </DropdownMenuItem>
+                )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setDeletingLeadId(row.original.id)}
+                className="text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Usuń
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
+      },
+    ],
+    [basePath, navigate]
+  );
+
+  const table = useReactTable({
+    data: leads,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    state: { sorting },
+    onSortingChange: setSorting,
+  });
+
+  const handleCreateLead = async (data: unknown) => {
+    await createMutation.mutateAsync(data as Parameters<typeof createMutation.mutateAsync>[0]);
+    setIsCreateDialogOpen(false);
+  };
+
+  const handleUpdateLead = async (data: unknown) => {
+    if (!editingLead) return;
+    await updateMutation.mutateAsync({
+      id: editingLead.id,
+      data: data as Parameters<typeof updateMutation.mutateAsync>[0]['data'],
+    });
+    setEditingLead(undefined);
+  };
+
+  const handleDeleteLead = async () => {
+    if (!deletingLeadId) return;
+    await deleteMutation.mutateAsync(deletingLeadId);
+    setDeletingLeadId(null);
+  };
+
+  const handleConvertLead = async () => {
+    if (!convertingLeadId) return;
+    const result = await convertMutation.mutateAsync({ id: convertingLeadId });
+    setConvertingLeadId(null);
+    if (result.clientId) {
+      // Optionally navigate to the new client
+    }
+  };
+
+  return (
+    <div className="container mx-auto space-y-6 p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate(basePath)}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-apptax-navy text-2xl font-bold">Leady</h1>
+            <p className="text-muted-foreground">Zarządzaj potencjalnymi klientami</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="bg-apptax-blue hover:bg-apptax-blue/90"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Dodaj leada
+          </Button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-4">
+        <Input
+          placeholder="Szukaj..."
+          className="w-64"
+          value={filters.search || ''}
+          onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+        />
+        <Select
+          value={filters.status || 'all'}
+          onValueChange={(value) =>
+            setFilters({ ...filters, status: value === 'all' ? undefined : (value as LeadStatus) })
+          }
+        >
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Wszystkie statusy</SelectItem>
+            {Object.values(LeadStatus).map((status) => (
+              <SelectItem key={status} value={status}>
+                {LeadStatusLabels[status]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={filters.source || 'all'}
+          onValueChange={(value) =>
+            setFilters({
+              ...filters,
+              source: value === 'all' ? undefined : (value as LeadSource),
+            })
+          }
+        >
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Źródło" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Wszystkie źródła</SelectItem>
+            {Object.values(LeadSource).map((source) => (
+              <SelectItem key={source} value={source}>
+                {LeadSourceLabels[source]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Table */}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {isPending ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  {columns.map((_, j) => (
+                    <TableCell key={j}>
+                      <Skeleton className="h-5 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  Brak leadów do wyświetlenia.
+                </TableCell>
+              </TableRow>
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Pagination info */}
+      {data && (
+        <div className="text-muted-foreground text-sm">
+          Wyświetlono {leads.length} z {data.total} leadów
+        </div>
+      )}
+
+      {/* Dialogs */}
+      <LeadFormDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onSubmit={handleCreateLead}
+      />
+
+      <LeadFormDialog
+        open={!!editingLead}
+        onOpenChange={(open) => !open && setEditingLead(undefined)}
+        lead={editingLead}
+        onSubmit={handleUpdateLead}
+      />
+
+      <AlertDialog open={!!deletingLeadId} onOpenChange={() => setDeletingLeadId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Czy na pewno chcesz usunąć tego leada?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Ta operacja jest nieodwracalna. Lead zostanie trwale usunięty z systemu.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteLead}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Usuń
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!convertingLeadId} onOpenChange={() => setConvertingLeadId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Przekonwertuj leada na klienta</AlertDialogTitle>
+            <AlertDialogDescription>
+              Lead zostanie przekonwertowany na klienta. Dane leada zostaną skopiowane do nowego
+              rekordu klienta.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConvertLead}
+              className="bg-apptax-blue hover:bg-apptax-blue/90"
+            >
+              Przekonwertuj
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}

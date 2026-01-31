@@ -25,9 +25,13 @@ import {
   Company,
   CompanyModuleAccess,
   EmailConfiguration,
+  Lead,
   Module as ModuleEntity,
   Notification,
   NotificationSettings,
+  Offer,
+  OfferActivity,
+  OfferTemplate,
   Task,
   TaskComment,
   TaskDependency,
@@ -47,6 +51,7 @@ import { AIAgentModule } from '@accounting/modules/ai-agent';
 import { ClientsModule } from '@accounting/modules/clients';
 import { EmailClientModule, EmailDraft } from '@accounting/modules/email-client';
 import { NotificationsModule } from '@accounting/modules/notifications';
+import { OffersModule } from '@accounting/modules/offers';
 import { TasksModule } from '@accounting/modules/tasks';
 import { TimeTrackingModule } from '@accounting/modules/time-tracking';
 
@@ -91,6 +96,10 @@ const ENTITIES = [
   TaskComment,
   TimeEntry,
   TimeSettings,
+  Lead,
+  OfferTemplate,
+  Offer,
+  OfferActivity,
 ];
 
 @Module({
@@ -153,6 +162,7 @@ const ENTITIES = [
     EmailClientModule,
     TasksModule,
     TimeTrackingModule,
+    OffersModule,
     NotificationsModule,
     ModulesModule,
     SeedersModule,
