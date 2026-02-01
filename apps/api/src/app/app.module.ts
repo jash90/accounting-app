@@ -39,6 +39,10 @@ import {
   TokenUsage,
   User,
   UserModulePermission,
+  ZusClientSettings,
+  // ZUS entities
+  ZusContribution,
+  ZusRate,
 } from '@accounting/common';
 import { ChangeLogModule } from '@accounting/infrastructure/change-log';
 import { EmailModule } from '@accounting/infrastructure/email';
@@ -49,6 +53,7 @@ import { EmailClientModule, EmailDraft } from '@accounting/modules/email-client'
 import { NotificationsModule } from '@accounting/modules/notifications';
 import { TasksModule } from '@accounting/modules/tasks';
 import { TimeTrackingModule } from '@accounting/modules/time-tracking';
+import { ZusModule } from '@accounting/modules/zus';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -91,6 +96,10 @@ const ENTITIES = [
   TaskComment,
   TimeEntry,
   TimeSettings,
+  // ZUS entities
+  ZusContribution,
+  ZusClientSettings,
+  ZusRate,
 ];
 
 @Module({
@@ -154,6 +163,7 @@ const ENTITIES = [
     TasksModule,
     TimeTrackingModule,
     NotificationsModule,
+    ZusModule,
     ModulesModule,
     SeedersModule,
     EmailModule,

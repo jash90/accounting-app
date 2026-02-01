@@ -1,0 +1,17 @@
+{
+  "name": "ZUS",
+  "slug": "zus",
+  "description": "Rozliczenia składek ZUS dla przedsiębiorców",
+  "icon": "Shield",
+  "version": "1.0.0",
+  "permissions": ["read", "write", "delete"],
+  "dependencies": ["clients"],
+  "features": [
+    "Obliczanie składek społecznych i zdrowotnych",
+    "Obsługa ulg: ulga na start, mały ZUS, mały ZUS Plus",
+    "Składka zdrowotna zależna od formy opodatkowania",
+    "Dashboard ze statystykami",
+    "Przypomnienia o terminach płatności",
+    "Eksport rozliczeń do CSV"
+  ]
+}

@@ -15,6 +15,11 @@ export * from './lib/enums/task-dependency-type.enum';
 export * from './lib/enums/time-entry-status.enum';
 export * from './lib/enums/time-rounding-method.enum';
 export * from './lib/enums/notification-type.enum';
+// ZUS enums
+export * from './lib/enums/zus-contribution-type.enum';
+export * from './lib/enums/zus-discount-type.enum';
+export * from './lib/enums/zus-contribution-status.enum';
+export * from './lib/enums/health-contribution-type.enum';
 
 // Constants
 export * from './lib/constants';
@@ -57,6 +62,10 @@ export * from './lib/entities/task-comment.entity';
 export * from './lib/entities/time-entry.entity';
 export * from './lib/entities/time-settings.entity';
 export * from './lib/entities/notification.entity';
+// ZUS entities
+export * from './lib/entities/zus-contribution.entity';
+export * from './lib/entities/zus-client-settings.entity';
+export * from './lib/entities/zus-rate.entity';
 export { AIProvider } from './lib/entities/ai-configuration.entity';
 export { AIMessageRole } from './lib/entities/ai-message.entity';
 export * from './lib/dto/responses';

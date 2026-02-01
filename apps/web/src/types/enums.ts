@@ -234,3 +234,84 @@ export const TimeRoundingMethodLabels: Record<TimeRoundingMethod, string> = {
   [TimeRoundingMethod.DOWN]: 'W dół',
   [TimeRoundingMethod.NEAREST]: 'Do najbliższego',
 };
+
+// ============================================
+// ZUS Module Enums
+// ============================================
+
+export enum ZusContributionType {
+  RETIREMENT = 'RETIREMENT',
+  DISABILITY = 'DISABILITY',
+  SICKNESS = 'SICKNESS',
+  ACCIDENT = 'ACCIDENT',
+  LABOR_FUND = 'LABOR_FUND',
+  HEALTH = 'HEALTH',
+}
+
+export const ZusContributionTypeLabels: Record<ZusContributionType, string> = {
+  [ZusContributionType.RETIREMENT]: 'Emerytalna',
+  [ZusContributionType.DISABILITY]: 'Rentowa',
+  [ZusContributionType.SICKNESS]: 'Chorobowa',
+  [ZusContributionType.ACCIDENT]: 'Wypadkowa',
+  [ZusContributionType.LABOR_FUND]: 'Fundusz Pracy',
+  [ZusContributionType.HEALTH]: 'Zdrowotna',
+};
+
+export enum ZusDiscountType {
+  NONE = 'NONE',
+  STARTUP_RELIEF = 'STARTUP_RELIEF',
+  SMALL_ZUS = 'SMALL_ZUS',
+  SMALL_ZUS_PLUS = 'SMALL_ZUS_PLUS',
+}
+
+export const ZusDiscountTypeLabels: Record<ZusDiscountType, string> = {
+  [ZusDiscountType.NONE]: 'Pełny ZUS',
+  [ZusDiscountType.STARTUP_RELIEF]: 'Ulga na start',
+  [ZusDiscountType.SMALL_ZUS]: 'Mały ZUS',
+  [ZusDiscountType.SMALL_ZUS_PLUS]: 'Mały ZUS Plus',
+};
+
+export const ZusDiscountTypeDescriptions: Record<ZusDiscountType, string> = {
+  [ZusDiscountType.NONE]:
+    'Pełne składki społeczne od 60% prognozowanego przeciętnego wynagrodzenia',
+  [ZusDiscountType.STARTUP_RELIEF]: '6 miesięcy bez składek społecznych, tylko składka zdrowotna',
+  [ZusDiscountType.SMALL_ZUS]:
+    '24 miesiące preferencyjnych składek od 30% minimalnego wynagrodzenia',
+  [ZusDiscountType.SMALL_ZUS_PLUS]:
+    '36 miesięcy w 60-miesięcznym oknie, podstawa zależna od dochodu',
+};
+
+export enum ZusContributionStatus {
+  DRAFT = 'DRAFT',
+  CALCULATED = 'CALCULATED',
+  PAID = 'PAID',
+  OVERDUE = 'OVERDUE',
+}
+
+export const ZusContributionStatusLabels: Record<ZusContributionStatus, string> = {
+  [ZusContributionStatus.DRAFT]: 'Wersja robocza',
+  [ZusContributionStatus.CALCULATED]: 'Obliczono',
+  [ZusContributionStatus.PAID]: 'Opłacone',
+  [ZusContributionStatus.OVERDUE]: 'Przeterminowane',
+};
+
+export const ZusContributionStatusColors: Record<ZusContributionStatus, string> = {
+  [ZusContributionStatus.DRAFT]: 'bg-slate-100 text-slate-700',
+  [ZusContributionStatus.CALCULATED]: 'bg-blue-100 text-blue-700',
+  [ZusContributionStatus.PAID]: 'bg-green-100 text-green-700',
+  [ZusContributionStatus.OVERDUE]: 'bg-red-100 text-red-700',
+};
+
+export enum HealthContributionType {
+  SCALE = 'SCALE',
+  LINEAR = 'LINEAR',
+  LUMP_SUM = 'LUMP_SUM',
+  TAX_CARD = 'TAX_CARD',
+}
+
+export const HealthContributionTypeLabels: Record<HealthContributionType, string> = {
+  [HealthContributionType.SCALE]: 'Skala podatkowa (9%)',
+  [HealthContributionType.LINEAR]: 'Podatek liniowy (4.9%)',
+  [HealthContributionType.LUMP_SUM]: 'Ryczałt',
+  [HealthContributionType.TAX_CARD]: 'Karta podatkowa',
+};

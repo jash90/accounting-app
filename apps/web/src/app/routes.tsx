@@ -86,6 +86,13 @@ const TimeTrackingSettingsPage = lazy(
   () => import('@/pages/modules/time-tracking/time-tracking-settings')
 );
 
+// ZUS Pages
+const ZusDashboardPage = lazy(() => import('@/pages/modules/zus/zus-dashboard'));
+const ZusContributionsListPage = lazy(() => import('@/pages/modules/zus/zus-contributions-list'));
+const ZusContributionDetailPage = lazy(() => import('@/pages/modules/zus/zus-contribution-detail'));
+const ZusContributionCreatePage = lazy(() => import('@/pages/modules/zus/zus-contribution-create'));
+const ZusSettingsPage = lazy(() => import('@/pages/modules/zus/zus-settings'));
+
 // Notifications Pages
 const NotificationsInboxPage = lazy(() => import('@/pages/notifications/notifications-inbox'));
 const NotificationsArchivePage = lazy(() => import('@/pages/notifications/notifications-archive'));
@@ -463,6 +470,47 @@ export default function Routes() {
             </Suspense>
           }
         />
+        {/* ZUS Routes for Admin */}
+        <Route
+          path="modules/zus"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ZusDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/zus/contributions"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ZusContributionsListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/zus/contributions/create"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ZusContributionCreatePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/zus/contributions/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ZusContributionDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/zus/settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ZusSettingsPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -756,6 +804,47 @@ export default function Routes() {
             </Suspense>
           }
         />
+        {/* ZUS Routes for Company Owner */}
+        <Route
+          path="modules/zus"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ZusDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/zus/contributions"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ZusContributionsListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/zus/contributions/create"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ZusContributionCreatePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/zus/contributions/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ZusContributionDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/zus/settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ZusSettingsPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -989,6 +1078,47 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <TimeTrackingSettingsPage />
+            </Suspense>
+          }
+        />
+        {/* ZUS Routes for Employee */}
+        <Route
+          path="zus"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ZusDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="zus/contributions"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ZusContributionsListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="zus/contributions/create"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ZusContributionCreatePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="zus/contributions/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ZusContributionDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="zus/settings"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ZusSettingsPage />
             </Suspense>
           }
         />
