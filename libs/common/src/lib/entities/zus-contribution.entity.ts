@@ -9,11 +9,17 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+import { ClientEmployee } from './client-employee.entity';
 import { Client } from './client.entity';
 import { Company } from './company.entity';
 import { User } from './user.entity';
 import { ZusContributionStatus } from '../enums/zus-contribution-status.enum';
 import { ZusDiscountType } from '../enums/zus-discount-type.enum';
+
+/**
+ * Type of ZUS contribution - owner or employee
+ */
+export type ZusContributionTarget = 'OWNER' | 'EMPLOYEE';
 
 /**
  * ZUS Contribution - monthly social insurance contribution record
@@ -27,6 +33,8 @@ import { ZusDiscountType } from '../enums/zus-discount-type.enum';
 @Index(['companyId', 'periodMonth', 'periodYear'])
 @Index(['status'])
 @Index(['dueDate'])
+@Index(['clientId', 'clientEmployeeId', 'periodMonth', 'periodYear'])
+@Index(['contributionType'])
 export class ZusContribution {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -44,6 +52,18 @@ export class ZusContribution {
   @ManyToOne(() => Client, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'clientId' })
   client!: Client;
+
+  /** Optional: Employee ID for employee contributions (null for owner) */
+  @Column({ type: 'uuid', nullable: true })
+  clientEmployeeId?: string | null;
+
+  @ManyToOne(() => ClientEmployee, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'clientEmployeeId' })
+  clientEmployee?: ClientEmployee;
+
+  /** Type of contribution: OWNER (business owner) or EMPLOYEE (client's employee) */
+  @Column({ type: 'varchar', length: 20, default: 'OWNER' })
+  contributionType!: ZusContributionTarget;
 
   /** Month of the contribution period (1-12) */
   @Column({ type: 'int' })

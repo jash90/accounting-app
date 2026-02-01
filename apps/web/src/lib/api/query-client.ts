@@ -75,6 +75,12 @@ export const queryKeys = {
       detail: (clientId: string, suspensionId: string) =>
         ['clients', clientId, 'suspensions', suspensionId] as const,
     },
+    employees: {
+      list: (clientId: string, filters?: Record<string, unknown>) =>
+        ['clients', clientId, 'employees', 'list', filters] as const,
+      detail: (clientId: string, employeeId: string) =>
+        ['clients', clientId, 'employees', employeeId] as const,
+    },
   },
   clientFieldDefinitions: {
     all: ['client-field-definitions'] as const,

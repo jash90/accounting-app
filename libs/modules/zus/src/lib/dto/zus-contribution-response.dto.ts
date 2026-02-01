@@ -1,6 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { ZusContribution, ZusContributionStatus, ZusDiscountType } from '@accounting/common';
+import {
+  EmployeeContractType,
+  ZusContribution,
+  ZusContributionStatus,
+  ZusDiscountType,
+  type ZusContributionTarget,
+} from '@accounting/common';
 
 export class ClientBasicResponseDto {
   @ApiProperty()
@@ -24,6 +30,20 @@ export class UserBasicResponseDto {
   lastName!: string;
 }
 
+export class ClientEmployeeBasicResponseDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  firstName!: string;
+
+  @ApiProperty()
+  lastName!: string;
+
+  @ApiProperty({ enum: EmployeeContractType })
+  contractType!: EmployeeContractType;
+}
+
 export class ZusContributionResponseDto {
   @ApiProperty()
   id!: string;
@@ -36,6 +56,15 @@ export class ZusContributionResponseDto {
 
   @ApiPropertyOptional({ type: () => ClientBasicResponseDto })
   client?: ClientBasicResponseDto;
+
+  @ApiPropertyOptional({ description: 'Employee ID (null for owner contributions)' })
+  clientEmployeeId?: string | null;
+
+  @ApiPropertyOptional({ type: () => ClientEmployeeBasicResponseDto })
+  clientEmployee?: ClientEmployeeBasicResponseDto;
+
+  @ApiProperty({ description: 'Type of contribution: OWNER or EMPLOYEE' })
+  contributionType!: ZusContributionTarget;
 
   @ApiProperty()
   periodMonth!: number;
@@ -145,6 +174,8 @@ export class ZusContributionResponseDto {
     dto.id = entity.id;
     dto.companyId = entity.companyId;
     dto.clientId = entity.clientId;
+    dto.clientEmployeeId = entity.clientEmployeeId ?? null;
+    dto.contributionType = entity.contributionType;
     dto.periodMonth = entity.periodMonth;
     dto.periodYear = entity.periodYear;
     dto.status = entity.status;
@@ -192,6 +223,15 @@ export class ZusContributionResponseDto {
         id: entity.client.id,
         name: entity.client.name,
         nip: entity.client.nip,
+      };
+    }
+
+    if (entity.clientEmployee) {
+      dto.clientEmployee = {
+        id: entity.clientEmployee.id,
+        firstName: entity.clientEmployee.firstName,
+        lastName: entity.clientEmployee.lastName,
+        contractType: entity.clientEmployee.contractType,
       };
     }
 

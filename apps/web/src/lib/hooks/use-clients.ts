@@ -1,31 +1,35 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
 import { type ApiErrorResponse } from '@/types/api';
 import {
-  type CreateClientDto,
-  type UpdateClientDto,
+  type ClientEmployeeFiltersDto,
   type ClientFiltersDto,
-  type SetCustomFieldValuesDto,
+  type CreateClientDto,
+  type CreateClientEmployeeDto,
   type CreateClientFieldDefinitionDto,
-  type UpdateClientFieldDefinitionDto,
   type CreateClientIconDto,
-  type UpdateClientIconDto,
   type CreateNotificationSettingsDto,
+  type SetCustomFieldValuesDto,
+  type UpdateClientDto,
+  type UpdateClientEmployeeDto,
+  type UpdateClientFieldDefinitionDto,
+  type UpdateClientIconDto,
   type UpdateNotificationSettingsDto,
 } from '@/types/dtos';
 
 import {
+  clientEmployeesApi,
+  clientIconsApi,
   clientsApi,
   fieldDefinitionsApi,
-  clientIconsApi,
   notificationSettingsApi,
+  type BulkDeleteClientsDto,
+  type BulkEditClientsDto,
+  type BulkRestoreClientsDto,
+  type CheckDuplicatesDto,
   type FieldDefinitionQueryDto,
   type IconQueryDto,
-  type BulkDeleteClientsDto,
-  type BulkRestoreClientsDto,
-  type BulkEditClientsDto,
-  type CheckDuplicatesDto,
 } from '../api/endpoints/clients';
 import { queryKeys } from '../api/query-client';
 
@@ -35,6 +39,7 @@ import { queryKeys } from '../api/query-client';
 
 export function useClients(filters?: ClientFiltersDto) {
   return useQuery({
+    // eslint-disable-next-line @tanstack/query/exhaustive-deps
     queryKey: queryKeys.clients.list(filters as Record<string, unknown> | undefined),
     queryFn: () => clientsApi.getAll(filters),
   });
@@ -728,6 +733,142 @@ export function useDeleteNotificationSettings() {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się usunąć ustawień powiadomień',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+// ============================================
+// Client Employee Hooks
+// ============================================
+
+export function useClientEmployees(clientId: string, filters?: ClientEmployeeFiltersDto) {
+  return useQuery({
+    // eslint-disable-next-line @tanstack/query/exhaustive-deps
+    queryKey: queryKeys.clients.employees.list(clientId, filters as Record<string, unknown>),
+    queryFn: () => clientEmployeesApi.getAll(clientId, filters),
+    enabled: !!clientId,
+  });
+}
+
+export function useClientEmployee(clientId: string, employeeId: string) {
+  return useQuery({
+    queryKey: queryKeys.clients.employees.detail(clientId, employeeId),
+    queryFn: () => clientEmployeesApi.getById(clientId, employeeId),
+    enabled: !!clientId && !!employeeId,
+  });
+}
+
+export function useCreateClientEmployee() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ clientId, data }: { clientId: string; data: CreateClientEmployeeDto }) =>
+      clientEmployeesApi.create(clientId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['clients', variables.clientId, 'employees'],
+        exact: false,
+      });
+      toast({
+        title: 'Sukces',
+        description: 'Pracownik został dodany',
+      });
+    },
+    onError: (error: ApiErrorResponse) => {
+      toast({
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się dodać pracownika',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useUpdateClientEmployee() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({
+      clientId,
+      employeeId,
+      data,
+    }: {
+      clientId: string;
+      employeeId: string;
+      data: UpdateClientEmployeeDto;
+    }) => clientEmployeesApi.update(clientId, employeeId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['clients', variables.clientId, 'employees'],
+        exact: false,
+      });
+      toast({
+        title: 'Sukces',
+        description: 'Pracownik został zaktualizowany',
+      });
+    },
+    onError: (error: ApiErrorResponse) => {
+      toast({
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się zaktualizować pracownika',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useDeleteClientEmployee() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ clientId, employeeId }: { clientId: string; employeeId: string }) =>
+      clientEmployeesApi.delete(clientId, employeeId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['clients', variables.clientId, 'employees'],
+        exact: false,
+      });
+      toast({
+        title: 'Sukces',
+        description: 'Pracownik został usunięty',
+      });
+    },
+    onError: (error: ApiErrorResponse) => {
+      toast({
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się usunąć pracownika',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useRestoreClientEmployee() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ clientId, employeeId }: { clientId: string; employeeId: string }) =>
+      clientEmployeesApi.restore(clientId, employeeId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['clients', variables.clientId, 'employees'],
+        exact: false,
+      });
+      toast({
+        title: 'Sukces',
+        description: 'Pracownik został przywrócony',
+      });
+    },
+    onError: (error: ApiErrorResponse) => {
+      toast({
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się przywrócić pracownika',
         variant: 'destructive',
       });
     },

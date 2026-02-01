@@ -27,6 +27,8 @@ import {
 } from '@accounting/rbac';
 
 import {
+  BulkContributionResultDto,
+  CalculateEmployeeContributionsDto,
   CalculateZusContributionDto,
   CreateZusContributionDto,
   GenerateMonthlyContributionsDto,
@@ -115,6 +117,19 @@ export class ZusContributionsController {
     @CurrentUser() user: User
   ): Promise<GenerateMonthlyResultDto> {
     return this.contributionsService.generateMonthly(dto.month, dto.year, user);
+  }
+
+  @Post('calculate-employees')
+  @RequirePermission('zus', 'write')
+  @ApiOperation({
+    summary: 'Calculate ZUS contributions for multiple employees of a client',
+  })
+  @ApiResponse({ status: 200, type: BulkContributionResultDto })
+  async calculateEmployeeContributions(
+    @Body() dto: CalculateEmployeeContributionsDto,
+    @CurrentUser() user: User
+  ): Promise<BulkContributionResultDto> {
+    return this.contributionsService.calculateEmployeeContributions(dto, user);
   }
 
   @Patch(':id')

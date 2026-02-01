@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 
 import { ClientChangelog } from '@/components/clients/client-changelog';
+import { ClientEmployeesList } from '@/components/clients/client-employees-list';
 import { ClientTaskStatistics } from '@/components/clients/client-task-statistics';
 import { ClientTasksList } from '@/components/clients/client-tasks-list';
 import { SuspensionHistoryCard } from '@/components/clients/suspension-history-card';
@@ -340,6 +341,9 @@ function ClientDetailContent() {
               )}
             </CardContent>
           </Card>
+
+          {/* Client Employees */}
+          <ClientEmployeesList clientId={clientId} clientName={client.name} />
 
           {/* Client Tasks */}
           <ClientTasksList clientId={clientId} clientName={client.name} />

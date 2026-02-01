@@ -92,6 +92,7 @@ const ZusContributionsListPage = lazy(() => import('@/pages/modules/zus/zus-cont
 const ZusContributionDetailPage = lazy(() => import('@/pages/modules/zus/zus-contribution-detail'));
 const ZusContributionCreatePage = lazy(() => import('@/pages/modules/zus/zus-contribution-create'));
 const ZusSettingsPage = lazy(() => import('@/pages/modules/zus/zus-settings'));
+const ZusReportsPage = lazy(() => import('@/pages/modules/zus/zus-reports'));
 
 // Notifications Pages
 const NotificationsInboxPage = lazy(() => import('@/pages/notifications/notifications-inbox'));
@@ -511,6 +512,14 @@ export default function Routes() {
             </Suspense>
           }
         />
+        <Route
+          path="modules/zus/reports"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ZusReportsPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -845,6 +854,14 @@ export default function Routes() {
             </Suspense>
           }
         />
+        <Route
+          path="modules/zus/reports"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ZusReportsPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -1119,6 +1136,14 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <ZusSettingsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="zus/reports"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <ZusReportsPage />
             </Suspense>
           }
         />

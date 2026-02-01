@@ -13,15 +13,16 @@ test.describe('ZUS Module - Company Owner Workflows', () => {
       await page.goto(`${BASE_URL}/company/modules/zus`);
       await page.waitForLoadState('networkidle');
 
-      // Verify page header
-      await expect(page.locator('h1, h2').first()).toContainText(/ZUS|Moduł/i);
+      // Verify page header contains "Moduł ZUS"
+      await expect(page.locator('h1').first()).toContainText(/Moduł ZUS/i);
 
       // Verify statistics cards are present
       const statsSection = page.locator('[class*="grid"]').first();
       await expect(statsSection).toBeVisible();
 
-      // Check for quick action cards
-      await expect(page.getByText(/Rozliczenia/i).first()).toBeVisible();
+      // Check for quick action cards - use more specific selector to avoid sidebar
+      const quickActionsCard = page.locator('main').getByText('Rozliczenia', { exact: true });
+      await expect(quickActionsCard).toBeVisible();
     });
 
     test('should navigate to contributions list from dashboard', async ({
@@ -32,14 +33,18 @@ test.describe('ZUS Module - Company Owner Workflows', () => {
       await page.goto(`${BASE_URL}/company/modules/zus`);
       await page.waitForLoadState('networkidle');
 
-      // Click on Rozliczenia card or link
-      await page
-        .getByText(/Rozliczenia/i)
-        .first()
-        .click();
+      // Click on the Rozliczenia quick action card in the main content area
+      // React Router Link uses "to" but renders as "href" with resolved path
+      // The card with CardTitle "Rozliczenia" - find the link wrapping it
+      const rozliczeniaCard = page
+        .locator('main')
+        .getByRole('link')
+        .filter({ has: page.getByText('Rozliczenia', { exact: true }) })
+        .first();
+      await rozliczeniaCard.click();
 
       // Verify navigation to contributions list
-      await expect(page).toHaveURL(/\/contributions/);
+      await expect(page).toHaveURL(/\/zus\/contributions/);
     });
   });
 
@@ -53,25 +58,31 @@ test.describe('ZUS Module - Company Owner Workflows', () => {
       await page.waitForLoadState('networkidle');
 
       // Verify page header
-      await expect(page.locator('h1, h2').first()).toContainText(/Rozliczenia/i);
+      await expect(page.locator('h1').first()).toContainText(/Rozliczenia ZUS/i);
 
-      // Verify table or empty state is shown - using Promise.race to check either condition
-      const tableOrEmpty = page.locator('table, :text("Brak rozliczeń")').first();
+      // Verify table or empty state is shown
+      const tableOrEmpty = page.locator('table, :text("Brak rozliczeń ZUS")').first();
       await expect(tableOrEmpty).toBeVisible();
     });
 
-    test('should filter contributions by status', async ({ authenticatedCompanyOwnerPage }) => {
+    test('should have status filter in contributions list', async ({
+      authenticatedCompanyOwnerPage,
+    }) => {
       const page = authenticatedCompanyOwnerPage;
 
       await page.goto(`${BASE_URL}/company/modules/zus/contributions`);
       await page.waitForLoadState('networkidle');
 
-      // Find and interact with status filter - test will pass if filter exists
-      const statusFilter = page.locator('[data-testid="status-filter"], select').first();
-      await expect(statusFilter).toBeVisible();
+      // Verify filters card is present with title "Filtry"
+      await expect(page.getByText('Filtry')).toBeVisible();
 
-      // Just verify the filter element is present - actual filtering tested with real data
-      await expect(page.locator('h1, h2').first()).toContainText(/Rozliczenia/i);
+      // The Select component uses button with role=combobox - check for Status filter trigger
+      // Look for select trigger that contains "Status" or "Wszystkie statusy"
+      const statusFilterTrigger = page.getByRole('combobox').nth(1); // Second combobox after search
+      await expect(statusFilterTrigger).toBeVisible();
+
+      // Verify page header
+      await expect(page.locator('h1').first()).toContainText(/Rozliczenia/i);
     });
   });
 
@@ -85,10 +96,10 @@ test.describe('ZUS Module - Company Owner Workflows', () => {
       await page.waitForLoadState('networkidle');
 
       // Verify page header
-      await expect(page.locator('h1, h2').first()).toContainText(/Oblicz|składki|ZUS/i);
+      await expect(page.locator('h1').first()).toContainText(/Oblicz składki ZUS/i);
 
-      // Verify form elements
-      const clientSelect = page.locator('[data-testid="client-select"], select').first();
+      // Verify form elements - client select is a combobox (Radix Select)
+      const clientSelect = page.getByRole('combobox', { name: /Klient/i });
       await expect(clientSelect).toBeVisible();
     });
 
@@ -101,11 +112,13 @@ test.describe('ZUS Module - Company Owner Workflows', () => {
       await page.waitForLoadState('networkidle');
 
       // Try to submit without selecting client
-      const submitButton = page.getByRole('button', { name: /Oblicz|Zapisz|Submit/i });
+      const submitButton = page.getByRole('button', { name: /Oblicz składki/i });
       await submitButton.click();
 
-      // Should show validation error
-      await expect(page.getByText(/Wybierz|klient|wymagane/i)).toBeVisible({ timeout: 5000 });
+      // Should show validation error - the label gets text-destructive class on validation error
+      // Also look for the form message with validation error
+      const validationError = page.locator('.text-destructive', { hasText: 'Klient' });
+      await expect(validationError).toBeVisible({ timeout: 5000 });
     });
 
     test('should show batch generation tab', async ({ authenticatedCompanyOwnerPage }) => {
@@ -114,10 +127,16 @@ test.describe('ZUS Module - Company Owner Workflows', () => {
       await page.goto(`${BASE_URL}/company/modules/zus/contributions/create`);
       await page.waitForLoadState('networkidle');
 
-      // Verify that the page has loaded and form elements are present
-      // Batch tab may or may not be visible depending on UI implementation
-      const formContainer = page.locator('form, [data-testid="contribution-form"]').first();
-      await expect(formContainer).toBeVisible();
+      // Verify mode switcher buttons are present
+      const singleModeBtn = page.getByRole('button', { name: /Pojedynczy klient/i });
+      const batchModeBtn = page.getByRole('button', { name: /Generuj dla wszystkich/i });
+
+      await expect(singleModeBtn).toBeVisible();
+      await expect(batchModeBtn).toBeVisible();
+
+      // Click batch mode and verify the form changes
+      await batchModeBtn.click();
+      await expect(page.getByText(/Generuj rozliczenia dla wszystkich klientów/i)).toBeVisible();
     });
   });
 
@@ -128,12 +147,16 @@ test.describe('ZUS Module - Company Owner Workflows', () => {
       await page.goto(`${BASE_URL}/company/modules/zus/settings`);
       await page.waitForLoadState('networkidle');
 
-      // Verify page header
-      await expect(page.locator('h1, h2').first()).toContainText(/Ustawienia|ZUS/i);
+      // Verify page header - PageHeader component uses a specific structure
+      await expect(page.getByText('Ustawienia modułu ZUS')).toBeVisible();
 
-      // Verify rate information is displayed
-      await expect(page.getByText(/Emerytalna|19,52/i)).toBeVisible();
-      await expect(page.getByText(/Rentowa|8,00/i)).toBeVisible();
+      // Wait for API data to load - check for the card content
+      await page.waitForSelector('text=Stawki składek społecznych', { timeout: 15000 });
+
+      // Verify rate information is displayed - check that the contribution rates card is visible
+      await expect(page.getByText('Stawki składek społecznych')).toBeVisible();
+      await expect(page.getByText('19.52%')).toBeVisible();
+      await expect(page.getByText('8.00%')).toBeVisible();
     });
 
     test('should show discount types information', async ({ authenticatedCompanyOwnerPage }) => {
@@ -142,8 +165,13 @@ test.describe('ZUS Module - Company Owner Workflows', () => {
       await page.goto(`${BASE_URL}/company/modules/zus/settings`);
       await page.waitForLoadState('networkidle');
 
-      // Verify discount types section
-      await expect(page.getByText(/Ulga na start|Mały ZUS/i).first()).toBeVisible();
+      // Wait for API data to load
+      await page.waitForSelector('text=Rodzaje ulg dla przedsiębiorców', { timeout: 15000 });
+
+      // Verify discount types section - h4 headings inside the card
+      await expect(page.getByText('Rodzaje ulg dla przedsiębiorców')).toBeVisible();
+      await expect(page.getByText('Ulga na start')).toBeVisible();
+      await expect(page.locator('h4', { hasText: 'Mały ZUS' }).first()).toBeVisible();
     });
   });
 
@@ -156,8 +184,8 @@ test.describe('ZUS Module - Company Owner Workflows', () => {
       await page.goto(`${BASE_URL}/company/modules/zus/contributions`);
       await page.waitForLoadState('networkidle');
 
-      // Verify export button exists
-      const exportButton = page.getByRole('button', { name: /Eksportuj|CSV|Export/i });
+      // Verify export button exists - exact match for button text
+      const exportButton = page.getByRole('button', { name: /Eksportuj CSV/i });
       await expect(exportButton).toBeVisible();
     });
   });

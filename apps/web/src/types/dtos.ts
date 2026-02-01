@@ -17,6 +17,7 @@ import {
   type AmlGroup,
   type AutoAssignCondition,
   type CustomFieldType,
+  type EmployeeContractType,
   type EmploymentType,
   type HealthContributionType,
   type TaskDependencyType,
@@ -26,6 +27,7 @@ import {
   type TimeEntryStatus,
   type TimeRoundingMethod,
   type VatStatus,
+  type WorkplaceType,
   type ZusContributionStatus,
   type ZusDiscountType,
   type ZusStatus,
@@ -1000,6 +1002,9 @@ export interface UpdateZusSettingsDto {
   accidentRate?: number;
 }
 
+// ZUS Contribution Target Type
+export type ZusContributionTarget = 'OWNER' | 'EMPLOYEE';
+
 // ZUS Contribution
 export interface ZusContributionResponseDto {
   id: string;
@@ -1010,6 +1015,14 @@ export interface ZusContributionResponseDto {
     name: string;
     nip?: string;
   };
+  clientEmployeeId?: string | null;
+  clientEmployee?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    contractType: EmployeeContractType;
+  };
+  contributionType: ZusContributionTarget;
   periodMonth: number;
   periodYear: number;
   status: ZusContributionStatus;
@@ -1088,6 +1101,7 @@ export interface ZusContributionFiltersDto {
   periodMonth?: number;
   periodYear?: number;
   status?: ZusContributionStatus;
+  contributionType?: ZusContributionTarget;
   search?: string;
   page?: number;
   limit?: number;
@@ -1150,6 +1164,22 @@ export interface GenerateMonthlyResultDto {
   noSettings: number;
 }
 
+export interface CalculateEmployeeContributionsDto {
+  clientId: string;
+  employeeIds: string[];
+  periodMonth: number;
+  periodYear: number;
+}
+
+export interface BulkContributionResultDto {
+  created: number;
+  skipped: number;
+  exempt: number;
+  errors: number;
+  contributionIds: string[];
+  errorMessages: string[];
+}
+
 // ZUS Rates
 export interface ZusRatesResponseDto {
   fullBasis: number;
@@ -1164,4 +1194,142 @@ export interface ZusRatesResponseDto {
   smallZusBasisPln: string;
   minimumWagePln: string;
   healthMinPln: string;
+}
+
+// ZUS Top Clients
+export interface ZusTopClientDto {
+  clientId: string;
+  clientName: string;
+  totalAmount: number;
+  totalAmountPln: string;
+  contributionsCount: number;
+}
+
+// ZUS Totals
+export interface ZusTotalsDto {
+  totalAmount: number;
+  totalAmountPln: string;
+  totalSocialAmount: number;
+  totalSocialAmountPln: string;
+  totalHealthAmount: number;
+  totalHealthAmountPln: string;
+  contributionsCount: number;
+}
+
+// ============================================
+// Client Employee DTOs
+// ============================================
+
+export interface CreateClientEmployeeDto {
+  firstName: string;
+  lastName: string;
+  pesel?: string;
+  email?: string;
+  phone?: string;
+  contractType: EmployeeContractType;
+  position?: string;
+  startDate: Date | string;
+  endDate?: Date | string;
+  grossSalary?: number;
+  // UMOWA_O_PRACE fields
+  workingHoursPerWeek?: number;
+  vacationDaysPerYear?: number;
+  workplaceType?: WorkplaceType;
+  // UMOWA_ZLECENIE fields
+  hourlyRate?: number;
+  isStudent?: boolean;
+  hasOtherInsurance?: boolean;
+  // UMOWA_O_DZIELO fields
+  projectDescription?: string;
+  deliveryDate?: Date | string;
+  agreedAmount?: number;
+  notes?: string;
+}
+
+export interface UpdateClientEmployeeDto {
+  firstName?: string;
+  lastName?: string;
+  pesel?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  contractType?: EmployeeContractType;
+  position?: string | null;
+  startDate?: Date | string;
+  endDate?: Date | string | null;
+  grossSalary?: number | null;
+  // UMOWA_O_PRACE fields
+  workingHoursPerWeek?: number | null;
+  vacationDaysPerYear?: number | null;
+  workplaceType?: WorkplaceType | null;
+  // UMOWA_ZLECENIE fields
+  hourlyRate?: number | null;
+  isStudent?: boolean | null;
+  hasOtherInsurance?: boolean | null;
+  // UMOWA_O_DZIELO fields
+  projectDescription?: string | null;
+  deliveryDate?: Date | string | null;
+  agreedAmount?: number | null;
+  notes?: string | null;
+  isActive?: boolean;
+}
+
+export interface ClientEmployeeFiltersDto {
+  search?: string;
+  contractType?: EmployeeContractType;
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export interface ClientEmployeeResponseDto {
+  id: string;
+  companyId: string;
+  clientId: string;
+  firstName: string;
+  lastName: string;
+  pesel?: string;
+  email?: string;
+  phone?: string;
+  contractType: EmployeeContractType;
+  position?: string;
+  startDate: string;
+  endDate?: string;
+  grossSalary?: number;
+  grossSalaryPln?: string;
+  // UMOWA_O_PRACE fields
+  workingHoursPerWeek?: number;
+  vacationDaysPerYear?: number;
+  workplaceType?: WorkplaceType;
+  // UMOWA_ZLECENIE fields
+  hourlyRate?: number;
+  hourlyRatePln?: string;
+  isStudent?: boolean;
+  hasOtherInsurance?: boolean;
+  // UMOWA_O_DZIELO fields
+  projectDescription?: string;
+  deliveryDate?: string;
+  agreedAmount?: number;
+  agreedAmountPln?: string;
+  isActive: boolean;
+  notes?: string;
+  createdBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  updatedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaginatedClientEmployeesResponseDto {
+  data: ClientEmployeeResponseDto[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }

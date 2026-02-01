@@ -12,12 +12,15 @@ import {
   CompanyModuleAccess,
   CustomFieldType,
   EmploymentType,
+  HealthContributionType,
   Module as ModuleEntity,
   TaxScheme,
   User,
   UserModulePermission,
   UserRole,
   VatStatus,
+  ZusClientSettings,
+  ZusDiscountType,
   ZusStatus,
 } from '@accounting/common';
 import { EmailConfigurationService } from '@accounting/email';
@@ -42,6 +45,8 @@ export class SeederService {
     private clientRepository: Repository<Client>,
     @InjectRepository(ClientFieldDefinition)
     private fieldDefinitionRepository: Repository<ClientFieldDefinition>,
+    @InjectRepository(ZusClientSettings)
+    private zusSettingsRepository: Repository<ZusClientSettings>,
     private dataSource: DataSource,
     private emailConfigService: EmailConfigurationService,
     private moduleDiscoveryService: ModuleDiscoveryService,
@@ -61,7 +66,7 @@ export class SeederService {
 
     // Seed data in correct order
     const admin = await this.seedAdmin();
-    const _systemCompany = await this.seedSystemAdminCompany(admin);
+    const systemCompany = await this.seedSystemAdminCompany(admin);
     const { companyA, ownerA, employeesA } = await this.seedCompanyA();
     await this.seedEmailConfigurations(companyA, ownerA, employeesA);
 
@@ -81,6 +86,16 @@ export class SeederService {
     await this.seedModuleAccess(companyA, modules);
     await this.seedEmployeePermissions(employeesA, modules);
     await this.seedClients(companyA, ownerA);
+    await this.seedClients(systemCompany, admin);
+
+    // Seed ZUS client settings for all clients
+    const clientsA = await this.clientRepository.find({ where: { companyId: companyA.id } });
+    await this.seedZusSettings(clientsA, companyA, ownerA);
+
+    const clientsSystem = await this.clientRepository.find({
+      where: { companyId: systemCompany.id },
+    });
+    await this.seedZusSettings(clientsSystem, systemCompany, admin);
 
     this.logger.log('Database seeding completed!');
     this.logger.log('Test Users (passwords configured in .env):');
@@ -145,6 +160,9 @@ export class SeederService {
       // Time tracking tables
       'time_entries',
       'time_settings',
+      // ZUS module tables
+      'zus_contributions',
+      'zus_client_settings',
       // RBAC tables
       'user_module_permissions',
       'company_module_access',
@@ -256,12 +274,13 @@ export class SeederService {
   // Modules are now auto-discovered from libs/modules/*/module.json files
 
   private async seedModuleAccess(companyA: Company, modules: ModuleEntity[]) {
-    // Company A: ai-agent, clients, email-client, tasks, time-tracking
+    // Company A: ai-agent, clients, email-client, tasks, time-tracking, zus
     const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
     const clientsModule = modules.find((m) => m.slug === 'clients');
     const emailClientModule = modules.find((m) => m.slug === 'email-client');
     const tasksModule = modules.find((m) => m.slug === 'tasks');
     const timeTrackingModule = modules.find((m) => m.slug === 'time-tracking');
+    const zusModule = modules.find((m) => m.slug === 'zus');
 
     if (aiAgentModule) {
       await this.companyModuleAccessRepository.save(
@@ -312,6 +331,16 @@ export class SeederService {
         })
       );
     }
+
+    if (zusModule) {
+      await this.companyModuleAccessRepository.save(
+        this.companyModuleAccessRepository.create({
+          companyId: companyA.id,
+          moduleId: zusModule.id,
+          isEnabled: true,
+        })
+      );
+    }
   }
 
   private async seedEmployeePermissions(employeesA: User[], modules: ModuleEntity[]) {
@@ -320,6 +349,7 @@ export class SeederService {
     const emailClientModule = modules.find((m) => m.slug === 'email-client');
     const tasksModule = modules.find((m) => m.slug === 'tasks');
     const timeTrackingModule = modules.find((m) => m.slug === 'time-tracking');
+    const zusModule = modules.find((m) => m.slug === 'zus');
 
     // Employee 1A: read, write for all modules
     const employee = employeesA[0];
@@ -341,6 +371,17 @@ export class SeederService {
         this.userModulePermissionRepository.create({
           userId: employee.id,
           moduleId: aiAgentModule.id,
+          permissions: ['read', 'write'],
+          grantedById,
+        })
+      );
+    }
+
+    if (zusModule) {
+      await this.userModulePermissionRepository.save(
+        this.userModulePermissionRepository.create({
+          userId: employee.id,
+          moduleId: zusModule.id,
           permissions: ['read', 'write'],
           grantedById,
         })
@@ -527,6 +568,43 @@ export class SeederService {
     } catch (error) {
       this.logger.error('Error seeding email configurations', (error as Error).message);
       // Continue seeding even if email config fails (email config is optional)
+    }
+  }
+
+  private async seedZusSettings(clients: Client[], company: Company, creator: User) {
+    this.logger.log(`Seeding ZUS client settings for ${company.name}...`);
+
+    for (const client of clients) {
+      // Map client's zusStatus to ZusDiscountType
+      const discountType = this.mapZusStatusToDiscountType(client.zusStatus ?? ZusStatus.FULL);
+
+      const settings = this.zusSettingsRepository.create({
+        companyId: company.id,
+        clientId: client.id,
+        discountType,
+        healthContributionType: HealthContributionType.SCALE, // default: tax scale
+        sicknessInsuranceOptIn: false,
+        paymentDay: 15,
+        accidentRate: 0.0167, // default rate 1.67%
+        createdById: creator.id,
+        isActive: true,
+      });
+
+      await this.zusSettingsRepository.save(settings);
+    }
+
+    this.logger.log(`ZUS settings seeded for ${clients.length} clients in ${company.name}`);
+  }
+
+  private mapZusStatusToDiscountType(zusStatus: ZusStatus): ZusDiscountType {
+    switch (zusStatus) {
+      case ZusStatus.PREFERENTIAL:
+        return ZusDiscountType.SMALL_ZUS; // Preferential = Small ZUS (24 months at 30% min wage)
+      case ZusStatus.NONE:
+        return ZusDiscountType.STARTUP_RELIEF; // No ZUS = Startup relief (social only health)
+      case ZusStatus.FULL:
+      default:
+        return ZusDiscountType.NONE; // Full ZUS = no discount
     }
   }
 }

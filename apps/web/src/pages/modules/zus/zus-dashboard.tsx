@@ -94,15 +94,17 @@ export default function ZusDashboardPage() {
           </Card>
         </Link>
 
-        <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Raporty</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">Generuj raporty i eksporty</p>
-          </CardContent>
-        </Card>
+        <Link to="reports">
+          <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Raporty</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">Generuj raporty i eksporty</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Statistics Cards */}

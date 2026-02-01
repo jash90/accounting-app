@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   ChangeLog,
   Client,
+  ClientEmployee,
   Company,
   User,
   ZusClientSettings,
@@ -33,6 +34,7 @@ import {
       ZusClientSettings,
       ZusRate,
       Client,
+      ClientEmployee,
       Company,
       User,
       ChangeLog,

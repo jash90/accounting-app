@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import {
+  Building2,
   Calculator,
   CheckCircle,
   Download,
@@ -12,6 +13,7 @@ import {
   MoreHorizontal,
   Plus,
   Trash2,
+  Users,
 } from 'lucide-react';
 
 import {
@@ -89,6 +91,7 @@ export default function ZusContributionsListPage() {
   const filters: ZusContributionFiltersDto = {
     search: searchParams.get('search') || undefined,
     status: (searchParams.get('status') as ZusContributionStatus) || undefined,
+    contributionType: (searchParams.get('type') as 'OWNER' | 'EMPLOYEE') || undefined,
     periodMonth: searchParams.get('month') ? parseInt(searchParams.get('month')!, 10) : undefined,
     periodYear: searchParams.get('year') ? parseInt(searchParams.get('year')!, 10) : undefined,
     page: parseInt(searchParams.get('page') || '1', 10),
@@ -170,7 +173,7 @@ export default function ZusContributionsListPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-5">
             <Input
               placeholder="Szukaj klienta..."
               value={filters.search || ''}
@@ -227,6 +230,20 @@ export default function ZusContributionsListPage() {
                 ))}
               </SelectContent>
             </Select>
+
+            <Select
+              value={filters.contributionType || 'all'}
+              onValueChange={(value) => updateFilter('type', value === 'all' ? undefined : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Typ rozliczenia" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Wszystkie typy</SelectItem>
+                <SelectItem value="OWNER">Właściciel</SelectItem>
+                <SelectItem value="EMPLOYEE">Pracownik</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -238,6 +255,8 @@ export default function ZusContributionsListPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Klient</TableHead>
+                <TableHead>Typ</TableHead>
+                <TableHead>Pracownik</TableHead>
                 <TableHead>Okres</TableHead>
                 <TableHead>Typ ulgi</TableHead>
                 <TableHead>Składki społeczne</TableHead>
@@ -252,7 +271,7 @@ export default function ZusContributionsListPage() {
               {isLoading ? (
                 [...Array(5)].map((_, i) => (
                   <TableRow key={i}>
-                    {[...Array(9)].map((_, j) => (
+                    {[...Array(11)].map((_, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-4 w-full" />
                       </TableCell>
@@ -270,6 +289,29 @@ export default function ZusContributionsListPage() {
                         <p className="text-sm text-muted-foreground">
                           NIP: {contribution.client.nip}
                         </p>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {contribution.contributionType === 'OWNER' ? (
+                        <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                          <Building2 className="h-3 w-3" />
+                          Właściciel
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                          <Users className="h-3 w-3" />
+                          Pracownik
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {contribution.clientEmployee ? (
+                        <span>
+                          {contribution.clientEmployee.firstName}{' '}
+                          {contribution.clientEmployee.lastName}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -326,7 +368,7 @@ export default function ZusContributionsListPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="h-24 text-center">
+                  <TableCell colSpan={11} className="h-24 text-center">
                     <div className="flex flex-col items-center gap-2">
                       <Calculator className="h-8 w-8 text-muted-foreground" />
                       <p className="text-muted-foreground">Brak rozliczeń ZUS</p>

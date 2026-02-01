@@ -10,7 +10,13 @@ import {
   RequirePermission,
 } from '@accounting/rbac';
 
-import { ZusMonthlyComparisonDto, ZusStatisticsDto, ZusUpcomingPaymentDto } from '../dto';
+import {
+  ZusMonthlyComparisonDto,
+  ZusStatisticsDto,
+  ZusTopClientDto,
+  ZusTotalsDto,
+  ZusUpcomingPaymentDto,
+} from '../dto';
 import { ZusStatisticsService } from '../services';
 
 @ApiTags('ZUS Dashboard')
@@ -51,5 +57,33 @@ export class ZusDashboardController {
   ): Promise<ZusMonthlyComparisonDto[]> {
     const monthsNum = months ? parseInt(months, 10) : 6;
     return this.statisticsService.getMonthlyComparison(user, monthsNum);
+  }
+
+  @Get('top-clients')
+  @RequirePermission('zus', 'read')
+  @ApiOperation({ summary: 'Get top clients by ZUS contributions' })
+  @ApiResponse({ status: 200, type: [ZusTopClientDto] })
+  async getTopClients(
+    @CurrentUser() user: User,
+    @Query('limit') limit?: string
+  ): Promise<ZusTopClientDto[]> {
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    return this.statisticsService.getTopClientsByContributions(user, limitNum);
+  }
+
+  @Get('month-totals')
+  @RequirePermission('zus', 'read')
+  @ApiOperation({ summary: 'Get current month ZUS totals' })
+  @ApiResponse({ status: 200, type: ZusTotalsDto })
+  async getMonthTotals(@CurrentUser() user: User): Promise<ZusTotalsDto> {
+    return this.statisticsService.getCurrentMonthTotals(user);
+  }
+
+  @Get('year-totals')
+  @RequirePermission('zus', 'read')
+  @ApiOperation({ summary: 'Get current year ZUS totals' })
+  @ApiResponse({ status: 200, type: ZusTotalsDto })
+  async getYearTotals(@CurrentUser() user: User): Promise<ZusTotalsDto> {
+    return this.statisticsService.getCurrentYearTotals(user);
   }
 }

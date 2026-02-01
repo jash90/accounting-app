@@ -1,4 +1,6 @@
 import type {
+  BulkContributionResultDto,
+  CalculateEmployeeContributionsDto,
   CalculateZusContributionDto,
   CreateZusContributionDto,
   GenerateMonthlyContributionsDto,
@@ -13,6 +15,8 @@ import type {
   ZusMonthlyComparisonDto,
   ZusRatesResponseDto,
   ZusStatisticsDto,
+  ZusTopClientDto,
+  ZusTotalsDto,
   ZusUpcomingPaymentDto,
 } from '@/types/dtos';
 
@@ -91,6 +95,19 @@ export const zusApi = {
     ): Promise<GenerateMonthlyResultDto> => {
       const { data } = await apiClient.post<GenerateMonthlyResultDto>(
         `${BASE_URL}/contributions/generate-monthly`,
+        dto
+      );
+      return data;
+    },
+
+    /**
+     * Calculate ZUS contributions for multiple employees of a client
+     */
+    calculateEmployeeContributions: async (
+      dto: CalculateEmployeeContributionsDto
+    ): Promise<BulkContributionResultDto> => {
+      const { data } = await apiClient.post<BulkContributionResultDto>(
+        `${BASE_URL}/contributions/calculate-employees`,
         dto
       );
       return data;
@@ -223,6 +240,32 @@ export const zusApi = {
         `${BASE_URL}/dashboard/comparison`,
         { params: { months } }
       );
+      return data;
+    },
+
+    /**
+     * Get top clients by ZUS contributions
+     */
+    getTopClients: async (limit: number = 10): Promise<ZusTopClientDto[]> => {
+      const { data } = await apiClient.get<ZusTopClientDto[]>(`${BASE_URL}/dashboard/top-clients`, {
+        params: { limit },
+      });
+      return data;
+    },
+
+    /**
+     * Get current month ZUS totals
+     */
+    getMonthTotals: async (): Promise<ZusTotalsDto> => {
+      const { data } = await apiClient.get<ZusTotalsDto>(`${BASE_URL}/dashboard/month-totals`);
+      return data;
+    },
+
+    /**
+     * Get current year ZUS totals
+     */
+    getYearTotals: async (): Promise<ZusTotalsDto> => {
+      const { data } = await apiClient.get<ZusTotalsDto>(`${BASE_URL}/dashboard/year-totals`);
       return data;
     },
   },
