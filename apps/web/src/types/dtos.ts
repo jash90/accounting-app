@@ -1,31 +1,34 @@
 import {
+  type AcceptanceCriterion,
+  type ChangeLog,
   type Client,
   type ClientFieldDefinition,
   type ClientIcon,
   type NotificationSettings,
-  type ChangeLog,
   type Task,
-  type TaskLabel,
   type TaskComment,
   type TaskDependency,
-  type AcceptanceCriterion,
+  type TaskLabel,
   type TimeEntry,
   type TimeSettings,
 } from './entities';
 import {
   UserRole,
-  type EmploymentType,
-  type VatStatus,
-  type TaxScheme,
-  type ZusStatus,
-  type CustomFieldType,
-  type AutoAssignCondition,
   type AmlGroup,
-  type TaskStatus,
-  type TaskPriority,
+  type AutoAssignCondition,
+  type CustomFieldType,
+  type EmploymentType,
+  type HealthContributionType,
   type TaskDependencyType,
+  type TaskPriority,
+  type TaskStatus,
+  type TaxScheme,
   type TimeEntryStatus,
   type TimeRoundingMethod,
+  type VatStatus,
+  type ZusContributionStatus,
+  type ZusDiscountType,
+  type ZusStatus,
 } from './enums';
 
 // Re-export for external consumers
@@ -965,4 +968,200 @@ export interface TimeByClientReportDto {
   billableMinutes: number;
   totalAmount: number;
   entryCount: number;
+}
+
+// ============================================
+// ZUS Module DTOs
+// ============================================
+
+// ZUS Client Settings
+export interface ZusClientSettingsResponseDto {
+  id: string;
+  clientId: string;
+  discountType: ZusDiscountType;
+  discountStartDate?: string;
+  discountEndDate?: string;
+  healthContributionType: HealthContributionType;
+  sicknessInsuranceOptIn: boolean;
+  paymentDay: number;
+  accidentRate: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateZusSettingsDto {
+  discountType?: ZusDiscountType;
+  discountStartDate?: string;
+  discountEndDate?: string;
+  healthContributionType?: HealthContributionType;
+  sicknessInsuranceOptIn?: boolean;
+  paymentDay?: number;
+  accidentRate?: number;
+}
+
+// ZUS Contribution
+export interface ZusContributionResponseDto {
+  id: string;
+  companyId: string;
+  clientId: string;
+  client?: {
+    id: string;
+    name: string;
+    nip?: string;
+  };
+  periodMonth: number;
+  periodYear: number;
+  status: ZusContributionStatus;
+  dueDate: string;
+  paidDate?: string;
+  // Amounts in grosze
+  retirementAmount: number;
+  disabilityAmount: number;
+  sicknessAmount: number;
+  accidentAmount: number;
+  laborFundAmount: number;
+  healthAmount: number;
+  totalSocialAmount: number;
+  totalAmount: number;
+  // Formatted amounts in PLN
+  retirementAmountPln: string;
+  disabilityAmountPln: string;
+  sicknessAmountPln: string;
+  accidentAmountPln: string;
+  laborFundAmountPln: string;
+  healthAmountPln: string;
+  totalSocialAmountPln: string;
+  totalAmountPln: string;
+  // Basis
+  socialBasis: number;
+  healthBasis: number;
+  socialBasisPln: string;
+  healthBasisPln: string;
+  discountType: ZusDiscountType;
+  sicknessOptedIn: boolean;
+  notes?: string;
+  createdBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  updatedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateZusContributionDto {
+  clientId: string;
+  periodMonth: number;
+  periodYear: number;
+  notes?: string;
+}
+
+export interface UpdateZusContributionDto {
+  status?: ZusContributionStatus;
+  notes?: string;
+}
+
+export interface CalculateZusContributionDto {
+  clientId: string;
+  periodMonth: number;
+  periodYear: number;
+  healthBasis?: number;
+}
+
+export interface GenerateMonthlyContributionsDto {
+  month: number;
+  year: number;
+}
+
+export interface MarkPaidDto {
+  paidDate: string;
+}
+
+export interface ZusContributionFiltersDto {
+  clientId?: string;
+  periodMonth?: number;
+  periodYear?: number;
+  status?: ZusContributionStatus;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedZusContributionsResponseDto {
+  data: ZusContributionResponseDto[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+// ZUS Statistics
+export interface ZusStatisticsDto {
+  totalContributions: number;
+  paidContributions: number;
+  overdueContributions: number;
+  pendingContributions: number;
+  totalPaidAmount: number;
+  totalPendingAmount: number;
+  totalOverdueAmount: number;
+  totalPaidAmountPln: string;
+  totalPendingAmountPln: string;
+  totalOverdueAmountPln: string;
+  clientsWithSettings: number;
+  byDiscountType: Record<ZusDiscountType, number>;
+  byStatus: Record<ZusContributionStatus, number>;
+}
+
+export interface ZusUpcomingPaymentDto {
+  id: string;
+  clientId: string;
+  clientName: string;
+  periodMonth: number;
+  periodYear: number;
+  dueDate: string;
+  totalAmount: number;
+  totalAmountPln: string;
+  daysUntilDue: number;
+  isOverdue: boolean;
+}
+
+export interface ZusMonthlyComparisonDto {
+  month: number;
+  year: number;
+  periodLabel: string;
+  totalSocialAmount: number;
+  totalHealthAmount: number;
+  totalAmount: number;
+  totalSocialAmountPln: string;
+  totalHealthAmountPln: string;
+  totalAmountPln: string;
+  contributionsCount: number;
+}
+
+export interface GenerateMonthlyResultDto {
+  generated: number;
+  skipped: number;
+  noSettings: number;
+}
+
+// ZUS Rates
+export interface ZusRatesResponseDto {
+  fullBasis: number;
+  smallZusBasis: number;
+  minimumWage: number;
+  averageWage: number;
+  healthMin: number;
+  lumpSumTier1: number;
+  lumpSumTier2: number;
+  lumpSumTier3: number;
+  fullBasisPln: string;
+  smallZusBasisPln: string;
+  minimumWagePln: string;
+  healthMinPln: string;
 }

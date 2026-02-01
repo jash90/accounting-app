@@ -30,6 +30,10 @@ import {
   TokenUsage,
   User,
   UserModulePermission,
+  ZusClientSettings,
+  // ZUS entities
+  ZusContribution,
+  ZusRate,
 } from '@accounting/common';
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -83,6 +87,10 @@ export default new DataSource({
     TaskComment,
     TimeEntry,
     TimeSettings,
+    // ZUS entities
+    ZusContribution,
+    ZusClientSettings,
+    ZusRate,
   ],
   migrations: ['apps/api/src/migrations/*{.ts,.js}'],
   synchronize: false,
