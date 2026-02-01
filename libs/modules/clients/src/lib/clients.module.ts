@@ -7,6 +7,7 @@ import {
   Client,
   ClientCustomFieldValue,
   ClientDeleteRequest,
+  ClientEmployee,
   ClientFieldDefinition,
   ClientIcon,
   ClientIconAssignment,
@@ -21,6 +22,7 @@ import { StorageModule } from '@accounting/infrastructure/storage';
 import { NotificationsModule } from '@accounting/modules/notifications';
 import { RBACModule } from '@accounting/rbac';
 
+import { ClientEmployeesController } from './controllers/client-employees.controller';
 import { ClientsController } from './controllers/clients.controller';
 import { DeleteRequestsController } from './controllers/delete-requests.controller';
 import { FieldDefinitionsController } from './controllers/field-definitions.controller';
@@ -29,6 +31,7 @@ import { NotificationSettingsController } from './controllers/notification-setti
 import { SuspensionsController } from './controllers/suspensions.controller';
 import { AutoAssignService } from './services/auto-assign.service';
 import { ClientChangelogService } from './services/client-changelog.service';
+import { ClientEmployeesService } from './services/client-employees.service';
 import { ClientIconsService } from './services/client-icons.service';
 import { ClientsService } from './services/clients.service';
 import { ConditionEvaluatorService } from './services/condition-evaluator.service';
@@ -45,6 +48,7 @@ import { SuspensionService } from './services/suspension.service';
   imports: [
     TypeOrmModule.forFeature([
       Client,
+      ClientEmployee,
       ClientFieldDefinition,
       ClientCustomFieldValue,
       ClientIcon,
@@ -70,10 +74,12 @@ import { SuspensionService } from './services/suspension.service';
     NotificationSettingsController,
     DeleteRequestsController,
     SuspensionsController,
+    ClientEmployeesController,
     ClientsController,
   ],
   providers: [
     ClientsService,
+    ClientEmployeesService,
     CustomFieldsService,
     ClientIconsService,
     ClientChangelogService,
@@ -89,6 +95,7 @@ import { SuspensionService } from './services/suspension.service';
   ],
   exports: [
     ClientsService,
+    ClientEmployeesService,
     CustomFieldsService,
     ClientIconsService,
     ClientChangelogService,

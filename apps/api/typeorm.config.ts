@@ -9,6 +9,7 @@ import {
   Client,
   ClientCustomFieldValue,
   ClientDeleteRequest,
+  ClientEmployee,
   ClientFieldDefinition,
   ClientIcon,
   ClientIconAssignment,
@@ -91,6 +92,8 @@ export default new DataSource({
     ZusContribution,
     ZusClientSettings,
     ZusRate,
+    // Client Employee entity
+    ClientEmployee,
   ],
   migrations: ['apps/api/src/migrations/*{.ts,.js}'],
   synchronize: false,

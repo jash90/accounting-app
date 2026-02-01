@@ -20,6 +20,8 @@ export * from './lib/enums/zus-contribution-type.enum';
 export * from './lib/enums/zus-discount-type.enum';
 export * from './lib/enums/zus-contribution-status.enum';
 export * from './lib/enums/health-contribution-type.enum';
+// Client Employee enums
+export * from './lib/enums/employee-contract-type.enum';
 
 // Constants
 export * from './lib/constants';
@@ -64,8 +66,11 @@ export * from './lib/entities/time-settings.entity';
 export * from './lib/entities/notification.entity';
 // ZUS entities
 export * from './lib/entities/zus-contribution.entity';
+export { type ZusContributionTarget } from './lib/entities/zus-contribution.entity';
 export * from './lib/entities/zus-client-settings.entity';
 export * from './lib/entities/zus-rate.entity';
+// Client Employee entity
+export * from './lib/entities/client-employee.entity';
 export { AIProvider } from './lib/entities/ai-configuration.entity';
 export { AIMessageRole } from './lib/entities/ai-message.entity';
 export * from './lib/dto/responses';

@@ -1,22 +1,27 @@
 import { type PaginatedResponse } from '@/types/api';
 import {
-  type CreateClientDto,
-  type UpdateClientDto,
-  type ClientFiltersDto,
-  type ClientResponseDto,
-  type SetCustomFieldValuesDto,
-  type CreateClientFieldDefinitionDto,
-  type UpdateClientFieldDefinitionDto,
-  type ClientFieldDefinitionResponseDto,
-  type CreateClientIconDto,
-  type UpdateClientIconDto,
-  type ClientIconResponseDto,
-  type CreateNotificationSettingsDto,
-  type UpdateNotificationSettingsDto,
-  type NotificationSettingsResponseDto,
   type ChangeLogResponseDto,
+  type ClientEmployeeFiltersDto,
+  type ClientEmployeeResponseDto,
+  type ClientFieldDefinitionResponseDto,
+  type ClientFiltersDto,
+  type ClientIconResponseDto,
+  type ClientResponseDto,
+  type CreateClientDto,
+  type CreateClientEmployeeDto,
+  type CreateClientFieldDefinitionDto,
+  type CreateClientIconDto,
+  type CreateNotificationSettingsDto,
+  type NotificationSettingsResponseDto,
+  type PaginatedClientEmployeesResponseDto,
+  type SetCustomFieldValuesDto,
+  type UpdateClientDto,
+  type UpdateClientEmployeeDto,
+  type UpdateClientFieldDefinitionDto,
+  type UpdateClientIconDto,
+  type UpdateNotificationSettingsDto,
 } from '@/types/dtos';
-import { type EmploymentType, type VatStatus, type TaxScheme, type ZusStatus } from '@/types/enums';
+import { type EmploymentType, type TaxScheme, type VatStatus, type ZusStatus } from '@/types/enums';
 
 import apiClient from '../client';
 
@@ -518,5 +523,63 @@ export const notificationSettingsApi = {
 
   delete: async (): Promise<void> => {
     await apiClient.delete(`${NOTIFICATION_SETTINGS_URL}/me`);
+  },
+};
+
+// ============================================
+// Client Employees API
+// ============================================
+
+export const clientEmployeesApi = {
+  getAll: async (
+    clientId: string,
+    filters?: ClientEmployeeFiltersDto
+  ): Promise<PaginatedClientEmployeesResponseDto> => {
+    const { data } = await apiClient.get<PaginatedClientEmployeesResponseDto>(
+      `${BASE_URL}/${clientId}/employees`,
+      { params: filters }
+    );
+    return data;
+  },
+
+  getById: async (clientId: string, employeeId: string): Promise<ClientEmployeeResponseDto> => {
+    const { data } = await apiClient.get<ClientEmployeeResponseDto>(
+      `${BASE_URL}/${clientId}/employees/${employeeId}`
+    );
+    return data;
+  },
+
+  create: async (
+    clientId: string,
+    employeeData: CreateClientEmployeeDto
+  ): Promise<ClientEmployeeResponseDto> => {
+    const { data } = await apiClient.post<ClientEmployeeResponseDto>(
+      `${BASE_URL}/${clientId}/employees`,
+      employeeData
+    );
+    return data;
+  },
+
+  update: async (
+    clientId: string,
+    employeeId: string,
+    employeeData: UpdateClientEmployeeDto
+  ): Promise<ClientEmployeeResponseDto> => {
+    const { data } = await apiClient.patch<ClientEmployeeResponseDto>(
+      `${BASE_URL}/${clientId}/employees/${employeeId}`,
+      employeeData
+    );
+    return data;
+  },
+
+  delete: async (clientId: string, employeeId: string): Promise<void> => {
+    await apiClient.delete(`${BASE_URL}/${clientId}/employees/${employeeId}`);
+  },
+
+  restore: async (clientId: string, employeeId: string): Promise<ClientEmployeeResponseDto> => {
+    const { data } = await apiClient.post<ClientEmployeeResponseDto>(
+      `${BASE_URL}/${clientId}/employees/${employeeId}/restore`
+    );
+    return data;
   },
 };

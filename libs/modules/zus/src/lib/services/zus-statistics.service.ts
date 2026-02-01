@@ -12,7 +12,13 @@ import {
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 
-import { ZusMonthlyComparisonDto, ZusStatisticsDto, ZusUpcomingPaymentDto } from '../dto';
+import {
+  ZusMonthlyComparisonDto,
+  ZusStatisticsDto,
+  ZusTopClientDto,
+  ZusTotalsDto,
+  ZusUpcomingPaymentDto,
+} from '../dto';
 
 /**
  * Polish month names
@@ -234,6 +240,104 @@ export class ZusStatisticsService {
     }
 
     return results;
+  }
+
+  /**
+   * Get top clients by total contributions amount
+   */
+  async getTopClientsByContributions(user: User, limit: number = 10): Promise<ZusTopClientDto[]> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+
+    const results = await this.contributionRepository
+      .createQueryBuilder('c')
+      .select('c.clientId', 'clientId')
+      .addSelect('client.name', 'clientName')
+      .addSelect('SUM(c.totalAmount)', 'totalAmount')
+      .addSelect('COUNT(*)', 'contributionsCount')
+      .leftJoin('c.client', 'client')
+      .where('c.companyId = :companyId', { companyId })
+      .groupBy('c.clientId')
+      .addGroupBy('client.name')
+      .orderBy('SUM(c.totalAmount)', 'DESC')
+      .limit(limit)
+      .getRawMany();
+
+    return results.map((r) => ({
+      clientId: r.clientId,
+      clientName: r.clientName ?? 'Nieznany klient',
+      totalAmount: parseInt(r.totalAmount || '0', 10),
+      totalAmountPln: formatGroszeToPln(parseInt(r.totalAmount || '0', 10)),
+      contributionsCount: parseInt(r.contributionsCount || '0', 10),
+    }));
+  }
+
+  /**
+   * Get totals for current month
+   */
+  async getCurrentMonthTotals(user: User): Promise<ZusTotalsDto> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+
+    const stats = await this.contributionRepository
+      .createQueryBuilder('c')
+      .select('SUM(c.totalSocialAmount)', 'totalSocial')
+      .addSelect('SUM(c.healthAmount)', 'totalHealth')
+      .addSelect('SUM(c.totalAmount)', 'total')
+      .addSelect('COUNT(*)', 'count')
+      .where('c.companyId = :companyId', { companyId })
+      .andWhere('c.periodMonth = :month', { month })
+      .andWhere('c.periodYear = :year', { year })
+      .getRawOne();
+
+    const totalSocialAmount = parseInt(stats?.totalSocial || '0', 10);
+    const totalHealthAmount = parseInt(stats?.totalHealth || '0', 10);
+    const totalAmount = parseInt(stats?.total || '0', 10);
+    const contributionsCount = parseInt(stats?.count || '0', 10);
+
+    return {
+      totalAmount,
+      totalAmountPln: formatGroszeToPln(totalAmount),
+      totalSocialAmount,
+      totalSocialAmountPln: formatGroszeToPln(totalSocialAmount),
+      totalHealthAmount,
+      totalHealthAmountPln: formatGroszeToPln(totalHealthAmount),
+      contributionsCount,
+    };
+  }
+
+  /**
+   * Get totals for current year
+   */
+  async getCurrentYearTotals(user: User): Promise<ZusTotalsDto> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const year = new Date().getFullYear();
+
+    const stats = await this.contributionRepository
+      .createQueryBuilder('c')
+      .select('SUM(c.totalSocialAmount)', 'totalSocial')
+      .addSelect('SUM(c.healthAmount)', 'totalHealth')
+      .addSelect('SUM(c.totalAmount)', 'total')
+      .addSelect('COUNT(*)', 'count')
+      .where('c.companyId = :companyId', { companyId })
+      .andWhere('c.periodYear = :year', { year })
+      .getRawOne();
+
+    const totalSocialAmount = parseInt(stats?.totalSocial || '0', 10);
+    const totalHealthAmount = parseInt(stats?.totalHealth || '0', 10);
+    const totalAmount = parseInt(stats?.total || '0', 10);
+    const contributionsCount = parseInt(stats?.count || '0', 10);
+
+    return {
+      totalAmount,
+      totalAmountPln: formatGroszeToPln(totalAmount),
+      totalSocialAmount,
+      totalSocialAmountPln: formatGroszeToPln(totalSocialAmount),
+      totalHealthAmount,
+      totalHealthAmountPln: formatGroszeToPln(totalHealthAmount),
+      contributionsCount,
+    };
   }
 }
 

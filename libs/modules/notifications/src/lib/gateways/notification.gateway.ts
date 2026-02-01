@@ -74,7 +74,8 @@ export class NotificationGateway
     private readonly configService: ConfigService
   ) {
     // Store allowed origins from ConfigService for logging/debugging
-    this.allowedOrigins = this.configService.get<string>('CORS_ORIGINS')?.split(',') || [
+    // Use optional chaining in case ConfigService is not yet initialized
+    this.allowedOrigins = this.configService?.get<string>('CORS_ORIGINS')?.split(',') || [
       'http://localhost:4200',
     ];
   }

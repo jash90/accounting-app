@@ -315,3 +315,37 @@ export const HealthContributionTypeLabels: Record<HealthContributionType, string
   [HealthContributionType.LUMP_SUM]: 'Ryczałt',
   [HealthContributionType.TAX_CARD]: 'Karta podatkowa',
 };
+
+// ============================================
+// Client Employee Enums
+// ============================================
+
+export enum EmployeeContractType {
+  UMOWA_O_PRACE = 'UMOWA_O_PRACE',
+  UMOWA_ZLECENIE = 'UMOWA_ZLECENIE',
+  UMOWA_O_DZIELO = 'UMOWA_O_DZIELO',
+}
+
+export const EmployeeContractTypeLabels: Record<EmployeeContractType, string> = {
+  [EmployeeContractType.UMOWA_O_PRACE]: 'Umowa o pracę',
+  [EmployeeContractType.UMOWA_ZLECENIE]: 'Umowa zlecenie',
+  [EmployeeContractType.UMOWA_O_DZIELO]: 'Umowa o dzieło',
+};
+
+export const EmployeeContractTypeColors: Record<EmployeeContractType, string> = {
+  [EmployeeContractType.UMOWA_O_PRACE]: 'bg-green-100 text-green-700',
+  [EmployeeContractType.UMOWA_ZLECENIE]: 'bg-blue-100 text-blue-700',
+  [EmployeeContractType.UMOWA_O_DZIELO]: 'bg-purple-100 text-purple-700',
+};
+
+export enum WorkplaceType {
+  OFFICE = 'OFFICE',
+  REMOTE = 'REMOTE',
+  HYBRID = 'HYBRID',
+}
+
+export const WorkplaceTypeLabels: Record<WorkplaceType, string> = {
+  [WorkplaceType.OFFICE]: 'Biuro',
+  [WorkplaceType.REMOTE]: 'Zdalnie',
+  [WorkplaceType.HYBRID]: 'Hybrydowo',
+};

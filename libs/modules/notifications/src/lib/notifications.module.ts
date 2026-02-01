@@ -40,6 +40,7 @@ import { SystemCompanyService } from './services/system-company.service';
 @Global()
 @Module({
   imports: [
+    ConfigModule,
     // Register all entities (including Company for System Admin Company pattern)
     TypeOrmModule.forFeature([Notification, NotificationSettings, User, Company]),
     EventEmitterModule.forRoot({

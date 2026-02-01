@@ -117,3 +117,43 @@ export class GenerateMonthlyResultDto {
   @ApiProperty({ description: 'Number of clients without ZUS settings' })
   noSettings!: number;
 }
+
+export class ZusTopClientDto {
+  @ApiProperty()
+  clientId!: string;
+
+  @ApiProperty()
+  clientName!: string;
+
+  @ApiProperty({ description: 'Total amount (grosze)' })
+  totalAmount!: number;
+
+  @ApiProperty({ description: 'Total amount (PLN)' })
+  totalAmountPln!: string;
+
+  @ApiProperty({ description: 'Number of contributions' })
+  contributionsCount!: number;
+}
+
+export class ZusTotalsDto {
+  @ApiProperty({ description: 'Total amount (grosze)' })
+  totalAmount!: number;
+
+  @ApiProperty({ description: 'Total amount (PLN)' })
+  totalAmountPln!: string;
+
+  @ApiProperty({ description: 'Total social amount (grosze)' })
+  totalSocialAmount!: number;
+
+  @ApiProperty({ description: 'Total social amount (PLN)' })
+  totalSocialAmountPln!: string;
+
+  @ApiProperty({ description: 'Total health amount (grosze)' })
+  totalHealthAmount!: number;
+
+  @ApiProperty({ description: 'Total health amount (PLN)' })
+  totalHealthAmountPln!: string;
+
+  @ApiProperty({ description: 'Number of contributions' })
+  contributionsCount!: number;
+}
