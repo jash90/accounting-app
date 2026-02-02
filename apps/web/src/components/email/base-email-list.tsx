@@ -1,22 +1,24 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { Link } from 'react-router-dom';
 
 import {
-  RefreshCw,
-  Mail,
-  MailOpen,
-  Trash2,
+  AlertCircle,
   CheckCheck,
-  Loader2,
   ChevronLeft,
   ChevronRight,
+  Loader2,
+  Mail,
+  MailOpen,
+  RefreshCw,
+  Settings,
+  Trash2,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
-import { useMarkAsRead, useDeleteEmails } from '@/lib/hooks/use-email-client';
+import { useDeleteEmails, useMarkAsRead } from '@/lib/hooks/use-email-client';
 import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 
 import { EmailListSkeleton } from '../../pages/modules/email-client/components/email-inbox-skeleton';
@@ -49,6 +51,8 @@ interface BaseEmailListProps {
   refetch: () => void;
   /** Empty state message when no emails */
   emptyMessage: string;
+  /** Error from the query */
+  error?: Error | null;
 }
 
 /**
@@ -62,6 +66,7 @@ export function BaseEmailList({
   isRefetching,
   refetch,
   emptyMessage,
+  error,
 }: BaseEmailListProps) {
   const markAsRead = useMarkAsRead();
   const deleteEmails = useDeleteEmails();
@@ -266,6 +271,36 @@ export function BaseEmailList({
         <div className="flex-1 overflow-auto">
           {isLoading ? (
             <EmailListSkeleton />
+          ) : error ? (
+            <div className="p-8 text-center">
+              {error.message?.includes('konfiguracji email') ||
+              error.message?.includes('email configuration') ? (
+                <>
+                  <Settings className="mx-auto mb-4 h-12 w-12 text-amber-500 opacity-70" />
+                  <h3 className="mb-2 text-lg font-semibold">Konfiguracja email wymagana</h3>
+                  <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                    Aby korzystać z modułu email, najpierw skonfiguruj konto pocztowe firmy w
+                    ustawieniach. Podaj dane serwera IMAP/SMTP oraz dane logowania.
+                  </p>
+                  <Link to="/settings/email-config">
+                    <Button variant="default" className="gap-2">
+                      <Settings className="h-4 w-4" />
+                      Przejdź do ustawień email
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="mx-auto mb-4 h-12 w-12 text-destructive opacity-70" />
+                  <h3 className="mb-2 text-lg font-semibold">Wystąpił błąd</h3>
+                  <p className="text-muted-foreground mb-4">{error.message}</p>
+                  <Button variant="outline" onClick={() => refetch()} className="gap-2">
+                    <RefreshCw className="h-4 w-4" />
+                    Spróbuj ponownie
+                  </Button>
+                </>
+              )}
+            </div>
           ) : sortedEmails.length === 0 ? (
             <div className="text-muted-foreground p-8 text-center">
               <MailOpen className="mx-auto mb-4 h-12 w-12 opacity-50" />
