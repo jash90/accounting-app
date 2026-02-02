@@ -56,6 +56,71 @@ interface BaseEmailListProps {
 }
 
 /**
+ * Extract error message from various error types (Axios, standard Error, etc.)
+ */
+function getErrorMessage(error: Error): string {
+  // Check for Axios error structure
+  const axiosError = error as Error & {
+    response?: { data?: { message?: string } };
+  };
+  if (axiosError.response?.data?.message) {
+    return axiosError.response.data.message;
+  }
+  return error.message || 'Nieznany błąd';
+}
+
+/**
+ * Check if error is related to missing email configuration
+ */
+function isEmailConfigError(errorMessage: string): boolean {
+  return (
+    errorMessage.includes('konfiguracji email') ||
+    errorMessage.includes('email configuration') ||
+    errorMessage.includes('Email configuration') ||
+    errorMessage.includes('Skonfiguruj')
+  );
+}
+
+/**
+ * Error state component for email list
+ */
+function EmailErrorState({ error, refetch }: { error: Error; refetch: () => void }) {
+  const errorMessage = getErrorMessage(error);
+  const isConfigError = isEmailConfigError(errorMessage);
+
+  if (isConfigError) {
+    return (
+      <div className="p-8 text-center">
+        <Settings className="mx-auto mb-4 h-12 w-12 text-amber-500 opacity-70" />
+        <h3 className="mb-2 text-lg font-semibold">Konfiguracja email wymagana</h3>
+        <p className="text-muted-foreground mx-auto mb-4 max-w-md">
+          Aby korzystać z modułu email, najpierw skonfiguruj konto pocztowe firmy w ustawieniach.
+          Podaj dane serwera IMAP/SMTP oraz dane logowania.
+        </p>
+        <Link to="/settings/email-config">
+          <Button variant="default" className="gap-2">
+            <Settings className="h-4 w-4" />
+            Przejdź do ustawień email
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-8 text-center">
+      <AlertCircle className="text-destructive mx-auto mb-4 h-12 w-12 opacity-70" />
+      <h3 className="mb-2 text-lg font-semibold">Wystąpił błąd</h3>
+      <p className="text-muted-foreground mb-4">{errorMessage}</p>
+      <Button variant="outline" onClick={() => refetch()} className="gap-2">
+        <RefreshCw className="h-4 w-4" />
+        Spróbuj ponownie
+      </Button>
+    </div>
+  );
+}
+
+/**
  * Shared email list component used by both Inbox and Folder pages
  * Handles email display, selection, bulk actions, and pagination
  */
@@ -272,35 +337,7 @@ export function BaseEmailList({
           {isLoading ? (
             <EmailListSkeleton />
           ) : error ? (
-            <div className="p-8 text-center">
-              {error.message?.includes('konfiguracji email') ||
-              error.message?.includes('email configuration') ? (
-                <>
-                  <Settings className="mx-auto mb-4 h-12 w-12 text-amber-500 opacity-70" />
-                  <h3 className="mb-2 text-lg font-semibold">Konfiguracja email wymagana</h3>
-                  <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                    Aby korzystać z modułu email, najpierw skonfiguruj konto pocztowe firmy w
-                    ustawieniach. Podaj dane serwera IMAP/SMTP oraz dane logowania.
-                  </p>
-                  <Link to="/settings/email-config">
-                    <Button variant="default" className="gap-2">
-                      <Settings className="h-4 w-4" />
-                      Przejdź do ustawień email
-                    </Button>
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="mx-auto mb-4 h-12 w-12 text-destructive opacity-70" />
-                  <h3 className="mb-2 text-lg font-semibold">Wystąpił błąd</h3>
-                  <p className="text-muted-foreground mb-4">{error.message}</p>
-                  <Button variant="outline" onClick={() => refetch()} className="gap-2">
-                    <RefreshCw className="h-4 w-4" />
-                    Spróbuj ponownie
-                  </Button>
-                </>
-              )}
-            </div>
+            <EmailErrorState error={error} refetch={refetch} />
           ) : sortedEmails.length === 0 ? (
             <div className="text-muted-foreground p-8 text-center">
               <MailOpen className="mx-auto mb-4 h-12 w-12 opacity-50" />
