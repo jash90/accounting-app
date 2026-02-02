@@ -10,6 +10,7 @@ import { AlertCircle, Maximize2 } from 'lucide-react';
 import { CustomFieldRenderer } from '@/components/clients/custom-field-renderer';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
@@ -169,9 +170,6 @@ export function ClientFormDialog({
             : undefined,
           cooperationStartDate: clientData.cooperationStartDate
             ? new Date(clientData.cooperationStartDate)
-            : undefined,
-          suspensionDate: clientData.suspensionDate
-            ? new Date(clientData.suspensionDate)
             : undefined,
           companySpecificity: clientData.companySpecificity || '',
           additionalInfo: clientData.additionalInfo || '',
@@ -492,7 +490,7 @@ export function ClientFormDialog({
               <div className="space-y-4">
                 <h3 className="text-apptax-navy text-sm font-semibold">Daty</h3>
 
-                <div className="grid grid-cols-3 items-end gap-4">
+                <div className="grid grid-cols-2 items-end gap-4">
                   <FormField
                     control={form.control}
                     name="companyStartDate"
@@ -502,17 +500,21 @@ export function ClientFormDialog({
                           Data rozpoczęcia firmy
                         </FormLabel>
                         <FormControl>
-                          <Input
-                            type="date"
-                            {...field}
+                          <DatePicker
                             value={
                               field.value instanceof Date
                                 ? field.value.toISOString().split('T')[0]
-                                : ''
+                                : undefined
                             }
-                            onChange={(e) =>
-                              field.onChange(e.target.value ? new Date(e.target.value) : undefined)
-                            }
+                            onChange={(value) => {
+                              if (!value) {
+                                field.onChange(undefined);
+                                return;
+                              }
+                              const [year, month, day] = value.split('-').map(Number);
+                              field.onChange(new Date(year, month - 1, day));
+                            }}
+                            placeholder="Wybierz datę"
                           />
                         </FormControl>
                         <FormMessage />
@@ -527,42 +529,21 @@ export function ClientFormDialog({
                       <FormItem>
                         <FormLabel>Data rozpoczęcia współpracy</FormLabel>
                         <FormControl>
-                          <Input
-                            type="date"
-                            {...field}
+                          <DatePicker
                             value={
                               field.value instanceof Date
                                 ? field.value.toISOString().split('T')[0]
-                                : ''
+                                : undefined
                             }
-                            onChange={(e) =>
-                              field.onChange(e.target.value ? new Date(e.target.value) : undefined)
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="suspensionDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Data zawieszenia</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="date"
-                            {...field}
-                            value={
-                              field.value instanceof Date
-                                ? field.value.toISOString().split('T')[0]
-                                : ''
-                            }
-                            onChange={(e) =>
-                              field.onChange(e.target.value ? new Date(e.target.value) : undefined)
-                            }
+                            onChange={(value) => {
+                              if (!value) {
+                                field.onChange(undefined);
+                                return;
+                              }
+                              const [year, month, day] = value.split('-').map(Number);
+                              field.onChange(new Date(year, month - 1, day));
+                            }}
+                            placeholder="Wybierz datę"
                           />
                         </FormControl>
                         <FormMessage />

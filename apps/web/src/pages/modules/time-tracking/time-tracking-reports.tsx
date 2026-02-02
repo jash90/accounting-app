@@ -1,23 +1,28 @@
 import { useState } from 'react';
-
 import { useNavigate } from 'react-router-dom';
-
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { PageHeader } from '@/components/common/page-header';
+import { useAuthContext } from '@/contexts/auth-context';
+import { UserRole } from '@/types/enums';
+import { endOfMonth, format, startOfMonth, subDays } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
   ArrowLeft,
   BarChart3,
-  FileSpreadsheet,
-  FileText,
   Clock,
   DollarSign,
+  FileSpreadsheet,
+  FileText,
   Users,
 } from 'lucide-react';
-
-import { PageHeader } from '@/components/common/page-header';
+import { useTaskClients } from '@/lib/hooks/use-tasks';
+import {
+  useExportTimeReport,
+  useTimeByClientReport,
+  useTimeSummaryReport,
+} from '@/lib/hooks/use-time-tracking';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -27,14 +32,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuthContext } from '@/contexts/auth-context';
-import { useTaskClients } from '@/lib/hooks/use-tasks';
-import {
-  useTimeSummaryReport,
-  useTimeByClientReport,
-  useExportTimeReport,
-} from '@/lib/hooks/use-time-tracking';
-import { UserRole } from '@/types/enums';
 
 function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
@@ -127,11 +124,19 @@ export default function TimeTrackingReportsPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <Label>Data od</Label>
-              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              <DatePicker
+                value={startDate}
+                onChange={(value) => setStartDate(value || '')}
+                placeholder="Data początkowa"
+              />
             </div>
             <div className="space-y-2">
               <Label>Data do</Label>
-              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+              <DatePicker
+                value={endDate}
+                onChange={(value) => setEndDate(value || '')}
+                placeholder="Data końcowa"
+              />
             </div>
             <div className="space-y-2">
               <Label>Grupuj według</Label>

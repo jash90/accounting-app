@@ -1,13 +1,21 @@
 import {
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
   AmlGroup,
-  IconType,
-  type ConditionOperator,
   CustomFieldType,
+  EmploymentType,
+  IconType,
+  TaxScheme,
+  VatStatus,
+  ZusStatus,
+  type ConditionOperator,
 } from '@/types/enums';
+
+// PKD 2025 - Polska Klasyfikacja Działalności (657 kodów na poziomie klasy)
+// Import from browser-safe subpath (no TypeORM/Node.js dependencies)
+import {
+  getPkdCodesForFrontend,
+  getPkdSectionsForFrontend,
+  type PkdCodeOption,
+} from '@accounting/common/browser';
 
 // Employment Type Labels
 export const EmploymentTypeLabels: Record<EmploymentType, string> = {
@@ -104,14 +112,6 @@ export const GTU_CODES = [
 
 export type GtuCode = (typeof GTU_CODES)[number]['code'];
 
-// PKD 2025 - Polska Klasyfikacja Działalności (657 kodów na poziomie klasy)
-// Import from browser-safe subpath (no TypeORM/Node.js dependencies)
-import {
-  getPkdCodesForFrontend,
-  getPkdSectionsForFrontend,
-  type PkdCodeOption,
-} from '@accounting/common/browser';
-
 // Re-export with backwards-compatible names and proper types
 export const PKD_CODES: PkdCodeOption[] = getPkdCodesForFrontend();
 export const PKD_SECTIONS: Record<string, string> = getPkdSectionsForFrontend();
@@ -133,7 +133,6 @@ export const ClientFieldLabels: Record<string, string> = {
   phone: 'Telefon',
   companyStartDate: 'Data założenia firmy',
   cooperationStartDate: 'Data rozpoczęcia współpracy',
-  suspensionDate: 'Data zawieszenia',
   companySpecificity: 'Specyfika firmy',
   additionalInfo: 'Dodatkowe informacje',
   gtuCodes: 'Kody GTU',
@@ -173,7 +172,6 @@ export const CONDITION_FIELDS = [
   { field: 'isActive', label: 'Aktywny', type: 'boolean' },
   { field: 'companyStartDate', label: 'Data założenia firmy', type: 'date' },
   { field: 'cooperationStartDate', label: 'Data rozpoczęcia współpracy', type: 'date' },
-  { field: 'suspensionDate', label: 'Data zawieszenia', type: 'date' },
 ] as const;
 
 // Operators available for each field type

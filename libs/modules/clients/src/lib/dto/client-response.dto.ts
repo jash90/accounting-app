@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
 import { EmploymentType, TaxScheme, VatStatus, ZusStatus } from '@accounting/common';
 
 /**
@@ -46,12 +47,6 @@ export class ClientResponseDto {
     example: '2021-06-01',
   })
   cooperationStartDate?: Date;
-
-  @ApiPropertyOptional({
-    description: 'Suspension date (if suspended)',
-    example: null,
-  })
-  suspensionDate?: Date;
 
   @ApiPropertyOptional({
     description: 'Company specificity notes',

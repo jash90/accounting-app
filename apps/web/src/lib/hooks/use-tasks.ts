@@ -1,25 +1,25 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
 import { type ApiErrorResponse } from '@/types/api';
 import {
-  type CreateTaskDto,
-  type UpdateTaskDto,
-  type TaskFiltersDto,
-  type ReorderTasksDto,
   type BulkUpdateStatusDto,
-  type CreateTaskLabelDto,
-  type UpdateTaskLabelDto,
   type CreateTaskCommentDto,
-  type UpdateTaskCommentDto,
   type CreateTaskDependencyDto,
+  type CreateTaskDto,
+  type CreateTaskLabelDto,
+  type ReorderTasksDto,
+  type TaskFiltersDto,
+  type UpdateTaskCommentDto,
+  type UpdateTaskDto,
+  type UpdateTaskLabelDto,
 } from '@/types/dtos';
 
 import {
-  tasksApi,
-  taskLabelsApi,
   taskCommentsApi,
   taskDependenciesApi,
+  taskLabelsApi,
+  tasksApi,
   type TaskLabelQueryDto,
 } from '../api/endpoints/tasks';
 import { queryKeys } from '../api/query-client';
@@ -30,7 +30,7 @@ import { queryKeys } from '../api/query-client';
 
 export function useTasks(filters?: TaskFiltersDto) {
   return useQuery({
-    queryKey: queryKeys.tasks.list(filters as Record<string, unknown> | undefined),
+    queryKey: queryKeys.tasks.list(filters),
     queryFn: () => tasksApi.getAll(filters),
   });
 }

@@ -1,24 +1,5 @@
-import { useState, useMemo, useCallback } from 'react';
-
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-import { type ColumnDef } from '@tanstack/react-table';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
-import {
-  Plus,
-  Edit,
-  Trash2,
-  Users,
-  Eye,
-  RotateCcw,
-  MoreHorizontal,
-  History,
-  ArrowLeft,
-  Download,
-  BarChart3,
-} from 'lucide-react';
-
 import {
   BulkActionsToolbar,
   type BulkEditChanges,
@@ -34,6 +15,61 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { DataTable } from '@/components/common/data-table';
 import { PageHeader } from '@/components/common/page-header';
 import { ViewModeToggle } from '@/components/common/view-mode-toggle';
+import { useAuthContext } from '@/contexts/auth-context';
+import { AmlGroupLabels } from '@/lib/constants/polish-labels';
+import {
+  type ClientFiltersDto,
+  type ClientResponseDto,
+  type CreateClientDto,
+  type UpdateClientDto,
+} from '@/types/dtos';
+import {
+  EmploymentTypeLabels,
+  TaxSchemeLabels,
+  UserRole,
+  VatStatus,
+  VatStatusLabels,
+  ZusStatusLabels,
+  type EmploymentType,
+  type TaxScheme,
+  type ZusStatus,
+} from '@/types/enums';
+import { type ColumnDef } from '@tanstack/react-table';
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
+import {
+  ArrowLeft,
+  BarChart3,
+  Download,
+  Edit,
+  Eye,
+  History,
+  MoreHorizontal,
+  Plus,
+  RotateCcw,
+  Trash2,
+  Users,
+} from 'lucide-react';
+import { type DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
+import {
+  useBulkDeleteClients,
+  useBulkEditClients,
+  useBulkRestoreClients,
+  useCheckDuplicates,
+  useClients,
+  useClientStatistics,
+  useCreateClient,
+  useDeleteClient,
+  useDownloadImportTemplate,
+  useExportClients,
+  useFieldDefinitions,
+  useImportClients,
+  useRestoreClient,
+  useSetClientCustomFields,
+  useUpdateClient,
+} from '@/lib/hooks/use-clients';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import { useTablePreferences, type ColumnConfig } from '@/lib/hooks/use-table-preferences';
 import { ClientFormDialog } from '@/components/forms/client-form-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -46,45 +82,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from '@/components/ui/use-toast';
-import { useAuthContext } from '@/contexts/auth-context';
-import { type DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
-import { AmlGroupLabels } from '@/lib/constants/polish-labels';
-import {
-  useClients,
-  useDeleteClient,
-  useRestoreClient,
-  useSetClientCustomFields,
-  useCreateClient,
-  useUpdateClient,
-  useClientStatistics,
-  useCheckDuplicates,
-  useBulkDeleteClients,
-  useBulkRestoreClients,
-  useBulkEditClients,
-  useExportClients,
-  useImportClients,
-  useDownloadImportTemplate,
-  useFieldDefinitions,
-} from '@/lib/hooks/use-clients';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import { useTablePreferences, type ColumnConfig } from '@/lib/hooks/use-table-preferences';
-import {
-  type ClientResponseDto,
-  type CreateClientDto,
-  type UpdateClientDto,
-  type ClientFiltersDto,
-} from '@/types/dtos';
-import {
-  type EmploymentType,
-  EmploymentTypeLabels,
-  VatStatus,
-  VatStatusLabels,
-  type TaxScheme,
-  TaxSchemeLabels,
-  type ZusStatus,
-  ZusStatusLabels,
-  UserRole,
-} from '@/types/enums';
 
 export default function ClientsListPage() {
   const { user } = useAuthContext();
@@ -758,7 +755,6 @@ export default function ClientsListPage() {
                   phone: data.phone || undefined,
                   companyStartDate: data.companyStartDate ?? undefined,
                   cooperationStartDate: data.cooperationStartDate ?? undefined,
-                  suspensionDate: data.suspensionDate ?? undefined,
                   companySpecificity: data.companySpecificity || undefined,
                   additionalInfo: data.additionalInfo || undefined,
                   gtuCode: data.gtuCode || undefined,

@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
   useCallback,
@@ -121,10 +120,9 @@ export function NotificationSocketProvider({ children }: NotificationSocketProvi
     // Clean up existing socket if user logs out or token is missing
     if (!accessToken || !user) {
       if (socketRef.current) {
+        // Disconnect will trigger the 'disconnect' event handler which sets isConnected to false
         socketRef.current.disconnect();
         socketRef.current = null;
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- Must sync connection state when user logs out
-        setIsConnected(false);
       }
       return;
     }
