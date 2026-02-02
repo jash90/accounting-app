@@ -55,8 +55,7 @@ import { SystemCompanyService } from './services/system-company.service';
         return {
           secret: configService.get<string>('JWT_SECRET'),
           signOptions: {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            expiresIn: expiresIn as any,
+            expiresIn,
           },
         };
       },
