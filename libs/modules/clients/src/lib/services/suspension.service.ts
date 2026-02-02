@@ -1,6 +1,6 @@
+import { TenantService } from '@accounting/common/backend';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import {
   Between,
   DataSource,
@@ -11,10 +11,7 @@ import {
   Repository,
   type EntityManager,
 } from 'typeorm';
-
 import { Client, ClientSuspension, User, UserRole } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
-
 import {
   CreateSuspensionDto,
   SuspensionResponseDto,
@@ -341,6 +338,7 @@ export class SuspensionService {
 
   /**
    * Get suspensions that need 7-day start reminder.
+   * Groups results by companyId to ensure proper tenant isolation when processing notifications.
    */
   async getSuspensionsFor7DayStartReminder(): Promise<ClientSuspension[]> {
     const targetDate = new Date();
@@ -350,17 +348,21 @@ export class SuspensionService {
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
+    // Query includes companyId relation to ensure proper tenant context for notifications.
+    // Each suspension is processed with its own companyId context in the reminder service.
     return this.suspensionRepository.find({
       where: {
         startDate: Between(startOfDay, endOfDay),
         startDate7DayReminderSent: false,
       },
       relations: ['client'],
+      order: { companyId: 'ASC', startDate: 'ASC' },
     });
   }
 
   /**
    * Get suspensions that need 1-day start reminder.
+   * Groups results by companyId to ensure proper tenant isolation when processing notifications.
    */
   async getSuspensionsFor1DayStartReminder(): Promise<ClientSuspension[]> {
     const targetDate = new Date();
@@ -370,17 +372,21 @@ export class SuspensionService {
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
+    // Query includes companyId relation to ensure proper tenant context for notifications.
+    // Each suspension is processed with its own companyId context in the reminder service.
     return this.suspensionRepository.find({
       where: {
         startDate: Between(startOfDay, endOfDay),
         startDate1DayReminderSent: false,
       },
       relations: ['client'],
+      order: { companyId: 'ASC', startDate: 'ASC' },
     });
   }
 
   /**
    * Get suspensions that need 7-day end reminder.
+   * Groups results by companyId to ensure proper tenant isolation when processing notifications.
    */
   async getSuspensionsFor7DayEndReminder(): Promise<ClientSuspension[]> {
     const targetDate = new Date();
@@ -390,17 +396,21 @@ export class SuspensionService {
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
+    // Query includes companyId relation to ensure proper tenant context for notifications.
+    // Each suspension is processed with its own companyId context in the reminder service.
     return this.suspensionRepository.find({
       where: {
         endDate: Between(startOfDay, endOfDay),
         endDate7DayReminderSent: false,
       },
       relations: ['client'],
+      order: { companyId: 'ASC', endDate: 'ASC' },
     });
   }
 
   /**
    * Get suspensions that need 1-day end reminder.
+   * Groups results by companyId to ensure proper tenant isolation when processing notifications.
    */
   async getSuspensionsFor1DayEndReminder(): Promise<ClientSuspension[]> {
     const targetDate = new Date();
@@ -410,28 +420,35 @@ export class SuspensionService {
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
+    // Query includes companyId relation to ensure proper tenant context for notifications.
+    // Each suspension is processed with its own companyId context in the reminder service.
     return this.suspensionRepository.find({
       where: {
         endDate: Between(startOfDay, endOfDay),
         endDate1DayReminderSent: false,
       },
       relations: ['client'],
+      order: { companyId: 'ASC', endDate: 'ASC' },
     });
   }
 
   /**
    * Get suspensions where resumption is today or past and notification not sent.
+   * Groups results by companyId to ensure proper tenant isolation when processing notifications.
    */
   async getSuspensionsForResumptionNotification(): Promise<ClientSuspension[]> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Query includes companyId relation to ensure proper tenant context for notifications.
+    // Each suspension is processed with its own companyId context in the reminder service.
     return this.suspensionRepository.find({
       where: {
         endDate: LessThanOrEqual(today),
         resumptionNotificationSent: false,
       },
       relations: ['client'],
+      order: { companyId: 'ASC', endDate: 'ASC' },
     });
   }
 

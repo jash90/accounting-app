@@ -1,7 +1,22 @@
 import { useState } from 'react';
-
 import { useNavigate, useParams } from 'react-router-dom';
-
+import { ClientChangelog } from '@/components/clients/client-changelog';
+import { ClientTaskStatistics } from '@/components/clients/client-task-statistics';
+import { ClientTasksList } from '@/components/clients/client-tasks-list';
+import { ReliefPeriodsCard } from '@/components/clients/relief-periods-card';
+import { SuspensionHistoryCard } from '@/components/clients/suspension-history-card';
+import { ErrorBoundary } from '@/components/common/error-boundary';
+import { useAuthContext } from '@/contexts/auth-context';
+import { formatDate } from '@/lib/utils/format-date';
+import { type UpdateClientDto } from '@/types/dtos';
+import { type ClientIcon } from '@/types/entities';
+import {
+  EmploymentTypeLabels,
+  TaxSchemeLabels,
+  UserRole,
+  VatStatusLabels,
+  ZusStatusLabels,
+} from '@/types/enums';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -12,20 +27,6 @@ import {
   Tags,
   User,
 } from 'lucide-react';
-
-import { ClientChangelog } from '@/components/clients/client-changelog';
-import { ClientTaskStatistics } from '@/components/clients/client-task-statistics';
-import { ClientTasksList } from '@/components/clients/client-tasks-list';
-import { ReliefPeriodsCard } from '@/components/clients/relief-periods-card';
-import { SuspensionHistoryCard } from '@/components/clients/suspension-history-card';
-import { ErrorBoundary } from '@/components/common/error-boundary';
-import { ClientFormDialog, type ClientReliefsData } from '@/components/forms/client-form-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { InfoItem } from '@/components/ui/info-item';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useAuthContext } from '@/contexts/auth-context';
 import {
   useClient,
   useClientIcons,
@@ -40,16 +41,12 @@ import {
   useDeleteReliefPeriod,
   useUpdateReliefPeriod,
 } from '@/lib/hooks/use-relief-periods';
-import { formatDate } from '@/lib/utils/format-date';
-import { type UpdateClientDto } from '@/types/dtos';
-import { type ClientIcon } from '@/types/entities';
-import {
-  EmploymentTypeLabels,
-  TaxSchemeLabels,
-  UserRole,
-  VatStatusLabels,
-  ZusStatusLabels,
-} from '@/types/enums';
+import { ClientFormDialog, type ClientReliefsData } from '@/components/forms/client-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { InfoItem } from '@/components/ui/info-item';
+import { Skeleton } from '@/components/ui/skeleton';
 
 /**
  * Error fallback component for ClientDetailPage
@@ -375,7 +372,7 @@ function ClientDetailContent() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
+              <div className="grid grid-cols-2 gap-6">
                 <InfoItem
                   label="Data rozpoczęcia firmy"
                   value={formatDate(client.companyStartDate)}
@@ -384,7 +381,6 @@ function ClientDetailContent() {
                   label="Data rozpoczęcia współpracy"
                   value={formatDate(client.cooperationStartDate)}
                 />
-                <InfoItem label="Data zawieszenia" value={formatDate(client.suspensionDate)} />
               </div>
             </CardContent>
           </Card>

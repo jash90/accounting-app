@@ -1,23 +1,37 @@
 import { Link, useLocation } from 'react-router-dom';
-
+import { cn } from '@/lib/utils/cn';
 import {
-  Inbox,
-  Send,
-  FileText,
-  Trash2,
   AlertTriangle,
   Archive,
+  FileText,
   Folder,
-  Loader2,
-  Tag,
+  Inbox,
+  Send,
   ShoppingBag,
+  Tag,
+  Trash2,
   Users,
+  type LucideIcon,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-
 import { useFolders } from '@/lib/hooks/use-email-client';
 import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
-import { cn } from '@/lib/utils/cn';
+import { Skeleton } from '@/components/ui/skeleton';
+
+/**
+ * Skeleton component for folder list loading state
+ */
+function EmailSidebarSkeleton() {
+  return (
+    <div className="space-y-1 p-2">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 rounded-md px-3 py-2">
+          <Skeleton className="h-4 w-4 bg-muted-foreground/20" />
+          <Skeleton className="h-4 w-20 bg-muted-foreground/20" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // Map IMAP folder names to appropriate icons
 function getFolderIcon(folderName: string): LucideIcon {
@@ -77,26 +91,29 @@ function sortFolders(folders: string[]): string[] {
 export function EmailSidebar() {
   const location = useLocation();
   const emailNav = useEmailClientNavigation();
-  const { data: folders, isLoading } = useFolders();
+  const { data: folders, isPending, isFetching, isError } = useFolders();
 
   const isActive = (folderName: string) => {
     const encodedFolder = encodeURIComponent(folderName);
     return location.pathname.includes(`/email-client/folder/${encodedFolder}`);
   };
 
-  if (isLoading) {
+  // Show skeleton when:
+  // 1. Initial loading (isPending) - no cached data
+  // 2. Fetching with no data yet (isFetching && !folders)
+  // 3. Error state (e.g., missing email config)
+  // 4. No folders data available
+  const showSkeleton = isPending || (isFetching && !folders) || isError || !folders;
+
+  if (showSkeleton) {
     return (
       <aside className="bg-muted/30 w-48 flex-shrink-0 border-r">
-        <nav className="space-y-1 p-2">
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
-          </div>
-        </nav>
+        <EmailSidebarSkeleton />
       </aside>
     );
   }
 
-  const sortedFolders = folders ? sortFolders(folders) : [];
+  const sortedFolders = sortFolders(folders);
 
   return (
     <aside className="bg-muted/30 w-48 flex-shrink-0 border-r">

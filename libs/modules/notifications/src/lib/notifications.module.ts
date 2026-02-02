@@ -1,12 +1,10 @@
+import { EmailModule } from '@accounting/email';
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
 import { Company, Notification, NotificationSettings, User } from '@accounting/common';
-import { EmailModule } from '@accounting/email';
-
 import { NotificationSettingsController } from './controllers/notification-settings.controller';
 import { NotificationsController } from './controllers/notifications.controller';
 import { NotificationGateway } from './gateways/notification.gateway';
@@ -55,7 +53,7 @@ import { SystemCompanyService } from './services/system-company.service';
         return {
           secret: configService.get<string>('JWT_SECRET'),
           signOptions: {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- @nestjs/jwt StringValue type is overly strict
             expiresIn: expiresIn as any,
           },
         };

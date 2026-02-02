@@ -28,6 +28,17 @@ function sanitizeText(text: string | undefined | null): string {
     .replace(/'/g, '&#039;');
 }
 
+/**
+ * Validate actionUrl to prevent XSS via javascript: protocol.
+ * Only allows relative paths starting with / or # (internal navigation).
+ */
+function isValidActionUrl(url: string | undefined | null): boolean {
+  if (!url) return false;
+  // Only allow relative paths starting with / or hash navigation
+  // Reject javascript:, data:, vbscript:, and other potentially dangerous protocols
+  return /^(\/[^/]|#)/.test(url) && !/^[a-zA-Z][a-zA-Z0-9+.-]*:/i.test(url);
+}
+
 interface NotificationItemProps {
   notification: NotificationResponseDto;
   onMarkAsRead?: (id: string) => void;
@@ -97,10 +108,12 @@ export function NotificationItem({
     </div>
   );
 
+  const safeActionUrl = isValidActionUrl(actionUrl) ? actionUrl : null;
+
   return (
     <div className="group relative border-b last:border-0" data-testid="notification-item">
-      {actionUrl ? (
-        <Link to={actionUrl} className="block w-full text-left">
+      {safeActionUrl ? (
+        <Link to={safeActionUrl} className="block w-full text-left">
           {content}
         </Link>
       ) : (

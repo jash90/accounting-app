@@ -9,18 +9,17 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-
+import { AmlGroup } from '../enums/aml-group.enum';
+import { EmploymentType } from '../enums/employment-type.enum';
+import { TaxScheme } from '../enums/tax-scheme.enum';
+import { VatStatus } from '../enums/vat-status.enum';
+import { ZusStatus } from '../enums/zus-status.enum';
 import { ClientCustomFieldValue } from './client-custom-field-value.entity';
 import { ClientIconAssignment } from './client-icon-assignment.entity';
 import { ClientReliefPeriod } from './client-relief-period.entity';
 import { ClientSuspension } from './client-suspension.entity';
 import { Company } from './company.entity';
 import { User } from './user.entity';
-import { AmlGroup } from '../enums/aml-group.enum';
-import { EmploymentType } from '../enums/employment-type.enum';
-import { TaxScheme } from '../enums/tax-scheme.enum';
-import { VatStatus } from '../enums/vat-status.enum';
-import { ZusStatus } from '../enums/zus-status.enum';
 
 @Entity('clients')
 @Index(['companyId'])
@@ -55,13 +54,6 @@ export class Client {
 
   @Column({ type: 'date', nullable: true })
   cooperationStartDate?: Date;
-
-  /**
-   * @deprecated Use the suspensions relation (ClientSuspension[]) for suspension history.
-   * This field is kept for backward compatibility during migration.
-   */
-  @Column({ type: 'date', nullable: true })
-  suspensionDate?: Date;
 
   @Column({ type: 'text', nullable: true })
   companySpecificity?: string;

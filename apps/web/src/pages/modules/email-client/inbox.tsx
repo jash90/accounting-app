@@ -2,7 +2,7 @@ import { BaseEmailList } from '@/components/email/base-email-list';
 import { useInbox } from '@/lib/hooks/use-email-client';
 
 export default function EmailInbox() {
-  const { data: emails, isLoading, refetch, isRefetching } = useInbox();
+  const { data: emails, isLoading, refetch, isRefetching, error } = useInbox();
 
   return (
     <BaseEmailList
@@ -12,6 +12,7 @@ export default function EmailInbox() {
       isRefetching={isRefetching}
       refetch={refetch}
       emptyMessage="Brak wiadomości w skrzynce odbiorczej"
+      error={error}
     />
   );
 }
