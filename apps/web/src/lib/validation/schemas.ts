@@ -5,7 +5,7 @@ import { UserRole } from '@/types/enums';
 // Auth Schemas
 export const loginSchema = z.object({
   email: z.string().email('Nieprawidłowy adres email'),
-  password: z.string().min(8, 'Hasło musi mieć co najmniej 8 znaków'),
+  password: z.string().min(12, 'Hasło musi mieć co najmniej 12 znaków'),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
@@ -15,7 +15,7 @@ export const changePasswordSchema = z
     currentPassword: z.string().min(1, 'Aktualne hasło jest wymagane'),
     newPassword: z
       .string()
-      .min(8, 'Nowe hasło musi mieć co najmniej 8 znaków')
+      .min(12, 'Nowe hasło musi mieć co najmniej 12 znaków')
       .regex(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
       .regex(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
       .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę')
