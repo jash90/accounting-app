@@ -54,7 +54,7 @@ export function NotificationBell() {
       variant="ghost"
       size="icon"
       data-testid="notification-bell"
-      className="relative h-9 w-9 text-muted-foreground hover:text-foreground"
+      className="relative h-9 w-9 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
     >
       <Bell
         className={cn(

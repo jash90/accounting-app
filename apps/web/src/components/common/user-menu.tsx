@@ -44,7 +44,7 @@ export function UserMenu() {
         <Button
           data-testid="user-menu-button"
           variant="ghost"
-          className="hover:bg-accent/10 relative h-10 w-10 rounded-full transition-colors"
+          className="hover:bg-sidebar-accent relative h-10 w-10 rounded-full transition-colors"
         >
           <Avatar>
             <AvatarFallback className="bg-primary font-semibold text-primary-foreground">
