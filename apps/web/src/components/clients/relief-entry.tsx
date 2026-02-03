@@ -129,7 +129,7 @@ export const ReliefEntry = memo(function ReliefEntry({
         <p>
           <span className="text-muted-foreground">Do: </span>
           <span className="font-medium">{format(endDate, 'd MMMM yyyy', { locale: pl })}</span>
-          {isExpired && <span className="ml-2 text-gray-500">(zakończona)</span>}
+          {isExpired && <span className="ml-2 text-muted-foreground">(zakończona)</span>}
         </p>
         {relief.createdByName && (
           <p className="text-muted-foreground mt-2 text-xs">
