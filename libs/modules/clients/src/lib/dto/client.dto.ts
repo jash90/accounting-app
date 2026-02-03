@@ -1,38 +1,39 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
-import { Type, Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
-  IsString,
-  IsOptional,
+  Allow,
+  IsArray,
+  IsBoolean,
+  IsDateString,
   IsEmail,
   IsEnum,
-  IsBoolean,
-  MaxLength,
-  MinLength,
-  IsUUID,
-  IsArray,
-  IsObject,
   IsInt,
-  Min,
-  Max,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUUID,
   Matches,
-  IsDateString,
-  ValidateNested,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
   registerDecorator,
-  ValidationOptions,
+  ValidateNested,
   ValidationArguments,
+  ValidationOptions,
 } from 'class-validator';
 
 import {
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
   AmlGroup,
-  Sanitize,
-  SanitizeWithFormatting,
+  EmploymentType,
   PKD_CODE_REGEX,
   PKD_CODE_VALIDATION_MESSAGE,
+  Sanitize,
+  SanitizeWithFormatting,
+  TaxScheme,
+  VatStatus,
+  ZusStatus,
 } from '@accounting/common';
 
 export class CreateClientDto {
@@ -72,11 +73,6 @@ export class CreateClientDto {
   @IsOptional()
   @Type(() => Date)
   cooperationStartDate?: Date;
-
-  @ApiPropertyOptional({ description: 'Suspension date' })
-  @IsOptional()
-  @Type(() => Date)
-  suspensionDate?: Date;
 
   @ApiPropertyOptional({ description: 'Company specificity notes' })
   @IsOptional()
@@ -213,6 +209,7 @@ export class CustomFieldFilterDto {
     description: 'Filter value (string or array for IN/CONTAINS_ANY operators)',
     oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
   })
+  @Allow()
   @Transform(({ value }) => {
     // Sanitize value to prevent XSS - strip HTML tags and encode dangerous characters
     // Note: & is a valid business character (e.g., "Smith & Sons") so we preserve it

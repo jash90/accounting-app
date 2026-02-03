@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
   useCallback,
@@ -8,16 +7,13 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-
-import { useQueryClient } from '@tanstack/react-query';
-import { io, type Socket } from 'socket.io-client';
-
-import { useToast } from '@/components/ui/use-toast';
 import { useAuthContext } from '@/contexts/auth-context';
-import { queryKeys } from '@/lib/api/query-client';
 import { tokenStorage } from '@/lib/auth/token-storage';
 import type { NotificationResponseDto } from '@/types/notifications';
-
+import { useQueryClient } from '@tanstack/react-query';
+import { io, type Socket } from 'socket.io-client';
+import { queryKeys } from '@/lib/api/query-client';
+import { useToast } from '@/components/ui/use-toast';
 
 // Extend Window interface for runtime config
 declare global {
@@ -121,10 +117,9 @@ export function NotificationSocketProvider({ children }: NotificationSocketProvi
     // Clean up existing socket if user logs out or token is missing
     if (!accessToken || !user) {
       if (socketRef.current) {
+        // Disconnect will trigger the 'disconnect' event handler which sets isConnected to false
         socketRef.current.disconnect();
         socketRef.current = null;
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- Must sync connection state when user logs out
-        setIsConnected(false);
       }
       return;
     }

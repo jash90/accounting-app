@@ -1,4 +1,4 @@
-import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import * as fs from 'fs/promises';
@@ -7,26 +7,26 @@ import * as path from 'path';
 import { Repository } from 'typeorm';
 
 import {
-  Client,
-  User,
-  NotificationSettings,
-  ChangeLog,
-  Company,
-  VatStatusLabels,
-  TaxSchemeLabels,
-  ZusStatusLabels,
-  EmploymentTypeLabels,
   AmlGroupLabels,
-  PaginationQueryDto,
+  ChangeLog,
+  Client,
+  Company,
+  EmploymentTypeLabels,
+  NotificationSettings,
   PaginatedResponseDto,
+  PaginationQueryDto,
+  TaxSchemeLabels,
+  User,
+  VatStatusLabels,
+  ZusStatusLabels,
 } from '@accounting/common';
 import {
   EmailConfigurationService,
   EmailSenderService,
-  SmtpConfig,
   ImapConfig,
+  SmtpConfig,
 } from '@accounting/email';
-import { ChangeLogService, ChangeDetail } from '@accounting/infrastructure/change-log';
+import { ChangeDetail, ChangeLogService } from '@accounting/infrastructure/change-log';
 
 @Injectable()
 export class ClientChangelogService {
@@ -531,7 +531,6 @@ export class ClientChangelogService {
       'phone',
       'companyStartDate',
       'cooperationStartDate',
-      'suspensionDate',
       'companySpecificity',
       'additionalInfo',
       'gtuCode',
@@ -574,13 +573,19 @@ export class ClientChangelogService {
     }
 
     // Handle Date strings - only accept ISO-8601 format to avoid false positives
-    // Pattern matches: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS (with optional timezone/ms)
-    const isoDatePattern = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?/;
+    // Use separate patterns to avoid regex backtracking concerns
+    const isIsoDateString = (val: string): boolean => {
+      // Check for YYYY-MM-DD format (exactly 10 chars) or YYYY-MM-DDTHH:MM:SS format (19+ chars)
+      if (val.length < 10) return false;
+      const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+      const dateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+      return datePattern.test(val) || dateTimePattern.test(val);
+    };
     if (
       typeof oldValue === 'string' &&
       typeof newValue === 'string' &&
-      isoDatePattern.test(oldValue) &&
-      isoDatePattern.test(newValue) &&
+      isIsoDateString(oldValue) &&
+      isIsoDateString(newValue) &&
       !isNaN(Date.parse(oldValue)) &&
       !isNaN(Date.parse(newValue))
     ) {
@@ -703,7 +708,6 @@ export class ClientChangelogService {
       clientPhone: client.phone,
       companyStartDate: this.formatDatePolish(client.companyStartDate),
       cooperationStartDate: this.formatDatePolish(client.cooperationStartDate),
-      suspensionDate: this.formatDatePolish(client.suspensionDate),
       vatStatusLabel: client.vatStatus ? VatStatusLabels[client.vatStatus] : null,
       taxSchemeLabel: client.taxScheme ? TaxSchemeLabels[client.taxScheme] : null,
       zusStatusLabel: client.zusStatus ? ZusStatusLabels[client.zusStatus] : null,

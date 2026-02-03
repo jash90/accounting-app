@@ -12,6 +12,7 @@ import {
 
 import { ClientCustomFieldValue } from './client-custom-field-value.entity';
 import { ClientIconAssignment } from './client-icon-assignment.entity';
+import { ClientReliefPeriod } from './client-relief-period.entity';
 import { ClientSuspension } from './client-suspension.entity';
 import { Company } from './company.entity';
 import { User } from './user.entity';
@@ -54,13 +55,6 @@ export class Client {
 
   @Column({ type: 'date', nullable: true })
   cooperationStartDate?: Date;
-
-  /**
-   * @deprecated Use the suspensions relation (ClientSuspension[]) for suspension history.
-   * This field is kept for backward compatibility during migration.
-   */
-  @Column({ type: 'date', nullable: true })
-  suspensionDate?: Date;
 
   @Column({ type: 'text', nullable: true })
   companySpecificity?: string;
@@ -159,6 +153,9 @@ export class Client {
 
   @OneToMany(() => ClientSuspension, (suspension) => suspension.client)
   suspensions?: ClientSuspension[];
+
+  @OneToMany(() => ClientReliefPeriod, (relief) => relief.client)
+  reliefPeriods?: ClientReliefPeriod[];
 
   @CreateDateColumn()
   createdAt!: Date;

@@ -755,7 +755,6 @@ export default function ClientsListPage() {
                   phone: data.phone || undefined,
                   companyStartDate: data.companyStartDate ?? undefined,
                   cooperationStartDate: data.cooperationStartDate ?? undefined,
-                  suspensionDate: data.suspensionDate ?? undefined,
                   companySpecificity: data.companySpecificity || undefined,
                   additionalInfo: data.additionalInfo || undefined,
                   gtuCode: data.gtuCode || undefined,

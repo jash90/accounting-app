@@ -10,24 +10,44 @@ import { useNotificationSocket } from '@/lib/contexts/notification-socket-contex
 import { useUnreadNotificationCount } from '@/lib/hooks/use-notifications';
 import { cn } from '@/lib/utils/cn';
 
+/**
+ * Custom hook to detect when notification count increases.
+ * Returns true for 3 seconds after count increases.
+ * Uses state-based tracking with deferred setState for React Compiler compliance.
+ */
+function useNewNotificationIndicator(count: number): boolean {
+  const [isNew, setIsNew] = useState(false);
+  const countRef = useRef(count);
+
+  // Detect count increase - use setTimeout to defer setState (React Compiler requires async)
+  useEffect(() => {
+    const prevCount = countRef.current;
+    countRef.current = count;
+
+    if (count > prevCount) {
+      // Defer setState to satisfy React Compiler's set-state-in-effect rule
+      const timer = setTimeout(() => setIsNew(true), 0);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [count]);
+
+  // Clear indicator after timeout
+  useEffect(() => {
+    if (!isNew) return;
+
+    const timer = setTimeout(() => setIsNew(false), 3000);
+    return () => clearTimeout(timer);
+  }, [isNew]);
+
+  return isNew;
+}
+
 export function NotificationBell() {
   const { data } = useUnreadNotificationCount();
   const { isConnected } = useNotificationSocket();
   const count = data?.count ?? 0;
-  const prevCountRef = useRef(count);
-  const [isNew, setIsNew] = useState(false);
-
-  useEffect(() => {
-    if (count > prevCountRef.current) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Detecting count increase requires immediate state update
-      setIsNew(true);
-      const timer = setTimeout(() => setIsNew(false), 3000);
-      prevCountRef.current = count;
-      return () => clearTimeout(timer);
-    }
-    prevCountRef.current = count;
-    return undefined;
-  }, [count]);
+  const isNew = useNewNotificationIndicator(count);
 
   const bellButton = (
     <Button
