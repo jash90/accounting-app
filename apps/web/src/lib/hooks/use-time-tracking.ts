@@ -1,24 +1,24 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
 import { type ApiErrorResponse } from '@/types/api';
 import {
   type CreateTimeEntryDto,
-  type UpdateTimeEntryDto,
-  type TimeEntryFiltersDto,
+  type RejectTimeEntryDto,
   type StartTimerDto,
   type StopTimerDto,
+  type TimeEntryFiltersDto,
+  type UpdateTimeEntryDto,
   type UpdateTimerDto,
-  type RejectTimeEntryDto,
   type UpdateTimeSettingsDto,
 } from '@/types/dtos';
 
 import {
   timeEntriesApi,
   timerApi,
+  timeReportsApi,
   timeSettingsApi,
   timesheetApi,
-  timeReportsApi,
 } from '../api/endpoints/time-tracking';
 import { queryKeys } from '../api/query-client';
 
@@ -32,7 +32,7 @@ const TIMER_REFETCH_INTERVAL_MS = 10000; // 10 seconds
 
 export function useTimeEntries(filters?: TimeEntryFiltersDto) {
   return useQuery({
-    queryKey: queryKeys.timeTracking.entries.list(filters as Record<string, unknown> | undefined),
+    queryKey: queryKeys.timeTracking.entries.list(filters),
     queryFn: () => timeEntriesApi.getAll(filters),
   });
 }

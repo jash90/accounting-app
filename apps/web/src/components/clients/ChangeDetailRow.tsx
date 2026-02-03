@@ -12,7 +12,6 @@ function formatFieldName(key: string): string {
     phone: 'Telefon',
     companyStartDate: 'Data rozpoczęcia firmy',
     cooperationStartDate: 'Data rozpoczęcia współpracy',
-    suspensionDate: 'Data zawieszenia',
     companySpecificity: 'Specyfika firmy',
     additionalInfo: 'Dodatkowe informacje',
     gtuCode: 'Kod GTU',

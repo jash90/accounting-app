@@ -1,36 +1,36 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
 import { randomUUID } from 'crypto';
-import { Repository, In, DataSource } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 
 import {
   Client,
-  User,
-  PaginatedResponseDto,
   isValidPkdCode,
+  PaginatedResponseDto,
   PKD_CLASSES,
   PKD_SECTIONS,
+  User,
   type PkdCodeOption,
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
-import { AutoAssignService } from './auto-assign.service';
-import { ClientChangelogService } from './client-changelog.service';
 import {
   BulkDeleteClientsDto,
-  BulkRestoreClientsDto,
   BulkEditClientsDto,
   BulkOperationResultDto,
+  BulkRestoreClientsDto,
 } from '../dto/bulk-operations.dto';
 import {
-  CreateClientDto,
-  UpdateClientDto,
   ClientFiltersDto,
+  CreateClientDto,
   CustomFieldFilter,
+  UpdateClientDto,
 } from '../dto/client.dto';
 import { ClientNotFoundException } from '../exceptions';
+import { AutoAssignService } from './auto-assign.service';
+import { ClientChangelogService } from './client-changelog.service';
 
 @Injectable()
 export class ClientsService {
@@ -745,7 +745,6 @@ export class ClientsService {
       phone: client.phone,
       companyStartDate: client.companyStartDate,
       cooperationStartDate: client.cooperationStartDate,
-      suspensionDate: client.suspensionDate,
       companySpecificity: client.companySpecificity,
       additionalInfo: client.additionalInfo,
       // Legacy fields (kept for backward compatibility)

@@ -1,4 +1,4 @@
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { CalendarIcon } from 'lucide-react';
 
@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils/cn';
+import { formatDisplayDate, safeParseDate } from '@/lib/utils/date';
 
 interface DatePickerProps {
   value: string | undefined;
@@ -35,14 +36,16 @@ export function DatePicker({
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {value ? format(parseISO(value), 'dd.MM.yyyy', { locale: pl }) : placeholder}
+          {value ? formatDisplayDate(value) || placeholder : placeholder}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
           mode="single"
-          selected={value ? parseISO(value) : undefined}
+          selected={safeParseDate(value)}
           onSelect={(date) => onChange(date ? format(date, 'yyyy-MM-dd') : undefined)}
+          locale={pl}
+          fixedWeeks
           initialFocus
         />
       </PopoverContent>

@@ -1,19 +1,19 @@
 import {
-  type UserRole,
-  type EmploymentType,
-  type VatStatus,
-  type TaxScheme,
-  type ZusStatus,
-  type CustomFieldType,
-  type ChangeAction,
   type AmlGroup,
-  type IconType,
   type AutoAssignCondition,
-  type TaskStatus,
-  type TaskPriority,
+  type ChangeAction,
+  type CustomFieldType,
+  type EmploymentType,
+  type IconType,
   type TaskDependencyType,
+  type TaskPriority,
+  type TaskStatus,
+  type TaxScheme,
   type TimeEntryStatus,
   type TimeRoundingMethod,
+  type UserRole,
+  type VatStatus,
+  type ZusStatus,
 } from './enums';
 
 export interface User {
@@ -79,7 +79,6 @@ export interface Client {
   phone?: string;
   companyStartDate?: Date;
   cooperationStartDate?: Date;
-  suspensionDate?: Date;
   companySpecificity?: string;
   additionalInfo?: string;
   // Legacy field (kept for backward compatibility)

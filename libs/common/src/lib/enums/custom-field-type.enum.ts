@@ -9,6 +9,8 @@ export enum CustomFieldType {
   EMAIL = 'EMAIL',
   PHONE = 'PHONE',
   URL = 'URL',
+  /** Date range with optional reminders (7 days and 1 day before end date) */
+  DATE_RANGE_WITH_REMINDER = 'DATE_RANGE_WITH_REMINDER',
 }
 
 /**
@@ -28,4 +30,5 @@ export const CustomFieldTypeLabels: Record<CustomFieldType, string> = {
   [CustomFieldType.EMAIL]: 'Email',
   [CustomFieldType.PHONE]: 'Telefon',
   [CustomFieldType.URL]: 'Adres URL',
+  [CustomFieldType.DATE_RANGE_WITH_REMINDER]: 'Zakres dat z przypomnieniem',
 };

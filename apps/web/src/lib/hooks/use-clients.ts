@@ -1,31 +1,29 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-
-import { useToast } from '@/components/ui/use-toast';
 import { type ApiErrorResponse } from '@/types/api';
 import {
-  type CreateClientDto,
-  type UpdateClientDto,
   type ClientFiltersDto,
-  type SetCustomFieldValuesDto,
+  type CreateClientDto,
   type CreateClientFieldDefinitionDto,
-  type UpdateClientFieldDefinitionDto,
   type CreateClientIconDto,
-  type UpdateClientIconDto,
   type CreateNotificationSettingsDto,
+  type SetCustomFieldValuesDto,
+  type UpdateClientDto,
+  type UpdateClientFieldDefinitionDto,
+  type UpdateClientIconDto,
   type UpdateNotificationSettingsDto,
 } from '@/types/dtos';
-
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/components/ui/use-toast';
 import {
+  clientIconsApi,
   clientsApi,
   fieldDefinitionsApi,
-  clientIconsApi,
   notificationSettingsApi,
+  type BulkDeleteClientsDto,
+  type BulkEditClientsDto,
+  type BulkRestoreClientsDto,
+  type CheckDuplicatesDto,
   type FieldDefinitionQueryDto,
   type IconQueryDto,
-  type BulkDeleteClientsDto,
-  type BulkRestoreClientsDto,
-  type BulkEditClientsDto,
-  type CheckDuplicatesDto,
 } from '../api/endpoints/clients';
 import { queryKeys } from '../api/query-client';
 
@@ -35,7 +33,7 @@ import { queryKeys } from '../api/query-client';
 
 export function useClients(filters?: ClientFiltersDto) {
   return useQuery({
-    queryKey: queryKeys.clients.list(filters as Record<string, unknown> | undefined),
+    queryKey: queryKeys.clients.list(filters),
     queryFn: () => clientsApi.getAll(filters),
   });
 }

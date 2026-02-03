@@ -3,10 +3,11 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format, parseISO, parse } from 'date-fns';
+import { format, parse, parseISO } from 'date-fns';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Dialog,
   DialogContent,
@@ -215,7 +216,11 @@ export function TimeEntryFormDialog({ open, onOpenChange, entry }: TimeEntryForm
                   <FormItem>
                     <FormLabel>Data</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DatePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Wybierz datę"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

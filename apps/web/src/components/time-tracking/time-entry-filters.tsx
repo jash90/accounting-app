@@ -1,7 +1,9 @@
+import { memo } from 'react';
+
 import { X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   Select,
   SelectContent,
@@ -9,8 +11,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { toDateString } from '@/lib/utils/date';
+import {
+  ALL_FILTER_VALUE,
+  booleanToSelectValue,
+  fromFilterValue,
+  selectValueToBoolean,
+  toFilterValue,
+} from '@/lib/utils/filter-types';
 import { type TimeEntryFiltersDto } from '@/types/dtos';
-import { type TimeEntryStatus, TimeEntryStatusLabels } from '@/types/enums';
+import { TimeEntryStatusLabels, type TimeEntryStatus } from '@/types/enums';
 
 interface Client {
   id: string;
@@ -28,7 +38,7 @@ interface TimeEntryFiltersProps {
   onClearFilters: () => void;
 }
 
-export function TimeEntryFilters({
+export const TimeEntryFilters = memo(function TimeEntryFilters({
   filters,
   clients,
   hasActiveFilters,
@@ -39,16 +49,16 @@ export function TimeEntryFilters({
     <div className="border-b px-6 pb-4">
       <div className="flex flex-wrap items-center gap-3">
         <Select
-          value={filters.status || '__all__'}
+          value={fromFilterValue(filters.status)}
           onValueChange={(value) =>
-            onFilterChange('status', value === '__all__' ? undefined : (value as TimeEntryStatus))
+            onFilterChange('status', toFilterValue(value) as TimeEntryStatus | undefined)
           }
         >
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__all__">Wszystkie</SelectItem>
+            <SelectItem value={ALL_FILTER_VALUE}>Wszystkie</SelectItem>
             {Object.entries(TimeEntryStatusLabels).map(([value, label]) => (
               <SelectItem key={value} value={value}>
                 {label}
@@ -58,16 +68,14 @@ export function TimeEntryFilters({
         </Select>
 
         <Select
-          value={filters.clientId || '__all__'}
-          onValueChange={(value) =>
-            onFilterChange('clientId', value === '__all__' ? undefined : value)
-          }
+          value={fromFilterValue(filters.clientId)}
+          onValueChange={(value) => onFilterChange('clientId', toFilterValue(value))}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Klient" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__all__">Wszyscy klienci</SelectItem>
+            <SelectItem value={ALL_FILTER_VALUE}>Wszyscy klienci</SelectItem>
             {clients.map((client) => (
               <SelectItem key={client.id} value={client.id}>
                 {client.name}
@@ -77,44 +85,30 @@ export function TimeEntryFilters({
         </Select>
 
         <Select
-          value={
-            filters.isBillable === undefined ? '__all__' : filters.isBillable ? 'true' : 'false'
-          }
-          onValueChange={(value) =>
-            onFilterChange('isBillable', value === '__all__' ? undefined : value === 'true')
-          }
+          value={booleanToSelectValue(filters.isBillable)}
+          onValueChange={(value) => onFilterChange('isBillable', selectValueToBoolean(value))}
         >
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="Rozliczalność" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__all__">Wszystkie</SelectItem>
+            <SelectItem value={ALL_FILTER_VALUE}>Wszystkie</SelectItem>
             <SelectItem value="true">Rozliczalne</SelectItem>
             <SelectItem value="false">Nierozliczalne</SelectItem>
           </SelectContent>
         </Select>
 
-        <Input
-          type="date"
-          placeholder="Od"
-          value={
-            filters.startDate instanceof Date
-              ? filters.startDate.toISOString().split('T')[0]
-              : filters.startDate || ''
-          }
-          onChange={(e) => onFilterChange('startDate', e.target.value)}
+        <DatePicker
+          placeholder="Data od"
+          value={toDateString(filters.startDate)}
+          onChange={(value) => onFilterChange('startDate', value || undefined)}
           className="w-[150px]"
         />
 
-        <Input
-          type="date"
-          placeholder="Do"
-          value={
-            filters.endDate instanceof Date
-              ? filters.endDate.toISOString().split('T')[0]
-              : filters.endDate || ''
-          }
-          onChange={(e) => onFilterChange('endDate', e.target.value)}
+        <DatePicker
+          placeholder="Data do"
+          value={toDateString(filters.endDate)}
+          onChange={(value) => onFilterChange('endDate', value || undefined)}
           className="w-[150px]"
         />
 
@@ -132,4 +126,4 @@ export function TimeEntryFilters({
       </div>
     </div>
   );
-}
+});

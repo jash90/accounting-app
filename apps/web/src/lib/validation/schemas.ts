@@ -5,7 +5,7 @@ import { UserRole } from '@/types/enums';
 // Auth Schemas
 export const loginSchema = z.object({
   email: z.string().email('Nieprawidłowy adres email'),
-  password: z.string().min(8, 'Hasło musi mieć co najmniej 8 znaków'),
+  password: z.string().min(12, 'Hasło musi mieć co najmniej 12 znaków'),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
@@ -15,7 +15,7 @@ export const changePasswordSchema = z
     currentPassword: z.string().min(1, 'Aktualne hasło jest wymagane'),
     newPassword: z
       .string()
-      .min(8, 'Nowe hasło musi mieć co najmniej 8 znaków')
+      .min(12, 'Nowe hasło musi mieć co najmniej 12 znaków')
       .regex(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
       .regex(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
       .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę')
@@ -312,7 +312,6 @@ export const createClientSchema = z.object({
   phone: z.string().max(20).optional(),
   companyStartDate: z.date().optional().nullable(),
   cooperationStartDate: z.date().optional().nullable(),
-  suspensionDate: z.date().optional().nullable(),
   companySpecificity: z.string().optional(),
   additionalInfo: z.string().optional(),
   gtuCode: gtuCodeSchema,
@@ -542,3 +541,89 @@ export const updateSuspensionSchema = z.object({
 });
 
 export type UpdateSuspensionFormData = z.infer<typeof updateSuspensionSchema>;
+
+// Client Relief Period Schemas
+export const reliefTypeSchema = z.enum(['ULGA_NA_START', 'MALY_ZUS'], {
+  message: 'Typ ulgi jest wymagany',
+});
+
+export type ReliefType = z.infer<typeof reliefTypeSchema>;
+
+export const createReliefPeriodSchema = z
+  .object({
+    reliefType: reliefTypeSchema,
+    startDate: z.date({ message: 'Data rozpoczęcia jest wymagana' }),
+    endDate: z.date({ message: 'Nieprawidłowy format daty zakończenia' }).optional().nullable(),
+  })
+  .refine(
+    (data) => {
+      if (data.endDate && data.startDate) {
+        return data.endDate > data.startDate;
+      }
+      return true;
+    },
+    {
+      message: 'Data zakończenia musi być późniejsza niż data rozpoczęcia',
+      path: ['endDate'],
+    }
+  );
+
+export type CreateReliefPeriodFormData = z.infer<typeof createReliefPeriodSchema>;
+
+export const updateReliefPeriodSchema = z
+  .object({
+    startDate: z.date({ message: 'Nieprawidłowy format daty rozpoczęcia' }).optional(),
+    endDate: z.date({ message: 'Nieprawidłowy format daty zakończenia' }).optional().nullable(),
+    isActive: z.boolean().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.endDate && data.startDate) {
+        return data.endDate > data.startDate;
+      }
+      return true;
+    },
+    {
+      message: 'Data zakończenia musi być późniejsza niż data rozpoczęcia',
+      path: ['endDate'],
+    }
+  );
+
+export type UpdateReliefPeriodFormData = z.infer<typeof updateReliefPeriodSchema>;
+
+// Client form relief section schema (for form state, not API)
+export const clientReliefSectionSchema = z
+  .object({
+    ulgaNaStartEnabled: z.boolean().default(false),
+    ulgaNaStartStartDate: z.date().optional().nullable(),
+    ulgaNaStartEndDate: z.date().optional().nullable(),
+    malyZusEnabled: z.boolean().default(false),
+    malyZusStartDate: z.date().optional().nullable(),
+    malyZusEndDate: z.date().optional().nullable(),
+  })
+  .refine(
+    (data) => {
+      if (data.ulgaNaStartEnabled) {
+        return !!data.ulgaNaStartStartDate;
+      }
+      return true;
+    },
+    {
+      message: 'Data rozpoczęcia jest wymagana gdy ulga jest włączona',
+      path: ['ulgaNaStartStartDate'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.malyZusEnabled) {
+        return !!data.malyZusStartDate;
+      }
+      return true;
+    },
+    {
+      message: 'Data rozpoczęcia jest wymagana gdy ulga jest włączona',
+      path: ['malyZusStartDate'],
+    }
+  );
+
+export type ClientReliefSectionFormData = z.infer<typeof clientReliefSectionSchema>;
