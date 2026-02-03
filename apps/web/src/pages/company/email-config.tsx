@@ -1,7 +1,15 @@
 import { useState } from 'react';
+
+import { AlertCircle, Building2, Edit, Lock, Plus, Server, Trash2 } from 'lucide-react';
+
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { PageHeader } from '@/components/common/page-header';
-import { AlertCircle, Building2, Edit, Lock, Plus, Server, Trash2 } from 'lucide-react';
+import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/components/ui/use-toast';
 import {
   useCompanyEmailConfig,
   useCreateCompanyEmailConfig,
@@ -14,12 +22,6 @@ import {
   type CreateEmailConfigFormData,
   type UpdateEmailConfigFormData,
 } from '@/lib/validation/schemas';
-import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/components/ui/use-toast';
 
 export default function CompanyEmailConfigPage() {
   const { data: emailConfig, isPending, isError, error } = useCompanyEmailConfig();
@@ -274,7 +276,7 @@ export default function CompanyEmailConfigPage() {
           <Card className="from-accent/10 to-accent/5 bg-gradient-to-r md:col-span-2">
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
-                <div className="rounded bg-white p-2">
+                <div className="rounded bg-background p-2">
                   <Building2 className="text-primary h-5 w-5" />
                 </div>
                 <div className="flex-1 space-y-2">

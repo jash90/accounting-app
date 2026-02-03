@@ -1,16 +1,10 @@
 import { useState } from 'react';
+
 import { useNavigate, useParams } from 'react-router-dom';
-import { PageHeader } from '@/components/common/page-header';
-import { ModulePermission } from '@/types/enums';
+
 import { ArrowLeft, Key, Package, Plus, Shield, Trash2 } from 'lucide-react';
-import { useEmployee } from '@/lib/hooks/use-employees';
-import {
-  useCompanyModules,
-  useEmployeeModules,
-  useGrantModuleAccess,
-  useRevokeModuleAccess,
-  useUpdateModulePermission,
-} from '@/lib/hooks/use-permissions';
+
+import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -23,6 +17,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
+import { useEmployee } from '@/lib/hooks/use-employees';
+import {
+  useCompanyModules,
+  useEmployeeModules,
+  useGrantModuleAccess,
+  useRevokeModuleAccess,
+  useUpdateModulePermission,
+} from '@/lib/hooks/use-permissions';
+import { ModulePermission } from '@/types/enums';
 
 export default function EmployeePermissionsPage() {
   const { id } = useParams<{ id: string }>();
@@ -271,7 +274,7 @@ export default function EmployeePermissionsPage() {
               ) : (
                 <select
                   id="grant-module-select"
-                  className="focus:ring-primary/20 focus:border-primary w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:ring-2 focus:outline-none"
+                  className="focus:ring-primary/20 focus:border-primary w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:ring-2 focus:outline-none"
                   value={selectedModule || ''}
                   onChange={(e) => {
                     setSelectedModule(e.target.value);
@@ -310,7 +313,7 @@ export default function EmployeePermissionsPage() {
                         />
                         <label
                           htmlFor={`grant-${permission}`}
-                          className="cursor-pointer text-sm text-gray-700"
+                          className="cursor-pointer text-sm text-foreground"
                         >
                           {permission.charAt(0).toUpperCase() + permission.slice(1)}
                         </label>

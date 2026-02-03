@@ -1,21 +1,24 @@
 import { useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
+
+import { type ColumnDef } from '@tanstack/react-table';
+import { Building2, Edit, Package, Plus, Trash2 } from 'lucide-react';
+
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { DataTable } from '@/components/common/data-table';
 import { PageHeader } from '@/components/common/page-header';
-import { type CompanyDto, type CreateCompanyDto, type UpdateCompanyDto } from '@/types/dtos';
-import { type ColumnDef } from '@tanstack/react-table';
-import { Building2, Edit, Package, Plus, Trash2 } from 'lucide-react';
+import { CompanyFormDialog } from '@/components/forms/company-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   useCompanies,
   useCreateCompany,
   useDeleteCompany,
   useUpdateCompany,
 } from '@/lib/hooks/use-companies';
-import { CompanyFormDialog } from '@/components/forms/company-form-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { type CompanyDto, type CreateCompanyDto, type UpdateCompanyDto } from '@/types/dtos';
 
 const columns: ColumnDef<CompanyDto>[] = [
   {
@@ -29,7 +32,7 @@ const columns: ColumnDef<CompanyDto>[] = [
     cell: ({ row }) => {
       const owner = row.original.owner;
       return owner ? (
-        <span className="text-gray-600">{`${owner.firstName} ${owner.lastName}`}</span>
+        <span className="text-muted-foreground">{`${owner.firstName} ${owner.lastName}`}</span>
       ) : (
         <span className="text-muted-foreground">Brak</span>
       );

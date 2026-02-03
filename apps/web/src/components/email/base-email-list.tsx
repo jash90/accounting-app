@@ -93,7 +93,7 @@ function EmailConfigModal({ isOpen }: { isOpen: boolean }) {
       className="fixed bottom-0 right-0 top-16 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
       style={{ left: '256px' }}
     >
-      <div className="mx-4 w-full max-w-lg rounded-xl border border-gray-100 bg-white p-6 shadow-lg">
+      <div className="mx-4 w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-lg">
         <div className="flex flex-col items-center justify-center text-center">
           <Settings className="mx-auto mb-4 h-12 w-12 text-amber-500 opacity-70" />
           <h2 className="mb-2 text-xl font-semibold">Konfiguracja email wymagana</h2>
@@ -406,7 +406,7 @@ export function BaseEmailList({
                               {email.from[0]?.name || email.from[0]?.address}
                             </p>
                             {isUnread && (
-                              <span className="h-2 w-2 shrink-0 rounded-full bg-blue-600" />
+                              <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
                             )}
                           </div>
                           <p

@@ -226,7 +226,9 @@ export const ClientCard = memo(function ClientCard({
             {client.name}
           </h3>
           {client.isActive ? (
-            <Badge className="shrink-0 bg-green-100 text-xs text-green-700">Aktywny</Badge>
+            <Badge className="shrink-0 bg-green-100 text-xs text-green-700 dark:bg-green-900 dark:text-green-300">
+              Aktywny
+            </Badge>
           ) : (
             <Badge variant="outline" className="shrink-0 text-xs">
               Nieaktywny
