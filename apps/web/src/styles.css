@@ -100,6 +100,16 @@
     --chart-3: 214 52% 25%; /* Professional Navy */
     --chart-4: 212 64% 57%; /* Light Blue */
     --chart-5: 170 53% 92%; /* Soft Teal */
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 209 90% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 209 90% 40%;
   }
 
   .dark {
@@ -139,6 +149,16 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+
+    /* Sidebar */
+    --sidebar-background: 214 52% 12%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 212 64% 57%;
+    --sidebar-primary-foreground: 214 52% 10%;
+    --sidebar-accent: 214 32% 18%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 214 32% 22%;
+    --sidebar-ring: 170 100% 37%;
   }
 }
 
@@ -212,6 +232,28 @@
   .bg-apptax-ai-gradient-accessible > * {
     position: relative;
     z-index: 1;
+  }
+
+  /* Theme Transition Utilities */
+  .theme-transitioning,
+  .theme-transitioning * {
+    transition-property: color, background-color, border-color, fill, stroke, box-shadow;
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .theme-transitioning img,
+  .theme-transitioning svg:not([class*='text-']),
+  .theme-transitioning video,
+  .theme-transitioning canvas {
+    transition: none !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .theme-transitioning,
+    .theme-transitioning * {
+      transition: none !important;
+    }
   }
 }
 

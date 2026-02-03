@@ -48,6 +48,14 @@ export function applyThemeToDOM(theme: Theme, mode: 'light' | 'dark'): void {
   const root = document.documentElement;
   const colors = theme.colors[mode];
 
+  // Check reduced motion preference
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Add transition class for smooth color change
+  if (!prefersReducedMotion) {
+    root.classList.add('theme-transitioning');
+  }
+
   // Apply all color variables
   for (const [key, cssVar] of Object.entries(CSS_VARIABLE_MAP)) {
     const value = colors[key as keyof ThemeColors];
@@ -61,6 +69,15 @@ export function applyThemeToDOM(theme: Theme, mode: 'light' | 'dark'): void {
     root.classList.add('dark');
   } else {
     root.classList.remove('dark');
+  }
+
+  // Remove transition class after animation
+  if (!prefersReducedMotion) {
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        root.classList.remove('theme-transitioning');
+      }, 250);
+    });
   }
 }
 

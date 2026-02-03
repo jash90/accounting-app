@@ -24,11 +24,18 @@ export function SidebarItem({ item }: SidebarItemProps) {
         isActive
           ? 'bg-sidebar-primary shadow-sm text-sidebar-primary-foreground'
           : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-        !isOpen && 'justify-center px-2'
+        !isOpen && 'justify-center px-2 gap-0'
       )}
     >
       <Icon className="h-5 w-5 flex-shrink-0" />
-      {isOpen && <span className="text-sm font-medium">{item.label}</span>}
+      <span
+        className={cn(
+          'text-sm font-medium whitespace-nowrap transition-all duration-200',
+          isOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0 overflow-hidden'
+        )}
+      >
+        {item.label}
+      </span>
     </Link>
   );
 }
