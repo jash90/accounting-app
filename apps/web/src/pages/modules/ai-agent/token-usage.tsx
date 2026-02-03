@@ -1,5 +1,5 @@
 import { Coins, MessageSquare, Sparkles, TrendingUp, Users } from 'lucide-react';
-import { useCompanyTokenUsage } from '@/lib/hooks/use-ai-agent';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useCompanyTokenUsage } from '@/lib/hooks/use-ai-agent';
 
 export default function TokenUsagePage() {
   const { data: usage, isLoading } = useCompanyTokenUsage();

@@ -1,26 +1,26 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
-import { Type, Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
-  IsString,
-  IsOptional,
-  IsEnum,
-  IsBoolean,
-  IsUUID,
-  IsInt,
-  IsArray,
   ArrayMaxSize,
   ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  Max,
   MaxLength,
   Min,
-  Max,
-  IsDateString,
-  IsNumber,
-  IsNotEmpty,
-  Matches,
 } from 'class-validator';
 
-import { TimeEntryStatus, Sanitize } from '@accounting/common';
+import { Sanitize, TimeEntryStatus } from '@accounting/common';
 
 export class CreateTimeEntryDto {
   @ApiPropertyOptional({ description: 'Description of the time entry', maxLength: 255 })

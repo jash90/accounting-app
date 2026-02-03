@@ -1,39 +1,39 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
   Body,
-  Param,
+  Controller,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Patch,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
+  ApiBadRequestResponse,
   ApiBearerAuth,
-  ApiOkResponse,
+  ApiBody,
+  ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
-  ApiBadRequestResponse,
-  ApiUnauthorizedResponse,
-  ApiForbiddenResponse,
-  ApiConflictResponse,
+  ApiOkResponse,
+  ApiOperation,
   ApiParam,
-  ApiBody,
+  ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
 import { CurrentUser, Roles, RolesGuard } from '@accounting/auth';
 import {
-  User,
-  UserRole,
+  CompanyModuleAccessResponseDto,
   ManageModulePermissionDto,
   ModuleResponseDto,
+  User,
   UserModulePermissionResponseDto,
-  CompanyModuleAccessResponseDto,
+  UserRole,
 } from '@accounting/common';
 
 import { CreateModuleDto, UpdateModuleDto } from './dto';

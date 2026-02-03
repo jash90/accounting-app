@@ -1,9 +1,10 @@
-import { useAuthContext } from '@/contexts/auth-context';
-import { UserRole } from '@/types/enums';
 import { Building2, Settings, UserCheck, Users, UserX } from 'lucide-react';
-import { useClients } from '@/lib/hooks/use-clients';
+
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
+import { useAuthContext } from '@/contexts/auth-context';
+import { useClients } from '@/lib/hooks/use-clients';
+import { UserRole } from '@/types/enums';
 
 export default function ClientsDashboardPage() {
   const { user } = useAuthContext();

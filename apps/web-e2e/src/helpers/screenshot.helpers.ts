@@ -1,6 +1,7 @@
-import { Page } from '@playwright/test';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
+
+import { Page } from '@playwright/test';
 
 export interface ScreenshotOptions {
   fullPage?: boolean;

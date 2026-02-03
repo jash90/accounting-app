@@ -1,8 +1,15 @@
 import { useState } from 'react';
+
+import { AlertCircle, Edit, Lock, Mail, Plus, Server, Shield, Trash2, User } from 'lucide-react';
+
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { PageHeader } from '@/components/common/page-header';
-import { type EmailConfigResponseDto } from '@/types/dtos';
-import { AlertCircle, Edit, Lock, Mail, Plus, Server, Shield, Trash2, User } from 'lucide-react';
+import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   useCreateSystemAdminEmailConfig,
   useCreateUserEmailConfig,
@@ -21,12 +28,7 @@ import {
   type CreateEmailConfigFormData,
   type UpdateEmailConfigFormData,
 } from '@/lib/validation/schemas';
-import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { type EmailConfigResponseDto } from '@/types/dtos';
 
 // Reusable Email Config Display Component
 function EmailConfigDisplay({

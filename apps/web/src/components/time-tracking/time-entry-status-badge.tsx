@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils/cn';
-import { type TimeEntryStatus, TimeEntryStatusLabels, TimeEntryStatusColors } from '@/types/enums';
+import { TimeEntryStatusColors, TimeEntryStatusLabels, type TimeEntryStatus } from '@/types/enums';
+
 
 interface TimeEntryStatusBadgeProps {
   status: TimeEntryStatus;

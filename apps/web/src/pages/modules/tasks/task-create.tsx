@@ -6,7 +6,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { CalendarIcon, ArrowLeft, Plus, X, Loader2, CheckSquare } from 'lucide-react';
+import { ArrowLeft, CalendarIcon, CheckSquare, Loader2, Plus, X } from 'lucide-react';
 import { z } from 'zod';
 
 import { PageHeader } from '@/components/common/page-header';
@@ -18,11 +18,11 @@ import { Combobox } from '@/components/ui/combobox';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -37,17 +37,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuthContext } from '@/contexts/auth-context';
 import {
   useCreateTask,
-  useTaskLabels,
   useTaskAssignees,
   useTaskClients,
+  useTaskLabels,
 } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
 import { type CreateTaskDto } from '@/types/dtos';
 import {
-  TaskStatus,
-  TaskStatusLabels,
   TaskPriority,
   TaskPriorityLabels,
+  TaskStatus,
+  TaskStatusLabels,
   UserRole,
 } from '@/types/enums';
 

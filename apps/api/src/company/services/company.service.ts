@@ -1,12 +1,12 @@
-import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import * as bcrypt from 'bcryptjs';
 import { Repository } from 'typeorm';
 
-import { User, UserRole, Company } from '@accounting/common';
-import { EmailSenderService, EmailConfigurationService } from '@accounting/email';
+import { Company, User, UserRole } from '@accounting/common';
+import { EmailConfigurationService, EmailSenderService } from '@accounting/email';
 import { EmailService } from '@accounting/infrastructure/email';
 
 import { CreateEmployeeDto } from '../dto/create-employee.dto';

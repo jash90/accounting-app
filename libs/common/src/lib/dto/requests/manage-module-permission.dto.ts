@@ -1,5 +1,6 @@
-import { IsEnum, IsString, IsArray, IsOptional, IsUUID } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+import { IsArray, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export enum PermissionTargetType {
   COMPANY = 'company',

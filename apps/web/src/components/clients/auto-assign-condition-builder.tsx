@@ -11,12 +11,12 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import {
-  type AutoAssignCondition,
-  type SingleCondition,
-  VatStatus,
   EmploymentType,
   TaxScheme,
+  VatStatus,
   ZusStatus,
+  type AutoAssignCondition,
+  type SingleCondition,
 } from '@/types/enums';
 
 // Field definitions with Polish labels and enum values

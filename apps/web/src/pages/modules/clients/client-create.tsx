@@ -1,22 +1,15 @@
 import { useCallback, useState } from 'react';
+
 import { useForm, type Control, type FieldValues, type Resolver } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
+
+import { zodResolver } from '@hookform/resolvers/zod';
+import { AlertTriangle, ArrowLeft, Loader2, Plus, Users } from 'lucide-react';
+
 import { CustomFieldRenderer } from '@/components/clients/custom-field-renderer';
 import { DuplicateWarningDialog } from '@/components/clients/duplicate-warning-dialog';
 import { ErrorBoundary } from '@/components/common/error-boundary';
 import { PageHeader } from '@/components/common/page-header';
-import { type CreateClientDto, type SetCustomFieldValuesDto } from '@/types/dtos';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertTriangle, ArrowLeft, Loader2, Plus, Users } from 'lucide-react';
-import { type DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
-import {
-  useCheckDuplicates,
-  useCreateClient,
-  useFieldDefinitions,
-  useSetClientCustomFields,
-} from '@/lib/hooks/use-clients';
-import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
-import { createClientSchema, type CreateClientFormData } from '@/lib/validation/schemas';
 import {
   AdditionalInfoCard,
   BasicInfoCard,
@@ -27,6 +20,16 @@ import {
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { useToast } from '@/components/ui/use-toast';
+import { type DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
+import {
+  useCheckDuplicates,
+  useCreateClient,
+  useFieldDefinitions,
+  useSetClientCustomFields,
+} from '@/lib/hooks/use-clients';
+import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
+import { createClientSchema, type CreateClientFormData } from '@/lib/validation/schemas';
+import { type CreateClientDto, type SetCustomFieldValuesDto } from '@/types/dtos';
 
 /**
  * Error fallback component for ClientCreatePage

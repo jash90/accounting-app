@@ -1,23 +1,23 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
-import { Type, Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
-  IsString,
-  IsOptional,
-  IsEnum,
-  IsBoolean,
-  IsUUID,
-  IsInt,
   IsArray,
-  MaxLength,
-  MinLength,
-  Min,
-  Max,
-  ValidateNested,
+  IsBoolean,
   IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+  ValidateNested,
 } from 'class-validator';
 
-import { TaskStatus, TaskPriority, Sanitize, SanitizeWithFormatting } from '@accounting/common';
+import { Sanitize, SanitizeWithFormatting, TaskPriority, TaskStatus } from '@accounting/common';
 
 export class AcceptanceCriterionDto {
   @ApiProperty({ description: 'Unique ID of the criterion' })

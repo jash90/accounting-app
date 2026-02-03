@@ -1,23 +1,23 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
-import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
+import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
-  CheckSquare,
   ArrowLeft,
-  List,
-  LayoutGrid,
   Calendar as CalendarIcon,
-  GanttChartSquare,
+  CheckSquare,
   ChevronLeft,
   ChevronRight,
+  GanttChartSquare,
+  LayoutGrid,
+  List,
   Plus,
 } from 'lucide-react';
 
 import { PageHeader } from '@/components/common/page-header';
-import { TaskFormDialog, TaskStatusBadge, TaskPriorityBadge } from '@/components/tasks';
+import { TaskFormDialog, TaskPriorityBadge, TaskStatusBadge } from '@/components/tasks';
 import { TaskFilters } from '@/components/tasks/task-filters';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -29,6 +29,7 @@ import { useCalendarTasks, useCreateTask } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
 import { type CalendarTaskDto, type CreateTaskDto, type TaskFiltersDto } from '@/types/dtos';
 import { TaskPriority, UserRole } from '@/types/enums';
+
 
 export default function TasksCalendarPage() {
   const { user } = useAuthContext();

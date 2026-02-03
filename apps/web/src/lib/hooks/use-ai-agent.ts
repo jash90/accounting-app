@@ -1,15 +1,15 @@
-import { useState, useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { type ApiErrorResponse } from '@/types/api';
 import {
+  type CreateAIConfigurationDto,
   type CreateConversationDto,
   type SendMessageDto,
-  type CreateAIConfigurationDto,
-  type UpdateAIConfigurationDto,
   type SetTokenLimitDto,
+  type UpdateAIConfigurationDto,
 } from '@/types/dtos';
 
 import { aiAgentApi } from '../api/endpoints/ai-agent';

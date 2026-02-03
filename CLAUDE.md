@@ -162,15 +162,16 @@ apps/web/src/
 
 ```typescript
 // Backend
-import { User, Company } from '@accounting/common';
-import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
-import { RequireModule, RequirePermission } from '@accounting/rbac';
-import { TasksModule } from '@accounting/modules/tasks';
+import { apiClient } from '@/lib/api-client';
 
+import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
+import { Company, User } from '@accounting/common';
+import { TasksModule } from '@accounting/modules/tasks';
+import { RequireModule, RequirePermission } from '@accounting/rbac';
+
+import { useAuth } from '@/lib/hooks/use-auth';
 // Frontend
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/lib/hooks/use-auth';
-import { apiClient } from '@/lib/api-client';
 ```
 
 ## Key Patterns

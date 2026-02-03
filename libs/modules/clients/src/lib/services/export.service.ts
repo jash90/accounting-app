@@ -1,9 +1,9 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository, DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 
-import { Client, User, EmploymentType, VatStatus, TaxScheme, ZusStatus } from '@accounting/common';
+import { Client, EmploymentType, TaxScheme, User, VatStatus, ZusStatus } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 

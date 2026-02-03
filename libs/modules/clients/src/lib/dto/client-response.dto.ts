@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
 import { EmploymentType, TaxScheme, VatStatus, ZusStatus } from '@accounting/common';
 
 /**

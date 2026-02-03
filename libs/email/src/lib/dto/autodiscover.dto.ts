@@ -1,10 +1,12 @@
-import { IsEmail, IsNotEmpty } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+import { IsEmail, IsNotEmpty } from 'class-validator';
+
 import {
   AutodiscoveryResult,
+  ConfidenceLevel,
   DiscoveredConfig,
   DiscoverySource,
-  ConfidenceLevel,
 } from '../interfaces/autodiscovery.interface';
 
 /**

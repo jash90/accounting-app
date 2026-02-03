@@ -1,15 +1,18 @@
+
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+
 import {
-  S3Client,
-  PutObjectCommand,
   DeleteObjectCommand,
-  HeadObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+
 import { StorageProvider, StorageResult } from '../interfaces/storage-provider.interface';
 
 @Injectable()

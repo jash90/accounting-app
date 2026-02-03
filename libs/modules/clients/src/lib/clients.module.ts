@@ -1,9 +1,7 @@
-import { CommonModule } from '@accounting/common/backend';
-import { EmailModule } from '@accounting/email';
-import { StorageModule } from '@accounting/infrastructure/storage';
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
 import {
   ChangeLog,
   Client,
@@ -19,8 +17,12 @@ import {
   NotificationSettings,
   User,
 } from '@accounting/common';
+import { CommonModule } from '@accounting/common/backend';
+import { EmailModule } from '@accounting/email';
+import { StorageModule } from '@accounting/infrastructure/storage';
 import { NotificationsModule } from '@accounting/modules/notifications';
 import { RBACModule } from '@accounting/rbac';
+
 import { ClientsController } from './controllers/clients.controller';
 import { DeleteRequestsController } from './controllers/delete-requests.controller';
 import { FieldDefinitionsController } from './controllers/field-definitions.controller';

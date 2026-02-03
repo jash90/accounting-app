@@ -1,14 +1,17 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { User, AIProvider } from '@accounting/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+
+import { finalize, Observable, Subject } from 'rxjs';
+
+import { AIProvider, User } from '@accounting/common';
 import { ReceivedEmail } from '@accounting/email';
-import { Observable, Subject, finalize } from 'rxjs';
 import {
   AIConfigurationService,
+  ChatStreamChunk,
   OpenAIProviderService,
   OpenRouterProviderService,
   TokenUsageService,
-  ChatStreamChunk,
 } from '@accounting/modules/ai-agent';
+
 import { EmailDraftService } from './email-draft.service';
 import { EmailAiOptionsDto } from '../dto/email-ai-options.dto';
 

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { TimeEntry, TimeSettings, Company, User, Client, Task } from '@accounting/common';
+import { Client, Company, Task, TimeEntry, TimeSettings, User } from '@accounting/common';
 import { CommonModule } from '@accounting/common/backend';
 import { RBACModule } from '@accounting/rbac';
 

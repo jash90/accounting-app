@@ -1,7 +1,7 @@
-import { test, expect } from '../fixtures/auth.fixtures';
-import { EmailInboxPage } from '../pages/email/EmailInboxPage';
+import { expect, test } from '../fixtures/auth.fixtures';
 import { EmailComposePage } from '../pages/email/EmailComposePage';
 import { EmailDraftsPage } from '../pages/email/EmailDraftsPage';
+import { EmailInboxPage } from '../pages/email/EmailInboxPage';
 
 test.describe('Email Client Module - Employee Access', () => {
   test.describe('Inbox View', () => {
@@ -730,7 +730,7 @@ test.describe('Draft Advanced Operations', () => {
 
     // Verify send action is available (don't actually send to avoid side effects)
     if (count > 0) {
-      expect(await sendButtons.first().isVisible()).toBeTruthy();
+      await expect(sendButtons.first()).toBeVisible();
     } else {
       // No drafts or no send buttons
       expect(count).toBe(0);

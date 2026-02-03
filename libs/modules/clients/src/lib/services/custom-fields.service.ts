@@ -1,7 +1,8 @@
-import { TenantService } from '@accounting/common/backend';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { DataSource, Repository } from 'typeorm';
+
 import {
   Client,
   ClientCustomFieldValue,
@@ -10,6 +11,8 @@ import {
   PaginatedResponseDto,
   User,
 } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
+
 import {
   ClientErrorCode,
   ClientException,

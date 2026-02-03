@@ -1,21 +1,23 @@
 import { useState } from 'react';
+
+import { type ColumnDef } from '@tanstack/react-table';
+import { Edit, Package, Plus, Trash2 } from 'lucide-react';
+
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { DataTable } from '@/components/common/data-table';
 import { PageHeader } from '@/components/common/page-header';
-import { getModuleIcon } from '@/lib/utils/module-icons';
-import { type CreateModuleDto, type ModuleDto, type UpdateModuleDto } from '@/types/dtos';
-import { type ColumnDef } from '@tanstack/react-table';
-import { Edit, Package, Plus, Trash2 } from 'lucide-react';
+import { ModuleFormDialog } from '@/components/forms/module-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   useCreateModule,
   useDeleteModule,
   useModules,
   useUpdateModule,
 } from '@/lib/hooks/use-modules';
-import { ModuleFormDialog } from '@/components/forms/module-form-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { getModuleIcon } from '@/lib/utils/module-icons';
+import { type CreateModuleDto, type ModuleDto, type UpdateModuleDto } from '@/types/dtos';
 
 const columns: ColumnDef<ModuleDto>[] = [
   {

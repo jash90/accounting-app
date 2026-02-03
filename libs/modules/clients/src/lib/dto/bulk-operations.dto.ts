@@ -1,25 +1,25 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import {
-  IsArray,
-  IsUUID,
-  IsOptional,
-  IsEnum,
-  IsBoolean,
-  IsString,
-  MaxLength,
-  Matches,
-  ArrayMinSize,
   ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  MaxLength,
 } from 'class-validator';
 
 import {
   EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
   PKD_CODE_REGEX,
   PKD_CODE_VALIDATION_MESSAGE,
+  TaxScheme,
+  VatStatus,
+  ZusStatus,
 } from '@accounting/common';
 
 export class BulkDeleteClientsDto {

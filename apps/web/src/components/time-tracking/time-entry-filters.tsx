@@ -22,6 +22,7 @@ import {
 import { type TimeEntryFiltersDto } from '@/types/dtos';
 import { TimeEntryStatusLabels, type TimeEntryStatus } from '@/types/enums';
 
+
 interface Client {
   id: string;
   name: string;

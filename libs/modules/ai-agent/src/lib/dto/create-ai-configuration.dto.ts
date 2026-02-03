@@ -1,5 +1,7 @@
-import { IsString, IsEnum, IsOptional, IsNumber, IsBoolean, Min, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+
 import { AIProvider } from '@accounting/common';
 
 export class CreateAIConfigurationDto {

@@ -1,6 +1,7 @@
-import { ExecutorContext } from '@nx/devkit';
 import { execSync } from 'child_process';
 import * as path from 'path';
+
+import { ExecutorContext } from '@nx/devkit';
 
 export interface BunTestExecutorSchema {
   testDir?: string;

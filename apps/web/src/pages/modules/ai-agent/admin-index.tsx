@@ -6,6 +6,7 @@ import {
   Settings,
   Sparkles,
 } from 'lucide-react';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NavigationCard } from '@/components/ui/navigation-card';
 

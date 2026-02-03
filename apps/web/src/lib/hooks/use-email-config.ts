@@ -1,13 +1,14 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
 import { type ApiErrorResponse } from '@/types/api';
 import {
   type CreateEmailConfigDto,
-  type UpdateEmailConfigDto,
-  type TestSmtpDto,
   type TestImapDto,
+  type TestSmtpDto,
+  type UpdateEmailConfigDto,
 } from '@/types/dtos';
+
 
 import { emailConfigApi } from '../api/endpoints/email-config';
 import { queryKeys } from '../api/query-client';

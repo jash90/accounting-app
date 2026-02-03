@@ -555,8 +555,8 @@ Implement comprehensive error handling across the module.
 
 ```typescript
 // lib/api/error-handler.ts
-import { AxiosError } from 'axios';
 import { toast } from '@/hooks/use-toast';
+import { AxiosError } from 'axios';
 
 interface ApiError {
   message: string | string[];

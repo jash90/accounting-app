@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthContext } from '@/contexts/auth-context';
 import { UserRole } from '@/types/enums';
 
+
 // Lazy load pages for code splitting
 const LoginPage = lazy(() => import('@/pages/public/login-page'));
 const AdminDashboard = lazy(() => import('@/pages/admin/dashboard'));

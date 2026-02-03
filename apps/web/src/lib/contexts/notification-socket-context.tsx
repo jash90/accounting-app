@@ -7,13 +7,16 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { useAuthContext } from '@/contexts/auth-context';
-import { tokenStorage } from '@/lib/auth/token-storage';
-import type { NotificationResponseDto } from '@/types/notifications';
+
 import { useQueryClient } from '@tanstack/react-query';
 import { io, type Socket } from 'socket.io-client';
-import { queryKeys } from '@/lib/api/query-client';
+
 import { useToast } from '@/components/ui/use-toast';
+import { useAuthContext } from '@/contexts/auth-context';
+import { queryKeys } from '@/lib/api/query-client';
+import { tokenStorage } from '@/lib/auth/token-storage';
+import type { NotificationResponseDto } from '@/types/notifications';
+
 
 // Extend Window interface for runtime config
 declare global {

@@ -42,15 +42,16 @@ AI Agent Module Entities:
 
 ```typescript
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
+
 import { Company } from './company.entity';
 import { User } from './user.entity';
 
@@ -173,8 +174,9 @@ When storing API keys, credentials, or other sensitive data, use encryption at r
 **File**: `libs/modules/ai-agent/src/lib/services/ai-configuration.service.ts`
 
 ```typescript
-import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as crypto from 'crypto';
+
+import { Injectable, OnModuleInit } from '@nestjs/common';
 
 @Injectable()
 export class AIConfigurationService implements OnModuleInit {
@@ -348,6 +350,7 @@ export abstract class AIProviderService {
 ```typescript
 import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
+
 import {
   AIProviderService,
   ChatMessage,
@@ -519,19 +522,20 @@ For modules that handle file uploads with processing.
 **File**: `libs/modules/ai-agent/src/lib/controllers/ai-context.controller.ts`
 
 ```typescript
+import { extname } from 'path';
+
 import {
+  BadRequestException,
   Controller,
   Post,
-  UseInterceptors,
   UploadedFile,
-  BadRequestException,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { ApiTags, ApiConsumes, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('modules/ai-agent/context')
 @ApiTags('AI Agent - Context')

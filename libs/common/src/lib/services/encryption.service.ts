@@ -1,8 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
+
 import { createCipheriv, createDecipheriv, randomBytes, scrypt } from 'crypto';
-import { promisify } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
+import { promisify } from 'util';
+
 
 const scryptAsync = promisify(scrypt);
 

@@ -1,15 +1,17 @@
 import { useState } from 'react';
+
+import { type ColumnDef } from '@tanstack/react-table';
+import { Edit, Trash2, UserPlus, Users } from 'lucide-react';
+
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { DataTable } from '@/components/common/data-table';
 import { PageHeader } from '@/components/common/page-header';
-import { UserRole, type CreateUserDto, type UpdateUserDto, type UserDto } from '@/types/dtos';
-import { type ColumnDef } from '@tanstack/react-table';
-import { Edit, Trash2, UserPlus, Users } from 'lucide-react';
-import { useCreateUser, useDeleteUser, useUpdateUser, useUsers } from '@/lib/hooks/use-users';
 import { UserFormDialog } from '@/components/forms/user-form-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useCreateUser, useDeleteUser, useUpdateUser, useUsers } from '@/lib/hooks/use-users';
+import { UserRole, type CreateUserDto, type UpdateUserDto, type UserDto } from '@/types/dtos';
 
 const columns: ColumnDef<UserDto>[] = [
   {

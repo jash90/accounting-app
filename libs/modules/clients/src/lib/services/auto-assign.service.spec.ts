@@ -1,23 +1,23 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
-import { type Repository, DataSource, type QueryRunner, type EntityManager } from 'typeorm';
+import { DataSource, type EntityManager, type QueryRunner, type Repository } from 'typeorm';
 
 import {
   ClientIcon,
   ClientIconAssignment,
-  type Client,
-  IconType,
   EmploymentType,
-  VatStatus,
+  IconType,
   TaxScheme,
+  VatStatus,
   ZusStatus,
   type AutoAssignCondition,
+  type Client,
 } from '@accounting/common';
 
+import { ClientErrorCode, ClientException } from '../exceptions';
 import { AutoAssignService } from './auto-assign.service';
 import { ConditionEvaluatorService } from './condition-evaluator.service';
-import { ClientException, ClientErrorCode } from '../exceptions';
 
 describe('AutoAssignService', () => {
   let service: AutoAssignService;

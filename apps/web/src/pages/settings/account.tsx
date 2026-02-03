@@ -1,12 +1,12 @@
 import { useState } from 'react';
+
 import { useForm } from 'react-hook-form';
-import { PageHeader } from '@/components/common/page-header';
-import { useAuthContext } from '@/contexts/auth-context';
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { Eye, EyeOff, KeyRound, Shield, User } from 'lucide-react';
-import { authApi } from '@/lib/api/endpoints/auth';
-import { changePasswordSchema, type ChangePasswordFormData } from '@/lib/validation/schemas';
+
+import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -20,6 +20,9 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuthContext } from '@/contexts/auth-context';
+import { authApi } from '@/lib/api/endpoints/auth';
+import { changePasswordSchema, type ChangePasswordFormData } from '@/lib/validation/schemas';
 
 export default function AccountSettingsPage() {
   const { user } = useAuthContext();

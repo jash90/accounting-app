@@ -1,19 +1,22 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Res } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Res, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
 import { Response } from 'express';
-import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+
+import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
+import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
   PermissionGuard,
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
-import { User } from '@accounting/common';
-import { EmailDraftService } from '../services/email-draft.service';
-import { EmailClientService } from '../services/email-client.service';
-import { EmailAiService } from '../services/email-ai.service';
+
 import { CreateDraftDto, UpdateDraftDto } from '../dto/create-draft.dto';
 import { EmailAiOptionsDto } from '../dto/email-ai-options.dto';
+import { EmailAiService } from '../services/email-ai.service';
+import { EmailClientService } from '../services/email-client.service';
+import { EmailDraftService } from '../services/email-draft.service';
 
 @ApiTags('Email Client - Drafts')
 @ApiBearerAuth()

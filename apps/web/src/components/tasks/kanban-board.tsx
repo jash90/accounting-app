@@ -1,21 +1,21 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
-  DndContext,
-  type DragEndEvent,
-  type DragOverEvent,
-  type DragStartEvent,
-  DragOverlay,
   closestCorners,
+  DndContext,
+  DragOverlay,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
 } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 
 import { cn } from '@/lib/utils/cn';
-import { type TaskResponseDto, type KanbanBoardDto } from '@/types/dtos';
+import { type KanbanBoardDto, type TaskResponseDto } from '@/types/dtos';
 import { TaskStatus } from '@/types/enums';
 
 import { KanbanColumn } from './kanban-column';

@@ -1,18 +1,18 @@
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { Users, UserCheck, UserX, TrendingUp, Clock, Activity } from 'lucide-react';
+import { Activity, Clock, TrendingUp, UserCheck, Users, UserX } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   EmploymentTypeLabels,
-  VatStatusLabels,
   TaxSchemeLabels,
+  VatStatusLabels,
   ZusStatusLabels,
   type EmploymentType,
-  type VatStatus,
   type TaxScheme,
+  type VatStatus,
   type ZusStatus,
 } from '@/types/enums';
 

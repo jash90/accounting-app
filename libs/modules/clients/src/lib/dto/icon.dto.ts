@@ -2,20 +2,20 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
 import { Transform, Type } from 'class-transformer';
 import {
-  IsString,
-  IsOptional,
-  MaxLength,
-  MinLength,
-  IsUUID,
   IsEnum,
-  IsObject,
   IsInt,
-  Min,
-  Max,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUUID,
   Matches,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
 } from 'class-validator';
 
-import { IconType, AutoAssignCondition, Sanitize } from '@accounting/common';
+import { AutoAssignCondition, IconType, Sanitize } from '@accounting/common';
 
 export class CreateIconDto {
   @ApiProperty({ description: 'Icon name', minLength: 1, maxLength: 100 })

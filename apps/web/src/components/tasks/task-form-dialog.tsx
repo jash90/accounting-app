@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { CalendarIcon, X, Loader2, Maximize2 } from 'lucide-react';
+import { CalendarIcon, Loader2, Maximize2, X } from 'lucide-react';
 import { z } from 'zod';
 
 import { Badge } from '@/components/ui/badge';
@@ -39,15 +39,15 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuthContext } from '@/contexts/auth-context';
-import { useTaskLabels, useTaskAssignees, useTaskClients } from '@/lib/hooks/use-tasks';
+import { useTaskAssignees, useTaskClients, useTaskLabels } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
-import { type TaskResponseDto, type CreateTaskDto, type UpdateTaskDto } from '@/types/dtos';
+import { type CreateTaskDto, type TaskResponseDto, type UpdateTaskDto } from '@/types/dtos';
 import {
-  UserRole,
-  TaskStatus,
-  TaskStatusLabels,
   TaskPriority,
   TaskPriorityLabels,
+  TaskStatus,
+  TaskStatusLabels,
+  UserRole,
 } from '@/types/enums';
 
 const taskFormSchema = z.object({

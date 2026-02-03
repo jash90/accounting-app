@@ -3,6 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { type ClientResponseDto } from '@/types/dtos';
 import { type ClientFieldDefinition } from '@/types/entities';
 
+
 interface ClientGridProps {
   clients: ClientResponseDto[];
   basePath: string;

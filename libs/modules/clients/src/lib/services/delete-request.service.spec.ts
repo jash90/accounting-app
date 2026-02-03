@@ -2,31 +2,31 @@ import { HttpStatus } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
-import { type Repository, DataSource, type QueryRunner, type EntityManager } from 'typeorm';
+import { DataSource, type EntityManager, type QueryRunner, type Repository } from 'typeorm';
 
 import {
-  ClientDeleteRequest,
   Client,
-  type User,
-  UserRole,
+  ClientDeleteRequest,
   DeleteRequestStatus,
   EmploymentType,
-  VatStatus,
   TaxScheme,
+  UserRole,
+  VatStatus,
   ZusStatus,
+  type User,
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 
+import {
+  ClientErrorCode,
+  ClientException,
+  ClientNotFoundException,
+  DeleteRequestAlreadyProcessedException,
+  DeleteRequestNotFoundException,
+} from '../exceptions';
 import { ClientChangelogService } from './client-changelog.service';
 import { ClientsService } from './clients.service';
 import { DeleteRequestService } from './delete-request.service';
-import {
-  ClientNotFoundException,
-  DeleteRequestNotFoundException,
-  DeleteRequestAlreadyProcessedException,
-  ClientException,
-  ClientErrorCode,
-} from '../exceptions';
 
 describe('DeleteRequestService', () => {
   let service: DeleteRequestService;

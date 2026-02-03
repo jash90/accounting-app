@@ -1,11 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
-import { Upload, Loader2 } from 'lucide-react';
+import { Loader2, Upload } from 'lucide-react';
 
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 
-import { AttachmentList, type Attachment, formatFileSize } from './AttachmentList';
+import { AttachmentList, formatFileSize, type Attachment } from './AttachmentList';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 

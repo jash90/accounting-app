@@ -1,7 +1,9 @@
+import { Monitor, Moon, Sun } from 'lucide-react';
+
+import { useTheme } from '@/lib/hooks/use-theme';
 import { type ColorMode } from '@/lib/themes';
 import { cn } from '@/lib/utils/cn';
-import { Monitor, Moon, Sun } from 'lucide-react';
-import { useTheme } from '@/lib/hooks/use-theme';
+
 
 interface ColorModeOption {
   value: ColorMode;

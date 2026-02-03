@@ -1,22 +1,22 @@
 import { type PaginatedResponse } from '@/types/api';
 import {
-  type CreateClientDto,
-  type UpdateClientDto,
-  type ClientFiltersDto,
-  type ClientResponseDto,
-  type SetCustomFieldValuesDto,
-  type CreateClientFieldDefinitionDto,
-  type UpdateClientFieldDefinitionDto,
-  type ClientFieldDefinitionResponseDto,
-  type CreateClientIconDto,
-  type UpdateClientIconDto,
-  type ClientIconResponseDto,
-  type CreateNotificationSettingsDto,
-  type UpdateNotificationSettingsDto,
-  type NotificationSettingsResponseDto,
   type ChangeLogResponseDto,
+  type ClientFieldDefinitionResponseDto,
+  type ClientFiltersDto,
+  type ClientIconResponseDto,
+  type ClientResponseDto,
+  type CreateClientDto,
+  type CreateClientFieldDefinitionDto,
+  type CreateClientIconDto,
+  type CreateNotificationSettingsDto,
+  type NotificationSettingsResponseDto,
+  type SetCustomFieldValuesDto,
+  type UpdateClientDto,
+  type UpdateClientFieldDefinitionDto,
+  type UpdateClientIconDto,
+  type UpdateNotificationSettingsDto,
 } from '@/types/dtos';
-import { type EmploymentType, type VatStatus, type TaxScheme, type ZusStatus } from '@/types/enums';
+import { type EmploymentType, type TaxScheme, type VatStatus, type ZusStatus } from '@/types/enums';
 
 import apiClient from '../client';
 

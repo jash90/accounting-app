@@ -1,37 +1,39 @@
 import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
   BadRequestException,
-  Logger,
+  ForbiddenException,
   HttpException,
+  Injectable,
   InternalServerErrorException,
+  Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+
 import { Observable, Subject } from 'rxjs';
 import { finalize } from 'rxjs/operators';
+import { Repository } from 'typeorm';
+
 import {
+  AIContext,
   AIConversation,
   AIMessage,
   AIMessageRole,
-  AIContext,
+  AIProvider,
   User,
   UserRole,
-  AIProvider,
 } from '@accounting/common';
-import { CreateConversationDto } from '../dto/create-conversation.dto';
-import { SendMessageDto } from '../dto/send-message.dto';
-import { PaginationQueryDto, PaginatedResponseDto } from '../dto/pagination.dto';
+
 import { AIConfigurationService } from './ai-configuration.service';
+import { AIProviderError, ChatStreamChunk } from './ai-provider.interface';
 import { OpenAIProviderService } from './openai-provider.service';
 import { OpenRouterProviderService } from './openrouter-provider.service';
-import { AIProviderError } from './ai-provider.interface';
 import { RAGService } from './rag.service';
+import { SystemCompanyService } from './system-company.service';
 import { TokenLimitService } from './token-limit.service';
 import { TokenUsageService } from './token-usage.service';
-import { SystemCompanyService } from './system-company.service';
-import { ChatStreamChunk } from './ai-provider.interface';
+import { CreateConversationDto } from '../dto/create-conversation.dto';
+import { PaginatedResponseDto, PaginationQueryDto } from '../dto/pagination.dto';
+import { SendMessageDto } from '../dto/send-message.dto';
 
 @Injectable()
 export class AIConversationService {

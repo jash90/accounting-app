@@ -1,14 +1,15 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
 import {
-  IsNumber,
-  Min,
-  IsOptional,
   IsBoolean,
-  Max,
-  IsString,
   IsIn,
   IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class SetTokenLimitDto {
   @ApiProperty({
