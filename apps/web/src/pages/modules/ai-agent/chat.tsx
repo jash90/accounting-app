@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { cn } from '@/lib/utils/cn';
-import { MessageRole } from '@/types/dtos';
+
 import {
   AlertCircle,
   Bot,
@@ -13,15 +13,7 @@ import {
   User,
   Zap,
 } from 'lucide-react';
-import {
-  useAIConfiguration,
-  useConversation,
-  useConversations,
-  useCreateConversation,
-  useDeleteConversation,
-  useSendMessage,
-  useSendMessageStream,
-} from '@/lib/hooks/use-ai-agent';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +29,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import {
+  useAIConfiguration,
+  useConversation,
+  useConversations,
+  useCreateConversation,
+  useDeleteConversation,
+  useSendMessage,
+  useSendMessageStream,
+} from '@/lib/hooks/use-ai-agent';
+import { cn } from '@/lib/utils/cn';
+import { MessageRole } from '@/types/dtos';
 
 export default function AIAgentChatPage() {
   // Keep useNavigate for potential future use or remove if not needed

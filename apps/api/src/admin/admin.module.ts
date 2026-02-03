@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { User, Company } from '@accounting/common';
+import { Company, User } from '@accounting/common';
 import { RBACModule } from '@accounting/rbac';
 
 import { AdminController } from './controllers/admin.controller';

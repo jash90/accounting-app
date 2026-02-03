@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/auth.fixtures';
+import { expect, test } from '../fixtures/auth.fixtures';
 import { TimeTrackingPage } from '../pages/modules/TimeTrackingPage';
 
 test.describe('Time Tracking - Timer Operations', () => {

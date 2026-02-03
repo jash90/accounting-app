@@ -94,8 +94,9 @@ libs/email/
 ### Example: AI Agent Module
 
 ```typescript
-import { Module } from '@nestjs/common';
 import { EmailModule } from '@accounting/email';
+import { Module } from '@nestjs/common';
+
 import { AIAgentService } from './ai-agent.service';
 
 @Module({
@@ -106,8 +107,8 @@ export class AIAgentModule {}
 ```
 
 ```typescript
-import { Injectable } from '@nestjs/common';
 import { EmailReaderService, EmailSenderService } from '@accounting/email';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class AIAgentService {
@@ -143,8 +144,8 @@ export class AIAgentService {
 ### Example: Simple Text Module
 
 ```typescript
-import { Injectable } from '@nestjs/common';
 import { EmailSenderService } from '@accounting/email';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class SimpleTextNotificationService {
@@ -248,7 +249,7 @@ export class YourModule {}
 ### 3. Use Services
 
 ```typescript
-import { EmailSenderService, EmailConfigHelper } from '@accounting/email';
+import { EmailConfigHelper, EmailSenderService } from '@accounting/email';
 
 @Injectable()
 export class YourService {
@@ -271,8 +272,8 @@ export class YourService {
 ### Unit Tests
 
 ```typescript
-import { Test } from '@nestjs/testing';
 import { EmailSenderService } from '@accounting/email';
+import { Test } from '@nestjs/testing';
 
 describe('EmailSenderService', () => {
   let service: EmailSenderService;

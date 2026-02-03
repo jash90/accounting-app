@@ -1,15 +1,15 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
-import { type Repository, DataSource } from 'typeorm';
+import { DataSource, type Repository } from 'typeorm';
 
 import {
   TimeEntry,
   TimeEntryStatus,
-  type User,
-  UserRole,
   TimeRoundingMethod,
+  UserRole,
   type TimeSettings,
+  type User,
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 

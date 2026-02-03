@@ -1,21 +1,24 @@
 import { useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
+
+import { type ColumnDef } from '@tanstack/react-table';
+import { Edit, Key, Trash2, UserPlus, Users } from 'lucide-react';
+
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { DataTable } from '@/components/common/data-table';
 import { PageHeader } from '@/components/common/page-header';
-import { type CreateEmployeeDto, type UpdateEmployeeDto, type UserDto } from '@/types/dtos';
-import { type ColumnDef } from '@tanstack/react-table';
-import { Edit, Key, Trash2, UserPlus, Users } from 'lucide-react';
+import { EmployeeFormDialog } from '@/components/forms/employee-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   useCreateEmployee,
   useDeleteEmployee,
   useEmployees,
   useUpdateEmployee,
 } from '@/lib/hooks/use-employees';
-import { EmployeeFormDialog } from '@/components/forms/employee-form-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { type CreateEmployeeDto, type UpdateEmployeeDto, type UserDto } from '@/types/dtos';
 
 const columns: ColumnDef<UserDto>[] = [
   {

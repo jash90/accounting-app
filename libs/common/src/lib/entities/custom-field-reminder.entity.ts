@@ -8,6 +8,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+
 import { ClientCustomFieldValue } from './client-custom-field-value.entity';
 import { ClientFieldDefinition } from './client-field-definition.entity';
 import { Client } from './client.entity';

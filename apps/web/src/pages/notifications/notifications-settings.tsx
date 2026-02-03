@@ -19,9 +19,9 @@ import {
 } from '@/lib/hooks/use-notifications';
 import {
   getModuleFromNotificationType,
-  type NotificationSettingsResponseDto,
   NotificationType,
   NotificationTypeLabels,
+  type NotificationSettingsResponseDto,
   type NotificationTypePreference,
 } from '@/types/notifications';
 

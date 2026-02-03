@@ -1,8 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
+
 import * as dns from 'dns';
 import { promisify } from 'util';
-import { AutodiscoveryResult, SrvRecord } from '../interfaces/autodiscovery.interface';
+
+
 import { ProviderLookupService } from './provider-lookup.service';
+import { AutodiscoveryResult, SrvRecord } from '../interfaces/autodiscovery.interface';
 
 const resolveSrv = promisify(dns.resolveSrv);
 const resolveMx = promisify(dns.resolveMx);

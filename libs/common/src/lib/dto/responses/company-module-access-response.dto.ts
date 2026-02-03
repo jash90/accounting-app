@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+
 import { ModuleResponseDto } from './module-response.dto';
 
 export class CompanyModuleAccessResponseDto {

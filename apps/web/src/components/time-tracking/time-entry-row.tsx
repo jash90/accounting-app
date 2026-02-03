@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { format, formatDistanceToNow } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
-  Play,
-  Pencil,
-  Trash2,
-  MoreHorizontal,
   Calendar,
-  Send,
   CheckCircle,
+  MoreHorizontal,
+  Pencil,
+  Play,
+  Send,
+  Trash2,
   XCircle,
 } from 'lucide-react';
 

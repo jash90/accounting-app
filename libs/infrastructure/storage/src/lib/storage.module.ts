@@ -1,9 +1,10 @@
-import { Module, Global, DynamicModule } from '@nestjs/common';
+import { DynamicModule, Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { StorageService } from './services/storage.service';
+
+import { STORAGE_PROVIDER } from './interfaces/storage-provider.interface';
 import { LocalStorageProvider } from './services/local-storage.provider';
 import { S3StorageProvider } from './services/s3-storage.provider';
-import { STORAGE_PROVIDER } from './interfaces/storage-provider.interface';
+import { StorageService } from './services/storage.service';
 
 @Global()
 @Module({})

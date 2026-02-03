@@ -1,20 +1,20 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
+  BadRequestException,
   Body,
+  Controller,
+  Delete,
+  Get,
   Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
   Query,
   UseGuards,
-  ParseUUIDPipe,
-  BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 
-import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
@@ -24,14 +24,14 @@ import {
 } from '@accounting/rbac';
 
 import {
-  CreateTimeEntryDto,
-  UpdateTimeEntryDto,
-  TimeEntryFiltersDto,
-  SubmitTimeEntryDto,
   ApproveTimeEntryDto,
-  RejectTimeEntryDto,
+  CreateTimeEntryDto,
   LockTimeEntryDto,
+  RejectTimeEntryDto,
+  SubmitTimeEntryDto,
+  TimeEntryFiltersDto,
   UnlockTimeEntryDto,
+  UpdateTimeEntryDto,
 } from '../dto/time-entry.dto';
 import { StartTimerDto, StopTimerDto, UpdateTimerDto } from '../dto/timer.dto';
 import { TimeEntriesService } from '../services/time-entries.service';

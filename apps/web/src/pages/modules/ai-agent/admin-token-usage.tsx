@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { type CompanyTokenUsageDto } from '@/types/dtos';
+
 import {
   Building2,
   ChevronDown,
@@ -9,7 +9,7 @@ import {
   Sparkles,
   Users,
 } from 'lucide-react';
-import { useAllCompaniesTokenUsage } from '@/lib/hooks/use-ai-agent';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -20,6 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useAllCompaniesTokenUsage } from '@/lib/hooks/use-ai-agent';
+import { type CompanyTokenUsageDto } from '@/types/dtos';
 
 function CompanyRow({ company }: { company: CompanyTokenUsageDto }) {
   const [isExpanded, setIsExpanded] = useState(false);

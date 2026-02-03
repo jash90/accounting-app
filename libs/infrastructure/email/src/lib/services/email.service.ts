@@ -1,10 +1,13 @@
+
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
-import * as handlebars from 'handlebars';
+
 import * as fs from 'fs/promises';
+import * as handlebars from 'handlebars';
+import * as nodemailer from 'nodemailer';
 import * as path from 'path';
-import { EmailOptions, EmailConfig } from '../interfaces/email-options.interface';
+
+import { EmailConfig, EmailOptions } from '../interfaces/email-options.interface';
 
 @Injectable()
 export class EmailService implements OnModuleInit {

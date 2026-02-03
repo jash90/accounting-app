@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, HttpException } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 
 import { ImapFlow } from 'imapflow';
 import { simpleParser, type Source } from 'mailparser';

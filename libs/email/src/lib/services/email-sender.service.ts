@@ -5,7 +5,7 @@ import { Transporter } from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
 
 import { EmailReaderService } from './email-reader.service';
-import { SmtpConfig, ImapConfig } from '../interfaces/email-config.interface';
+import { ImapConfig, SmtpConfig } from '../interfaces/email-config.interface';
 import { EmailMessage } from '../interfaces/email-message.interface';
 
 // CommonJS import - nodemailer's MailComposer lacks proper ESM exports

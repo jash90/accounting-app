@@ -5,10 +5,10 @@
  * with a real PostgreSQL database.
  */
 
-import { DataSource } from 'typeorm';
+import { ConfigModule } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
+import { DataSource } from 'typeorm';
 
 // Test database configuration
 export const TEST_DB_CONFIG = {

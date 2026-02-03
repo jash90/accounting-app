@@ -1,5 +1,3 @@
-import { useAuthContext } from '@/contexts/auth-context';
-import { TaskStatus, UserRole } from '@/types/enums';
 import {
   AlertCircle,
   Calendar,
@@ -11,9 +9,12 @@ import {
   List,
   Settings,
 } from 'lucide-react';
-import { useTasks } from '@/lib/hooks/use-tasks';
+
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
+import { useAuthContext } from '@/contexts/auth-context';
+import { useTasks } from '@/lib/hooks/use-tasks';
+import { TaskStatus, UserRole } from '@/types/enums';
 
 export default function TasksDashboardPage() {
   const { user } = useAuthContext();

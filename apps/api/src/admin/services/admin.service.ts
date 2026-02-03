@@ -1,15 +1,15 @@
 import {
+  BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
-  ConflictException,
-  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import * as bcrypt from 'bcryptjs';
-import { Repository, DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
-import { User, Company, UserRole } from '@accounting/common';
+import { Company, User, UserRole } from '@accounting/common';
 import { RBACService } from '@accounting/rbac';
 
 import { CreateCompanyDto } from '../dto/create-company.dto';

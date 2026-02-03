@@ -1,3 +1,6 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { useToast } from '@/components/ui/use-toast';
 import { type ApiErrorResponse } from '@/types/api';
 import {
   type ClientFiltersDto,
@@ -11,8 +14,8 @@ import {
   type UpdateClientIconDto,
   type UpdateNotificationSettingsDto,
 } from '@/types/dtos';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useToast } from '@/components/ui/use-toast';
+
+
 import {
   clientIconsApi,
   clientsApi,

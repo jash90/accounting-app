@@ -1,8 +1,9 @@
 import { Building2, Package, Users } from 'lucide-react';
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCompanies } from '@/lib/hooks/use-companies';
 import { useModules } from '@/lib/hooks/use-modules';
 import { useUsers } from '@/lib/hooks/use-users';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function AdminDashboard() {
   const { data: users, isPending: usersLoading } = useUsers();

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -6,26 +6,26 @@ import { type ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
-  Plus,
-  Edit,
-  Trash2,
-  CheckSquare,
-  MoreHorizontal,
   ArrowLeft,
-  List,
-  LayoutGrid,
   Calendar,
+  CheckSquare,
+  Edit,
   GanttChartSquare,
+  LayoutGrid,
+  List,
+  MoreHorizontal,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { DataTable } from '@/components/common/data-table';
 import { PageHeader } from '@/components/common/page-header';
 import {
-  TaskStatusBadge,
-  TaskPriorityBadge,
-  TaskLabelList,
   TaskFormDialog,
+  TaskLabelList,
+  TaskPriorityBadge,
+  TaskStatusBadge,
 } from '@/components/tasks';
 import { TaskFilters } from '@/components/tasks/task-filters';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -42,20 +42,20 @@ import {
 import { useAuthContext } from '@/contexts/auth-context';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import {
-  useTasks,
-  useCreateTask,
-  useUpdateTask,
-  useDeleteTask,
   useBulkUpdateStatus,
+  useCreateTask,
+  useDeleteTask,
+  useTasks,
+  useUpdateTask,
 } from '@/lib/hooks/use-tasks';
 import { mapTaskLabels } from '@/lib/utils/task-label-mapper';
 import {
-  type TaskResponseDto,
   type CreateTaskDto,
-  type UpdateTaskDto,
   type TaskFiltersDto,
+  type TaskResponseDto,
+  type UpdateTaskDto,
 } from '@/types/dtos';
-import { type TaskStatus, TaskStatusLabels, UserRole } from '@/types/enums';
+import { TaskStatusLabels, UserRole, type TaskStatus } from '@/types/enums';
 
 export default function TasksListPage() {
   const { user } = useAuthContext();

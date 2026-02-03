@@ -1,14 +1,15 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
   CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
   Unique,
 } from 'typeorm';
-import { User } from './user.entity';
+
 import { Module } from './module.entity';
+import { User } from './user.entity';
 
 @Entity('user_module_permissions')
 @Unique(['userId', 'moduleId'])

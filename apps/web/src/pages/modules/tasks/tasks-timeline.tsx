@@ -1,31 +1,31 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
 import {
-  format,
-  startOfWeek,
-  startOfMonth,
-  endOfMonth,
   addDays,
-  addWeeks,
   addMonths,
-  subWeeks,
-  subMonths,
+  addWeeks,
   differenceInDays,
+  endOfMonth,
+  format,
   max,
   min,
+  startOfMonth,
+  startOfWeek,
+  subMonths,
+  subWeeks,
 } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
-  CheckSquare,
   ArrowLeft,
-  List,
-  LayoutGrid,
   Calendar,
-  GanttChartSquare,
+  CheckSquare,
   ChevronLeft,
   ChevronRight,
+  GanttChartSquare,
+  LayoutGrid,
+  List,
   Plus,
 } from 'lucide-react';
 
@@ -44,10 +44,11 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import { useTasks, useCreateTask } from '@/lib/hooks/use-tasks';
+import { useCreateTask, useTasks } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
-import { type TaskResponseDto, type CreateTaskDto, type TaskFiltersDto } from '@/types/dtos';
+import { type CreateTaskDto, type TaskFiltersDto, type TaskResponseDto } from '@/types/dtos';
 import { TaskStatus, TaskStatusLabels, UserRole } from '@/types/enums';
+
 
 type ViewMode = 'day' | 'week' | 'month';
 

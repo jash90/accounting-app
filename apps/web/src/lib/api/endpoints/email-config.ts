@@ -1,10 +1,10 @@
 import {
-  type EmailConfigResponseDto,
   type CreateEmailConfigDto,
-  type UpdateEmailConfigDto,
-  type TestSmtpDto,
-  type TestImapDto,
+  type EmailConfigResponseDto,
   type TestConnectionResultDto,
+  type TestImapDto,
+  type TestSmtpDto,
+  type UpdateEmailConfigDto,
 } from '@/types/dtos';
 
 import apiClient from '../client';

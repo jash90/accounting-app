@@ -1,39 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import {
-  BulkActionsToolbar,
-  type BulkEditChanges,
-} from '@/components/clients/bulk-actions-toolbar';
-import { ClientFilters } from '@/components/clients/client-filters';
-import { ClientGrid } from '@/components/clients/client-grid';
-import { DuplicateWarningDialog } from '@/components/clients/duplicate-warning-dialog';
-import { ExportImportDialog } from '@/components/clients/export-import-dialog';
-import { IconBadgeList } from '@/components/clients/icon-badge';
-import { StatisticsDashboard } from '@/components/clients/statistics-dashboard';
-import { ColumnVisibilityModal } from '@/components/common/column-visibility-modal';
-import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import { DataTable } from '@/components/common/data-table';
-import { PageHeader } from '@/components/common/page-header';
-import { ViewModeToggle } from '@/components/common/view-mode-toggle';
-import { useAuthContext } from '@/contexts/auth-context';
-import { AmlGroupLabels } from '@/lib/constants/polish-labels';
-import {
-  type ClientFiltersDto,
-  type ClientResponseDto,
-  type CreateClientDto,
-  type UpdateClientDto,
-} from '@/types/dtos';
-import {
-  EmploymentTypeLabels,
-  TaxSchemeLabels,
-  UserRole,
-  VatStatus,
-  VatStatusLabels,
-  ZusStatusLabels,
-  type EmploymentType,
-  type TaxScheme,
-  type ZusStatus,
-} from '@/types/enums';
+
 import { type ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -50,7 +18,39 @@ import {
   Trash2,
   Users,
 } from 'lucide-react';
+
+import {
+  BulkActionsToolbar,
+  type BulkEditChanges,
+} from '@/components/clients/bulk-actions-toolbar';
+import { ClientFilters } from '@/components/clients/client-filters';
+import { ClientGrid } from '@/components/clients/client-grid';
+import { DuplicateWarningDialog } from '@/components/clients/duplicate-warning-dialog';
+import { ExportImportDialog } from '@/components/clients/export-import-dialog';
+import { IconBadgeList } from '@/components/clients/icon-badge';
+import { StatisticsDashboard } from '@/components/clients/statistics-dashboard';
+import { ColumnVisibilityModal } from '@/components/common/column-visibility-modal';
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { DataTable } from '@/components/common/data-table';
+import { PageHeader } from '@/components/common/page-header';
+import { ViewModeToggle } from '@/components/common/view-mode-toggle';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import { useTablePreferences, type ColumnConfig } from '@/lib/hooks/use-table-preferences';
+import { ClientFormDialog } from '@/components/forms/client-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { toast } from '@/components/ui/use-toast';
+import { useAuthContext } from '@/contexts/auth-context';
 import { type DuplicateCheckResultDto } from '@/lib/api/endpoints/clients';
+import { AmlGroupLabels } from '@/lib/constants/polish-labels';
 import {
   useBulkDeleteClients,
   useBulkEditClients,
@@ -68,20 +68,23 @@ import {
   useSetClientCustomFields,
   useUpdateClient,
 } from '@/lib/hooks/use-clients';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import { useTablePreferences, type ColumnConfig } from '@/lib/hooks/use-table-preferences';
-import { ClientFormDialog } from '@/components/forms/client-form-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { toast } from '@/components/ui/use-toast';
+  type ClientFiltersDto,
+  type ClientResponseDto,
+  type CreateClientDto,
+  type UpdateClientDto,
+} from '@/types/dtos';
+import {
+  EmploymentTypeLabels,
+  TaxSchemeLabels,
+  UserRole,
+  VatStatus,
+  VatStatusLabels,
+  ZusStatusLabels,
+  type EmploymentType,
+  type TaxScheme,
+  type ZusStatus,
+} from '@/types/enums';
 
 export default function ClientsListPage() {
   const { user } = useAuthContext();

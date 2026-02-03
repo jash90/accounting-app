@@ -3,14 +3,14 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { DataSource, type Repository } from 'typeorm';
 
-import { TimeEntry, TimeEntryStatus, type User, UserRole, type Company } from '@accounting/common';
+import { TimeEntry, TimeEntryStatus, UserRole, type Company, type User } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
+import { TimerAlreadyRunningException, TimerNotRunningException } from '../exceptions';
 import { TimeCalculationService } from './time-calculation.service';
 import { TimeEntriesService } from './time-entries.service';
 import { TimeSettingsService } from './time-settings.service';
-import { TimerAlreadyRunningException, TimerNotRunningException } from '../exceptions';
 
 /**
  * Concurrent update tests for TimeEntriesService

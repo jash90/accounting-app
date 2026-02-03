@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { User } from '@accounting/common';
 import {
@@ -17,6 +18,7 @@ import {
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
+
 import { CreateTaskDependencyDto } from '../dto/task-dependency.dto';
 import {
   TaskDependencyResponseDto,

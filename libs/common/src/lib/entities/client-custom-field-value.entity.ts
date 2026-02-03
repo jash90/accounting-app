@@ -1,16 +1,17 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
   Unique,
+  UpdateDateColumn,
 } from 'typeorm';
-import { Client } from './client.entity';
+
 import { ClientFieldDefinition } from './client-field-definition.entity';
+import { Client } from './client.entity';
 import { Company } from './company.entity';
 
 @Entity('client_custom_field_values')

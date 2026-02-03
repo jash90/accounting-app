@@ -8,10 +8,11 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { ReliefType } from '../enums/relief-type.enum';
+
 import { Client } from './client.entity';
 import { Company } from './company.entity';
 import { User } from './user.entity';
+import { ReliefType } from '../enums/relief-type.enum';
 
 /**
  * Entity tracking client relief periods (ulgi).

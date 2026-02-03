@@ -36,8 +36,8 @@ A full-stack multi-tenant SaaS application featuring Role-Based Access Control (
 
 ## ✨ Key Features
 
-| Feature                 | Description                                       |
-| ----------------------- | ------------------------------------------------- |
+| Feature                  | Description                                       |
+| ------------------------ | ------------------------------------------------- |
 | 🔐 **Authentication**    | JWT with secure refresh token rotation            |
 | 👥 **Multi-tenancy**     | Complete data isolation between companies         |
 | 🛡️ **RBAC**              | Three-tier roles with granular module permissions |

@@ -1,6 +1,7 @@
+import { Monitor, Palette } from 'lucide-react';
+
 import { PageHeader } from '@/components/common/page-header';
 import { ThemeModeToggle, ThemeSelector } from '@/components/theme';
-import { Monitor, Palette } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function AppearanceSettingsPage() {

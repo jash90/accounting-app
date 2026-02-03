@@ -1,6 +1,3 @@
-import { TimerWidget } from '@/components/time-tracking';
-import { useAuthContext } from '@/contexts/auth-context';
-import { UserRole } from '@/types/enums';
 import {
   BarChart3,
   Calendar,
@@ -12,9 +9,14 @@ import {
   Timer,
   TrendingUp,
 } from 'lucide-react';
-import { useActiveTimer, useTimeEntries } from '@/lib/hooks/use-time-tracking';
+
+import { TimerWidget } from '@/components/time-tracking';
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
+import { useAuthContext } from '@/contexts/auth-context';
+import { useActiveTimer, useTimeEntries } from '@/lib/hooks/use-time-tracking';
+import { UserRole } from '@/types/enums';
+
 
 export default function TimeTrackingDashboardPage() {
   const { user } = useAuthContext();

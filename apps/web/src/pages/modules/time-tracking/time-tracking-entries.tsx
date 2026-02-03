@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
-import { ArrowLeft, Clock, Plus, List, Calendar, CalendarDays } from 'lucide-react';
+import { ArrowLeft, Calendar, CalendarDays, Clock, List, Plus } from 'lucide-react';
 
 import { PageHeader } from '@/components/common/page-header';
 import { TimeEntriesList, TimeEntryFormDialog, TimerWidget } from '@/components/time-tracking';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import { UserRole } from '@/types/enums';
+
 
 export default function TimeTrackingEntriesPage() {
   const { user } = useAuthContext();

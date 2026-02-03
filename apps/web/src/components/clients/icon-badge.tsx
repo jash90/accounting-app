@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils/cn';
 import { type ClientIcon } from '@/types/entities';
 import { IconType } from '@/types/enums';
 
+
 interface IconBadgeProps {
   icon: ClientIcon;
   size?: 'sm' | 'md' | 'lg';

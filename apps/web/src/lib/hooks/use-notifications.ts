@@ -8,6 +8,7 @@ import type {
   UpdateNotificationSettingsDto,
 } from '@/types/notifications';
 
+
 import { notificationsApi, notificationSettingsApi } from '../api/endpoints/notifications';
 import { queryKeys } from '../api/query-client';
 

@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { IsEmail, IsString, IsNotEmpty, MinLength, ValidateIf } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, ValidateIf } from 'class-validator';
 
 /**
  * DTO for sending emails.

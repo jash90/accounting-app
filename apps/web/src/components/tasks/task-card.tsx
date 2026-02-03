@@ -4,7 +4,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { Calendar, MessageSquare, Link2, GripVertical } from 'lucide-react';
+import { Calendar, GripVertical, Link2, MessageSquare } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';

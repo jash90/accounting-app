@@ -1,4 +1,4 @@
-import { TimeRoundingMethod, DefaultRoundingInterval } from '@accounting/common';
+import { DefaultRoundingInterval, TimeRoundingMethod } from '@accounting/common';
 
 import { TimeCalculationService } from './time-calculation.service';
 

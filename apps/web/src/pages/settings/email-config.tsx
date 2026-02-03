@@ -1,7 +1,15 @@
 import { useState } from 'react';
+
+import { Edit, Lock, Mail, Plus, Server, Trash2 } from 'lucide-react';
+
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { PageHeader } from '@/components/common/page-header';
-import { Edit, Lock, Mail, Plus, Server, Trash2 } from 'lucide-react';
+import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/components/ui/use-toast';
 import {
   useCreateUserEmailConfig,
   useDeleteUserEmailConfig,
@@ -14,12 +22,6 @@ import {
   type CreateEmailConfigFormData,
   type UpdateEmailConfigFormData,
 } from '@/lib/validation/schemas';
-import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/components/ui/use-toast';
 
 export default function UserEmailConfigPage() {
   const { data: emailConfig, isPending, isError, error } = useUserEmailConfig();
