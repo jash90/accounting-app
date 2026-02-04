@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+
 import { useMutation, useQuery, useQueryClient, type Query } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
@@ -255,9 +257,20 @@ export function useBulkUpdateStatus() {
   return useMutation({
     mutationFn: (bulkData: BulkUpdateStatusDto) => tasksApi.bulkUpdateStatus(bulkData),
     onSuccess: (_, variables) => {
-      // Invalidate detail queries for affected tasks
-      variables.taskIds.forEach((id) => {
-        queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(id) });
+      // Batch invalidation using Set predicate - O(1) vs O(n) individual calls
+      // This single predicate call replaces the previous forEach loop
+      const affectedTaskIds = new Set(variables.taskIds);
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return (
+            Array.isArray(key) &&
+            key[0] === 'tasks' &&
+            key[1] === 'detail' &&
+            typeof key[2] === 'string' &&
+            affectedTaskIds.has(key[2])
+          );
+        },
       });
       // Invalidate all task view queries (list, kanban, calendar) in one predicate call
       queryClient.invalidateQueries({ predicate: isTaskViewQuery });
@@ -280,10 +293,38 @@ export function useBulkUpdateStatus() {
 // Task Label Hooks
 // ============================================
 
+/**
+ * Stabilize filter object for consistent query key serialization.
+ * Returns undefined for empty/undefined queries to ensure deduplication.
+ */
+function stableTaskLabelFilterKey(query?: TaskLabelQueryDto): TaskLabelQueryDto | undefined {
+  if (!query) return undefined;
+  // Only include defined properties to ensure stable serialization
+  const stable: Partial<TaskLabelQueryDto> = {};
+  if (query.search !== undefined) stable.search = query.search;
+  if (query.isActive !== undefined) stable.isActive = query.isActive;
+  return Object.keys(stable).length > 0 ? (stable as TaskLabelQueryDto) : undefined;
+}
+
 export function useTaskLabels(query?: TaskLabelQueryDto) {
+  // Memoize the stable query key based on primitive values to prevent
+  // unnecessary query refetches when the parent component re-renders
+  // with a new object reference containing the same values.
+  // ESLint exhaustive-deps rule disabled intentionally:
+  // We depend on primitive values (search, isActive) rather than the query object reference.
+  // This is necessary because parent components may pass inline objects that create new
+  // references on every render, even when the actual values haven't changed.
+  // By depending on primitive values, we only recalculate when actual filter values change.
+  const stableQuery = useMemo(
+    () => stableTaskLabelFilterKey(query),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [query?.search, query?.isActive]
+  );
+
   return useQuery({
-    queryKey: [...queryKeys.taskLabels.all, query],
-    queryFn: () => taskLabelsApi.getAll(query),
+    queryKey: queryKeys.taskLabels.list(stableQuery),
+    // Use stableQuery in queryFn to ensure consistency with queryKey
+    queryFn: () => taskLabelsApi.getAll(stableQuery),
     ...TASK_LOOKUP_CACHE,
   });
 }

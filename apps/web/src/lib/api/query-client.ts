@@ -30,7 +30,8 @@ export const queryClient = new QueryClient({
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime)
-      refetchOnWindowFocus: false,
+      // Keep default refetchOnWindowFocus: true for data freshness
+      // Override per-query where real-time updates aren't needed
       retry: 1,
     },
     mutations: {
@@ -147,6 +148,7 @@ export const queryKeys = {
   },
   taskLabels: {
     all: ['task-labels'] as const,
+    list: (filters?: unknown) => ['task-labels', 'list', stableFilterKey(filters)] as const,
     detail: (id: string) => ['task-labels', id] as const,
     byTask: (taskId: string) => ['task-labels', 'by-task', taskId] as const,
   },
@@ -183,7 +185,7 @@ export const queryKeys = {
   },
   settlements: {
     all: ['settlements'] as const,
-    list: (filters?: Record<string, unknown>) => ['settlements', 'list', filters] as const,
+    list: (filters?: unknown) => ['settlements', 'list', stableFilterKey(filters)] as const,
     detail: (id: string) => ['settlements', id] as const,
     stats: {
       overview: (month: number, year: number) =>
@@ -193,5 +195,10 @@ export const queryKeys = {
       my: (month: number, year: number) => ['settlements', 'stats', 'my', month, year] as const,
     },
     comments: (settlementId: string) => ['settlements', settlementId, 'comments'] as const,
+    assignableUsers: {
+      bySettlement: (settlementId: string) =>
+        ['settlements', 'assignable-users', settlementId] as const,
+      all: ['settlements', 'assignable-users', 'all'] as const,
+    },
   },
 };
