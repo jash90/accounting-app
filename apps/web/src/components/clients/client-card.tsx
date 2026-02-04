@@ -1,17 +1,7 @@
 import { memo, useCallback, useMemo } from 'react';
+
 import { useNavigate } from 'react-router-dom';
 
-import { IconBadgeList } from '@/components/clients/icon-badge';
-import { cn } from '@/lib/utils/cn';
-import { type ClientResponseDto } from '@/types/dtos';
-import { type ClientFieldDefinition } from '@/types/entities';
-import {
-  CustomFieldType,
-  EmploymentTypeLabels,
-  TaxSchemeLabels,
-  VatStatus,
-  VatStatusLabels,
-} from '@/types/enums';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
@@ -26,6 +16,7 @@ import {
   Trash2,
 } from 'lucide-react';
 
+import { IconBadgeList } from '@/components/clients/icon-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -37,6 +28,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils/cn';
+import { type ClientResponseDto } from '@/types/dtos';
+import { type ClientFieldDefinition } from '@/types/entities';
+import {
+  CustomFieldType,
+  EmploymentTypeLabels,
+  TaxSchemeLabels,
+  VatStatus,
+  VatStatusLabels,
+} from '@/types/enums';
 
 // Hoisted empty arrays to prevent re-renders from new reference creation
 const EMPTY_FIELD_DEFINITIONS: ClientFieldDefinition[] = [];
@@ -76,10 +77,13 @@ export const ClientCard = memo(function ClientCard({
 }: ClientCardProps) {
   const navigate = useNavigate();
 
+  // Use Set for O(1) lookup instead of Array.includes O(n)
+  const visibleColumnsSet = useMemo(() => new Set(visibleColumns), [visibleColumns]);
+
   // Filter custom fields that are visible - memoized to prevent recalculation
   const visibleCustomFields = useMemo(
-    () => fieldDefinitions.filter((field) => visibleColumns.includes(`customField_${field.id}`)),
-    [fieldDefinitions, visibleColumns]
+    () => fieldDefinitions.filter((field) => visibleColumnsSet.has(`customField_${field.id}`)),
+    [fieldDefinitions, visibleColumnsSet]
   );
 
   // Get custom field value by definition id - memoized callback

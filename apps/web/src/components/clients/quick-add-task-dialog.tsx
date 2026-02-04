@@ -1,15 +1,10 @@
 import { useForm } from 'react-hook-form';
 
-import { cn } from '@/lib/utils/cn';
-import { type CreateTaskDto } from '@/types/dtos';
-import { TaskPriority, TaskPriorityLabels } from '@/types/enums';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { Building2, CalendarIcon, Loader2 } from 'lucide-react';
 
-import { queryKeys } from '@/lib/api/query-client';
-import { useCreateTask, useTaskAssignees } from '@/lib/hooks/use-tasks';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -30,6 +25,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { queryKeys } from '@/lib/api/query-client';
+import { useCreateTask, useTaskAssignees } from '@/lib/hooks/use-tasks';
+import { cn } from '@/lib/utils/cn';
+import { type CreateTaskDto } from '@/types/dtos';
+import { TaskPriority, TaskPriorityLabels } from '@/types/enums';
 
 interface QuickAddTaskDialogProps {
   open: boolean;

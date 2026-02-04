@@ -13,11 +13,6 @@ import {
   User,
 } from 'lucide-react';
 
-import { ClientChangelog } from '@/components/clients/client-changelog';
-import { ClientTaskStatistics } from '@/components/clients/client-task-statistics';
-import { ClientTasksList } from '@/components/clients/client-tasks-list';
-import { ReliefPeriodsCard } from '@/components/clients/relief-periods-card';
-import { SuspensionHistoryCard } from '@/components/clients/suspension-history-card';
 import { ErrorBoundary } from '@/components/common/error-boundary';
 import { type ClientReliefsData } from '@/components/forms/client-form-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -50,6 +45,34 @@ import {
   VatStatusLabels,
   ZusStatusLabels,
 } from '@/types/enums';
+
+// Lazy-load conditionally rendered sidebar components for better bundle splitting
+// These are only visible on client detail page and often scrolled to
+const ClientChangelog = lazy(() =>
+  import('@/components/clients/client-changelog').then((m) => ({
+    default: m.ClientChangelog,
+  }))
+);
+const ClientTaskStatistics = lazy(() =>
+  import('@/components/clients/client-task-statistics').then((m) => ({
+    default: m.ClientTaskStatistics,
+  }))
+);
+const ClientTasksList = lazy(() =>
+  import('@/components/clients/client-tasks-list').then((m) => ({
+    default: m.ClientTasksList,
+  }))
+);
+const ReliefPeriodsCard = lazy(() =>
+  import('@/components/clients/relief-periods-card').then((m) => ({
+    default: m.ReliefPeriodsCard,
+  }))
+);
+const SuspensionHistoryCard = lazy(() =>
+  import('@/components/clients/suspension-history-card').then((m) => ({
+    default: m.SuspensionHistoryCard,
+  }))
+);
 
 // Lazy-load heavy form dialog (976 lines) - only loaded when edit button is clicked
 const ClientFormDialog = lazy(() =>
@@ -208,7 +231,9 @@ function ClientDetailContent() {
         try {
           await Promise.all(operations);
         } catch (error) {
-          console.error('Failed to update relief periods:', error);
+          if (import.meta.env.DEV) {
+            console.error('Failed to update relief periods:', error);
+          }
           // Error notification handled by mutation's onError
         }
       }
@@ -432,7 +457,9 @@ function ClientDetailContent() {
           </Card>
 
           {/* Client Tasks */}
-          <ClientTasksList clientId={clientId} clientName={client.name} />
+          <Suspense fallback={<Skeleton className="h-48" />}>
+            <ClientTasksList clientId={clientId} clientName={client.name} />
+          </Suspense>
 
           {/* Custom Fields */}
           {customFieldValues.length > 0 && (
@@ -497,11 +524,19 @@ function ClientDetailContent() {
         </div>
 
         <div className="space-y-6">
-          <ClientTaskStatistics clientId={clientId} />
-          <ReliefPeriodsCard clientId={clientId} />
-          <SuspensionHistoryCard clientId={clientId} />
+          <Suspense fallback={<Skeleton className="h-32" />}>
+            <ClientTaskStatistics clientId={clientId} />
+          </Suspense>
+          <Suspense fallback={<Skeleton className="h-32" />}>
+            <ReliefPeriodsCard clientId={clientId} />
+          </Suspense>
+          <Suspense fallback={<Skeleton className="h-32" />}>
+            <SuspensionHistoryCard clientId={clientId} />
+          </Suspense>
           <div id="changelog">
-            <ClientChangelog clientId={id} />
+            <Suspense fallback={<Skeleton className="h-48" />}>
+              <ClientChangelog clientId={id} />
+            </Suspense>
           </div>
         </div>
       </div>
@@ -562,7 +597,9 @@ function ClientDetailContent() {
                       try {
                         await Promise.all(operations);
                       } catch (error) {
-                        console.error('Failed to update client data:', error);
+                        if (import.meta.env.DEV) {
+                          console.error('Failed to update client data:', error);
+                        }
                         // Error notification handled by mutation's onError
                       }
                     }
@@ -570,7 +607,9 @@ function ClientDetailContent() {
                     setEditOpen(false);
                   },
                   onError: (error) => {
-                    console.error('Failed to update client:', error);
+                    if (import.meta.env.DEV) {
+                      console.error('Failed to update client:', error);
+                    }
                     // Error notification handled by mutation's onError
                   },
                 }

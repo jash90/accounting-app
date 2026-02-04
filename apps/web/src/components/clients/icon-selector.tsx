@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { IconTypeLabels } from '@/lib/constants/polish-labels';
-import { cn } from '@/lib/utils/cn';
-import { ICON_REGISTRY, type LucideIconComponent } from '@/lib/utils/lucide-icon-registry';
-import { IconType } from '@/types/enums';
 import { Circle, Image, Palette, Shapes, Upload } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -11,6 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { IconTypeLabels } from '@/lib/constants/polish-labels';
+import { cn } from '@/lib/utils/cn';
+import { ICON_REGISTRY, type LucideIconComponent } from '@/lib/utils/lucide-icon-registry';
+import { IconType } from '@/types/enums';
 
 // Popular Lucide icons for quick selection - these must match keys in ICON_REGISTRY
 const POPULAR_LUCIDE_ICONS = [
