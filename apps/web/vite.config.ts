@@ -38,9 +38,19 @@ export default defineConfig({
 
   // Dependency optimization configuration
   optimizeDeps: {
-    // Pre-bundle lucide-react to avoid loading all 1,583 modules on cold start
-    // This reduces initial load time by 200-800ms
-    include: ['lucide-react'],
+    // Pre-bundle large packages to reduce cold start time by 200-800ms
+    // lucide-react: 1,583 modules → pre-bundled
+    // @radix-ui packages: Each has 10-20 internal modules, used heavily in shadcn/ui
+    include: [
+      'lucide-react',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-select',
+      '@radix-ui/react-popover',
+      '@radix-ui/react-tooltip',
+      '@radix-ui/react-checkbox',
+      '@radix-ui/react-radio-group',
+    ],
     exclude: [
       '@nestjs/mapped-types',
       'class-transformer',

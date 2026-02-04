@@ -75,7 +75,9 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
         const state: StoredSidebarState = { version: STORAGE_VERSION, isOpen };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       } catch (error) {
-        console.error('Failed to save sidebar state:', error);
+        if (import.meta.env.DEV) {
+          console.error('Failed to save sidebar state:', error);
+        }
       }
     }
   }, [isOpen]);

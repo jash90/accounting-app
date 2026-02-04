@@ -1,6 +1,6 @@
-import { lazy, Suspense } from 'react';
+import { lazy, memo, Suspense } from 'react';
 
-import { Navigate, Route, Routes as RouterRoutes } from 'react-router-dom';
+import { Navigate, Route, Routes as RouterRoutes, useLocation } from 'react-router-dom';
 
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
@@ -147,10 +147,13 @@ function LazyRouteErrorFallback() {
 /**
  * Wrapper component that adds error boundary around lazy-loaded routes.
  * Catches chunk load failures and shows a retry UI.
+ * Auto-resets when navigating to a different route via resetKeys.
  */
 function LazyRoute({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+
   return (
-    <ErrorBoundary fallback={<LazyRouteErrorFallback />}>
+    <ErrorBoundary fallback={<LazyRouteErrorFallback />} resetKeys={[location.pathname]}>
       <Suspense fallback={<PageLoader />}>{children}</Suspense>
     </ErrorBoundary>
   );
@@ -171,8 +174,9 @@ function Unauthorized() {
   );
 }
 
-// Protected Route Component
-function ProtectedRoute({
+// Protected Route Component - memoized to prevent unnecessary re-renders
+// when auth context updates (e.g., token refresh) but auth state hasn't changed
+const ProtectedRoute = memo(function ProtectedRoute({
   children,
   allowedRoles,
 }: {
@@ -194,7 +198,7 @@ function ProtectedRoute({
   }
 
   return <>{children}</>;
-}
+});
 
 export default function Routes() {
   return (
@@ -520,49 +524,49 @@ export default function Routes() {
         <Route
           path="modules/settlements"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <SettlementsDashboardPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/settlements/list"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <SettlementsListPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/settlements/:id/comments"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <SettlementCommentsPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/settlements/:id/assign"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <SettlementAssignPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/settlements/team"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <SettlementsTeamPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/settlements/settings"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <SettlementsSettingsPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
       </Route>
@@ -862,49 +866,49 @@ export default function Routes() {
         <Route
           path="modules/settlements"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <SettlementsDashboardPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/settlements/list"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <SettlementsListPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/settlements/:id/comments"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <SettlementCommentsPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/settlements/:id/assign"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <SettlementAssignPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/settlements/team"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <SettlementsTeamPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/settlements/settings"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <SettlementsSettingsPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
       </Route>
@@ -1147,25 +1151,25 @@ export default function Routes() {
         <Route
           path="settlements"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <SettlementsDashboardPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="settlements/list"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <SettlementsListPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="settlements/:id/comments"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <SettlementCommentsPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
       </Route>
