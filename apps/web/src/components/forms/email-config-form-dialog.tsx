@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useMemo } from 'react';
 
 import { useForm } from 'react-hook-form';
 
@@ -60,41 +60,11 @@ export function EmailConfigFormDialog({
   const isEditing = !!config;
   const schema = isEditing ? updateEmailConfigSchema : createEmailConfigSchema;
 
-  const form = useForm<CreateEmailConfigFormData | UpdateEmailConfigFormData>({
-    resolver: zodResolver(schema),
-    defaultValues: config
-      ? {
-          smtpHost: config.smtpHost,
-          smtpPort: config.smtpPort,
-          smtpSecure: config.smtpSecure,
-          smtpUser: config.smtpUser,
-          smtpPassword: '', // Never pre-fill passwords
-          imapHost: config.imapHost,
-          imapPort: config.imapPort,
-          imapTls: config.imapTls,
-          imapUser: config.imapUser,
-          imapPassword: '', // Never pre-fill passwords
-          displayName: config.displayName,
-        }
-      : {
-          smtpHost: '',
-          smtpPort: 465,
-          smtpSecure: true,
-          smtpUser: '',
-          smtpPassword: '',
-          imapHost: '',
-          imapPort: 993,
-          imapTls: true,
-          imapUser: '',
-          imapPassword: '',
-          displayName: '',
-        },
-  });
-
-  // Reset form when dialog opens with config data
-  useEffect(() => {
-    if (open && config) {
-      form.reset({
+  // Compute form values synchronously - avoids useEffect render cycle
+  // react-hook-form's `values` prop syncs external values without extra re-renders
+  const formValues = useMemo((): CreateEmailConfigFormData | UpdateEmailConfigFormData => {
+    if (config) {
+      return {
         smtpHost: config.smtpHost,
         smtpPort: config.smtpPort,
         smtpSecure: config.smtpSecure,
@@ -106,23 +76,30 @@ export function EmailConfigFormDialog({
         imapUser: config.imapUser,
         imapPassword: '', // Never pre-fill passwords
         displayName: config.displayName,
-      });
-    } else if (open && !config) {
-      form.reset({
-        smtpHost: '',
-        smtpPort: 465,
-        smtpSecure: true,
-        smtpUser: '',
-        smtpPassword: '',
-        imapHost: '',
-        imapPort: 993,
-        imapTls: true,
-        imapUser: '',
-        imapPassword: '',
-        displayName: '',
-      });
+      };
     }
-  }, [open, config, form]);
+    return {
+      smtpHost: '',
+      smtpPort: 465,
+      smtpSecure: true,
+      smtpUser: '',
+      smtpPassword: '',
+      imapHost: '',
+      imapPort: 993,
+      imapTls: true,
+      imapUser: '',
+      imapPassword: '',
+      displayName: '',
+    };
+  }, [config]);
+
+  const form = useForm<CreateEmailConfigFormData | UpdateEmailConfigFormData>({
+    resolver: zodResolver(schema),
+    values: formValues, // Syncs values without useEffect - reduces render cycles
+    resetOptions: {
+      keepDirtyValues: false, // Reset all values when formValues changes
+    },
+  });
 
   const handleSubmit = (data: CreateEmailConfigFormData | UpdateEmailConfigFormData) => {
     // Note: Form reset is handled by parent closing dialog on success
@@ -174,19 +151,21 @@ export function EmailConfigFormDialog({
     });
   };
 
-  const canTestSmtp = !!(
-    form.watch('smtpHost') &&
-    form.watch('smtpPort') &&
-    form.watch('smtpUser') &&
-    form.watch('smtpPassword')
-  );
+  // Consolidate watch calls to prevent multiple subscriptions causing re-renders
+  const [smtpHost, smtpPort, smtpUser, smtpPassword, imapHost, imapPort, imapUser, imapPassword] =
+    form.watch([
+      'smtpHost',
+      'smtpPort',
+      'smtpUser',
+      'smtpPassword',
+      'imapHost',
+      'imapPort',
+      'imapUser',
+      'imapPassword',
+    ]);
 
-  const canTestImap = !!(
-    form.watch('imapHost') &&
-    form.watch('imapPort') &&
-    form.watch('imapUser') &&
-    form.watch('imapPassword')
-  );
+  const canTestSmtp = !!(smtpHost && smtpPort && smtpUser && smtpPassword);
+  const canTestImap = !!(imapHost && imapPort && imapUser && imapPassword);
 
   const getTitle = () => {
     switch (type) {
@@ -292,7 +271,7 @@ export function EmailConfigFormDialog({
                 />
               </div>
 
-              {(form.watch('smtpPort') === 465 || form.watch('smtpPort') === 587) && (
+              {(smtpPort === 465 || smtpPort === 587) && (
                 <Alert className="border-amber-200 bg-amber-50">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-sm text-amber-800">
@@ -428,7 +407,7 @@ export function EmailConfigFormDialog({
                 />
               </div>
 
-              {form.watch('imapPort') === 993 && (
+              {imapPort === 993 && (
                 <Alert className="border-amber-200 bg-amber-50">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-sm text-amber-800">

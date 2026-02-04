@@ -4,7 +4,8 @@ import { parseISO } from 'date-fns';
 import { ArrowLeft, Calendar, CalendarDays, List } from 'lucide-react';
 
 import { PageHeader } from '@/components/common/page-header';
-import { DailyTimesheet, TimerWidget } from '@/components/time-tracking';
+import { DailyTimesheet } from '@/components/time-tracking/daily-timesheet';
+import { TimerWidget } from '@/components/time-tracking/timer-widget';
 import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/contexts/auth-context';
 import { UserRole } from '@/types/enums';

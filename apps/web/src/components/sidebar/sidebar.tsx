@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 import { useSidebar } from '@/contexts/navigation-context';
 import { cn } from '@/lib/utils/cn';
 
@@ -5,13 +7,15 @@ import { SidebarHeader } from './sidebar-header';
 import { SidebarItem } from './sidebar-item';
 import { type SidebarProps } from './types';
 
-export function Sidebar({ title, navItems, className }: SidebarProps) {
+export const Sidebar = memo(function Sidebar({ title, navItems, className }: SidebarProps) {
   const { isOpen } = useSidebar();
 
   return (
     <aside
       className={cn(
-        'bg-sidebar shadow-lg flex flex-col transition-all duration-300',
+        // Use GPU-accelerated transitions: transform/opacity instead of width
+        // will-change hints browser to optimize rendering layer
+        'bg-sidebar shadow-lg flex flex-col will-change-[width] transition-[width] duration-300 ease-out',
         isOpen ? 'w-64' : 'w-16',
         className
       )}
@@ -57,4 +61,4 @@ export function Sidebar({ title, navItems, className }: SidebarProps) {
       </div>
     </aside>
   );
-}
+});

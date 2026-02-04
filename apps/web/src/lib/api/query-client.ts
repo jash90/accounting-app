@@ -1,5 +1,30 @@
 import { QueryClient } from '@tanstack/react-query';
 
+/**
+ * Create a stable string representation of filter objects for query keys.
+ * This prevents cache misses caused by object reference changes when filter
+ * values are the same but the object reference is different.
+ *
+ * Filters out undefined/null values before serialization to ensure consistent
+ * cache keys (e.g., { a: 1, b: undefined } serializes same as { a: 1 }).
+ */
+export function stableFilterKey(filters?: unknown): string | undefined {
+  if (!filters) return undefined;
+
+  // Filter out undefined/null values for consistent serialization
+  const cleanedFilters = Object.fromEntries(
+    Object.entries(filters as Record<string, unknown>).filter(
+      ([, value]) => value !== undefined && value !== null
+    )
+  );
+
+  // Return undefined if all values were filtered out
+  if (Object.keys(cleanedFilters).length === 0) return undefined;
+
+  // Sort object keys for consistent serialization regardless of property order
+  return JSON.stringify(cleanedFilters, Object.keys(cleanedFilters).sort());
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -35,6 +60,7 @@ export const queryKeys = {
   },
   permissions: {
     byEmployee: (employeeId: string) => ['permissions', 'employee', employeeId] as const,
+    companyModules: ['company', 'modules'] as const,
   },
   aiAgent: {
     conversations: {
@@ -64,7 +90,7 @@ export const queryKeys = {
   },
   clients: {
     all: ['clients'] as const,
-    list: (filters?: Record<string, unknown>) => ['clients', 'list', filters] as const,
+    list: (filters?: unknown) => ['clients', 'list', stableFilterKey(filters)] as const,
     detail: (id: string) => ['clients', id] as const,
     changelog: (clientId: string) => ['clients', clientId, 'changelog'] as const,
     icons: (clientId: string) => ['clients', clientId, 'icons'] as const,
@@ -83,10 +109,13 @@ export const queryKeys = {
   },
   clientFieldDefinitions: {
     all: ['client-field-definitions'] as const,
+    list: (filters?: unknown) =>
+      ['client-field-definitions', 'list', stableFilterKey(filters)] as const,
     detail: (id: string) => ['client-field-definitions', id] as const,
   },
   clientIcons: {
     all: ['client-icons'] as const,
+    list: (filters?: unknown) => ['client-icons', 'list', stableFilterKey(filters)] as const,
     detail: (id: string) => ['client-icons', id] as const,
     byClient: (clientId: string) => ['client-icons', 'by-client', clientId] as const,
   },
@@ -103,10 +132,12 @@ export const queryKeys = {
   },
   tasks: {
     all: ['tasks'] as const,
-    list: (filters?: Record<string, unknown>) => ['tasks', 'list', filters] as const,
+    list: (filters?: unknown) => ['tasks', 'list', stableFilterKey(filters)] as const,
     detail: (id: string) => ['tasks', id] as const,
-    kanban: (filters?: Record<string, unknown>) => ['tasks', 'kanban', filters] as const,
-    calendar: (params?: Record<string, unknown>) => ['tasks', 'calendar', params] as const,
+    kanban: (filters?: Record<string, unknown>) =>
+      ['tasks', 'kanban', stableFilterKey(filters)] as const,
+    calendar: (params?: Record<string, unknown>) =>
+      ['tasks', 'calendar', stableFilterKey(params)] as const,
     subtasks: (taskId: string) => ['tasks', taskId, 'subtasks'] as const,
     comments: (taskId: string) => ['tasks', taskId, 'comments'] as const,
     dependencies: (taskId: string) => ['tasks', taskId, 'dependencies'] as const,
@@ -122,7 +153,7 @@ export const queryKeys = {
   timeTracking: {
     entries: {
       all: ['time-entries'] as const,
-      list: (filters?: Record<string, unknown>) => ['time-entries', 'list', filters] as const,
+      list: (filters?: unknown) => ['time-entries', 'list', stableFilterKey(filters)] as const,
       detail: (id: string) => ['time-entries', id] as const,
     },
     timer: {
@@ -134,16 +165,18 @@ export const queryKeys = {
       weekly: (date: string) => ['timesheet', 'weekly', date] as const,
     },
     reports: {
-      summary: (params?: Record<string, unknown>) => ['time-reports', 'summary', params] as const,
+      summary: (params?: Record<string, unknown>) =>
+        ['time-reports', 'summary', stableFilterKey(params)] as const,
       byClient: (params?: Record<string, unknown>) =>
-        ['time-reports', 'by-client', params] as const,
+        ['time-reports', 'by-client', stableFilterKey(params)] as const,
     },
   },
   notifications: {
     all: ['notifications'] as const,
-    list: (filters?: Record<string, unknown>) => ['notifications', 'list', filters] as const,
+    list: (filters?: Record<string, unknown>) =>
+      ['notifications', 'list', stableFilterKey(filters)] as const,
     archived: (filters?: Record<string, unknown>) =>
-      ['notifications', 'archived', filters] as const,
+      ['notifications', 'archived', stableFilterKey(filters)] as const,
     detail: (id: string) => ['notifications', id] as const,
     unreadCount: ['notifications', 'unread-count'] as const,
     settings: ['notifications', 'settings'] as const,

@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+
 import {
   BarChart3,
   Calendar,
@@ -10,7 +12,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
-import { TimerWidget } from '@/components/time-tracking';
+import { TimerWidget } from '@/components/time-tracking/timer-widget';
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
@@ -23,20 +25,27 @@ export default function TimeTrackingDashboardPage() {
   const { data: entriesData, isPending: entriesLoading } = useTimeEntries({ limit: 100 });
   const { data: activeTimer } = useActiveTimer();
 
-  const entries = entriesData?.data ?? [];
-
-  // Calculate statistics
-  const totalEntries = entries.length;
-  const runningEntries = entries.filter((e) => e.isRunning).length;
-  const billableMinutes = entries
-    .filter((e) => e.isBillable && !e.isRunning)
-    .reduce((sum, e) => sum + (e.durationMinutes || 0), 0);
-  const totalAmount = entries
-    .filter((e) => !e.isRunning)
-    .reduce((sum, e) => {
-      const amount = e.totalAmount != null ? parseFloat(String(e.totalAmount)) : 0;
-      return sum + (isNaN(amount) ? 0 : amount);
-    }, 0);
+  // Calculate statistics - memoized to prevent recalculation on every render
+  const { totalEntries, runningEntries, billableMinutes, totalAmount } = useMemo(() => {
+    const entries = entriesData?.data ?? [];
+    const total = entries.length;
+    const running = entries.filter((e) => e.isRunning).length;
+    const billable = entries
+      .filter((e) => e.isBillable && !e.isRunning)
+      .reduce((sum, e) => sum + (e.durationMinutes || 0), 0);
+    const amount = entries
+      .filter((e) => !e.isRunning)
+      .reduce((sum, e) => {
+        const amt = e.totalAmount != null ? parseFloat(String(e.totalAmount)) : 0;
+        return sum + (isNaN(amt) ? 0 : amt);
+      }, 0);
+    return {
+      totalEntries: total,
+      runningEntries: running,
+      billableMinutes: billable,
+      totalAmount: amount,
+    };
+  }, [entriesData?.data]);
 
   // Determine the base path based on user role
   const getBasePath = () => {

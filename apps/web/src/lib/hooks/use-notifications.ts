@@ -12,6 +12,28 @@ import type {
 import { notificationsApi, notificationSettingsApi } from '../api/endpoints/notifications';
 import { queryKeys } from '../api/query-client';
 
+// ============================================
+// Cache Time Constants
+// ============================================
+
+/** Cache times for notification list views */
+const NOTIFICATION_LIST_CACHE = {
+  staleTime: 30 * 1000, // 30 seconds - notifications should refresh often
+  gcTime: 5 * 60 * 1000, // 5 minutes
+};
+
+/** Cache times for notification detail views */
+const NOTIFICATION_DETAIL_CACHE = {
+  staleTime: 60 * 1000, // 1 minute
+  gcTime: 10 * 60 * 1000, // 10 minutes
+};
+
+/** Cache times for notification settings - changes infrequently */
+const NOTIFICATION_SETTINGS_CACHE = {
+  staleTime: 5 * 60 * 1000, // 5 minutes
+  gcTime: 10 * 60 * 1000, // 10 minutes
+};
+
 /**
  * Converts NotificationFiltersDto to a query-key safe Record.
  * This provides type safety while ensuring the filter values are
@@ -36,6 +58,7 @@ export function useNotifications(filters?: NotificationFiltersDto) {
   return useQuery({
     queryKey: queryKeys.notifications.list(toQueryKeyFilters(filters)),
     queryFn: () => notificationsApi.getAll(filters),
+    ...NOTIFICATION_LIST_CACHE,
   });
 }
 
@@ -43,6 +66,7 @@ export function useArchivedNotifications(filters?: NotificationFiltersDto) {
   return useQuery({
     queryKey: queryKeys.notifications.archived(toQueryKeyFilters(filters)),
     queryFn: () => notificationsApi.getArchived(filters),
+    ...NOTIFICATION_LIST_CACHE,
   });
 }
 
@@ -51,6 +75,7 @@ export function useNotification(id: string) {
     queryKey: queryKeys.notifications.detail(id),
     queryFn: () => notificationsApi.getById(id),
     enabled: !!id,
+    ...NOTIFICATION_DETAIL_CACHE,
   });
 }
 
@@ -58,7 +83,9 @@ export function useUnreadNotificationCount() {
   return useQuery({
     queryKey: queryKeys.notifications.unreadCount,
     queryFn: () => notificationsApi.getUnreadCount(),
-    refetchInterval: 30000,
+    // No refetchInterval - rely on socket.io real-time updates via NotificationSocketContext
+    // Socket events trigger queryClient.invalidateQueries for unreadCount on notification:new and notification:read
+    ...NOTIFICATION_LIST_CACHE,
   });
 }
 
@@ -69,9 +96,11 @@ export function useMarkNotificationAsRead() {
   return useMutation({
     mutationFn: (id: string) => notificationsApi.markAsRead(id),
     onMutate: async (id) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.notifications.all, exact: false });
-      await queryClient.cancelQueries({ queryKey: queryKeys.notifications.unreadCount });
+      // Cancel any outgoing refetches in parallel
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: queryKeys.notifications.all, exact: false }),
+        queryClient.cancelQueries({ queryKey: queryKeys.notifications.unreadCount }),
+      ]);
 
       // Snapshot current state for rollback
       const previousLists = queryClient.getQueriesData({ queryKey: queryKeys.notifications.all });
@@ -131,9 +160,11 @@ export function useMarkNotificationAsUnread() {
   return useMutation({
     mutationFn: (id: string) => notificationsApi.markAsUnread(id),
     onMutate: async (id) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.notifications.all, exact: false });
-      await queryClient.cancelQueries({ queryKey: queryKeys.notifications.unreadCount });
+      // Cancel any outgoing refetches in parallel
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: queryKeys.notifications.all, exact: false }),
+        queryClient.cancelQueries({ queryKey: queryKeys.notifications.unreadCount }),
+      ]);
 
       // Snapshot current state for rollback
       const previousLists = queryClient.getQueriesData({ queryKey: queryKeys.notifications.all });
@@ -217,9 +248,11 @@ export function useArchiveNotification() {
   return useMutation({
     mutationFn: (id: string) => notificationsApi.archive(id),
     onMutate: async (id) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.notifications.all, exact: false });
-      await queryClient.cancelQueries({ queryKey: queryKeys.notifications.unreadCount });
+      // Cancel any outgoing refetches in parallel
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: queryKeys.notifications.all, exact: false }),
+        queryClient.cancelQueries({ queryKey: queryKeys.notifications.unreadCount }),
+      ]);
 
       // Snapshot current state for rollback
       const previousLists = queryClient.getQueriesData({ queryKey: queryKeys.notifications.all });
@@ -366,6 +399,7 @@ export function useNotificationSettings() {
   return useQuery({
     queryKey: queryKeys.notifications.settings,
     queryFn: () => notificationSettingsApi.getAll(),
+    ...NOTIFICATION_SETTINGS_CACHE,
   });
 }
 
@@ -374,6 +408,7 @@ export function useNotificationSettingsByModule(moduleSlug: string) {
     queryKey: [...queryKeys.notifications.settings, moduleSlug],
     queryFn: () => notificationSettingsApi.getByModule(moduleSlug),
     enabled: !!moduleSlug,
+    ...NOTIFICATION_SETTINGS_CACHE,
   });
 }
 

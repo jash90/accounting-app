@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 
 import { format, formatDistanceToNow } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -38,7 +38,7 @@ interface TimeEntryRowProps {
   onReject: (entry: TimeEntryResponseDto) => void;
 }
 
-export function TimeEntryRow({
+export const TimeEntryRow = memo(function TimeEntryRow({
   entry,
   onEdit,
   onDelete,
@@ -195,4 +195,4 @@ export function TimeEntryRow({
       </div>
     </div>
   );
-}
+});

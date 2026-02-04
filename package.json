@@ -6,7 +6,7 @@
     "build": "nx build api",
     "build:web": "nx build web",
     "test": "bun test apps/api/src",
-    "test:web": "bun test web/src",
+    "test:web": "nx test web",
     "test:e2e": "nx e2e web-e2e",
     "test:integration": "bun test apps/api/src/**/*.integration.spec.ts --timeout 30000",
     "lint": "nx lint api",

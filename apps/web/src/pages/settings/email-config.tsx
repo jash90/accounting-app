@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 
 import { Edit, Lock, Mail, Plus, Server, Trash2 } from 'lucide-react';
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { PageHeader } from '@/components/common/page-header';
-import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +22,17 @@ import {
   type UpdateEmailConfigFormData,
 } from '@/lib/validation/schemas';
 
+// Lazy-load heavy form dialog (533 lines)
+const EmailConfigFormDialog = lazy(() =>
+  import('@/components/forms/email-config-form-dialog').then((m) => ({
+    default: m.EmailConfigFormDialog,
+  }))
+);
+
+// Preload function for form dialog - triggered on mouse enter
+const preloadEmailConfigFormDialog = () => {
+  import('@/components/forms/email-config-form-dialog');
+};
 export default function UserEmailConfigPage() {
   const { data: emailConfig, isPending, isError, error } = useUserEmailConfig();
   const createConfig = useCreateUserEmailConfig();
@@ -86,7 +96,12 @@ export default function UserEmailConfigPage() {
         action={
           hasConfig ? (
             <div className="flex gap-2">
-              <Button onClick={() => setFormOpen(true)} variant="secondary" size="sm">
+              <Button
+                onClick={() => setFormOpen(true)}
+                onMouseEnter={preloadEmailConfigFormDialog}
+                variant="secondary"
+                size="sm"
+              >
                 <Edit className="mr-2 h-4 w-4" />
                 Edit Configuration
               </Button>
@@ -96,7 +111,11 @@ export default function UserEmailConfigPage() {
               </Button>
             </div>
           ) : (
-            <Button onClick={() => setFormOpen(true)} size="sm">
+            <Button
+              onClick={() => setFormOpen(true)}
+              onMouseEnter={preloadEmailConfigFormDialog}
+              size="sm"
+            >
               <Plus className="mr-2 h-4 w-4" />
               Create Configuration
             </Button>
@@ -130,7 +149,11 @@ export default function UserEmailConfigPage() {
                   start sending and receiving emails through the platform.
                 </p>
               </div>
-              <Button onClick={() => setFormOpen(true)} className="mt-4">
+              <Button
+                onClick={() => setFormOpen(true)}
+                onMouseEnter={preloadEmailConfigFormDialog}
+                className="mt-4"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Create Email Configuration
               </Button>
@@ -274,18 +297,35 @@ export default function UserEmailConfigPage() {
         </div>
       )}
 
-      {/* Form Dialog */}
-      <EmailConfigFormDialog
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        config={hasConfig ? emailConfig : undefined}
-        onSubmit={handleSubmit}
-        type="user"
-        onTestSmtp={(data) => testSmtp.mutate(data)}
-        onTestImap={(data) => testImap.mutate(data)}
-        isTestingSmtp={testSmtp.isPending}
-        isTestingImap={testImap.isPending}
-      />
+      {/* Form Dialog - Lazy-loaded with Suspense */}
+      {formOpen && (
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <Card className="w-[400px]">
+                <CardContent className="space-y-4 p-6">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </CardContent>
+              </Card>
+            </div>
+          }
+        >
+          <EmailConfigFormDialog
+            open={formOpen}
+            onOpenChange={setFormOpen}
+            config={hasConfig ? emailConfig : undefined}
+            onSubmit={handleSubmit}
+            type="user"
+            onTestSmtp={(data) => testSmtp.mutate(data)}
+            onTestImap={(data) => testImap.mutate(data)}
+            isTestingSmtp={testSmtp.isPending}
+            isTestingImap={testImap.isPending}
+          />
+        </Suspense>
+      )}
 
       {/* Delete Confirmation */}
       <ConfirmDialog

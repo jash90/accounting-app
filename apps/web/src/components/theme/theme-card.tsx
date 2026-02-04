@@ -1,6 +1,9 @@
+import { memo } from 'react';
+
+import { Check } from 'lucide-react';
+
 import { type Theme } from '@/lib/themes';
 import { cn } from '@/lib/utils/cn';
-import { Check } from 'lucide-react';
 
 interface ThemeCardProps {
   theme: Theme;
@@ -9,7 +12,12 @@ interface ThemeCardProps {
   onSelect: () => void;
 }
 
-export function ThemeCard({ theme, isSelected, colorMode, onSelect }: ThemeCardProps) {
+export const ThemeCard = memo(function ThemeCard({
+  theme,
+  isSelected,
+  colorMode,
+  onSelect,
+}: ThemeCardProps) {
   const preview = theme.preview[colorMode];
 
   return (
@@ -64,4 +72,4 @@ export function ThemeCard({ theme, isSelected, colorMode, onSelect }: ThemeCardP
       </div>
     </button>
   );
-}
+});
