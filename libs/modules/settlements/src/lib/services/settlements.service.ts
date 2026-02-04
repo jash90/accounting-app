@@ -14,6 +14,7 @@ import {
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 
+import { SETTLEMENT_MESSAGES } from '../constants/settlement-messages';
 import {
   AssignSettlementDto,
   BulkAssignDto,
@@ -179,7 +180,7 @@ export class SettlementsService {
               changedAt: new Date().toISOString(),
               changedById: user.id,
               changedByEmail: user.email,
-              notes: 'Automatyczne utworzenie rozliczenia',
+              notes: SETTLEMENT_MESSAGES.AUTO_CREATED,
             },
           ],
         });
@@ -327,7 +328,7 @@ export class SettlementsService {
   async bulkAssign(
     dto: BulkAssignDto,
     user: User
-  ): Promise<{ assigned: number; requested: number }> {
+  ): Promise<{ assigned: number; requested: number; skippedIds: string[] }> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     // Validate assignee
@@ -339,27 +340,124 @@ export class SettlementsService {
       throw new UserNotFoundException(dto.userId, companyId);
     }
 
-    // Get settlements that belong to this company
-    const settlements = await this.settlementRepository.find({
-      where: { id: In(dto.settlementIds), companyId },
+    // First, find which settlements actually exist and belong to this company
+    const existingSettlements = await this.settlementRepository.find({
+      where: {
+        id: In(dto.settlementIds),
+        companyId,
+      },
+      select: ['id'],
     });
 
-    if (settlements.length === 0) {
-      return { assigned: 0, requested: dto.settlementIds.length };
+    const existingIds = new Set(existingSettlements.map((s) => s.id));
+    const skippedIds = dto.settlementIds.filter((id) => !existingIds.has(id));
+
+    if (existingIds.size === 0) {
+      this.logger.warn(
+        `Bulk assign: No valid settlements found for IDs: ${dto.settlementIds.join(', ')}`
+      );
+      return { assigned: 0, requested: dto.settlementIds.length, skippedIds };
     }
 
-    // Update all settlements
-    for (const settlement of settlements) {
-      settlement.userId = dto.userId;
-      settlement.assignedById = user.id;
+    // Use QueryBuilder for efficient bulk update
+    const result = await this.settlementRepository
+      .createQueryBuilder()
+      .update()
+      .set({
+        userId: dto.userId,
+        assignedById: user.id,
+      })
+      .where('id IN (:...ids)', { ids: Array.from(existingIds) })
+      .andWhere('companyId = :companyId', { companyId })
+      .execute();
+
+    const assignedCount = result.affected ?? 0;
+
+    if (assignedCount > 0) {
+      this.logger.log(
+        `Bulk assigned ${assignedCount} settlements to user ${dto.userId} by ${user.id}`
+      );
     }
 
-    await this.settlementRepository.save(settlements);
+    if (skippedIds.length > 0) {
+      this.logger.warn(
+        `Bulk assign: Skipped ${skippedIds.length} invalid/inaccessible settlement IDs`
+      );
+    }
 
-    this.logger.log(
-      `Bulk assigned ${settlements.length} settlements to user ${dto.userId} by ${user.id}`
-    );
+    return { assigned: assignedCount, requested: dto.settlementIds.length, skippedIds };
+  }
 
-    return { assigned: settlements.length, requested: dto.settlementIds.length };
+  /**
+   * Get assignable users for a settlement
+   * Returns all active employees from the settlement's company
+   * For ADMIN users, returns all ADMIN users (they have companyId: null)
+   */
+  async getAssignableUsers(id: string, user: User): Promise<User[]> {
+    // First get the settlement to know its company
+    const settlement = await this.findOne(id, user);
+
+    if (user.role === UserRole.ADMIN) {
+      // For ADMIN users, return all active ADMIN users (they have companyId: null)
+      return this.userRepository.find({
+        where: {
+          isActive: true,
+          role: UserRole.ADMIN,
+        },
+        order: {
+          firstName: 'ASC',
+          lastName: 'ASC',
+        },
+      });
+    }
+
+    // For non-ADMIN users, return employees and owners from the settlement's company
+    return this.userRepository.find({
+      where: {
+        companyId: settlement.companyId,
+        isActive: true,
+        role: In([UserRole.EMPLOYEE, UserRole.COMPANY_OWNER]),
+      },
+      order: {
+        firstName: 'ASC',
+        lastName: 'ASC',
+      },
+    });
+  }
+
+  /**
+   * Get all assignable users for the settlements module
+   * Returns all active employees from the user's effective company
+   * For ADMIN users, returns all ADMIN users (they have companyId: null)
+   */
+  async getAllAssignableUsers(user: User): Promise<User[]> {
+    if (user.role === UserRole.ADMIN) {
+      // For ADMIN users, return all active ADMIN users (they have companyId: null)
+      return this.userRepository.find({
+        where: {
+          isActive: true,
+          role: UserRole.ADMIN,
+        },
+        order: {
+          firstName: 'ASC',
+          lastName: 'ASC',
+        },
+      });
+    }
+
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+
+    // For non-ADMIN users, return employees and owners from their company
+    return this.userRepository.find({
+      where: {
+        companyId,
+        isActive: true,
+        role: In([UserRole.EMPLOYEE, UserRole.COMPANY_OWNER]),
+      },
+      order: {
+        firstName: 'ASC',
+        lastName: 'ASC',
+      },
+    });
   }
 }

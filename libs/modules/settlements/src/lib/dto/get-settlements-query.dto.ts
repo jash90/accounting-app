@@ -5,6 +5,25 @@ import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, IsUUID, Max, Min } from
 
 import { SettlementStatus, TaxScheme } from '@accounting/common';
 
+/**
+ * Allowed sort fields for settlements query.
+ * This enum prevents SQL injection via the sortBy parameter.
+ */
+export enum SettlementSortField {
+  CLIENT_NAME = 'client.name',
+  CLIENT_NIP = 'client.nip',
+  STATUS = 'settlement.status',
+  MONTH = 'settlement.month',
+  YEAR = 'settlement.year',
+  PRIORITY = 'settlement.priority',
+  DEADLINE = 'settlement.deadline',
+  CREATED_AT = 'settlement.createdAt',
+  UPDATED_AT = 'settlement.updatedAt',
+  ASSIGNEE_EMAIL = 'assignedUser.email',
+  ASSIGNEE_FIRST_NAME = 'assignedUser.firstName',
+  ASSIGNEE_LAST_NAME = 'assignedUser.lastName',
+}
+
 export class GetSettlementsQueryDto {
   @ApiProperty({ description: 'Month (1-12)', minimum: 1, maximum: 12 })
   @Type(() => Number)
@@ -13,10 +32,11 @@ export class GetSettlementsQueryDto {
   @Max(12)
   month!: number;
 
-  @ApiProperty({ description: 'Year', minimum: 2020 })
+  @ApiProperty({ description: 'Year', minimum: 2020, maximum: 2100 })
   @Type(() => Number)
   @IsInt()
   @Min(2020)
+  @Max(2100)
   year!: number;
 
   @ApiPropertyOptional({ enum: SettlementStatus })
@@ -51,10 +71,14 @@ export class GetSettlementsQueryDto {
   @IsBoolean()
   requiresAttention?: boolean;
 
-  @ApiPropertyOptional({ description: 'Sort by field', default: 'client.name' })
+  @ApiPropertyOptional({
+    description: 'Sort by field (whitelist validated to prevent SQL injection)',
+    default: SettlementSortField.CLIENT_NAME,
+    enum: SettlementSortField,
+  })
   @IsOptional()
-  @IsString()
-  sortBy?: string;
+  @IsEnum(SettlementSortField)
+  sortBy?: SettlementSortField;
 
   @ApiPropertyOptional({ enum: ['asc', 'desc'], default: 'asc' })
   @IsOptional()
@@ -85,9 +109,10 @@ export class MonthYearQueryDto {
   @Max(12)
   month!: number;
 
-  @ApiProperty({ description: 'Year', minimum: 2020 })
+  @ApiProperty({ description: 'Year', minimum: 2020, maximum: 2100 })
   @Type(() => Number)
   @IsInt()
   @Min(2020)
+  @Max(2100)
   year!: number;
 }

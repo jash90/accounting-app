@@ -1,3 +1,5 @@
+import { memo, useCallback, useMemo } from 'react';
+
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -24,35 +26,40 @@ const MONTH_NAMES = [
   'Grudzień',
 ];
 
-export function MonthSelector({ month, year, onMonthChange, onYearChange }: MonthSelectorProps) {
-  const handlePreviousMonth = () => {
+export const MonthSelector = memo(function MonthSelector({
+  month,
+  year,
+  onMonthChange,
+  onYearChange,
+}: MonthSelectorProps) {
+  const handlePreviousMonth = useCallback(() => {
     if (month === 1) {
       onMonthChange(12);
       onYearChange(year - 1);
     } else {
       onMonthChange(month - 1);
     }
-  };
+  }, [month, year, onMonthChange, onYearChange]);
 
-  const handleNextMonth = () => {
+  const handleNextMonth = useCallback(() => {
     if (month === 12) {
       onMonthChange(1);
       onYearChange(year + 1);
     } else {
       onMonthChange(month + 1);
     }
-  };
+  }, [month, year, onMonthChange, onYearChange]);
 
-  const handleCurrentMonth = () => {
+  const handleCurrentMonth = useCallback(() => {
     const now = new Date();
     onMonthChange(now.getMonth() + 1);
     onYearChange(now.getFullYear());
-  };
+  }, [onMonthChange, onYearChange]);
 
-  const isCurrentMonth = () => {
+  const isCurrentMonth = useMemo(() => {
     const now = new Date();
     return month === now.getMonth() + 1 && year === now.getFullYear();
-  };
+  }, [month, year]);
 
   return (
     <div className="flex items-center gap-2">
@@ -70,11 +77,11 @@ export function MonthSelector({ month, year, onMonthChange, onYearChange }: Mont
         <ChevronRight className="h-4 w-4" />
       </Button>
 
-      {!isCurrentMonth() && (
+      {!isCurrentMonth && (
         <Button variant="ghost" size="sm" onClick={handleCurrentMonth}>
           Dzisiaj
         </Button>
       )}
     </div>
   );
-}
+});
