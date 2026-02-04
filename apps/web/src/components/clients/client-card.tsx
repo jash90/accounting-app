@@ -2,6 +2,8 @@ import { memo, useCallback, useMemo } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
 import {
   Building2,
   Edit,
@@ -37,6 +39,15 @@ import {
   VatStatusLabels,
 } from '@/types/enums';
 
+// Hoisted empty arrays to prevent re-renders from new reference creation
+const EMPTY_FIELD_DEFINITIONS: ClientFieldDefinition[] = [];
+const EMPTY_VISIBLE_COLUMNS: string[] = [];
+
+interface ClientPermissions {
+  write: boolean;
+  delete: boolean;
+}
+
 interface ClientCardProps {
   client: ClientResponseDto;
   basePath: string;
@@ -45,11 +56,12 @@ interface ClientCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onRestore?: () => void;
-  hasWritePermission?: boolean;
-  hasDeletePermission?: boolean;
+  permissions?: ClientPermissions;
   fieldDefinitions?: ClientFieldDefinition[];
   visibleColumns?: string[];
 }
+
+const DEFAULT_PERMISSIONS: ClientPermissions = { write: false, delete: false };
 
 export const ClientCard = memo(function ClientCard({
   client,
@@ -59,10 +71,9 @@ export const ClientCard = memo(function ClientCard({
   onEdit,
   onDelete,
   onRestore,
-  hasWritePermission = false,
-  hasDeletePermission = false,
-  fieldDefinitions = [],
-  visibleColumns = [],
+  permissions = DEFAULT_PERMISSIONS,
+  fieldDefinitions = EMPTY_FIELD_DEFINITIONS,
+  visibleColumns = EMPTY_VISIBLE_COLUMNS,
 }: ClientCardProps) {
   const navigate = useNavigate();
 
@@ -92,7 +103,7 @@ export const ClientCard = memo(function ClientCard({
           return value === 'true' ? 'Tak' : 'Nie';
         case CustomFieldType.DATE:
           try {
-            return new Date(value).toLocaleDateString('pl-PL');
+            return format(new Date(value), 'dd.MM.yyyy', { locale: pl });
           } catch {
             return value;
           }
@@ -171,7 +182,7 @@ export const ClientCard = memo(function ClientCard({
                     Szczegóły
                   </DropdownMenuItem>
 
-                  {hasWritePermission && client.isActive && onEdit && (
+                  {permissions.write && client.isActive && onEdit && (
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
@@ -190,7 +201,7 @@ export const ClientCard = memo(function ClientCard({
 
                   <DropdownMenuSeparator />
 
-                  {hasDeletePermission && client.isActive && onDelete && (
+                  {permissions.delete && client.isActive && onDelete && (
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
@@ -203,7 +214,7 @@ export const ClientCard = memo(function ClientCard({
                     </DropdownMenuItem>
                   )}
 
-                  {hasWritePermission && !client.isActive && onRestore && (
+                  {permissions.write && !client.isActive && onRestore && (
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -36,7 +36,6 @@ import { PageHeader } from '@/components/common/page-header';
 import { ViewModeToggle } from '@/components/common/view-mode-toggle';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import { useTablePreferences, type ColumnConfig } from '@/lib/hooks/use-table-preferences';
-import { ClientFormDialog } from '@/components/forms/client-form-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -86,6 +85,35 @@ import {
   type ZusStatus,
 } from '@/types/enums';
 
+// Lazy-load heavy form dialog (976 lines) - only loaded when add/edit button is clicked
+const ClientFormDialog = lazy(() =>
+  import('@/components/forms/client-form-dialog').then((m) => ({
+    default: m.ClientFormDialog,
+  }))
+);
+
+// Preload function for form dialog - triggered on mouse enter
+const preloadClientFormDialog = () => {
+  import('@/components/forms/client-form-dialog');
+};
+
+// Dialog loading fallback component
+function DialogLoadingFallback() {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <Card>
+        <CardContent className="space-y-4 p-6">
+          <div className="h-6 w-48 animate-pulse rounded bg-gray-200" />
+          <div className="h-10 w-full animate-pulse rounded bg-gray-200" />
+          <div className="h-10 w-full animate-pulse rounded bg-gray-200" />
+          <div className="h-10 w-full animate-pulse rounded bg-gray-200" />
+          <div className="h-20 w-full animate-pulse rounded bg-gray-200" />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function ClientsListPage() {
   const { user } = useAuthContext();
   const navigate = useNavigate();
@@ -93,8 +121,8 @@ export default function ClientsListPage() {
   // Use centralized permission hook instead of hardcoding role checks
   const { hasWritePermission, hasDeletePermission } = useModulePermissions('clients');
 
-  // Determine the base path based on user role
-  const getBasePath = () => {
+  // Determine the base path based on user role - memoized to prevent re-renders
+  const basePath = useMemo(() => {
     switch (user?.role) {
       case UserRole.ADMIN:
         return '/admin/modules/clients';
@@ -103,9 +131,7 @@ export default function ClientsListPage() {
       default:
         return '/modules/clients';
     }
-  };
-
-  const basePath = getBasePath();
+  }, [user?.role]);
 
   // Fetch custom field definitions
   const { data: fieldDefinitionsResponse } = useFieldDefinitions({ isActive: true });
@@ -302,6 +328,8 @@ export default function ClientsListPage() {
   const createClientAndClose = useCallback(
     async (data: CreateClientDto, customFields?: { values: Record<string, string | null> }) => {
       const newClient = await createClient.mutateAsync(data);
+      // Note: Custom fields must be set after client creation since we need the client ID
+      // This is a sequential dependency, not parallel-able
       if (customFields && Object.keys(customFields.values).length > 0) {
         await setCustomFields.mutateAsync({
           id: newClient.id,
@@ -362,8 +390,116 @@ export default function ClientsListPage() {
     [navigate, basePath]
   );
 
-  const columns: ColumnDef<ClientResponseDto>[] = useMemo(
-    () => [
+  // Memoized callbacks for DataTable props to prevent unnecessary re-renders
+  const handleRowClick = useCallback(
+    (client: ClientResponseDto) => navigate(`${basePath}/${client.id}`),
+    [navigate, basePath]
+  );
+
+  const getRowId = useCallback((row: ClientResponseDto) => row.id, []);
+
+  // Memoized dialog submit handlers to prevent unnecessary re-renders
+  const handleCreateSubmit = useCallback(
+    async (
+      data: Partial<CreateClientDto>,
+      customFields?: { values: Record<string, string | null> }
+    ) => {
+      try {
+        const createDto: CreateClientDto = {
+          name: data.name!,
+          nip: data.nip || undefined,
+          email: data.email || undefined,
+          phone: data.phone || undefined,
+          companyStartDate: data.companyStartDate ?? undefined,
+          cooperationStartDate: data.cooperationStartDate ?? undefined,
+          companySpecificity: data.companySpecificity || undefined,
+          additionalInfo: data.additionalInfo || undefined,
+          gtuCode: data.gtuCode || undefined,
+          pkdCode: data.pkdCode || undefined,
+          amlGroup: data.amlGroup || undefined,
+          employmentType: data.employmentType as EmploymentType | undefined,
+          vatStatus: data.vatStatus as VatStatus | undefined,
+          taxScheme: data.taxScheme as TaxScheme | undefined,
+          zusStatus: data.zusStatus as ZusStatus | undefined,
+          receiveEmailCopy: data.receiveEmailCopy,
+        };
+        await handleCreateWithDuplicateCheck(createDto, customFields);
+      } catch {
+        // Error is handled by mutation's onError callback
+        // Dialog stays open so user can retry
+      }
+    },
+    [handleCreateWithDuplicateCheck]
+  );
+
+  const handleEditSubmit = useCallback(
+    async (
+      data: Partial<UpdateClientDto>,
+      customFields?: { values: Record<string, string | null> }
+    ) => {
+      if (!editingClient) return;
+      try {
+        // Execute client update and custom fields update in parallel for faster saves
+        const operations: Promise<unknown>[] = [
+          updateClient.mutateAsync({
+            id: editingClient.id,
+            data: data as UpdateClientDto,
+          }),
+        ];
+
+        if (customFields && Object.keys(customFields.values).length > 0) {
+          operations.push(
+            setCustomFields.mutateAsync({
+              id: editingClient.id,
+              data: customFields,
+            })
+          );
+        }
+
+        await Promise.all(operations);
+        setEditingClient(null);
+      } catch {
+        // Error is handled by mutation's onError callback
+        // Dialog stays open so user can retry
+      }
+    },
+    [editingClient, updateClient, setCustomFields]
+  );
+
+  const handleEditDialogOpenChange = useCallback(
+    (open: boolean) => !open && setEditingClient(null),
+    []
+  );
+
+  const handleDeleteDialogOpenChange = useCallback(
+    (open: boolean) => !open && setDeletingClient(null),
+    []
+  );
+
+  const handleRestoreDialogOpenChange = useCallback(
+    (open: boolean) => !open && setRestoringClient(null),
+    []
+  );
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (!deletingClient) return;
+    deleteClient.mutate(deletingClient.id, {
+      onSuccess: () => setDeletingClient(null),
+      onSettled: () => setDeletingClient(null),
+    });
+  }, [deletingClient, deleteClient]);
+
+  const handleRestoreConfirm = useCallback(() => {
+    if (!restoringClient) return;
+    restoreClient.mutate(restoringClient.id, {
+      onSuccess: () => setRestoringClient(null),
+      onSettled: () => setRestoringClient(null),
+    });
+  }, [restoringClient, restoreClient]);
+
+  // Base columns - no fieldDefinitions dependency for better memoization
+  const baseColumns = useMemo(
+    (): ColumnDef<ClientResponseDto>[] => [
       {
         accessorKey: 'name',
         header: 'Nazwa',
@@ -537,8 +673,14 @@ export default function ClientsListPage() {
           );
         },
       },
-      // Custom field columns
-      ...fieldDefinitions.map((field) => ({
+    ],
+    []
+  );
+
+  // Custom field columns - separate memoization with fieldDefinitions dependency
+  const customFieldColumns = useMemo(
+    (): ColumnDef<ClientResponseDto>[] =>
+      fieldDefinitions.map((field) => ({
         id: `customField_${field.id}`,
         header: field.label,
         cell: ({ row }: { row: { original: ClientResponseDto } }) => {
@@ -570,76 +712,86 @@ export default function ClientsListPage() {
           return <span className="block max-w-[150px] truncate text-sm">{value}</span>;
         },
       })),
-      {
-        id: 'actions',
-        header: 'Akcje',
-        cell: ({ row }) => {
-          const client = row.original;
+    [fieldDefinitions]
+  );
 
-          return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0" aria-label="Otwórz menu akcji">
-                  <MoreHorizontal className="h-4 w-4" />
-                  <span className="sr-only">Otwórz menu akcji</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate(`${basePath}/${client.id}`)}>
-                  <Eye className="mr-2 h-4 w-4" />
-                  Szczegóły
+  // Actions column - separate memoization with navigation/permission dependencies
+  const actionsColumn = useMemo(
+    (): ColumnDef<ClientResponseDto> => ({
+      id: 'actions',
+      header: 'Akcje',
+      cell: ({ row }) => {
+        const client = row.original;
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0" aria-label="Otwórz menu akcji">
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">Otwórz menu akcji</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate(`${basePath}/${client.id}`)}>
+                <Eye className="mr-2 h-4 w-4" />
+                Szczegóły
+              </DropdownMenuItem>
+
+              {hasWritePermission && client.isActive && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingClient(client);
+                  }}
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edytuj
                 </DropdownMenuItem>
+              )}
 
-                {hasWritePermission && client.isActive && (
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingClient(client);
-                    }}
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edytuj
-                  </DropdownMenuItem>
-                )}
+              <DropdownMenuItem onClick={() => navigate(`${basePath}/${client.id}#changelog`)}>
+                <History className="mr-2 h-4 w-4" />
+                Historia zmian
+              </DropdownMenuItem>
 
-                <DropdownMenuItem onClick={() => navigate(`${basePath}/${client.id}#changelog`)}>
-                  <History className="mr-2 h-4 w-4" />
-                  Historia zmian
+              <DropdownMenuSeparator />
+
+              {hasDeletePermission && client.isActive && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeletingClient(client);
+                  }}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Usuń
                 </DropdownMenuItem>
+              )}
 
-                <DropdownMenuSeparator />
-
-                {hasDeletePermission && client.isActive && (
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeletingClient(client);
-                    }}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Usuń
-                  </DropdownMenuItem>
-                )}
-
-                {hasWritePermission && !client.isActive && (
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setRestoringClient(client);
-                    }}
-                  >
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Przywróć
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          );
-        },
+              {hasWritePermission && !client.isActive && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setRestoringClient(client);
+                  }}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Przywróć
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
       },
-    ],
-    [navigate, hasWritePermission, hasDeletePermission, basePath, fieldDefinitions]
+    }),
+    [navigate, hasWritePermission, hasDeletePermission, basePath]
+  );
+
+  // Combine all columns - only recreates when individual parts change
+  const columns = useMemo(
+    (): ColumnDef<ClientResponseDto>[] => [...baseColumns, ...customFieldColumns, actionsColumn],
+    [baseColumns, customFieldColumns, actionsColumn]
   );
 
   return (
@@ -676,6 +828,7 @@ export default function ClientsListPage() {
             {hasWritePermission && (
               <Button
                 onClick={() => setCreateOpen(true)}
+                onMouseEnter={preloadClientFormDialog}
                 className="bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md transition-all"
               >
                 <Plus className="mr-2 h-4 w-4" />
@@ -717,11 +870,11 @@ export default function ClientsListPage() {
               columns={columns}
               data={clients}
               isLoading={isPending}
-              onRowClick={(client) => navigate(`${basePath}/${client.id}`)}
+              onRowClick={handleRowClick}
               selectable
               selectedRows={selectedClients}
               onSelectionChange={setSelectedClients}
-              getRowId={(row) => row.id}
+              getRowId={getRowId}
               columnVisibility={visibleColumns}
             />
           ) : (
@@ -734,8 +887,7 @@ export default function ClientsListPage() {
               onEditClient={hasWritePermission ? setEditingClient : undefined}
               onDeleteClient={hasDeletePermission ? setDeletingClient : undefined}
               onRestoreClient={hasWritePermission ? setRestoringClient : undefined}
-              hasWritePermission={hasWritePermission}
-              hasDeletePermission={hasDeletePermission}
+              permissions={{ write: hasWritePermission, delete: hasDeletePermission }}
               fieldDefinitions={fieldDefinitions}
               visibleColumns={visibleColumns}
             />
@@ -745,63 +897,26 @@ export default function ClientsListPage() {
 
       {hasWritePermission && (
         <>
-          <ClientFormDialog
-            open={createOpen}
-            onOpenChange={setCreateOpen}
-            onSubmit={async (data, customFields) => {
-              try {
-                // Transform form data to CreateClientDto with proper validation
-                const createDto: CreateClientDto = {
-                  name: data.name!,
-                  nip: data.nip || undefined,
-                  email: data.email || undefined,
-                  phone: data.phone || undefined,
-                  companyStartDate: data.companyStartDate ?? undefined,
-                  cooperationStartDate: data.cooperationStartDate ?? undefined,
-                  companySpecificity: data.companySpecificity || undefined,
-                  additionalInfo: data.additionalInfo || undefined,
-                  gtuCode: data.gtuCode || undefined,
-                  pkdCode: data.pkdCode || undefined,
-                  amlGroup: data.amlGroup || undefined,
-                  employmentType: data.employmentType as EmploymentType | undefined,
-                  vatStatus: data.vatStatus as VatStatus | undefined,
-                  taxScheme: data.taxScheme as TaxScheme | undefined,
-                  zusStatus: data.zusStatus as ZusStatus | undefined,
-                  receiveEmailCopy: data.receiveEmailCopy,
-                };
-                await handleCreateWithDuplicateCheck(createDto, customFields);
-              } catch {
-                // Error is handled by mutation's onError callback
-                // Dialog stays open so user can retry
-              }
-            }}
-          />
+          {createOpen && (
+            <Suspense fallback={<DialogLoadingFallback />}>
+              <ClientFormDialog
+                open={createOpen}
+                onOpenChange={setCreateOpen}
+                onSubmit={handleCreateSubmit}
+              />
+            </Suspense>
+          )}
 
           {editingClient && (
-            <ClientFormDialog
-              key={editingClient.id}
-              open={!!editingClient}
-              onOpenChange={(open) => !open && setEditingClient(null)}
-              client={editingClient}
-              onSubmit={async (data, customFields) => {
-                try {
-                  await updateClient.mutateAsync({
-                    id: editingClient.id,
-                    data: data as UpdateClientDto,
-                  });
-                  if (customFields && Object.keys(customFields.values).length > 0) {
-                    await setCustomFields.mutateAsync({
-                      id: editingClient.id,
-                      data: customFields,
-                    });
-                  }
-                  setEditingClient(null);
-                } catch {
-                  // Error is handled by mutation's onError callback
-                  // Dialog stays open so user can retry
-                }
-              }}
-            />
+            <Suspense fallback={<DialogLoadingFallback />}>
+              <ClientFormDialog
+                key={editingClient.id}
+                open={!!editingClient}
+                onOpenChange={handleEditDialogOpenChange}
+                client={editingClient}
+                onSubmit={handleEditSubmit}
+              />
+            </Suspense>
           )}
         </>
       )}
@@ -809,16 +924,11 @@ export default function ClientsListPage() {
       {hasDeletePermission && deletingClient && (
         <ConfirmDialog
           open={!!deletingClient}
-          onOpenChange={(open) => !open && setDeletingClient(null)}
+          onOpenChange={handleDeleteDialogOpenChange}
           title="Usuń klienta"
           description={`Czy na pewno chcesz usunąć klienta "${deletingClient.name}"? Klient zostanie dezaktywowany i można go będzie przywrócić później.`}
           variant="destructive"
-          onConfirm={() => {
-            deleteClient.mutate(deletingClient.id, {
-              onSuccess: () => setDeletingClient(null),
-              onSettled: () => setDeletingClient(null),
-            });
-          }}
+          onConfirm={handleDeleteConfirm}
           isLoading={deleteClient.isPending}
         />
       )}
@@ -826,15 +936,10 @@ export default function ClientsListPage() {
       {restoringClient && (
         <ConfirmDialog
           open={!!restoringClient}
-          onOpenChange={(open) => !open && setRestoringClient(null)}
+          onOpenChange={handleRestoreDialogOpenChange}
           title="Przywróć klienta"
           description={`Czy na pewno chcesz przywrócić klienta "${restoringClient.name}"?`}
-          onConfirm={() => {
-            restoreClient.mutate(restoringClient.id, {
-              onSuccess: () => setRestoringClient(null),
-              onSettled: () => setRestoringClient(null),
-            });
-          }}
+          onConfirm={handleRestoreConfirm}
           isLoading={restoreClient.isPending}
         />
       )}

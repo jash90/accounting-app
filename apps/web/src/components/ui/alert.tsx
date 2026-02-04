@@ -1,4 +1,4 @@
-import * as React from 'react';
+import type * as React from 'react';
 
 import { cva, type VariantProps } from 'class-variance-authority';
 
@@ -20,30 +20,37 @@ const alertVariants = cva(
   }
 );
 
-const Alert = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>
->(({ className, variant, ...props }, ref) => (
-  <div ref={ref} role="alert" className={cn(alertVariants({ variant }), className)} {...props} />
-));
-Alert.displayName = 'Alert';
+interface AlertProps
+  extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof alertVariants> {
+  ref?: React.Ref<HTMLDivElement>;
+}
 
-const AlertTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
-  ({ className, ...props }, ref) => (
+function Alert({ className, variant, ref, ...props }: AlertProps) {
+  return (
+    <div ref={ref} role="alert" className={cn(alertVariants({ variant }), className)} {...props} />
+  );
+}
+
+interface AlertTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {
+  ref?: React.Ref<HTMLHeadingElement>;
+}
+
+function AlertTitle({ className, ref, ...props }: AlertTitleProps) {
+  return (
     <h5
       ref={ref}
       className={cn('mb-1 leading-none font-medium tracking-tight', className)}
       {...props}
     />
-  )
-);
-AlertTitle.displayName = 'AlertTitle';
+  );
+}
 
-const AlertDescription = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('text-sm [&_p]:leading-relaxed', className)} {...props} />
-  )
-);
-AlertDescription.displayName = 'AlertDescription';
+interface AlertDescriptionProps extends React.HTMLAttributes<HTMLDivElement> {
+  ref?: React.Ref<HTMLDivElement>;
+}
+
+function AlertDescription({ className, ref, ...props }: AlertDescriptionProps) {
+  return <div ref={ref} className={cn('text-sm [&_p]:leading-relaxed', className)} {...props} />;
+}
 
 export { Alert, AlertTitle, AlertDescription };
