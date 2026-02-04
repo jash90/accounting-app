@@ -66,6 +66,13 @@ const routeLoaders: Record<string, RouteLoader> = {
   '/admin/modules/time-tracking/settings': () =>
     import('@/pages/modules/time-tracking/time-tracking-settings'),
 
+  // Admin Settlements routes
+  '/admin/modules/settlements': () => import('@/pages/modules/settlements/settlements-dashboard'),
+  '/admin/modules/settlements/list': () => import('@/pages/modules/settlements/settlements-list'),
+  '/admin/modules/settlements/team': () => import('@/pages/modules/settlements/settlements-team'),
+  '/admin/modules/settlements/settings': () =>
+    import('@/pages/modules/settlements/settlements-settings'),
+
   // Company routes
   '/company': () => import('@/pages/company/dashboard'),
   '/company/employees': () => import('@/pages/company/employees/employees-list'),
@@ -115,6 +122,13 @@ const routeLoaders: Record<string, RouteLoader> = {
   '/company/modules/time-tracking/settings': () =>
     import('@/pages/modules/time-tracking/time-tracking-settings'),
 
+  // Company Settlements routes
+  '/company/modules/settlements': () => import('@/pages/modules/settlements/settlements-dashboard'),
+  '/company/modules/settlements/list': () => import('@/pages/modules/settlements/settlements-list'),
+  '/company/modules/settlements/team': () => import('@/pages/modules/settlements/settlements-team'),
+  '/company/modules/settlements/settings': () =>
+    import('@/pages/modules/settlements/settlements-settings'),
+
   // Employee/Modules routes
   '/modules': () => import('@/pages/employee/dashboard'),
   '/modules/ai-agent': () => import('@/pages/modules/ai-agent/employee-index'),
@@ -147,6 +161,10 @@ const routeLoaders: Record<string, RouteLoader> = {
   '/modules/time-tracking/settings': () =>
     import('@/pages/modules/time-tracking/time-tracking-settings'),
 
+  // Employee Settlements routes
+  '/modules/settlements': () => import('@/pages/modules/settlements/settlements-dashboard'),
+  '/modules/settlements/list': () => import('@/pages/modules/settlements/settlements-list'),
+
   // Settings routes
   '/settings/email-config': () => import('@/pages/settings/email-config'),
   '/settings/account': () => import('@/pages/settings/account'),
@@ -159,11 +177,14 @@ const routeLoaders: Record<string, RouteLoader> = {
 };
 
 // Track which routes have been prefetched to avoid duplicate requests
+// Capped to prevent unbounded memory growth in long-running sessions
+const MAX_PREFETCH_CACHE = 100;
 const prefetched = new Set<string>();
 
 /**
  * Prefetch a route's JavaScript chunk.
  * Safe to call multiple times - subsequent calls are no-ops.
+ * Cache is capped at MAX_PREFETCH_CACHE entries to prevent memory growth.
  *
  * @param path - The route path to prefetch (e.g., '/admin/users')
  */
@@ -175,6 +196,14 @@ export function prefetchRoute(path: string): void {
 
   const loader = routeLoaders[path];
   if (loader) {
+    // Cap the set size using LRU-style eviction (oldest entry first)
+    if (prefetched.size >= MAX_PREFETCH_CACHE) {
+      const oldest = prefetched.values().next().value;
+      if (oldest) {
+        prefetched.delete(oldest);
+      }
+    }
+
     prefetched.add(path);
     // Fire and forget - don't await, just trigger the import
     loader().catch(() => {
@@ -201,4 +230,23 @@ export function isRoutePrefetched(path: string): boolean {
  */
 export function getPrefetchableRoutes(): string[] {
   return Object.keys(routeLoaders);
+}
+
+/**
+ * Create a prefetch handler for use with onMouseEnter/onFocus events.
+ * This is a non-hook version for use in event handlers.
+ *
+ * @param path - The route path to prefetch
+ * @returns A function that triggers the prefetch
+ *
+ * @example
+ * <Button
+ *   onMouseEnter={createPrefetchHandler('/modules/clients')}
+ *   onClick={() => navigate('/modules/clients')}
+ * >
+ *   Go to Clients
+ * </Button>
+ */
+export function createPrefetchHandler(path: string): () => void {
+  return () => prefetchRoute(path);
 }

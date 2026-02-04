@@ -3,6 +3,7 @@ import {
   use,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -82,6 +83,36 @@ export function NotificationSocketProvider({ children }: NotificationSocketProvi
     queryClientRef.current = queryClient;
     toastRef.current = toast;
   }, [queryClient, toast]);
+
+  // Batch notification invalidations to prevent cache invalidation storms
+  // when multiple notifications arrive rapidly
+  const pendingInvalidations = useRef(new Set<string>());
+  const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushInvalidations = useCallback(() => {
+    // Clear any existing timeout
+    if (flushTimeoutRef.current) {
+      clearTimeout(flushTimeoutRef.current);
+    }
+
+    // Debounce: wait 100ms before flushing to batch rapid notifications
+    flushTimeoutRef.current = setTimeout(() => {
+      const qc = queryClientRef.current;
+      if (pendingInvalidations.current.has('notifications')) {
+        qc.invalidateQueries({
+          queryKey: queryKeys.notifications.all,
+          exact: false,
+        });
+      }
+      if (pendingInvalidations.current.has('unreadCount')) {
+        qc.invalidateQueries({
+          queryKey: queryKeys.notifications.unreadCount,
+        });
+      }
+      pendingInvalidations.current.clear();
+      flushTimeoutRef.current = null;
+    }, 100);
+  }, []);
 
   // Stable user ID for dependency tracking - prevents full user object comparison
   const userId = user?.id;
@@ -192,18 +223,16 @@ export function NotificationSocketProvider({ children }: NotificationSocketProvi
       });
 
       // Handler for new notifications - uses refs for stable reference
+      // Batches cache invalidations to prevent storms when multiple notifications arrive
       socketInstance.on('notification:new', (notification: NotificationResponseDto) => {
         if (isCancelled) return;
         try {
           setLastNotification(notification);
 
-          queryClientRef.current.invalidateQueries({
-            queryKey: queryKeys.notifications.all,
-            exact: false,
-          });
-          queryClientRef.current.invalidateQueries({
-            queryKey: queryKeys.notifications.unreadCount,
-          });
+          // Batch invalidations - will be flushed after 100ms of inactivity
+          pendingInvalidations.current.add('notifications');
+          pendingInvalidations.current.add('unreadCount');
+          flushInvalidations();
 
           toastRef.current({
             title: notification.title,
@@ -211,38 +240,46 @@ export function NotificationSocketProvider({ children }: NotificationSocketProvi
             duration: 5000,
           });
         } catch (error) {
-          console.error('Error handling new notification:', error);
+          if (import.meta.env.DEV) {
+            console.error('Error handling new notification:', error);
+          }
         }
       });
 
       // Handler for notification read - uses refs for stable reference
+      // Batches cache invalidations to prevent storms
       socketInstance.on('notification:read', (payload: { id: string }) => {
         if (isCancelled) return;
         try {
+          // Detail query invalidation is immediate (specific to one notification)
           queryClientRef.current.invalidateQueries({
             queryKey: queryKeys.notifications.detail(payload.id),
           });
-          queryClientRef.current.invalidateQueries({
-            queryKey: queryKeys.notifications.all,
-            exact: false,
-          });
-          queryClientRef.current.invalidateQueries({
-            queryKey: queryKeys.notifications.unreadCount,
-          });
+
+          // Batch the list invalidations
+          pendingInvalidations.current.add('notifications');
+          pendingInvalidations.current.add('unreadCount');
+          flushInvalidations();
         } catch (error) {
-          console.error('Error handling notification read:', error);
+          if (import.meta.env.DEV) {
+            console.error('Error handling notification read:', error);
+          }
         }
       });
 
       socketInstance.on('connect_error', (error) => {
         if (isCancelled) return;
-        console.error('WebSocket connection error:', error);
+        if (import.meta.env.DEV) {
+          console.error('WebSocket connection error:', error);
+        }
         setIsConnected(false);
       });
 
       socketInstance.io.on('reconnect_failed', () => {
         if (isCancelled) return;
-        console.error('WebSocket reconnection failed after all attempts');
+        if (import.meta.env.DEV) {
+          console.error('WebSocket reconnection failed after all attempts');
+        }
         toastRef.current({
           title: 'Nie można połączyć z serwerem',
           description: 'Odśwież stronę, aby ponowić próbę połączenia',
@@ -254,8 +291,18 @@ export function NotificationSocketProvider({ children }: NotificationSocketProvi
       socketRef.current = socketInstance;
     })();
 
+    // Capture ref values before cleanup to avoid stale ref warnings
+    const currentPendingInvalidations = pendingInvalidations.current;
+
     return () => {
       isCancelled = true;
+      // Clear any pending flush timeout to prevent memory leaks
+      if (flushTimeoutRef.current) {
+        clearTimeout(flushTimeoutRef.current);
+        flushTimeoutRef.current = null;
+      }
+      currentPendingInvalidations.clear();
+
       if (socketRef.current) {
         socketRef.current.off('connect');
         socketRef.current.off('disconnect');
@@ -267,10 +314,16 @@ export function NotificationSocketProvider({ children }: NotificationSocketProvi
         socketRef.current = null;
       }
     };
-  }, [userId, createSocket]); // Use userId instead of full user object
+  }, [userId, createSocket, flushInvalidations]); // Use userId instead of full user object
+
+  // Memoize context value to prevent unnecessary re-renders of consumers
+  const contextValue = useMemo(
+    () => ({ isConnected, lastNotification }),
+    [isConnected, lastNotification]
+  );
 
   return (
-    <NotificationSocketContext.Provider value={{ isConnected, lastNotification }}>
+    <NotificationSocketContext.Provider value={contextValue}>
       {children}
     </NotificationSocketContext.Provider>
   );

@@ -74,9 +74,33 @@ const isClientListQuery = (query: Query): boolean => {
 
 export function useClients(filters?: ClientFiltersDto) {
   // Stabilize filters object to prevent query key instability
-  // We intentionally depend on specific properties, not the entire filters object
+  // We reconstruct the object from individual properties to ensure referential stability
+  // when the actual filter values haven't changed
   const stableFilters = useMemo(
-    () => filters,
+    (): ClientFiltersDto | undefined => {
+      if (!filters) return undefined;
+      // Reconstruct object from primitive values to ensure stable reference
+      const result: ClientFiltersDto = {};
+      if (filters.search !== undefined) result.search = filters.search;
+      if (filters.status !== undefined) result.status = filters.status;
+      if (filters.type !== undefined) result.type = filters.type;
+      if (filters.assignedUserId !== undefined) result.assignedUserId = filters.assignedUserId;
+      if (filters.page !== undefined) result.page = filters.page;
+      if (filters.limit !== undefined) result.limit = filters.limit;
+      if (filters.sortBy !== undefined) result.sortBy = filters.sortBy;
+      if (filters.sortOrder !== undefined) result.sortOrder = filters.sortOrder;
+      if (filters.includeDeleted !== undefined) result.includeDeleted = filters.includeDeleted;
+      return Object.keys(result).length > 0 ? result : undefined;
+    },
+    // ESLint exhaustive-deps rule disabled intentionally:
+    // This pattern uses primitive values extracted from the filters object rather than
+    // the object reference itself. This is necessary because:
+    // 1. Parent components often pass inline objects: useClients({ search: 'foo', page: 1 })
+    // 2. Inline objects create new references on every render, even when values are identical
+    // 3. Using `filters` directly would cause unnecessary query refetches on every parent re-render
+    // 4. By depending on primitive values (strings, numbers, booleans), we only recalculate
+    //    when actual filter values change, not when the object reference changes
+    // This is a deliberate optimization pattern for React Query stability.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       filters?.search,
@@ -341,9 +365,20 @@ export function useBulkDeleteClients() {
   return useMutation({
     mutationFn: (dto: BulkDeleteClientsDto) => clientsApi.bulkDelete(dto),
     onSuccess: (result, variables) => {
-      // Remove deleted clients from cache
-      variables.clientIds.forEach((id: string) => {
-        queryClient.removeQueries({ queryKey: queryKeys.clients.detail(id) });
+      // Remove deleted clients from cache using batch predicate (O(1) vs O(n) individual calls)
+      const idsToRemove = new Set(variables.clientIds);
+      queryClient.removeQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return (
+            Array.isArray(key) &&
+            key[0] === 'clients' &&
+            typeof key[1] === 'string' &&
+            key[1] !== 'list' &&
+            key[1] !== 'statistics' &&
+            idsToRemove.has(key[1])
+          );
+        },
       });
       // Only invalidate list queries
       queryClient.invalidateQueries({ predicate: isClientListQuery });
@@ -369,9 +404,19 @@ export function useBulkRestoreClients() {
   return useMutation({
     mutationFn: (dto: BulkRestoreClientsDto) => clientsApi.bulkRestore(dto),
     onSuccess: (result, variables) => {
-      // Invalidate restored client details
-      variables.clientIds.forEach((id: string) => {
-        queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(id) });
+      // Invalidate restored client details using batch predicate (O(1) vs O(n) individual calls)
+      const idsToInvalidate = new Set(variables.clientIds);
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return (
+            Array.isArray(key) &&
+            key[0] === 'clients' &&
+            key[1] === 'detail' &&
+            typeof key[2] === 'string' &&
+            idsToInvalidate.has(key[2])
+          );
+        },
       });
       // Only invalidate list queries
       queryClient.invalidateQueries({ predicate: isClientListQuery });
@@ -397,9 +442,19 @@ export function useBulkEditClients() {
   return useMutation({
     mutationFn: (dto: BulkEditClientsDto) => clientsApi.bulkEdit(dto),
     onSuccess: (result, variables) => {
-      // Invalidate edited client details
-      variables.clientIds.forEach((id: string) => {
-        queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(id) });
+      // Invalidate edited client details using batch predicate (O(1) vs O(n) individual calls)
+      const idsToInvalidate = new Set(variables.clientIds);
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return (
+            Array.isArray(key) &&
+            key[0] === 'clients' &&
+            key[1] === 'detail' &&
+            typeof key[2] === 'string' &&
+            idsToInvalidate.has(key[2])
+          );
+        },
       });
       // Only invalidate list queries
       queryClient.invalidateQueries({ predicate: isClientListQuery });

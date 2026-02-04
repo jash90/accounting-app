@@ -32,7 +32,9 @@ const getApiBaseUrl = (): string => {
   }
 
   // Production without runtime config - use relative paths (assumes same domain or proxy)
-  console.warn('No API_BASE_URL configured, using relative paths');
+  if (import.meta.env.DEV) {
+    console.warn('No API_BASE_URL configured, using relative paths');
+  }
   return '';
 };
 
