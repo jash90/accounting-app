@@ -153,6 +153,23 @@ export class SettlementsController {
     return this.statsService.getMyStats(query.month, query.year, user);
   }
 
+  @Get('assignable-users')
+  @ApiOperation({
+    summary: 'Get all assignable users for settlements module',
+    description:
+      "Returns all active employees from the user's company that can be assigned to settlements.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of assignable users',
+  })
+  @UseGuards(OwnerOrAdminGuard)
+  @OwnerOrAdmin()
+  @RequirePermission('settlements', 'manage')
+  async getAllAssignableUsers(@CurrentUser() user: User) {
+    return this.settlementsService.getAllAssignableUsers(user);
+  }
+
   @Get(':id')
   @ApiOperation({
     summary: 'Get a settlement by ID',
@@ -180,6 +197,29 @@ export class SettlementsController {
   @RequirePermission('settlements', 'read')
   async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.settlementsService.findOne(id, user);
+  }
+
+  @Get(':id/assignable-users')
+  @ApiOperation({
+    summary: 'Get assignable users for a settlement',
+    description:
+      "Returns all active employees from the settlement's company that can be assigned to the settlement.",
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'Settlement ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of assignable users',
+  })
+  @UseGuards(OwnerOrAdminGuard)
+  @OwnerOrAdmin()
+  @RequirePermission('settlements', 'manage')
+  async getAssignableUsers(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return this.settlementsService.getAssignableUsers(id, user);
   }
 
   @Post('initialize')
