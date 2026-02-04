@@ -1,10 +1,25 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
+import { AmlGroupLabels, GTU_CODES } from '@/lib/constants/polish-labels';
+import { cn } from '@/lib/utils/cn';
+import { type ClientFiltersDto, type CustomFieldFilter } from '@/types/dtos';
+import {
+  EmploymentTypeLabels,
+  TaxSchemeLabels,
+  VatStatusLabels,
+  ZusStatusLabels,
+  type AmlGroup,
+  type EmploymentType,
+  type TaxScheme,
+  type VatStatus,
+  type ZusStatus,
+} from '@/types/enums';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Search, X, Filter, ChevronDown } from 'lucide-react';
+import { ChevronDown, Filter, Search, X } from 'lucide-react';
 
+import { usePkdSearch } from '@/lib/hooks/use-pkd-search';
+import { clientFiltersSchema, type ClientFiltersFormData } from '@/lib/validation/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -20,22 +35,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AmlGroupLabels, GTU_CODES } from '@/lib/constants/polish-labels';
-import { usePkdSearch } from '@/lib/hooks/use-pkd-search';
-import { cn } from '@/lib/utils/cn';
-import { clientFiltersSchema, type ClientFiltersFormData } from '@/lib/validation/schemas';
-import { type ClientFiltersDto, type CustomFieldFilter } from '@/types/dtos';
-import {
-  type EmploymentType,
-  EmploymentTypeLabels,
-  type VatStatus,
-  VatStatusLabels,
-  type TaxScheme,
-  TaxSchemeLabels,
-  type ZusStatus,
-  ZusStatusLabels,
-  type AmlGroup,
-} from '@/types/enums';
 
 import { ClientCustomFilters } from './client-custom-filters';
 
@@ -267,7 +266,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
   );
 
   return (
-    <Card className="border-apptax-soft-teal/30">
+    <Card className="border-border">
       <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
         <CardContent className="p-4">
           <CollapsibleTrigger asChild>
@@ -276,12 +275,10 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
               className="flex w-full cursor-pointer items-center gap-2 text-left select-none"
               aria-expanded={filtersOpen}
             >
-              <Filter className="text-apptax-blue h-4 w-4" aria-hidden="true" />
-              <span className="text-apptax-navy font-medium">Filtry</span>
+              <Filter className="text-primary h-4 w-4" aria-hidden="true" />
+              <span className="text-foreground font-medium">Filtry</span>
               {hasActiveFilters && (
-                <span className="bg-apptax-blue rounded px-1.5 py-0.5 text-xs text-white">
-                  Aktywne
-                </span>
+                <span className="bg-primary rounded px-1.5 py-0.5 text-xs text-white">Aktywne</span>
               )}
               <ChevronDown
                 className={cn('ml-auto h-4 w-4 transition-transform', filtersOpen && 'rotate-180')}
@@ -486,7 +483,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
                       <span className="flex items-center gap-2">
                         Filtry zaawansowane
                         {hasAdvancedFilters && (
-                          <span className="bg-apptax-blue rounded px-1.5 py-0.5 text-xs text-white">
+                          <span className="bg-primary rounded px-1.5 py-0.5 text-xs text-white">
                             Aktywne
                           </span>
                         )}

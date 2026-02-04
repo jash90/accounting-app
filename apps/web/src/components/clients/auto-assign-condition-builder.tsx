@@ -1,3 +1,11 @@
+import {
+  EmploymentType,
+  TaxScheme,
+  VatStatus,
+  ZusStatus,
+  type AutoAssignCondition,
+  type SingleCondition,
+} from '@/types/enums';
 import { Zap } from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,14 +18,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import {
-  type AutoAssignCondition,
-  type SingleCondition,
-  VatStatus,
-  EmploymentType,
-  TaxScheme,
-  ZusStatus,
-} from '@/types/enums';
 
 // Field definitions with Polish labels and enum values
 const ASSIGNABLE_FIELDS: Record<

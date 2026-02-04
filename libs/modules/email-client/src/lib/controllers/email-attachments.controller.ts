@@ -20,7 +20,9 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+
 import { Response } from 'express';
+
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { User } from '@accounting/common';
 import {
@@ -29,6 +31,7 @@ import {
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
+
 import { EmailAttachmentService } from '../services/email-attachment.service';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB

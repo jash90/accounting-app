@@ -1,13 +1,13 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 
 import {
-  type Client,
-  type SingleCondition,
-  type ConditionGroup,
   EmploymentType,
-  VatStatus,
   TaxScheme,
+  VatStatus,
   ZusStatus,
+  type Client,
+  type ConditionGroup,
+  type SingleCondition,
 } from '@accounting/common';
 
 import { ConditionEvaluatorService } from './condition-evaluator.service';

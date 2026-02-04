@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 /**
  * Current version of the preferences schema.
@@ -123,11 +123,17 @@ function saveToStorage(tableId: string, preferences: TablePreferences): void {
 }
 
 function getDefaultPreferences(columns: ColumnConfig[]): TablePreferences {
+  // Combine filter + map into single reduce for better performance
+  const visibleColumns = columns.reduce<string[]>((acc, col) => {
+    if (col.alwaysVisible || col.defaultVisible !== false) {
+      acc.push(col.id);
+    }
+    return acc;
+  }, []);
+
   return {
     viewMode: 'table',
-    visibleColumns: columns
-      .filter((col) => col.alwaysVisible || col.defaultVisible !== false)
-      .map((col) => col.id),
+    visibleColumns,
   };
 }
 
@@ -157,17 +163,19 @@ export function useTablePreferences(
   tableId: string,
   columns: ColumnConfig[]
 ): UseTablePreferencesReturn {
-  // Track previous tableId to detect changes (React recommended pattern)
-  const [prevTableId, setPrevTableId] = useState(tableId);
-  const [preferences, setPreferences] = useState<TablePreferences>(() =>
-    getInitialPreferences(tableId, columns)
+  // Compute initial preferences using useMemo instead of useState + synchronous setState
+  // This avoids the anti-pattern of calling setState during render
+  const initialPreferences = useMemo(
+    () => getInitialPreferences(tableId, columns),
+    [tableId, columns]
   );
 
-  // Synchronously update state when tableId changes (derived state pattern)
-  if (prevTableId !== tableId) {
-    setPrevTableId(tableId);
+  const [preferences, setPreferences] = useState<TablePreferences>(initialPreferences);
+
+  // Reset preferences when tableId changes using useEffect (proper derived state pattern)
+  useEffect(() => {
     setPreferences(getInitialPreferences(tableId, columns));
-  }
+  }, [tableId, columns]);
 
   // Sync preferences to localStorage
   useEffect(() => {
@@ -208,9 +216,15 @@ export function useTablePreferences(
     [columns]
   );
 
-  const isColumnVisible = useCallback(
-    (columnId: string) => preferences.visibleColumns.includes(columnId),
+  // Use Set for O(1) lookup instead of Array.includes O(n)
+  const visibleColumnsSet = useMemo(
+    () => new Set(preferences.visibleColumns),
     [preferences.visibleColumns]
+  );
+
+  const isColumnVisible = useCallback(
+    (columnId: string) => visibleColumnsSet.has(columnId),
+    [visibleColumnsSet]
   );
 
   const resetToDefaults = useCallback(() => {

@@ -1,6 +1,6 @@
-import { type ParsedMail, type AddressObject } from 'mailparser';
+import { type AddressObject, type ParsedMail } from 'mailparser';
 
-import { type ReceivedEmail, type EmailAddress } from '../interfaces/email-message.interface';
+import { type EmailAddress, type ReceivedEmail } from '../interfaces/email-message.interface';
 
 /**
  * Convert mailparser ParsedMail to ReceivedEmail

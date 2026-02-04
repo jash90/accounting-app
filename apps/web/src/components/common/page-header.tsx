@@ -14,12 +14,12 @@ export function PageHeader({ title, description, action, icon, titleAction }: Pa
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           {icon && (
-            <div className="bg-apptax-gradient shadow-apptax-sm flex h-12 w-12 items-center justify-center rounded-xl text-white">
+            <div className="bg-primary shadow-sm flex h-12 w-12 items-center justify-center rounded-xl text-white">
               {icon}
             </div>
           )}
           <div>
-            <h1 className="text-apptax-navy text-3xl font-bold tracking-tight">{title}</h1>
+            <h1 className="text-foreground text-3xl font-bold tracking-tight">{title}</h1>
             {description && <p className="text-muted-foreground mt-1 text-sm">{description}</p>}
           </div>
           {titleAction && <div className="flex-shrink-0">{titleAction}</div>}

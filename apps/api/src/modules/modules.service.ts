@@ -1,9 +1,9 @@
 import {
-  Injectable,
-  NotFoundException,
+  BadRequestException,
   ConflictException,
   ForbiddenException,
-  BadRequestException,
+  Injectable,
+  NotFoundException,
   Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -11,15 +11,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import {
-  User,
-  Module as ModuleEntity,
-  UserRole,
   ManageModulePermissionDto,
+  Module as ModuleEntity,
   PermissionTargetType,
+  User,
+  UserRole,
 } from '@accounting/common';
-import { RBACService, ModuleDiscoveryService, DiscoveredModule } from '@accounting/rbac';
+import { DiscoveredModule, ModuleDiscoveryService, RBACService } from '@accounting/rbac';
 
-import { CreateModuleDto, UpdateModuleDto, GrantModuleAccessDto } from './dto';
+import { CreateModuleDto, GrantModuleAccessDto, UpdateModuleDto } from './dto';
 import { CompanyModuleAccessService } from './services/company-module-access.service';
 import { EmployeeModulePermissionsService } from './services/employee-module-permissions.service';
 

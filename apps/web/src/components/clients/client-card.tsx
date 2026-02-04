@@ -1,20 +1,31 @@
 import { memo, useCallback, useMemo } from 'react';
-
 import { useNavigate } from 'react-router-dom';
 
+import { IconBadgeList } from '@/components/clients/icon-badge';
+import { cn } from '@/lib/utils/cn';
+import { type ClientResponseDto } from '@/types/dtos';
+import { type ClientFieldDefinition } from '@/types/entities';
 import {
-  Eye,
+  CustomFieldType,
+  EmploymentTypeLabels,
+  TaxSchemeLabels,
+  VatStatus,
+  VatStatusLabels,
+} from '@/types/enums';
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
+import {
+  Building2,
   Edit,
-  Trash2,
-  RotateCcw,
-  MoreHorizontal,
+  Eye,
   History,
   Mail,
+  MoreHorizontal,
   Phone,
-  Building2,
+  RotateCcw,
+  Trash2,
 } from 'lucide-react';
 
-import { IconBadgeList } from '@/components/clients/icon-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,16 +37,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils/cn';
-import { type ClientResponseDto } from '@/types/dtos';
-import { type ClientFieldDefinition } from '@/types/entities';
-import {
-  EmploymentTypeLabels,
-  VatStatus,
-  VatStatusLabels,
-  TaxSchemeLabels,
-  CustomFieldType,
-} from '@/types/enums';
+
+// Hoisted empty arrays to prevent re-renders from new reference creation
+const EMPTY_FIELD_DEFINITIONS: ClientFieldDefinition[] = [];
+const EMPTY_VISIBLE_COLUMNS: string[] = [];
+
+interface ClientPermissions {
+  write: boolean;
+  delete: boolean;
+}
 
 interface ClientCardProps {
   client: ClientResponseDto;
@@ -45,11 +55,12 @@ interface ClientCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onRestore?: () => void;
-  hasWritePermission?: boolean;
-  hasDeletePermission?: boolean;
+  permissions?: ClientPermissions;
   fieldDefinitions?: ClientFieldDefinition[];
   visibleColumns?: string[];
 }
+
+const DEFAULT_PERMISSIONS: ClientPermissions = { write: false, delete: false };
 
 export const ClientCard = memo(function ClientCard({
   client,
@@ -59,10 +70,9 @@ export const ClientCard = memo(function ClientCard({
   onEdit,
   onDelete,
   onRestore,
-  hasWritePermission = false,
-  hasDeletePermission = false,
-  fieldDefinitions = [],
-  visibleColumns = [],
+  permissions = DEFAULT_PERMISSIONS,
+  fieldDefinitions = EMPTY_FIELD_DEFINITIONS,
+  visibleColumns = EMPTY_VISIBLE_COLUMNS,
 }: ClientCardProps) {
   const navigate = useNavigate();
 
@@ -92,7 +102,7 @@ export const ClientCard = memo(function ClientCard({
           return value === 'true' ? 'Tak' : 'Nie';
         case CustomFieldType.DATE:
           try {
-            return new Date(value).toLocaleDateString('pl-PL');
+            return format(new Date(value), 'dd.MM.yyyy', { locale: pl });
           } catch {
             return value;
           }
@@ -126,9 +136,9 @@ export const ClientCard = memo(function ClientCard({
   return (
     <Card
       className={cn(
-        'group hover:shadow-apptax-md border-apptax-soft-teal/30 cursor-pointer transition-all',
-        'hover:border-apptax-teal/50',
-        isSelected && 'ring-apptax-blue border-apptax-blue ring-2'
+        'group hover:shadow-md border-border cursor-pointer transition-all',
+        'hover:border-accent',
+        isSelected && 'ring-primary border-primary ring-2'
       )}
       onClick={handleCardClick}
     >
@@ -171,7 +181,7 @@ export const ClientCard = memo(function ClientCard({
                     Szczegóły
                   </DropdownMenuItem>
 
-                  {hasWritePermission && client.isActive && onEdit && (
+                  {permissions.write && client.isActive && onEdit && (
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
@@ -190,7 +200,7 @@ export const ClientCard = memo(function ClientCard({
 
                   <DropdownMenuSeparator />
 
-                  {hasDeletePermission && client.isActive && onDelete && (
+                  {permissions.delete && client.isActive && onDelete && (
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
@@ -203,7 +213,7 @@ export const ClientCard = memo(function ClientCard({
                     </DropdownMenuItem>
                   )}
 
-                  {hasWritePermission && !client.isActive && onRestore && (
+                  {permissions.write && !client.isActive && onRestore && (
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
@@ -222,11 +232,13 @@ export const ClientCard = memo(function ClientCard({
 
         {/* Client name with status */}
         <div className="mb-2 flex items-center gap-2">
-          <h3 className="text-apptax-navy line-clamp-1 min-w-0 flex-1 text-lg font-semibold">
+          <h3 className="text-foreground line-clamp-1 min-w-0 flex-1 text-lg font-semibold">
             {client.name}
           </h3>
           {client.isActive ? (
-            <Badge className="shrink-0 bg-green-100 text-xs text-green-700">Aktywny</Badge>
+            <Badge className="shrink-0 bg-green-100 text-xs text-green-700 dark:bg-green-900 dark:text-green-300">
+              Aktywny
+            </Badge>
           ) : (
             <Badge variant="outline" className="shrink-0 text-xs">
               Nieaktywny
@@ -236,7 +248,7 @@ export const ClientCard = memo(function ClientCard({
 
         {/* NIP */}
         {client.nip && (
-          <div className="text-apptax-navy/70 mb-2 flex items-center gap-2 text-sm">
+          <div className="text-foreground/70 mb-2 flex items-center gap-2 text-sm">
             <Building2 className="h-4 w-4 shrink-0" />
             <span className="font-mono">{client.nip}</span>
           </div>
@@ -265,7 +277,7 @@ export const ClientCard = memo(function ClientCard({
         </div>
 
         {/* Contact info */}
-        <div className="text-apptax-navy/60 space-y-1.5 text-sm">
+        <div className="text-foreground/60 space-y-1.5 text-sm">
           {client.email && (
             <div className="flex items-center gap-2">
               <Mail className="h-3.5 w-3.5 shrink-0" />
@@ -282,11 +294,11 @@ export const ClientCard = memo(function ClientCard({
 
         {/* Custom fields */}
         {visibleCustomFields.length > 0 && (
-          <div className="border-apptax-soft-teal/30 mt-3 space-y-1.5 border-t pt-3 text-sm">
+          <div className="border-border mt-3 space-y-1.5 border-t pt-3 text-sm">
             {visibleCustomFields.map((field) => (
               <div key={field.id} className="flex items-center justify-between">
-                <span className="text-apptax-navy/60 truncate">{field.label}:</span>
-                <span className="text-apptax-navy/80 ml-2 truncate font-medium">
+                <span className="text-foreground/60 truncate">{field.label}:</span>
+                <span className="text-foreground/80 ml-2 truncate font-medium">
                   {formatCustomFieldValue(field)}
                 </span>
               </div>

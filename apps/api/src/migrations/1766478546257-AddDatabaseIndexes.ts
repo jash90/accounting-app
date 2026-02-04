@@ -1,4 +1,4 @@
-import { type MigrationInterface, type QueryRunner, TableForeignKey } from 'typeorm';
+import { TableForeignKey, type MigrationInterface, type QueryRunner } from 'typeorm';
 
 interface FKMetadata {
   name: string;

@@ -48,8 +48,9 @@ export function EmployeeFormDialog({
   });
 
   const handleSubmit = (data: CreateEmployeeFormData | UpdateUserFormData) => {
+    // Note: Form reset is handled by parent closing dialog on success
+    // Do NOT reset here - if mutation fails, user loses their data
     onSubmit(data);
-    form.reset();
   };
 
   return (

@@ -1,8 +1,9 @@
-import { Injectable, Inject, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+
 import {
+  STORAGE_PROVIDER,
   StorageProvider,
   StorageResult,
-  STORAGE_PROVIDER,
 } from '../interfaces/storage-provider.interface';
 
 @Injectable()

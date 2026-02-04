@@ -1,11 +1,13 @@
-import { Injectable, Logger, HttpStatus } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+
 import OpenAI from 'openai';
 import { Observable } from 'rxjs';
+
 import {
-  AIProviderService,
   AIProviderError,
-  ChatMessage,
+  AIProviderService,
   ChatCompletionResponse,
+  ChatMessage,
   ChatStreamChunk,
   EmbeddingResponse,
 } from './ai-provider.interface';

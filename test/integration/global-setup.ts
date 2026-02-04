@@ -5,6 +5,7 @@
  */
 
 import { Client } from 'pg';
+
 import { TEST_DB_CONFIG } from './setup';
 
 export default async function globalSetup() {

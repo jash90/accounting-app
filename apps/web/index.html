@@ -8,9 +8,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="AppTax - AI-powered accounting CRM platform for the Polish market. Combine traditional accounting reliability with innovative AI capabilities." />
     <meta name="theme-color" content="#1E3A5F" />
-    <!-- CSP: 'unsafe-inline' for styles (required by Radix UI), fonts self-hosted, connect limited to self, API and WebSocket -->
-    <!-- For production: Replace __CSP_CONNECT_SRC__ with actual backend URLs during deploy -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' http://localhost:3000 ws://localhost:3000 https://*.up.railway.app wss://*.up.railway.app;" />
+    <!--
+      CSP Security Notes:
+      - 'unsafe-inline' for scripts: Required by Vite HMR in dev and React hydration. Consider nonce-based approach for stricter security.
+      - 'unsafe-inline' for styles: Required by Radix UI for dynamic CSS injection.
+      - connect-src: Specific Railway production domain to prevent connections to arbitrary Railway apps.
+      - img-src https: allows loading images from any HTTPS source (avatars, etc.)
+
+      TODO: Implement nonce-based CSP for scripts when Vite adds proper support.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' http://localhost:3000 ws://localhost:3000 https://api-production-02a2.up.railway.app wss://api-production-02a2.up.railway.app;" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/apptax-favicon.svg" />

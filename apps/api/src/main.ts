@@ -1,6 +1,7 @@
-import { ValidationPipe, Logger, type INestApplication } from '@nestjs/common';
+
+import { Logger, ValidationPipe, type INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';

@@ -1,3 +1,4 @@
+
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -7,15 +8,15 @@ import * as path from 'path';
 import { Repository } from 'typeorm';
 
 import {
-  Task,
-  User,
-  NotificationSettings,
-  Company,
   Client,
-  TaskStatus,
+  Company,
+  NotificationSettings,
+  Task,
   TaskPriority,
-  TaskStatusLabels,
   TaskPriorityLabels,
+  TaskStatus,
+  TaskStatusLabels,
+  User,
 } from '@accounting/common';
 import { EmailConfigurationService, EmailSenderService } from '@accounting/email';
 
@@ -492,6 +493,7 @@ export class TaskNotificationService {
     }
 
     // Handle Date strings
+    // eslint-disable-next-line security/detect-unsafe-regex -- Linear pattern, no backtracking risk
     const isoDatePattern = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?/;
     if (
       typeof oldValue === 'string' &&

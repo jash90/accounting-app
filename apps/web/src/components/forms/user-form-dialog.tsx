@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 
-import { useForm } from 'react-hook-form';
-import type { Resolver } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -30,7 +29,7 @@ import {
   type CreateUserFormData,
   type UpdateUserFormData,
 } from '@/lib/validation/schemas';
-import { type UserDto, UserRole } from '@/types/dtos';
+import { UserRole, type UserDto } from '@/types/dtos';
 
 interface UserFormDialogProps {
   open: boolean;

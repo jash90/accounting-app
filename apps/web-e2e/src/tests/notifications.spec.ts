@@ -1,5 +1,5 @@
-/* eslint-disable playwright/no-conditional-in-test */
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+
 import { LoginPage } from '../pages/auth/LoginPage';
 import { NotificationBellComponent } from '../pages/components/NotificationBellComponent';
 import { NotificationsPage } from '../pages/notifications/NotificationsPage';

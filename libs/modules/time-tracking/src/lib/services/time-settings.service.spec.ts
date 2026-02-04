@@ -3,7 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { type Repository } from 'typeorm';
 
-import { TimeSettings, TimeRoundingMethod, type User, UserRole } from '@accounting/common';
+import { TimeRoundingMethod, TimeSettings, UserRole, type User } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 
 import { TimeSettingsService } from './time-settings.service';

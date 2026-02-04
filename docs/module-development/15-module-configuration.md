@@ -221,6 +221,7 @@ Create file: `libs/modules/{module}/src/lib/exceptions/{module}.exception.ts`
 
 ```typescript
 import { HttpException, HttpStatus } from '@nestjs/common';
+
 import { ClientErrorCode } from './error-codes.enum';
 
 export interface ClientExceptionContext {
@@ -440,9 +441,10 @@ The `TenantService` from `@accounting/common` provides centralized logic for det
 **Service Location**: `libs/common/src/lib/services/tenant.service.ts`
 
 ```typescript
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
 import { Company } from '../entities/company.entity';
 import { User } from '../entities/user.entity';
 import { UserRole } from '../enums/user-role.enum';
@@ -573,9 +575,13 @@ export * from './task-dependencies.service';
 
 ```typescript
 // Clean imports from module boundary
-import { TasksModule, TasksService } from '@accounting/modules/tasks';
-import { CreateTaskDto, TaskResponseDto } from '@accounting/modules/tasks';
-import { TaskNotFoundException } from '@accounting/modules/tasks';
+import {
+  CreateTaskDto,
+  TaskNotFoundException,
+  TaskResponseDto,
+  TasksModule,
+  TasksService,
+} from '@accounting/modules/tasks';
 ```
 
 ---

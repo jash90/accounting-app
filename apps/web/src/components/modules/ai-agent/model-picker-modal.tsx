@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback, useEffect, memo } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Search, X, GitCompare, Star, Clock, Loader2, ChevronRight } from 'lucide-react';
+import { ChevronRight, Clock, GitCompare, Loader2, Search, Star, X } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -523,7 +523,7 @@ const ModelPickerModalContent = memo(function ModelPickerModalContent({
               <Button
                 onClick={handleSelectModel}
                 disabled={!selectedModel}
-                className="bg-apptax-blue hover:bg-apptax-blue/90"
+                className="bg-primary hover:bg-primary/90"
               >
                 Wybierz model
               </Button>

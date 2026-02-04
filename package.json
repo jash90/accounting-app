@@ -6,7 +6,7 @@
     "build": "nx build api",
     "build:web": "nx build web",
     "test": "bun test apps/api/src",
-    "test:web": "bun test web/src",
+    "test:web": "nx test web",
     "test:e2e": "nx e2e web-e2e",
     "test:integration": "bun test apps/api/src/**/*.integration.spec.ts --timeout 30000",
     "lint": "nx lint api",
@@ -23,15 +23,15 @@
     "migration:revert": "bun ./node_modules/typeorm/cli.js migration:revert -d apps/api/typeorm.config.ts",
     "seed": "bun apps/api/src/seeders/seed.ts",
     "migration:compile:prod": "tsc apps/api/typeorm.prod.config.ts apps/api/src/migrations/*.ts --outDir dist/apps/api --module commonjs --target ES2021 --esModuleInterop --experimentalDecorators --emitDecoratorMetadata --skipLibCheck --resolveJsonModule",
-    "migration:run:prod": "cd dist/apps/api && bun ../../../node_modules/typeorm/cli.js migration:run -d typeorm.prod.config.js",
+    "migration:run:prod": "cd dist/apps/api && node ../../../node_modules/typeorm/cli.js migration:run -d typeorm.prod.config.js",
     "db:migrate:prod": "npm run migration:compile:prod && npm run migration:run:prod",
-    "seed:prod": "bun dist/apps/api/main.js",
+    "seed:prod": "node dist/apps/api/main.js",
     "start": "node dist/apps/api/main.js",
     "prepare": "if [ -d .git ]; then husky; fi"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --fix --max-warnings=0 --no-warn-ignored"
+      "eslint --fix --no-warn-ignored"
     ],
     "*.{ts,tsx,json,md,css,scss}": [
       "prettier --write"

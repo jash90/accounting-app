@@ -1,4 +1,4 @@
-import { Users, Building2, Package } from 'lucide-react';
+import { Building2, Package, Users } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCompanies } from '@/lib/hooks/use-companies';
@@ -14,7 +14,7 @@ export default function AdminDashboard() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-apptax-navy text-3xl font-bold tracking-tight">Panel Administratora</h1>
+        <h1 className="text-foreground text-3xl font-bold tracking-tight">Panel Administratora</h1>
         <p className="text-muted-foreground mt-2">Przegląd statystyk systemowych i zarządzanie</p>
       </div>
 
@@ -24,14 +24,14 @@ export default function AdminDashboard() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Wszyscy użytkownicy</CardTitle>
-              <div className="bg-apptax-soft-teal rounded-lg p-2">
-                <Users className="text-apptax-blue h-5 w-5" />
+              <div className="bg-accent/10 rounded-lg p-2">
+                <Users className="text-primary h-5 w-5" />
               </div>
             </div>
             <CardDescription>Wszyscy użytkownicy w systemie</CardDescription>
           </CardHeader>
           <CardContent>
-            <p data-testid="user-count" className="text-apptax-blue text-4xl font-bold">
+            <p data-testid="user-count" className="text-primary text-4xl font-bold">
               {usersLoading ? '...' : users?.length || 0}
             </p>
           </CardContent>
@@ -41,14 +41,14 @@ export default function AdminDashboard() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Wszystkie firmy</CardTitle>
-              <div className="bg-apptax-soft-teal rounded-lg p-2">
-                <Building2 className="text-apptax-blue h-5 w-5" />
+              <div className="bg-accent/10 rounded-lg p-2">
+                <Building2 className="text-primary h-5 w-5" />
               </div>
             </div>
             <CardDescription>Zarejestrowane firmy</CardDescription>
           </CardHeader>
           <CardContent>
-            <p data-testid="company-count" className="text-apptax-blue text-4xl font-bold">
+            <p data-testid="company-count" className="text-primary text-4xl font-bold">
               {companiesLoading ? '...' : companies?.length || 0}
             </p>
           </CardContent>
@@ -58,25 +58,25 @@ export default function AdminDashboard() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Moduły</CardTitle>
-              <div className="bg-apptax-soft-teal rounded-lg p-2">
-                <Package className="text-apptax-teal h-5 w-5" />
+              <div className="bg-accent/10 rounded-lg p-2">
+                <Package className="text-accent h-5 w-5" />
               </div>
             </div>
             <CardDescription>Dostępne moduły</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <p data-testid="module-count" className="text-apptax-blue text-4xl font-bold">
+              <p data-testid="module-count" className="text-primary text-4xl font-bold">
                 {modulesLoading ? '...' : modules?.length || 0}
               </p>
-              <div className="bg-apptax-teal ai-glow h-2 w-2 rounded-full" />
+              <div className="bg-accent ai-glow h-2 w-2 rounded-full" />
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Welcome Card */}
-      <Card className="bg-apptax-dark-gradient border-0 text-white">
+      <Card className="bg-primary border-0 text-white">
         <CardContent className="p-8">
           <div className="flex items-start justify-between">
             <div>
@@ -87,8 +87,8 @@ export default function AdminDashboard() {
               </p>
             </div>
             <div className="hidden md:block">
-              <div className="text-apptax-teal flex items-center gap-2">
-                <div className="bg-apptax-teal ai-glow h-3 w-3 rounded-full" />
+              <div className="text-accent flex items-center gap-2">
+                <div className="bg-accent ai-glow h-3 w-3 rounded-full" />
                 <span className="text-sm font-medium">Platforma zasilana AI</span>
               </div>
             </div>

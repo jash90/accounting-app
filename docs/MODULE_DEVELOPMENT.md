@@ -565,14 +565,15 @@ Create file: `libs/common/src/lib/entities/task.entity.ts`
 
 ```typescript
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
   CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+
 import { Company } from './company.entity';
 import { User } from './user.entity';
 
@@ -717,17 +718,18 @@ export class Company {
 Create file: `libs/modules/tasks/src/lib/dto/create-task.dto.ts`
 
 ```typescript
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsString,
+  IsDateString,
   IsEnum,
   IsOptional,
+  IsString,
   IsUUID,
-  IsDateString,
-  MinLength,
   MaxLength,
+  MinLength,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { TaskStatus, TaskPriority } from '@accounting/common';
+
+import { TaskPriority, TaskStatus } from '@accounting/common';
 
 export class CreateTaskDto {
   @ApiProperty({
@@ -801,17 +803,18 @@ export class CreateTaskDto {
 Create file: `libs/modules/tasks/src/lib/dto/update-task.dto.ts`
 
 ```typescript
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsString,
+  IsDateString,
   IsEnum,
   IsOptional,
+  IsString,
   IsUUID,
-  IsDateString,
-  MinLength,
   MaxLength,
+  MinLength,
 } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { TaskStatus, TaskPriority } from '@accounting/common';
+
+import { TaskPriority, TaskStatus } from '@accounting/common';
 
 export class UpdateTaskDto {
   @ApiPropertyOptional({
@@ -878,7 +881,8 @@ Create file: `libs/modules/tasks/src/lib/dto/task-response.dto.ts`
 
 ```typescript
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { TaskStatus, TaskPriority } from '@accounting/common';
+
+import { TaskPriority, TaskStatus } from '@accounting/common';
 
 // Nested type: Simplified user info in response
 class UserBasicInfoDto {
@@ -979,14 +983,16 @@ Create file: `libs/modules/tasks/src/lib/services/task.service.ts`
 
 ```typescript
 import {
+  BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
-  ForbiddenException,
-  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Task, User, UserRole, Company } from '@accounting/common'; // Include Company for System Company pattern
+
+import { Company, Task, User, UserRole } from '@accounting/common'; // Include Company for System Company pattern
+
 import { CreateTaskDto } from '../dto/create-task.dto';
 import { UpdateTaskDto } from '../dto/update-task.dto';
 
@@ -1256,38 +1262,40 @@ Create file: `libs/modules/tasks/src/lib/controllers/task.controller.ts`
 
 ```typescript
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
   Body,
-  Param,
-  Query,
+  Controller,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
   ApiBearerAuth,
+  ApiOperation,
   ApiParam,
   ApiQuery,
+  ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
+
 import { CurrentUser } from '@accounting/auth';
+import { User } from '@accounting/common';
 import {
-  RequireModule,
-  RequirePermission,
   ModuleAccessGuard,
   PermissionGuard,
+  RequireModule,
+  RequirePermission,
 } from '@accounting/rbac';
-import { User } from '@accounting/common';
-import { TaskService } from '../services/task.service';
+
 import { CreateTaskDto } from '../dto/create-task.dto';
-import { UpdateTaskDto } from '../dto/update-task.dto';
 import { TaskResponseDto } from '../dto/task-response.dto';
+import { UpdateTaskDto } from '../dto/update-task.dto';
+import { TaskService } from '../services/task.service';
 
 @ApiTags('tasks') // Swagger tag
 @ApiBearerAuth('JWT-auth') // Requires JWT
@@ -1453,8 +1461,10 @@ Create file: `libs/modules/tasks/src/lib/tasks.module.ts`
 ```typescript
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Task, User, Company } from '@accounting/common'; // Include Company for System Admin pattern
+
+import { Company, Task, User } from '@accounting/common'; // Include Company for System Admin pattern
 import { RBACModule } from '@accounting/rbac';
+
 import { TaskController } from './controllers/task.controller';
 import { TaskService } from './services/task.service';
 
@@ -1524,21 +1534,23 @@ Update `apps/api/src/app/app.module.ts`:
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { AuthModule } from '@accounting/auth';
 import {
-  User,
   Company,
-  Module as ModuleEntity,
   CompanyModuleAccess,
-  UserModulePermission,
+  Module as ModuleEntity,
   SimpleText,
   Task, // Add Task entity
+  User,
+  UserModulePermission,
 } from '@accounting/common';
-import { AuthModule } from '@accounting/auth';
-import { RBACModule } from '@accounting/rbac';
 import { SimpleTextModule } from '@accounting/modules/simple-text';
 import { TasksModule } from '@accounting/modules/tasks'; // Import TasksModule
+import { RBACModule } from '@accounting/rbac';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -1589,14 +1601,15 @@ Update `apps/api/typeorm.config.ts`:
 
 ```typescript
 import { DataSource } from 'typeorm';
+
 import {
-  User,
   Company,
-  Module,
   CompanyModuleAccess,
-  UserModulePermission,
+  Module,
   SimpleText,
   Task, // Import Task entity
+  User,
+  UserModulePermission,
 } from '@accounting/common';
 
 export default new DataSource({
@@ -2148,12 +2161,14 @@ Authorization: Bearer <admin_token>
 Create `libs/modules/tasks/src/lib/services/task.service.spec.ts`:
 
 ```typescript
+import { ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { TaskService } from './task.service';
+
 import { Task, User, UserRole } from '@accounting/common';
-import { ForbiddenException } from '@nestjs/common';
+
+import { TaskService } from './task.service';
 
 describe('TaskService', () => {
   let service: TaskService;
@@ -2408,8 +2423,9 @@ export type UpdateTaskFormData = z.infer<typeof updateTaskSchema>;
 Create file: `web/src/lib/api/endpoints/tasks.ts`
 
 ```typescript
+import { CreateTaskDto, TaskResponseDto, UpdateTaskDto } from '@/types/dtos';
+
 import { apiClient } from '../client';
-import { CreateTaskDto, UpdateTaskDto, TaskResponseDto } from '@/types/dtos';
 
 export const tasksApi = {
   /**
@@ -2517,11 +2533,12 @@ export const queryKeys = {
 Create file: `web/src/lib/hooks/use-tasks.ts`
 
 ```typescript
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { tasksApi } from '@/lib/api/endpoints/tasks';
-import { queryKeys } from '@/lib/api/query-client';
 import { useToast } from '@/hooks/use-toast';
 import { CreateTaskDto, UpdateTaskDto } from '@/types/dtos';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { tasksApi } from '@/lib/api/endpoints/tasks';
+import { queryKeys } from '@/lib/api/query-client';
 
 /**
  * Get all tasks
@@ -3207,15 +3224,16 @@ export class YourResponseDto {
 
 ```typescript
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
   CreateDateColumn,
-  UpdateDateColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
+
 import { Company } from './company.entity';
 import { User } from './user.entity';
 
@@ -3611,15 +3629,16 @@ AI Agent Module Entities:
 
 ```typescript
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
+
 import { Company } from './company.entity';
 import { User } from './user.entity';
 
@@ -3742,8 +3761,9 @@ When storing API keys, credentials, or other sensitive data, use encryption at r
 **File**: `libs/modules/ai-agent/src/lib/services/ai-configuration.service.ts`
 
 ```typescript
-import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as crypto from 'crypto';
+
+import { Injectable, OnModuleInit } from '@nestjs/common';
 
 @Injectable()
 export class AIConfigurationService implements OnModuleInit {
@@ -3915,6 +3935,7 @@ export abstract class AIProviderService {
 ```typescript
 import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
+
 import {
   AIProviderService,
   ChatMessage,
@@ -4086,19 +4107,20 @@ For modules that handle file uploads with processing.
 **File**: `libs/modules/ai-agent/src/lib/controllers/ai-context.controller.ts`
 
 ```typescript
+import { extname } from 'path';
+
 import {
+  BadRequestException,
   Controller,
   Post,
-  UseInterceptors,
   UploadedFile,
-  BadRequestException,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { ApiTags, ApiConsumes, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('modules/ai-agent/context')
 @ApiTags('AI Agent - Context')
@@ -5637,6 +5659,7 @@ Create file: `libs/modules/{module}/src/lib/exceptions/{module}.exception.ts`
 
 ```typescript
 import { HttpException, HttpStatus } from '@nestjs/common';
+
 import { ClientErrorCode } from './error-codes.enum';
 
 export interface ClientExceptionContext {
@@ -5856,9 +5879,10 @@ The `TenantService` from `@accounting/common` provides centralized logic for det
 **Service Location**: `libs/common/src/lib/services/tenant.service.ts`
 
 ```typescript
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
 import { Company } from '../entities/company.entity';
 import { User } from '../entities/user.entity';
 import { UserRole } from '../enums/user-role.enum';
@@ -5987,9 +6011,13 @@ export * from './task-dependencies.service';
 
 ```typescript
 // Clean imports from module boundary
-import { TasksModule, TasksService } from '@accounting/modules/tasks';
-import { CreateTaskDto, TaskResponseDto } from '@accounting/modules/tasks';
-import { TaskNotFoundException } from '@accounting/modules/tasks';
+import {
+  CreateTaskDto,
+  TaskNotFoundException,
+  TaskResponseDto,
+  TasksModule,
+  TasksService,
+} from '@accounting/modules/tasks';
 ```
 
 ---
@@ -6249,12 +6277,14 @@ The navigation is built dynamically from the API using the `useNavigationItems` 
 
 ```typescript
 import { useMemo } from 'react';
-import { LayoutDashboard, Users, Building2, Package } from 'lucide-react';
+
+import { NavItem } from '@/components/sidebar';
 import { UserDto } from '@/types/dtos';
 import { UserRole } from '@/types/enums';
+import { Building2, LayoutDashboard, Package, Users } from 'lucide-react';
+
 import { useModules } from '@/lib/hooks/use-modules';
 import { useCompanyModules } from '@/lib/hooks/use-permissions';
-import { NavItem } from '@/components/sidebar';
 
 export function useNavigationItems(user: UserDto | null): NavItem[] {
   // Fetch modules based on user role
@@ -7019,8 +7049,8 @@ Implement comprehensive error handling across the module.
 
 ```typescript
 // lib/api/error-handler.ts
-import { AxiosError } from 'axios';
 import { toast } from '@/hooks/use-toast';
+import { AxiosError } from 'axios';
 
 interface ApiError {
   message: string | string[];

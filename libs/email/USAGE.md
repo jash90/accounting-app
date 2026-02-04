@@ -35,8 +35,8 @@ npm install
 ### 1. Import the EmailModule
 
 ```typescript
-import { Module } from '@nestjs/common';
 import { EmailModule } from '@accounting/email';
+import { Module } from '@nestjs/common';
 
 @Module({
   imports: [EmailModule],
@@ -48,8 +48,8 @@ export class YourModule {}
 ### 2. Inject Services
 
 ```typescript
+import { EmailReaderService, EmailSenderService } from '@accounting/email';
 import { Injectable } from '@nestjs/common';
-import { EmailSenderService, EmailReaderService } from '@accounting/email';
 
 @Injectable()
 export class YourService {
@@ -174,8 +174,8 @@ Authorization: Bearer <jwt-token>
 ### Using Persistent Configuration
 
 ```typescript
-import { Injectable } from '@nestjs/common';
 import { EmailConfigurationService, EmailSenderService } from '@accounting/email';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class NotificationService {
@@ -254,7 +254,7 @@ const config = EmailConfigHelper.createFromEnv(process.env);
 ### Manual Configuration
 
 ```typescript
-import { SmtpConfig, ImapConfig } from '@accounting/email';
+import { ImapConfig, SmtpConfig } from '@accounting/email';
 
 const smtpConfig: SmtpConfig = {
   host: 'mail-server123456.lh.pl',
@@ -432,8 +432,8 @@ const emails = await this.emailReader.fetchEmails(imapConfig, {
 ### Multi-Tenant Email Service
 
 ```typescript
+import { EmailConfigHelper, EmailSenderService } from '@accounting/email';
 import { Injectable } from '@nestjs/common';
-import { EmailSenderService, EmailConfigHelper } from '@accounting/email';
 
 @Injectable()
 export class CompanyEmailService {
@@ -473,9 +473,9 @@ export class CompanyEmailService {
 ### Email Queue Worker
 
 ```typescript
+import { EmailConfigHelper, EmailReaderService } from '@accounting/email';
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { EmailReaderService, EmailConfigHelper } from '@accounting/email';
 
 @Injectable()
 export class EmailInboxWorker {
@@ -514,8 +514,8 @@ export class EmailInboxWorker {
 ### Notification Service
 
 ```typescript
-import { Injectable } from '@nestjs/common';
 import { EmailSenderService, SmtpConfig } from '@accounting/email';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class NotificationService {

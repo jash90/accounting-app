@@ -1,24 +1,25 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
 import { type ApiErrorResponse } from '@/types/api';
 import {
   type CreateTimeEntryDto,
-  type UpdateTimeEntryDto,
-  type TimeEntryFiltersDto,
+  type RejectTimeEntryDto,
   type StartTimerDto,
   type StopTimerDto,
+  type TimeEntryFiltersDto,
+  type UpdateTimeEntryDto,
   type UpdateTimerDto,
-  type RejectTimeEntryDto,
   type UpdateTimeSettingsDto,
 } from '@/types/dtos';
+
 
 import {
   timeEntriesApi,
   timerApi,
+  timeReportsApi,
   timeSettingsApi,
   timesheetApi,
-  timeReportsApi,
 } from '../api/endpoints/time-tracking';
 import { queryKeys } from '../api/query-client';
 
@@ -27,13 +28,48 @@ import { queryKeys } from '../api/query-client';
 const TIMER_REFETCH_INTERVAL_MS = 10000; // 10 seconds
 
 // ============================================
+// Cache Time Constants
+// ============================================
+
+/** Cache times for time entry list views - data is time-sensitive */
+const TIME_ENTRY_LIST_CACHE = {
+  staleTime: 2 * 60 * 1000, // 2 minutes
+  gcTime: 5 * 60 * 1000, // 5 minutes
+};
+
+/** Cache times for time entry detail views */
+const TIME_ENTRY_DETAIL_CACHE = {
+  staleTime: 2 * 60 * 1000, // 2 minutes
+  gcTime: 5 * 60 * 1000, // 5 minutes
+};
+
+/** Cache times for time settings - changes infrequently */
+const TIME_SETTINGS_CACHE = {
+  staleTime: 5 * 60 * 1000, // 5 minutes
+  gcTime: 10 * 60 * 1000, // 10 minutes
+};
+
+/** Cache times for timesheet views */
+const TIMESHEET_CACHE = {
+  staleTime: 2 * 60 * 1000, // 2 minutes
+  gcTime: 5 * 60 * 1000, // 5 minutes
+};
+
+/** Cache times for report data */
+const REPORT_CACHE = {
+  staleTime: 5 * 60 * 1000, // 5 minutes
+  gcTime: 10 * 60 * 1000, // 10 minutes
+};
+
+// ============================================
 // Time Entry Hooks
 // ============================================
 
 export function useTimeEntries(filters?: TimeEntryFiltersDto) {
   return useQuery({
-    queryKey: queryKeys.timeTracking.entries.list(filters as Record<string, unknown> | undefined),
+    queryKey: queryKeys.timeTracking.entries.list(filters),
     queryFn: () => timeEntriesApi.getAll(filters),
+    ...TIME_ENTRY_LIST_CACHE,
   });
 }
 
@@ -42,6 +78,7 @@ export function useTimeEntry(id: string) {
     queryKey: queryKeys.timeTracking.entries.detail(id),
     queryFn: () => timeEntriesApi.getById(id),
     enabled: !!id,
+    ...TIME_ENTRY_DETAIL_CACHE,
   });
 }
 
@@ -308,6 +345,7 @@ export function useTimeSettings() {
   return useQuery({
     queryKey: queryKeys.timeTracking.settings,
     queryFn: () => timeSettingsApi.get(),
+    ...TIME_SETTINGS_CACHE,
   });
 }
 
@@ -343,6 +381,7 @@ export function useDailyTimesheet(date: string) {
     queryKey: queryKeys.timeTracking.timesheet.daily(date),
     queryFn: () => timesheetApi.getDaily(date),
     enabled: !!date,
+    ...TIMESHEET_CACHE,
   });
 }
 
@@ -351,6 +390,7 @@ export function useWeeklyTimesheet(date: string) {
     queryKey: queryKeys.timeTracking.timesheet.weekly(date),
     queryFn: () => timesheetApi.getWeekly(date),
     enabled: !!date,
+    ...TIMESHEET_CACHE,
   });
 }
 
@@ -367,6 +407,7 @@ export function useTimeSummaryReport(params: {
     queryKey: queryKeys.timeTracking.reports.summary(params),
     queryFn: () => timeReportsApi.getSummary(params),
     enabled: !!params.startDate && !!params.endDate,
+    ...REPORT_CACHE,
   });
 }
 
@@ -379,6 +420,7 @@ export function useTimeByClientReport(params: {
     queryKey: queryKeys.timeTracking.reports.byClient(params),
     queryFn: () => timeReportsApi.getByClient(params),
     enabled: !!params.startDate && !!params.endDate,
+    ...REPORT_CACHE,
   });
 }
 

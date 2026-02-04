@@ -1,4 +1,4 @@
-import { type MigrationInterface, type QueryRunner, TableColumn, TableForeignKey } from 'typeorm';
+import { TableColumn, TableForeignKey, type MigrationInterface, type QueryRunner } from 'typeorm';
 
 export class RevertAdminContextSwitching1734461500000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

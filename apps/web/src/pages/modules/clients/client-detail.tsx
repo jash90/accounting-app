@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -16,12 +16,14 @@ import {
 import { ClientChangelog } from '@/components/clients/client-changelog';
 import { ClientTaskStatistics } from '@/components/clients/client-task-statistics';
 import { ClientTasksList } from '@/components/clients/client-tasks-list';
+import { ReliefPeriodsCard } from '@/components/clients/relief-periods-card';
 import { SuspensionHistoryCard } from '@/components/clients/suspension-history-card';
 import { ErrorBoundary } from '@/components/common/error-boundary';
-import { ClientFormDialog } from '@/components/forms/client-form-dialog';
+import { type ClientReliefsData } from '@/components/forms/client-form-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { InfoItem } from '@/components/ui/info-item';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthContext } from '@/contexts/auth-context';
 import {
@@ -31,6 +33,14 @@ import {
   useSetClientCustomFields,
   useUpdateClient,
 } from '@/lib/hooks/use-clients';
+import {
+  ReliefType,
+  useClientReliefPeriods,
+  useCreateReliefPeriod,
+  useDeleteReliefPeriod,
+  useUpdateReliefPeriod,
+} from '@/lib/hooks/use-relief-periods';
+import { formatDate } from '@/lib/utils/format-date';
 import { type UpdateClientDto } from '@/types/dtos';
 import { type ClientIcon } from '@/types/entities';
 import {
@@ -41,20 +51,12 @@ import {
   ZusStatusLabels,
 } from '@/types/enums';
 
-function formatDate(date?: Date | string | null): string {
-  if (!date) return '-';
-  return new Date(date).toLocaleDateString('pl-PL');
-}
-
-function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="space-y-1">
-      <p className="text-muted-foreground text-sm">{label}</p>
-      <p className="text-apptax-navy font-medium">{value || '-'}</p>
-    </div>
-  );
-}
-
+// Lazy-load heavy form dialog (976 lines) - only loaded when edit button is clicked
+const ClientFormDialog = lazy(() =>
+  import('@/components/forms/client-form-dialog').then((m) => ({
+    default: m.ClientFormDialog,
+  }))
+);
 /**
  * Error fallback component for ClientDetailPage
  */
@@ -102,10 +104,16 @@ function ClientDetailContent() {
   const updateClient = useUpdateClient();
   const setCustomFields = useSetClientCustomFields();
 
+  // Relief period hooks
+  const { data: reliefPeriods } = useClientReliefPeriods(clientId);
+  const createReliefPeriod = useCreateReliefPeriod();
+  const updateReliefPeriod = useUpdateReliefPeriod();
+  const deleteReliefPeriod = useDeleteReliefPeriod();
+
   const [editOpen, setEditOpen] = useState(false);
 
-  // Determine the base path based on user role
-  const getBasePath = () => {
+  // Memoize basePath to prevent unnecessary recalculations
+  const basePath = useMemo(() => {
     switch (user?.role) {
       case UserRole.ADMIN:
         return '/admin/modules/clients';
@@ -114,9 +122,99 @@ function ClientDetailContent() {
       default:
         return '/modules/clients';
     }
-  };
+  }, [user?.role]);
 
-  const basePath = getBasePath();
+  // Handler for updating relief periods from the form dialog
+  // Uses Promise.all for parallel execution instead of sequential awaits
+  const handleReliefPeriodsUpdate = useCallback(
+    async (reliefs: ClientReliefsData) => {
+      const existingUlgaNaStart = reliefPeriods?.find(
+        (r) => r.reliefType === ReliefType.ULGA_NA_START
+      );
+      const existingMalyZus = reliefPeriods?.find((r) => r.reliefType === ReliefType.MALY_ZUS);
+
+      const operations: Promise<unknown>[] = [];
+
+      // Collect Ulga na Start operation
+      if (reliefs.ulgaNaStart) {
+        if (existingUlgaNaStart) {
+          operations.push(
+            updateReliefPeriod.mutateAsync({
+              clientId,
+              reliefId: existingUlgaNaStart.id,
+              data: {
+                startDate: reliefs.ulgaNaStart.startDate.split('T')[0],
+                endDate: reliefs.ulgaNaStart.endDate?.split('T')[0],
+              },
+            })
+          );
+        } else {
+          operations.push(
+            createReliefPeriod.mutateAsync({
+              clientId,
+              data: {
+                reliefType: ReliefType.ULGA_NA_START,
+                startDate: reliefs.ulgaNaStart.startDate.split('T')[0],
+                endDate: reliefs.ulgaNaStart.endDate?.split('T')[0],
+              },
+            })
+          );
+        }
+      } else if (existingUlgaNaStart) {
+        operations.push(
+          deleteReliefPeriod.mutateAsync({
+            clientId,
+            reliefId: existingUlgaNaStart.id,
+          })
+        );
+      }
+
+      // Collect Mały ZUS operation
+      if (reliefs.malyZus) {
+        if (existingMalyZus) {
+          operations.push(
+            updateReliefPeriod.mutateAsync({
+              clientId,
+              reliefId: existingMalyZus.id,
+              data: {
+                startDate: reliefs.malyZus.startDate.split('T')[0],
+                endDate: reliefs.malyZus.endDate?.split('T')[0],
+              },
+            })
+          );
+        } else {
+          operations.push(
+            createReliefPeriod.mutateAsync({
+              clientId,
+              data: {
+                reliefType: ReliefType.MALY_ZUS,
+                startDate: reliefs.malyZus.startDate.split('T')[0],
+                endDate: reliefs.malyZus.endDate?.split('T')[0],
+              },
+            })
+          );
+        }
+      } else if (existingMalyZus) {
+        operations.push(
+          deleteReliefPeriod.mutateAsync({
+            clientId,
+            reliefId: existingMalyZus.id,
+          })
+        );
+      }
+
+      // Execute all operations in parallel
+      if (operations.length > 0) {
+        try {
+          await Promise.all(operations);
+        } catch (error) {
+          console.error('Failed to update relief periods:', error);
+          // Error notification handled by mutation's onError
+        }
+      }
+    },
+    [clientId, reliefPeriods, createReliefPeriod, updateReliefPeriod, deleteReliefPeriod]
+  );
 
   // Handle missing id
   if (!id) {
@@ -186,7 +284,7 @@ function ClientDetailContent() {
             Powrót do listy
           </Button>
           <div>
-            <h1 className="text-apptax-navy flex items-center gap-2 text-2xl font-bold">
+            <h1 className="text-foreground flex items-center gap-2 text-2xl font-bold">
               {client.name}
               {!client.isActive && (
                 <Badge variant="outline" className="ml-2">
@@ -199,10 +297,7 @@ function ClientDetailContent() {
         </div>
 
         {client.isActive && (
-          <Button
-            onClick={() => setEditOpen(true)}
-            className="bg-apptax-blue hover:bg-apptax-blue/90"
-          >
+          <Button onClick={() => setEditOpen(true)} className="bg-primary hover:bg-primary/90">
             <Edit className="mr-2 h-4 w-4" />
             Edytuj
           </Button>
@@ -227,10 +322,7 @@ function ClientDetailContent() {
                   label="Email"
                   value={
                     client.email ? (
-                      <a
-                        href={`mailto:${client.email}`}
-                        className="text-apptax-blue hover:underline"
-                      >
+                      <a href={`mailto:${client.email}`} className="text-primary hover:underline">
                         {client.email}
                       </a>
                     ) : null
@@ -327,15 +419,13 @@ function ClientDetailContent() {
               {client.companySpecificity && (
                 <div className="mb-4">
                   <p className="text-muted-foreground mb-1 text-sm">Specyfika firmy</p>
-                  <p className="text-apptax-navy whitespace-pre-wrap">
-                    {client.companySpecificity}
-                  </p>
+                  <p className="text-foreground whitespace-pre-wrap">{client.companySpecificity}</p>
                 </div>
               )}
               {client.additionalInfo && (
                 <div>
                   <p className="text-muted-foreground mb-1 text-sm">Dodatkowe uwagi</p>
-                  <p className="text-apptax-navy whitespace-pre-wrap">{client.additionalInfo}</p>
+                  <p className="text-foreground whitespace-pre-wrap">{client.additionalInfo}</p>
                 </div>
               )}
             </CardContent>
@@ -408,6 +498,7 @@ function ClientDetailContent() {
 
         <div className="space-y-6">
           <ClientTaskStatistics clientId={clientId} />
+          <ReliefPeriodsCard clientId={clientId} />
           <SuspensionHistoryCard clientId={clientId} />
           <div id="changelog">
             <ClientChangelog clientId={id} />
@@ -416,39 +507,77 @@ function ClientDetailContent() {
       </div>
 
       {editOpen && client && (
-        <ClientFormDialog
-          open={editOpen}
-          onOpenChange={setEditOpen}
-          client={client}
-          onSubmit={async (data, customFields) => {
-            updateClient.mutate(
-              {
-                id: client.id,
-                data: data as UpdateClientDto,
-              },
-              {
-                onSuccess: async () => {
-                  if (customFields && Object.keys(customFields.values).length > 0) {
-                    try {
-                      await setCustomFields.mutateAsync({
-                        id: client.id,
-                        data: customFields,
-                      });
-                    } catch (error) {
-                      console.error('Failed to update client custom fields:', error);
-                      // Error notification handled by mutation's onError
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <Card>
+                <CardContent className="space-y-4 p-6">
+                  <Skeleton className="h-6 w-48" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                </CardContent>
+              </Card>
+            </div>
+          }
+        >
+          <ClientFormDialog
+            open={editOpen}
+            onOpenChange={setEditOpen}
+            client={client}
+            existingReliefs={reliefPeriods?.map((r) => ({
+              reliefType: r.reliefType as ReliefType,
+              startDate: r.startDate,
+              endDate: r.endDate,
+            }))}
+            onSubmit={async (data, customFields, reliefs) => {
+              updateClient.mutate(
+                {
+                  id: client.id,
+                  data: data as UpdateClientDto,
+                },
+                {
+                  onSuccess: async () => {
+                    // Execute custom fields and relief periods updates in parallel for faster saves
+                    const operations: Promise<unknown>[] = [];
+
+                    // Handle custom fields
+                    if (customFields && Object.keys(customFields.values).length > 0) {
+                      operations.push(
+                        setCustomFields.mutateAsync({
+                          id: client.id,
+                          data: customFields,
+                        })
+                      );
                     }
-                  }
-                  setEditOpen(false);
-                },
-                onError: (error) => {
-                  console.error('Failed to update client:', error);
-                  // Error notification handled by mutation's onError
-                },
-              }
-            );
-          }}
-        />
+
+                    // Handle relief periods
+                    if (reliefs) {
+                      operations.push(handleReliefPeriodsUpdate(reliefs));
+                    }
+
+                    // Wait for all operations to complete in parallel
+                    if (operations.length > 0) {
+                      try {
+                        await Promise.all(operations);
+                      } catch (error) {
+                        console.error('Failed to update client data:', error);
+                        // Error notification handled by mutation's onError
+                      }
+                    }
+
+                    setEditOpen(false);
+                  },
+                  onError: (error) => {
+                    console.error('Failed to update client:', error);
+                    // Error notification handled by mutation's onError
+                  },
+                }
+              );
+            }}
+          />
+        </Suspense>
       )}
     </div>
   );

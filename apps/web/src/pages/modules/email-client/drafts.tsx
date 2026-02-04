@@ -1,14 +1,14 @@
 import { useState } from 'react';
 
 import {
-  Send,
-  Edit,
-  Sparkles,
-  RefreshCw,
+  AlertTriangle,
   Cloud,
   CloudOff,
-  AlertTriangle,
+  Edit,
   Loader2,
+  RefreshCw,
+  Send,
+  Sparkles,
   Trash2,
 } from 'lucide-react';
 
@@ -23,12 +23,12 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import {
+  useDeleteAllDrafts,
+  useDraftConflicts,
   useDrafts,
+  useResolveConflict,
   useSendDraft,
   useSyncDrafts,
-  useDraftConflicts,
-  useResolveConflict,
-  useDeleteAllDrafts,
 } from '@/lib/hooks/use-email-client';
 import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 
@@ -51,29 +51,29 @@ function SyncStatusIcon({ status }: { status: SyncStatus }) {
     case 'synced':
       return (
         <span title="Zsynchronizowano z serwerem">
-          <Cloud className="h-4 w-4 text-green-600" />
+          <Cloud className="h-4 w-4 text-green-600 dark:text-green-400" />
         </span>
       );
     case 'local':
       return (
         <span title="Tylko lokalnie">
-          <CloudOff className="h-4 w-4 text-gray-400" />
+          <CloudOff className="h-4 w-4 text-muted-foreground" />
         </span>
       );
     case 'imap_only':
       return (
         <span title="Tylko na serwerze">
-          <Cloud className="h-4 w-4 text-blue-500" />
+          <Cloud className="h-4 w-4 text-blue-500 dark:text-blue-400" />
         </span>
       );
     case 'conflict':
       return (
         <span title="Konflikt synchronizacji">
-          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
         </span>
       );
     default:
-      return <CloudOff className="h-4 w-4 text-gray-400" />;
+      return <CloudOff className="h-4 w-4 text-muted-foreground" />;
   }
 }
 

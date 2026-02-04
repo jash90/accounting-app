@@ -1,6 +1,17 @@
 import { useState } from 'react';
 
-import { Trash2, RotateCcw, Edit, ChevronDown, X } from 'lucide-react';
+import { type ClientResponseDto } from '@/types/dtos';
+import {
+  EmploymentTypeLabels,
+  TaxSchemeLabels,
+  VatStatusLabels,
+  ZusStatusLabels,
+  type EmploymentType,
+  type TaxScheme,
+  type VatStatus,
+  type ZusStatus,
+} from '@/types/enums';
+import { ChevronDown, Edit, RotateCcw, Trash2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -27,17 +38,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { type ClientResponseDto } from '@/types/dtos';
-import {
-  type EmploymentType,
-  EmploymentTypeLabels,
-  type VatStatus,
-  VatStatusLabels,
-  type TaxScheme,
-  TaxSchemeLabels,
-  type ZusStatus,
-  ZusStatusLabels,
-} from '@/types/enums';
 
 interface BulkActionsToolbarProps {
   selectedClients: ClientResponseDto[];
@@ -101,8 +101,8 @@ export function BulkActionsToolbar({
 
   return (
     <>
-      <div className="bg-apptax-soft-teal/30 border-apptax-soft-teal flex items-center gap-2 rounded-lg border p-3">
-        <span className="text-apptax-navy text-sm font-medium">
+      <div className="bg-accent/10 border-accent flex items-center gap-2 rounded-lg border p-3">
+        <span className="text-foreground text-sm font-medium">
           Zaznaczono {selectedClients.length}{' '}
           {selectedClients.length === 1
             ? 'klienta'

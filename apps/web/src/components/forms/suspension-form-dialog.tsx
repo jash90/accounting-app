@@ -213,7 +213,7 @@ export function SuspensionFormDialog({
               <Button
                 type="submit"
                 disabled={isLoading || form.formState.isSubmitting}
-                className="bg-apptax-blue hover:bg-apptax-blue/90"
+                className="bg-primary hover:bg-primary/90"
               >
                 {isLoading ? 'Zapisywanie...' : isEditing ? 'Zapisz zmiany' : 'Dodaj zawieszenie'}
               </Button>

@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository, Between, DataSource } from 'typeorm';
+import { Between, DataSource, Repository } from 'typeorm';
 
 import { TimeEntry, User, UserRole } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
@@ -10,9 +10,9 @@ import { TimeCalculationService } from './time-calculation.service';
 import { TimeSettingsService } from './time-settings.service';
 import {
   DailyTimesheetDto,
-  WeeklyTimesheetDto,
   ReportFiltersDto,
   TimesheetGroupBy,
+  WeeklyTimesheetDto,
 } from '../dto/timesheet.dto';
 
 export interface DayEntry {

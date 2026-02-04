@@ -1,22 +1,22 @@
+import { TaskStatus, TaskStatusLabels } from '@/types/enums';
 import { BarChart3, Clock, Target } from 'lucide-react';
 
+import { useClientTaskStatistics } from '@/lib/hooks/use-tasks';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useClientTaskStatistics } from '@/lib/hooks/use-tasks';
-import { TaskStatus, TaskStatusLabels } from '@/types/enums';
 
 interface ClientTaskStatisticsProps {
   clientId: string;
 }
 
 const statusColors: Record<TaskStatus, string> = {
-  [TaskStatus.BACKLOG]: 'bg-gray-100 text-gray-700 hover:bg-gray-100',
-  [TaskStatus.TODO]: 'bg-blue-100 text-blue-700 hover:bg-blue-100',
-  [TaskStatus.IN_PROGRESS]: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100',
-  [TaskStatus.IN_REVIEW]: 'bg-purple-100 text-purple-700 hover:bg-purple-100',
-  [TaskStatus.DONE]: 'bg-green-100 text-green-700 hover:bg-green-100',
-  [TaskStatus.CANCELLED]: 'bg-red-100 text-red-700 hover:bg-red-100',
+  [TaskStatus.BACKLOG]: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+  [TaskStatus.TODO]: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  [TaskStatus.IN_PROGRESS]: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
+  [TaskStatus.IN_REVIEW]: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
+  [TaskStatus.DONE]: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+  [TaskStatus.CANCELLED]: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
 };
 
 function formatTime(minutes: number): string {

@@ -1,30 +1,30 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
-import { type Repository, DataSource } from 'typeorm';
+import { DataSource, type Repository } from 'typeorm';
 
 import {
   TimeEntry,
   TimeEntryStatus,
-  type User,
-  UserRole,
   TimeRoundingMethod,
+  UserRole,
+  type User,
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
-import { TimeCalculationService } from './time-calculation.service';
-import { TimeEntriesService } from './time-entries.service';
-import { TimeSettingsService } from './time-settings.service';
 import { type CreateTimeEntryDto, type UpdateTimeEntryDto } from '../dto/time-entry.dto';
 import { type StartTimerDto, type StopTimerDto } from '../dto/timer.dto';
 import {
+  TimeEntryInvalidStatusException,
+  TimeEntryLockedException,
   TimeEntryNotFoundException,
   TimerAlreadyRunningException,
   TimerNotRunningException,
-  TimeEntryLockedException,
-  TimeEntryInvalidStatusException,
 } from '../exceptions';
+import { TimeCalculationService } from './time-calculation.service';
+import { TimeEntriesService } from './time-entries.service';
+import { TimeSettingsService } from './time-settings.service';
 
 describe('TimeEntriesService', () => {
   let service: TimeEntriesService;

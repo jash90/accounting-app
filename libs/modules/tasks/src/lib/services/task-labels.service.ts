@@ -7,7 +7,7 @@ import { TaskLabel, User } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 
 import { CreateTaskLabelDto, UpdateTaskLabelDto } from '../dto/task-label.dto';
-import { TaskLabelNotFoundException, TaskLabelAlreadyExistsException } from '../exceptions';
+import { TaskLabelAlreadyExistsException, TaskLabelNotFoundException } from '../exceptions';
 
 @Injectable()
 export class TaskLabelsService {

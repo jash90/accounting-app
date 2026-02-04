@@ -1,37 +1,37 @@
-import { useState, useCallback, useMemo } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
 import {
-  format,
-  startOfWeek,
-  startOfMonth,
-  endOfMonth,
   addDays,
-  addWeeks,
   addMonths,
-  subWeeks,
-  subMonths,
+  addWeeks,
   differenceInDays,
+  endOfMonth,
+  format,
   max,
   min,
+  startOfMonth,
+  startOfWeek,
+  subMonths,
+  subWeeks,
 } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
-  CheckSquare,
   ArrowLeft,
-  List,
-  LayoutGrid,
   Calendar,
-  GanttChartSquare,
+  CheckSquare,
   ChevronLeft,
   ChevronRight,
+  GanttChartSquare,
+  LayoutGrid,
+  List,
   Plus,
 } from 'lucide-react';
 
 import { PageHeader } from '@/components/common/page-header';
-import { TaskFormDialog, TaskStatusBadge } from '@/components/tasks';
 import { TaskFilters } from '@/components/tasks/task-filters';
+import { TaskStatusBadge } from '@/components/tasks/task-status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -44,10 +44,28 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import { useTasks, useCreateTask } from '@/lib/hooks/use-tasks';
+import { useCreateTask, useTasks } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
-import { type TaskResponseDto, type CreateTaskDto, type TaskFiltersDto } from '@/types/dtos';
+import { type CreateTaskDto, type TaskFiltersDto } from '@/types/dtos';
 import { TaskStatus, TaskStatusLabels, UserRole } from '@/types/enums';
+
+
+// Lazy-load heavy form dialog to reduce initial bundle size - direct import for tree-shaking
+const TaskFormDialog = lazy(() =>
+  import('@/components/tasks/task-form-dialog').then((m) => ({
+    default: m.TaskFormDialog,
+  }))
+);
+
+// Loading fallback for dialog
+const DialogLoadingFallback = () => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="bg-background rounded-lg p-6 shadow-lg">
+      <Skeleton className="h-8 w-48 mb-4" />
+      <Skeleton className="h-64 w-96" />
+    </div>
+  </div>
+);
 
 type ViewMode = 'day' | 'week' | 'month';
 
@@ -83,6 +101,14 @@ export default function TasksTimelinePage() {
   const handleFiltersChange = useCallback((newFilters: TaskFiltersDto) => {
     setFilters(newFilters);
   }, []);
+
+  // Memoized submit handler to avoid recreating on each render
+  const handleCreateSubmit = useCallback(
+    async (data: CreateTaskDto) => {
+      await createTask.mutateAsync(data);
+    },
+    [createTask]
+  );
 
   // Calculate timeline range
   const timelineRange = useMemo(() => {
@@ -141,40 +167,50 @@ export default function TasksTimelinePage() {
     return tasks.filter((task) => task.dueDate || task.startDate);
   }, [tasks]);
 
-  // Calculate task bar position
-  const getTaskBarStyle = (task: TaskResponseDto) => {
-    const taskStart = task.startDate
-      ? new Date(task.startDate)
-      : task.dueDate
-        ? new Date(task.dueDate)
-        : null;
-    const taskEnd = task.dueDate
-      ? new Date(task.dueDate)
-      : task.startDate
-        ? new Date(task.startDate)
-        : null;
-
-    if (!taskStart || !taskEnd) return null;
-
+  // Memoize task bar styles to prevent recalculation during render
+  const taskBarStyles = useMemo(() => {
+    const styles = new Map<string, { left: string; width: string } | null>();
     const rangeStart = timelineRange.start;
     const rangeEnd = timelineRange.end;
-
-    // Check if task is visible in current range
-    if (taskEnd < rangeStart || taskStart > rangeEnd) return null;
-
-    const visibleStart = max([taskStart, rangeStart]);
-    const visibleEnd = min([taskEnd, rangeEnd]);
-
-    const startOffset = differenceInDays(visibleStart, rangeStart);
-    const duration = differenceInDays(visibleEnd, visibleStart) + 1;
-
     const cellWidth = 100 / timelineRange.days;
 
-    return {
-      left: `${startOffset * cellWidth}%`,
-      width: `${duration * cellWidth}%`,
-    };
-  };
+    for (const task of tasksWithDates) {
+      const taskStart = task.startDate
+        ? new Date(task.startDate)
+        : task.dueDate
+          ? new Date(task.dueDate)
+          : null;
+      const taskEnd = task.dueDate
+        ? new Date(task.dueDate)
+        : task.startDate
+          ? new Date(task.startDate)
+          : null;
+
+      if (!taskStart || !taskEnd) {
+        styles.set(task.id, null);
+        continue;
+      }
+
+      // Check if task is visible in current range
+      if (taskEnd < rangeStart || taskStart > rangeEnd) {
+        styles.set(task.id, null);
+        continue;
+      }
+
+      const visibleStart = max([taskStart, rangeStart]);
+      const visibleEnd = min([taskEnd, rangeEnd]);
+
+      const startOffset = differenceInDays(visibleStart, rangeStart);
+      const duration = differenceInDays(visibleEnd, visibleStart) + 1;
+
+      styles.set(task.id, {
+        left: `${startOffset * cellWidth}%`,
+        width: `${duration * cellWidth}%`,
+      });
+    }
+
+    return styles;
+  }, [tasksWithDates, timelineRange]);
 
   const getStatusColor = (status: TaskStatus) => {
     switch (status) {
@@ -344,7 +380,7 @@ export default function TasksTimelinePage() {
                 </div>
               ) : (
                 tasksWithDates.map((task) => {
-                  const barStyle = getTaskBarStyle(task);
+                  const barStyle = taskBarStyles.get(task.id);
 
                   return (
                     <div
@@ -433,15 +469,15 @@ export default function TasksTimelinePage() {
         </CardContent>
       </Card>
 
-      {hasWritePermission && (
-        <TaskFormDialog
-          open={createOpen}
-          onOpenChange={setCreateOpen}
-          onSubmit={async (data) => {
-            await createTask.mutateAsync(data as CreateTaskDto);
-          }}
-          isLoading={createTask.isPending}
-        />
+      {hasWritePermission && createOpen && (
+        <Suspense fallback={<DialogLoadingFallback />}>
+          <TaskFormDialog
+            open={createOpen}
+            onOpenChange={setCreateOpen}
+            onSubmit={handleCreateSubmit}
+            isLoading={createTask.isPending}
+          />
+        </Suspense>
       )}
     </div>
   );

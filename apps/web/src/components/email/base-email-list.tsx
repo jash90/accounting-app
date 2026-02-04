@@ -1,22 +1,24 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { Link } from 'react-router-dom';
 
 import {
-  RefreshCw,
-  Mail,
-  MailOpen,
-  Trash2,
+  AlertCircle,
   CheckCheck,
-  Loader2,
   ChevronLeft,
   ChevronRight,
+  Loader2,
+  Mail,
+  MailOpen,
+  RefreshCw,
+  Settings,
+  Trash2,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
-import { useMarkAsRead, useDeleteEmails } from '@/lib/hooks/use-email-client';
+import { useDeleteEmails, useMarkAsRead } from '@/lib/hooks/use-email-client';
 import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 
 import { EmailListSkeleton } from '../../pages/modules/email-client/components/email-inbox-skeleton';
@@ -49,6 +51,85 @@ interface BaseEmailListProps {
   refetch: () => void;
   /** Empty state message when no emails */
   emptyMessage: string;
+  /** Error from the query */
+  error?: Error | null;
+}
+
+/**
+ * Extract error message from various error types (Axios, standard Error, etc.)
+ */
+function getErrorMessage(error: Error): string {
+  // Check for Axios error structure
+  const axiosError = error as Error & {
+    response?: { data?: { message?: string } };
+  };
+  if (axiosError.response?.data?.message) {
+    return axiosError.response.data.message;
+  }
+  return error.message || 'Nieznany błąd';
+}
+
+/**
+ * Check if error is related to missing email configuration
+ */
+function isEmailConfigError(errorMessage: string): boolean {
+  return (
+    errorMessage.includes('konfiguracji email') ||
+    errorMessage.includes('email configuration') ||
+    errorMessage.includes('Email configuration') ||
+    errorMessage.includes('Skonfiguruj')
+  );
+}
+
+/**
+ * Non-closable modal for email configuration error
+ * Uses fixed positioning relative to viewport, offset to not cover the main sidebar
+ */
+function EmailConfigModal({ isOpen }: { isOpen: boolean }) {
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed bottom-0 right-0 top-16 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+      style={{ left: '256px' }}
+    >
+      <div className="mx-4 w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-lg">
+        <div className="flex flex-col items-center justify-center text-center">
+          <Settings className="mx-auto mb-4 h-12 w-12 text-amber-500 opacity-70" />
+          <h2 className="mb-2 text-xl font-semibold">Konfiguracja email wymagana</h2>
+          <p className="text-muted-foreground mx-auto mb-6 max-w-md text-sm">
+            Aby korzystać z modułu email, najpierw skonfiguruj konto pocztowe firmy w ustawieniach.
+            Podaj dane serwera IMAP/SMTP oraz dane logowania.
+          </p>
+          <Link to="/settings/email-config">
+            <Button variant="default" className="gap-2">
+              <Settings className="h-4 w-4" />
+              Przejdź do ustawień email
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Error state component for general errors (not config errors)
+ */
+function EmailErrorState({ error, refetch }: { error: Error; refetch: () => void }) {
+  const errorMessage = getErrorMessage(error);
+
+  return (
+    <div className="p-8 text-center">
+      <AlertCircle className="text-destructive mx-auto mb-4 h-12 w-12 opacity-70" />
+      <h3 className="mb-2 text-lg font-semibold">Wystąpił błąd</h3>
+      <p className="text-muted-foreground mb-4">{errorMessage}</p>
+      <Button variant="outline" onClick={() => refetch()} className="gap-2">
+        <RefreshCw className="h-4 w-4" />
+        Spróbuj ponownie
+      </Button>
+    </div>
+  );
 }
 
 /**
@@ -62,6 +143,7 @@ export function BaseEmailList({
   isRefetching,
   refetch,
   emptyMessage,
+  error,
 }: BaseEmailListProps) {
   const markAsRead = useMarkAsRead();
   const deleteEmails = useDeleteEmails();
@@ -74,6 +156,10 @@ export function BaseEmailList({
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
+
+  // Check if error is a config error
+  const errorMessage = error ? getErrorMessage(error) : '';
+  const isConfigError = error ? isEmailConfigError(errorMessage) : false;
 
   // Sort emails by date (newest first) and paginate
   const sortedEmails = useMemo(() => {
@@ -179,7 +265,9 @@ export function BaseEmailList({
     <div className="flex h-full">
       <EmailSidebar />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        {/* Non-closable modal for config error - positioned within content area */}
+        <EmailConfigModal isOpen={isConfigError} />
         {/* Header */}
         <div className="flex items-center justify-between border-b p-4">
           <div>
@@ -266,7 +354,9 @@ export function BaseEmailList({
         <div className="flex-1 overflow-auto">
           {isLoading ? (
             <EmailListSkeleton />
-          ) : sortedEmails.length === 0 ? (
+          ) : error && !isConfigError ? (
+            <EmailErrorState error={error} refetch={refetch} />
+          ) : sortedEmails.length === 0 && !isConfigError ? (
             <div className="text-muted-foreground p-8 text-center">
               <MailOpen className="mx-auto mb-4 h-12 w-12 opacity-50" />
               <p>{emptyMessage}</p>
@@ -316,7 +406,7 @@ export function BaseEmailList({
                               {email.from[0]?.name || email.from[0]?.address}
                             </p>
                             {isUnread && (
-                              <span className="h-2 w-2 shrink-0 rounded-full bg-blue-600" />
+                              <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
                             )}
                           </div>
                           <p

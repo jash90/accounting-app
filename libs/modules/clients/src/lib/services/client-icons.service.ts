@@ -1,26 +1,26 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository, DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 import {
+  Client,
   ClientIcon,
   ClientIconAssignment,
-  Client,
-  User,
   IconType,
   PaginatedResponseDto,
+  User,
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 import { StorageService } from '@accounting/infrastructure/storage';
 
-import { AutoAssignService } from './auto-assign.service';
-import { CreateIconDto, UpdateIconDto, AssignIconDto, IconQueryDto } from '../dto/icon.dto';
+import { AssignIconDto, CreateIconDto, IconQueryDto, UpdateIconDto } from '../dto/icon.dto';
 import {
   ClientNotFoundException,
-  IconNotFoundException,
   IconAssignmentException,
+  IconNotFoundException,
 } from '../exceptions';
+import { AutoAssignService } from './auto-assign.service';
 
 @Injectable()
 export class ClientIconsService {

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
 import { type TaskResponseDto } from '@/types/dtos';
-import { type TaskStatus, TaskStatusLabels, TaskStatusColors } from '@/types/enums';
+import { TaskStatusColors, TaskStatusLabels, type TaskStatus } from '@/types/enums';
 
 import { SortableTaskCard } from './task-card';
 

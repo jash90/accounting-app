@@ -1,18 +1,19 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
   ManyToOne,
   OneToMany,
-  JoinColumn,
-  Index,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
+
+import { ClientCustomFieldValue } from './client-custom-field-value.entity';
 import { Company } from './company.entity';
 import { User } from './user.entity';
 import { CustomFieldType } from '../enums/custom-field-type.enum';
-import { ClientCustomFieldValue } from './client-custom-field-value.entity';
 
 export interface ValidationRule {
   min?: number;
