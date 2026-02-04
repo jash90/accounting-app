@@ -28,7 +28,36 @@ import {
 // Hoisted empty array to prevent re-renders from new reference creation
 const EMPTY_SELECTED_ROWS: never[] = [];
 
+// Hoisted style constant to prevent re-renders from new reference creation
+const TABLE_ROW_STYLE = {
+  contentVisibility: 'auto',
+  containIntrinsicSize: '0 48px',
+} as const;
+
+// Pre-allocated skeleton count to avoid array recreation
+const SKELETON_COUNT = 5;
+
+/**
+ * Generic data table component with sorting, pagination, and row selection.
+ *
+ * @remarks
+ * **Performance Note:** The `columns` prop should be memoized with `useMemo` in the parent
+ * component to prevent unnecessary re-renders of the entire table. Column definitions that
+ * change on every render will cause the internal `allColumns` memoization to recalculate,
+ * leading to performance degradation.
+ *
+ * @example
+ * ```tsx
+ * // Good - columns are memoized
+ * const columns = useMemo(() => createColumns(), []);
+ * return <DataTable columns={columns} data={data} />;
+ *
+ * // Bad - columns recreated every render
+ * return <DataTable columns={createColumns()} data={data} />;
+ * ```
+ */
 interface DataTableProps<TData, TValue> {
+  /** Column definitions - MUST be memoized with useMemo in parent component */
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   isLoading?: boolean;
@@ -166,8 +195,9 @@ function DataTableInner<TData, TValue>({
 
   if (isLoading) {
     return (
-      <div className="space-y-3 p-4">
-        {[...Array(5)].map((_, i) => (
+      <div className="space-y-3 p-4" role="status" aria-busy="true">
+        <span className="sr-only">Ładowanie danych tabeli...</span>
+        {Array.from({ length: SKELETON_COUNT }, (_, i) => (
           <Skeleton key={i} className="bg-accent/10 h-12 w-full rounded-lg" />
         ))}
       </div>
@@ -221,7 +251,7 @@ function DataTableInner<TData, TValue>({
                 onClick={() => onRowClick?.(row.original)}
                 data-state={row.getIsSelected() && 'selected'}
                 className={`hover:bg-accent/10 transition-colors ${onRowClick ? 'cursor-pointer' : ''} ${row.getIsSelected() ? 'bg-accent/10' : ''}`}
-                style={{ contentVisibility: 'auto', containIntrinsicSize: '0 48px' }}
+                style={TABLE_ROW_STYLE}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
