@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 
 interface PageHeaderProps {
   title: string;
@@ -8,7 +8,13 @@ interface PageHeaderProps {
   titleAction?: ReactNode;
 }
 
-export function PageHeader({ title, description, action, icon, titleAction }: PageHeaderProps) {
+export const PageHeader = memo(function PageHeader({
+  title,
+  description,
+  action,
+  icon,
+  titleAction,
+}: PageHeaderProps) {
   return (
     <div className="mb-8 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -28,4 +34,4 @@ export function PageHeader({ title, description, action, icon, titleAction }: Pa
       </div>
     </div>
   );
-}
+});
