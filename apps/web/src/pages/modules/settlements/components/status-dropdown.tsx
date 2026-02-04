@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 
 import { Check, CheckCircle, ChevronDown, Clock, PlayCircle } from 'lucide-react';
 
@@ -43,7 +43,7 @@ const STATUS_CONFIG = {
   },
 };
 
-export function StatusDropdown({
+export const StatusDropdown = memo(function StatusDropdown({
   currentStatus,
   onStatusChange,
   disabled = false,
@@ -53,12 +53,15 @@ export function StatusDropdown({
   const currentConfig = STATUS_CONFIG[currentStatus];
   const CurrentIcon = currentConfig.icon;
 
-  const handleStatusSelect = (status: SettlementStatus) => {
-    if (status !== currentStatus) {
-      onStatusChange(status);
-    }
-    setOpen(false);
-  };
+  const handleStatusSelect = useCallback(
+    (status: SettlementStatus) => {
+      if (status !== currentStatus) {
+        onStatusChange(status);
+      }
+      setOpen(false);
+    },
+    [currentStatus, onStatusChange]
+  );
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -102,4 +105,4 @@ export function StatusDropdown({
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+});
