@@ -39,10 +39,19 @@ const CSS_VARIABLE_MAP: Record<keyof ThemeColors, string> = {
   chart3: '--chart-3',
   chart4: '--chart-4',
   chart5: '--chart-5',
+  sidebarBackground: '--sidebar-background',
+  sidebarForeground: '--sidebar-foreground',
+  sidebarPrimary: '--sidebar-primary',
+  sidebarPrimaryForeground: '--sidebar-primary-foreground',
+  sidebarAccent: '--sidebar-accent',
+  sidebarAccentForeground: '--sidebar-accent-foreground',
+  sidebarBorder: '--sidebar-border',
+  sidebarRing: '--sidebar-ring',
 };
 
 /**
  * Applies theme colors to the document root as CSS variables.
+ * Batches CSS variable writes for better performance.
  */
 export function applyThemeToDOM(theme: Theme, mode: 'light' | 'dark'): void {
   const root = document.documentElement;
@@ -56,12 +65,26 @@ export function applyThemeToDOM(theme: Theme, mode: 'light' | 'dark'): void {
     root.classList.add('theme-transitioning');
   }
 
-  // Apply all color variables
+  // Batch CSS variable writes for better performance
+  // Instead of 29 individual setProperty calls, build a single cssText update
+  const cssVars: string[] = [];
   for (const [key, cssVar] of Object.entries(CSS_VARIABLE_MAP)) {
     const value = colors[key as keyof ThemeColors];
     if (value) {
-      root.style.setProperty(cssVar, value);
+      cssVars.push(`${cssVar}: ${value}`);
     }
+  }
+
+  // Apply all variables at once
+  if (cssVars.length > 0) {
+    // Get existing inline styles that aren't CSS variables we're setting
+    const existingStyles = root.style.cssText
+      .split(';')
+      .map((s) => s.trim())
+      .filter((s) => s && !s.startsWith('--'));
+
+    // Combine existing non-variable styles with new CSS variables
+    root.style.cssText = [...existingStyles, ...cssVars].join('; ');
   }
 
   // Update dark mode class
@@ -71,13 +94,21 @@ export function applyThemeToDOM(theme: Theme, mode: 'light' | 'dark'): void {
     root.classList.remove('dark');
   }
 
-  // Remove transition class after animation
+  // Remove transition class after animation using transitionend event
   if (!prefersReducedMotion) {
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        root.classList.remove('theme-transitioning');
-      }, 250);
-    });
+    const handleTransitionEnd = () => {
+      root.classList.remove('theme-transitioning');
+      root.removeEventListener('transitionend', handleTransitionEnd);
+    };
+
+    // Add passive listener for transition completion (better performance)
+    root.addEventListener('transitionend', handleTransitionEnd, { passive: true });
+
+    // Fallback timeout in case transitionend doesn't fire (e.g., no CSS transition defined)
+    setTimeout(() => {
+      root.classList.remove('theme-transitioning');
+      root.removeEventListener('transitionend', handleTransitionEnd);
+    }, 300);
   }
 }
 
@@ -203,7 +234,8 @@ export function createSystemColorSchemeListener(
     callback(event.matches ? 'dark' : 'light');
   };
 
-  mediaQuery.addEventListener('change', handler);
+  // Use passive listener for better scrolling/rendering performance
+  mediaQuery.addEventListener('change', handler, { passive: true });
 
   return () => {
     mediaQuery.removeEventListener('change', handler);
@@ -226,7 +258,8 @@ export function createStorageListener(
     }
   };
 
-  window.addEventListener('storage', handler);
+  // Use passive listener for better performance
+  window.addEventListener('storage', handler, { passive: true });
 
   return () => {
     window.removeEventListener('storage', handler);

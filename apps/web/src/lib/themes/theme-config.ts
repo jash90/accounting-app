@@ -51,6 +51,16 @@ export interface ThemeColors {
   input: string;
   ring: string;
 
+  // Sidebar colors
+  sidebarBackground: string;
+  sidebarForeground: string;
+  sidebarPrimary: string;
+  sidebarPrimaryForeground: string;
+  sidebarAccent: string;
+  sidebarAccentForeground: string;
+  sidebarBorder: string;
+  sidebarRing: string;
+
   // Chart colors
   chart1: string;
   chart2: string;
