@@ -1,38 +1,21 @@
-import { useCallback, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useState, useTransition } from 'react';
 
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { type ColumnDef } from '@tanstack/react-table';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
-import {
-  AlertTriangle,
-  ArrowLeft,
-  Calculator,
-  MessageSquare,
-  MoreHorizontal,
-  PlayCircle,
-  UserPlus,
-} from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Calculator, PlayCircle, RefreshCcw } from 'lucide-react';
 
-import { DataTable } from '@/components/common/data-table';
+import { ErrorBoundary } from '@/components/common/error-boundary';
 import { PageHeader } from '@/components/common/page-header';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthContext } from '@/contexts/auth-context';
 import {
-  SettlementStatus,
   type GetSettlementsQueryDto,
   type SettlementResponseDto,
+  type SettlementStatus,
 } from '@/lib/api/endpoints/settlements';
 import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
@@ -41,15 +24,80 @@ import {
   useSettlements,
   useUpdateSettlementStatus,
 } from '@/lib/hooks/use-settlements';
-import { TaxSchemeLabels, UserRole, type TaxScheme } from '@/types/enums';
+import { UserRole } from '@/types/enums';
 
+import { createSettlementsListColumns } from './columns/settlements-list-columns';
 import { FiltersPanel, type SettlementFilters } from './components/filters-panel';
 import { MonthSelector } from './components/month-selector';
-import { StatusBadge } from './components/status-badge';
-import { StatusDropdown } from './components/status-dropdown';
+import { SettlementColumnsProvider } from './contexts/settlement-columns-context';
+
+// Lazy-load DataTable for better initial bundle size
+const LazyDataTable = lazy(() =>
+  import('@/components/common/data-table').then((m) => ({
+    default: m.DataTable as React.ComponentType<{
+      columns: ColumnDef<SettlementResponseDto>[];
+      data: SettlementResponseDto[];
+      isLoading?: boolean;
+    }>,
+  }))
+);
+
+// Pre-allocated skeleton count to avoid array recreation
+const TABLE_SKELETON_COUNT = 5;
+
+// Table loading skeleton for Suspense fallback
+function TableSkeleton() {
+  return (
+    <div className="space-y-3 p-4" role="status" aria-live="polite">
+      <span className="sr-only">Ładowanie tabeli rozliczeń...</span>
+      <div className="flex items-center justify-between border-b pb-3">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-8 w-32" />
+      </div>
+      {Array.from({ length: TABLE_SKELETON_COUNT }, (_, i) => (
+        <div key={i} className="flex items-center gap-4 py-3">
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-6 w-28" />
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-6 w-16" />
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-6 w-28" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Columns are now stable since they don't depend on isPending
+const columns = createSettlementsListColumns();
+
+// Error fallback component for settlements table
+function SettlementsTableErrorFallback({ onRetry }: { onRetry?: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <AlertTriangle className="h-12 w-12 text-destructive/70" />
+      <h3 className="mt-4 text-lg font-semibold">Nie udało się załadować rozliczeń</h3>
+      <p className="text-muted-foreground mt-2 max-w-md">
+        Wystąpił błąd podczas ładowania tabeli rozliczeń. Spróbuj odświeżyć stronę lub skontaktuj
+        się z administratorem, jeśli problem będzie się powtarzał.
+      </p>
+      {onRetry ? (
+        <button
+          onClick={onRetry}
+          className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          <RefreshCcw className="h-4 w-4" />
+          Spróbuj ponownie
+        </button>
+      ) : null}
+    </div>
+  );
+}
 
 export default function SettlementsListPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuthContext();
   const { toast } = useToast();
   const basePath = useModuleBasePath('settlements');
@@ -59,10 +107,28 @@ export default function SettlementsListPage() {
   // Check if user is owner or admin
   const isOwnerOrAdmin = user?.role === UserRole.COMPANY_OWNER || user?.role === UserRole.ADMIN;
 
-  // Month/year state
+  // Month/year state with transition for non-blocking UI updates
   const currentDate = new Date();
   const [month, setMonth] = useState(currentDate.getMonth() + 1);
   const [year, setYear] = useState(currentDate.getFullYear());
+  const [isMonthTransition, startMonthTransition] = useTransition();
+
+  // Wrap month/year changes in startTransition for non-blocking UI
+  // Note: setMonth and setYear are stable (from useState), but we include them
+  // to satisfy the React Compiler's dependency inference
+  const handleMonthChange = useCallback(
+    (newMonth: number) => {
+      startMonthTransition(() => setMonth(newMonth));
+    },
+    [setMonth]
+  );
+
+  const handleYearChange = useCallback(
+    (newYear: number) => {
+      startMonthTransition(() => setYear(newYear));
+    },
+    [setYear]
+  );
 
   // Filters state
   const [filters, setFilters] = useState<SettlementFilters>({});
@@ -110,198 +176,51 @@ export default function SettlementsListPage() {
     );
   }, [initializeMonth, month, year, toast]);
 
-  const handleFiltersChange = useCallback((newFilters: SettlementFilters) => {
-    setFilters(newFilters);
-  }, []);
+  // Use transition for filter changes to keep UI responsive during re-renders
+  const [, startFilterTransition] = useTransition();
 
-  // Columns definition
-  const columns: ColumnDef<SettlementResponseDto>[] = useMemo(
-    () => [
-      {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ row }) => {
-          const settlement = row.original;
+  // Support both direct value and functional update patterns for FiltersPanel
+  const handleFiltersChange = useCallback(
+    (newFilters: SettlementFilters | ((prev: SettlementFilters) => SettlementFilters)) => {
+      startFilterTransition(() => {
+        if (typeof newFilters === 'function') {
+          setFilters(newFilters);
+        } else {
+          setFilters(newFilters);
+        }
+      });
+    },
+    []
+  );
 
-          if (hasWritePermission) {
-            return (
-              <StatusDropdown
-                currentStatus={settlement.status}
-                onStatusChange={(status) => handleStatusChange(settlement.id, status)}
-                isLoading={updateStatus.isPending}
-              />
-            );
-          }
+  // Navigation handlers for columns
+  const handleNavigateToComments = useCallback(
+    (settlementId: string) => navigate(`${basePath}/${settlementId}/comments`),
+    [basePath, navigate]
+  );
 
-          return <StatusBadge status={settlement.status} />;
-        },
-      },
-      {
-        accessorKey: 'client.name',
-        header: 'Klient',
-        cell: ({ row }) => {
-          const client = row.original.client;
-          return (
-            <div className="flex flex-col">
-              <span className="text-apptax-navy font-medium">{client?.name || '-'}</span>
-              {client?.email && (
-                <span className="text-muted-foreground text-xs">{client.email}</span>
-              )}
-            </div>
-          );
-        },
-      },
-      {
-        accessorKey: 'client.nip',
-        header: 'NIP',
-        cell: ({ row }) => (
-          <span className="text-apptax-navy/80 font-mono text-sm">
-            {row.original.client?.nip || '-'}
-          </span>
-        ),
-      },
-      {
-        accessorKey: 'client.taxScheme',
-        header: 'Forma opodatkowania',
-        cell: ({ row }) => {
-          const taxScheme = row.original.client?.taxScheme as TaxScheme | undefined;
-          return taxScheme ? (
-            <Badge variant="secondary" className="text-xs">
-              {TaxSchemeLabels[taxScheme]}
-            </Badge>
-          ) : (
-            <span className="text-muted-foreground">-</span>
-          );
-        },
-      },
-      {
-        accessorKey: 'invoiceCount',
-        header: 'Faktury',
-        cell: ({ row }) => (
-          <span className="text-apptax-navy font-medium">{row.original.invoiceCount}</span>
-        ),
-      },
-      {
-        accessorKey: 'documentsDate',
-        header: 'Data dokumentów',
-        cell: ({ row }) => {
-          const date = row.original.documentsDate;
-          return date ? (
-            <span className="text-sm">{format(new Date(date), 'dd.MM.yyyy', { locale: pl })}</span>
-          ) : (
-            <span className="text-muted-foreground">-</span>
-          );
-        },
-      },
-      {
-        accessorKey: 'assignedUser',
-        header: 'Przypisany',
-        cell: ({ row }) => {
-          const assignedUser = row.original.assignedUser;
-          if (!assignedUser) {
-            return <span className="text-muted-foreground italic text-sm">Nieprzypisany</span>;
-          }
-          return (
-            <span className="text-sm">
-              {assignedUser.firstName && assignedUser.lastName
-                ? `${assignedUser.firstName} ${assignedUser.lastName}`
-                : assignedUser.email}
-            </span>
-          );
-        },
-      },
-      {
-        accessorKey: 'requiresAttention',
-        header: 'Uwagi',
-        cell: ({ row }) => {
-          if (row.original.requiresAttention) {
-            return (
-              <div
-                className="flex items-center gap-1 text-orange-600"
-                title={row.original.attentionReason || 'Wymaga uwagi'}
-              >
-                <AlertTriangle className="h-4 w-4" />
-                <span className="text-xs">Wymaga uwagi</span>
-              </div>
-            );
-          }
-          return null;
-        },
-      },
-      {
-        accessorKey: 'notes',
-        header: 'Notatki',
-        cell: ({ row }) => {
-          const notes = row.original.notes;
-          return notes ? (
-            <span
-              className="block max-w-[150px] truncate text-sm text-muted-foreground"
-              title={notes}
-            >
-              {notes}
-            </span>
-          ) : null;
-        },
-      },
-      {
-        accessorKey: 'settledBy',
-        header: 'Rozliczył',
-        cell: ({ row }) => {
-          const settledBy = row.original.settledBy;
-          if (!settledBy || row.original.status !== SettlementStatus.COMPLETED) {
-            return <span className="text-muted-foreground">-</span>;
-          }
-          return (
-            <span className="text-sm">
-              {settledBy.firstName && settledBy.lastName
-                ? `${settledBy.firstName} ${settledBy.lastName}`
-                : settledBy.email}
-            </span>
-          );
-        },
-      },
-      {
-        id: 'actions',
-        header: 'Akcje',
-        cell: ({ row }) => {
-          const settlement = row.original;
+  const handleNavigateToAssign = useCallback(
+    (settlementId: string) => navigate(`${basePath}/${settlementId}/assign`),
+    [basePath, navigate]
+  );
 
-          return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0" aria-label="Otwórz menu akcji">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate(`${basePath}/${settlement.id}/comments`)}>
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Komentarze
-                </DropdownMenuItem>
-
-                {hasManagePermission && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => navigate(`${basePath}/${settlement.id}/assign`)}
-                    >
-                      <UserPlus className="mr-2 h-4 w-4" />
-                      Przypisz pracownika
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          );
-        },
-      },
-    ],
-    [
-      basePath,
-      handleStatusChange,
+  // Context value for column cell components
+  // This allows cells to read isPending from context instead of having it as a column dependency
+  const columnsContextValue = useMemo(
+    () => ({
       hasWritePermission,
       hasManagePermission,
-      navigate,
+      onStatusChange: handleStatusChange,
+      onNavigateToComments: handleNavigateToComments,
+      onNavigateToAssign: handleNavigateToAssign,
+      isStatusUpdatePending: updateStatus.isPending,
+    }),
+    [
+      hasWritePermission,
+      hasManagePermission,
+      handleStatusChange,
+      handleNavigateToComments,
+      handleNavigateToAssign,
       updateStatus.isPending,
     ]
   );
@@ -324,19 +243,19 @@ export default function SettlementsListPage() {
             <MonthSelector
               month={month}
               year={year}
-              onMonthChange={setMonth}
-              onYearChange={setYear}
+              onMonthChange={handleMonthChange}
+              onYearChange={handleYearChange}
             />
-            {hasManagePermission && (
+            {hasManagePermission ? (
               <Button
                 onClick={handleInitializeMonth}
-                disabled={initializeMonth.isPending}
+                disabled={initializeMonth.isPending || isMonthTransition}
                 className="bg-apptax-blue hover:bg-apptax-blue/90"
               >
                 <PlayCircle className="mr-2 h-4 w-4" />
                 {initializeMonth.isPending ? 'Inicjalizacja...' : 'Zainicjalizuj miesiąc'}
               </Button>
-            )}
+            ) : null}
           </div>
         }
       />
@@ -349,7 +268,20 @@ export default function SettlementsListPage() {
 
       <Card className="border-apptax-soft-teal/30">
         <CardContent className="p-0">
-          <DataTable columns={columns} data={settlements} isLoading={isPending} />
+          <SettlementColumnsProvider value={columnsContextValue}>
+            <ErrorBoundary
+              fallback={<SettlementsTableErrorFallback />}
+              resetKeys={[location.pathname, month, year]}
+            >
+              <Suspense fallback={<TableSkeleton />}>
+                <LazyDataTable
+                  columns={columns}
+                  data={settlements}
+                  isLoading={isPending || isMonthTransition}
+                />
+              </Suspense>
+            </ErrorBoundary>
+          </SettlementColumnsProvider>
         </CardContent>
       </Card>
     </div>
