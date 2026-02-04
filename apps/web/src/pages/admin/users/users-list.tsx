@@ -1,17 +1,22 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 
 import { type ColumnDef } from '@tanstack/react-table';
 import { Edit, Trash2, UserPlus, Users } from 'lucide-react';
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import { DataTable } from '@/components/common/data-table';
 import { PageHeader } from '@/components/common/page-header';
 import { UserFormDialog } from '@/components/forms/user-form-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useCreateUser, useDeleteUser, useUpdateUser, useUsers } from '@/lib/hooks/use-users';
 import { UserRole, type CreateUserDto, type UpdateUserDto, type UserDto } from '@/types/dtos';
+
+// Lazy load DataTable for bundle size optimization
+const DataTable = lazy(() =>
+  import('@/components/common/data-table').then((m) => ({ default: m.DataTable }))
+);
 
 const columns: ColumnDef<UserDto>[] = [
   {
@@ -125,7 +130,13 @@ export default function UsersListPage() {
 
       <Card className="border-border">
         <CardContent className="p-0">
-          <DataTable columns={actionColumns} data={users} isLoading={isPending} />
+          <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+            <DataTable
+              columns={actionColumns as never}
+              data={users as never}
+              isLoading={isPending}
+            />
+          </Suspense>
         </CardContent>
       </Card>
 

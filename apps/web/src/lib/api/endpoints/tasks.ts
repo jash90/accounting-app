@@ -152,6 +152,8 @@ const LABELS_URL = `${BASE_URL}/labels`;
 export interface TaskLabelQueryDto {
   page?: number;
   limit?: number;
+  search?: string;
+  isActive?: boolean;
 }
 
 export const taskLabelsApi = {

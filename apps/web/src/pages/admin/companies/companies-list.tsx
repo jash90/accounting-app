@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -6,12 +6,12 @@ import { type ColumnDef } from '@tanstack/react-table';
 import { Building2, Edit, Package, Plus, Trash2 } from 'lucide-react';
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import { DataTable } from '@/components/common/data-table';
 import { PageHeader } from '@/components/common/page-header';
 import { CompanyFormDialog } from '@/components/forms/company-form-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   useCompanies,
   useCreateCompany,
@@ -19,6 +19,11 @@ import {
   useUpdateCompany,
 } from '@/lib/hooks/use-companies';
 import { type CompanyDto, type CreateCompanyDto, type UpdateCompanyDto } from '@/types/dtos';
+
+// Lazy load DataTable for bundle size optimization
+const DataTable = lazy(() =>
+  import('@/components/common/data-table').then((m) => ({ default: m.DataTable }))
+);
 
 const columns: ColumnDef<CompanyDto>[] = [
   {
@@ -127,7 +132,13 @@ export default function CompaniesListPage() {
 
       <Card className="border-border">
         <CardContent className="p-0">
-          <DataTable columns={actionColumns} data={companies} isLoading={isPending} />
+          <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+            <DataTable
+              columns={actionColumns as never}
+              data={companies as never}
+              isLoading={isPending}
+            />
+          </Suspense>
         </CardContent>
       </Card>
 

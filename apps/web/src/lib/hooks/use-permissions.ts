@@ -36,8 +36,7 @@ export type ModulePermissionType = (typeof ModulePermission)[keyof typeof Module
  *   The underscore prefix indicates intentional non-use.
  * @returns Object with permission flags and helper functions
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function useModulePermissions(moduleSlug: string) {
+export function useModulePermissions(_moduleSlug: string) {
   const { user, isAuthenticated } = useAuthContext();
 
   return useMemo(() => {

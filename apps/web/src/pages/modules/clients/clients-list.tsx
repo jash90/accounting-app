@@ -28,7 +28,6 @@ import { ClientGrid } from '@/components/clients/client-grid';
 import { DuplicateWarningDialog } from '@/components/clients/duplicate-warning-dialog';
 import { ExportImportDialog } from '@/components/clients/export-import-dialog';
 import { IconBadgeList } from '@/components/clients/icon-badge';
-import { StatisticsDashboard } from '@/components/clients/statistics-dashboard';
 import { ColumnVisibilityModal } from '@/components/common/column-visibility-modal';
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { DataTable } from '@/components/common/data-table';
@@ -36,6 +35,7 @@ import { PageHeader } from '@/components/common/page-header';
 import { ViewModeToggle } from '@/components/common/view-mode-toggle';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import { useTablePreferences, type ColumnConfig } from '@/lib/hooks/use-table-preferences';
+import type { CreateClientFormData, UpdateClientFormData } from '@/lib/validation/schemas';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -89,6 +89,13 @@ import {
 const ClientFormDialog = lazy(() =>
   import('@/components/forms/client-form-dialog').then((m) => ({
     default: m.ClientFormDialog,
+  }))
+);
+
+// Lazy-load statistics dashboard - only rendered when toggle is clicked
+const StatisticsDashboard = lazy(() =>
+  import('@/components/clients/statistics-dashboard').then((m) => ({
+    default: m.StatisticsDashboard,
   }))
 );
 
@@ -401,7 +408,7 @@ export default function ClientsListPage() {
   // Memoized dialog submit handlers to prevent unnecessary re-renders
   const handleCreateSubmit = useCallback(
     async (
-      data: Partial<CreateClientDto>,
+      data: CreateClientFormData | UpdateClientFormData,
       customFields?: { values: Record<string, string | null> }
     ) => {
       try {
@@ -434,7 +441,7 @@ export default function ClientsListPage() {
 
   const handleEditSubmit = useCallback(
     async (
-      data: Partial<UpdateClientDto>,
+      data: CreateClientFormData | UpdateClientFormData,
       customFields?: { values: Record<string, string | null> }
     ) => {
       if (!editingClient) return;
@@ -705,7 +712,9 @@ export default function ClientsListPage() {
               return <span className="text-sm">{dateValue.toLocaleDateString('pl-PL')}</span>;
             }
             // Log invalid date for debugging
-            console.error(`Invalid date value for field "${field.label}":`, value);
+            if (import.meta.env.DEV) {
+              console.error(`Invalid date value for field "${field.label}":`, value);
+            }
             return <span className="text-sm">{value}</span>;
           }
 
@@ -840,11 +849,25 @@ export default function ClientsListPage() {
       />
 
       {showStatistics && (
-        <StatisticsDashboard
-          statistics={statistics}
-          isLoading={statisticsLoading}
-          onClientClick={handleClientClick}
-        />
+        <Suspense
+          fallback={
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }, (_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-6">
+                    <div className="h-8 w-16 animate-pulse rounded bg-gray-200" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          }
+        >
+          <StatisticsDashboard
+            statistics={statistics}
+            isLoading={statisticsLoading}
+            onClientClick={handleClientClick}
+          />
+        </Suspense>
       )}
 
       <ClientFilters filters={filters} onFiltersChange={handleFiltersChange} />

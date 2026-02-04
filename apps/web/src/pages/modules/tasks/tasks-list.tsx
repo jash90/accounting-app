@@ -127,8 +127,8 @@ export default function TasksListPage() {
 
   // Memoized submit handlers to avoid recreating on each render
   const handleCreateSubmit = useCallback(
-    async (data: CreateTaskDto) => {
-      await createTask.mutateAsync(data);
+    async (data: CreateTaskDto | UpdateTaskDto) => {
+      await createTask.mutateAsync(data as CreateTaskDto);
     },
     [createTask]
   );
