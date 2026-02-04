@@ -288,4 +288,17 @@ export const settlementsApi = {
     );
     return data;
   },
+
+  // Assignable Users
+  getAssignableUsers: async (settlementId: string): Promise<UserSummaryDto[]> => {
+    const { data } = await apiClient.get<UserSummaryDto[]>(
+      `${BASE_URL}/${settlementId}/assignable-users`
+    );
+    return data;
+  },
+
+  getAllAssignableUsers: async (): Promise<UserSummaryDto[]> => {
+    const { data } = await apiClient.get<UserSummaryDto[]>(`${BASE_URL}/assignable-users`);
+    return data;
+  },
 };
