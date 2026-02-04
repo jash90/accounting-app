@@ -46,7 +46,7 @@ import { useAuthContext } from '@/contexts/auth-context';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import { useCreateTask, useTasks } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
-import { type CreateTaskDto, type TaskFiltersDto } from '@/types/dtos';
+import { type CreateTaskDto, type TaskFiltersDto, type UpdateTaskDto } from '@/types/dtos';
 import { TaskStatus, TaskStatusLabels, UserRole } from '@/types/enums';
 
 
@@ -104,8 +104,8 @@ export default function TasksTimelinePage() {
 
   // Memoized submit handler to avoid recreating on each render
   const handleCreateSubmit = useCallback(
-    async (data: CreateTaskDto) => {
-      await createTask.mutateAsync(data);
+    async (data: CreateTaskDto | UpdateTaskDto) => {
+      await createTask.mutateAsync(data as CreateTaskDto);
     },
     [createTask]
   );

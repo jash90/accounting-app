@@ -130,9 +130,9 @@ export default function TasksKanbanPage() {
 
   // Memoized submit handlers to avoid recreating on each render
   const handleCreateSubmit = useCallback(
-    async (data: CreateTaskDto) => {
+    async (data: CreateTaskDto | UpdateTaskDto) => {
       await createTask.mutateAsync({
-        ...data,
+        ...(data as CreateTaskDto),
         status: createDefaultStatus,
       });
     },

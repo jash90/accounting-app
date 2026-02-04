@@ -28,7 +28,12 @@ import { useAuthContext } from '@/contexts/auth-context';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import { useCalendarTasks, useCreateTask } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
-import { type CalendarTaskDto, type CreateTaskDto, type TaskFiltersDto } from '@/types/dtos';
+import {
+  type CalendarTaskDto,
+  type CreateTaskDto,
+  type TaskFiltersDto,
+  type UpdateTaskDto,
+} from '@/types/dtos';
 import { TaskPriority, UserRole } from '@/types/enums';
 
 
@@ -90,8 +95,8 @@ export default function TasksCalendarPage() {
 
   // Memoized submit handler to avoid recreating on each render
   const handleCreateSubmit = useCallback(
-    async (data: CreateTaskDto) => {
-      await createTask.mutateAsync(data);
+    async (data: CreateTaskDto | UpdateTaskDto) => {
+      await createTask.mutateAsync(data as CreateTaskDto);
     },
     [createTask]
   );

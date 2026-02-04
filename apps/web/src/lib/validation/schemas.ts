@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { UserRole } from '@/types/enums';
+import { TaskPriority, TaskStatus, UserRole } from '@/types/enums';
 
 // Auth Schemas
 export const loginSchema = z.object({
@@ -632,8 +632,8 @@ export type ClientReliefSectionFormData = z.infer<typeof clientReliefSectionSche
 export const taskFormSchema = z.object({
   title: z.string().min(1, 'Tytuł jest wymagany').max(255),
   description: z.string().optional(),
-  status: z.enum(['BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'CANCELLED']),
-  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
+  status: z.nativeEnum(TaskStatus),
+  priority: z.nativeEnum(TaskPriority),
   dueDate: z.date().optional().nullable(),
   startDate: z.date().optional().nullable(),
   estimatedMinutes: z.number().min(0).optional().nullable(),
