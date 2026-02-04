@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 
 import { Clock, Filter } from 'lucide-react';
 
@@ -32,7 +32,7 @@ interface TimeEntriesListProps {
 
 const PAGE_SIZE = 20;
 
-export function TimeEntriesList({
+export const TimeEntriesList = memo(function TimeEntriesList({
   className,
   showHeader = true,
   initialFilters,
@@ -279,4 +279,4 @@ export function TimeEntriesList({
       />
     </>
   );
-}
+});
