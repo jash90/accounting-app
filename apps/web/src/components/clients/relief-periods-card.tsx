@@ -1,17 +1,9 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 
-import { ReliefEntry } from '@/components/clients/relief-entry';
 import { format } from 'date-fns';
 import { Gift, Plus } from 'lucide-react';
 
-import { ReliefType, type ReliefPeriodResponseDto } from '@/lib/api/endpoints/relief-periods';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import {
-  useClientReliefPeriods,
-  useCreateReliefPeriod,
-  useDeleteReliefPeriod,
-  useUpdateReliefPeriod,
-} from '@/lib/hooks/use-relief-periods';
+import { ReliefEntry } from '@/components/clients/relief-entry';
 import { ReliefPeriodFormDialog } from '@/components/forms/relief-period-form-dialog';
 import {
   AlertDialog,
@@ -29,6 +21,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { ReliefType, type ReliefPeriodResponseDto } from '@/lib/api/endpoints/relief-periods';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import {
+  useClientReliefPeriods,
+  useCreateReliefPeriod,
+  useDeleteReliefPeriod,
+  useUpdateReliefPeriod,
+} from '@/lib/hooks/use-relief-periods';
 
 import type {
   CreateReliefPeriodFormData,
@@ -39,7 +39,9 @@ interface ReliefPeriodsCardProps {
   clientId: string;
 }
 
-export function ReliefPeriodsCard({ clientId }: ReliefPeriodsCardProps) {
+export const ReliefPeriodsCard = memo(function ReliefPeriodsCard({
+  clientId,
+}: ReliefPeriodsCardProps) {
   const { data: reliefPeriods, isPending, error } = useClientReliefPeriods(clientId);
   const createReliefPeriod = useCreateReliefPeriod();
   const updateReliefPeriod = useUpdateReliefPeriod();
@@ -183,8 +185,9 @@ export function ReliefPeriodsCard({ clientId }: ReliefPeriodsCardProps) {
           )}
         </CardHeader>
         <CardContent>
-          {reliefPeriods && reliefPeriods.length > 0 ? (
-            <TooltipProvider>
+          {/* TooltipProvider hoisted outside conditional to prevent context recreation */}
+          <TooltipProvider>
+            {reliefPeriods && reliefPeriods.length > 0 ? (
               <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-2">
                   {reliefPeriods.map((relief) => (
@@ -200,12 +203,12 @@ export function ReliefPeriodsCard({ clientId }: ReliefPeriodsCardProps) {
                   ))}
                 </div>
               </ScrollArea>
-            </TooltipProvider>
-          ) : (
-            <p className="text-muted-foreground py-8 text-center text-sm">
-              Brak ulg ZUS dla tego klienta
-            </p>
-          )}
+            ) : (
+              <p className="text-muted-foreground py-8 text-center text-sm">
+                Brak ulg ZUS dla tego klienta
+              </p>
+            )}
+          </TooltipProvider>
         </CardContent>
       </Card>
 
@@ -242,4 +245,4 @@ export function ReliefPeriodsCard({ clientId }: ReliefPeriodsCardProps) {
       </AlertDialog>
     </>
   );
-}
+});

@@ -1,16 +1,5 @@
-import { useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 
-import { type ClientResponseDto } from '@/types/dtos';
-import {
-  EmploymentTypeLabels,
-  TaxSchemeLabels,
-  VatStatusLabels,
-  ZusStatusLabels,
-  type EmploymentType,
-  type TaxScheme,
-  type VatStatus,
-  type ZusStatus,
-} from '@/types/enums';
 import { ChevronDown, Edit, RotateCcw, Trash2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -38,6 +27,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { type ClientResponseDto } from '@/types/dtos';
+import {
+  EmploymentTypeLabels,
+  TaxSchemeLabels,
+  VatStatusLabels,
+  ZusStatusLabels,
+  type EmploymentType,
+  type TaxScheme,
+  type VatStatus,
+  type ZusStatus,
+} from '@/types/enums';
 
 interface BulkActionsToolbarProps {
   selectedClients: ClientResponseDto[];
@@ -58,7 +58,7 @@ export interface BulkEditChanges {
   zusStatus?: ZusStatus;
 }
 
-export function BulkActionsToolbar({
+export const BulkActionsToolbar = memo(function BulkActionsToolbar({
   selectedClients,
   onClearSelection,
   onBulkDelete,
@@ -69,33 +69,44 @@ export function BulkActionsToolbar({
   isEditing = false,
   canDelete = false,
 }: BulkActionsToolbarProps) {
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  // Consolidate dialog state into single union type - reduces re-renders for mutually exclusive state
+  type DialogType = 'delete' | 'restore' | 'edit' | null;
+  const [openDialog, setOpenDialog] = useState<DialogType>(null);
   const [editChanges, setEditChanges] = useState<BulkEditChanges>({});
 
-  const activeClients = selectedClients.filter((c) => c.isActive);
-  const inactiveClients = selectedClients.filter((c) => !c.isActive);
+  // Single loop to partition clients by active status - avoids iterating twice
+  const { activeClients, inactiveClients } = useMemo(() => {
+    const active: ClientResponseDto[] = [];
+    const inactive: ClientResponseDto[] = [];
+    for (const client of selectedClients) {
+      if (client.isActive) {
+        active.push(client);
+      } else {
+        inactive.push(client);
+      }
+    }
+    return { activeClients: active, inactiveClients: inactive };
+  }, [selectedClients]);
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = useCallback(() => {
     onBulkDelete(activeClients.map((c) => c.id));
-    setDeleteDialogOpen(false);
-  };
+    setOpenDialog(null);
+  }, [onBulkDelete, activeClients]);
 
-  const handleBulkRestore = () => {
+  const handleBulkRestore = useCallback(() => {
     onBulkRestore(inactiveClients.map((c) => c.id));
-    setRestoreDialogOpen(false);
-  };
+    setOpenDialog(null);
+  }, [onBulkRestore, inactiveClients]);
 
-  const handleBulkEdit = () => {
+  const handleBulkEdit = useCallback(() => {
     if (Object.keys(editChanges).length === 0) return;
     onBulkEdit(
       activeClients.map((c) => c.id),
       editChanges
     );
-    setEditDialogOpen(false);
+    setOpenDialog(null);
     setEditChanges({});
-  };
+  }, [onBulkEdit, activeClients, editChanges]);
 
   if (selectedClients.length === 0) return null;
 
@@ -125,7 +136,7 @@ export function BulkActionsToolbar({
             <DropdownMenuSeparator />
 
             {activeClients.length > 0 && (
-              <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
+              <DropdownMenuItem onClick={() => setOpenDialog('edit')}>
                 <Edit className="mr-2 h-4 w-4" />
                 Edytuj ({activeClients.length})
               </DropdownMenuItem>
@@ -133,7 +144,7 @@ export function BulkActionsToolbar({
 
             {canDelete && activeClients.length > 0 && (
               <DropdownMenuItem
-                onClick={() => setDeleteDialogOpen(true)}
+                onClick={() => setOpenDialog('delete')}
                 className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
@@ -142,7 +153,7 @@ export function BulkActionsToolbar({
             )}
 
             {inactiveClients.length > 0 && (
-              <DropdownMenuItem onClick={() => setRestoreDialogOpen(true)}>
+              <DropdownMenuItem onClick={() => setOpenDialog('restore')}>
                 <RotateCcw className="mr-2 h-4 w-4" />
                 Przywróć ({inactiveClients.length})
               </DropdownMenuItem>
@@ -156,7 +167,10 @@ export function BulkActionsToolbar({
       </div>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <Dialog
+        open={openDialog === 'delete'}
+        onOpenChange={(open) => setOpenDialog(open ? 'delete' : null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Usuń {activeClients.length} klientów</DialogTitle>
@@ -174,7 +188,7 @@ export function BulkActionsToolbar({
             </ul>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setOpenDialog(null)}>
               Anuluj
             </Button>
             <Button variant="destructive" onClick={handleBulkDelete} disabled={isDeleting}>
@@ -185,7 +199,10 @@ export function BulkActionsToolbar({
       </Dialog>
 
       {/* Restore Confirmation Dialog */}
-      <Dialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
+      <Dialog
+        open={openDialog === 'restore'}
+        onOpenChange={(open) => setOpenDialog(open ? 'restore' : null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Przywróć {inactiveClients.length} klientów</DialogTitle>
@@ -202,7 +219,7 @@ export function BulkActionsToolbar({
             </ul>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRestoreDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setOpenDialog(null)}>
               Anuluj
             </Button>
             <Button onClick={handleBulkRestore} disabled={isRestoring}>
@@ -213,7 +230,10 @@ export function BulkActionsToolbar({
       </Dialog>
 
       {/* Bulk Edit Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      <Dialog
+        open={openDialog === 'edit'}
+        onOpenChange={(open) => setOpenDialog(open ? 'edit' : null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edytuj {activeClients.length} klientów</DialogTitle>
@@ -325,7 +345,7 @@ export function BulkActionsToolbar({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setOpenDialog(null)}>
               Anuluj
             </Button>
             <Button
@@ -343,4 +363,4 @@ export function BulkActionsToolbar({
       </Dialog>
     </>
   );
-}
+});

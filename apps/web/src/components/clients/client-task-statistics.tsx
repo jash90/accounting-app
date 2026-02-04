@@ -1,10 +1,12 @@
-import { TaskStatus, TaskStatusLabels } from '@/types/enums';
+import { memo } from 'react';
+
 import { BarChart3, Clock, Target } from 'lucide-react';
 
-import { useClientTaskStatistics } from '@/lib/hooks/use-tasks';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useClientTaskStatistics } from '@/lib/hooks/use-tasks';
+import { TaskStatus, TaskStatusLabels } from '@/types/enums';
 
 interface ClientTaskStatisticsProps {
   clientId: string;
@@ -28,7 +30,9 @@ function formatTime(minutes: number): string {
   return `${hours} godz ${mins} min`;
 }
 
-export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
+export const ClientTaskStatistics = memo(function ClientTaskStatistics({
+  clientId,
+}: ClientTaskStatisticsProps) {
   const { data: statistics, isPending, error } = useClientTaskStatistics(clientId);
 
   if (isPending) {
@@ -151,4 +155,4 @@ export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
       </CardContent>
     </Card>
   );
-}
+});

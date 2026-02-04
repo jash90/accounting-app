@@ -1,25 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+
 import { useForm } from 'react-hook-form';
 
-import { AmlGroupLabels, GTU_CODES } from '@/lib/constants/polish-labels';
-import { cn } from '@/lib/utils/cn';
-import { type ClientFiltersDto, type CustomFieldFilter } from '@/types/dtos';
-import {
-  EmploymentTypeLabels,
-  TaxSchemeLabels,
-  VatStatusLabels,
-  ZusStatusLabels,
-  type AmlGroup,
-  type EmploymentType,
-  type TaxScheme,
-  type VatStatus,
-  type ZusStatus,
-} from '@/types/enums';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ChevronDown, Filter, Search, X } from 'lucide-react';
 
-import { usePkdSearch } from '@/lib/hooks/use-pkd-search';
-import { clientFiltersSchema, type ClientFiltersFormData } from '@/lib/validation/schemas';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -35,6 +20,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { AmlGroupLabels, GTU_CODES } from '@/lib/constants/polish-labels';
+import { usePkdSearch } from '@/lib/hooks/use-pkd-search';
+import { cn } from '@/lib/utils/cn';
+import { clientFiltersSchema, type ClientFiltersFormData } from '@/lib/validation/schemas';
+import { type ClientFiltersDto, type CustomFieldFilter } from '@/types/dtos';
+import {
+  EmploymentTypeLabels,
+  TaxSchemeLabels,
+  VatStatusLabels,
+  ZusStatusLabels,
+  type AmlGroup,
+  type EmploymentType,
+  type TaxScheme,
+  type VatStatus,
+  type ZusStatus,
+} from '@/types/enums';
 
 import { ClientCustomFilters } from './client-custom-filters';
 
@@ -45,12 +46,20 @@ interface ClientFiltersProps {
 
 const SEARCH_DEBOUNCE_MS = 300;
 
-export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) {
+/**
+ * Client filters component wrapped in memo() for performance.
+ * Only re-renders when filters or onFiltersChange change.
+ */
+export const ClientFilters = memo(function ClientFilters({
+  filters,
+  onFiltersChange,
+}: ClientFiltersProps) {
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [customFieldFilters, setCustomFieldFilters] = useState<CustomFieldFilter[]>(
     filters.customFieldFilters || []
   );
+  const [isPending, startTransition] = useTransition();
 
   // Sync customFieldFilters when filters prop changes
   useEffect(() => {
@@ -142,6 +151,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
   }, [debouncedSearch]);
 
   // Watch form changes and update filters with debounced search
+  // Note: form.watch returns a stable subscription, form object itself is stable from useForm
   useEffect(() => {
     const subscription = form.watch((value) => {
       const currentSearch = value.search || '';
@@ -155,21 +165,22 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
       const searchChanged = currentSearch !== debouncedSearchRef.current;
 
       if (searchChanged) {
-        // Debounce search changes
+        // Debounce search changes - use transition only for search to prevent UI blocking
         searchTimeoutRef.current = setTimeout(() => {
           setDebouncedSearch(currentSearch);
-          // Cast value - we handle customFieldFilters separately via customFieldFiltersRef
-          onFiltersChange(
-            buildFilters(
-              value as Partial<ClientFiltersFormData>,
-              currentSearch,
-              customFieldFiltersRef.current
-            )
-          );
+          startTransition(() => {
+            onFiltersChange(
+              buildFilters(
+                value as Partial<ClientFiltersFormData>,
+                currentSearch,
+                customFieldFiltersRef.current
+              )
+            );
+          });
         }, SEARCH_DEBOUNCE_MS);
       } else {
-        // Immediate update for non-search filters
-        // Cast value - we handle customFieldFilters separately via customFieldFiltersRef
+        // Direct update for instant operations (dropdowns, checkboxes)
+        // No transition needed - these are fast and shouldn't show "Filtrowanie..." spinner
         onFiltersChange(
           buildFilters(
             value as Partial<ClientFiltersFormData>,
@@ -186,12 +197,15 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
         clearTimeout(searchTimeoutRef.current);
       }
     };
+    // form object is stable from useForm, but we need it in the closure
+    // onFiltersChange and buildFilters are memoized callbacks
   }, [form, onFiltersChange, buildFilters]);
 
   const handleCustomFieldFiltersChange = useCallback(
     (newCustomFilters: CustomFieldFilter[]) => {
       setCustomFieldFilters(newCustomFilters);
       const formValues = form.getValues();
+      // Direct update for custom field filters - these are instant operations
       onFiltersChange(buildFilters(formValues, debouncedSearch, newCustomFilters));
     },
     [form, onFiltersChange, buildFilters, debouncedSearch]
@@ -277,7 +291,10 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
             >
               <Filter className="text-primary h-4 w-4" aria-hidden="true" />
               <span className="text-foreground font-medium">Filtry</span>
-              {hasActiveFilters && (
+              {isPending && (
+                <span className="text-muted-foreground animate-pulse text-xs">Filtrowanie...</span>
+              )}
+              {hasActiveFilters && !isPending && (
                 <span className="bg-primary rounded px-1.5 py-0.5 text-xs text-white">Aktywne</span>
               )}
               <ChevronDown
@@ -641,4 +658,4 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
       </Collapsible>
     </Card>
   );
-}
+});

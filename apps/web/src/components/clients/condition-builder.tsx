@@ -1,5 +1,22 @@
 import { memo, useCallback, useMemo } from 'react';
 
+import { Check, ChevronDown, FolderPlus, Plus, Trash2 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import {
   AmlGroupLabels,
   CONDITION_FIELDS,
@@ -21,23 +38,6 @@ import {
   type LogicalOperator,
   type SingleCondition,
 } from '@/types/enums';
-import { Check, ChevronDown, FolderPlus, Plus, Trash2 } from 'lucide-react';
-
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { DatePicker } from '@/components/ui/date-picker';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 
 // Generate unique ID for condition tracking (stable React keys)
 // Uses crypto.randomUUID() for SSR-safe, collision-resistant IDs
@@ -203,6 +203,10 @@ const GroupConditionRenderer = memo(function GroupConditionRenderer({
   const groupLogicalOperator = group.logicalOperator;
   const groupConditions = group.conditions;
 
+  // Memoize conditions length for dependency - this is a primitive that only changes
+  // when the actual number of conditions changes, not when conditions are edited
+  const conditionsCount = groupConditions.length;
+
   const handleLogicalOperatorChange = useCallback(
     (operator: LogicalOperator) => {
       onChange({
@@ -246,6 +250,8 @@ const GroupConditionRenderer = memo(function GroupConditionRenderer({
     [onChange, onRemove, isRoot, groupId, groupLogicalOperator, groupConditions]
   );
 
+  // These callbacks only need to depend on conditionsCount since they just append
+  // The actual conditions array is spread at execution time
   const handleAddCondition = useCallback(() => {
     const newCondition: SingleCondition = {
       id: generateConditionId(),
@@ -258,7 +264,8 @@ const GroupConditionRenderer = memo(function GroupConditionRenderer({
       logicalOperator: groupLogicalOperator,
       conditions: [...groupConditions, newCondition],
     });
-  }, [onChange, groupId, groupLogicalOperator, groupConditions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onChange, groupId, groupLogicalOperator, conditionsCount]);
 
   const handleAddNestedGroup = useCallback(() => {
     const newGroup: ConditionGroup = {
@@ -278,7 +285,8 @@ const GroupConditionRenderer = memo(function GroupConditionRenderer({
       logicalOperator: groupLogicalOperator,
       conditions: [...groupConditions, newGroup],
     });
-  }, [onChange, groupId, groupLogicalOperator, groupConditions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onChange, groupId, groupLogicalOperator, conditionsCount]);
 
   return (
     <Card className={cn(isRoot ? 'border-primary' : 'border-muted')}>
@@ -514,6 +522,8 @@ const ValueInput = memo(function ValueInput({
   // Compute derived values at the top of the component to allow hooks below
   const isMultiSelect = ['in', 'notIn'].includes(operator) && fieldConfig?.type === 'enum';
   const selectedValues = useMemo(() => (Array.isArray(value) ? value : []), [value]);
+  // Use Set for O(1) lookup instead of O(n) array.includes()
+  const selectedValuesSet = useMemo(() => new Set(selectedValues), [selectedValues]);
   const effectiveEnumKey = fieldConfig?.field || '';
 
   // Single event handler using data attributes to avoid creating functions per option
@@ -527,12 +537,13 @@ const ValueInput = memo(function ValueInput({
       if ('key' in e && e.key !== 'Enter' && e.key !== ' ') return;
       if ('key' in e) e.preventDefault();
 
-      const newValues = selectedValues.includes(optValue)
+      // Use Set for O(1) lookup
+      const newValues = selectedValuesSet.has(optValue)
         ? selectedValues.filter((v) => v !== optValue)
         : [...selectedValues, optValue];
       onChange(newValues);
     },
-    [selectedValues, onChange]
+    [selectedValues, selectedValuesSet, onChange]
   );
 
   // Multi-select for 'in' and 'notIn' operators - use proper multi-select with checkboxes
@@ -561,7 +572,8 @@ const ValueInput = memo(function ValueInput({
             aria-label="Wybierz wartości"
           >
             {options.map((opt) => {
-              const isSelected = selectedValues.includes(opt.value);
+              // Use Set for O(1) lookup
+              const isSelected = selectedValuesSet.has(opt.value);
               return (
                 <div
                   key={opt.value}

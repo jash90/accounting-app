@@ -1,14 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import { cn } from '@/lib/utils/cn';
-import { type CustomFieldFilter } from '@/types/dtos';
-import { type ClientFieldDefinition } from '@/types/entities';
-import { CustomFieldType } from '@/types/enums';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { CalendarIcon, ChevronDown, Loader2, X } from 'lucide-react';
 
-import { useFieldDefinitions } from '@/lib/hooks/use-clients';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -23,6 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useFieldDefinitions } from '@/lib/hooks/use-clients';
+import { cn } from '@/lib/utils/cn';
+import { type CustomFieldFilter } from '@/types/dtos';
+import { type ClientFieldDefinition } from '@/types/entities';
+import { CustomFieldType } from '@/types/enums';
 
 interface ClientCustomFiltersProps {
   filters: CustomFieldFilter[];
@@ -100,9 +100,25 @@ interface CustomFieldFilterControlProps {
 }
 
 function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilterControlProps) {
-  const operators = getOperatorsForFieldType(field.fieldType);
+  // Memoize operators to prevent recalculation on every render
+  const operators = useMemo(() => getOperatorsForFieldType(field.fieldType), [field.fieldType]);
   const currentOperator = filter?.operator || getDefaultOperator(field.fieldType);
   const currentValue = filter?.value || '';
+
+  // Memoize selectedValues and Set for ENUM field type to prevent recreation on every render
+  // This is computed unconditionally so useMemo can be used
+  const selectedValuesData = useMemo(() => {
+    if (field.fieldType !== CustomFieldType.ENUM) return null;
+    const selectedValues = Array.isArray(currentValue)
+      ? currentValue
+      : currentValue
+        ? [currentValue]
+        : [];
+    return {
+      values: selectedValues,
+      set: new Set(selectedValues),
+    };
+  }, [field.fieldType, currentValue]);
 
   const handleOperatorChange = useCallback(
     (newOperator: string) => {
@@ -311,11 +327,9 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
 
     case CustomFieldType.ENUM: {
       const enumValues = field.enumValues || [];
-      const selectedValues = Array.isArray(currentValue)
-        ? currentValue
-        : currentValue
-          ? [currentValue]
-          : [];
+      // Use memoized selectedValues and Set computed at the top of the component
+      const selectedValues = selectedValuesData?.values ?? [];
+      const selectedValuesSet = selectedValuesData?.set ?? new Set<string>();
       const isMultiSelect = currentOperator === 'in';
 
       if (isMultiSelect) {
@@ -338,7 +352,7 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
               <div className="flex-1 space-y-1">
                 <div className="flex min-h-[40px] flex-wrap gap-2 rounded-md border p-2">
                   {enumValues.map((enumValue) => {
-                    const isSelected = selectedValues.includes(enumValue);
+                    const isSelected = selectedValuesSet.has(enumValue);
                     return (
                       <label
                         key={enumValue}

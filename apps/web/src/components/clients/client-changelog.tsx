@@ -1,12 +1,14 @@
-import { type ChangeLogResponseDto } from '@/types/dtos';
-import { ChangeAction } from '@/types/enums';
+import { memo } from 'react';
+
 import { Edit, History, Plus, Trash2 } from 'lucide-react';
 
-import { useClientChangelog } from '@/lib/hooks/use-clients';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useClientChangelog } from '@/lib/hooks/use-clients';
+import { type ChangeLogResponseDto } from '@/types/dtos';
+import { ChangeAction } from '@/types/enums';
 
 import { ChangeDetailRow } from './ChangeDetailRow';
 
@@ -86,7 +88,11 @@ function ChangelogEntry({ entry }: { entry: ChangeLogResponseDto }) {
   );
 }
 
-export function ClientChangelog({ clientId }: ClientChangelogProps) {
+/**
+ * Client changelog component wrapped in memo() for performance.
+ * Only re-renders when clientId changes.
+ */
+export const ClientChangelog = memo(function ClientChangelog({ clientId }: ClientChangelogProps) {
   const { data: changelog, isPending, error } = useClientChangelog(clientId);
 
   if (isPending) {
@@ -156,4 +162,4 @@ export function ClientChangelog({ clientId }: ClientChangelogProps) {
       </CardContent>
     </Card>
   );
-}
+});
