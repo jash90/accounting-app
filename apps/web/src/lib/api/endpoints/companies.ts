@@ -1,9 +1,9 @@
 import {
+  PermissionTargetType,
   type CompanyDto,
   type CreateCompanyDto,
-  type UpdateCompanyDto,
   type ManageModulePermissionDto,
-  PermissionTargetType,
+  type UpdateCompanyDto,
 } from '@/types/dtos';
 import { type CompanyModuleAccess } from '@/types/entities';
 

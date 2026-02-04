@@ -1,13 +1,15 @@
 import { useNavigate } from 'react-router-dom';
 
 import { format } from 'date-fns';
-import { ArrowLeft, CalendarDays, List, Calendar } from 'lucide-react';
+import { ArrowLeft, Calendar, CalendarDays, List } from 'lucide-react';
 
 import { PageHeader } from '@/components/common/page-header';
-import { WeeklyTimesheet, TimerWidget } from '@/components/time-tracking';
+import { TimerWidget } from '@/components/time-tracking/timer-widget';
+import { WeeklyTimesheet } from '@/components/time-tracking/weekly-timesheet';
 import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/contexts/auth-context';
 import { UserRole } from '@/types/enums';
+
 
 export default function TimeTrackingTimesheetWeeklyPage() {
   const { user } = useAuthContext();

@@ -1,8 +1,8 @@
-import { useState, memo, useRef, useEffect } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
-import { ArrowLeft, Plus, Edit, Trash2, Settings, Tags, Image } from 'lucide-react';
+import { ArrowLeft, Edit, Image, Plus, Settings, Tags, Trash2 } from 'lucide-react';
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { PageHeader } from '@/components/common/page-header';
@@ -23,24 +23,24 @@ import {
 } from '@/components/ui/table';
 import { useAuthContext } from '@/contexts/auth-context';
 import {
-  useFieldDefinitions,
-  useCreateFieldDefinition,
-  useUpdateFieldDefinition,
-  useDeleteFieldDefinition,
   useClientIcons,
   useCreateClientIcon,
-  useUpdateClientIcon,
-  useDeleteClientIcon,
-  useNotificationSettings,
+  useCreateFieldDefinition,
   useCreateNotificationSettings,
+  useDeleteClientIcon,
+  useDeleteFieldDefinition,
+  useFieldDefinitions,
+  useNotificationSettings,
+  useUpdateClientIcon,
+  useUpdateFieldDefinition,
   useUpdateNotificationSettings,
 } from '@/lib/hooks/use-clients';
 import {
   type CreateClientFieldDefinitionFormData,
-  type UpdateClientFieldDefinitionFormData,
   type CreateClientIconFormData,
-  type UpdateClientIconFormData,
   type NotificationSettingsFormData,
+  type UpdateClientFieldDefinitionFormData,
+  type UpdateClientIconFormData,
 } from '@/lib/validation/schemas';
 import {
   type ClientFieldDefinitionResponseDto,
@@ -49,7 +49,7 @@ import {
   type UpdateClientFieldDefinitionDto,
   type UpdateClientIconDto,
 } from '@/types/dtos';
-import { UserRole, CustomFieldType } from '@/types/enums';
+import { CustomFieldType, UserRole } from '@/types/enums';
 
 const FIELD_TYPE_LABELS: Record<CustomFieldType, string> = {
   [CustomFieldType.TEXT]: 'Tekst',

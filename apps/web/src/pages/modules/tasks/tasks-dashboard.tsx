@@ -1,20 +1,20 @@
 import {
-  CheckSquare,
-  List,
-  LayoutGrid,
-  Calendar,
-  GanttChartSquare,
-  Settings,
-  Clock,
   AlertCircle,
+  Calendar,
   CheckCircle2,
+  CheckSquare,
+  Clock,
+  GanttChartSquare,
+  LayoutGrid,
+  List,
+  Settings,
 } from 'lucide-react';
 
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useTasks } from '@/lib/hooks/use-tasks';
-import { UserRole, TaskStatus } from '@/types/enums';
+import { TaskStatus, UserRole } from '@/types/enums';
 
 export default function TasksDashboardPage() {
   const { user } = useAuthContext();
@@ -56,14 +56,14 @@ export default function TasksDashboardPage() {
       description: 'Przeglądaj wszystkie zadania w formie tabeli z sortowaniem i filtrowaniem',
       icon: List,
       href: `${basePath}/list`,
-      gradient: 'bg-apptax-gradient',
+      gradient: 'bg-primary',
     },
     {
       title: 'Tablica Kanban',
       description: 'Zarządzaj zadaniami metodą przeciągnij i upuść między kolumnami',
       icon: LayoutGrid,
       href: `${basePath}/kanban`,
-      gradient: 'bg-apptax-dark-gradient',
+      gradient: 'bg-primary',
     },
     {
       title: 'Kalendarz',
@@ -87,9 +87,9 @@ export default function TasksDashboardPage() {
   return (
     <div className="container mx-auto space-y-6 p-6">
       <div>
-        <h1 className="text-apptax-navy flex items-center gap-3 text-3xl font-bold">
+        <h1 className="text-foreground flex items-center gap-3 text-3xl font-bold">
           Moduł Zadania
-          <div className="bg-apptax-teal h-3 w-3 rounded-full" />
+          <div className="bg-accent h-3 w-3 rounded-full" />
         </h1>
         <p className="text-muted-foreground mt-1">Zarządzanie zadaniami z wieloma widokami</p>
       </div>
@@ -100,9 +100,9 @@ export default function TasksDashboardPage() {
           label="Wszystkie zadania"
           value={totalTasks}
           icon={CheckSquare}
-          iconBg="bg-apptax-gradient"
-          valueColor="text-apptax-navy"
-          borderColor="border-apptax-soft-teal/30"
+          iconBg="bg-primary"
+          valueColor="text-foreground"
+          borderColor="border-accent/30"
           isLoading={isPending}
         />
 

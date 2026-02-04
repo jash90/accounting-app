@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AuthModule } from '@accounting/auth';
-import { EmailConfiguration, Company } from '@accounting/common';
+import { Company, EmailConfiguration } from '@accounting/common';
 import { CommonModule } from '@accounting/common/backend';
 import { RBACModule } from '@accounting/rbac';
 

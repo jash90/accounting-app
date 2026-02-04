@@ -16,6 +16,7 @@ export * from './lib/enums/time-entry-status.enum';
 export * from './lib/enums/time-rounding-method.enum';
 export * from './lib/enums/notification-type.enum';
 export * from './lib/enums/settlement-status.enum';
+export * from './lib/enums/relief-type.enum';
 
 // Constants
 export * from './lib/constants';
@@ -48,6 +49,8 @@ export * from './lib/entities/client-custom-field-value.entity';
 export * from './lib/entities/client-icon.entity';
 export * from './lib/entities/client-icon-assignment.entity';
 export * from './lib/entities/client-suspension.entity';
+export * from './lib/entities/client-relief-period.entity';
+export * from './lib/entities/custom-field-reminder.entity';
 export * from './lib/entities/notification-settings.entity';
 export * from './lib/entities/client-delete-request.entity';
 export * from './lib/entities/task.entity';

@@ -1,24 +1,25 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository, DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 import {
-  ClientFieldDefinition,
-  ClientCustomFieldValue,
   Client,
-  User,
+  ClientCustomFieldValue,
+  ClientFieldDefinition,
   CustomFieldType,
   PaginatedResponseDto,
+  User,
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 
 import {
+  ClientErrorCode,
+  ClientException,
   ClientNotFoundException,
   FieldNotFoundException,
-  ClientException,
-  ClientErrorCode,
 } from '../exceptions';
+import { CustomFieldReminderService } from './custom-field-reminder.service';
 
 export interface CreateFieldDefinitionDto {
   name: string;
@@ -52,7 +53,8 @@ export class CustomFieldsService {
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
     private readonly tenantService: TenantService,
-    private readonly dataSource: DataSource
+    private readonly dataSource: DataSource,
+    private readonly customFieldReminderService: CustomFieldReminderService
   ) {}
 
   // Field Definition CRUD
@@ -303,7 +305,40 @@ export class CustomFieldsService {
       });
     }
 
-    return this.fieldValueRepository.save(fieldValue);
+    const saved = await this.fieldValueRepository.save(fieldValue);
+
+    // Handle reminders for DATE_RANGE_WITH_REMINDER type
+    if (definition.fieldType === CustomFieldType.DATE_RANGE_WITH_REMINDER && dto.value) {
+      await this.handleDateRangeReminder(saved, definition, dto.value, companyId);
+    }
+
+    return saved;
+  }
+
+  /**
+   * Handle creation/update of reminder for DATE_RANGE_WITH_REMINDER custom fields.
+   */
+  private async handleDateRangeReminder(
+    fieldValue: ClientCustomFieldValue,
+    definition: ClientFieldDefinition,
+    value: string,
+    companyId: string
+  ): Promise<void> {
+    try {
+      const dateRange = JSON.parse(value);
+      if (dateRange.startDate && dateRange.endDate) {
+        await this.customFieldReminderService.upsertReminder(
+          companyId,
+          fieldValue.clientId,
+          definition.id,
+          fieldValue.id,
+          new Date(dateRange.startDate),
+          new Date(dateRange.endDate)
+        );
+      }
+    } catch {
+      // Ignore errors - validation should catch invalid JSON
+    }
   }
 
   async setMultipleCustomFieldValues(
@@ -364,6 +399,11 @@ export class CustomFieldsService {
 
         const saved = await queryRunner.manager.save(fieldValue);
         results.push(saved);
+
+        // Handle reminders for DATE_RANGE_WITH_REMINDER type
+        if (definition.fieldType === CustomFieldType.DATE_RANGE_WITH_REMINDER && value) {
+          await this.handleDateRangeReminder(saved, definition, value, companyId);
+        }
       }
 
       await queryRunner.commitTransaction();
@@ -514,6 +554,43 @@ export class CustomFieldsService {
 
       case CustomFieldType.TEXT:
         // No special validation for text
+        break;
+
+      case CustomFieldType.DATE_RANGE_WITH_REMINDER:
+        // Value should be JSON with startDate and endDate
+        try {
+          const dateRange = JSON.parse(value);
+          if (typeof dateRange !== 'object' || dateRange === null) {
+            throw new Error('Not an object');
+          }
+          if (!dateRange.startDate || !dateRange.endDate) {
+            throw new BadRequestException(
+              `Field "${definition.label}" musi zawierać startDate i endDate`
+            );
+          }
+          const startDate = new Date(dateRange.startDate);
+          const endDate = new Date(dateRange.endDate);
+          if (isNaN(startDate.getTime())) {
+            throw new BadRequestException(
+              `Field "${definition.label}" - nieprawidłowy format startDate`
+            );
+          }
+          if (isNaN(endDate.getTime())) {
+            throw new BadRequestException(
+              `Field "${definition.label}" - nieprawidłowy format endDate`
+            );
+          }
+          if (endDate.getTime() <= startDate.getTime()) {
+            throw new BadRequestException(
+              `Field "${definition.label}" - endDate musi być późniejsza niż startDate`
+            );
+          }
+        } catch (e) {
+          if (e instanceof BadRequestException) throw e;
+          throw new BadRequestException(
+            `Field "${definition.label}" musi być poprawnym obiektem JSON z startDate i endDate`
+          );
+        }
         break;
     }
   }

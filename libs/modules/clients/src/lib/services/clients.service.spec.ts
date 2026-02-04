@@ -4,28 +4,28 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { type Repository } from 'typeorm';
 
 import {
-  Client,
-  type User,
-  UserRole,
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
   AmlGroup,
+  Client,
+  EmploymentType,
   PaginatedResponseDto,
+  TaxScheme,
+  UserRole,
+  VatStatus,
+  ZusStatus,
+  type User,
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
+import { ClientNotFoundException } from '../exceptions';
 import { AutoAssignService } from './auto-assign.service';
 import { ClientChangelogService } from './client-changelog.service';
 import {
   ClientsService,
+  type ClientFilters,
   type CreateClientDto,
   type UpdateClientDto,
-  type ClientFilters,
 } from './clients.service';
-import { ClientNotFoundException } from '../exceptions';
 
 describe('ClientsService', () => {
   let service: ClientsService;

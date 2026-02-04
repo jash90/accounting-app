@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { EmailConfiguration, Company } from '@accounting/common';
+import { Company, EmailConfiguration } from '@accounting/common';
 import { CreateEmailConfigDto, UpdateEmailConfigDto } from '@accounting/email';
 
 import { EncryptionService } from './encryption.service';

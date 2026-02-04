@@ -1,9 +1,12 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { describe, it, expect, beforeEach, mock, Mock } from 'bun:test';
-import { AuthService } from './auth.service';
-import { User, Company, UserRole } from '@accounting/common';
+
 import * as bcrypt from 'bcryptjs';
+import { beforeEach, describe, expect, it, mock, type Mock } from 'bun:test';
+
+import { Company, User, UserRole } from '@accounting/common';
+
+import { AuthService } from './auth.service';
 import { ACCESS_JWT_SERVICE, REFRESH_JWT_SERVICE } from '../constants/jwt.constants';
 
 describe('AuthService', () => {

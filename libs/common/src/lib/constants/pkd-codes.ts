@@ -1,3 +1,6 @@
+// Import PKD_CLASSES for internal use and re-export for external consumers
+import { PKD_CLASSES } from './pkd-classes';
+
 /**
  * PKD 2025 - Polska Klasyfikacja Działalności
  * Obowiązuje od 1 stycznia 2025 r.
@@ -292,8 +295,6 @@ export const PKD_DIVISIONS: PkdDivision[] = [
   { code: '99', name: 'Organizacje i zespoły eksterytorialne', section: 'V' },
 ];
 
-// Import PKD_CLASSES for internal use and re-export for external consumers
-import { PKD_CLASSES } from './pkd-classes';
 export { PKD_CLASSES };
 
 // Helper function to get PKD code with full label (supports both division and class codes)

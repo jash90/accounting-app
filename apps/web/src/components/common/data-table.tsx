@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
+import { memo, useMemo, useState } from 'react';
 
 import {
   flexRender,
   getCoreRowModel,
-  useReactTable,
-  getSortedRowModel,
   getPaginationRowModel,
-  type SortingState,
+  getSortedRowModel,
+  useReactTable,
   type ColumnDef,
   type RowSelectionState,
+  type SortingState,
   type VisibilityState,
 } from '@tanstack/react-table';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -25,6 +25,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
+// Hoisted empty array to prevent re-renders from new reference creation
+const EMPTY_SELECTED_ROWS: never[] = [];
+
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
@@ -40,7 +43,7 @@ interface DataTableProps<TData, TValue> {
   columnVisibility?: string[];
 }
 
-export function DataTable<TData, TValue>({
+function DataTableInner<TData, TValue>({
   columns,
   data,
   isLoading = false,
@@ -49,75 +52,80 @@ export function DataTable<TData, TValue>({
   enablePagination = true,
   pageSize = 20,
   selectable = false,
-  selectedRows = [],
+  selectedRows = EMPTY_SELECTED_ROWS as TData[],
   onSelectionChange,
   getRowId,
   columnVisibility: visibleColumnIds,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [internalRowSelection, setInternalRowSelection] = useState<RowSelectionState>({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
-  // Sync columnVisibility from props
-  useEffect(() => {
-    if (visibleColumnIds) {
-      const newVisibility: VisibilityState = {};
-      // Hide columns not in the visibleColumnIds list
-      // Prefer col.id over col.accessorKey for consistent column identification
-      columns.forEach((col) => {
-        const colId = col.id || ('accessorKey' in col ? String(col.accessorKey) : undefined);
-        if (colId) {
-          newVisibility[colId] = visibleColumnIds.includes(colId);
-        }
-      });
-      setColumnVisibility(newVisibility);
-    }
-  }, [visibleColumnIds, columns]);
+  // Memoize selected row IDs for efficient comparison
+  const selectedRowIds = useMemo(() => {
+    if (!getRowId) return new Set<string>();
+    return new Set(selectedRows.map((row) => getRowId(row)));
+  }, [selectedRows, getRowId]);
 
-  // Sync external selectedRows with internal selection state
-  useEffect(() => {
-    if (!selectable || !getRowId) return;
-
+  // Derive row selection state during render (not in useEffect)
+  // This avoids an extra render cycle and keeps state in sync
+  const rowSelection = useMemo(() => {
+    if (!selectable || !getRowId) return internalRowSelection;
     const newSelection: RowSelectionState = {};
-    selectedRows.forEach((row) => {
-      const rowIndex = data.findIndex((d) => getRowId(d) === getRowId(row));
-      if (rowIndex !== -1) {
-        newSelection[rowIndex] = true;
+    data.forEach((row, index) => {
+      const rowId = getRowId(row);
+      if (selectedRowIds.has(rowId)) {
+        newSelection[index] = true;
       }
     });
-    setRowSelection(newSelection);
-  }, [selectedRows, data, selectable, getRowId]);
+    return newSelection;
+  }, [selectedRowIds, data, selectable, getRowId, internalRowSelection]);
 
-  // Build columns with selection column if selectable
-  const allColumns: ColumnDef<TData, TValue>[] = selectable
-    ? [
-        {
-          id: 'select',
-          header: ({ table }) => (
-            <Checkbox
-              checked={
-                table.getIsAllPageRowsSelected() ||
-                (table.getIsSomePageRowsSelected() && 'indeterminate')
-              }
-              onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-              aria-label="Zaznacz wszystko"
-              onClick={(e) => e.stopPropagation()}
-            />
-          ),
-          cell: ({ row }) => (
-            <Checkbox
-              checked={row.getIsSelected()}
-              onCheckedChange={(value) => row.toggleSelected(!!value)}
-              aria-label="Zaznacz wiersz"
-              onClick={(e) => e.stopPropagation()}
-            />
-          ),
-          enableSorting: false,
-          enableHiding: false,
-        } as ColumnDef<TData, TValue>,
-        ...columns,
-      ]
-    : columns;
+  // Derive columnVisibility from props during render
+  const derivedColumnVisibility = useMemo(() => {
+    if (!visibleColumnIds) return columnVisibility;
+    const newVisibility: VisibilityState = {};
+    columns.forEach((col) => {
+      const colId = col.id || ('accessorKey' in col ? String(col.accessorKey) : undefined);
+      if (colId) {
+        newVisibility[colId] = visibleColumnIds.includes(colId);
+      }
+    });
+    return newVisibility;
+  }, [visibleColumnIds, columns, columnVisibility]);
+
+  // Memoize columns with selection column to prevent recreation on every render
+  const allColumns = useMemo((): ColumnDef<TData, TValue>[] => {
+    if (!selectable) return columns;
+
+    return [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && 'indeterminate')
+            }
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Zaznacz wszystko"
+            onClick={(e) => e.stopPropagation()}
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Zaznacz wiersz"
+            onClick={(e) => e.stopPropagation()}
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      } as ColumnDef<TData, TValue>,
+      ...columns,
+    ];
+  }, [selectable, columns]);
 
   const table = useReactTable({
     data,
@@ -130,7 +138,7 @@ export function DataTable<TData, TValue>({
       const newSelection =
         typeof updaterOrValue === 'function' ? updaterOrValue(rowSelection) : updaterOrValue;
 
-      setRowSelection(newSelection);
+      setInternalRowSelection(newSelection);
 
       // Call onSelectionChange with the actual row data
       if (onSelectionChange) {
@@ -144,7 +152,7 @@ export function DataTable<TData, TValue>({
     state: {
       sorting,
       rowSelection: selectable ? rowSelection : {},
-      columnVisibility: visibleColumnIds ? columnVisibility : {},
+      columnVisibility: derivedColumnVisibility,
     },
     onColumnVisibilityChange: setColumnVisibility,
     enableRowSelection: selectable,
@@ -160,7 +168,7 @@ export function DataTable<TData, TValue>({
     return (
       <div className="space-y-3 p-4">
         {[...Array(5)].map((_, i) => (
-          <Skeleton key={i} className="bg-apptax-soft-teal/30 h-12 w-full rounded-lg" />
+          <Skeleton key={i} className="bg-accent/10 h-12 w-full rounded-lg" />
         ))}
       </div>
     );
@@ -171,8 +179,8 @@ export function DataTable<TData, TValue>({
   return (
     <div className="space-y-4">
       {selectable && selectedCount > 0 && (
-        <div className="bg-apptax-soft-teal/20 rounded-lg px-4 py-2">
-          <p className="text-apptax-navy text-sm">
+        <div className="bg-accent/10 rounded-lg px-4 py-2">
+          <p className="text-foreground text-sm">
             Zaznaczono <span className="font-semibold">{selectedCount}</span>{' '}
             {selectedCount === 1 ? 'element' : selectedCount < 5 ? 'elementy' : 'elementów'}
           </p>
@@ -181,13 +189,13 @@ export function DataTable<TData, TValue>({
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="bg-apptax-navy/5 hover:bg-apptax-navy/5">
+            <TableRow key={headerGroup.id} className="bg-muted hover:bg-muted">
               {headerGroup.headers.map((header) => {
                 const sortDirection = header.column.getIsSorted();
                 return (
                   <TableHead
                     key={header.id}
-                    className="text-apptax-navy font-semibold"
+                    className="text-foreground font-semibold"
                     aria-sort={
                       sortDirection === 'asc'
                         ? 'ascending'
@@ -212,7 +220,8 @@ export function DataTable<TData, TValue>({
                 key={row.id}
                 onClick={() => onRowClick?.(row.original)}
                 data-state={row.getIsSelected() && 'selected'}
-                className={`hover:bg-apptax-soft-teal/30 transition-colors ${onRowClick ? 'cursor-pointer' : ''} ${row.getIsSelected() ? 'bg-apptax-soft-teal/20' : ''}`}
+                className={`hover:bg-accent/10 transition-colors ${onRowClick ? 'cursor-pointer' : ''} ${row.getIsSelected() ? 'bg-accent/10' : ''}`}
+                style={{ contentVisibility: 'auto', containIntrinsicSize: '0 48px' }}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
@@ -237,14 +246,14 @@ export function DataTable<TData, TValue>({
         <div className="flex items-center justify-between px-2">
           <p className="text-muted-foreground text-sm">
             Wyświetlanie{' '}
-            <span className="text-apptax-navy font-medium">
+            <span className="text-foreground font-medium">
               {table.getState().pagination.pageIndex * pageSize + 1}
             </span>{' '}
             -{' '}
-            <span className="text-apptax-navy font-medium">
+            <span className="text-foreground font-medium">
               {Math.min((table.getState().pagination.pageIndex + 1) * pageSize, data.length)}
             </span>{' '}
-            z <span className="text-apptax-navy font-medium">{data.length}</span> wyników
+            z <span className="text-foreground font-medium">{data.length}</span> wyników
           </p>
           <div className="flex gap-2">
             <Button
@@ -252,7 +261,7 @@ export function DataTable<TData, TValue>({
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50 hover:border-apptax-teal"
+              className="border-accent hover:bg-accent/20 hover:border-accent"
             >
               <ChevronLeft className="mr-1 h-4 w-4" />
               Poprzednia
@@ -262,7 +271,7 @@ export function DataTable<TData, TValue>({
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50 hover:border-apptax-teal"
+              className="border-accent hover:bg-accent/20 hover:border-accent"
             >
               Następna
               <ChevronRight className="ml-1 h-4 w-4" />
@@ -273,3 +282,6 @@ export function DataTable<TData, TValue>({
     </div>
   );
 }
+
+// Export memoized component to prevent unnecessary re-renders
+export const DataTable = memo(DataTableInner) as typeof DataTableInner;

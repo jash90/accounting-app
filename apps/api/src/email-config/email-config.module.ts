@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { EmailConfiguration, Company } from '@accounting/common';
+import { Company, EmailConfiguration } from '@accounting/common';
 import { RBACModule } from '@accounting/rbac';
 
 import { EmailConfigController } from './controllers/email-config.controller';

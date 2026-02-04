@@ -1,12 +1,12 @@
-import { History, Plus, Edit, Trash2 } from 'lucide-react';
+import { type ChangeLogResponseDto } from '@/types/dtos';
+import { ChangeAction } from '@/types/enums';
+import { Edit, History, Plus, Trash2 } from 'lucide-react';
 
+import { useClientChangelog } from '@/lib/hooks/use-clients';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useClientChangelog } from '@/lib/hooks/use-clients';
-import { type ChangeLogResponseDto } from '@/types/dtos';
-import { ChangeAction } from '@/types/enums';
 
 import { ChangeDetailRow } from './ChangeDetailRow';
 
@@ -44,8 +44,8 @@ function ChangelogEntry({ entry }: { entry: ChangeLogResponseDto }) {
   const changedKeys = new Set([...Object.keys(oldValues), ...Object.keys(newValues)]);
 
   return (
-    <div className="border-apptax-soft-teal relative border-l-2 pb-4 pl-4">
-      <div className="bg-apptax-blue absolute top-0 -left-[7px] h-3 w-3 rounded-full" />
+    <div className="border-accent relative border-l-2 pb-4 pl-4">
+      <div className="bg-primary absolute top-0 -left-[7px] h-3 w-3 rounded-full" />
 
       <div className="mb-2 flex items-center gap-2">
         <Badge variant={config.variant} className="gap-1">

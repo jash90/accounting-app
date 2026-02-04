@@ -7,6 +7,7 @@ declare global {
   interface Window {
     __APP_CONFIG__?: {
       API_BASE_URL?: string;
+      WS_URL?: string;
     };
   }
 }
@@ -35,6 +36,56 @@ const getApiBaseUrl = (): string => {
   return '';
 };
 
+/**
+ * Token refresh manager that handles concurrent 401 responses properly.
+ * Uses a single promise for all concurrent refresh attempts to prevent race conditions.
+ */
+class TokenRefreshManager {
+  private refreshPromise: Promise<string> | null = null;
+
+  /**
+   * Refreshes the token, ensuring only one refresh happens at a time.
+   * Concurrent calls will share the same refresh promise.
+   */
+  async refresh(): Promise<string> {
+    // If a refresh is already in progress, return the existing promise
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    const refreshToken = tokenStorage.getRefreshToken();
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+
+    // Create a new refresh promise
+    this.refreshPromise = axios
+      .post(`${getApiBaseUrl()}/api/auth/refresh`, {
+        refresh_token: refreshToken,
+      })
+      .then(({ data }) => {
+        tokenStorage.setAccessToken(data.access_token);
+        return data.access_token as string;
+      })
+      .finally(() => {
+        // Clear the promise so future refreshes can happen
+        this.refreshPromise = null;
+      });
+
+    return this.refreshPromise;
+  }
+
+  /**
+   * Handles token refresh failure by clearing tokens and redirecting to login.
+   */
+  handleRefreshFailure(): void {
+    tokenStorage.clearTokens();
+    window.location.href = '/login';
+  }
+}
+
+const tokenRefreshManager = new TokenRefreshManager();
+
 const apiClient = axios.create({
   baseURL: getApiBaseUrl(),
   headers: {
@@ -55,24 +106,7 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor - auto-refresh on 401
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (value: unknown) => void;
-  reject: (reason?: unknown) => void;
-}> = [];
-
-const processQueue = (error: Error | null, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
-};
-
+// Response interceptor - auto-refresh on 401 using TokenRefreshManager
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -108,45 +142,16 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            return apiClient(originalRequest);
-          })
-          .catch((err) => Promise.reject(err));
-      }
-
       originalRequest._retry = true;
-      isRefreshing = true;
-
-      const refreshToken = tokenStorage.getRefreshToken();
-
-      if (!refreshToken) {
-        tokenStorage.clearTokens();
-        window.location.href = '/login';
-        return Promise.reject(error);
-      }
 
       try {
-        const { data } = await axios.post(`${getApiBaseUrl()}/api/auth/refresh`, {
-          refresh_token: refreshToken,
-        });
-
-        tokenStorage.setAccessToken(data.access_token);
-        processQueue(null, data.access_token);
-
-        originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
+        // TokenRefreshManager handles concurrent requests - all share the same refresh promise
+        const newToken = await tokenRefreshManager.refresh();
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
-        processQueue(refreshError as Error, null);
-        tokenStorage.clearTokens();
-        window.location.href = '/login';
+        tokenRefreshManager.handleRefreshFailure();
         return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
       }
     }
 

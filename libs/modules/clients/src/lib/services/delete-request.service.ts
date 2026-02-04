@@ -1,26 +1,26 @@
-import { Injectable, HttpStatus } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository, DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 import {
-  ClientDeleteRequest,
   Client,
+  ClientDeleteRequest,
+  DeleteRequestStatus,
   User,
   UserRole,
-  DeleteRequestStatus,
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 
+import {
+  ClientErrorCode,
+  ClientException,
+  ClientNotFoundException,
+  DeleteRequestAlreadyProcessedException,
+  DeleteRequestNotFoundException,
+} from '../exceptions';
 import { ClientChangelogService } from './client-changelog.service';
 import { ClientsService } from './clients.service';
-import {
-  ClientNotFoundException,
-  DeleteRequestNotFoundException,
-  DeleteRequestAlreadyProcessedException,
-  ClientException,
-  ClientErrorCode,
-} from '../exceptions';
 
 export interface CreateDeleteRequestDto {
   reason?: string;

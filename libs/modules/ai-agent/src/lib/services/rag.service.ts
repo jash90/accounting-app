@@ -1,11 +1,15 @@
+
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { AIContext, User } from '@accounting/common';
-import { OpenAIProviderService } from './openai-provider.service';
-import { SystemCompanyService } from './system-company.service';
+
 import * as fs from 'fs/promises';
 import * as pdfParse from 'pdf-parse';
+import { Repository } from 'typeorm';
+
+import { AIContext, User } from '@accounting/common';
+
+import { OpenAIProviderService } from './openai-provider.service';
+import { SystemCompanyService } from './system-company.service';
 
 @Injectable()
 export class RAGService {

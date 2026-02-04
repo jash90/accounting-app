@@ -1,15 +1,15 @@
 import { useEffect } from 'react';
 
-import { useParams, Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 
 import DOMPurify from 'dompurify';
-import { ArrowLeft, Reply, Trash2, Mail, CheckCheck, Paperclip, Sparkles } from 'lucide-react';
+import { ArrowLeft, CheckCheck, Mail, Paperclip, Reply, Sparkles, Trash2 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
-import { useEmail, useMarkAsRead, useDeleteEmails } from '@/lib/hooks/use-email-client';
+import { useDeleteEmails, useEmail, useMarkAsRead } from '@/lib/hooks/use-email-client';
 import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 
 import { EmailDetailSkeleton } from './components/email-detail-skeleton';

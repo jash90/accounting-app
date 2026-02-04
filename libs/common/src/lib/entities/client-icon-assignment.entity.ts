@@ -1,15 +1,16 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
   Unique,
 } from 'typeorm';
-import { Client } from './client.entity';
+
 import { ClientIcon } from './client-icon.entity';
+import { Client } from './client.entity';
 
 @Entity('client_icon_assignments')
 @Unique(['clientId', 'iconId'])

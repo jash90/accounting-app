@@ -4,6 +4,18 @@ import { format, startOfToday } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { CalendarClock, Edit, PauseCircle, PlayCircle, Plus, Trash2 } from 'lucide-react';
 
+import { type SuspensionResponseDto } from '@/lib/api/endpoints/suspensions';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import {
+  useClientSuspensions,
+  useCreateSuspension,
+  useDeleteSuspension,
+  useUpdateSuspension,
+} from '@/lib/hooks/use-suspensions';
+import {
+  type CreateSuspensionFormData,
+  type UpdateSuspensionFormData,
+} from '@/lib/validation/schemas';
 import { SuspensionFormDialog } from '@/components/forms/suspension-form-dialog';
 import {
   AlertDialog,
@@ -21,18 +33,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { type SuspensionResponseDto } from '@/lib/api/endpoints/suspensions';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import {
-  useClientSuspensions,
-  useCreateSuspension,
-  useDeleteSuspension,
-  useUpdateSuspension,
-} from '@/lib/hooks/use-suspensions';
-import {
-  type CreateSuspensionFormData,
-  type UpdateSuspensionFormData,
-} from '@/lib/validation/schemas';
 
 interface SuspensionHistoryCardProps {
   clientId: string;
@@ -69,7 +69,7 @@ const SuspensionEntry = memo(function SuspensionEntry({
       : 'Zakończone zawieszenie';
 
   return (
-    <div className="border-apptax-soft-teal relative border-l-2 pb-4 pl-4">
+    <div className="border-accent relative border-l-2 pb-4 pl-4">
       <div
         className={`absolute top-0 -left-[7px] h-3 w-3 rounded-full ${
           isActive ? 'bg-amber-500' : isFuture ? 'bg-blue-500' : 'bg-gray-400'

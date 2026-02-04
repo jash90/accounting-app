@@ -1,41 +1,51 @@
+import { useMemo } from 'react';
+
 import {
-  Clock,
-  List,
+  BarChart3,
   Calendar,
   CalendarDays,
-  BarChart3,
+  Clock,
+  DollarSign,
+  List,
   Settings,
   Timer,
-  DollarSign,
   TrendingUp,
 } from 'lucide-react';
 
-import { TimerWidget } from '@/components/time-tracking';
+import { TimerWidget } from '@/components/time-tracking/timer-widget';
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
-import { useTimeEntries, useActiveTimer } from '@/lib/hooks/use-time-tracking';
+import { useActiveTimer, useTimeEntries } from '@/lib/hooks/use-time-tracking';
 import { UserRole } from '@/types/enums';
+
 
 export default function TimeTrackingDashboardPage() {
   const { user } = useAuthContext();
   const { data: entriesData, isPending: entriesLoading } = useTimeEntries({ limit: 100 });
   const { data: activeTimer } = useActiveTimer();
 
-  const entries = entriesData?.data ?? [];
-
-  // Calculate statistics
-  const totalEntries = entries.length;
-  const runningEntries = entries.filter((e) => e.isRunning).length;
-  const billableMinutes = entries
-    .filter((e) => e.isBillable && !e.isRunning)
-    .reduce((sum, e) => sum + (e.durationMinutes || 0), 0);
-  const totalAmount = entries
-    .filter((e) => !e.isRunning)
-    .reduce((sum, e) => {
-      const amount = e.totalAmount != null ? parseFloat(String(e.totalAmount)) : 0;
-      return sum + (isNaN(amount) ? 0 : amount);
-    }, 0);
+  // Calculate statistics - memoized to prevent recalculation on every render
+  const { totalEntries, runningEntries, billableMinutes, totalAmount } = useMemo(() => {
+    const entries = entriesData?.data ?? [];
+    const total = entries.length;
+    const running = entries.filter((e) => e.isRunning).length;
+    const billable = entries
+      .filter((e) => e.isBillable && !e.isRunning)
+      .reduce((sum, e) => sum + (e.durationMinutes || 0), 0);
+    const amount = entries
+      .filter((e) => !e.isRunning)
+      .reduce((sum, e) => {
+        const amt = e.totalAmount != null ? parseFloat(String(e.totalAmount)) : 0;
+        return sum + (isNaN(amt) ? 0 : amt);
+      }, 0);
+    return {
+      totalEntries: total,
+      runningEntries: running,
+      billableMinutes: billable,
+      totalAmount: amount,
+    };
+  }, [entriesData?.data]);
 
   // Determine the base path based on user role
   const getBasePath = () => {
@@ -64,14 +74,14 @@ export default function TimeTrackingDashboardPage() {
       description: 'Przeglądaj wszystkie wpisy czasu z filtrowaniem i edycją',
       icon: List,
       href: `${basePath}/entries`,
-      gradient: 'bg-apptax-gradient',
+      gradient: 'bg-primary',
     },
     {
       title: 'Timesheet dzienny',
       description: 'Widok dzienny z podsumowaniem czasu pracy',
       icon: Calendar,
       href: `${basePath}/timesheet/daily`,
-      gradient: 'bg-apptax-dark-gradient',
+      gradient: 'bg-primary',
     },
     {
       title: 'Timesheet tygodniowy',
@@ -95,9 +105,9 @@ export default function TimeTrackingDashboardPage() {
   return (
     <div className="container mx-auto space-y-6 p-6">
       <div>
-        <h1 className="text-apptax-navy flex items-center gap-3 text-3xl font-bold">
+        <h1 className="text-foreground flex items-center gap-3 text-3xl font-bold">
           Logowanie czasu
-          <div className="bg-apptax-teal h-3 w-3 rounded-full" />
+          <div className="bg-accent h-3 w-3 rounded-full" />
         </h1>
         <p className="text-muted-foreground mt-1">
           Śledź czas pracy i generuj raporty rozliczeniowe
@@ -114,9 +124,9 @@ export default function TimeTrackingDashboardPage() {
           label="Wszystkie wpisy"
           value={totalEntries}
           icon={Clock}
-          iconBg="bg-apptax-gradient"
-          valueColor="text-apptax-navy"
-          borderColor="border-apptax-soft-teal/30"
+          iconBg="bg-primary"
+          valueColor="text-foreground"
+          borderColor="border-accent/30"
           isLoading={entriesLoading}
         />
 

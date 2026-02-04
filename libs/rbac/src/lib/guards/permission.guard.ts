@@ -1,13 +1,14 @@
 import {
-  Injectable,
   CanActivate,
   ExecutionContext,
   ForbiddenException,
+  Injectable,
   Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RBACService } from '../services/rbac.service';
+
 import { REQUIRE_PERMISSION_KEY } from '../decorators/require-permission.decorator';
+import { RBACService } from '../services/rbac.service';
 
 @Injectable()
 export class PermissionGuard implements CanActivate {

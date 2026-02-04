@@ -132,17 +132,17 @@ export default tseslint.config(
       ],
       'import/no-duplicates': 'warn',
 
-      // Security rules (warn level for gradual adoption)
+      // Security rules - error level for critical security issues
       'security/detect-object-injection': 'off', // Too many false positives
-      'security/detect-non-literal-regexp': 'warn',
-      'security/detect-unsafe-regex': 'warn',
-      'security/detect-buffer-noassert': 'warn',
-      'security/detect-child-process': 'warn',
-      'security/detect-disable-mustache-escape': 'warn',
-      'security/detect-eval-with-expression': 'warn',
-      'security/detect-no-csrf-before-method-override': 'warn',
-      'security/detect-possible-timing-attacks': 'warn',
-      'security/detect-pseudoRandomBytes': 'warn',
+      'security/detect-non-literal-regexp': 'error',
+      'security/detect-unsafe-regex': 'error',
+      'security/detect-buffer-noassert': 'error',
+      'security/detect-child-process': 'error',
+      'security/detect-disable-mustache-escape': 'error',
+      'security/detect-eval-with-expression': 'error',
+      'security/detect-no-csrf-before-method-override': 'error',
+      'security/detect-possible-timing-attacks': 'warn', // Keep warn - can have false positives
+      'security/detect-pseudoRandomBytes': 'error',
 
       // === @darraghor/nestjs-typed ===
       // DI & Injection (warn level - may have false positives with dynamic module registration)
@@ -337,6 +337,34 @@ export default tseslint.config(
     },
   },
 
+  // Test utilities and context files - may export both components and hooks/functions
+  {
+    files: [
+      'apps/web/src/lib/test-utils/**/*.{ts,tsx}',
+      'apps/web/src/lib/contexts/**/*.{ts,tsx}',
+      'apps/web/src/contexts/**/*.{ts,tsx}',
+    ],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+
+  // UI Components - shadcn/ui pattern exports both components and variant functions
+  {
+    files: ['apps/web/src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+
+  // Email components - export constants alongside components
+  {
+    files: ['apps/web/src/components/email/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+
   // E2E test files (Playwright)
   {
     files: ['apps/api-e2e/**/*.ts', 'apps/web-e2e/**/*.ts'],
@@ -350,52 +378,87 @@ export default tseslint.config(
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
       'no-console': 'off',
+      // Allow conditionals in E2E tests - needed for testing dynamic state scenarios
+      // (e.g., "if notifications exist, verify X; otherwise verify empty state")
+      'playwright/no-conditional-in-test': 'off',
 
       // Playwright rules
       'playwright/expect-expect': [
         'error',
         {
           assertFunctionNames: [
-            // General POM assertions
-            'expect*',
+            // General POM assertions - using glob patterns
+            'expect',
+            'expect.*',
             '*.expect*',
-            '*.expectToBe*',
-            '*.expectToHave*',
-            '*.expectPageTo*',
-            // Specific POM methods
+            // Page navigation assertions
             'expectToBeOnUsersPage',
+            'expectToBeOnCompaniesPage',
+            'expectToBeOnModulesPage',
+            'expectToBeOnDashboard',
+            'expectToBeOnLoginPage',
+            'expectToBeOnEmployeesPage',
+            'expectToBeOnChatPage',
+            'expectToBeOnClientsPage',
+            'expectToBeOnCompose',
+            'expectToBeOnDrafts',
+            'expectToBeOnInbox',
+            'expectToBeOnNotificationsPage',
+            'expectToBeOnPermissionsPage',
+            'expectToBeOnTimeTrackingPage',
+            'expectToRemainOnLoginPage',
+            // Table/list assertions
             'expectTableHasRows',
             'expectUserInList',
             'expectUserNotInList',
-            'expectEmailError',
-            'expectPasswordError',
-            'expectSuccessToast',
-            'expectToBeOnCompaniesPage',
             'expectCompanyInList',
             'expectCompanyNotInList',
-            'expectNameError',
-            'expectToBeOnModulesPage',
-            'expectModuleEnabled',
-            'expectModuleDisabled',
-            'expectModuleInList',
-            'expectToBeOnDashboard',
-            'expectUsersCardVisible',
-            'expectToRemainOnLoginPage',
-            'expectFormError',
-            'expectToBeOnLoginPage',
-            'expectUnauthorizedHeading',
-            'expectNavLinkVisible',
-            'expectToBeOnEmployeesPage',
             'expectEmployeeInList',
             'expectEmployeeNotInList',
-            'expectPermissions',
+            'expectModuleInList',
+            'expectClientInList',
+            'expectEntryInList',
+            'expectEntryNotInList',
+            // Module assertions
+            'expectModuleEnabled',
+            'expectModuleDisabled',
             'expectModuleVisible',
             'expectModuleInSidebar',
             'expectModuleNotInSidebar',
+            // Form/validation assertions
+            'expectEmailError',
+            'expectPasswordError',
+            'expectNameError',
+            'expectFormError',
+            'expectPkdValidationError',
+            // UI state assertions
+            'expectSuccessToast',
+            'expectUsersCardVisible',
+            'expectUnauthorizedHeading',
+            'expectNavLinkVisible',
+            'expectPermissions',
+            'expectEmptyState',
+            'expectLoadingComplete',
+            'expectDropdownOpen',
+            'expectDropdownClosed',
+            // AI Agent / Chat assertions
+            'expectConversationHidden',
+            'expectConversationVisible',
+            'expectMessageVisible',
+            'expectNoConsoleErrors',
+            'expectNoNestedButtonWarnings',
+            'expectTokenCountDisplayed',
+            // Email client assertions
+            'expectEmailListVisible',
+            'expectDraftListVisible',
+            'expectTabAllSelected',
+            'expectTabUnreadSelected',
+            // Time tracking assertions
+            'expectTimerRunning',
+            'expectTimerStopped',
           ],
         },
       ],
-      'playwright/no-conditional-in-test': 'warn',
       'playwright/no-focused-test': 'error',
       'playwright/no-skipped-test': 'warn',
       'playwright/prefer-web-first-assertions': 'warn',

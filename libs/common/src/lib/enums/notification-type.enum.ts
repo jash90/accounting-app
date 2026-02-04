@@ -43,6 +43,17 @@ export enum NotificationType {
   CLIENT_SUSPENSION_END_REMINDER_1D = 'client.suspension.end.reminder.1d',
   CLIENT_RESUMED = 'client.resumed',
 
+  // Relief Periods (Ulgi)
+  CLIENT_RELIEF_CREATED = 'client.relief.created',
+  CLIENT_RELIEF_UPDATED = 'client.relief.updated',
+  CLIENT_RELIEF_DELETED = 'client.relief.deleted',
+  CLIENT_RELIEF_END_REMINDER_7D = 'client.relief.end.reminder.7d',
+  CLIENT_RELIEF_END_REMINDER_1D = 'client.relief.end.reminder.1d',
+
+  // Custom Field Reminders
+  CLIENT_CUSTOM_FIELD_REMINDER_7D = 'client.custom_field.reminder.7d',
+  CLIENT_CUSTOM_FIELD_REMINDER_1D = 'client.custom_field.reminder.1d',
+
   // ========================================
   // TIME TRACKING MODULE
   // ========================================
@@ -122,6 +133,15 @@ export const NotificationTypeLabels: Record<NotificationType, string> = {
   [NotificationType.CLIENT_SUSPENSION_END_REMINDER_7D]: 'Przypomnienie: wznowienie za 7 dni',
   [NotificationType.CLIENT_SUSPENSION_END_REMINDER_1D]: 'Przypomnienie: wznowienie jutro',
   [NotificationType.CLIENT_RESUMED]: 'Działalność klienta została wznowiona',
+  [NotificationType.CLIENT_RELIEF_CREATED]: 'Dodano ulgę dla klienta',
+  [NotificationType.CLIENT_RELIEF_UPDATED]: 'Zaktualizowano ulgę klienta',
+  [NotificationType.CLIENT_RELIEF_DELETED]: 'Usunięto ulgę klienta',
+  [NotificationType.CLIENT_RELIEF_END_REMINDER_7D]: 'Przypomnienie: ulga kończy się za 7 dni',
+  [NotificationType.CLIENT_RELIEF_END_REMINDER_1D]: 'Przypomnienie: ulga kończy się jutro',
+  [NotificationType.CLIENT_CUSTOM_FIELD_REMINDER_7D]:
+    'Przypomnienie o polu niestandardowym (7 dni)',
+  [NotificationType.CLIENT_CUSTOM_FIELD_REMINDER_1D]:
+    'Przypomnienie o polu niestandardowym (1 dzień)',
 
   // Time Tracking
   [NotificationType.TIME_ENTRY_CREATED]: 'Utworzono wpis czasu',

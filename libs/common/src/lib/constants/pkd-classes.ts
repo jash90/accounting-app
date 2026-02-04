@@ -3,7 +3,7 @@
  * Pełna lista 659 kodów PKD na poziomie klasy (5-cyfrowe kody)
  */
 
-import { PkdClass } from './pkd-codes';
+import { type PkdClass } from './pkd-codes';
 
 export const PKD_CLASSES: PkdClass[] = [
   {

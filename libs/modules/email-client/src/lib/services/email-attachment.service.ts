@@ -1,8 +1,11 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+
+import * as path from 'path';
+
 import { User } from '@accounting/common';
 import { StorageService } from '@accounting/infrastructure/storage';
-import * as path from 'path';
 
 @Injectable()
 export class EmailAttachmentService {

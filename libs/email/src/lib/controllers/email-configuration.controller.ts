@@ -1,25 +1,27 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
   Body,
-  UseGuards,
+  Controller,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
+  Post,
+  Put,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
-import { OwnerOrAdminGuard } from '@accounting/rbac';
+
+import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { User } from '@accounting/common';
-import { EmailConfigurationService } from '../services/email-configuration.service';
-import { EmailAutodiscoveryService } from '../services/email-autodiscovery.service';
-import { CreateEmailConfigDto } from '../dto/create-email-config.dto';
-import { UpdateEmailConfigDto } from '../dto/update-email-config.dto';
-import { EmailConfigResponseDto } from '../dto/email-config-response.dto';
+import { OwnerOrAdminGuard } from '@accounting/rbac';
+
 import { AutodiscoverRequestDto, AutodiscoverResponseDto } from '../dto/autodiscover.dto';
+import { CreateEmailConfigDto } from '../dto/create-email-config.dto';
+import { EmailConfigResponseDto } from '../dto/email-config-response.dto';
+import { UpdateEmailConfigDto } from '../dto/update-email-config.dto';
+import { EmailAutodiscoveryService } from '../services/email-autodiscovery.service';
+import { EmailConfigurationService } from '../services/email-configuration.service';
 
 /**
  * Controller for managing email configurations

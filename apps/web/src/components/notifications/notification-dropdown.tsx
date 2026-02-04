@@ -1,3 +1,5 @@
+import { memo, useCallback } from 'react';
+
 import { Link } from 'react-router-dom';
 
 import { Bell, Check } from 'lucide-react';
@@ -23,7 +25,9 @@ interface NotificationDropdownProps {
   children: React.ReactNode;
 }
 
-export function NotificationDropdown({ children }: NotificationDropdownProps) {
+export const NotificationDropdown = memo(function NotificationDropdown({
+  children,
+}: NotificationDropdownProps) {
   const { data: notificationsData, isLoading } = useNotifications({
     isRead: false,
     limit: 5,
@@ -36,6 +40,11 @@ export function NotificationDropdown({ children }: NotificationDropdownProps) {
 
   const notifications = notificationsData?.data || [];
   const hasNotifications = notifications.length > 0;
+
+  // Memoize callbacks to prevent recreation on every render
+  const handleMarkAsRead = useCallback((id: string) => markAsRead(id), [markAsRead]);
+
+  const handleArchive = useCallback((id: string) => archive(id), [archive]);
 
   return (
     <DropdownMenu>
@@ -70,8 +79,8 @@ export function NotificationDropdown({ children }: NotificationDropdownProps) {
                 <NotificationItem
                   key={notification.id}
                   notification={notification}
-                  onMarkAsRead={(id) => markAsRead(id)}
-                  onArchive={(id) => archive(id)}
+                  onMarkAsRead={handleMarkAsRead}
+                  onArchive={handleArchive}
                   showActions={false}
                 />
               ))}
@@ -93,4 +102,4 @@ export function NotificationDropdown({ children }: NotificationDropdownProps) {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+});

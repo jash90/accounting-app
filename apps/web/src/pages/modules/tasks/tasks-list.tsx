@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useState, useTransition } from 'react';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -6,28 +6,25 @@ import { type ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
-  Plus,
-  Edit,
-  Trash2,
-  CheckSquare,
-  MoreHorizontal,
   ArrowLeft,
-  List,
-  LayoutGrid,
   Calendar,
+  CheckSquare,
+  Edit,
   GanttChartSquare,
+  LayoutGrid,
+  List,
+  MoreHorizontal,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { DataTable } from '@/components/common/data-table';
 import { PageHeader } from '@/components/common/page-header';
-import {
-  TaskStatusBadge,
-  TaskPriorityBadge,
-  TaskLabelList,
-  TaskFormDialog,
-} from '@/components/tasks';
 import { TaskFilters } from '@/components/tasks/task-filters';
+import { TaskLabelList } from '@/components/tasks/task-label-badge';
+import { TaskPriorityBadge } from '@/components/tasks/task-priority-badge';
+import { TaskStatusBadge } from '@/components/tasks/task-status-badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -39,24 +36,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import {
-  useTasks,
-  useCreateTask,
-  useUpdateTask,
-  useDeleteTask,
   useBulkUpdateStatus,
+  useCreateTask,
+  useDeleteTask,
+  useTasks,
+  useUpdateTask,
 } from '@/lib/hooks/use-tasks';
 import { mapTaskLabels } from '@/lib/utils/task-label-mapper';
 import {
-  type TaskResponseDto,
   type CreateTaskDto,
-  type UpdateTaskDto,
   type TaskFiltersDto,
+  type TaskResponseDto,
+  type UpdateTaskDto,
 } from '@/types/dtos';
-import { type TaskStatus, TaskStatusLabels, UserRole } from '@/types/enums';
+import { TaskStatusLabels, UserRole, type TaskStatus } from '@/types/enums';
 
+// Lazy-load heavy form dialog (547 lines) - direct import for tree-shaking
+const TaskFormDialog = lazy(() =>
+  import('@/components/tasks/task-form-dialog').then((m) => ({
+    default: m.TaskFormDialog,
+  }))
+);
 export default function TasksListPage() {
   const { user } = useAuthContext();
   const navigate = useNavigate();
@@ -64,7 +68,8 @@ export default function TasksListPage() {
 
   const { hasWritePermission, hasDeletePermission } = useModulePermissions('tasks');
 
-  const getBasePath = () => {
+  // Memoize basePath to prevent recalculation on every render
+  const basePath = useMemo(() => {
     switch (user?.role) {
       case UserRole.ADMIN:
         return '/admin/modules/tasks';
@@ -73,9 +78,7 @@ export default function TasksListPage() {
       default:
         return '/modules/tasks';
     }
-  };
-
-  const basePath = getBasePath();
+  }, [user?.role]);
 
   const [filters, setFilters] = useState<TaskFiltersDto>({});
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
@@ -86,6 +89,7 @@ export default function TasksListPage() {
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const bulkUpdateStatus = useBulkUpdateStatus();
+  const [isBulkPending, startBulkTransition] = useTransition();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskResponseDto | null>(null);
@@ -110,11 +114,52 @@ export default function TasksListPage() {
     setSelectedTasks((prev) => (selected ? [...prev, taskId] : prev.filter((id) => id !== taskId)));
   }, []);
 
-  const handleBulkStatusChange = async (status: TaskStatus) => {
-    if (selectedTasks.length === 0) return;
-    await bulkUpdateStatus.mutateAsync({ taskIds: selectedTasks, status });
-    setSelectedTasks([]);
-  };
+  const handleSelectAll = useCallback(
+    (selected: boolean) => {
+      if (selected) {
+        setSelectedTasks(tasks.map((t) => t.id));
+      } else {
+        setSelectedTasks([]);
+      }
+    },
+    [tasks]
+  );
+
+  // Memoized submit handlers to avoid recreating on each render
+  const handleCreateSubmit = useCallback(
+    async (data: CreateTaskDto) => {
+      await createTask.mutateAsync(data);
+    },
+    [createTask]
+  );
+
+  const handleUpdateSubmit = useCallback(
+    async (data: UpdateTaskDto) => {
+      if (!activeEditingTask) return;
+      await updateTask.mutateAsync({
+        id: activeEditingTask.id,
+        data,
+      });
+      setEditingTask(null);
+      if (taskIdFromUrl) {
+        setSearchParams({}, { replace: true });
+      }
+    },
+    [updateTask, activeEditingTask, taskIdFromUrl, setSearchParams]
+  );
+
+  const handleBulkStatusChange = useCallback(
+    (status: TaskStatus) => {
+      if (selectedTasks.length === 0) return;
+      startBulkTransition(() => {
+        bulkUpdateStatus.mutate(
+          { taskIds: selectedTasks, status },
+          { onSuccess: () => setSelectedTasks([]) }
+        );
+      });
+    },
+    [selectedTasks, bulkUpdateStatus]
+  );
 
   const getInitials = (firstName?: string, lastName?: string) => {
     const first = firstName?.charAt(0) || '';
@@ -134,19 +179,18 @@ export default function TasksListPage() {
             }
             onCheckedChange={(value) => {
               table.toggleAllPageRowsSelected(!!value);
-              if (value) {
-                setSelectedTasks(tasks.map((t) => t.id));
-              } else {
-                setSelectedTasks([]);
-              }
+              handleSelectAll(!!value);
             }}
             aria-label="Zaznacz wszystkie"
           />
         ),
         cell: ({ row }) => (
           <Checkbox
-            checked={selectedTasks.includes(row.original.id)}
-            onCheckedChange={(value) => handleRowSelection(row.original.id, !!value)}
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => {
+              row.toggleSelected(!!value);
+              handleRowSelection(row.original.id, !!value);
+            }}
             aria-label="Zaznacz wiersz"
             onClick={(e) => e.stopPropagation()}
           />
@@ -266,7 +310,7 @@ export default function TasksListPage() {
         },
       },
     ],
-    [selectedTasks, tasks, hasWritePermission, hasDeletePermission, handleRowSelection]
+    [hasWritePermission, hasDeletePermission, handleRowSelection, handleSelectAll]
   );
 
   return (
@@ -325,7 +369,7 @@ export default function TasksListPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => handleBulkStatusChange(value as TaskStatus)}
-                  disabled={bulkUpdateStatus.isPending}
+                  disabled={bulkUpdateStatus.isPending || isBulkPending}
                 >
                   {label}
                 </Button>
@@ -348,41 +392,61 @@ export default function TasksListPage() {
 
       {hasWritePermission && (
         <>
-          <TaskFormDialog
-            open={createOpen}
-            onOpenChange={setCreateOpen}
-            onSubmit={async (data) => {
-              await createTask.mutateAsync(data as CreateTaskDto);
-            }}
-            isLoading={createTask.isPending}
-          />
+          {createOpen && (
+            <Suspense
+              fallback={
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                  <Card>
+                    <CardContent className="space-y-4 p-6">
+                      <Skeleton className="h-6 w-48" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-20 w-full" />
+                    </CardContent>
+                  </Card>
+                </div>
+              }
+            >
+              <TaskFormDialog
+                open={createOpen}
+                onOpenChange={setCreateOpen}
+                onSubmit={handleCreateSubmit}
+                isLoading={createTask.isPending}
+              />
+            </Suspense>
+          )}
 
           {activeEditingTask && (
-            <TaskFormDialog
-              open={!!activeEditingTask}
-              onOpenChange={(open) => {
-                if (!open) {
-                  setEditingTask(null);
-                  // Clear URL param if present
-                  if (taskIdFromUrl) {
-                    setSearchParams({}, { replace: true });
+            <Suspense
+              fallback={
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                  <Card>
+                    <CardContent className="space-y-4 p-6">
+                      <Skeleton className="h-6 w-48" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-20 w-full" />
+                    </CardContent>
+                  </Card>
+                </div>
+              }
+            >
+              <TaskFormDialog
+                open={!!activeEditingTask}
+                onOpenChange={(open) => {
+                  if (!open) {
+                    setEditingTask(null);
+                    // Clear URL param if present
+                    if (taskIdFromUrl) {
+                      setSearchParams({}, { replace: true });
+                    }
                   }
-                }
-              }}
-              task={activeEditingTask}
-              onSubmit={async (data) => {
-                await updateTask.mutateAsync({
-                  id: activeEditingTask.id,
-                  data: data as UpdateTaskDto,
-                });
-                setEditingTask(null);
-                // Clear URL param if present
-                if (taskIdFromUrl) {
-                  setSearchParams({}, { replace: true });
-                }
-              }}
-              isLoading={updateTask.isPending}
-            />
+                }}
+                task={activeEditingTask}
+                onSubmit={handleUpdateSubmit}
+                isLoading={updateTask.isPending}
+              />
+            </Suspense>
           )}
         </>
       )}

@@ -1,6 +1,7 @@
-import { IsNumber, IsOptional, IsIn, IsString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
 import { Type } from 'class-transformer';
+import { IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class EmailAiOptionsDto {
   @ApiProperty({ description: 'IMAP message UID to reply to' })

@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
 import { TaskDependencyType, TaskPriority, TaskStatus } from '@accounting/common';
 
 export class TaskLabelResponseDto {

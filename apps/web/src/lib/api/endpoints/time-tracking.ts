@@ -1,21 +1,21 @@
 import { type PaginatedResponse } from '@/types/api';
 import {
+  type ApproveTimeEntryDto,
   type CreateTimeEntryDto,
-  type UpdateTimeEntryDto,
-  type TimeEntryFiltersDto,
-  type TimeEntryResponseDto,
+  type DailyTimesheetDto,
+  type RejectTimeEntryDto,
   type StartTimerDto,
   type StopTimerDto,
-  type UpdateTimerDto,
   type SubmitTimeEntryDto,
-  type ApproveTimeEntryDto,
-  type RejectTimeEntryDto,
-  type UpdateTimeSettingsDto,
-  type TimeSettingsResponseDto,
-  type DailyTimesheetDto,
-  type WeeklyTimesheetDto,
-  type TimeSummaryReportDto,
   type TimeByClientReportDto,
+  type TimeEntryFiltersDto,
+  type TimeEntryResponseDto,
+  type TimeSettingsResponseDto,
+  type TimeSummaryReportDto,
+  type UpdateTimeEntryDto,
+  type UpdateTimerDto,
+  type UpdateTimeSettingsDto,
+  type WeeklyTimesheetDto,
 } from '@/types/dtos';
 
 import apiClient from '../client';

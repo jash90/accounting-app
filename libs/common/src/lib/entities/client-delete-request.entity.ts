@@ -1,15 +1,16 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
-import { User } from './user.entity';
+
 import { Client } from './client.entity';
 import { Company } from './company.entity';
+import { User } from './user.entity';
 import { DeleteRequestStatus } from '../enums/delete-request-status.enum';
 
 @Entity('client_delete_requests')

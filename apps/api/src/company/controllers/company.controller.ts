@@ -1,34 +1,34 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
+  BadRequestException,
   Body,
-  Param,
+  Controller,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Patch,
+  Post,
   UseGuards,
-  BadRequestException,
 } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
+  ApiBadRequestResponse,
   ApiBearerAuth,
-  ApiOkResponse,
+  ApiBody,
+  ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
-  ApiBadRequestResponse,
-  ApiUnauthorizedResponse,
-  ApiForbiddenResponse,
-  ApiConflictResponse,
+  ApiOkResponse,
+  ApiOperation,
   ApiParam,
-  ApiBody,
+  ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
 import { CurrentUser, Roles, RolesGuard } from '@accounting/auth';
-import { User, UserRole, UserResponseDto } from '@accounting/common';
+import { User, UserResponseDto, UserRole } from '@accounting/common';
 import { OwnerOrAdminGuard } from '@accounting/rbac';
 
 import { CreateEmployeeDto } from '../dto/create-employee.dto';

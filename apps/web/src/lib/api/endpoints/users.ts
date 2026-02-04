@@ -1,4 +1,4 @@
-import { type UserDto, type CreateUserDto, type UpdateUserDto } from '@/types/dtos';
+import { type CreateUserDto, type UpdateUserDto, type UserDto } from '@/types/dtos';
 
 import apiClient from '../client';
 

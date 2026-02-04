@@ -42,10 +42,10 @@ function formatValue(value: unknown): string {
 export function ChangeDetailRow({ fieldKey, oldValue, newValue }: ChangeDetailRowProps) {
   return (
     <div className="flex items-start gap-2">
-      <span className="text-apptax-navy font-medium">{formatFieldName(fieldKey)}:</span>
+      <span className="text-foreground font-medium">{formatFieldName(fieldKey)}:</span>
       <span className="text-muted-foreground line-through">{formatValue(oldValue)}</span>
-      <span className="text-apptax-blue">→</span>
-      <span className="text-apptax-navy">{formatValue(newValue)}</span>
+      <span className="text-primary">→</span>
+      <span className="text-foreground">{formatValue(newValue)}</span>
     </div>
   );
 }

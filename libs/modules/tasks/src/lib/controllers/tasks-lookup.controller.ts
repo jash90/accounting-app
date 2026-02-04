@@ -1,11 +1,11 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
-import { User, Client, UserRole } from '@accounting/common';
+import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
+import { Client, User, UserRole } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 import {
   ModuleAccessGuard,

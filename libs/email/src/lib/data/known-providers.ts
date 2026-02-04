@@ -1,4 +1,4 @@
-import { KnownProvider } from '../interfaces/autodiscovery.interface';
+import { type KnownProvider } from '../interfaces/autodiscovery.interface';
 
 /**
  * Database of known email providers with pre-configured SMTP/IMAP settings

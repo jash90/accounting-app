@@ -1,14 +1,15 @@
-import { forwardRef } from 'react';
+import type * as React from 'react';
+import { memo } from 'react';
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { Calendar, MessageSquare, Link2, GripVertical } from 'lucide-react';
+import { Calendar, GripVertical, Link2, MessageSquare } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils/cn';
 import { mapTaskLabels } from '@/lib/utils/task-label-mapper';
 import { type TaskResponseDto } from '@/types/dtos';
@@ -24,146 +25,146 @@ interface TaskCardProps {
   isDragging?: boolean;
   showStatus?: boolean;
   className?: string;
+  ref?: React.Ref<HTMLDivElement>;
 }
 
-export const TaskCard = forwardRef<HTMLDivElement, TaskCardProps>(
-  ({ task, onClick, isDragging = false, showStatus = false, className }, ref) => {
-    const labels = mapTaskLabels(task.labels);
-    const commentCount = task.comments?.length || 0;
-    const dependencyCount = task.dependencies?.length || 0;
+export const TaskCard = memo(function TaskCard({
+  task,
+  onClick,
+  isDragging = false,
+  showStatus = false,
+  className,
+  ref,
+}: TaskCardProps) {
+  const labels = mapTaskLabels(task.labels);
+  const commentCount = task.comments?.length || 0;
+  const dependencyCount = task.dependencies?.length || 0;
 
-    const getInitials = (firstName?: string, lastName?: string) => {
-      const first = firstName?.charAt(0) || '';
-      const last = lastName?.charAt(0) || '';
-      return (first + last).toUpperCase() || '?';
-    };
+  const getInitials = (firstName?: string, lastName?: string) => {
+    const first = firstName?.charAt(0) || '';
+    const last = lastName?.charAt(0) || '';
+    return (first + last).toUpperCase() || '?';
+  };
 
-    const isOverdue =
-      task.dueDate && new Date(task.dueDate) < new Date() && task.status !== TaskStatus.DONE;
+  const isOverdue =
+    task.dueDate && new Date(task.dueDate) < new Date() && task.status !== TaskStatus.DONE;
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-      if (onClick && (e.key === 'Enter' || e.key === ' ')) {
-        e.preventDefault();
-        onClick();
-      }
-    };
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      onClick();
+    }
+  };
 
-    return (
-      <Card
-        ref={ref}
-        onClick={onClick}
-        onKeyDown={handleKeyDown}
-        tabIndex={onClick ? 0 : undefined}
-        role={onClick ? 'button' : undefined}
-        aria-label={`Zadanie: ${task.title}${isOverdue ? ' - po terminie' : ''}`}
-        className={cn(
-          'transition-shadow hover:shadow-md',
-          onClick && 'cursor-pointer',
-          isDragging && 'opacity-50 shadow-lg',
-          isOverdue && 'border-red-300',
-          onClick && 'focus:ring-primary focus:ring-2 focus:ring-offset-2 focus:outline-none',
-          className
-        )}
-      >
-        <CardContent className="space-y-2 p-3">
-          {/* Labels */}
-          {labels.length > 0 && <TaskLabelList labels={labels} size="sm" maxVisible={2} />}
+  return (
+    <Card
+      ref={ref}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      tabIndex={onClick ? 0 : undefined}
+      role={onClick ? 'button' : undefined}
+      aria-label={`Zadanie: ${task.title}${isOverdue ? ' - po terminie' : ''}`}
+      className={cn(
+        'transition-shadow hover:shadow-md',
+        onClick && 'cursor-pointer',
+        isDragging && 'opacity-50 shadow-lg',
+        isOverdue && 'border-red-300',
+        onClick && 'focus:ring-primary focus:ring-2 focus:ring-offset-2 focus:outline-none',
+        className
+      )}
+    >
+      <CardContent className="space-y-2 p-3">
+        {/* Labels */}
+        {labels.length > 0 && <TaskLabelList labels={labels} size="sm" maxVisible={2} />}
 
-          {/* Title */}
-          <h4 className="line-clamp-2 text-sm leading-snug font-medium">{task.title}</h4>
+        {/* Title */}
+        <h4 className="line-clamp-2 text-sm leading-snug font-medium">{task.title}</h4>
 
-          {/* Meta info */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              {/* Priority */}
-              <TaskPriorityBadge priority={task.priority} size="sm" showLabel={false} />
+        {/* Meta info */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            {/* Priority */}
+            <TaskPriorityBadge priority={task.priority} size="sm" showLabel={false} />
 
-              {/* Status (optional) */}
-              {showStatus && <TaskStatusBadge status={task.status} size="sm" />}
+            {/* Status (optional) */}
+            {showStatus && <TaskStatusBadge status={task.status} size="sm" />}
 
-              {/* Due date */}
-              {task.dueDate && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div
-                        className={cn(
-                          'flex items-center gap-1 text-xs',
-                          isOverdue ? 'text-red-600' : 'text-muted-foreground'
-                        )}
-                      >
-                        <Calendar size={12} />
-                        <span>{format(new Date(task.dueDate), 'd MMM', { locale: pl })}</span>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>
-                        Termin: {format(new Date(task.dueDate), 'PPP', { locale: pl })}
-                        {isOverdue && ' (po terminie)'}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
-
-            {/* Indicators */}
-            <div className="text-muted-foreground flex items-center gap-1.5">
-              {commentCount > 0 && (
-                <div className="flex items-center gap-0.5 text-xs">
-                  <MessageSquare size={12} />
-                  <span>{commentCount}</span>
-                </div>
-              )}
-              {dependencyCount > 0 && (
-                <div className="flex items-center gap-0.5 text-xs">
-                  <Link2 size={12} />
-                  <span>{dependencyCount}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Footer: Client and Assignee */}
-          <div className="flex items-center justify-between pt-1">
-            {/* Client */}
-            {task.client && (
-              <span className="text-muted-foreground max-w-[100px] truncate text-xs">
-                {task.client.name}
-              </span>
-            )}
-            {!task.client && <span />}
-
-            {/* Assignee */}
-            {task.assignee && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Avatar className="h-6 w-6">
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                        {getInitials(task.assignee.firstName, task.assignee.lastName)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>
-                      {task.assignee.firstName} {task.assignee.lastName}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+            {/* Due date */}
+            {task.dueDate && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div
+                    className={cn(
+                      'flex items-center gap-1 text-xs',
+                      isOverdue ? 'text-red-600' : 'text-muted-foreground'
+                    )}
+                  >
+                    <Calendar size={12} />
+                    <span>{format(new Date(task.dueDate), 'd MMM', { locale: pl })}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    Termin: {format(new Date(task.dueDate), 'PPP', { locale: pl })}
+                    {isOverdue && ' (po terminie)'}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
-        </CardContent>
-      </Card>
-    );
-  }
-);
 
-TaskCard.displayName = 'TaskCard';
+          {/* Indicators */}
+          <div className="text-muted-foreground flex items-center gap-1.5">
+            {commentCount > 0 && (
+              <div className="flex items-center gap-0.5 text-xs">
+                <MessageSquare size={12} />
+                <span>{commentCount}</span>
+              </div>
+            )}
+            {dependencyCount > 0 && (
+              <div className="flex items-center gap-0.5 text-xs">
+                <Link2 size={12} />
+                <span>{dependencyCount}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer: Client and Assignee */}
+        <div className="flex items-center justify-between pt-1">
+          {/* Client */}
+          {task.client && (
+            <span className="text-muted-foreground max-w-[100px] truncate text-xs">
+              {task.client.name}
+            </span>
+          )}
+          {!task.client && <span />}
+
+          {/* Assignee */}
+          {task.assignee && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Avatar className="h-6 w-6">
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                    {getInitials(task.assignee.firstName, task.assignee.lastName)}
+                  </AvatarFallback>
+                </Avatar>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>
+                  {task.assignee.firstName} {task.assignee.lastName}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+});
 
 // Sortable version for Kanban
-interface SortableTaskCardProps extends TaskCardProps {
+interface SortableTaskCardProps extends Omit<TaskCardProps, 'ref'> {
   id: string;
 }
 

@@ -2,11 +2,11 @@ import { Injectable } from '@nestjs/common';
 
 import {
   AutoAssignCondition,
-  SingleCondition,
+  Client,
   ConditionGroup,
   ConditionOperator,
   isConditionGroup,
-  Client,
+  SingleCondition,
 } from '@accounting/common';
 
 /**

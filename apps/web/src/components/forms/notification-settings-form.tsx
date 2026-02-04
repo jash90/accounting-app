@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 
-import { useForm } from 'react-hook-form';
-import type { Resolver } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Bell, BellOff } from 'lucide-react';
@@ -69,7 +68,7 @@ export function NotificationSettingsForm({
       <CardHeader>
         <div className="flex items-center gap-2">
           {hasAnyNotification ? (
-            <Bell className="text-apptax-blue h-5 w-5" />
+            <Bell className="text-primary h-5 w-5" />
           ) : (
             <BellOff className="text-muted-foreground h-5 w-5" />
           )}
@@ -140,7 +139,7 @@ export function NotificationSettingsForm({
               <Button
                 type="submit"
                 disabled={isLoading || !form.formState.isDirty}
-                className="bg-apptax-blue hover:bg-apptax-blue/90"
+                className="bg-primary hover:bg-primary/90"
               >
                 Zapisz ustawienia
               </Button>

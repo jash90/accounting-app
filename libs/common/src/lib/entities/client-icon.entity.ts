@@ -1,18 +1,19 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  ManyToOne,
-  OneToMany,
-  JoinColumn,
-  Index,
   BeforeInsert,
   BeforeUpdate,
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
+
+import { ClientIconAssignment } from './client-icon-assignment.entity';
 import { Company } from './company.entity';
 import { User } from './user.entity';
-import { ClientIconAssignment } from './client-icon-assignment.entity';
 import { IconType } from '../enums/icon-type.enum';
 import { AutoAssignCondition } from '../types/auto-assign-condition.types';
 

@@ -9,21 +9,18 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: 'border-transparent bg-apptax-blue text-white hover:bg-apptax-blue/80',
-        secondary: 'border-transparent bg-apptax-navy text-white hover:bg-apptax-navy/80',
+        default: 'border-transparent bg-primary text-white hover:bg-primary/80',
+        secondary: 'border-transparent bg-primary text-white hover:bg-primary/80',
         destructive:
           'border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80',
-        outline: 'border-apptax-blue text-apptax-blue bg-transparent',
+        outline: 'border-primary text-primary bg-transparent',
         success: 'border-transparent bg-emerald-500 text-white hover:bg-emerald-500/80',
         warning: 'border-transparent bg-amber-500 text-white hover:bg-amber-500/80',
-        teal: 'border-transparent bg-apptax-teal text-white hover:bg-apptax-teal/80',
-        muted:
-          'border-apptax-soft-teal bg-apptax-soft-teal text-apptax-navy/70 hover:bg-apptax-soft-teal/80',
-        'soft-blue':
-          'border-apptax-light-blue/30 bg-apptax-light-blue/10 text-apptax-blue hover:bg-apptax-light-blue/20',
-        'soft-teal':
-          'border-apptax-teal/30 bg-apptax-teal/10 text-apptax-teal hover:bg-apptax-teal/20',
-        ai: 'border-transparent bg-gradient-to-r from-apptax-teal to-apptax-blue text-white ai-glow',
+        teal: 'border-transparent bg-accent text-white hover:bg-accent/80',
+        muted: 'border-accent bg-accent/10 text-foreground/70 hover:bg-accent/20',
+        'soft-blue': 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20',
+        'soft-teal': 'border-accent/30 bg-accent/10 text-accent hover:bg-accent/20',
+        ai: 'border-transparent bg-gradient-to-r from-accent to-primary text-white ai-glow',
       },
     },
     defaultVariants: {

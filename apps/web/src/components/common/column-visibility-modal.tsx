@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
-import { Settings2, Search, X } from 'lucide-react';
+import { Search, Settings2, X } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,10 +9,10 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -77,7 +77,7 @@ export function ColumnVisibilityModal({
         <Button
           variant="outline"
           size="sm"
-          className="border-apptax-soft-teal hover:bg-apptax-soft-teal/30 hover:border-apptax-teal"
+          className="border-accent hover:bg-accent/10 hover:border-accent"
         >
           <Settings2 className="mr-2 h-4 w-4" />
           Kolumny
@@ -179,7 +179,7 @@ export function ColumnVisibilityModal({
               variant="outline"
               size="sm"
               onClick={onResetToDefaults}
-              className="text-apptax-blue"
+              className="text-primary"
             >
               Przywróć domyślne
             </Button>

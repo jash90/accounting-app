@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository, MoreThanOrEqual } from 'typeorm';
+import { MoreThanOrEqual, Repository } from 'typeorm';
 
 import {
-  Client,
-  User,
   ChangeLog,
+  Client,
   EmploymentType,
-  VatStatus,
   TaxScheme,
+  User,
+  VatStatus,
   ZusStatus,
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
@@ -17,8 +17,8 @@ import { TenantService } from '@accounting/common/backend';
 import {
   ClientStatisticsDto,
   ClientStatisticsWithRecentDto,
-  RecentClientDto,
   RecentActivityDto,
+  RecentClientDto,
 } from '../dto/statistics.dto';
 
 @Injectable()

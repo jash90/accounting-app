@@ -1,3 +1,4 @@
+
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
@@ -21,9 +22,11 @@ import {
   ClientFieldDefinition,
   ClientIcon,
   ClientIconAssignment,
+  ClientReliefPeriod,
   ClientSuspension,
   Company,
   CompanyModuleAccess,
+  CustomFieldReminder,
   EmailConfiguration,
   Module as ModuleEntity,
   MonthlySettlement,
@@ -82,6 +85,8 @@ const ENTITIES = [
   ClientIcon,
   ClientIconAssignment,
   ClientSuspension,
+  ClientReliefPeriod,
+  CustomFieldReminder,
   NotificationSettings,
   Notification,
   ClientDeleteRequest,

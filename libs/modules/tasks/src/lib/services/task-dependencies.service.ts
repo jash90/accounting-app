@@ -8,11 +8,11 @@ import { TenantService } from '@accounting/common/backend';
 
 import { CreateTaskDependencyDto } from '../dto/task-dependency.dto';
 import {
-  TaskNotFoundException,
-  TaskDependencyNotFoundException,
-  TaskDependencyCycleException,
-  TaskSelfDependencyException,
   TaskDependencyAlreadyExistsException,
+  TaskDependencyCycleException,
+  TaskDependencyNotFoundException,
+  TaskNotFoundException,
+  TaskSelfDependencyException,
 } from '../exceptions';
 
 @Injectable()

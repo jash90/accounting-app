@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { TimeSettings, TimeRoundingMethod, User } from '@accounting/common';
+import { TimeRoundingMethod, TimeSettings, User } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 
 import { UpdateTimeSettingsDto } from '../dto/time-settings.dto';

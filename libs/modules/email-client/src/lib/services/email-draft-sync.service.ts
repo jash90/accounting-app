@@ -5,10 +5,10 @@ import { Repository } from 'typeorm';
 
 import { User } from '@accounting/common';
 import {
-  EmailReaderService,
-  EmailConfigurationService,
-  ReceivedEmail,
   EmailConfig,
+  EmailConfigurationService,
+  EmailReaderService,
+  ReceivedEmail,
 } from '@accounting/email';
 
 import { EmailDraft } from '../entities/email-draft.entity';
