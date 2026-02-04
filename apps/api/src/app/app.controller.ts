@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Public } from '@accounting/auth';
 
@@ -13,6 +13,7 @@ export class AppController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'Root endpoint' })
+  @ApiOkResponse({ description: 'Welcome message' })
   getData() {
     return this.appService.getData();
   }
@@ -20,6 +21,7 @@ export class AppController {
   @Get('health')
   @Public()
   @ApiOperation({ summary: 'Health check endpoint for Railway deployment' })
+  @ApiOkResponse({ description: 'Health check status' })
   health() {
     return {
       status: 'ok',

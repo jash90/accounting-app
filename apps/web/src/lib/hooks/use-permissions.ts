@@ -32,10 +32,12 @@ export type ModulePermissionType = (typeof ModulePermission)[keyof typeof Module
  * - EMPLOYEE: Limited access (READ, WRITE - DELETE requires owner approval)
  *
  * @param moduleSlug - The module identifier (e.g., 'clients')
+ *   Note: Currently unused but kept for API consistency and future per-module permissions.
+ *   The underscore prefix indicates intentional non-use.
  * @returns Object with permission flags and helper functions
  */
-
-export function useModulePermissions(_moduleSlug: string) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function useModulePermissions(moduleSlug: string) {
   const { user, isAuthenticated } = useAuthContext();
 
   return useMemo(() => {
@@ -99,7 +101,7 @@ export function useModulePermissions(_moduleSlug: string) {
 
 export function useCompanyModules() {
   return useQuery({
-    queryKey: ['company', 'modules'],
+    queryKey: queryKeys.permissions.companyModules,
     queryFn: permissionsApi.getCompanyModules,
   });
 }

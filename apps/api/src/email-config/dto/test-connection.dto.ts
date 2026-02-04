@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { IsBoolean, IsEmail, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
@@ -21,7 +21,7 @@ export class TestSmtpDto {
   @Max(65535)
   smtpPort!: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Use SSL/TLS for SMTP connection',
     example: true,
     default: true,
@@ -64,7 +64,7 @@ export class TestImapDto {
   @Max(65535)
   imapPort!: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Use TLS for IMAP connection',
     example: true,
     default: true,

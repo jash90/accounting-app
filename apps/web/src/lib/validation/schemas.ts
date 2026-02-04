@@ -627,3 +627,21 @@ export const clientReliefSectionSchema = z
   );
 
 export type ClientReliefSectionFormData = z.infer<typeof clientReliefSectionSchema>;
+
+// Task Schemas
+export const taskFormSchema = z.object({
+  title: z.string().min(1, 'Tytuł jest wymagany').max(255),
+  description: z.string().optional(),
+  status: z.enum(['BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'CANCELLED']),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
+  dueDate: z.date().optional().nullable(),
+  startDate: z.date().optional().nullable(),
+  estimatedMinutes: z.number().min(0).optional().nullable(),
+  storyPoints: z.number().min(1).max(13).optional().nullable(),
+  clientId: z.string().optional().nullable(),
+  assigneeId: z.string().optional().nullable(),
+  parentTaskId: z.string().optional().nullable(),
+  labelIds: z.array(z.string()).optional(),
+});
+
+export type TaskFormData = z.infer<typeof taskFormSchema>;

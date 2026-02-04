@@ -8,6 +8,7 @@ import {
   ZusStatus,
   type ConditionOperator,
 } from '@/types/enums';
+
 // PKD 2025 - Polska Klasyfikacja Działalności (657 kodów na poziomie klasy)
 // Import from browser-safe subpath (no TypeORM/Node.js dependencies)
 import {

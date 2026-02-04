@@ -2,7 +2,7 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
-import { beforeEach, describe, expect, it, mock, spyOn, type Mock } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, mock, spyOn, type Mock } from 'bun:test';
 import * as fs from 'fs';
 
 import { Module, ModuleSource } from '@accounting/common';
@@ -10,6 +10,7 @@ import { ModuleDiscoveryService, type ModuleConfig } from '@accounting/rbac';
 
 describe('ModuleDiscoveryService', () => {
   let service: ModuleDiscoveryService;
+  let module: TestingModule;
 
   const mockModuleRepository = {
     findOne: mock(() => {}),
@@ -47,7 +48,7 @@ describe('ModuleDiscoveryService', () => {
     readdirSyncSpy = spyOn(fs, 'readdirSync');
     readFileSyncSpy = spyOn(fs, 'readFileSync');
 
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         ModuleDiscoveryService,
         {
@@ -58,6 +59,10 @@ describe('ModuleDiscoveryService', () => {
     }).compile();
 
     service = module.get<ModuleDiscoveryService>(ModuleDiscoveryService);
+  });
+
+  afterEach(async () => {
+    await module.close();
   });
 
   describe('discoverModules', () => {

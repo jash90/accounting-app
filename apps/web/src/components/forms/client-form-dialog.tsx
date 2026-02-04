@@ -65,6 +65,25 @@ export interface ClientReliefsData {
   malyZus?: ReliefPeriodFormData;
 }
 
+// Relief state interface and initial value moved to module level for stable reference
+interface ReliefState {
+  ulgaNaStartEnabled: boolean;
+  ulgaNaStartStartDate: Date | undefined;
+  ulgaNaStartEndDate: Date | undefined;
+  malyZusEnabled: boolean;
+  malyZusStartDate: Date | undefined;
+  malyZusEndDate: Date | undefined;
+}
+
+const INITIAL_RELIEF_STATE: ReliefState = {
+  ulgaNaStartEnabled: false,
+  ulgaNaStartStartDate: undefined,
+  ulgaNaStartEndDate: undefined,
+  malyZusEnabled: false,
+  malyZusStartDate: undefined,
+  malyZusEndDate: undefined,
+};
+
 interface ClientFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -100,35 +119,58 @@ export function ClientFormDialog({
   const fieldDefinitions = fieldDefinitionsResponse?.data ?? [];
   const activeFieldDefinitions = fieldDefinitions.filter((fd) => fd.isActive);
 
+  // Memoize sorted field definitions to avoid re-sorting on every render
+  const sortedFieldDefinitions = useMemo(
+    () => activeFieldDefinitions.slice().sort((a, b) => a.displayOrder - b.displayOrder),
+    [activeFieldDefinitions]
+  );
+
   // Custom field values state
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
 
-  // Relief periods state
-  const [ulgaNaStartEnabled, setUlgaNaStartEnabled] = useState(false);
-  const [ulgaNaStartStartDate, setUlgaNaStartStartDate] = useState<Date | undefined>(undefined);
-  const [ulgaNaStartEndDate, setUlgaNaStartEndDate] = useState<Date | undefined>(undefined);
-  const [malyZusEnabled, setMalyZusEnabled] = useState(false);
-  const [malyZusStartDate, setMalyZusStartDate] = useState<Date | undefined>(undefined);
-  const [malyZusEndDate, setMalyZusEndDate] = useState<Date | undefined>(undefined);
+  // Relief periods state - consolidated to reduce render cycles
+  const [reliefState, setReliefState] = useState<ReliefState>(INITIAL_RELIEF_STATE);
 
-  // Initialize relief state from existing reliefs
+  // Destructure for easier access while maintaining consolidated state
+  const {
+    ulgaNaStartEnabled,
+    ulgaNaStartStartDate,
+    ulgaNaStartEndDate,
+    malyZusEnabled,
+    malyZusStartDate,
+    malyZusEndDate,
+  } = reliefState;
+
+  // Setter functions that update specific relief state properties
+  const setUlgaNaStartEnabled = (enabled: boolean) =>
+    setReliefState((prev) => ({ ...prev, ulgaNaStartEnabled: enabled }));
+  const setUlgaNaStartStartDate = (date: Date | undefined) =>
+    setReliefState((prev) => ({ ...prev, ulgaNaStartStartDate: date }));
+  const setUlgaNaStartEndDate = (date: Date | undefined) =>
+    setReliefState((prev) => ({ ...prev, ulgaNaStartEndDate: date }));
+  const setMalyZusEnabled = (enabled: boolean) =>
+    setReliefState((prev) => ({ ...prev, malyZusEnabled: enabled }));
+  const setMalyZusStartDate = (date: Date | undefined) =>
+    setReliefState((prev) => ({ ...prev, malyZusStartDate: date }));
+  const setMalyZusEndDate = (date: Date | undefined) =>
+    setReliefState((prev) => ({ ...prev, malyZusEndDate: date }));
+
+  // Initialize relief state from existing reliefs - single state update reduces render cycles
   useEffect(() => {
     if (!open || existingReliefs.length === 0) return;
 
     const ulgaNaStart = existingReliefs.find((r) => r.reliefType === ReliefType.ULGA_NA_START);
     const malyZus = existingReliefs.find((r) => r.reliefType === ReliefType.MALY_ZUS);
 
-    if (ulgaNaStart) {
-      setUlgaNaStartEnabled(true);
-      setUlgaNaStartStartDate(new Date(ulgaNaStart.startDate));
-      setUlgaNaStartEndDate(new Date(ulgaNaStart.endDate));
-    }
-
-    if (malyZus) {
-      setMalyZusEnabled(true);
-      setMalyZusStartDate(new Date(malyZus.startDate));
-      setMalyZusEndDate(new Date(malyZus.endDate));
-    }
+    // Single state update instead of 6 separate updates
+    setReliefState({
+      ulgaNaStartEnabled: !!ulgaNaStart,
+      ulgaNaStartStartDate: ulgaNaStart ? new Date(ulgaNaStart.startDate) : undefined,
+      ulgaNaStartEndDate: ulgaNaStart ? new Date(ulgaNaStart.endDate) : undefined,
+      malyZusEnabled: !!malyZus,
+      malyZusStartDate: malyZus ? new Date(malyZus.startDate) : undefined,
+      malyZusEndDate: malyZus ? new Date(malyZus.endDate) : undefined,
+    });
   }, [existingReliefs, open]);
 
   // Auto-calculate end dates when start dates change
@@ -146,17 +188,59 @@ export function ClientFormDialog({
     }
   };
 
-  // Reset relief state
-  const resetReliefState = () => {
-    setUlgaNaStartEnabled(false);
-    setUlgaNaStartStartDate(undefined);
-    setUlgaNaStartEndDate(undefined);
-    setMalyZusEnabled(false);
-    setMalyZusStartDate(undefined);
-    setMalyZusEndDate(undefined);
-  };
+  // Reset relief state - single update instead of 6 separate updates
+  const resetReliefState = useCallback(() => {
+    setReliefState(INITIAL_RELIEF_STATE);
+  }, []);
 
-  // Generate default values from client data or empty form
+  // Compute form values synchronously - avoids useEffect render cycle
+  // react-hook-form's `values` prop syncs external values without extra re-renders
+  const formValues = useMemo((): CreateClientFormData | UpdateClientFormData => {
+    if (client) {
+      return {
+        name: client.name,
+        nip: client.nip || '',
+        email: client.email || '',
+        phone: client.phone || '',
+        companyStartDate: client.companyStartDate ? new Date(client.companyStartDate) : undefined,
+        cooperationStartDate: client.cooperationStartDate
+          ? new Date(client.cooperationStartDate)
+          : undefined,
+        companySpecificity: client.companySpecificity || '',
+        additionalInfo: client.additionalInfo || '',
+        gtuCode: client.gtuCode || '',
+        pkdCode: client.pkdCode || '',
+        amlGroup: client.amlGroup || '',
+        employmentType: client.employmentType,
+        vatStatus: client.vatStatus,
+        taxScheme: client.taxScheme,
+        zusStatus: client.zusStatus,
+        receiveEmailCopy: client.receiveEmailCopy ?? true,
+      };
+    }
+    return {
+      name: '',
+      nip: '',
+      email: '',
+      phone: '',
+      companySpecificity: '',
+      additionalInfo: '',
+      gtuCode: '',
+      pkdCode: '',
+      amlGroup: '',
+      receiveEmailCopy: true,
+    };
+  }, [client]);
+
+  const form = useForm<CreateClientFormData | UpdateClientFormData>({
+    resolver: zodResolver(schema),
+    values: formValues, // Syncs values without useEffect - reduces render cycles
+    resetOptions: {
+      keepDirtyValues: false, // Reset all values when formValues changes
+    },
+  });
+
+  // Helper function for getting default values (used in handleOpenChange for reset)
   const getDefaultValues = useCallback(
     (clientData?: ClientResponseDto): CreateClientFormData | UpdateClientFormData => {
       if (clientData) {
@@ -198,11 +282,6 @@ export function ClientFormDialog({
     },
     []
   );
-
-  const form = useForm<CreateClientFormData | UpdateClientFormData>({
-    resolver: zodResolver(schema),
-    defaultValues: getDefaultValues(client),
-  });
 
   // PKD search hook for server-side search
   const {
@@ -277,7 +356,7 @@ export function ClientFormDialog({
       }
       onOpenChange(newOpen);
     },
-    [client, form, getDefaultValues, getInitialCustomFieldValues, onOpenChange]
+    [client, form, getDefaultValues, getInitialCustomFieldValues, onOpenChange, resetReliefState]
   );
 
   const handleCustomFieldChange = (fieldId: string, value: string) => {
@@ -925,32 +1004,30 @@ export function ClientFormDialog({
               </div>
 
               {/* Custom Fields */}
-              {activeFieldDefinitions.length > 0 && (
+              {sortedFieldDefinitions.length > 0 && (
                 <div className="space-y-4">
                   <h3 className="text-foreground text-sm font-semibold">Pola niestandardowe</h3>
 
                   <div className="grid grid-cols-2 gap-4">
-                    {activeFieldDefinitions
-                      .sort((a, b) => a.displayOrder - b.displayOrder)
-                      .map((definition) => (
-                        <div key={definition.id} className="space-y-2">
-                          <label
-                            htmlFor={`custom-field-${definition.id}`}
-                            className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                          >
-                            {definition.label}
-                            {definition.isRequired && ' *'}
-                          </label>
-                          {renderCustomField(definition)}
-                          {definition.isRequired &&
-                            !customFieldValues[definition.id] &&
-                            form.formState.isSubmitted && (
-                              <p className="text-destructive text-sm font-medium">
-                                To pole jest wymagane
-                              </p>
-                            )}
-                        </div>
-                      ))}
+                    {sortedFieldDefinitions.map((definition) => (
+                      <div key={definition.id} className="space-y-2">
+                        <label
+                          htmlFor={`custom-field-${definition.id}`}
+                          className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {definition.label}
+                          {definition.isRequired && ' *'}
+                        </label>
+                        {renderCustomField(definition)}
+                        {definition.isRequired &&
+                          !customFieldValues[definition.id] &&
+                          form.formState.isSubmitted && (
+                            <p className="text-destructive text-sm font-medium">
+                              To pole jest wymagane
+                            </p>
+                          )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
