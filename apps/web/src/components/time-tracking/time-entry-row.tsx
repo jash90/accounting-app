@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 
 import { format, formatDistanceToNow } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -73,6 +73,13 @@ export const TimeEntryRow = memo(function TimeEntryRow({
     return () => clearInterval(intervalId);
   }, [entry.isRunning, entry.startTime]);
 
+  // Stable callbacks for dropdown menu items to preserve memo optimization
+  const handleEdit = useCallback(() => onEdit(entry), [onEdit, entry]);
+  const handleDelete = useCallback(() => onDelete(entry), [onDelete, entry]);
+  const handleSubmit = useCallback(() => onSubmit(entry), [onSubmit, entry]);
+  const handleApprove = useCallback(() => onApprove(entry), [onApprove, entry]);
+  const handleReject = useCallback(() => onReject(entry), [onReject, entry]);
+
   return (
     <div
       role="button"
@@ -144,16 +151,16 @@ export const TimeEntryRow = memo(function TimeEntryRow({
           <DropdownMenuContent align="end">
             {entry.status === TimeEntryStatus.DRAFT && (
               <>
-                <DropdownMenuItem onClick={() => onEdit(entry)}>
+                <DropdownMenuItem onClick={handleEdit}>
                   <Pencil className="mr-2 h-4 w-4" />
                   Edytuj
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onSubmit(entry)}>
+                <DropdownMenuItem onClick={handleSubmit}>
                   <Send className="mr-2 h-4 w-4" />
                   Wyślij do zatwierdzenia
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onDelete(entry)} className="text-destructive">
+                <DropdownMenuItem onClick={handleDelete} className="text-destructive">
                   <Trash2 className="mr-2 h-4 w-4" />
                   Usuń
                 </DropdownMenuItem>
@@ -161,11 +168,11 @@ export const TimeEntryRow = memo(function TimeEntryRow({
             )}
             {entry.status === TimeEntryStatus.SUBMITTED && (
               <>
-                <DropdownMenuItem onClick={() => onApprove(entry)}>
+                <DropdownMenuItem onClick={handleApprove}>
                   <CheckCircle className="mr-2 h-4 w-4" />
                   Zatwierdź
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onReject(entry)}>
+                <DropdownMenuItem onClick={handleReject}>
                   <XCircle className="mr-2 h-4 w-4" />
                   Odrzuć
                 </DropdownMenuItem>
@@ -184,7 +191,7 @@ export const TimeEntryRow = memo(function TimeEntryRow({
                   Odrzucony: {entry.rejectionNote}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onEdit(entry)}>
+                <DropdownMenuItem onClick={handleEdit}>
                   <Pencil className="mr-2 h-4 w-4" />
                   Edytuj i wyślij ponownie
                 </DropdownMenuItem>
