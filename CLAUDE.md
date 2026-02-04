@@ -36,6 +36,10 @@ bun run migration:revert    # Revert last migration
 # Quality
 bun run lint             # Lint backend
 bun run lint:web         # Lint frontend
+bun run lint:all         # Lint all projects
+bun run lint:fix         # Fix lint issues across all projects
+bun run format           # Format all files with Prettier
+bun run format:check     # Check formatting without changes
 ```
 
 ## Test Credentials
@@ -121,10 +125,13 @@ workspace/
     ├── rbac/             # @accounting/rbac - RBAC system
     ├── common/           # @accounting/common - Shared entities/enums
     ├── email/            # Email handling utilities
+    ├── infrastructure/   # Shared infrastructure utilities
     └── modules/
         ├── ai-agent/     # Claude/OpenAI integration
         ├── clients/      # Client management (CRM)
         ├── email-client/ # IMAP/SMTP email client
+        ├── notifications/# Real-time notifications
+        ├── settlements/  # Settlement management
         ├── tasks/        # Task management
         └── time-tracking/# Time tracking
 ```
@@ -162,15 +169,14 @@ apps/web/src/
 
 ```typescript
 // Backend
-import { apiClient } from '@/lib/api-client';
-
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { Company, User } from '@accounting/common';
 import { TasksModule } from '@accounting/modules/tasks';
 import { RequireModule, RequirePermission } from '@accounting/rbac';
 
-import { useAuth } from '@/lib/hooks/use-auth';
 // Frontend
+import { apiClient } from '@/lib/api/client';
+import { useAuth } from '@/lib/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 ```
 
