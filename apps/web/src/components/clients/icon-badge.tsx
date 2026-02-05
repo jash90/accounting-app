@@ -1,10 +1,11 @@
+import { Image } from 'lucide-react';
+
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils/cn';
 import { getIconByKebabName, type LucideIconComponent } from '@/lib/utils/lucide-icon-registry';
 import { type ClientIcon } from '@/types/entities';
 import { IconType } from '@/types/enums';
-import { Image } from 'lucide-react';
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface IconBadgeProps {
   icon: ClientIcon;

@@ -1,12 +1,12 @@
 import { memo } from 'react';
 
-import { TaskStatus, TaskStatusLabels } from '@/types/enums';
 import { BarChart3, Clock, Target } from 'lucide-react';
 
-import { useClientTaskStatistics } from '@/lib/hooks/use-tasks';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useClientTaskStatistics } from '@/lib/hooks/use-tasks';
+import { TaskStatus, TaskStatusLabels } from '@/types/enums';
 
 interface ClientTaskStatisticsProps {
   clientId: string;
