@@ -1,24 +1,55 @@
 import { useMemo } from 'react';
 
 import {
+  AlertTriangle,
   BarChart3,
   Calendar,
   CalendarDays,
   Clock,
   DollarSign,
   List,
+  RefreshCw,
   Settings,
   Timer,
   TrendingUp,
 } from 'lucide-react';
 
+import { ErrorBoundary } from '@/components/common/error-boundary';
 import { TimerWidget } from '@/components/time-tracking/timer-widget';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useActiveTimer, useTimeEntries } from '@/lib/hooks/use-time-tracking';
 import { UserRole } from '@/types/enums';
 
+// Hoisted outside component - static JSX that doesn't depend on component state
+// Prevents recreation on every render
+const timerErrorFallback = (
+  <Card className="w-full border-destructive/50 bg-destructive/5">
+    <CardContent className="flex items-center justify-between p-4">
+      <div className="flex items-center gap-3">
+        <AlertTriangle className="h-5 w-5 text-destructive" />
+        <div>
+          <p className="font-medium text-destructive">Błąd timera</p>
+          <p className="text-muted-foreground text-sm">
+            Nie udało się załadować timera. Odśwież stronę, aby spróbować ponownie.
+          </p>
+        </div>
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => window.location.reload()}
+        className="gap-2"
+      >
+        <RefreshCw className="h-4 w-4" />
+        Odśwież
+      </Button>
+    </CardContent>
+  </Card>
+);
 
 export default function TimeTrackingDashboardPage() {
   const { user } = useAuthContext();
@@ -67,37 +98,40 @@ export default function TimeTrackingDashboardPage() {
     return `${hours}h ${mins}m`;
   };
 
-  // View options
-  const views = [
-    {
-      title: 'Lista wpisów',
-      description: 'Przeglądaj wszystkie wpisy czasu z filtrowaniem i edycją',
-      icon: List,
-      href: `${basePath}/entries`,
-      gradient: 'bg-primary',
-    },
-    {
-      title: 'Timesheet dzienny',
-      description: 'Widok dzienny z podsumowaniem czasu pracy',
-      icon: Calendar,
-      href: `${basePath}/timesheet/daily`,
-      gradient: 'bg-primary',
-    },
-    {
-      title: 'Timesheet tygodniowy',
-      description: 'Widok tygodniowy z analizą czasu',
-      icon: CalendarDays,
-      href: `${basePath}/timesheet/weekly`,
-      gradient: 'bg-gradient-to-br from-purple-500 to-pink-500',
-    },
-    {
-      title: 'Raporty',
-      description: 'Generuj raporty rozliczeniowe i eksportuj dane do CSV/Excel',
-      icon: BarChart3,
-      href: `${basePath}/reports`,
-      gradient: 'bg-gradient-to-br from-emerald-500 to-teal-500',
-    },
-  ];
+  // View options - memoized to prevent array recreation on every render
+  const views = useMemo(
+    () => [
+      {
+        title: 'Lista wpisów',
+        description: 'Przeglądaj wszystkie wpisy czasu z filtrowaniem i edycją',
+        icon: List,
+        href: `${basePath}/entries`,
+        gradient: 'bg-primary',
+      },
+      {
+        title: 'Timesheet dzienny',
+        description: 'Widok dzienny z podsumowaniem czasu pracy',
+        icon: Calendar,
+        href: `${basePath}/timesheet/daily`,
+        gradient: 'bg-primary',
+      },
+      {
+        title: 'Timesheet tygodniowy',
+        description: 'Widok tygodniowy z analizą czasu',
+        icon: CalendarDays,
+        href: `${basePath}/timesheet/weekly`,
+        gradient: 'bg-gradient-to-br from-purple-500 to-pink-500',
+      },
+      {
+        title: 'Raporty',
+        description: 'Generuj raporty rozliczeniowe i eksportuj dane do CSV/Excel',
+        icon: BarChart3,
+        href: `${basePath}/reports`,
+        gradient: 'bg-gradient-to-br from-emerald-500 to-teal-500',
+      },
+    ],
+    [basePath]
+  );
 
   // Settings option (only for admins and company owners)
   const showSettings = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER;
@@ -114,8 +148,10 @@ export default function TimeTrackingDashboardPage() {
         </p>
       </div>
 
-      {/* Timer Widget */}
-      <TimerWidget />
+      {/* Timer Widget - wrapped in ErrorBoundary to prevent full page crash */}
+      <ErrorBoundary fallback={timerErrorFallback}>
+        <TimerWidget />
+      </ErrorBoundary>
 
       {/* Statistics Cards */}
       <div className="flex flex-wrap gap-6">

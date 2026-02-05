@@ -1,9 +1,40 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type Query } from '@tanstack/react-query';
 
 import apiClient from '../api/client';
 import { tokenStorage } from '../auth/token-storage';
+
+// ============================================
+// Helper Functions
+// ============================================
+
+/**
+ * Predicate to invalidate email inbox queries only, not individual email details.
+ * This prevents unnecessary refetches of email details that haven't changed.
+ */
+const isEmailInboxQuery = (query: Query): boolean => {
+  const key = query.queryKey;
+  // Match inbox queries: ['email-inbox', ...] but not individual emails: ['email', uid]
+  return Array.isArray(key) && key[0] === 'email-inbox';
+};
+
+/**
+ * Predicate to invalidate email folder queries.
+ */
+const isEmailFolderQuery = (query: Query): boolean => {
+  const key = query.queryKey;
+  return Array.isArray(key) && key[0] === 'email-folder';
+};
+
+/**
+ * Predicate to invalidate draft queries only.
+ */
+const isEmailDraftListQuery = (query: Query): boolean => {
+  const key = query.queryKey;
+  // Match draft list queries: ['email-drafts'] but not individual drafts: ['email-draft', id]
+  return Array.isArray(key) && key[0] === 'email-drafts';
+};
 
 interface EmailAddress {
   address: string;
@@ -95,7 +126,8 @@ export function useSendEmail() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-inbox'] });
+      // Only invalidate inbox list queries, not individual email details
+      queryClient.invalidateQueries({ predicate: isEmailInboxQuery });
     },
   });
 }
@@ -109,7 +141,8 @@ export function useCreateDraft() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-drafts'] });
+      // Only invalidate draft list queries
+      queryClient.invalidateQueries({ predicate: isEmailDraftListQuery });
     },
   });
 }
@@ -123,8 +156,9 @@ export function useSendDraft() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-drafts'] });
-      queryClient.invalidateQueries({ queryKey: ['email-inbox'] });
+      // Only invalidate draft and inbox list queries
+      queryClient.invalidateQueries({ predicate: isEmailDraftListQuery });
+      queryClient.invalidateQueries({ predicate: isEmailInboxQuery });
     },
   });
 }
@@ -204,8 +238,10 @@ export function useUpdateDraft() {
       return data;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['email-drafts'] });
+      // Invalidate the specific draft detail
       queryClient.invalidateQueries({ queryKey: ['email-draft', variables.draftId] });
+      // Only invalidate draft list queries
+      queryClient.invalidateQueries({ predicate: isEmailDraftListQuery });
     },
   });
 }
@@ -220,8 +256,11 @@ export function useDeleteDraft() {
     mutationFn: async (draftId: string) => {
       await apiClient.delete(`/api/modules/email-client/drafts/${draftId}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-drafts'] });
+    onSuccess: (_, deletedId) => {
+      // Remove the specific draft from cache
+      queryClient.removeQueries({ queryKey: ['email-draft', deletedId] });
+      // Only invalidate draft list queries
+      queryClient.invalidateQueries({ predicate: isEmailDraftListQuery });
     },
   });
 }
@@ -272,9 +311,14 @@ export function useMarkAsRead() {
       });
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-inbox'] });
-      queryClient.invalidateQueries({ queryKey: ['email-folder'] });
+    onSuccess: (_, messageUids) => {
+      // Invalidate specific email details that were marked as read
+      messageUids.forEach((uid) => {
+        queryClient.invalidateQueries({ queryKey: ['email', uid] });
+      });
+      // Only invalidate inbox and folder list queries
+      queryClient.invalidateQueries({ predicate: isEmailInboxQuery });
+      queryClient.invalidateQueries({ predicate: isEmailFolderQuery });
     },
   });
 }
@@ -292,9 +336,14 @@ export function useDeleteEmails() {
       });
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-inbox'] });
-      queryClient.invalidateQueries({ queryKey: ['email-folder'] });
+    onSuccess: (_, messageUids) => {
+      // Remove deleted emails from cache
+      messageUids.forEach((uid) => {
+        queryClient.removeQueries({ queryKey: ['email', uid] });
+      });
+      // Only invalidate inbox and folder list queries
+      queryClient.invalidateQueries({ predicate: isEmailInboxQuery });
+      queryClient.invalidateQueries({ predicate: isEmailFolderQuery });
     },
   });
 }
@@ -319,7 +368,8 @@ export function useGenerateAiDraft() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-drafts'] });
+      // Only invalidate draft list queries
+      queryClient.invalidateQueries({ predicate: isEmailDraftListQuery });
       queryClient.invalidateQueries({ queryKey: ['ai-drafts'] });
     },
   });
@@ -486,8 +536,8 @@ export function useGenerateAiDraftStream() {
                     isStreaming: false,
                     draftId: chunk.draftId || null,
                   }));
-                  // Invalidate queries to refresh draft lists
-                  queryClient.invalidateQueries({ queryKey: ['email-drafts'] });
+                  // Invalidate queries to refresh draft lists (using predicates)
+                  queryClient.invalidateQueries({ predicate: isEmailDraftListQuery });
                   queryClient.invalidateQueries({ queryKey: ['ai-drafts'] });
                 } else if (chunk.type === 'error') {
                   setState((prev) => ({
@@ -557,7 +607,8 @@ export function useSyncDrafts() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-drafts'] });
+      // Only invalidate draft list queries
+      queryClient.invalidateQueries({ predicate: isEmailDraftListQuery });
       queryClient.invalidateQueries({ queryKey: ['email-draft-conflicts'] });
     },
   });
@@ -596,8 +647,11 @@ export function useResolveConflict() {
       );
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-drafts'] });
+    onSuccess: (_, variables) => {
+      // Invalidate the specific draft detail
+      queryClient.invalidateQueries({ queryKey: ['email-draft', variables.draftId] });
+      // Only invalidate draft list queries
+      queryClient.invalidateQueries({ predicate: isEmailDraftListQuery });
       queryClient.invalidateQueries({ queryKey: ['email-draft-conflicts'] });
     },
   });
@@ -622,7 +676,10 @@ export function useDeleteAllDrafts() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-drafts'] });
+      // Remove all individual draft details from cache
+      queryClient.removeQueries({ queryKey: ['email-draft'] });
+      // Only invalidate draft list queries
+      queryClient.invalidateQueries({ predicate: isEmailDraftListQuery });
       queryClient.invalidateQueries({ queryKey: ['email-draft-conflicts'] });
       queryClient.invalidateQueries({ queryKey: ['ai-drafts'] });
     },
