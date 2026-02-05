@@ -1,11 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 
+import Decimal from 'decimal.js';
 import { Brackets, Repository } from 'typeorm';
 
 import {
   Client,
-  Company,
   Lead,
   LeadStatus,
   Offer,
@@ -14,8 +15,8 @@ import {
   OfferTemplate,
   RecipientSnapshot,
   User,
-  UserRole,
 } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 import { StorageService } from '@accounting/infrastructure/storage';
 
 import { DocxGenerationService } from './docx-generation.service';
@@ -33,6 +34,15 @@ import {
   UpdateOfferDto,
   UpdateOfferStatusDto,
 } from '../dto/offer.dto';
+import {
+  OFFER_EVENTS,
+  OfferCreatedEvent,
+  OfferDocumentGeneratedEvent,
+  OfferDuplicatedEvent,
+  OfferEmailSentEvent,
+  OfferStatusChangedEvent,
+  OfferUpdatedEvent,
+} from '../events/offer.events';
 import {
   OfferCannotModifyException,
   OfferInvalidStatusTransitionException,
@@ -65,6 +75,8 @@ const VALID_STATUS_TRANSITIONS: Record<OfferStatus, OfferStatus[]> = {
 
 @Injectable()
 export class OffersService {
+  private readonly logger = new Logger(OffersService.name);
+
   constructor(
     @InjectRepository(Offer)
     private readonly offerRepository: Repository<Offer>,
@@ -74,25 +86,19 @@ export class OffersService {
     private readonly leadRepository: Repository<Lead>,
     @InjectRepository(OfferTemplate)
     private readonly templateRepository: Repository<OfferTemplate>,
-    @InjectRepository(Company)
-    private readonly companyRepository: Repository<Company>,
+    private readonly systemCompanyService: SystemCompanyService,
     private readonly offerNumberingService: OfferNumberingService,
     private readonly offerActivityService: OfferActivityService,
     private readonly offerTemplatesService: OfferTemplatesService,
     private readonly docxGenerationService: DocxGenerationService,
     private readonly offerEmailService: OfferEmailService,
     private readonly leadsService: LeadsService,
-    private readonly storageService: StorageService
+    private readonly storageService: StorageService,
+    private readonly eventEmitter: EventEmitter2
   ) {}
 
   private async getCompanyId(user: User): Promise<string> {
-    if (user.role === UserRole.ADMIN) {
-      const systemCompany = await this.companyRepository.findOneOrFail({
-        where: { name: 'System Admin Company' },
-      });
-      return systemCompany.id;
-    }
-    return user.companyId!;
+    return this.systemCompanyService.getCompanyIdForUser(user);
   }
 
   /**
@@ -128,26 +134,36 @@ export class OffersService {
   }
 
   /**
-   * Calculates offer totals from service items
+   * Calculates offer totals from service items using decimal.js for precision.
+   * Uses fixed-point arithmetic to avoid floating-point rounding errors in financial calculations.
    */
   private calculateTotals(
     dto: CreateOfferDto | UpdateOfferDto,
     vatRate: number
   ): { totalNetAmount: number; totalGrossAmount: number } {
-    let totalNetAmount = 0;
+    let totalNet = new Decimal(0);
 
     if (dto.serviceTerms?.items) {
       for (const item of dto.serviceTerms.items) {
-        totalNetAmount += item.unitPrice * item.quantity;
+        const itemNet = new Decimal(item.unitPrice).times(item.quantity);
+        totalNet = totalNet.plus(itemNet);
       }
     }
 
-    const totalGrossAmount = totalNetAmount * (1 + vatRate / 100);
+    const vatMultiplier = new Decimal(1).plus(new Decimal(vatRate).div(100));
+    const totalGross = totalNet.times(vatMultiplier);
 
     return {
-      totalNetAmount: Math.round(totalNetAmount * 100) / 100,
-      totalGrossAmount: Math.round(totalGrossAmount * 100) / 100,
+      totalNetAmount: totalNet.toDecimalPlaces(2).toNumber(),
+      totalGrossAmount: totalGross.toDecimalPlaces(2).toNumber(),
     };
+  }
+
+  /**
+   * Calculates net amount for a single service item using decimal.js for precision.
+   */
+  private calculateItemNetAmount(unitPrice: number, quantity: number): number {
+    return new Decimal(unitPrice).times(quantity).toDecimalPlaces(2).toNumber();
   }
 
   async findAll(user: User, filters: OfferFiltersDto): Promise<PaginatedOffersResponseDto> {
@@ -311,14 +327,14 @@ export class OffersService {
     // Calculate totals
     const { totalNetAmount, totalGrossAmount } = this.calculateTotals(dto, vatRate);
 
-    // Prepare service terms with net amounts
+    // Prepare service terms with net amounts (using precise calculation)
     let serviceTerms = dto.serviceTerms;
     if (serviceTerms?.items) {
       serviceTerms = {
         ...serviceTerms,
         items: serviceTerms.items.map((item) => ({
           ...item,
-          netAmount: Math.round(item.unitPrice * item.quantity * 100) / 100,
+          netAmount: this.calculateItemNetAmount(item.unitPrice, item.quantity),
         })),
       };
     }
@@ -346,8 +362,8 @@ export class OffersService {
 
     const savedOffer = await this.offerRepository.save(offer);
 
-    // Log activity
-    await this.offerActivityService.logCreated(savedOffer, user);
+    // Emit event for async activity logging (decoupled from main flow)
+    this.eventEmitter.emit(OFFER_EVENTS.CREATED, new OfferCreatedEvent(savedOffer, user));
 
     return this.findOne(savedOffer.id, user);
   }
@@ -416,7 +432,7 @@ export class OffersService {
         ...dto.serviceTerms,
         items: dto.serviceTerms.items.map((item) => ({
           ...item,
-          netAmount: Math.round(item.unitPrice * item.quantity * 100) / 100,
+          netAmount: this.calculateItemNetAmount(item.unitPrice, item.quantity),
         })),
       };
     }
@@ -453,9 +469,12 @@ export class OffersService {
 
     const savedOffer = await this.offerRepository.save(offer);
 
-    // Log activity if there were changes
+    // Emit event for async activity logging if there were changes
     if (Object.keys(changes).length > 0) {
-      await this.offerActivityService.logUpdated(savedOffer, user, changes);
+      this.eventEmitter.emit(
+        OFFER_EVENTS.UPDATED,
+        new OfferUpdatedEvent(savedOffer, changes, user)
+      );
     }
 
     return this.findOne(savedOffer.id, user);
@@ -476,8 +495,11 @@ export class OffersService {
 
     const savedOffer = await this.offerRepository.save(offer);
 
-    // Log activity
-    await this.offerActivityService.logStatusChanged(savedOffer, user, previousStatus, dto.status);
+    // Emit event for async activity logging
+    this.eventEmitter.emit(
+      OFFER_EVENTS.STATUS_CHANGED,
+      new OfferStatusChangedEvent(savedOffer, previousStatus, dto.status, user)
+    );
 
     return this.findOne(savedOffer.id, user);
   }
@@ -489,8 +511,11 @@ export class OffersService {
     if (offer.generatedDocumentPath) {
       try {
         await this.storageService.deleteFile(offer.generatedDocumentPath);
-      } catch {
-        // Ignore deletion errors
+      } catch (error) {
+        this.logger.warn(
+          `Failed to delete document for offer ${id}: ${offer.generatedDocumentPath}`,
+          error
+        );
       }
     }
 
@@ -541,8 +566,11 @@ export class OffersService {
 
     const savedOffer = await this.offerRepository.save(offer);
 
-    // Log activity
-    await this.offerActivityService.logDocumentGenerated(savedOffer, user, filePath);
+    // Emit event for async activity logging
+    this.eventEmitter.emit(
+      OFFER_EVENTS.DOCUMENT_GENERATED,
+      new OfferDocumentGeneratedEvent(savedOffer, filePath, user)
+    );
 
     return this.findOne(savedOffer.id, user);
   }
@@ -578,12 +606,15 @@ export class OffersService {
 
     const savedOffer = await this.offerRepository.save(offer);
 
-    // Log activity
-    await this.offerActivityService.logEmailSent(
-      savedOffer,
-      user,
-      dto.email,
-      dto.subject || `Oferta ${offer.offerNumber}`
+    // Emit event for async activity logging
+    this.eventEmitter.emit(
+      OFFER_EVENTS.EMAIL_SENT,
+      new OfferEmailSentEvent(
+        savedOffer,
+        dto.email,
+        dto.subject || `Oferta ${offer.offerNumber}`,
+        user
+      )
     );
 
     // Update lead status if sending to a lead
@@ -655,8 +686,11 @@ export class OffersService {
 
     const savedOffer = await this.offerRepository.save(newOffer);
 
-    // Log activity
-    await this.offerActivityService.logDuplicated(savedOffer, user, sourceOffer.id);
+    // Emit event for async activity logging
+    this.eventEmitter.emit(
+      OFFER_EVENTS.DUPLICATED,
+      new OfferDuplicatedEvent(savedOffer, sourceOffer.id, user)
+    );
 
     return this.findOne(savedOffer.id, user);
   }
