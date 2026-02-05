@@ -138,7 +138,7 @@ export class AddRunningTimerUniqueIndex1768950000000 implements MigrationInterfa
     // This provides database-level enforcement of the "one running timer per user" constraint
     console.log('[AddRunningTimerUniqueIndex] Creating unique index...');
     await queryRunner.query(`
-      CREATE UNIQUE INDEX "IDX_time_entries_one_running_per_user"
+      CREATE UNIQUE INDEX IF NOT EXISTS "IDX_time_entries_one_running_per_user"
       ON "time_entries" ("userId", "companyId")
       WHERE "isRunning" = true AND "isActive" = true
     `);
