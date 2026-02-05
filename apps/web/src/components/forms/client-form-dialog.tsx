@@ -84,6 +84,9 @@ const INITIAL_RELIEF_STATE: ReliefState = {
   malyZusEndDate: undefined,
 };
 
+// Empty array constant to prevent re-renders from default prop recreation
+const EMPTY_EXISTING_RELIEFS: { reliefType: ReliefType; startDate: string; endDate: string }[] = [];
+
 interface ClientFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -101,7 +104,7 @@ export function ClientFormDialog({
   onOpenChange,
   client,
   onSubmit,
-  existingReliefs = [],
+  existingReliefs = EMPTY_EXISTING_RELIEFS,
 }: ClientFormDialogProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -359,12 +362,17 @@ export function ClientFormDialog({
     [client, form, getDefaultValues, getInitialCustomFieldValues, onOpenChange, resetReliefState]
   );
 
-  const handleCustomFieldChange = (fieldId: string, value: string) => {
+  /**
+   * Handles custom field value changes.
+   * Wrapped in useCallback to maintain stable reference for child components,
+   * preventing unnecessary re-renders when used in lists of custom fields.
+   */
+  const handleCustomFieldChange = useCallback((fieldId: string, value: string) => {
     setCustomFieldValues((prev) => ({
       ...prev,
       [fieldId]: value,
     }));
-  };
+  }, []);
 
   const handleSubmit = (data: CreateClientFormData | UpdateClientFormData) => {
     // Validate required custom fields before submission
@@ -448,12 +456,15 @@ export function ClientFormDialog({
 
   const renderCustomField = (definition: ClientFieldDefinition) => {
     const value = customFieldValues[definition.id] || '';
+    const hasError = definition.isRequired && !value && form.formState.isSubmitted;
 
     return (
       <CustomFieldRenderer
         definition={definition}
         value={value}
         onChange={(newValue) => handleCustomFieldChange(definition.id, newValue)}
+        aria-describedby={hasError ? `custom-field-${definition.id}-error` : undefined}
+        aria-invalid={hasError}
       />
     );
   };
@@ -776,6 +787,8 @@ export function ClientFormDialog({
                         <Input
                           id="ulga-na-start-start-date"
                           type="date"
+                          aria-describedby="ulga-na-start-start-date-error"
+                          aria-invalid={!ulgaNaStartStartDate}
                           value={
                             ulgaNaStartStartDate
                               ? ulgaNaStartStartDate.toISOString().split('T')[0]
@@ -787,6 +800,15 @@ export function ClientFormDialog({
                             )
                           }
                         />
+                        {!ulgaNaStartStartDate && form.formState.isSubmitted && (
+                          <p
+                            id="ulga-na-start-start-date-error"
+                            className="text-destructive text-sm font-medium"
+                            role="alert"
+                          >
+                            Data rozpoczęcia jest wymagana
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label htmlFor="ulga-na-start-end-date" className="text-sm font-medium">
@@ -795,6 +817,7 @@ export function ClientFormDialog({
                         <Input
                           id="ulga-na-start-end-date"
                           type="date"
+                          aria-describedby="ulga-na-start-end-date-help"
                           value={
                             ulgaNaStartEndDate ? ulgaNaStartEndDate.toISOString().split('T')[0] : ''
                           }
@@ -804,7 +827,10 @@ export function ClientFormDialog({
                             )
                           }
                         />
-                        <p className="text-muted-foreground text-xs">
+                        <p
+                          id="ulga-na-start-end-date-help"
+                          className="text-muted-foreground text-xs"
+                        >
                           Automatycznie obliczone: 6 miesięcy od daty rozpoczęcia
                         </p>
                       </div>
@@ -845,6 +871,8 @@ export function ClientFormDialog({
                         <Input
                           id="maly-zus-start-date"
                           type="date"
+                          aria-describedby="maly-zus-start-date-error"
+                          aria-invalid={!malyZusStartDate}
                           value={
                             malyZusStartDate ? malyZusStartDate.toISOString().split('T')[0] : ''
                           }
@@ -854,6 +882,15 @@ export function ClientFormDialog({
                             )
                           }
                         />
+                        {!malyZusStartDate && form.formState.isSubmitted && (
+                          <p
+                            id="maly-zus-start-date-error"
+                            className="text-destructive text-sm font-medium"
+                            role="alert"
+                          >
+                            Data rozpoczęcia jest wymagana
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label htmlFor="maly-zus-end-date" className="text-sm font-medium">
@@ -862,12 +899,13 @@ export function ClientFormDialog({
                         <Input
                           id="maly-zus-end-date"
                           type="date"
+                          aria-describedby="maly-zus-end-date-help"
                           value={malyZusEndDate ? malyZusEndDate.toISOString().split('T')[0] : ''}
                           onChange={(e) =>
                             setMalyZusEndDate(e.target.value ? new Date(e.target.value) : undefined)
                           }
                         />
-                        <p className="text-muted-foreground text-xs">
+                        <p id="maly-zus-end-date-help" className="text-muted-foreground text-xs">
                           Automatycznie obliczone: 36 miesięcy od daty rozpoczęcia
                         </p>
                       </div>
@@ -1022,7 +1060,11 @@ export function ClientFormDialog({
                         {definition.isRequired &&
                           !customFieldValues[definition.id] &&
                           form.formState.isSubmitted && (
-                            <p className="text-destructive text-sm font-medium">
+                            <p
+                              id={`custom-field-${definition.id}-error`}
+                              className="text-destructive text-sm font-medium"
+                              role="alert"
+                            >
                               To pole jest wymagane
                             </p>
                           )}
