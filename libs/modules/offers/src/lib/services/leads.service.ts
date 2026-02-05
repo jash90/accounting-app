@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Brackets, Repository } from 'typeorm';
+import { Brackets, DataSource, Repository } from 'typeorm';
 
-import { Client, Company, Lead, LeadStatus, User, UserRole } from '@accounting/common';
+import { Client, isForeignKeyViolation, Lead, LeadStatus, User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import {
   ConvertLeadToClientDto,
@@ -25,18 +26,12 @@ export class LeadsService {
     private readonly leadRepository: Repository<Lead>,
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
-    @InjectRepository(Company)
-    private readonly companyRepository: Repository<Company>
+    private readonly systemCompanyService: SystemCompanyService,
+    private readonly dataSource: DataSource
   ) {}
 
   private async getCompanyId(user: User): Promise<string> {
-    if (user.role === UserRole.ADMIN) {
-      const systemCompany = await this.companyRepository.findOneOrFail({
-        where: { name: 'System Admin Company' },
-      });
-      return systemCompany.id;
-    }
-    return user.companyId!;
+    return this.systemCompanyService.getCompanyIdForUser(user);
   }
 
   async findAll(user: User, filters: LeadFiltersDto): Promise<PaginatedLeadsResponseDto> {
@@ -149,14 +144,52 @@ export class LeadsService {
     try {
       await this.leadRepository.remove(lead);
     } catch (error: unknown) {
-      // Check if it's a foreign key constraint violation (PostgreSQL error code 23503)
-      if (error && typeof error === 'object' && 'code' in error && error.code === '23503') {
+      // Check if it's a foreign key constraint violation (works across PostgreSQL, MySQL, SQLite)
+      if (isForeignKeyViolation(error)) {
         throw new LeadHasOffersException(id);
       }
       throw error;
     }
   }
 
+  /**
+   * Converts a lead to a client.
+   *
+   * ## Data Mapping
+   * The following lead fields are mapped to the new client:
+   * - `name` → `client.name` (can be overridden via `dto.clientName`)
+   * - `nip` → `client.nip`
+   * - `email` → `client.email`
+   * - `phone` → `client.phone`
+   *
+   * ## Fields NOT Mapped
+   *
+   * ### Intentionally Not Mapped (Lead-specific lifecycle data)
+   * The following fields are NOT transferred to the client as they represent
+   * lead lifecycle data that isn't relevant to the client profile:
+   * - `contactPerson`, `contactPosition` - Lead contact info (client may have different primary contact)
+   * - `source` - Lead acquisition source (not relevant for ongoing client relationship)
+   * - `estimatedValue` - Lead estimation (client will have actual billing data)
+   * - `notes` - Lead-specific notes (start fresh with client relationship notes)
+   * - `assignedTo` - Lead assignment (client workflow is different)
+   *
+   * ### Not Mapped Due to Schema Differences
+   * The Client entity does not currently have address/location fields.
+   * The following Lead fields are lost during conversion:
+   * - `regon` - Polish business registration number
+   * - `street` - Street address
+   * - `postalCode` - Postal code
+   * - `city` - City
+   * - `country` - Country
+   *
+   * NOTE: If address fields are needed on clients, consider adding them to the
+   * Client entity or using custom fields to store this information.
+   *
+   * @param id - The lead ID to convert
+   * @param dto - Optional overrides for the new client
+   * @param user - The user performing the conversion
+   * @returns The updated lead and newly created client
+   */
   async convertToClient(
     id: string,
     dto: ConvertLeadToClientDto,
@@ -170,28 +203,34 @@ export class LeadsService {
 
     const companyId = await this.getCompanyId(user);
 
-    // Create client from lead data
-    const client = this.clientRepository.create({
-      name: dto.clientName || lead.name,
-      nip: lead.nip,
-      email: lead.email,
-      phone: lead.phone,
-      companyId,
-      createdById: user.id,
-      isActive: true,
+    // Use transaction to ensure atomicity of client creation and lead update
+    return this.dataSource.transaction(async (manager) => {
+      // Create client from lead data
+      // NOTE: Address fields (street, postalCode, city, country, regon) are NOT
+      // mapped because the Client entity doesn't have these columns.
+      // See JSDoc above for full data mapping documentation.
+      const client = manager.create(Client, {
+        name: dto.clientName || lead.name,
+        nip: lead.nip,
+        email: lead.email,
+        phone: lead.phone,
+        companyId,
+        createdById: user.id,
+        isActive: true,
+      });
+
+      const savedClient = await manager.save(Client, client);
+
+      // Update lead with conversion info
+      lead.convertedToClientId = savedClient.id;
+      lead.convertedAt = new Date();
+      lead.status = LeadStatus.CONVERTED;
+      lead.updatedById = user.id;
+
+      const savedLead = await manager.save(Lead, lead);
+
+      return { lead: savedLead, client: savedClient };
     });
-
-    const savedClient = await this.clientRepository.save(client);
-
-    // Update lead with conversion info
-    lead.convertedToClientId = savedClient.id;
-    lead.convertedAt = new Date();
-    lead.status = LeadStatus.CONVERTED;
-    lead.updatedById = user.id;
-
-    const savedLead = await this.leadRepository.save(lead);
-
-    return { lead: savedLead, client: savedClient };
   }
 
   async getStatistics(user: User): Promise<LeadStatisticsDto> {

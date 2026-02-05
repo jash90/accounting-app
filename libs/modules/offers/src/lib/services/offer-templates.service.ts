@@ -3,7 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Brackets, Repository } from 'typeorm';
 
-import { Company, OfferTemplate, User, UserRole } from '@accounting/common';
+import { OfferTemplate, User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 import { StorageService } from '@accounting/infrastructure/storage';
 
 import {
@@ -57,19 +58,12 @@ export class OfferTemplatesService {
   constructor(
     @InjectRepository(OfferTemplate)
     private readonly templateRepository: Repository<OfferTemplate>,
-    @InjectRepository(Company)
-    private readonly companyRepository: Repository<Company>,
+    private readonly systemCompanyService: SystemCompanyService,
     private readonly storageService: StorageService
   ) {}
 
   private async getCompanyId(user: User): Promise<string> {
-    if (user.role === UserRole.ADMIN) {
-      const systemCompany = await this.companyRepository.findOneOrFail({
-        where: { name: 'System Admin Company' },
-      });
-      return systemCompany.id;
-    }
-    return user.companyId!;
+    return this.systemCompanyService.getCompanyIdForUser(user);
   }
 
   async findAll(
