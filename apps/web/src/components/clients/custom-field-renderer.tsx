@@ -1,7 +1,5 @@
 import { memo } from 'react';
 
-import { type ClientFieldDefinition } from '@/types/entities';
-import { CustomFieldType } from '@/types/enums';
 
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
@@ -13,6 +11,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { type ClientFieldDefinition } from '@/types/entities';
+import { CustomFieldType } from '@/types/enums';
 
 interface CustomFieldRendererProps {
   definition: ClientFieldDefinition;

@@ -1,5 +1,22 @@
 import { memo, useCallback, useMemo } from 'react';
 
+import { Check, ChevronDown, FolderPlus, Plus, Trash2 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import {
   AmlGroupLabels,
   CONDITION_FIELDS,
@@ -21,23 +38,6 @@ import {
   type LogicalOperator,
   type SingleCondition,
 } from '@/types/enums';
-import { Check, ChevronDown, FolderPlus, Plus, Trash2 } from 'lucide-react';
-
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { DatePicker } from '@/components/ui/date-picker';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 
 // Generate unique ID for condition tracking (stable React keys)
 // Uses crypto.randomUUID() for SSR-safe, collision-resistant IDs
@@ -264,6 +264,10 @@ const GroupConditionRenderer = memo(function GroupConditionRenderer({
       logicalOperator: groupLogicalOperator,
       conditions: [...groupConditions, newCondition],
     });
+    // Intentionally using conditionsCount instead of groupConditions to prevent callback recreation
+    // on every condition edit. Since this callback only appends to the array, we only need to know
+    // when the array length changes (conditionsCount), not when individual items change.
+    // The current groupConditions is read via closure at execution time.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onChange, groupId, groupLogicalOperator, conditionsCount]);
 
@@ -285,6 +289,10 @@ const GroupConditionRenderer = memo(function GroupConditionRenderer({
       logicalOperator: groupLogicalOperator,
       conditions: [...groupConditions, newGroup],
     });
+    // Intentionally using conditionsCount instead of groupConditions to prevent callback recreation
+    // on every condition edit. Since this callback only appends to the array, we only need to know
+    // when the array length changes (conditionsCount), not when individual items change.
+    // The current groupConditions is read via closure at execution time.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onChange, groupId, groupLogicalOperator, conditionsCount]);
 
