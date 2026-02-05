@@ -1,19 +1,20 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
   ManyToOne,
   OneToMany,
-  JoinColumn,
-  Index,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
+
+import { Client } from './client.entity';
 import { Company } from './company.entity';
 import { User } from './user.entity';
-import { Client } from './client.entity';
-import { TaskStatus } from '../enums/task-status.enum';
 import { TaskPriority } from '../enums/task-priority.enum';
+import { TaskStatus } from '../enums/task-status.enum';
 
 @Entity('tasks')
 @Index(['companyId'])
@@ -29,7 +30,7 @@ export class Task {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ length: 255 })
+  @Column({ type: 'varchar', length: 255 })
   title!: string;
 
   @Column({ type: 'text', nullable: true })
@@ -68,7 +69,7 @@ export class Task {
   sortOrder!: number;
 
   // Multi-tenant
-  @Column()
+  @Column({ type: 'uuid' })
   companyId!: string;
 
   @ManyToOne(() => Company, { onDelete: 'CASCADE' })
@@ -76,7 +77,7 @@ export class Task {
   company!: Company;
 
   // Optional: Linked client
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   clientId?: string;
 
   @ManyToOne(() => Client, { onDelete: 'SET NULL', nullable: true })
@@ -84,7 +85,7 @@ export class Task {
   client?: Client;
 
   // Assignee
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   assigneeId?: string;
 
   @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
@@ -92,7 +93,7 @@ export class Task {
   assignee?: User;
 
   // Creator
-  @Column()
+  @Column({ type: 'uuid' })
   createdById!: string;
 
   @ManyToOne(() => User)
@@ -100,7 +101,7 @@ export class Task {
   createdBy!: User;
 
   // Subtasks: self-referencing relation
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   parentTaskId?: string;
 
   @ManyToOne(() => Task, (task) => task.subtasks, {
@@ -113,7 +114,7 @@ export class Task {
   @OneToMany(() => Task, (task) => task.parentTask)
   subtasks?: Task[];
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
   @CreateDateColumn()

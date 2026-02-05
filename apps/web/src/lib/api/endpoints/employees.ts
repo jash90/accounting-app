@@ -1,5 +1,6 @@
+import { type CreateEmployeeDto, type UpdateEmployeeDto, type UserDto } from '@/types/dtos';
+
 import apiClient from '../client';
-import { CreateEmployeeDto, UpdateEmployeeDto, UserDto } from '@/types/dtos';
 
 export const employeesApi = {
   getAll: async (): Promise<UserDto[]> => {
@@ -26,4 +27,3 @@ export const employeesApi = {
     await apiClient.delete(`/api/company/employees/${id}`);
   },
 };
-

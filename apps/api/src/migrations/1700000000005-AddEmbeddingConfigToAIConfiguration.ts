@@ -1,8 +1,6 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
-export class AddEmbeddingConfigToAIConfiguration1700000000005
-  implements MigrationInterface
-{
+export class AddEmbeddingConfigToAIConfiguration1700000000005 implements MigrationInterface {
   name = 'AddEmbeddingConfigToAIConfiguration1700000000005';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

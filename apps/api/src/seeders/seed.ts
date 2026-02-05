@@ -1,7 +1,8 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../app/app.module';
-import { SeedersModule } from './seeders.module';
+
 import { SeederService } from './seeder.service';
+import { SeedersModule } from './seeders.module';
+import { AppModule } from '../app/app.module';
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule);
@@ -20,4 +21,3 @@ bootstrap()
     console.error('Seeding failed:', error);
     process.exit(1);
   });
-

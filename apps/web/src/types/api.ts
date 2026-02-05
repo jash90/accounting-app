@@ -1,4 +1,4 @@
-import { AxiosError } from 'axios';
+import { type AxiosError } from 'axios';
 
 export interface ApiError {
   message: string;
@@ -26,4 +26,3 @@ export interface ApiResponse<T> {
 }
 
 export type ApiErrorResponse = AxiosError<ApiError>;
-

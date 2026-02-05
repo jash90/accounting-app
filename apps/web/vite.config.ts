@@ -1,9 +1,10 @@
 /// <reference types='vitest' />
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
-import { nxCopyAssetsPlugin } from '@nx/vite/plugins/nx-copy-assets.plugin';
 import path from 'path';
+
+import { nxCopyAssetsPlugin } from '@nx/vite/plugins/nx-copy-assets.plugin';
+import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
   root: __dirname,
@@ -26,16 +27,38 @@ export default defineConfig({
     host: 'localhost',
   },
 
-  plugins: [
-    react(),
-    nxViteTsPaths(),
-    nxCopyAssetsPlugin(['*.md']),
-  ],
+  plugins: [react(), nxViteTsPaths(), nxCopyAssetsPlugin(['*.md'])],
 
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@accounting/common/browser': path.resolve(__dirname, '../../libs/common/src/browser.ts'),
     },
+  },
+
+  // Dependency optimization configuration
+  optimizeDeps: {
+    // Pre-bundle large packages to reduce cold start time by 200-800ms
+    // lucide-react: 1,583 modules → pre-bundled
+    // @radix-ui packages: Each has 10-20 internal modules, used heavily in shadcn/ui
+    include: [
+      'lucide-react',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-select',
+      '@radix-ui/react-popover',
+      '@radix-ui/react-tooltip',
+      '@radix-ui/react-checkbox',
+      '@radix-ui/react-radio-group',
+    ],
+    exclude: [
+      '@nestjs/mapped-types',
+      'class-transformer',
+      'class-validator',
+      'typeorm',
+      '@nestjs/common',
+      '@nestjs/core',
+    ],
   },
 
   build: {
@@ -44,6 +67,16 @@ export default defineConfig({
     reportCompressedSize: true,
     commonjsOptions: {
       transformMixedEsModules: true,
+    },
+    rollupOptions: {
+      external: [
+        '@nestjs/mapped-types',
+        'class-transformer/storage',
+        'class-transformer',
+        'typeorm',
+        '@nestjs/common',
+        '@nestjs/core',
+      ],
     },
   },
 

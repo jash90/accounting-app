@@ -1,11 +1,22 @@
-import { Injectable, NotFoundException, ForbiddenException, InternalServerErrorException, Logger, Inject, forwardRef } from '@nestjs/common';
+import {
+  ForbiddenException,
+  forwardRef,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
+
 import { User } from '@accounting/common';
 import { EmailConfigurationService } from '@accounting/email';
-import { EmailDraft } from '../entities/email-draft.entity';
-import { CreateDraftDto, UpdateDraftDto } from '../dto/create-draft.dto';
+
 import { EmailDraftSyncService, SyncResult } from './email-draft-sync.service';
+import { CreateDraftDto, UpdateDraftDto } from '../dto/create-draft.dto';
+import { EmailDraft } from '../entities/email-draft.entity';
 
 /**
  * Service for managing email drafts
@@ -23,7 +34,7 @@ export class EmailDraftService {
     private readonly draftRepository: Repository<EmailDraft>,
     @Inject(forwardRef(() => EmailDraftSyncService))
     private readonly draftSyncService: EmailDraftSyncService,
-    private readonly emailConfigService: EmailConfigurationService,
+    private readonly emailConfigService: EmailConfigurationService
   ) {}
 
   /**
@@ -45,7 +56,9 @@ export class EmailDraftService {
 
     // Sync to IMAP if enabled
     if (syncToImap) {
-      const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(user.companyId);
+      const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
+        user.companyId
+      );
       if (emailConfig) {
         try {
           await this.draftSyncService.pushDraftToImap(savedDraft, emailConfig);
@@ -105,7 +118,10 @@ export class EmailDraftService {
       throw new ForbiddenException('You can only edit your own drafts');
     }
 
-    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(user.companyId!);
+    // companyId is validated in findOne() which throws if missing
+    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
+      user.companyId as string
+    );
 
     if (emailConfig && draft.syncStatus === 'synced' && draft.imapUid) {
       try {
@@ -132,7 +148,10 @@ export class EmailDraftService {
       throw new ForbiddenException('You can only delete your own drafts');
     }
 
-    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(user.companyId!);
+    // companyId is validated in findOne() which throws if missing
+    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
+      user.companyId as string
+    );
 
     if (emailConfig && draft.imapUid) {
       try {
@@ -201,7 +220,7 @@ export class EmailDraftService {
   async resolveConflict(
     user: User,
     draftId: string,
-    resolution: 'keep_local' | 'keep_imap',
+    resolution: 'keep_local' | 'keep_imap'
   ): Promise<EmailDraft> {
     return this.draftSyncService.resolveConflict(draftId, resolution, user);
   }

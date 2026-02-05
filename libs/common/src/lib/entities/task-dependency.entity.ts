@@ -1,13 +1,14 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
   Unique,
 } from 'typeorm';
+
 import { Task } from './task.entity';
 import { User } from './user.entity';
 import { TaskDependencyType } from '../enums/task-dependency-type.enum';
@@ -20,14 +21,14 @@ export class TaskDependency {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   taskId!: string;
 
   @ManyToOne(() => Task, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'taskId' })
   task!: Task;
 
-  @Column()
+  @Column({ type: 'uuid' })
   dependsOnTaskId!: string;
 
   @ManyToOne(() => Task, { onDelete: 'CASCADE' })
@@ -41,7 +42,7 @@ export class TaskDependency {
   })
   dependencyType!: TaskDependencyType;
 
-  @Column()
+  @Column({ type: 'uuid' })
   createdById!: string;
 
   @ManyToOne(() => User)

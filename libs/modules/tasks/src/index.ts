@@ -1,8 +1,14 @@
+// Module
 export * from './lib/tasks.module';
-export { TasksService } from './lib/services/tasks.service';
-export { TaskLabelsService } from './lib/services/task-labels.service';
-export { TaskCommentsService } from './lib/services/task-comments.service';
-export { TaskDependenciesService } from './lib/services/task-dependencies.service';
-export * from './lib/controllers';
-export * from './lib/dto';
+
+// Exceptions
 export * from './lib/exceptions';
+
+// Services
+export * from './lib/services';
+
+// Controllers
+export * from './lib/controllers';
+
+// DTOs
+export * from './lib/dto';

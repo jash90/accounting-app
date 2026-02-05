@@ -5,6 +5,7 @@ export * from './lib/dto/register.dto';
 export * from './lib/dto/login.dto';
 export * from './lib/dto/auth-response.dto';
 export * from './lib/dto/refresh-token.dto';
+export * from './lib/dto/change-password.dto';
 export * from './lib/guards/jwt-auth.guard';
 export * from './lib/guards/roles.guard';
 export * from './lib/decorators/public.decorator';

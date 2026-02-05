@@ -73,7 +73,7 @@ export class OpenAIModelsService {
       return chatModels;
     } catch (error) {
       this.logger.warn(
-        `Failed to fetch models from OpenAI API: ${error instanceof Error ? error.message : error}`,
+        `Failed to fetch models from OpenAI API: ${error instanceof Error ? error.message : error}`
       );
       // Return fallback models
       const fallbackModels = this.getDefaultChatModels();
@@ -119,7 +119,7 @@ export class OpenAIModelsService {
       return embeddingModels;
     } catch (error) {
       this.logger.warn(
-        `Failed to fetch embedding models from OpenAI API: ${error instanceof Error ? error.message : error}`,
+        `Failed to fetch embedding models from OpenAI API: ${error instanceof Error ? error.message : error}`
       );
       // Return fallback models
       const fallbackModels = this.getDefaultEmbeddingModels();
@@ -187,7 +187,7 @@ export class OpenAIModelsService {
       'gpt-3.5-turbo-16k': 'GPT-3.5 Turbo 16K',
       'o1-preview': 'o1 Preview',
       'o1-mini': 'o1 Mini',
-      'o1': 'o1',
+      o1: 'o1',
       'o3-mini': 'o3 Mini',
       'text-embedding-3-small': 'Text Embedding 3 Small',
       'text-embedding-3-large': 'Text Embedding 3 Large',
@@ -219,7 +219,7 @@ export class OpenAIModelsService {
       'gpt-3.5-turbo-16k': 'Extended context window (16K)',
       'o1-preview': 'Advanced reasoning for complex problems',
       'o1-mini': 'Efficient reasoning model',
-      'o1': 'Reasoning model',
+      o1: 'Reasoning model',
       'o3-mini': 'Fast reasoning model',
     };
 

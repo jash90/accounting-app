@@ -32,6 +32,13 @@ export class ModuleResponseDto {
   })
   isActive!: boolean;
 
+  @ApiPropertyOptional({
+    description: 'Module icon name (lucide-react icon in kebab-case)',
+    example: 'bot',
+    nullable: true,
+  })
+  icon!: string | null;
+
   @ApiProperty({
     description: 'Module creation timestamp',
     example: '2024-01-15T10:30:00Z',

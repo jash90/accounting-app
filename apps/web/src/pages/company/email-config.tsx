@@ -1,22 +1,27 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { PageHeader } from '@/components/common/page-header';
+
+import { AlertCircle, Building2, Edit, Lock, Plus, Server, Trash2 } from 'lucide-react';
+
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { PageHeader } from '@/components/common/page-header';
 import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/use-toast';
 import {
   useCompanyEmailConfig,
   useCreateCompanyEmailConfig,
-  useUpdateCompanyEmailConfig,
   useDeleteCompanyEmailConfig,
-  useTestCompanySmtp,
   useTestCompanyImap,
+  useTestCompanySmtp,
+  useUpdateCompanyEmailConfig,
 } from '@/lib/hooks/use-email-config';
-import { CreateEmailConfigFormData, UpdateEmailConfigFormData } from '@/lib/validation/schemas';
-import { Building2, Edit, Trash2, Plus, Server, Lock, AlertCircle } from 'lucide-react';
+import {
+  type CreateEmailConfigFormData,
+  type UpdateEmailConfigFormData,
+} from '@/lib/validation/schemas';
 
 export default function CompanyEmailConfigPage() {
   const { data: emailConfig, isPending, isError, error } = useCompanyEmailConfig();
@@ -82,17 +87,17 @@ export default function CompanyEmailConfigPage() {
           hasConfig ? (
             <div className="flex gap-2">
               <Button onClick={() => setFormOpen(true)} variant="secondary" size="sm">
-                <Edit className="h-4 w-4 mr-2" />
+                <Edit className="mr-2 h-4 w-4" />
                 Edytuj konfigurację
               </Button>
               <Button onClick={() => setDeleteOpen(true)} variant="destructive" size="sm">
-                <Trash2 className="h-4 w-4 mr-2" />
+                <Trash2 className="mr-2 h-4 w-4" />
                 Usuń
               </Button>
             </div>
           ) : (
             <Button onClick={() => setFormOpen(true)} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               Utwórz konfigurację
             </Button>
           )
@@ -100,17 +105,18 @@ export default function CompanyEmailConfigPage() {
       />
 
       {/* Important Notice */}
-      <Card className="border-apptax-blue bg-apptax-soft-teal/30">
+      <Card className="border-primary bg-accent/10">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
-            <div className="p-2 bg-apptax-blue/10 rounded">
-              <AlertCircle className="h-5 w-5 text-apptax-blue" />
+            <div className="bg-primary/10 rounded p-2">
+              <AlertCircle className="text-primary h-5 w-5" />
             </div>
             <div className="flex-1 space-y-2">
-              <h4 className="font-semibold text-apptax-navy">Konfiguracja email dla całej firmy</h4>
-              <p className="text-sm text-muted-foreground">
-                Ta konfiguracja email będzie używana do wszystkich komunikacji firmowych, powiadomień i automatycznych
-                wiadomości wysyłanych w imieniu Twojej organizacji. Tylko właściciele firmy mogą zarządzać tą konfiguracją.
+              <h4 className="text-foreground font-semibold">Konfiguracja email dla całej firmy</h4>
+              <p className="text-muted-foreground text-sm">
+                Ta konfiguracja email będzie używana do wszystkich komunikacji firmowych,
+                powiadomień i automatycznych wiadomości wysyłanych w imieniu Twojej organizacji.
+                Tylko właściciele firmy mogą zarządzać tą konfiguracją.
               </p>
             </div>
           </div>
@@ -120,7 +126,7 @@ export default function CompanyEmailConfigPage() {
       {/* Loading State */}
       {isPending && (
         <Card>
-          <CardContent className="p-6 space-y-4">
+          <CardContent className="space-y-4 p-6">
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-4 w-1/2" />
             <Skeleton className="h-4 w-2/3" />
@@ -133,18 +139,20 @@ export default function CompanyEmailConfigPage() {
         <Card className="border-dashed">
           <CardContent className="p-12 text-center">
             <div className="flex flex-col items-center gap-4">
-              <div className="p-4 bg-apptax-soft-teal rounded-full">
-                <Building2 className="h-8 w-8 text-apptax-blue" />
+              <div className="bg-accent/10 rounded-full p-4">
+                <Building2 className="text-primary h-8 w-8" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-apptax-navy">Brak konfiguracji email firmy</h3>
+                <h3 className="text-foreground text-lg font-semibold">
+                  Brak konfiguracji email firmy
+                </h3>
                 <p className="text-muted-foreground max-w-md">
-                  Twoja firma nie ma jeszcze skonfigurowanych ustawień email. Utwórz konfigurację, aby umożliwić
-                  komunikację email i automatyczne powiadomienia w całej firmie.
+                  Twoja firma nie ma jeszcze skonfigurowanych ustawień email. Utwórz konfigurację,
+                  aby umożliwić komunikację email i automatyczne powiadomienia w całej firmie.
                 </p>
               </div>
               <Button onClick={() => setFormOpen(true)} className="mt-4">
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="mr-2 h-4 w-4" />
                 Utwórz konfigurację email firmy
               </Button>
             </div>
@@ -157,12 +165,12 @@ export default function CompanyEmailConfigPage() {
         <Card className="border-destructive">
           <CardContent className="p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-destructive/10 rounded">
-                <Building2 className="h-5 w-5 text-destructive" />
+              <div className="bg-destructive/10 rounded p-2">
+                <Building2 className="text-destructive h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-semibold text-destructive">Błąd ładowania konfiguracji</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="text-destructive font-semibold">Błąd ładowania konfiguracji</h3>
+                <p className="text-muted-foreground text-sm">
                   {error.message || 'Nie udało się załadować konfiguracji email firmy'}
                 </p>
               </div>
@@ -179,7 +187,7 @@ export default function CompanyEmailConfigPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Server className="h-5 w-5 text-apptax-blue" />
+                  <Server className="text-primary h-5 w-5" />
                   <CardTitle>Konfiguracja SMTP</CardTitle>
                 </div>
                 <Badge variant={emailConfig.isActive ? 'success' : 'muted'}>
@@ -192,11 +200,11 @@ export default function CompanyEmailConfigPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Host</span>
-                  <span className="font-medium text-apptax-navy">{emailConfig.smtpHost}</span>
+                  <span className="text-foreground font-medium">{emailConfig.smtpHost}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Port</span>
-                  <span className="font-medium text-apptax-navy">{emailConfig.smtpPort}</span>
+                  <span className="text-foreground font-medium">{emailConfig.smtpPort}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Zabezpieczenia</span>
@@ -206,13 +214,13 @@ export default function CompanyEmailConfigPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Użytkownik</span>
-                  <span className="font-medium text-apptax-navy">{emailConfig.smtpUser}</span>
+                  <span className="text-foreground font-medium">{emailConfig.smtpUser}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Hasło</span>
                   <div className="flex items-center gap-2">
-                    <Lock className="h-3 w-3 text-apptax-teal" />
-                    <span className="text-xs text-muted-foreground">Zaszyfrowane</span>
+                    <Lock className="text-accent h-3 w-3" />
+                    <span className="text-muted-foreground text-xs">Zaszyfrowane</span>
                   </div>
                 </div>
               </div>
@@ -224,7 +232,7 @@ export default function CompanyEmailConfigPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Server className="h-5 w-5 text-apptax-teal" />
+                  <Server className="text-accent h-5 w-5" />
                   <CardTitle>Konfiguracja IMAP</CardTitle>
                 </div>
                 <Badge variant={emailConfig.isActive ? 'success' : 'muted'}>
@@ -237,11 +245,11 @@ export default function CompanyEmailConfigPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Host</span>
-                  <span className="font-medium text-apptax-navy">{emailConfig.imapHost}</span>
+                  <span className="text-foreground font-medium">{emailConfig.imapHost}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Port</span>
-                  <span className="font-medium text-apptax-navy">{emailConfig.imapPort}</span>
+                  <span className="text-foreground font-medium">{emailConfig.imapPort}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Zabezpieczenia</span>
@@ -251,13 +259,13 @@ export default function CompanyEmailConfigPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Użytkownik</span>
-                  <span className="font-medium text-apptax-navy">{emailConfig.imapUser}</span>
+                  <span className="text-foreground font-medium">{emailConfig.imapUser}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Hasło</span>
                   <div className="flex items-center gap-2">
-                    <Lock className="h-3 w-3 text-apptax-teal" />
-                    <span className="text-xs text-muted-foreground">Zaszyfrowane</span>
+                    <Lock className="text-accent h-3 w-3" />
+                    <span className="text-muted-foreground text-xs">Zaszyfrowane</span>
                   </div>
                 </div>
               </div>
@@ -265,27 +273,30 @@ export default function CompanyEmailConfigPage() {
           </Card>
 
           {/* Info Card */}
-          <Card className="md:col-span-2 bg-gradient-to-r from-apptax-soft-teal to-apptax-soft-teal/50">
+          <Card className="from-accent/10 to-accent/5 bg-gradient-to-r md:col-span-2">
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
-                <div className="p-2 bg-white rounded">
-                  <Building2 className="h-5 w-5 text-apptax-blue" />
+                <div className="rounded bg-background p-2">
+                  <Building2 className="text-primary h-5 w-5" />
                 </div>
                 <div className="flex-1 space-y-2">
-                  <h4 className="font-semibold text-apptax-navy">
+                  <h4 className="text-foreground font-semibold">
                     {emailConfig.displayName || 'Konfiguracja email firmy aktywna'}
                   </h4>
-                  <div className="space-y-1 text-sm text-muted-foreground">
+                  <div className="text-muted-foreground space-y-1 text-sm">
                     <p>
-                      Konfiguracja email Twojej firmy jest aktywna i zabezpieczona szyfrowaniem. Ta konfiguracja jest używana
-                      do wszystkich operacji email w całej firmie.
+                      Konfiguracja email Twojej firmy jest aktywna i zabezpieczona szyfrowaniem. Ta
+                      konfiguracja jest używana do wszystkich operacji email w całej firmie.
                     </p>
                     {emailConfig.company && (
-                      <p className="font-medium text-apptax-navy">
+                      <p className="text-foreground font-medium">
                         Firma: {emailConfig.company.name}
                       </p>
                     )}
-                    <p>Ostatnia aktualizacja: {new Date(emailConfig.updatedAt).toLocaleDateString('pl-PL')}</p>
+                    <p>
+                      Ostatnia aktualizacja:{' '}
+                      {new Date(emailConfig.updatedAt).toLocaleDateString('pl-PL')}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -299,7 +310,13 @@ export default function CompanyEmailConfigPage() {
         open={formOpen}
         onOpenChange={setFormOpen}
         config={hasConfig ? emailConfig : undefined}
-        onSubmit={hasConfig ? handleUpdate : handleCreate}
+        onSubmit={(data) => {
+          if (hasConfig) {
+            handleUpdate(data as UpdateEmailConfigFormData);
+          } else {
+            handleCreate(data as CreateEmailConfigFormData);
+          }
+        }}
         type="company"
         onTestSmtp={(data) => testSmtp.mutate(data)}
         onTestImap={(data) => testImap.mutate(data)}

@@ -1,13 +1,20 @@
-import { Injectable, Logger, BadRequestException, RequestTimeoutException, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  RequestTimeoutException,
+} from '@nestjs/common';
+
 import { User, UserRole } from '@accounting/common';
 import {
+  EmailConfigurationService,
   EmailReaderService,
   EmailSenderService,
-  EmailConfigurationService,
-  ReceivedEmail,
   FetchEmailsOptions,
-  SmtpConfig,
   ImapConfig,
+  ReceivedEmail,
+  SmtpConfig,
 } from '@accounting/email';
 
 /** Default timeout for IMAP operations in milliseconds */
@@ -30,14 +37,16 @@ export class EmailClientService {
   private async withTimeout<T>(
     operation: Promise<T>,
     operationName: string,
-    timeoutMs: number = IMAP_OPERATION_TIMEOUT,
+    timeoutMs: number = IMAP_OPERATION_TIMEOUT
   ): Promise<T> {
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
-        reject(new RequestTimeoutException(
-          `Email operation '${operationName}' timed out after ${timeoutMs / 1000}s. ` +
-          `The email server may be unreachable or experiencing issues. Please try again later.`
-        ));
+        reject(
+          new RequestTimeoutException(
+            `Email operation '${operationName}' timed out after ${timeoutMs / 1000}s. ` +
+              `The email server may be unreachable or experiencing issues. Please try again later.`
+          )
+        );
       }, timeoutMs);
     });
 
@@ -51,14 +60,21 @@ export class EmailClientService {
 
       // Handle specific IMAP errors
       const err = error as Error;
-      if (err.message?.includes('AUTHENTICATIONFAILED') || err.message?.includes('Invalid credentials')) {
+      if (
+        err.message?.includes('AUTHENTICATIONFAILED') ||
+        err.message?.includes('Invalid credentials')
+      ) {
         this.logger.error(`IMAP authentication failed: ${err.message}`);
         throw new InternalServerErrorException(
           'Email authentication failed. Please verify the email configuration credentials.'
         );
       }
 
-      if (err.message?.includes('ECONNREFUSED') || err.message?.includes('ETIMEDOUT') || err.message?.includes('ENOTFOUND')) {
+      if (
+        err.message?.includes('ECONNREFUSED') ||
+        err.message?.includes('ETIMEDOUT') ||
+        err.message?.includes('ENOTFOUND')
+      ) {
         this.logger.error(`IMAP connection failed: ${err.message}`);
         throw new InternalServerErrorException(
           'Unable to connect to email server. Please check the server address and try again later.'
@@ -75,7 +91,7 @@ export class EmailClientService {
   constructor(
     private readonly emailReaderService: EmailReaderService,
     private readonly emailSenderService: EmailSenderService,
-    private readonly emailConfigService: EmailConfigurationService,
+    private readonly emailConfigService: EmailConfigurationService
   ) {}
 
   /**
@@ -106,7 +122,9 @@ export class EmailClientService {
       throw new BadRequestException('Użytkownik musi należeć do firmy');
     }
 
-    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(user.companyId);
+    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
+      user.companyId
+    );
 
     if (!emailConfig) {
       throw new BadRequestException('Brak konfiguracji email dla firmy. Skonfiguruj email firmy.');
@@ -128,7 +146,7 @@ export class EmailClientService {
         limit: options.limit || 50,
         unseenOnly: options.unseenOnly,
       }),
-      'getInbox',
+      'getInbox'
     );
 
     return emails;
@@ -137,7 +155,11 @@ export class EmailClientService {
   /**
    * Fetch emails from specific folder
    */
-  async getFolder(user: User, folderName: string, options: Partial<FetchEmailsOptions> = {}): Promise<ReceivedEmail[]> {
+  async getFolder(
+    user: User,
+    folderName: string,
+    options: Partial<FetchEmailsOptions> = {}
+  ): Promise<ReceivedEmail[]> {
     const emailConfig = await this.getEmailConfigForUser(user);
 
     return this.withTimeout(
@@ -146,7 +168,7 @@ export class EmailClientService {
         limit: options.limit || 50,
         unseenOnly: options.unseenOnly,
       }),
-      `getFolder:${folderName}`,
+      `getFolder:${folderName}`
     );
   }
 
@@ -156,24 +178,24 @@ export class EmailClientService {
   async listFolders(user: User): Promise<string[]> {
     const emailConfig = await this.getEmailConfigForUser(user);
 
-    return this.withTimeout(
-      this.emailReaderService.listMailboxes(emailConfig.imap),
-      'listFolders',
-    );
+    return this.withTimeout(this.emailReaderService.listMailboxes(emailConfig.imap), 'listFolders');
   }
 
   /**
    * Send email (with IMAP save to Sent folder)
    */
-  async sendEmail(user: User, message: {
-    to: string | string[];
-    subject: string;
-    text?: string;
-    html?: string;
-    cc?: string | string[];
-    bcc?: string | string[];
-    attachments?: Array<{ path: string; filename: string }>;
-  }): Promise<void> {
+  async sendEmail(
+    user: User,
+    message: {
+      to: string | string[];
+      subject: string;
+      text?: string;
+      html?: string;
+      cc?: string | string[];
+      bcc?: string | string[];
+      attachments?: Array<{ path: string; filename: string }>;
+    }
+  ): Promise<void> {
     const emailConfig = await this.getEmailConfigForUser(user);
 
     this.logger.log(`Sending email from user ${user.id} (role: ${user.role})`);
@@ -181,7 +203,7 @@ export class EmailClientService {
     await this.withTimeout(
       this.emailSenderService.sendEmailAndSave(emailConfig.smtp, emailConfig.imap, message),
       'sendEmail',
-      30000, // 30 seconds for sending (longer timeout for SMTP + IMAP save)
+      30000 // 30 seconds for sending (longer timeout for SMTP + IMAP save)
     );
 
     this.logger.log(`Email sent and saved to Sent folder successfully`);
@@ -195,7 +217,7 @@ export class EmailClientService {
 
     await this.withTimeout(
       this.emailReaderService.markAsSeen(emailConfig.imap, messageUids),
-      'markAsRead',
+      'markAsRead'
     );
     this.logger.log(`Marked ${messageUids.length} messages as read`);
   }
@@ -208,7 +230,7 @@ export class EmailClientService {
 
     await this.withTimeout(
       this.emailReaderService.deleteEmails(emailConfig.imap, messageUids),
-      'deleteEmail',
+      'deleteEmail'
     );
     this.logger.log(`Deleted ${messageUids.length} messages`);
   }
@@ -227,7 +249,7 @@ export class EmailClientService {
         limit: 1,
         markAsSeen: true,
       }),
-      `getEmail:${uid}`,
+      `getEmail:${uid}`
     );
 
     if (emails.length === 0) {

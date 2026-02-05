@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { EmploymentType, VatStatus, TaxScheme, ZusStatus } from '@accounting/common';
+
+import { EmploymentType, TaxScheme, VatStatus, ZusStatus } from '@accounting/common';
 
 export class ClientStatisticsDto {
   @ApiProperty({ description: 'Total number of clients' })

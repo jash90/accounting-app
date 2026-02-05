@@ -1,13 +1,12 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+
 import * as fs from 'fs';
 import { promises as fsPromises } from 'fs';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import {
-  StorageProvider,
-  StorageResult,
-} from '../interfaces/storage-provider.interface';
+
+import { StorageProvider, StorageResult } from '../interfaces/storage-provider.interface';
 
 @Injectable()
 export class LocalStorageProvider implements StorageProvider {
@@ -16,13 +15,8 @@ export class LocalStorageProvider implements StorageProvider {
   private readonly urlPrefix: string;
 
   constructor(private configService: ConfigService) {
-    this.basePath = path.resolve(
-      this.configService.get<string>('STORAGE_LOCAL_PATH', './uploads')
-    );
-    this.urlPrefix = this.configService.get<string>(
-      'STORAGE_LOCAL_URL',
-      '/uploads'
-    );
+    this.basePath = path.resolve(this.configService.get<string>('STORAGE_LOCAL_PATH', './uploads'));
+    this.urlPrefix = this.configService.get<string>('STORAGE_LOCAL_URL', '/uploads');
 
     // Ensure base directory exists (sync ok during startup)
     this.ensureDirectoryExistsSync(this.basePath);
@@ -43,9 +37,7 @@ export class LocalStorageProvider implements StorageProvider {
 
     // Ensure the resolved path is within basePath
     if (!fullPath.startsWith(this.basePath + path.sep) && fullPath !== this.basePath) {
-      this.logger.warn(
-        `Path traversal attempt detected: ${userPath} -> ${fullPath}`
-      );
+      this.logger.warn(`Path traversal attempt detected: ${userPath} -> ${fullPath}`);
       throw new BadRequestException('Invalid file path');
     }
 
@@ -74,10 +66,7 @@ export class LocalStorageProvider implements StorageProvider {
     }
   }
 
-  async upload(
-    file: Express.Multer.File,
-    subPath: string
-  ): Promise<StorageResult> {
+  async upload(file: Express.Multer.File, subPath: string): Promise<StorageResult> {
     // Sanitize the subPath to prevent directory traversal
     const sanitizedDir = this.sanitizePath(subPath);
 

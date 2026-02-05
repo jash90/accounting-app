@@ -1,30 +1,22 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Body,
-  Param,
-  UseGuards,
-  Res,
-  HttpStatus,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Res, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
 import { Response } from 'express';
-import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
-import { ModuleAccessGuard, PermissionGuard, RequireModule, RequirePermission } from '@accounting/rbac';
+
+import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { User } from '@accounting/common';
-import { EmailDraftService } from '../services/email-draft.service';
-import { EmailClientService } from '../services/email-client.service';
-import { EmailAiService } from '../services/email-ai.service';
+import {
+  ModuleAccessGuard,
+  PermissionGuard,
+  RequireModule,
+  RequirePermission,
+} from '@accounting/rbac';
+
 import { CreateDraftDto, UpdateDraftDto } from '../dto/create-draft.dto';
 import { EmailAiOptionsDto } from '../dto/email-ai-options.dto';
+import { EmailAiService } from '../services/email-ai.service';
+import { EmailClientService } from '../services/email-client.service';
+import { EmailDraftService } from '../services/email-draft.service';
 
 @ApiTags('Email Client - Drafts')
 @ApiBearerAuth()
@@ -35,7 +27,7 @@ export class EmailDraftsController {
   constructor(
     private readonly draftService: EmailDraftService,
     private readonly emailClientService: EmailClientService,
-    private readonly aiService: EmailAiService,
+    private readonly aiService: EmailAiService
   ) {}
 
   @Get()
@@ -85,7 +77,7 @@ export class EmailDraftsController {
   async resolveConflict(
     @CurrentUser() user: User,
     @Param('id') id: string,
-    @Body() dto: { resolution: 'keep_local' | 'keep_imap' },
+    @Body() dto: { resolution: 'keep_local' | 'keep_imap' }
   ) {
     return this.draftService.resolveConflict(user, id, dto.resolution);
   }
@@ -102,10 +94,7 @@ export class EmailDraftsController {
   @ApiOperation({ summary: 'Generate AI reply draft for an email' })
   @ApiResponse({ status: 201, description: 'AI draft generated' })
   @RequirePermission('email-client', 'write')
-  async generateAiReply(
-    @CurrentUser() user: User,
-    @Body() dto: EmailAiOptionsDto,
-  ) {
+  async generateAiReply(@CurrentUser() user: User, @Body() dto: EmailAiOptionsDto) {
     // Fetch the original email from IMAP
     const originalEmail = await this.emailClientService.getEmail(user, dto.messageUid);
 
@@ -120,7 +109,7 @@ export class EmailDraftsController {
   async generateAiReplyStream(
     @CurrentUser() user: User,
     @Body() dto: EmailAiOptionsDto,
-    @Res() res: Response,
+    @Res() res: Response
   ) {
     // Set SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
@@ -184,11 +173,7 @@ export class EmailDraftsController {
   @ApiOperation({ summary: 'Update draft' })
   @ApiResponse({ status: 200, description: 'Draft updated' })
   @RequirePermission('email-client', 'write')
-  async update(
-    @CurrentUser() user: User,
-    @Param('id') id: string,
-    @Body() dto: UpdateDraftDto,
-  ) {
+  async update(@CurrentUser() user: User, @Param('id') id: string, @Body() dto: UpdateDraftDto) {
     return this.draftService.update(user, id, dto);
   }
 

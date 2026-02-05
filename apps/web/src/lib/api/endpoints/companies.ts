@@ -1,12 +1,13 @@
-import apiClient from '../client';
 import {
-  CompanyDto,
-  CreateCompanyDto,
-  UpdateCompanyDto,
-  ManageModulePermissionDto,
   PermissionTargetType,
+  type CompanyDto,
+  type CreateCompanyDto,
+  type ManageModulePermissionDto,
+  type UpdateCompanyDto,
 } from '@/types/dtos';
-import { CompanyModuleAccess } from '@/types/entities';
+import { type CompanyModuleAccess } from '@/types/entities';
+
+import apiClient from '../client';
 
 export const companiesApi = {
   getAll: async (): Promise<CompanyDto[]> => {
@@ -35,7 +36,9 @@ export const companiesApi = {
 
   // Company Module Access Management
   getCompanyModules: async (companyId: string): Promise<CompanyModuleAccess[]> => {
-    const { data } = await apiClient.get<CompanyModuleAccess[]>(`/api/modules/companies/${companyId}`);
+    const { data } = await apiClient.get<CompanyModuleAccess[]>(
+      `/api/modules/companies/${companyId}`
+    );
     return data;
   },
 
@@ -57,4 +60,3 @@ export const companiesApi = {
     await apiClient.delete('/api/modules/permissions', { data: dto });
   },
 };
-

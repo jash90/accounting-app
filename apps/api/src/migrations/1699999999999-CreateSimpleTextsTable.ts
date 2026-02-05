@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
 export class CreateSimpleTextsTable1699999999999 implements MigrationInterface {
   name = 'CreateSimpleTextsTable1699999999999';

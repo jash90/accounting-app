@@ -1,13 +1,23 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException, Inject } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
-import { User, UserRole, Company } from '@accounting/common';
-import { RegisterDto } from '../dto/register.dto';
-import { LoginDto } from '../dto/login.dto';
-import { AuthResponseDto, UserDto } from '../dto/auth-response.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+
+import * as bcrypt from 'bcryptjs';
+import { Repository } from 'typeorm';
+
+import { Company, User, UserRole } from '@accounting/common';
+
 import { ACCESS_JWT_SERVICE, REFRESH_JWT_SERVICE } from '../constants/jwt.constants';
+import { AuthResponseDto, UserDto } from '../dto/auth-response.dto';
+import { ChangePasswordDto } from '../dto/change-password.dto';
+import { LoginDto } from '../dto/login.dto';
+import { RegisterDto } from '../dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -19,7 +29,7 @@ export class AuthService {
     @Inject(ACCESS_JWT_SERVICE)
     private accessJwtService: JwtService,
     @Inject(REFRESH_JWT_SERVICE)
-    private refreshJwtService: JwtService,
+    private refreshJwtService: JwtService
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
@@ -34,8 +44,7 @@ export class AuthService {
 
     // Validate companyId for COMPANY_OWNER and EMPLOYEE
     if (
-      (registerDto.role === UserRole.COMPANY_OWNER ||
-        registerDto.role === UserRole.EMPLOYEE) &&
+      (registerDto.role === UserRole.COMPANY_OWNER || registerDto.role === UserRole.EMPLOYEE) &&
       !registerDto.companyId
     ) {
       throw new BadRequestException('companyId is required for COMPANY_OWNER and EMPLOYEE roles');
@@ -113,13 +122,30 @@ export class AuthService {
       }
 
       return this.generateTokens(user);
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
   }
 
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(dto.currentPassword, user.password);
+
+    if (!isCurrentPasswordValid) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    user.password = await bcrypt.hash(dto.newPassword, 10);
+    await this.userRepository.save(user);
+  }
+
   private generateTokens(user: User): AuthResponseDto {
-    const payload: Record<string, any> = {
+    const payload: Record<string, string | null> = {
       sub: user.id,
       email: user.email,
       role: user.role,
@@ -150,4 +176,3 @@ export class AuthService {
     };
   }
 }
-

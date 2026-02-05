@@ -1,5 +1,6 @@
+import { type CreateModuleDto, type ModuleDto, type UpdateModuleDto } from '@/types/dtos';
+
 import apiClient from '../client';
-import { ModuleDto, CreateModuleDto, UpdateModuleDto } from '@/types/dtos';
 
 export const modulesApi = {
   /**
@@ -37,4 +38,3 @@ export const modulesApi = {
     await apiClient.delete(`/api/modules/${id}`);
   },
 };
-

@@ -1,5 +1,7 @@
-import { IsEmail, IsString, IsEnum, IsOptional, IsBoolean } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+import { IsBoolean, IsEmail, IsEnum, IsOptional, IsString } from 'class-validator';
+
 import { UserRole } from '@accounting/common';
 
 export class CreateUserDto {
@@ -19,23 +21,36 @@ export class CreateUserDto {
   @IsString()
   lastName: string;
 
-  @ApiProperty({ enum: UserRole, example: UserRole.COMPANY_OWNER, description: 'User role in the system' })
+  @ApiProperty({
+    enum: UserRole,
+    example: UserRole.COMPANY_OWNER,
+    description: 'User role in the system',
+  })
   @IsEnum(UserRole)
   role: UserRole;
 
-  @ApiProperty({ required: false, example: '123e4567-e89b-12d3-a456-426614174000', description: 'Company ID (required for EMPLOYEE role)' })
+  @ApiPropertyOptional({
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    description: 'Company ID (required for EMPLOYEE role)',
+  })
   @IsOptional()
   @IsString()
   companyId?: string;
 
-  @ApiProperty({ required: false, example: 'Acme Corporation', description: 'Company name (required for COMPANY_OWNER - auto-creates company)' })
+  @ApiPropertyOptional({
+    example: 'Acme Corporation',
+    description: 'Company name (required for COMPANY_OWNER - auto-creates company)',
+  })
   @IsOptional()
   @IsString()
   companyName?: string;
 
-  @ApiProperty({ required: false, default: true, example: true, description: 'Whether the user account is active' })
+  @ApiPropertyOptional({
+    default: true,
+    example: true,
+    description: 'Whether the user account is active',
+  })
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
 }
-

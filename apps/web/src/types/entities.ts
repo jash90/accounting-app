@@ -1,17 +1,19 @@
 import {
-  UserRole,
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
-  CustomFieldType,
-  ChangeAction,
-  AmlGroup,
-  IconType,
-  AutoAssignCondition,
-  TaskStatus,
-  TaskPriority,
-  TaskDependencyType,
+  type AmlGroup,
+  type AutoAssignCondition,
+  type ChangeAction,
+  type CustomFieldType,
+  type EmploymentType,
+  type IconType,
+  type TaskDependencyType,
+  type TaskPriority,
+  type TaskStatus,
+  type TaxScheme,
+  type TimeEntryStatus,
+  type TimeRoundingMethod,
+  type UserRole,
+  type VatStatus,
+  type ZusStatus,
 } from './enums';
 
 export interface User {
@@ -77,13 +79,14 @@ export interface Client {
   phone?: string;
   companyStartDate?: Date;
   cooperationStartDate?: Date;
-  suspensionDate?: Date;
   companySpecificity?: string;
   additionalInfo?: string;
   // Legacy field (kept for backward compatibility)
   gtuCode?: string;
   // New array field for multiple GTU codes
   gtuCodes?: string[];
+  // PKD code (Polska Klasyfikacja Działalności)
+  pkdCode?: string;
   // Legacy field (kept for backward compatibility)
   amlGroup?: string;
   // New enum field for AML group
@@ -264,3 +267,62 @@ export interface TaskComment {
   updatedAt: Date;
 }
 
+// Time Tracking entities
+export interface TimeEntry {
+  id: string;
+  description?: string;
+  startTime: Date;
+  endTime?: Date;
+  durationMinutes?: number;
+  isRunning: boolean;
+  isBillable: boolean;
+  hourlyRate?: number;
+  totalAmount?: number;
+  currency: string;
+  status: TimeEntryStatus;
+  rejectionNote?: string;
+  tags?: string[];
+  companyId: string;
+  userId: string;
+  user?: User;
+  clientId?: string;
+  client?: Client;
+  taskId?: string;
+  task?: Task;
+  approvedById?: string;
+  approvedBy?: User;
+  approvedAt?: Date;
+  submittedAt?: Date;
+  billedAt?: Date;
+  createdById: string;
+  createdBy?: User;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TimeSettings {
+  id: string;
+  companyId: string;
+  roundingMethod: TimeRoundingMethod;
+  roundingIntervalMinutes: number;
+  defaultHourlyRate?: number;
+  defaultCurrency: string;
+  requireApproval: boolean;
+  allowOverlappingEntries: boolean;
+  workingHoursPerDay: number;
+  workingHoursPerWeek: number;
+  weekStartDay: number;
+  allowTimerMode: boolean;
+  allowManualEntry: boolean;
+  autoStopTimerAfterMinutes: number;
+  minimumEntryMinutes: number;
+  maximumEntryMinutes: number;
+  enableDailyReminder: boolean;
+  dailyReminderTime?: string;
+  lockEntriesAfterDays: number;
+  updatedById?: string;
+  updatedBy?: User;
+  createdAt: Date;
+  updatedAt: Date;
+}

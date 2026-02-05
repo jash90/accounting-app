@@ -1,8 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
-import { AppModule } from '../../../../api/src/app/app.module';
+
 import { VatStatus } from '@accounting/common';
+
+import { AppModule } from '../../../api/src/app/app.module';
 
 /**
  * E2E Tests for Clients CRUD Operations
@@ -34,7 +36,7 @@ describe('Clients CRUD E2E Tests', () => {
         whitelist: true,
         transform: true,
         forbidNonWhitelisted: true,
-      }),
+      })
     );
     await app.init();
   });
@@ -71,8 +73,8 @@ describe('Clients CRUD E2E Tests', () => {
       const response = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          email: 'bartlomiej.zimny@onet.pl',
-          password: 'Owner123!',
+          email: process.env.SEED_OWNER_EMAIL ?? '',
+          password: process.env.SEED_OWNER_PASSWORD ?? '',
         })
         .expect(200);
 
@@ -84,8 +86,8 @@ describe('Clients CRUD E2E Tests', () => {
       const response = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          email: 'bartlomiej.zimny@interia.pl',
-          password: 'Employee123!',
+          email: process.env.SEED_EMPLOYEE_EMAIL ?? '',
+          password: process.env.SEED_EMPLOYEE_PASSWORD ?? '',
         })
         .expect(200);
 
@@ -97,8 +99,8 @@ describe('Clients CRUD E2E Tests', () => {
       const response = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          email: 'bartlomiej.zimny@onet.pl',
-          password: 'Owner123!',
+          email: process.env.SEED_OWNER_EMAIL ?? '',
+          password: process.env.SEED_OWNER_PASSWORD ?? '',
         })
         .expect(200);
 
@@ -251,9 +253,12 @@ describe('Clients CRUD E2E Tests', () => {
         .set('Authorization', `Bearer ${ownerToken}`)
         .expect(200);
 
-      expect(response.body.data.every((c: { name: string }) =>
-        c.name.toLowerCase().includes('e2e') || c.name.toLowerCase().includes('test')
-      )).toBe(true);
+      expect(
+        response.body.data.every(
+          (c: { name: string }) =>
+            c.name.toLowerCase().includes('e2e') || c.name.toLowerCase().includes('test')
+        )
+      ).toBe(true);
     });
 
     it('should filter by VAT status', async () => {
@@ -264,7 +269,11 @@ describe('Clients CRUD E2E Tests', () => {
         .expect(200);
 
       if (response.body.data.length > 0) {
-        expect(response.body.data.every((c: { vatStatus: string }) => c.vatStatus === VatStatus.VAT_MONTHLY)).toBe(true);
+        expect(
+          response.body.data.every(
+            (c: { vatStatus: string }) => c.vatStatus === VatStatus.VAT_MONTHLY
+          )
+        ).toBe(true);
       }
     });
 
@@ -275,13 +284,13 @@ describe('Clients CRUD E2E Tests', () => {
         .set('Authorization', `Bearer ${ownerToken}`)
         .expect(200);
 
-      expect(response.body.data.every((c: { isActive: boolean }) => c.isActive === true)).toBe(true);
+      expect(response.body.data.every((c: { isActive: boolean }) => c.isActive === true)).toBe(
+        true
+      );
     });
 
     it('should fail without authentication', async () => {
-      await request(app.getHttpServer())
-        .get('/modules/clients')
-        .expect(401);
+      await request(app.getHttpServer()).get('/modules/clients').expect(401);
     });
   });
 

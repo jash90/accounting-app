@@ -1,47 +1,58 @@
-import apiClient from '../client';
 import { tokenStorage } from '@/lib/auth/token-storage';
 import {
-  CreateConversationDto,
-  SendMessageDto,
-  ConversationResponseDto,
-  AIMessageDto,
-  CreateAIConfigurationDto,
-  UpdateAIConfigurationDto,
-  AIConfigurationResponseDto,
-  TokenUsageResponseDto,
-  TokenUsageSummaryDto,
-  CompanyTokenUsageDto,
-  AIContextResponseDto,
-  SetTokenLimitDto,
-  TokenLimitResponseDto,
-  OpenRouterModelDto,
-  OpenAIModelDto,
-  ChatStreamChunk,
+  type AIConfigurationResponseDto,
+  type AIContextResponseDto,
+  type AIMessageDto,
+  type ChatStreamChunk,
+  type CompanyTokenUsageDto,
+  type ConversationResponseDto,
+  type CreateAIConfigurationDto,
+  type CreateConversationDto,
+  type OpenAIModelDto,
+  type OpenRouterModelDto,
+  type SendMessageDto,
+  type SetTokenLimitDto,
+  type TokenLimitResponseDto,
+  type TokenUsageResponseDto,
+  type TokenUsageSummaryDto,
+  type UpdateAIConfigurationDto,
 } from '@/types/dtos';
+
+import apiClient from '../client';
 
 // Conversation endpoints
 export const conversationApi = {
   getAll: async (): Promise<ConversationResponseDto[]> => {
-    const { data } = await apiClient.get<{ data: ConversationResponseDto[] } | ConversationResponseDto[]>('/api/modules/ai-agent/conversations');
+    const { data } = await apiClient.get<
+      { data: ConversationResponseDto[] } | ConversationResponseDto[]
+    >('/api/modules/ai-agent/conversations');
     // Handle both paginated response ({ data: [...] }) and array response
     return Array.isArray(data) ? data : data.data;
   },
 
   getById: async (id: string): Promise<ConversationResponseDto> => {
-    const { data } = await apiClient.get<ConversationResponseDto>(`/api/modules/ai-agent/conversations/${id}`);
+    const { data } = await apiClient.get<ConversationResponseDto>(
+      `/api/modules/ai-agent/conversations/${id}`
+    );
     return data;
   },
 
   create: async (conversationData: CreateConversationDto): Promise<ConversationResponseDto> => {
-    const { data } = await apiClient.post<ConversationResponseDto>('/api/modules/ai-agent/conversations', conversationData);
+    const { data } = await apiClient.post<ConversationResponseDto>(
+      '/api/modules/ai-agent/conversations',
+      conversationData
+    );
     return data;
   },
 
-  sendMessage: async (conversationId: string, messageData: SendMessageDto): Promise<{ userMessage: { content: string }, assistantMessage: AIMessageDto }> => {
-    const { data } = await apiClient.post<{ userMessage: { content: string }, assistantMessage: AIMessageDto }>(
-      `/api/modules/ai-agent/conversations/${conversationId}/messages`,
-      messageData
-    );
+  sendMessage: async (
+    conversationId: string,
+    messageData: SendMessageDto
+  ): Promise<{ userMessage: { content: string }; assistantMessage: AIMessageDto }> => {
+    const { data } = await apiClient.post<{
+      userMessage: { content: string };
+      assistantMessage: AIMessageDto;
+    }>(`/api/modules/ai-agent/conversations/${conversationId}/messages`, messageData);
     return data;
   },
 
@@ -55,7 +66,7 @@ export const conversationApi = {
     onChunk: (content: string) => void,
     onDone?: (data: { inputTokens?: number; outputTokens?: number; totalTokens?: number }) => void,
     onError?: (error: string) => void,
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): Promise<void> => {
     const token = tokenStorage.getAccessToken();
 
@@ -63,16 +74,19 @@ export const conversationApi = {
       throw new Error('No access token available. Please log in again.');
     }
 
-    const response = await fetch(`/api/modules/ai-agent/conversations/${conversationId}/messages/stream`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'text/event-stream',
-      },
-      body: JSON.stringify(messageData),
-      signal,
-    });
+    const response = await fetch(
+      `/api/modules/ai-agent/conversations/${conversationId}/messages/stream`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify(messageData),
+        signal,
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Stream request failed' }));
@@ -140,37 +154,53 @@ export const conversationApi = {
 // AI Configuration endpoints
 export const aiConfigurationApi = {
   get: async (): Promise<AIConfigurationResponseDto | null> => {
-    const { data } = await apiClient.get<AIConfigurationResponseDto | null>('/api/modules/ai-agent/config');
+    const { data } = await apiClient.get<AIConfigurationResponseDto | null>(
+      '/api/modules/ai-agent/config'
+    );
     return data;
   },
 
   create: async (configData: CreateAIConfigurationDto): Promise<AIConfigurationResponseDto> => {
-    const { data } = await apiClient.post<AIConfigurationResponseDto>('/api/modules/ai-agent/config', configData);
+    const { data } = await apiClient.post<AIConfigurationResponseDto>(
+      '/api/modules/ai-agent/config',
+      configData
+    );
     return data;
   },
 
   update: async (configData: UpdateAIConfigurationDto): Promise<AIConfigurationResponseDto> => {
-    const { data } = await apiClient.patch<AIConfigurationResponseDto>('/api/modules/ai-agent/config', configData);
+    const { data } = await apiClient.patch<AIConfigurationResponseDto>(
+      '/api/modules/ai-agent/config',
+      configData
+    );
     return data;
   },
 
   getModels: async (): Promise<OpenRouterModelDto[]> => {
-    const { data } = await apiClient.get<OpenRouterModelDto[]>('/api/modules/ai-agent/config/models');
+    const { data } = await apiClient.get<OpenRouterModelDto[]>(
+      '/api/modules/ai-agent/config/models'
+    );
     return data;
   },
 
   getOpenAIModels: async (): Promise<OpenAIModelDto[]> => {
-    const { data } = await apiClient.get<OpenAIModelDto[]>('/api/modules/ai-agent/config/openai-models');
+    const { data } = await apiClient.get<OpenAIModelDto[]>(
+      '/api/modules/ai-agent/config/openai-models'
+    );
     return data;
   },
 
   getOpenAIEmbeddingModels: async (): Promise<OpenAIModelDto[]> => {
-    const { data } = await apiClient.get<OpenAIModelDto[]>('/api/modules/ai-agent/config/openai-embedding-models');
+    const { data } = await apiClient.get<OpenAIModelDto[]>(
+      '/api/modules/ai-agent/config/openai-embedding-models'
+    );
     return data;
   },
 
   resetApiKey: async (): Promise<AIConfigurationResponseDto> => {
-    const { data } = await apiClient.post<AIConfigurationResponseDto>('/api/modules/ai-agent/config/reset-api-key');
+    const { data } = await apiClient.post<AIConfigurationResponseDto>(
+      '/api/modules/ai-agent/config/reset-api-key'
+    );
     return data;
   },
 };
@@ -183,25 +213,33 @@ export const tokenUsageApi = {
   },
 
   getMyUsage: async (): Promise<TokenUsageResponseDto[]> => {
-    const { data } = await apiClient.get<TokenUsageResponseDto[]>('/api/modules/ai-agent/usage/me/detailed');
+    const { data } = await apiClient.get<TokenUsageResponseDto[]>(
+      '/api/modules/ai-agent/usage/me/detailed'
+    );
     return data;
   },
 
   // For COMPANY_OWNER - get company-wide usage
   getCompanyUsage: async (): Promise<CompanyTokenUsageDto> => {
-    const { data } = await apiClient.get<CompanyTokenUsageDto>('/api/modules/ai-agent/usage/company');
+    const { data } = await apiClient.get<CompanyTokenUsageDto>(
+      '/api/modules/ai-agent/usage/company'
+    );
     return data;
   },
 
   // For ADMIN - get all companies usage
   getAllCompaniesUsage: async (): Promise<CompanyTokenUsageDto[]> => {
-    const { data } = await apiClient.get<CompanyTokenUsageDto[]>('/api/modules/ai-agent/usage/all-companies');
+    const { data } = await apiClient.get<CompanyTokenUsageDto[]>(
+      '/api/modules/ai-agent/usage/all-companies'
+    );
     return data;
   },
 
   // Get usage by company (ADMIN only)
   getCompanyUsageById: async (companyId: string): Promise<CompanyTokenUsageDto> => {
-    const { data } = await apiClient.get<CompanyTokenUsageDto>(`/api/modules/ai-agent/usage/company/${companyId}`);
+    const { data } = await apiClient.get<CompanyTokenUsageDto>(
+      `/api/modules/ai-agent/usage/company/${companyId}`
+    );
     return data;
   },
 };
@@ -209,12 +247,17 @@ export const tokenUsageApi = {
 // Token Limit endpoints
 export const tokenLimitApi = {
   get: async (targetType: 'company' | 'user', targetId: string): Promise<TokenLimitResponseDto> => {
-    const { data } = await apiClient.get<TokenLimitResponseDto>(`/api/modules/ai-agent/token-limit/${targetType}/${targetId}`);
+    const { data } = await apiClient.get<TokenLimitResponseDto>(
+      `/api/modules/ai-agent/token-limit/${targetType}/${targetId}`
+    );
     return data;
   },
 
   set: async (limitData: SetTokenLimitDto): Promise<TokenLimitResponseDto> => {
-    const { data } = await apiClient.post<TokenLimitResponseDto>('/api/modules/ai-agent/token-limit', limitData);
+    const { data } = await apiClient.post<TokenLimitResponseDto>(
+      '/api/modules/ai-agent/token-limit',
+      limitData
+    );
     return data;
   },
 
@@ -231,7 +274,9 @@ export const contextApi = {
   },
 
   getOne: async (id: string): Promise<AIContextResponseDto & { extractedText: string }> => {
-    const { data } = await apiClient.get<AIContextResponseDto & { extractedText: string }>(`/api/modules/ai-agent/context/${id}`);
+    const { data } = await apiClient.get<AIContextResponseDto & { extractedText: string }>(
+      `/api/modules/ai-agent/context/${id}`
+    );
     return data;
   },
 
@@ -239,11 +284,15 @@ export const contextApi = {
     const formData = new FormData();
     formData.append('file', file);
 
-    const { data } = await apiClient.post<AIContextResponseDto>('/api/modules/ai-agent/context', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const { data } = await apiClient.post<AIContextResponseDto>(
+      '/api/modules/ai-agent/context',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
     return data;
   },
 

@@ -1,6 +1,8 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+
 import { UserRole } from '@accounting/common';
+
 import { OWNER_OR_ADMIN_KEY } from '../decorators/owner-or-admin.decorator';
 
 @Injectable()
@@ -8,10 +10,10 @@ export class OwnerOrAdminGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const isOwnerOrAdminRequired = this.reflector.getAllAndOverride<boolean>(
-      OWNER_OR_ADMIN_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const isOwnerOrAdminRequired = this.reflector.getAllAndOverride<boolean>(OWNER_OR_ADMIN_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     if (!isOwnerOrAdminRequired) {
       return true;
@@ -35,4 +37,3 @@ export class OwnerOrAdminGuard implements CanActivate {
     throw new ForbiddenException('Only company owners or admins can access this resource');
   }
 }
-

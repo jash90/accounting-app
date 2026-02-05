@@ -1,8 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { useToast } from '@/components/ui/use-toast';
+import { type ApiErrorResponse } from '@/types/api';
+import { type CreateModuleDto, type UpdateModuleDto } from '@/types/dtos';
+
+
 import { modulesApi } from '../api/endpoints/modules';
 import { queryKeys } from '../api/query-client';
-import { CreateModuleDto, UpdateModuleDto } from '@/types/dtos';
-import { useToast } from '@/components/ui/use-toast';
 
 export function useModules() {
   return useQuery({
@@ -32,7 +36,7 @@ export function useCreateModule() {
         description: 'Moduł został utworzony',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się utworzyć modułu',
@@ -57,7 +61,7 @@ export function useUpdateModule() {
         description: 'Moduł został zaktualizowany',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się zaktualizować modułu',
@@ -80,7 +84,7 @@ export function useDeleteModule() {
         description: 'Moduł został usunięty',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się usunąć modułu',
@@ -89,4 +93,3 @@ export function useDeleteModule() {
     },
   });
 }
-

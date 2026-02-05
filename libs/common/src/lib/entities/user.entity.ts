@@ -1,19 +1,20 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
+  CreateDateColumn,
+  Entity,
+  Index,
   JoinColumn,
+  ManyToOne,
   OneToMany,
   OneToOne,
-  CreateDateColumn,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
-  Index,
 } from 'typeorm';
-import { UserRole } from '../enums/user-role.enum';
+
 import { Company } from './company.entity';
-import { UserModulePermission } from './user-module-permission.entity';
 import { EmailConfiguration } from './email-configuration.entity';
+import { UserModulePermission } from './user-module-permission.entity';
+import { UserRole } from '../enums/user-role.enum';
 
 @Entity('users')
 @Index(['companyId']) // For company employee queries
@@ -23,16 +24,16 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ unique: true })
+  @Column({ type: 'varchar', unique: true })
   email!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   password!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   firstName!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   lastName!: string;
 
   @Column({
@@ -41,14 +42,14 @@ export class User {
   })
   role!: UserRole;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   companyId!: string | null;
 
   @ManyToOne(() => Company, (company) => company.employees, { nullable: true })
   @JoinColumn({ name: 'companyId' })
   company!: Company | null;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
   @OneToMany(() => UserModulePermission, (permission) => permission.user)
@@ -63,4 +64,3 @@ export class User {
   @UpdateDateColumn()
   updatedAt!: Date;
 }
-

@@ -1,5 +1,4 @@
-import { IsString, IsEmail, IsOptional, IsArray, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsEmail, IsOptional, IsString } from 'class-validator';
 
 /**
  * DTO for sending emails via SMTP

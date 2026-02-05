@@ -1,17 +1,16 @@
-import { useState, useEffect, useMemo } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
+
 import { useForm } from 'react-hook-form';
-import { cn } from '@/lib/utils/cn';
-import {
-  TaskStatus,
-  TaskStatusLabels,
-  TaskPriority,
-  TaskPriorityLabels,
-} from '@/types/enums';
-import { TaskFiltersDto } from '@/types/dtos';
-import { useClients } from '@/lib/hooks/use-clients';
-import { useEmployees } from '@/lib/hooks/use-employees';
-import { Input } from '@/components/ui/input';
+
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
+import { CalendarIcon, Search, X } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -19,16 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { Form, FormField, FormItem, FormControl } from '@/components/ui/form';
-import { Search, X, CalendarIcon, Filter } from 'lucide-react';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { useClients } from '@/lib/hooks/use-clients';
+import { useDebounce } from '@/lib/hooks/use-debounce';
+import { useEmployees } from '@/lib/hooks/use-employees';
+import { cn } from '@/lib/utils/cn';
+import { ALL_FILTER_VALUE, fromFilterValue, toFilterValue } from '@/lib/utils/filter-types';
+import { type TaskFiltersDto } from '@/types/dtos';
+import { TaskPriorityLabels, TaskStatusLabels } from '@/types/enums';
 
 interface TaskFiltersProps {
   filters: TaskFiltersDto;
@@ -46,18 +42,23 @@ interface FilterFormData {
   dueDateTo: Date | undefined;
 }
 
-export function TaskFilters({ filters, onFiltersChange, className }: TaskFiltersProps) {
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+export const TaskFilters = memo(function TaskFilters({
+  filters,
+  onFiltersChange,
+  className,
+}: TaskFiltersProps) {
+  const [localSearch, setLocalSearch] = useState(filters.search || '');
+  const debouncedSearch = useDebounce(localSearch, 300);
   const { data: clientsData } = useClients();
   const { data: employeesData } = useEmployees();
 
   const form = useForm<FilterFormData>({
     defaultValues: {
       search: filters.search || '',
-      status: filters.status || 'all',
-      priority: filters.priority || 'all',
-      assigneeId: filters.assigneeId || 'all',
-      clientId: filters.clientId || 'all',
+      status: fromFilterValue(filters.status),
+      priority: fromFilterValue(filters.priority),
+      assigneeId: fromFilterValue(filters.assigneeId),
+      clientId: fromFilterValue(filters.clientId),
       dueDateFrom: filters.dueDateFrom ? new Date(filters.dueDateFrom) : undefined,
       dueDateTo: filters.dueDateTo ? new Date(filters.dueDateTo) : undefined,
     },
@@ -78,27 +79,30 @@ export function TaskFilters({ filters, onFiltersChange, className }: TaskFilters
     );
   }, [filters]);
 
-  const handleSearchChange = (value: string) => {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
+  // Use refs to avoid stale closures while keeping effect deps minimal
+  const filtersRef = useRef(filters);
+  const onFiltersChangeRef = useRef(onFiltersChange);
+
+  // Update refs in effect to be React Compiler compliant
+  useEffect(() => {
+    filtersRef.current = filters;
+    onFiltersChangeRef.current = onFiltersChange;
+  });
+
+  // Sync debounced search value to filters
+  useEffect(() => {
+    const searchValue = debouncedSearch || undefined;
+    if (searchValue !== filtersRef.current.search) {
+      onFiltersChangeRef.current({ ...filtersRef.current, search: searchValue });
     }
-
-    const timeout = setTimeout(() => {
-      onFiltersChange({ ...filters, search: value || undefined });
-    }, 300);
-
-    setSearchTimeout(timeout);
-  };
+  }, [debouncedSearch]);
 
   const handleSelectChange = (field: keyof TaskFiltersDto, value: string) => {
-    const newValue = value === 'all' ? undefined : value;
+    const newValue = toFilterValue(value);
     onFiltersChange({ ...filters, [field]: newValue });
   };
 
-  const handleDateChange = (
-    field: 'dueDateFrom' | 'dueDateTo',
-    date: Date | undefined
-  ) => {
+  const handleDateChange = (field: 'dueDateFrom' | 'dueDateTo', date: Date | undefined) => {
     onFiltersChange({
       ...filters,
       [field]: date ? format(date, 'yyyy-MM-dd') : undefined,
@@ -106,32 +110,25 @@ export function TaskFilters({ filters, onFiltersChange, className }: TaskFilters
   };
 
   const clearFilters = () => {
+    setLocalSearch('');
     form.reset({
       search: '',
-      status: 'all',
-      priority: 'all',
-      assigneeId: 'all',
-      clientId: 'all',
+      status: ALL_FILTER_VALUE,
+      priority: ALL_FILTER_VALUE,
+      assigneeId: ALL_FILTER_VALUE,
+      clientId: ALL_FILTER_VALUE,
       dueDateFrom: undefined,
       dueDateTo: undefined,
     });
     onFiltersChange({});
   };
 
-  useEffect(() => {
-    return () => {
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
-      }
-    };
-  }, [searchTimeout]);
-
   return (
     <Form {...form}>
       <div className={cn('flex flex-wrap items-center gap-2', className)}>
         {/* Search */}
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative max-w-sm min-w-[200px] flex-1">
+          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <FormField
             control={form.control}
             name="search"
@@ -141,10 +138,11 @@ export function TaskFilters({ filters, onFiltersChange, className }: TaskFilters
                   <Input
                     placeholder="Szukaj zadań..."
                     className="pl-9"
-                    {...field}
+                    value={localSearch}
                     onChange={(e) => {
-                      field.onChange(e);
-                      handleSearchChange(e.target.value);
+                      const value = e.target.value;
+                      field.onChange(value);
+                      setLocalSearch(value);
                     }}
                   />
                 </FormControl>
@@ -172,7 +170,7 @@ export function TaskFilters({ filters, onFiltersChange, className }: TaskFilters
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="all">Wszystkie</SelectItem>
+                  <SelectItem value={ALL_FILTER_VALUE}>Wszystkie</SelectItem>
                   {Object.entries(TaskStatusLabels).map(([value, label]) => (
                     <SelectItem key={value} value={value}>
                       {label}
@@ -203,7 +201,7 @@ export function TaskFilters({ filters, onFiltersChange, className }: TaskFilters
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="all">Wszystkie</SelectItem>
+                  <SelectItem value={ALL_FILTER_VALUE}>Wszystkie</SelectItem>
                   {Object.entries(TaskPriorityLabels).map(([value, label]) => (
                     <SelectItem key={value} value={value}>
                       {label}
@@ -234,7 +232,7 @@ export function TaskFilters({ filters, onFiltersChange, className }: TaskFilters
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="all">Wszyscy</SelectItem>
+                  <SelectItem value={ALL_FILTER_VALUE}>Wszyscy</SelectItem>
                   {employees.map((emp) => (
                     <SelectItem key={emp.id} value={emp.id}>
                       {emp.firstName} {emp.lastName}
@@ -265,7 +263,7 @@ export function TaskFilters({ filters, onFiltersChange, className }: TaskFilters
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="all">Wszyscy</SelectItem>
+                  <SelectItem value={ALL_FILTER_VALUE}>Wszyscy</SelectItem>
                   {clients.map((client) => (
                     <SelectItem key={client.id} value={client.id}>
                       {client.name}
@@ -294,9 +292,7 @@ export function TaskFilters({ filters, onFiltersChange, className }: TaskFilters
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {field.value
-                        ? format(field.value, 'd MMM', { locale: pl })
-                        : 'Od'}
+                      {field.value ? format(field.value, 'd MMM', { locale: pl }) : 'Od'}
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
@@ -309,6 +305,7 @@ export function TaskFilters({ filters, onFiltersChange, className }: TaskFilters
                       handleDateChange('dueDateFrom', date);
                     }}
                     locale={pl}
+                    fixedWeeks
                   />
                 </PopoverContent>
               </Popover>
@@ -334,9 +331,7 @@ export function TaskFilters({ filters, onFiltersChange, className }: TaskFilters
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {field.value
-                        ? format(field.value, 'd MMM', { locale: pl })
-                        : 'Do'}
+                      {field.value ? format(field.value, 'd MMM', { locale: pl }) : 'Do'}
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
@@ -349,6 +344,7 @@ export function TaskFilters({ filters, onFiltersChange, className }: TaskFilters
                       handleDateChange('dueDateTo', date);
                     }}
                     locale={pl}
+                    fixedWeeks
                   />
                 </PopoverContent>
               </Popover>
@@ -359,11 +355,11 @@ export function TaskFilters({ filters, onFiltersChange, className }: TaskFilters
         {/* Clear filters */}
         {hasActiveFilters && (
           <Button variant="ghost" size="sm" onClick={clearFilters}>
-            <X className="h-4 w-4 mr-1" />
+            <X className="mr-1 h-4 w-4" />
             Wyczyść
           </Button>
         )}
       </div>
     </Form>
   );
-}
+});

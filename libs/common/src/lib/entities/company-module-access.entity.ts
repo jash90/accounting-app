@@ -1,12 +1,13 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
   CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
   Unique,
 } from 'typeorm';
+
 import { Company } from './company.entity';
 import { Module } from './module.entity';
 
@@ -16,7 +17,7 @@ export class CompanyModuleAccess {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   companyId!: string;
 
   @ManyToOne(() => Company, (company) => company.moduleAccesses, {
@@ -25,7 +26,7 @@ export class CompanyModuleAccess {
   @JoinColumn({ name: 'companyId' })
   company!: Company;
 
-  @Column()
+  @Column({ type: 'uuid' })
   moduleId!: string;
 
   @ManyToOne(() => Module, (module) => module.companyAccesses, {
@@ -34,10 +35,9 @@ export class CompanyModuleAccess {
   @JoinColumn({ name: 'moduleId' })
   module!: Module;
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   isEnabled!: boolean;
 
   @CreateDateColumn()
   createdAt!: Date;
 }
-

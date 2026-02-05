@@ -1,25 +1,21 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-import {
-  Users,
-  UserCheck,
-  UserX,
-  TrendingUp,
-  Clock,
-  Activity,
-} from 'lucide-react';
+import { memo, useMemo } from 'react';
+
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import { Activity, Clock, TrendingUp, UserCheck, Users, UserX } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   EmploymentTypeLabels,
-  VatStatusLabels,
   TaxSchemeLabels,
+  VatStatusLabels,
   ZusStatusLabels,
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
+  type EmploymentType,
+  type TaxScheme,
+  type VatStatus,
+  type ZusStatus,
 } from '@/types/enums';
 
 interface RecentClient {
@@ -60,11 +56,72 @@ interface StatisticsDashboardProps {
   onClientClick?: (clientId: string) => void;
 }
 
-export function StatisticsDashboard({
+/** Action type labels - defined outside component to prevent recreation on each render */
+const ACTION_LABELS: Record<string, string> = {
+  CREATE: 'Utworzono',
+  UPDATE: 'Zaktualizowano',
+  DELETE: 'Usunięto',
+  RESTORE: 'Przywrócono',
+};
+
+/**
+ * Statistics dashboard component wrapped in memo() for performance.
+ * Only re-renders when statistics, isLoading, or onClientClick change.
+ */
+export const StatisticsDashboard = memo(function StatisticsDashboard({
   statistics,
   isLoading = false,
   onClientClick,
 }: StatisticsDashboardProps) {
+  // Memoize expensive array transforms to prevent recreation on every render
+  // These filter().sort().slice() chains would otherwise run 4 times per render
+  const byEmploymentType = statistics?.byEmploymentType;
+  const sortedEmploymentTypes = useMemo(
+    () =>
+      byEmploymentType
+        ? Object.entries(byEmploymentType)
+            .filter(([, count]) => count > 0)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 4)
+        : [],
+    [byEmploymentType]
+  );
+
+  const byVatStatus = statistics?.byVatStatus;
+  const sortedVatStatuses = useMemo(
+    () =>
+      byVatStatus
+        ? Object.entries(byVatStatus)
+            .filter(([, count]) => count > 0)
+            .sort(([, a], [, b]) => b - a)
+        : [],
+    [byVatStatus]
+  );
+
+  const byTaxScheme = statistics?.byTaxScheme;
+  const sortedTaxSchemes = useMemo(
+    () =>
+      byTaxScheme
+        ? Object.entries(byTaxScheme)
+            .filter(([, count]) => count > 0)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 4)
+        : [],
+    [byTaxScheme]
+  );
+
+  const byZusStatus = statistics?.byZusStatus;
+  const sortedZusStatuses = useMemo(
+    () =>
+      byZusStatus
+        ? Object.entries(byZusStatus)
+            .filter(([, count]) => count > 0)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 4)
+        : [],
+    [byZusStatus]
+  );
+
   if (isLoading) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -84,13 +141,6 @@ export function StatisticsDashboard({
 
   if (!statistics) return null;
 
-  const actionLabels: Record<string, string> = {
-    CREATE: 'Utworzono',
-    UPDATE: 'Zaktualizowano',
-    DELETE: 'Usunięto',
-    RESTORE: 'Przywrócono',
-  };
-
   return (
     <div className="space-y-6">
       {/* Main Stats */}
@@ -98,13 +148,11 @@ export function StatisticsDashboard({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Wszyscy klienci</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{statistics.total}</div>
-            <p className="text-xs text-muted-foreground">
-              W bazie danych
-            </p>
+            <p className="text-muted-foreground text-xs">W bazie danych</p>
           </CardContent>
         </Card>
 
@@ -115,8 +163,9 @@ export function StatisticsDashboard({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{statistics.active}</div>
-            <p className="text-xs text-muted-foreground">
-              {statistics.total > 0 ? Math.round((statistics.active / statistics.total) * 100) : 0}% wszystkich
+            <p className="text-muted-foreground text-xs">
+              {statistics.total > 0 ? Math.round((statistics.active / statistics.total) * 100) : 0}%
+              wszystkich
             </p>
           </CardContent>
         </Card>
@@ -128,9 +177,7 @@ export function StatisticsDashboard({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{statistics.inactive}</div>
-            <p className="text-xs text-muted-foreground">
-              Dezaktywowani
-            </p>
+            <p className="text-muted-foreground text-xs">Dezaktywowani</p>
           </CardContent>
         </Card>
 
@@ -141,7 +188,7 @@ export function StatisticsDashboard({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{statistics.addedLast30Days}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               W tym miesiącu: {statistics.addedThisMonth}
             </p>
           </CardContent>
@@ -156,20 +203,16 @@ export function StatisticsDashboard({
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {Object.entries(statistics.byEmploymentType)
-                .filter(([, count]) => count > 0)
-                .sort(([, a], [, b]) => b - a)
-                .slice(0, 4)
-                .map(([type, count]) => (
-                  <div key={type} className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {EmploymentTypeLabels[type as EmploymentType] || type}
-                    </span>
-                    <Badge variant="secondary">{count}</Badge>
-                  </div>
-                ))}
-              {Object.values(statistics.byEmploymentType).every((v) => v === 0) && (
-                <p className="text-sm text-muted-foreground">Brak danych</p>
+              {sortedEmploymentTypes.map(([type, count]) => (
+                <div key={type} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {EmploymentTypeLabels[type as EmploymentType] || type}
+                  </span>
+                  <Badge variant="secondary">{count}</Badge>
+                </div>
+              ))}
+              {sortedEmploymentTypes.length === 0 && (
+                <p className="text-muted-foreground text-sm">Brak danych</p>
               )}
             </div>
           </CardContent>
@@ -181,19 +224,16 @@ export function StatisticsDashboard({
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {Object.entries(statistics.byVatStatus)
-                .filter(([, count]) => count > 0)
-                .sort(([, a], [, b]) => b - a)
-                .map(([status, count]) => (
-                  <div key={status} className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {VatStatusLabels[status as VatStatus] || status}
-                    </span>
-                    <Badge variant="secondary">{count}</Badge>
-                  </div>
-                ))}
-              {Object.values(statistics.byVatStatus).every((v) => v === 0) && (
-                <p className="text-sm text-muted-foreground">Brak danych</p>
+              {sortedVatStatuses.map(([status, count]) => (
+                <div key={status} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {VatStatusLabels[status as VatStatus] || status}
+                  </span>
+                  <Badge variant="secondary">{count}</Badge>
+                </div>
+              ))}
+              {sortedVatStatuses.length === 0 && (
+                <p className="text-muted-foreground text-sm">Brak danych</p>
               )}
             </div>
           </CardContent>
@@ -205,20 +245,16 @@ export function StatisticsDashboard({
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {Object.entries(statistics.byTaxScheme)
-                .filter(([, count]) => count > 0)
-                .sort(([, a], [, b]) => b - a)
-                .slice(0, 4)
-                .map(([scheme, count]) => (
-                  <div key={scheme} className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground truncate mr-2">
-                      {TaxSchemeLabels[scheme as TaxScheme] || scheme}
-                    </span>
-                    <Badge variant="secondary">{count}</Badge>
-                  </div>
-                ))}
-              {Object.values(statistics.byTaxScheme).every((v) => v === 0) && (
-                <p className="text-sm text-muted-foreground">Brak danych</p>
+              {sortedTaxSchemes.map(([scheme, count]) => (
+                <div key={scheme} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground mr-2 truncate">
+                    {TaxSchemeLabels[scheme as TaxScheme] || scheme}
+                  </span>
+                  <Badge variant="secondary">{count}</Badge>
+                </div>
+              ))}
+              {sortedTaxSchemes.length === 0 && (
+                <p className="text-muted-foreground text-sm">Brak danych</p>
               )}
             </div>
           </CardContent>
@@ -230,20 +266,16 @@ export function StatisticsDashboard({
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {Object.entries(statistics.byZusStatus)
-                .filter(([, count]) => count > 0)
-                .sort(([, a], [, b]) => b - a)
-                .slice(0, 4)
-                .map(([status, count]) => (
-                  <div key={status} className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {ZusStatusLabels[status as ZusStatus] || status}
-                    </span>
-                    <Badge variant="secondary">{count}</Badge>
-                  </div>
-                ))}
-              {Object.values(statistics.byZusStatus).every((v) => v === 0) && (
-                <p className="text-sm text-muted-foreground">Brak danych</p>
+              {sortedZusStatuses.map(([status, count]) => (
+                <div key={status} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {ZusStatusLabels[status as ZusStatus] || status}
+                  </span>
+                  <Badge variant="secondary">{count}</Badge>
+                </div>
+              ))}
+              {sortedZusStatuses.length === 0 && (
+                <p className="text-muted-foreground text-sm">Brak danych</p>
               )}
             </div>
           </CardContent>
@@ -256,23 +288,31 @@ export function StatisticsDashboard({
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Ostatnio dodani</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <Clock className="text-muted-foreground h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {statistics.recentlyAdded.slice(0, 5).map((client) => (
                   <div
                     key={client.id}
-                    className="flex items-center justify-between text-sm cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded"
+                    role="button"
+                    tabIndex={0}
+                    className="hover:bg-muted/50 -mx-2 flex cursor-pointer items-center justify-between rounded px-2 py-1 text-sm"
                     onClick={() => onClientClick?.(client.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onClientClick?.(client.id);
+                      }
+                    }}
                   >
                     <div>
                       <p className="font-medium">{client.name}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-muted-foreground text-xs">
                         {client.nip || client.email || 'Brak danych kontaktowych'}
                       </p>
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       {format(new Date(client.createdAt), 'd MMM', { locale: pl })}
                     </span>
                   </div>
@@ -286,24 +326,32 @@ export function StatisticsDashboard({
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Ostatnia aktywność</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
+              <Activity className="text-muted-foreground h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {statistics.recentActivity.slice(0, 5).map((activity) => (
                   <div
                     key={activity.id}
-                    className="flex items-center justify-between text-sm cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded"
+                    role="button"
+                    tabIndex={0}
+                    className="hover:bg-muted/50 -mx-2 flex cursor-pointer items-center justify-between rounded px-2 py-1 text-sm"
                     onClick={() => onClientClick?.(activity.entityId)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onClientClick?.(activity.entityId);
+                      }
+                    }}
                   >
                     <div>
                       <p className="font-medium">{activity.entityName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {actionLabels[activity.action] || activity.action}
+                      <p className="text-muted-foreground text-xs">
+                        {ACTION_LABELS[activity.action] || activity.action}
                         {activity.changedByName && ` przez ${activity.changedByName}`}
                       </p>
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       {format(new Date(activity.createdAt), 'd MMM HH:mm', { locale: pl })}
                     </span>
                   </div>
@@ -315,4 +363,4 @@ export function StatisticsDashboard({
       </div>
     </div>
   );
-}
+});

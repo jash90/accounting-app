@@ -1,16 +1,21 @@
-import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+
+import * as bcrypt from 'bcryptjs';
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
-import { User, UserRole, Company } from '@accounting/common';
+
+import { Company, User, UserRole } from '@accounting/common';
+import { EmailConfigurationService, EmailSenderService } from '@accounting/email';
 import { EmailService } from '@accounting/infrastructure/email';
-import { EmailSenderService, EmailConfigurationService } from '@accounting/email';
+
 import { CreateEmployeeDto } from '../dto/create-employee.dto';
 import { UpdateEmployeeDto } from '../dto/update-employee.dto';
 
 @Injectable()
 export class CompanyService {
   private readonly logger = new Logger(CompanyService.name);
+  private readonly frontendUrl: string;
 
   constructor(
     @InjectRepository(User)
@@ -20,7 +25,14 @@ export class CompanyService {
     private emailService: EmailService,
     private emailSenderService: EmailSenderService,
     private emailConfigService: EmailConfigurationService,
-  ) {}
+    private configService: ConfigService
+  ) {
+    // Use FRONTEND_URL env var, fallback to CORS_ORIGINS first value, or localhost
+    this.frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') ||
+      this.configService.get<string>('CORS_ORIGINS')?.split(',')[0]?.trim() ||
+      'http://localhost:4200';
+  }
 
   // Employee Management
   async getEmployees(companyId: string) {
@@ -45,7 +57,7 @@ export class CompanyService {
   async createEmployee(
     companyId: string,
     createEmployeeDto: CreateEmployeeDto,
-    creatorName?: string,
+    creatorName?: string
   ) {
     const existingUser = await this.userRepository.findOne({
       where: { email: createEmployeeDto.email },
@@ -76,7 +88,7 @@ export class CompanyService {
   private async sendUserCreatedNotification(
     companyId: string,
     newUser: User,
-    creatorName?: string,
+    creatorName?: string
   ) {
     try {
       const company = await this.companyRepository.findOne({
@@ -90,10 +102,13 @@ export class CompanyService {
       }
 
       // Get company email configuration (SMTP + IMAP for save to Sent)
-      const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(companyId);
+      const emailConfig =
+        await this.emailConfigService.getDecryptedEmailConfigByCompanyId(companyId);
 
       if (!emailConfig) {
-        this.logger.warn(`No email configuration for company. Skipping employee creation notifications.`);
+        this.logger.warn(
+          `No email configuration for company. Skipping employee creation notifications.`
+        );
         return;
       }
 
@@ -111,15 +126,11 @@ export class CompanyService {
           <p>Pracownik został poinformowany i może teraz zalogować się do systemu.</p>
         `;
 
-        await this.emailSenderService.sendEmailAndSave(
-          emailConfig.smtp,
-          emailConfig.imap,
-          {
-            to: company.owner.email,
-            subject: `Nowy pracownik: ${newUser.firstName} ${newUser.lastName}`,
-            html: ownerNotificationHtml,
-          },
-        );
+        await this.emailSenderService.sendEmailAndSave(emailConfig.smtp, emailConfig.imap, {
+          to: company.owner.email,
+          subject: `Nowy pracownik: ${newUser.firstName} ${newUser.lastName}`,
+          html: ownerNotificationHtml,
+        });
 
         this.logger.log(`Owner notification sent and saved to Sent`);
       }
@@ -133,19 +144,15 @@ export class CompanyService {
           <li><strong>Email:</strong> ${newUser.email}</li>
           <li><strong>Hasło:</strong> (ustalone podczas rejestracji)</li>
         </ul>
-        <p>Możesz zalogować się tutaj: <a href="http://localhost:4200/login">http://localhost:4200/login</a></p>
+        <p>Możesz zalogować się tutaj: <a href="${this.frontendUrl}/login">${this.frontendUrl}/login</a></p>
         <p>Pozdrawiamy,<br><strong>${company.name}</strong></p>
       `;
 
-      await this.emailSenderService.sendEmailAndSave(
-        emailConfig.smtp,
-        emailConfig.imap,
-        {
-          to: newUser.email,
-          subject: `Witaj w ${company.name}!`,
-          html: employeeWelcomeHtml,
-        },
-      );
+      await this.emailSenderService.sendEmailAndSave(emailConfig.smtp, emailConfig.imap, {
+        to: newUser.email,
+        subject: `Witaj w ${company.name}!`,
+        html: employeeWelcomeHtml,
+      });
 
       this.logger.log(`Employee welcome email sent and saved to Sent for user ${newUser.id}`);
       this.logger.log(`All user creation notifications sent successfully (owner + employee)`);
@@ -156,7 +163,11 @@ export class CompanyService {
     }
   }
 
-  async updateEmployee(companyId: string, employeeId: string, updateEmployeeDto: UpdateEmployeeDto) {
+  async updateEmployee(
+    companyId: string,
+    employeeId: string,
+    updateEmployeeDto: UpdateEmployeeDto
+  ) {
     const employee = await this.getEmployeeById(companyId, employeeId);
 
     if (updateEmployeeDto.email && updateEmployeeDto.email !== employee.email) {
@@ -194,4 +205,3 @@ export class CompanyService {
     return company;
   }
 }
-

@@ -1,32 +1,34 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { ColumnDef } from '@tanstack/react-table';
+import { lazy, Suspense, useCallback, useMemo, useState, useTransition } from 'react';
+
 import { useNavigate, useSearchParams } from 'react-router-dom';
+
+import { type ColumnDef } from '@tanstack/react-table';
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
 import {
-  useTasks,
-  useCreateTask,
-  useUpdateTask,
-  useDeleteTask,
-  useBulkUpdateStatus,
-} from '@/lib/hooks/use-tasks';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import { PageHeader } from '@/components/common/page-header';
+  ArrowLeft,
+  Calendar,
+  CheckSquare,
+  Edit,
+  GanttChartSquare,
+  LayoutGrid,
+  List,
+  MoreHorizontal,
+  Plus,
+  Trash2,
+} from 'lucide-react';
+
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { DataTable } from '@/components/common/data-table';
+import { PageHeader } from '@/components/common/page-header';
+import { TaskFilters } from '@/components/tasks/task-filters';
+import { TaskLabelList } from '@/components/tasks/task-label-badge';
+import { TaskPriorityBadge } from '@/components/tasks/task-priority-badge';
+import { TaskStatusBadge } from '@/components/tasks/task-status-badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Plus,
-  Edit,
-  Trash2,
-  CheckSquare,
-  MoreHorizontal,
-  ArrowLeft,
-  List,
-  LayoutGrid,
-  Calendar,
-  GanttChartSquare,
-} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,29 +36,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  TaskResponseDto,
-  CreateTaskDto,
-  UpdateTaskDto,
-  TaskFiltersDto,
-} from '@/types/dtos';
-import {
-  TaskStatus,
-  TaskStatusLabels,
-  UserRole,
-} from '@/types/enums';
-import {
-  TaskStatusBadge,
-  TaskPriorityBadge,
-  TaskLabelList,
-  TaskFormDialog,
-} from '@/components/tasks';
-import { TaskFilters } from '@/components/tasks/task-filters';
-import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthContext } from '@/contexts/auth-context';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import {
+  useBulkUpdateStatus,
+  useCreateTask,
+  useDeleteTask,
+  useTasks,
+  useUpdateTask,
+} from '@/lib/hooks/use-tasks';
+import { mapTaskLabels } from '@/lib/utils/task-label-mapper';
+import {
+  type CreateTaskDto,
+  type TaskFiltersDto,
+  type TaskResponseDto,
+  type UpdateTaskDto,
+} from '@/types/dtos';
+import { TaskStatusLabels, UserRole, type TaskStatus } from '@/types/enums';
 
+// Lazy-load heavy form dialog (547 lines) - direct import for tree-shaking
+const TaskFormDialog = lazy(() =>
+  import('@/components/tasks/task-form-dialog').then((m) => ({
+    default: m.TaskFormDialog,
+  }))
+);
 export default function TasksListPage() {
   const { user } = useAuthContext();
   const navigate = useNavigate();
@@ -64,7 +68,8 @@ export default function TasksListPage() {
 
   const { hasWritePermission, hasDeletePermission } = useModulePermissions('tasks');
 
-  const getBasePath = () => {
+  // Memoize basePath to prevent recalculation on every render
+  const basePath = useMemo(() => {
     switch (user?.role) {
       case UserRole.ADMIN:
         return '/admin/modules/tasks';
@@ -73,52 +78,88 @@ export default function TasksListPage() {
       default:
         return '/modules/tasks';
     }
-  };
-
-  const basePath = getBasePath();
+  }, [user?.role]);
 
   const [filters, setFilters] = useState<TaskFiltersDto>({});
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
   const { data: tasksResponse, isPending } = useTasks(filters);
-  const tasks = tasksResponse?.data ?? [];
+  const tasks = useMemo(() => tasksResponse?.data ?? [], [tasksResponse?.data]);
 
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const bulkUpdateStatus = useBulkUpdateStatus();
+  const [isBulkPending, startBulkTransition] = useTransition();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskResponseDto | null>(null);
   const [deletingTask, setDeletingTask] = useState<TaskResponseDto | null>(null);
 
   // Handle taskId from URL (from calendar/timeline navigation)
-  useEffect(() => {
-    const taskId = searchParams.get('taskId');
-    if (taskId && tasks.length > 0) {
-      const task = tasks.find((t) => t.id === taskId);
-      if (task) {
-        setEditingTask(task);
-        // Clear the URL param after opening the modal
-        setSearchParams({}, { replace: true });
-      }
-    }
-  }, [searchParams, tasks, setSearchParams]);
+  // Derive the task to edit from URL param
+  const taskIdFromUrl = searchParams.get('taskId');
+  const taskFromUrl = useMemo(() => {
+    if (!taskIdFromUrl || tasks.length === 0) return null;
+    return tasks.find((t) => t.id === taskIdFromUrl) || null;
+  }, [taskIdFromUrl, tasks]);
+
+  // The active editing task is either from local state or derived from URL
+  const activeEditingTask = editingTask || taskFromUrl;
 
   const handleFiltersChange = useCallback((newFilters: TaskFiltersDto) => {
     setFilters(newFilters);
   }, []);
 
   const handleRowSelection = useCallback((taskId: string, selected: boolean) => {
-    setSelectedTasks((prev) =>
-      selected ? [...prev, taskId] : prev.filter((id) => id !== taskId)
-    );
+    setSelectedTasks((prev) => (selected ? [...prev, taskId] : prev.filter((id) => id !== taskId)));
   }, []);
 
-  const handleBulkStatusChange = async (status: TaskStatus) => {
-    if (selectedTasks.length === 0) return;
-    await bulkUpdateStatus.mutateAsync({ taskIds: selectedTasks, status });
-    setSelectedTasks([]);
-  };
+  const handleSelectAll = useCallback(
+    (selected: boolean) => {
+      if (selected) {
+        setSelectedTasks(tasks.map((t) => t.id));
+      } else {
+        setSelectedTasks([]);
+      }
+    },
+    [tasks]
+  );
+
+  // Memoized submit handlers to avoid recreating on each render
+  const handleCreateSubmit = useCallback(
+    async (data: CreateTaskDto | UpdateTaskDto) => {
+      await createTask.mutateAsync(data as CreateTaskDto);
+    },
+    [createTask]
+  );
+
+  const handleUpdateSubmit = useCallback(
+    async (data: UpdateTaskDto) => {
+      if (!activeEditingTask) return;
+      await updateTask.mutateAsync({
+        id: activeEditingTask.id,
+        data,
+      });
+      setEditingTask(null);
+      if (taskIdFromUrl) {
+        setSearchParams({}, { replace: true });
+      }
+    },
+    [updateTask, activeEditingTask, taskIdFromUrl, setSearchParams]
+  );
+
+  const handleBulkStatusChange = useCallback(
+    (status: TaskStatus) => {
+      if (selectedTasks.length === 0) return;
+      startBulkTransition(() => {
+        bulkUpdateStatus.mutate(
+          { taskIds: selectedTasks, status },
+          { onSuccess: () => setSelectedTasks([]) }
+        );
+      });
+    },
+    [selectedTasks, bulkUpdateStatus]
+  );
 
   const getInitials = (firstName?: string, lastName?: string) => {
     const first = firstName?.charAt(0) || '';
@@ -138,21 +179,18 @@ export default function TasksListPage() {
             }
             onCheckedChange={(value) => {
               table.toggleAllPageRowsSelected(!!value);
-              if (value) {
-                setSelectedTasks(tasks.map((t) => t.id));
-              } else {
-                setSelectedTasks([]);
-              }
+              handleSelectAll(!!value);
             }}
             aria-label="Zaznacz wszystkie"
           />
         ),
         cell: ({ row }) => (
           <Checkbox
-            checked={selectedTasks.includes(row.original.id)}
-            onCheckedChange={(value) =>
-              handleRowSelection(row.original.id, !!value)
-            }
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => {
+              row.toggleSelected(!!value);
+              handleRowSelection(row.original.id, !!value);
+            }}
             aria-label="Zaznacz wiersz"
             onClick={(e) => e.stopPropagation()}
           />
@@ -166,11 +204,7 @@ export default function TasksListPage() {
           <div className="flex flex-col gap-1">
             <span className="font-medium">{row.original.title}</span>
             {row.original.labels && row.original.labels.length > 0 && (
-              <TaskLabelList
-                labels={row.original.labels.map((la) => la.label).filter(Boolean) as any}
-                size="sm"
-                maxVisible={2}
-              />
+              <TaskLabelList labels={mapTaskLabels(row.original.labels)} size="sm" maxVisible={2} />
             )}
           </div>
         ),
@@ -183,9 +217,7 @@ export default function TasksListPage() {
       {
         accessorKey: 'priority',
         header: 'Priorytet',
-        cell: ({ row }) => (
-          <TaskPriorityBadge priority={row.original.priority} size="sm" />
-        ),
+        cell: ({ row }) => <TaskPriorityBadge priority={row.original.priority} size="sm" />,
       },
       {
         accessorKey: 'dueDate',
@@ -194,10 +226,9 @@ export default function TasksListPage() {
           const dueDate = row.original.dueDate;
           if (!dueDate) return <span className="text-muted-foreground">-</span>;
 
-          const isOverdue =
-            new Date(dueDate) < new Date() && row.original.status !== 'done';
+          const isOverdue = new Date(dueDate) < new Date() && row.original.status !== 'done';
           return (
-            <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
+            <span className={isOverdue ? 'font-medium text-red-600' : ''}>
               {format(new Date(dueDate), 'd MMM yyyy', { locale: pl })}
             </span>
           );
@@ -228,7 +259,7 @@ export default function TasksListPage() {
         accessorKey: 'client',
         header: 'Klient',
         cell: ({ row }) => (
-          <span className="text-sm truncate max-w-[150px] block">
+          <span className="block max-w-[150px] truncate text-sm">
             {row.original.client?.name || '-'}
           </span>
         ),
@@ -279,7 +310,7 @@ export default function TasksListPage() {
         },
       },
     ],
-    [selectedTasks, tasks, hasWritePermission, hasDeletePermission, handleRowSelection]
+    [hasWritePermission, hasDeletePermission, handleRowSelection, handleSelectAll]
   );
 
   return (
@@ -296,29 +327,17 @@ export default function TasksListPage() {
         description="Zarządzaj zadaniami - widok listy"
         icon={<CheckSquare className="h-6 w-6" />}
         titleAction={
-          <div className="flex items-center gap-1 border rounded-lg p-1">
+          <div className="flex items-center gap-1 rounded-lg border p-1">
             <Button variant="ghost" size="sm" className="bg-accent">
               <List className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/kanban`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/kanban`)}>
               <LayoutGrid className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/calendar`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/calendar`)}>
               <Calendar className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`${basePath}/timeline`)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate(`${basePath}/timeline`)}>
               <GanttChartSquare className="h-4 w-4" />
             </Button>
           </div>
@@ -339,18 +358,18 @@ export default function TasksListPage() {
       {selectedTasks.length > 0 && (
         <Card>
           <CardContent className="flex items-center justify-between py-3">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-muted-foreground text-sm">
               Zaznaczono {selectedTasks.length} zadań
             </span>
             <div className="flex items-center gap-2">
-              <span className="text-sm mr-2">Zmień status na:</span>
+              <span className="mr-2 text-sm">Zmień status na:</span>
               {Object.entries(TaskStatusLabels).map(([value, label]) => (
                 <Button
                   key={value}
                   variant="outline"
                   size="sm"
                   onClick={() => handleBulkStatusChange(value as TaskStatus)}
-                  disabled={bulkUpdateStatus.isPending}
+                  disabled={bulkUpdateStatus.isPending || isBulkPending}
                 >
                   {label}
                 </Button>
@@ -373,29 +392,61 @@ export default function TasksListPage() {
 
       {hasWritePermission && (
         <>
-          <TaskFormDialog
-            open={createOpen}
-            onOpenChange={setCreateOpen}
-            onSubmit={async (data) => {
-              await createTask.mutateAsync(data as CreateTaskDto);
-            }}
-            isLoading={createTask.isPending}
-          />
+          {createOpen && (
+            <Suspense
+              fallback={
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                  <Card>
+                    <CardContent className="space-y-4 p-6">
+                      <Skeleton className="h-6 w-48" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-20 w-full" />
+                    </CardContent>
+                  </Card>
+                </div>
+              }
+            >
+              <TaskFormDialog
+                open={createOpen}
+                onOpenChange={setCreateOpen}
+                onSubmit={handleCreateSubmit}
+                isLoading={createTask.isPending}
+              />
+            </Suspense>
+          )}
 
-          {editingTask && (
-            <TaskFormDialog
-              open={!!editingTask}
-              onOpenChange={(open) => !open && setEditingTask(null)}
-              task={editingTask}
-              onSubmit={async (data) => {
-                await updateTask.mutateAsync({
-                  id: editingTask.id,
-                  data: data as UpdateTaskDto,
-                });
-                setEditingTask(null);
-              }}
-              isLoading={updateTask.isPending}
-            />
+          {activeEditingTask && (
+            <Suspense
+              fallback={
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                  <Card>
+                    <CardContent className="space-y-4 p-6">
+                      <Skeleton className="h-6 w-48" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-20 w-full" />
+                    </CardContent>
+                  </Card>
+                </div>
+              }
+            >
+              <TaskFormDialog
+                open={!!activeEditingTask}
+                onOpenChange={(open) => {
+                  if (!open) {
+                    setEditingTask(null);
+                    // Clear URL param if present
+                    if (taskIdFromUrl) {
+                      setSearchParams({}, { replace: true });
+                    }
+                  }
+                }}
+                task={activeEditingTask}
+                onSubmit={handleUpdateSubmit}
+                isLoading={updateTask.isPending}
+              />
+            </Suspense>
           )}
         </>
       )}
