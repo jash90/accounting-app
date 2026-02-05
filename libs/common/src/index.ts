@@ -25,6 +25,9 @@ export * from './lib/enums/relief-type.enum';
 // Constants
 export * from './lib/constants';
 
+// Utils
+export * from './lib/utils/database-errors';
+
 // Types
 export * from './lib/types';
 
@@ -89,3 +92,8 @@ export * from './lib/dto/pagination.dto';
 
 // Re-export TenantService type for type-only imports in frontend if needed
 export type { TenantService } from './lib/services/tenant.service';
+
+// Re-export SystemCompanyService type for type-only imports in frontend if needed
+// NOTE: SystemCompanyService is NOT exported as a value to prevent Node.js dependencies in browser bundles.
+// Import directly in backend code from '@accounting/common/backend' or from CommonModule.
+export type { SystemCompanyService } from './lib/services/system-company.service';
