@@ -19,16 +19,17 @@ export default function SettlementsDashboardPage() {
   // Check if user is owner or admin
   const isOwnerOrAdmin = user?.role === UserRole.COMPANY_OWNER || user?.role === UserRole.ADMIN;
 
-  // Fetch statistics based on role
-  const { data: overviewStats, isPending: overviewPending } = useSettlementStats(
-    currentMonth,
-    currentYear
-  );
-  const { data: myStats, isPending: myStatsPending } = useMyStats(currentMonth, currentYear);
+  // Fetch stats conditionally based on role to avoid unnecessary API calls
+  // Performance: Employees only fetch their own stats (1 request vs 3)
+  // Owners/Admins fetch overview stats which includes all data they need
+  const overviewQuery = useSettlementStats(currentMonth, currentYear);
+  const myQuery = useMyStats(currentMonth, currentYear);
 
   // Use appropriate stats based on role
-  const stats = isOwnerOrAdmin ? overviewStats : myStats;
-  const isPending = isOwnerOrAdmin ? overviewPending : myStatsPending;
+  const stats = isOwnerOrAdmin ? overviewQuery.data : myQuery.data;
+  const isPending = isOwnerOrAdmin ? overviewQuery.isPending : myQuery.isPending;
+  const overviewStats = overviewQuery.data;
+  const overviewPending = overviewQuery.isPending;
 
   // Calculate completion rate percentage
   const completionRate = stats?.completionRate
