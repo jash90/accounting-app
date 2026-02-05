@@ -260,9 +260,8 @@ describe('AutoAssignService', () => {
     it('should do nothing when no icons with conditions exist', async () => {
       const client = createMockClient();
 
-      // First call: find icons with conditions - returns empty
-      // Second call: removeStaleAutoAssignments - returns empty
-      entityManager.find.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+      // Mock find to return empty arrays for both calls (icons and assignments)
+      entityManager.find.mockResolvedValue([]);
 
       await service.evaluateAndAssign(client);
 
@@ -298,10 +297,13 @@ describe('AutoAssignService', () => {
       };
       (entityManager.getRepository as jest.Mock).mockReturnValue(mockRepoQb);
 
-      // First find: icons with conditions
-      entityManager.find
-        .mockResolvedValueOnce([icon]) // Icons with conditions
-        .mockResolvedValueOnce([]); // Current auto-assignments
+      // Mock find to return icon on first call (icons query) and empty array for assignments
+      let findCallCount = 0;
+      entityManager.find.mockImplementation(() => {
+        findCallCount++;
+        if (findCallCount === 1) return Promise.resolve([icon]); // Icons with conditions
+        return Promise.resolve([]); // Current auto-assignments
+      });
 
       conditionEvaluator.evaluate.mockReturnValue(true);
 
@@ -344,7 +346,13 @@ describe('AutoAssignService', () => {
       };
       (entityManager.getRepository as jest.Mock).mockReturnValue(mockRepoQb);
 
-      entityManager.find.mockResolvedValueOnce([icon]).mockResolvedValueOnce([]);
+      // Mock find to return icon on first call, empty array for assignments
+      let findCallCount = 0;
+      entityManager.find.mockImplementation(() => {
+        findCallCount++;
+        if (findCallCount === 1) return Promise.resolve([icon]); // Icons with conditions
+        return Promise.resolve([]); // Current auto-assignments
+      });
 
       conditionEvaluator.evaluate.mockReturnValue(true);
 
@@ -382,8 +390,13 @@ describe('AutoAssignService', () => {
       };
       (entityManager.getRepository as jest.Mock).mockReturnValue(mockRepoQb);
 
-      // Icon exists and matches - existing auto-assignment exists for same icon
-      entityManager.find.mockResolvedValueOnce([icon]).mockResolvedValueOnce([existingAssignment]); // Current auto-assignment already exists
+      // Mock find to return icon and then existing assignment
+      let findCallCount = 0;
+      entityManager.find.mockImplementation(() => {
+        findCallCount++;
+        if (findCallCount === 1) return Promise.resolve([icon]); // Icons with conditions
+        return Promise.resolve([existingAssignment]); // Current auto-assignment already exists
+      });
 
       conditionEvaluator.evaluate.mockReturnValue(true);
 
@@ -419,7 +432,13 @@ describe('AutoAssignService', () => {
       };
       (entityManager.getRepository as jest.Mock).mockReturnValue(mockRepoQb);
 
-      entityManager.find.mockResolvedValueOnce([icon]).mockResolvedValueOnce([staleAssignment]); // Current assignments include stale one
+      // Mock find to return icon and then stale assignment
+      let findCallCount = 0;
+      entityManager.find.mockImplementation(() => {
+        findCallCount++;
+        if (findCallCount === 1) return Promise.resolve([icon]); // Icons with conditions
+        return Promise.resolve([staleAssignment]); // Current assignments include stale one
+      });
 
       // New icon matches, but stale one doesn't (different icon)
       conditionEvaluator.evaluate.mockReturnValue(true);
@@ -458,7 +477,13 @@ describe('AutoAssignService', () => {
       };
       (entityManager.getRepository as jest.Mock).mockReturnValue(mockRepoQb);
 
-      entityManager.find.mockResolvedValueOnce([icon1, icon2]).mockResolvedValueOnce([]);
+      // Mock find to return icons and then empty assignments
+      let findCallCount = 0;
+      entityManager.find.mockImplementation(() => {
+        findCallCount++;
+        if (findCallCount === 1) return Promise.resolve([icon1, icon2]); // Icons with conditions
+        return Promise.resolve([]); // Current auto-assignments
+      });
 
       // First icon throws error, second one succeeds
       conditionEvaluator.evaluate
@@ -478,7 +503,8 @@ describe('AutoAssignService', () => {
     it('should filter icons by companyId and isActive', async () => {
       const client = createMockClient();
 
-      entityManager.find.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+      // Mock find to return empty arrays for both icons and assignments queries
+      entityManager.find.mockResolvedValue([]);
 
       await service.evaluateAndAssign(client);
 
@@ -520,7 +546,13 @@ describe('AutoAssignService', () => {
       };
       (entityManager.getRepository as jest.Mock).mockReturnValue(mockRepoQb);
 
-      entityManager.find.mockResolvedValueOnce([icon1, icon2, icon3]).mockResolvedValueOnce([]);
+      // Mock find to return icons and then empty assignments
+      let findCallCount = 0;
+      entityManager.find.mockImplementation(() => {
+        findCallCount++;
+        if (findCallCount === 1) return Promise.resolve([icon1, icon2, icon3]); // Icons with conditions
+        return Promise.resolve([]); // Current auto-assignments
+      });
 
       // icon1 and icon3 match, icon2 doesn't
       conditionEvaluator.evaluate

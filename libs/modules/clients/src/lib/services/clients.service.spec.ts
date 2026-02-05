@@ -17,6 +17,7 @@ import {
 import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
+import { CLIENT_VALIDATION_MESSAGES } from '../constants';
 import { ClientNotFoundException } from '../exceptions';
 import { AutoAssignService } from './auto-assign.service';
 import { ClientChangelogService } from './client-changelog.service';
@@ -524,7 +525,7 @@ describe('ClientsService', () => {
       };
 
       await expect(service.create(dtoWithInvalidPkd, mockUser as User)).rejects.toThrow(
-        'Nieprawidłowy kod PKD'
+        CLIENT_VALIDATION_MESSAGES.INVALID_PKD_CODE
       );
     });
 
@@ -535,7 +536,7 @@ describe('ClientsService', () => {
       };
 
       await expect(service.create(dtoWithInvalidPkd, mockUser as User)).rejects.toThrow(
-        'Nieprawidłowy kod PKD'
+        CLIENT_VALIDATION_MESSAGES.INVALID_PKD_CODE
       );
     });
   });

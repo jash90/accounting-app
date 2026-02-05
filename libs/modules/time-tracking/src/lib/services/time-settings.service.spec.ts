@@ -116,11 +116,13 @@ describe('TimeSettingsService', () => {
     });
 
     it('should create default settings when not exists', async () => {
-      // First findOne returns null (no settings exist), second returns the created settings
-      settingsRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(mockSettings);
+      // Mock findOne to return null first (no settings exist), then return created settings
+      let findOneCallCount = 0;
+      settingsRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(null);
+        return Promise.resolve(mockSettings);
+      });
 
       const result = await service.getSettings(mockUser as User);
 
@@ -146,11 +148,13 @@ describe('TimeSettingsService', () => {
       };
       settingsRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
-      // First findOne returns null, second returns the default settings
-      settingsRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(mockSettings);
+      // Mock findOne to return null first (no settings), then return created settings
+      let findOneCallCount = 0;
+      settingsRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(null);
+        return Promise.resolve(mockSettings);
+      });
 
       await service.getSettings(mockUser as User);
 
@@ -242,11 +246,13 @@ describe('TimeSettingsService', () => {
     });
 
     it('should create settings if they do not exist', async () => {
-      // First findOne returns null, second returns the created settings, third for updateSettings
-      settingsRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(mockSettings);
+      // Mock findOne to return null first (no settings), then return created settings
+      let findOneCallCount = 0;
+      settingsRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(null);
+        return Promise.resolve(mockSettings);
+      });
       settingsRepository.save = jest.fn().mockImplementation((data) => data);
 
       await service.updateSettings(updateDto, mockOwner as User);
@@ -375,12 +381,15 @@ describe('TimeSettingsService', () => {
       };
       settingsRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
-      // First findOne returns null, second returns settings with differentCompanyId
+      // Use call counter pattern for robust mocking
+      // First findOne returns null (no settings), second returns created settings
       const createdSettings = { ...mockSettings, companyId: differentCompanyId };
-      settingsRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(createdSettings);
+      let findOneCallCount = 0;
+      settingsRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(null);
+        return Promise.resolve(createdSettings);
+      });
 
       await service.getSettings(mockUser as User);
 

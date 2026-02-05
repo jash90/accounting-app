@@ -415,11 +415,13 @@ describe('TimeEntriesService', () => {
       const existingEntry = { ...mockTimeEntry };
       const updatedEntry = { ...existingEntry, ...updateDto };
 
-      // First findOne is called outside transaction for validation
-      entryRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(existingEntry)
-        .mockResolvedValueOnce(updatedEntry);
+      // Mock findOne to return existing entry first, then updated entry after save
+      let findOneCallCount = 0;
+      entryRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(existingEntry);
+        return Promise.resolve(updatedEntry);
+      });
 
       // Transaction mock with entity manager
       const mockQueryBuilder = createMockQueryBuilder();
@@ -461,10 +463,13 @@ describe('TimeEntriesService', () => {
       const existingEntry = { ...mockTimeEntry };
       const updatedEntry = { ...existingEntry, ...updateDto };
 
-      entryRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(existingEntry)
-        .mockResolvedValueOnce(updatedEntry);
+      // Mock findOne to return existing entry first, then updated entry after save
+      let findOneCallCount = 0;
+      entryRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(existingEntry);
+        return Promise.resolve(updatedEntry);
+      });
 
       const mockQueryBuilder = createMockQueryBuilder();
       mockQueryBuilder.getOne = jest.fn().mockResolvedValue(existingEntry);
@@ -759,13 +764,16 @@ describe('TimeEntriesService', () => {
   describe('submitEntry', () => {
     it('should submit draft entry for approval', async () => {
       const draftEntry = { ...mockTimeEntry, status: TimeEntryStatus.DRAFT };
-      entryRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(draftEntry)
-        .mockResolvedValueOnce({ ...draftEntry, status: TimeEntryStatus.SUBMITTED });
-      entryRepository.save = jest
-        .fn()
-        .mockResolvedValue({ ...draftEntry, status: TimeEntryStatus.SUBMITTED });
+      const submittedEntry = { ...draftEntry, status: TimeEntryStatus.SUBMITTED };
+
+      // Mock findOne to return draft entry first, then submitted entry after save
+      let findOneCallCount = 0;
+      entryRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(draftEntry);
+        return Promise.resolve(submittedEntry);
+      });
+      entryRepository.save = jest.fn().mockResolvedValue(submittedEntry);
 
       const result = await service.submitEntry(mockEntryId, mockUser as User);
 
@@ -803,13 +811,16 @@ describe('TimeEntriesService', () => {
   describe('approveEntry', () => {
     it('should approve submitted entry', async () => {
       const submittedEntry = { ...mockTimeEntry, status: TimeEntryStatus.SUBMITTED };
-      entryRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(submittedEntry)
-        .mockResolvedValueOnce({ ...submittedEntry, status: TimeEntryStatus.APPROVED });
-      entryRepository.save = jest
-        .fn()
-        .mockResolvedValue({ ...submittedEntry, status: TimeEntryStatus.APPROVED });
+      const approvedEntry = { ...submittedEntry, status: TimeEntryStatus.APPROVED };
+
+      // Mock findOne to return submitted entry first, then approved entry after save
+      let findOneCallCount = 0;
+      entryRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(submittedEntry);
+        return Promise.resolve(approvedEntry);
+      });
+      entryRepository.save = jest.fn().mockResolvedValue(approvedEntry);
 
       const result = await service.approveEntry(mockEntryId, mockOwner as User);
 
@@ -835,13 +846,16 @@ describe('TimeEntriesService', () => {
   describe('rejectEntry', () => {
     it('should reject submitted entry with note', async () => {
       const submittedEntry = { ...mockTimeEntry, status: TimeEntryStatus.SUBMITTED };
-      entryRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(submittedEntry)
-        .mockResolvedValueOnce({ ...submittedEntry, status: TimeEntryStatus.REJECTED });
-      entryRepository.save = jest
-        .fn()
-        .mockResolvedValue({ ...submittedEntry, status: TimeEntryStatus.REJECTED });
+      const rejectedEntry = { ...submittedEntry, status: TimeEntryStatus.REJECTED };
+
+      // Use call counter pattern for robust mocking
+      let findOneCallCount = 0;
+      entryRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(submittedEntry);
+        return Promise.resolve(rejectedEntry);
+      });
+      entryRepository.save = jest.fn().mockResolvedValue(rejectedEntry);
 
       const result = await service.rejectEntry(
         mockEntryId,
@@ -998,11 +1012,13 @@ describe('TimeEntriesService', () => {
       const existingEntry = { ...mockTimeEntry };
       const updatedEntry = { ...existingEntry, startTime: new Date('2024-01-15T09:30:00Z') };
 
-      // First findOne for validation, second for return
-      entryRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(existingEntry)
-        .mockResolvedValueOnce(updatedEntry);
+      // Use call counter pattern for robust mocking
+      let findOneCallCount = 0;
+      entryRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(existingEntry);
+        return Promise.resolve(updatedEntry);
+      });
 
       const mockQueryBuilder = createMockQueryBuilder();
       mockQueryBuilder.getOne = jest.fn().mockResolvedValue(existingEntry);
@@ -1102,10 +1118,13 @@ describe('TimeEntriesService', () => {
       };
       const updatedEntry = { ...recentEntry, description: 'Updated' };
 
-      entryRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(recentEntry)
-        .mockResolvedValueOnce(updatedEntry);
+      // Use call counter pattern for robust mocking
+      let findOneCallCount = 0;
+      entryRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(recentEntry);
+        return Promise.resolve(updatedEntry);
+      });
 
       const mockQueryBuilder = createMockQueryBuilder();
       mockQueryBuilder.getOne = jest.fn().mockResolvedValue(recentEntry);
@@ -1152,10 +1171,13 @@ describe('TimeEntriesService', () => {
       };
       const updatedEntry = { ...oldEntry, description: 'Updated' };
 
-      entryRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(oldEntry)
-        .mockResolvedValueOnce(updatedEntry);
+      // Use call counter pattern for robust mocking
+      let findOneCallCount = 0;
+      entryRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(oldEntry);
+        return Promise.resolve(updatedEntry);
+      });
 
       const mockQueryBuilder = createMockQueryBuilder();
       mockQueryBuilder.getOne = jest.fn().mockResolvedValue(oldEntry);
