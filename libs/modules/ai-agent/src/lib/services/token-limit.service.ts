@@ -11,8 +11,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 
 import { Company, TokenLimit, User, UserRole } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
-import { SystemCompanyService } from './system-company.service';
 import { TokenUsageService } from './token-usage.service';
 import { SetTokenLimitDto } from '../dto/set-token-limit.dto';
 

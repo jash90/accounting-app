@@ -1,3 +1,4 @@
+
 import {
   BadRequestException,
   ConflictException,
@@ -12,8 +13,8 @@ import * as crypto from 'crypto';
 import { Repository } from 'typeorm';
 
 import { AIConfiguration, User, UserRole } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
-import { SystemCompanyService } from './system-company.service';
 import { CreateAIConfigurationDto } from '../dto/create-ai-configuration.dto';
 import { UpdateAIConfigurationDto } from '../dto/update-ai-configuration.dto';
 

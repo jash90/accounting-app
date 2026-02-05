@@ -7,9 +7,9 @@ import * as pdfParse from 'pdf-parse';
 import { Repository } from 'typeorm';
 
 import { AIContext, User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { OpenAIProviderService } from './openai-provider.service';
-import { SystemCompanyService } from './system-company.service';
 
 @Injectable()
 export class RAGService {
