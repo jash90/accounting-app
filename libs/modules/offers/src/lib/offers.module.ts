@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import {
@@ -19,6 +20,7 @@ import { RBACModule } from '@accounting/rbac';
 import { LeadsController } from './controllers/leads.controller';
 import { OfferTemplatesController } from './controllers/offer-templates.controller';
 import { OffersController } from './controllers/offers.controller';
+import { OfferActivityListener } from './listeners/offer-activity.listener';
 import { DocxGenerationService } from './services/docx-generation.service';
 import { LeadsService } from './services/leads.service';
 import { OfferActivityService } from './services/offer-activity.service';
@@ -39,6 +41,8 @@ import { OffersService } from './services/offers.service';
       User,
       EmailConfiguration,
     ]),
+    // EventEmitterModule is registered globally in app.module, but we import for type safety
+    EventEmitterModule.forRoot(),
     CommonModule,
     RBACModule,
     StorageModule,
@@ -51,6 +55,7 @@ import { OffersService } from './services/offers.service';
     OffersController,
   ],
   providers: [
+    // SystemCompanyService is provided by CommonModule
     LeadsService,
     OfferTemplatesService,
     OffersService,
@@ -58,6 +63,8 @@ import { OffersService } from './services/offers.service';
     OfferActivityService,
     OfferEmailService,
     DocxGenerationService,
+    // Event listeners
+    OfferActivityListener,
   ],
   exports: [
     LeadsService,
