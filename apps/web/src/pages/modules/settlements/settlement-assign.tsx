@@ -11,7 +11,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Skeleton } from '@/components/ui/skeleton';
-import { type SettlementResponseDto } from '@/lib/api/endpoints/settlements';
 import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import {
   useAssignableUsers,
@@ -132,29 +131,25 @@ function SettlementInfoCard({ settlementId }: SettlementInfoCardProps) {
 }
 
 // User selection card component - loads independently
+// Uses key-based reset pattern: parent passes settlement.userId as key to reset state on external changes
 interface UserSelectionCardProps {
   settlementId: string;
-  settlement: SettlementResponseDto | undefined;
+  initialUserId: string;
   basePath: string;
 }
 
-function UserSelectionCard({ settlementId, settlement, basePath }: UserSelectionCardProps) {
+function UserSelectionCard({ settlementId, initialUserId, basePath }: UserSelectionCardProps) {
   const navigate = useNavigate();
   const { data: assignableUsers, isPending: usersPending } = useAssignableUsers(settlementId);
   const employees = assignableUsers ?? [];
   const assignSettlement = useAssignSettlement();
 
-  // Derive initial value from settlement data
-  const initialUserId = settlement?.userId ?? 'unassigned';
-
-  // Form state - tracks user's explicit selection, undefined means use initial value
-  const [selectedUserId, setSelectedUserId] = useState<string | undefined>(undefined);
-
-  // Use explicit selection if made, otherwise fall back to initial value
-  const currentSelection = selectedUserId ?? initialUserId;
+  // Form state - selectedUserId is the user's explicit selection
+  // When key changes (due to initialUserId change), React remounts component with fresh state
+  const [selectedUserId, setSelectedUserId] = useState<string>(initialUserId);
 
   const handleSave = () => {
-    const userId = currentSelection === 'unassigned' ? null : currentSelection;
+    const userId = selectedUserId === 'unassigned' ? null : selectedUserId;
 
     assignSettlement.mutate(
       {
@@ -170,7 +165,7 @@ function UserSelectionCard({ settlementId, settlement, basePath }: UserSelection
   };
 
   // Check if selection has changed from initial state
-  const hasChanges = currentSelection !== initialUserId;
+  const hasChanges = selectedUserId !== initialUserId;
 
   if (usersPending) {
     return <UserSelectionSkeleton />;
@@ -185,11 +180,7 @@ function UserSelectionCard({ settlementId, settlement, basePath }: UserSelection
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <RadioGroup
-          value={currentSelection}
-          onValueChange={setSelectedUserId}
-          className="space-y-3"
-        >
+        <RadioGroup value={selectedUserId} onValueChange={setSelectedUserId} className="space-y-3">
           {/* Unassign Option */}
           <div className="flex items-center space-x-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors">
             <RadioGroupItem value="unassigned" id="unassigned" />
@@ -303,9 +294,12 @@ export default function SettlementAssignPage() {
         </Suspense>
 
         <Suspense fallback={<UserSelectionSkeleton />}>
+          {/* Key-based reset pattern: when settlement.userId changes externally,
+              React remounts UserSelectionCard with fresh state, avoiding queueMicrotask anti-pattern */}
           <UserSelectionCard
+            key={settlement?.userId ?? 'unassigned'}
             settlementId={settlementId}
-            settlement={settlement}
+            initialUserId={settlement?.userId ?? 'unassigned'}
             basePath={basePath}
           />
         </Suspense>

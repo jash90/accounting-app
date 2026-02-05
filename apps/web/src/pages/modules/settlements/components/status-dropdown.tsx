@@ -43,6 +43,9 @@ const STATUS_CONFIG = {
   },
 };
 
+// Pre-computed array to avoid Object.values() call on every render
+const SETTLEMENT_STATUS_VALUES = Object.values(SettlementStatus);
+
 export const StatusDropdown = memo(function StatusDropdown({
   currentStatus,
   onStatusChange,
@@ -86,7 +89,7 @@ export const StatusDropdown = memo(function StatusDropdown({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-[180px]">
-        {Object.values(SettlementStatus).map((status) => {
+        {SETTLEMENT_STATUS_VALUES.map((status) => {
           const config = STATUS_CONFIG[status];
           const Icon = config.icon;
 

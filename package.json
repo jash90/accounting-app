@@ -5,10 +5,11 @@
   "scripts": {
     "build": "nx build api",
     "build:web": "nx build web",
-    "test": "bun test apps/api/src",
+    "test": "bun test libs/auth libs/common libs/rbac libs/modules/clients libs/modules/tasks libs/modules/notifications libs/modules/ai-agent libs/modules/settlements libs/modules/time-tracking/src/lib/services/time-calculation.service.spec.ts libs/modules/time-tracking/src/lib/services/time-entries.service.spec.ts libs/modules/time-tracking/src/lib/services/time-entries.service.concurrent.spec.ts libs/modules/time-tracking/src/lib/services/time-settings.service.spec.ts libs/modules/time-tracking/src/lib/services/timesheet.service.spec.ts apps/api/src",
+    "test:unit": "bun test libs/auth libs/common libs/rbac libs/modules/clients libs/modules/tasks libs/modules/notifications libs/modules/ai-agent libs/modules/settlements libs/modules/time-tracking/src/lib/services/time-calculation.service.spec.ts libs/modules/time-tracking/src/lib/services/time-entries.service.spec.ts libs/modules/time-tracking/src/lib/services/time-entries.service.concurrent.spec.ts libs/modules/time-tracking/src/lib/services/time-settings.service.spec.ts libs/modules/time-tracking/src/lib/services/timesheet.service.spec.ts apps/api/src",
     "test:web": "nx test web",
     "test:e2e": "nx e2e web-e2e",
-    "test:integration": "bun test apps/api/src/**/*.integration.spec.ts --timeout 30000",
+    "test:integration": "bun test --timeout 30000 '**/*.integration.spec.ts'",
     "lint": "nx lint api",
     "lint:web": "nx lint web",
     "lint:all": "nx run-many --target=lint --all",
