@@ -76,49 +76,89 @@ describe('ClientsService', () => {
     getManyAndCount: jest.fn().mockResolvedValue([[mockClient], 1]),
   });
 
+  // Create mocks at module level for proper instantiation
+  const mockChangeLogService = {
+    logCreate: jest.fn(),
+    logUpdate: jest.fn(),
+    logDelete: jest.fn(),
+  };
+
+  const mockClientChangelogService = {
+    notifyClientCreated: jest.fn(),
+    notifyClientUpdated: jest.fn(),
+    notifyClientDeleted: jest.fn(),
+  };
+
+  const mockAutoAssignService = {
+    evaluateAndAssign: jest.fn(),
+  };
+
+  const mockTenantService = {
+    getEffectiveCompanyId: jest.fn(),
+  };
+
   beforeEach(async () => {
+    // Reset mocks before each test
+    jest.clearAllMocks();
+    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+
     const mockQueryBuilder = createMockQueryBuilder();
+
+    const mockClientRepository = {
+      create: jest.fn(),
+      save: jest.fn(),
+      findOne: jest.fn(),
+      remove: jest.fn(),
+      createQueryBuilder: jest.fn(() => mockQueryBuilder),
+    };
+
+    const mockDataSource = {
+      transaction: jest.fn().mockImplementation((callback: any) =>
+        callback({
+          findOne: jest.fn(),
+          save: jest.fn(),
+        })
+      ),
+      getRepository: jest.fn().mockReturnValue({
+        findOne: jest.fn(),
+      }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        ClientsService,
+        // Use useFactory to manually wire dependencies (needed for Bun which doesn't emit decorator metadata)
+        {
+          provide: ClientsService,
+          useFactory: () => {
+            return new ClientsService(
+              mockClientRepository as any,
+              mockDataSource as any,
+              mockChangeLogService as any,
+              mockClientChangelogService as any,
+              mockAutoAssignService as any,
+              mockTenantService as any
+            );
+          },
+        },
         {
           provide: getRepositoryToken(Client),
-          useValue: {
-            create: jest.fn(),
-            save: jest.fn(),
-            findOne: jest.fn(),
-            remove: jest.fn(),
-            createQueryBuilder: jest.fn(() => mockQueryBuilder),
-          },
+          useValue: mockClientRepository,
         },
         {
           provide: ChangeLogService,
-          useValue: {
-            logCreate: jest.fn(),
-            logUpdate: jest.fn(),
-            logDelete: jest.fn(),
-          },
+          useValue: mockChangeLogService,
         },
         {
           provide: ClientChangelogService,
-          useValue: {
-            notifyClientCreated: jest.fn(),
-            notifyClientUpdated: jest.fn(),
-            notifyClientDeleted: jest.fn(),
-          },
+          useValue: mockClientChangelogService,
         },
         {
           provide: AutoAssignService,
-          useValue: {
-            evaluateAndAssign: jest.fn(),
-          },
+          useValue: mockAutoAssignService,
         },
         {
           provide: TenantService,
-          useValue: {
-            getEffectiveCompanyId: jest.fn().mockResolvedValue(mockCompanyId),
-          },
+          useValue: mockTenantService,
         },
       ],
     }).compile();
@@ -449,7 +489,7 @@ describe('ClientsService', () => {
     it('should create client with valid PKD code', async () => {
       const dtoWithPkd: CreateClientDto = {
         ...createDto,
-        pkdCode: '62.01',
+        pkdCode: '62.01.Z',
       };
       const savedClient = { ...mockClient, ...dtoWithPkd };
       clientRepository.create = jest.fn().mockReturnValue(savedClient);
@@ -457,9 +497,9 @@ describe('ClientsService', () => {
 
       const result = await service.create(dtoWithPkd, mockUser as User);
 
-      expect(result.pkdCode).toBe('62.01');
+      expect(result.pkdCode).toBe('62.01.Z');
       expect(clientRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ pkdCode: '62.01' })
+        expect.objectContaining({ pkdCode: '62.01.Z' })
       );
     });
 

@@ -150,9 +150,6 @@ export class SettlementCommentResponseDto {
   content!: string;
 
   @ApiProperty()
-  isInternal!: boolean;
-
-  @ApiProperty()
   createdAt!: string;
 }
 
@@ -170,4 +167,10 @@ export class BulkAssignResultDto {
 
   @ApiProperty({ description: 'Number of settlements requested' })
   requested!: number;
+
+  @ApiProperty({
+    description: 'Settlement IDs that were not found or skipped',
+    type: [String],
+  })
+  skippedIds!: string[];
 }

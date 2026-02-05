@@ -15,6 +15,7 @@ import { User } from './user.entity';
 @Entity('settlement_comments')
 @Index(['settlementId'])
 @Index(['companyId'])
+@Index(['settlementId', 'companyId']) // Compound index for queries filtering by both fields
 export class SettlementComment {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -37,9 +38,6 @@ export class SettlementComment {
 
   @Column({ type: 'text' })
   content!: string;
-
-  @Column({ type: 'boolean', default: true })
-  isInternal!: boolean;
 
   @Column({ type: 'uuid' })
   companyId!: string;

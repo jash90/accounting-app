@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { useForm, type Resolver } from 'react-hook-form';
 
@@ -60,8 +60,10 @@ export function NotificationSettingsForm({
     onSubmit(data);
   };
 
-  const hasAnyNotification =
-    form.watch('receiveOnCreate') || form.watch('receiveOnUpdate') || form.watch('receiveOnDelete');
+  // Single watch call to prevent 3 separate re-renders
+  const notificationValues = form.watch(['receiveOnCreate', 'receiveOnUpdate', 'receiveOnDelete']);
+  // Memoize derived state to prevent unnecessary re-renders
+  const hasAnyNotification = useMemo(() => notificationValues.some(Boolean), [notificationValues]);
 
   return (
     <Card>

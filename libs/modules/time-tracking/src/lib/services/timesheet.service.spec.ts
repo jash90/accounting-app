@@ -29,6 +29,15 @@ describe('TimesheetService', () => {
   const mockCompanyId = 'company-123';
   const mockUserId = 'user-123';
 
+  // Create mocks at module level for proper instantiation
+  const mockTenantService = {
+    getEffectiveCompanyId: jest.fn(),
+  };
+
+  const mockSettingsService = {
+    getSettings: jest.fn(),
+  };
+
   const mockEmployee: Partial<User> = {
     id: mockUserId,
     email: 'employee@example.com',
@@ -107,42 +116,59 @@ describe('TimesheetService', () => {
   };
 
   beforeEach(async () => {
+    // Reset mocks before each test
+    mockTenantService.getEffectiveCompanyId.mockReset();
+    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSettingsService.getSettings.mockReset();
+    mockSettingsService.getSettings.mockResolvedValue(mockSettings);
+
     const mockQueryBuilder = createMockQueryBuilder();
+
+    const mockEntryRepository = {
+      find: jest.fn(),
+      createQueryBuilder: jest.fn(() => mockQueryBuilder),
+    };
+
+    const mockDataSource = {
+      getRepository: jest.fn().mockReturnValue({
+        findOne: jest.fn().mockResolvedValue({
+          id: mockUserId,
+          companyId: mockCompanyId,
+          isActive: true,
+        }),
+      }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        TimesheetService,
-        TimeCalculationService,
+        // Use useFactory to manually wire dependencies (needed for Bun which doesn't emit decorator metadata)
+        {
+          provide: TimesheetService,
+          useFactory: () => {
+            return new TimesheetService(
+              mockEntryRepository as any,
+              new TimeCalculationService(),
+              mockSettingsService as any,
+              mockTenantService as any,
+              mockDataSource as any
+            );
+          },
+        },
         {
           provide: getRepositoryToken(TimeEntry),
-          useValue: {
-            find: jest.fn(),
-            createQueryBuilder: jest.fn(() => mockQueryBuilder),
-          },
+          useValue: mockEntryRepository,
         },
         {
           provide: TenantService,
-          useValue: {
-            getEffectiveCompanyId: jest.fn().mockResolvedValue(mockCompanyId),
-          },
+          useValue: mockTenantService,
         },
         {
           provide: TimeSettingsService,
-          useValue: {
-            getSettings: jest.fn().mockResolvedValue(mockSettings),
-          },
+          useValue: mockSettingsService,
         },
         {
           provide: DataSource,
-          useValue: {
-            getRepository: jest.fn().mockReturnValue({
-              findOne: jest.fn().mockResolvedValue({
-                id: mockUserId,
-                companyId: mockCompanyId,
-                isActive: true,
-              }),
-            }),
-          },
+          useValue: mockDataSource,
         },
       ],
     }).compile();
@@ -151,7 +177,7 @@ describe('TimesheetService', () => {
     entryRepository = module.get(getRepositoryToken(TimeEntry));
     tenantService = module.get(TenantService);
     settingsService = module.get(TimeSettingsService);
-    _calculationService = module.get(TimeCalculationService);
+    _calculationService = new TimeCalculationService();
   });
 
   describe('getDailyTimesheet', () => {
@@ -256,7 +282,7 @@ describe('TimesheetService', () => {
 
     it('should respect week start day from settings', async () => {
       entryRepository.find = jest.fn().mockResolvedValue([]);
-      settingsService.getSettings = jest.fn().mockResolvedValue({
+      mockSettingsService.getSettings.mockResolvedValue({
         ...mockSettings,
         weekStartDay: 0, // Sunday
       });

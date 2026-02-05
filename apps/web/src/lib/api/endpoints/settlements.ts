@@ -77,7 +77,6 @@ export interface SettlementCommentResponseDto {
   userId: string;
   user?: UserSummaryDto;
   content: string;
-  isInternal: boolean;
   createdAt: string;
 }
 
@@ -142,7 +141,6 @@ export interface BulkAssignDto {
 
 export interface CreateCommentDto {
   content: string;
-  isInternal?: boolean;
 }
 
 // ============================================

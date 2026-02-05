@@ -56,10 +56,12 @@ export function createSettlementsListColumns(): ColumnDef<SettlementResponseDto>
       accessorKey: 'client.taxScheme',
       header: 'Forma opodatkowania',
       cell: ({ row }) => {
-        const taxScheme = row.original.client?.taxScheme as TaxScheme | undefined;
-        return taxScheme ? (
+        const taxScheme = row.original.client?.taxScheme;
+        // Validate that taxScheme is a valid TaxScheme key before using it
+        const isValidTaxScheme = taxScheme && taxScheme in TaxSchemeLabels;
+        return isValidTaxScheme ? (
           <Badge variant="secondary" className="text-xs">
-            {TaxSchemeLabels[taxScheme]}
+            {TaxSchemeLabels[taxScheme as TaxScheme]}
           </Badge>
         ) : (
           <span className="text-muted-foreground">-</span>

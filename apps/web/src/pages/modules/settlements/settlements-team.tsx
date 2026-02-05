@@ -44,11 +44,14 @@ const LazyDataTable = lazy(() =>
   }))
 );
 
+// Pre-allocated constant for skeleton indices - prevents array creation on each render
+const SKELETON_INDICES = [0, 1, 2] as const;
+
 // Table loading skeleton for Suspense fallback
 function TableSkeleton() {
   return (
     <div className="space-y-3 p-4">
-      {[...Array(3)].map((_, i) => (
+      {SKELETON_INDICES.map((i) => (
         <div key={i} className="bg-accent/10 h-12 w-full animate-pulse rounded-lg" />
       ))}
     </div>
@@ -93,8 +96,7 @@ export default function SettlementsTeamPage() {
   const employeeStats = employeeStatsQuery.data?.employees ?? [];
 
   const unassignedPending = unassignedQuery.isPending;
-  // Memoize to prevent useCallback dependencies from changing on every render
-  // when React Query returns the same data with a new array reference
+  // Memoize for stable reference - required for useCallback dependencies (line 150)
   const unassignedSettlements = useMemo(
     () => unassignedQuery.data?.data ?? [],
     [unassignedQuery.data?.data]
@@ -298,6 +300,7 @@ export default function SettlementsTeamPage() {
                       position: 'relative',
                     }}
                   >
+                    {/* Virtualizer handles ref internally - no need for conditional check */}
                     {virtualizer.getVirtualItems().map((virtualItem) => {
                       const settlement = unassignedSettlements[virtualItem.index];
                       const isSelected = selectedSet.has(settlement.id);

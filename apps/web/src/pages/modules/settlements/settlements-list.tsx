@@ -42,8 +42,9 @@ const LazyDataTable = lazy(() =>
   }))
 );
 
-// Pre-allocated skeleton count to avoid array recreation
-const TABLE_SKELETON_COUNT = 5;
+// Pre-allocated skeleton indices to avoid array recreation on each render
+// Using a constant array instead of Array.from() in render path
+const SKELETON_INDICES = [0, 1, 2, 3, 4] as const;
 
 // Table loading skeleton for Suspense fallback
 function TableSkeleton() {
@@ -54,7 +55,7 @@ function TableSkeleton() {
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-8 w-32" />
       </div>
-      {Array.from({ length: TABLE_SKELETON_COUNT }, (_, i) => (
+      {SKELETON_INDICES.map((i) => (
         <div key={i} className="flex items-center gap-4 py-3">
           <Skeleton className="h-6 w-24" />
           <Skeleton className="h-6 w-40" />

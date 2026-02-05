@@ -18,6 +18,11 @@ describe('TimeSettingsService', () => {
   const mockCompanyId = 'company-123';
   const mockUserId = 'user-123';
 
+  // Create mocks at module level for proper instantiation
+  const mockTenantService = {
+    getEffectiveCompanyId: jest.fn(),
+  };
+
   const mockUser: Partial<User> = {
     id: mockUserId,
     email: 'user@example.com',
@@ -53,22 +58,42 @@ describe('TimeSettingsService', () => {
   };
 
   beforeEach(async () => {
+    // Reset mocks before each test
+    mockTenantService.getEffectiveCompanyId.mockReset();
+    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+
+    // Create mock QueryBuilder for insert operations
+    const mockQueryBuilder = {
+      insert: jest.fn().mockReturnThis(),
+      into: jest.fn().mockReturnThis(),
+      values: jest.fn().mockReturnThis(),
+      orIgnore: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ affected: 1, generatedMaps: [] }),
+    };
+
+    const mockSettingsRepository = {
+      findOne: jest.fn(),
+      create: jest.fn().mockImplementation((data) => data),
+      save: jest.fn(),
+      createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        TimeSettingsService,
+        // Use useFactory to manually wire dependencies (needed for Bun which doesn't emit decorator metadata)
         {
-          provide: getRepositoryToken(TimeSettings),
-          useValue: {
-            findOne: jest.fn(),
-            create: jest.fn(),
-            save: jest.fn(),
+          provide: TimeSettingsService,
+          useFactory: () => {
+            return new TimeSettingsService(mockSettingsRepository as any, mockTenantService as any);
           },
         },
         {
+          provide: getRepositoryToken(TimeSettings),
+          useValue: mockSettingsRepository,
+        },
+        {
           provide: TenantService,
-          useValue: {
-            getEffectiveCompanyId: jest.fn().mockResolvedValue(mockCompanyId),
-          },
+          useValue: mockTenantService,
         },
       ],
     }).compile();
@@ -91,25 +116,46 @@ describe('TimeSettingsService', () => {
     });
 
     it('should create default settings when not exists', async () => {
-      settingsRepository.findOne = jest.fn().mockResolvedValue(null);
-      settingsRepository.create = jest.fn().mockReturnValue(mockSettings);
-      settingsRepository.save = jest.fn().mockResolvedValue(mockSettings);
+      // First findOne returns null (no settings exist), second returns the created settings
+      settingsRepository.findOne = jest
+        .fn()
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(mockSettings);
 
       const result = await service.getSettings(mockUser as User);
 
-      expect(settingsRepository.create).toHaveBeenCalled();
-      expect(settingsRepository.save).toHaveBeenCalled();
+      // Should have called createQueryBuilder for insert
+      expect(settingsRepository.createQueryBuilder).toHaveBeenCalled();
+      // Should have called findOne twice (initial check + fetch after insert)
+      expect(settingsRepository.findOne).toHaveBeenCalledTimes(2);
       expect(result).toEqual(mockSettings);
     });
 
     it('should use correct default values when creating', async () => {
-      settingsRepository.findOne = jest.fn().mockResolvedValue(null);
-      settingsRepository.create = jest.fn().mockImplementation((data) => data);
-      settingsRepository.save = jest.fn().mockImplementation((data) => data);
+      // Track the values passed to the insert
+      let insertedValues: any = null;
+      const mockQb = {
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockImplementation((vals) => {
+          insertedValues = vals;
+          return mockQb;
+        }),
+        orIgnore: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      };
+      settingsRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
+
+      // First findOne returns null, second returns the default settings
+      settingsRepository.findOne = jest
+        .fn()
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(mockSettings);
 
       await service.getSettings(mockUser as User);
 
-      expect(settingsRepository.create).toHaveBeenCalledWith(
+      // Verify the default values used in insert
+      expect(insertedValues).toEqual(
         expect.objectContaining({
           companyId: mockCompanyId,
           roundingMethod: TimeRoundingMethod.NONE,
@@ -196,14 +242,17 @@ describe('TimeSettingsService', () => {
     });
 
     it('should create settings if they do not exist', async () => {
-      settingsRepository.findOne = jest.fn().mockResolvedValue(null);
-      settingsRepository.create = jest.fn().mockImplementation((data) => data);
+      // First findOne returns null, second returns the created settings, third for updateSettings
+      settingsRepository.findOne = jest
+        .fn()
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(mockSettings);
       settingsRepository.save = jest.fn().mockImplementation((data) => data);
 
       await service.updateSettings(updateDto, mockOwner as User);
 
-      // getSettings will create default settings first
-      expect(settingsRepository.create).toHaveBeenCalled();
+      // getSettings will create default settings first via createQueryBuilder
+      expect(settingsRepository.createQueryBuilder).toHaveBeenCalled();
     });
   });
 
@@ -310,14 +359,32 @@ describe('TimeSettingsService', () => {
 
     it('should use company ID from tenant service', async () => {
       const differentCompanyId = 'different-company-456';
-      tenantService.getEffectiveCompanyId = jest.fn().mockResolvedValue(differentCompanyId);
-      settingsRepository.findOne = jest.fn().mockResolvedValue(null);
-      settingsRepository.create = jest.fn().mockImplementation((data) => data);
-      settingsRepository.save = jest.fn().mockImplementation((data) => data);
+      mockTenantService.getEffectiveCompanyId.mockResolvedValue(differentCompanyId);
+
+      // Track the values passed to the insert
+      let insertedValues: any = null;
+      const mockQb = {
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockImplementation((vals) => {
+          insertedValues = vals;
+          return mockQb;
+        }),
+        orIgnore: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      };
+      settingsRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
+
+      // First findOne returns null, second returns settings with differentCompanyId
+      const createdSettings = { ...mockSettings, companyId: differentCompanyId };
+      settingsRepository.findOne = jest
+        .fn()
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(createdSettings);
 
       await service.getSettings(mockUser as User);
 
-      expect(settingsRepository.create).toHaveBeenCalledWith(
+      expect(insertedValues).toEqual(
         expect.objectContaining({
           companyId: differentCompanyId,
         })
