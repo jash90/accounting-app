@@ -1,5 +1,5 @@
 // Core Services
-export * from './system-company.service';
+// SystemCompanyService is now exported from @accounting/common/backend
 export * from './ai-configuration.service';
 export * from './ai-conversation.service';
 
