@@ -34,6 +34,8 @@ describe('TimeEntriesService', () => {
   let tenantService: jest.Mocked<TenantService>;
   let _calculationService: TimeCalculationService;
   let settingsService: jest.Mocked<TimeSettingsService>;
+  let mockEntityManager: ReturnType<typeof createMockEntityManager>;
+  let mockQueryBuilderForManager: ReturnType<typeof createMockQueryBuilder>;
 
   // Mock data
   const mockCompanyId = 'company-123';
@@ -144,7 +146,10 @@ describe('TimeEntriesService', () => {
     mockSettingsService.allowsOverlapping.mockResolvedValue(true);
 
     const mockQueryBuilder = createMockQueryBuilder();
-    const mockEntityManager = createMockEntityManager();
+    mockQueryBuilderForManager = createMockQueryBuilder();
+    mockEntityManager = createMockEntityManager();
+    // Override the entity manager's query builder with our accessible mock
+    mockEntityManager.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilderForManager);
 
     const mockEntryRepository = {
       create: jest.fn(),
@@ -766,18 +771,15 @@ describe('TimeEntriesService', () => {
       const draftEntry = { ...mockTimeEntry, status: TimeEntryStatus.DRAFT };
       const submittedEntry = { ...draftEntry, status: TimeEntryStatus.SUBMITTED };
 
-      // Mock findOne to return draft entry first, then submitted entry after save
-      let findOneCallCount = 0;
-      entryRepository.findOne = jest.fn().mockImplementation(() => {
-        findOneCallCount++;
-        if (findOneCallCount === 1) return Promise.resolve(draftEntry);
-        return Promise.resolve(submittedEntry);
-      });
-      entryRepository.save = jest.fn().mockResolvedValue(submittedEntry);
+      // Mock transaction query builder to return draft entry
+      mockQueryBuilderForManager.getOne = jest.fn().mockResolvedValue(draftEntry);
+      mockEntityManager.save = jest.fn().mockResolvedValue(submittedEntry);
+      // Mock findOne for the final return
+      entryRepository.findOne = jest.fn().mockResolvedValue(submittedEntry);
 
       const result = await service.submitEntry(mockEntryId, mockUser as User);
 
-      expect(entryRepository.save).toHaveBeenCalledWith(
+      expect(mockEntityManager.save).toHaveBeenCalledWith(
         expect.objectContaining({
           status: TimeEntryStatus.SUBMITTED,
         })
@@ -787,7 +789,8 @@ describe('TimeEntriesService', () => {
 
     it('should throw when entry is not in draft status', async () => {
       const approvedEntry = { ...mockTimeEntry, status: TimeEntryStatus.APPROVED };
-      entryRepository.findOne = jest.fn().mockResolvedValue(approvedEntry);
+      // Mock transaction query builder to return approved entry
+      mockQueryBuilderForManager.getOne = jest.fn().mockResolvedValue(approvedEntry);
 
       await expect(service.submitEntry(mockEntryId, mockUser as User)).rejects.toBeInstanceOf(
         TimeEntryInvalidStatusException
@@ -795,12 +798,8 @@ describe('TimeEntriesService', () => {
     });
 
     it('should throw when user tries to submit another user entry', async () => {
-      const otherUserEntry = {
-        ...mockTimeEntry,
-        userId: 'other-user-123',
-        status: TimeEntryStatus.DRAFT,
-      };
-      entryRepository.findOne = jest.fn().mockResolvedValue(otherUserEntry);
+      // Mock transaction query builder to return null (entry not found for this user)
+      mockQueryBuilderForManager.getOne = jest.fn().mockResolvedValue(null);
 
       await expect(service.submitEntry(mockEntryId, mockUser as User)).rejects.toBeInstanceOf(
         TimeEntryNotFoundException
@@ -813,18 +812,15 @@ describe('TimeEntriesService', () => {
       const submittedEntry = { ...mockTimeEntry, status: TimeEntryStatus.SUBMITTED };
       const approvedEntry = { ...submittedEntry, status: TimeEntryStatus.APPROVED };
 
-      // Mock findOne to return submitted entry first, then approved entry after save
-      let findOneCallCount = 0;
-      entryRepository.findOne = jest.fn().mockImplementation(() => {
-        findOneCallCount++;
-        if (findOneCallCount === 1) return Promise.resolve(submittedEntry);
-        return Promise.resolve(approvedEntry);
-      });
-      entryRepository.save = jest.fn().mockResolvedValue(approvedEntry);
+      // Mock transaction query builder to return submitted entry
+      mockQueryBuilderForManager.getOne = jest.fn().mockResolvedValue(submittedEntry);
+      mockEntityManager.save = jest.fn().mockResolvedValue(approvedEntry);
+      // Mock findOne for the final return
+      entryRepository.findOne = jest.fn().mockResolvedValue(approvedEntry);
 
       const result = await service.approveEntry(mockEntryId, mockOwner as User);
 
-      expect(entryRepository.save).toHaveBeenCalledWith(
+      expect(mockEntityManager.save).toHaveBeenCalledWith(
         expect.objectContaining({
           status: TimeEntryStatus.APPROVED,
           approvedById: mockOwner.id,
@@ -835,7 +831,8 @@ describe('TimeEntriesService', () => {
 
     it('should throw when entry is not in submitted status', async () => {
       const draftEntry = { ...mockTimeEntry, status: TimeEntryStatus.DRAFT };
-      entryRepository.findOne = jest.fn().mockResolvedValue(draftEntry);
+      // Mock transaction query builder to return draft entry
+      mockQueryBuilderForManager.getOne = jest.fn().mockResolvedValue(draftEntry);
 
       await expect(service.approveEntry(mockEntryId, mockOwner as User)).rejects.toBeInstanceOf(
         TimeEntryInvalidStatusException
@@ -848,14 +845,11 @@ describe('TimeEntriesService', () => {
       const submittedEntry = { ...mockTimeEntry, status: TimeEntryStatus.SUBMITTED };
       const rejectedEntry = { ...submittedEntry, status: TimeEntryStatus.REJECTED };
 
-      // Use call counter pattern for robust mocking
-      let findOneCallCount = 0;
-      entryRepository.findOne = jest.fn().mockImplementation(() => {
-        findOneCallCount++;
-        if (findOneCallCount === 1) return Promise.resolve(submittedEntry);
-        return Promise.resolve(rejectedEntry);
-      });
-      entryRepository.save = jest.fn().mockResolvedValue(rejectedEntry);
+      // Mock transaction query builder to return submitted entry
+      mockQueryBuilderForManager.getOne = jest.fn().mockResolvedValue(submittedEntry);
+      mockEntityManager.save = jest.fn().mockResolvedValue(rejectedEntry);
+      // Mock findOne for the final return
+      entryRepository.findOne = jest.fn().mockResolvedValue(rejectedEntry);
 
       const result = await service.rejectEntry(
         mockEntryId,
@@ -863,7 +857,7 @@ describe('TimeEntriesService', () => {
         mockOwner as User
       );
 
-      expect(entryRepository.save).toHaveBeenCalledWith(
+      expect(mockEntityManager.save).toHaveBeenCalledWith(
         expect.objectContaining({
           status: TimeEntryStatus.REJECTED,
           rejectionNote: 'Invalid description',
@@ -874,7 +868,8 @@ describe('TimeEntriesService', () => {
 
     it('should throw when entry is not in submitted status', async () => {
       const draftEntry = { ...mockTimeEntry, status: TimeEntryStatus.DRAFT };
-      entryRepository.findOne = jest.fn().mockResolvedValue(draftEntry);
+      // Mock transaction query builder to return draft entry
+      mockQueryBuilderForManager.getOne = jest.fn().mockResolvedValue(draftEntry);
 
       await expect(
         service.rejectEntry(mockEntryId, 'Rejected', mockOwner as User)
