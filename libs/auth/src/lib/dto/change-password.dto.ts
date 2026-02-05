@@ -4,8 +4,8 @@ import { IsNotEmpty, IsString, Matches, MinLength } from 'class-validator';
 
 export class ChangePasswordDto {
   @ApiProperty({ description: 'Current password' })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'Aktualne hasło musi być tekstem' })
+  @IsNotEmpty({ message: 'Aktualne hasło jest wymagane' })
   currentPassword!: string;
 
   @ApiProperty({
@@ -13,11 +13,11 @@ export class ChangePasswordDto {
       'New password (min 12 chars, must contain uppercase, lowercase, number, special char)',
     minLength: 12,
   })
-  @IsString()
-  @MinLength(12)
+  @IsString({ message: 'Nowe hasło musi być tekstem' })
+  @MinLength(12, { message: 'Hasło musi mieć minimum 12 znaków' })
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/, {
     message:
-      'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)',
+      'Hasło musi zawierać co najmniej jedną wielką literę, jedną małą literę, jedną cyfrę i jeden znak specjalny (@$!%*?&)',
   })
   newPassword!: string;
 }

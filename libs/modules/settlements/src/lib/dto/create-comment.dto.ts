@@ -7,10 +7,10 @@ import { Sanitize } from '@accounting/common';
 export class CreateCommentDto {
   @ApiProperty({ description: 'Comment content', minLength: 1, maxLength: 2000 })
   @Sanitize() // XSS protection: strips HTML tags and trims whitespace
-  @IsString()
-  @IsNotEmpty({ message: 'Comment cannot be empty' })
-  @MinLength(1, { message: 'Comment cannot be empty' })
-  @MaxLength(2000, { message: 'Comment cannot exceed 2000 characters' })
-  @Matches(/\S/, { message: 'Comment cannot contain only whitespace' }) // Prevents whitespace-only input after trim
+  @IsString({ message: 'Komentarz musi być tekstem' })
+  @IsNotEmpty({ message: 'Komentarz nie może być pusty' })
+  @MinLength(1, { message: 'Komentarz nie może być pusty' })
+  @MaxLength(2000, { message: 'Komentarz nie może przekraczać 2000 znaków' })
+  @Matches(/\S/, { message: 'Komentarz nie może zawierać tylko białych znaków' }) // Prevents whitespace-only input after trim
   content!: string;
 }
