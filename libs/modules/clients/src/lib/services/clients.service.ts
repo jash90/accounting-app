@@ -17,6 +17,7 @@ import {
 import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
+import { CLIENT_VALIDATION_MESSAGES } from '../constants';
 import {
   BulkDeleteClientsDto,
   BulkEditClientsDto,
@@ -246,7 +247,9 @@ export class ClientsService {
       normalizedPkdCode = undefined;
     }
     if (normalizedPkdCode && !isValidPkdCode(normalizedPkdCode)) {
-      throw new BadRequestException(`Nieprawidłowy kod PKD: ${normalizedPkdCode}`);
+      throw new BadRequestException(
+        `${CLIENT_VALIDATION_MESSAGES.INVALID_PKD_CODE}: ${normalizedPkdCode}`
+      );
     }
 
     const client = this.clientRepository.create({
@@ -294,7 +297,9 @@ export class ClientsService {
       normalizedPkdCode = undefined;
     }
     if (normalizedPkdCode && !isValidPkdCode(normalizedPkdCode)) {
-      throw new BadRequestException(`Nieprawidłowy kod PKD: ${normalizedPkdCode}`);
+      throw new BadRequestException(
+        `${CLIENT_VALIDATION_MESSAGES.INVALID_PKD_CODE}: ${normalizedPkdCode}`
+      );
     }
 
     const oldValues = this.sanitizeClientForLog(client);
@@ -497,6 +502,8 @@ export class ClientsService {
       await clientRepo.save(clients);
 
       // Prepare changelog entries with old and new values
+      // Note: Non-null assertion is safe here because oldValuesMap is populated
+      // from the same `clients` array being iterated - every client.id has an entry.
       const changelogEntries = clients.map((client) => ({
         entityId: client.id,
         oldData: {
@@ -538,7 +545,9 @@ export class ClientsService {
       normalizedPkdCode = undefined;
     }
     if (normalizedPkdCode && !isValidPkdCode(normalizedPkdCode)) {
-      throw new BadRequestException(`Nieprawidłowy kod PKD: ${normalizedPkdCode}`);
+      throw new BadRequestException(
+        `${CLIENT_VALIDATION_MESSAGES.INVALID_PKD_CODE}: ${normalizedPkdCode}`
+      );
     }
 
     // Build update payload from non-undefined values (outside transaction for validation)
@@ -584,6 +593,8 @@ export class ClientsService {
       await clientRepo.save(clients);
 
       // Prepare changelog entries with old and new values
+      // Note: Non-null assertion is safe here because oldValuesMap is populated
+      // from the same `clients` array being iterated - every client.id has an entry.
       const changelogEntries = clients.map((client) => ({
         entityId: client.id,
         oldData: {
@@ -600,6 +611,7 @@ export class ClientsService {
       await this.changeLogService.logBulkUpdate('Client', changelogEntries, user);
 
       // Prepare updates for batch notification
+      // Note: Non-null assertion is safe - same invariant as changelogEntries above.
       const notificationUpdates = clients.map((client) => ({
         client,
         oldValues: oldValuesMap.get(client.id)!,

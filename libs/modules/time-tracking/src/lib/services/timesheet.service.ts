@@ -6,6 +6,7 @@ import { Between, DataSource, Repository } from 'typeorm';
 import { TimeEntry, User, UserRole } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 
+import { TIME_TRACKING_ERROR_MESSAGES, TIME_TRACKING_LABELS } from '../constants';
 import { TimeCalculationService } from './time-calculation.service';
 import { TimeSettingsService } from './time-settings.service';
 import {
@@ -90,7 +91,7 @@ export class TimesheetService {
       where: { id: userId, companyId, isActive: true },
     });
     if (!targetUser) {
-      throw new NotFoundException('Użytkownik nie należy do tej firmy');
+      throw new NotFoundException(TIME_TRACKING_ERROR_MESSAGES.USER_NOT_IN_COMPANY);
     }
   }
 
@@ -194,6 +195,8 @@ export class TimesheetService {
 
   async getReportSummary(dto: ReportFiltersDto, user: User): Promise<ReportSummary> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    // Note: Date handling assumes server timezone. For multi-timezone deployments,
+    // consider using a date library like date-fns with timezone support.
     const startDate = new Date(dto.startDate);
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(dto.endDate);
@@ -331,17 +334,17 @@ export class TimesheetService {
 
         case TimesheetGroupBy.CLIENT:
           groupId = entry.clientId ?? 'no-client';
-          groupName = entry.client?.name ?? 'Bez klienta';
+          groupName = entry.client?.name ?? TIME_TRACKING_LABELS.NO_CLIENT;
           break;
 
         case TimesheetGroupBy.TASK:
           groupId = entry.taskId ?? 'no-task';
-          groupName = entry.task?.title ?? 'Bez zadania';
+          groupName = entry.task?.title ?? TIME_TRACKING_LABELS.NO_TASK;
           break;
 
         default:
           groupId = 'all';
-          groupName = 'Wszystkie';
+          groupName = TIME_TRACKING_LABELS.ALL;
       }
 
       if (!groupMap.has(groupId)) {

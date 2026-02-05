@@ -13,6 +13,7 @@ import {
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 
+import { TIME_TRACKING_LABELS } from '../constants';
 import { TimeCalculationService } from './time-calculation.service';
 import { TimeSettingsService } from './time-settings.service';
 import { TimesheetService } from './timesheet.service';
@@ -638,7 +639,7 @@ describe('TimesheetService', () => {
   });
 
   describe('groupEntries (via getReportSummary)', () => {
-    it('should use Polish labels for no-client grouping', async () => {
+    it('should use correct labels for no-client grouping', async () => {
       const mockEntries = [
         createMockEntry({
           clientId: undefined as any,
@@ -655,10 +656,10 @@ describe('TimesheetService', () => {
       );
 
       const noClientGroup = result.groupedData?.find((g) => g.groupId === 'no-client');
-      expect(noClientGroup?.groupName).toBe('Bez klienta');
+      expect(noClientGroup?.groupName).toBe(TIME_TRACKING_LABELS.NO_CLIENT);
     });
 
-    it('should use Polish labels for no-task grouping', async () => {
+    it('should use correct labels for no-task grouping', async () => {
       const mockEntries = [
         createMockEntry({
           taskId: undefined as any,
@@ -675,7 +676,7 @@ describe('TimesheetService', () => {
       );
 
       const noTaskGroup = result.groupedData?.find((g) => g.groupId === 'no-task');
-      expect(noTaskGroup?.groupName).toBe('Bez zadania');
+      expect(noTaskGroup?.groupName).toBe(TIME_TRACKING_LABELS.NO_TASK);
     });
 
     it('should calculate correct totals per group', async () => {
