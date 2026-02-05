@@ -4,8 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 
 import { NotificationSettings, NotificationType, User, UserRole } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
-import { SystemCompanyService } from './system-company.service';
 import {
   UpdateModuleNotificationSettingsDto,
   UpdateNotificationSettingsDto,
@@ -249,30 +249,65 @@ export class NotificationSettingsService {
     return settings;
   }
 
+  /**
+   * Checks if a notification type is enabled based on user settings.
+   * Uses explicit type matching for better type safety and maintainability.
+   */
   private checkEventTypeEnabled(
     settings: NotificationSettings,
     notificationType: NotificationType
   ): boolean {
-    if (notificationType.includes('.created') && !settings.receiveOnCreate) {
-      return false;
+    // Task-specific settings
+    switch (notificationType) {
+      case NotificationType.TASK_COMPLETED:
+        return settings.receiveOnTaskCompleted;
+      case NotificationType.TASK_OVERDUE:
+        return settings.receiveOnTaskOverdue;
+      default:
+        break;
     }
 
-    if (notificationType.includes('.updated') && !settings.receiveOnUpdate) {
-      return false;
+    // Created events
+    switch (notificationType) {
+      case NotificationType.TASK_CREATED:
+      case NotificationType.CLIENT_CREATED:
+      case NotificationType.CLIENT_SUSPENSION_CREATED:
+      case NotificationType.CLIENT_RELIEF_CREATED:
+      case NotificationType.TIME_ENTRY_CREATED:
+        return settings.receiveOnCreate;
+      default:
+        break;
     }
 
-    if (notificationType.includes('.deleted') && !settings.receiveOnDelete) {
-      return false;
+    // Updated events
+    switch (notificationType) {
+      case NotificationType.TASK_UPDATED:
+      case NotificationType.TASK_BULK_UPDATED:
+      case NotificationType.CLIENT_UPDATED:
+      case NotificationType.CLIENT_BULK_UPDATED:
+      case NotificationType.CLIENT_SUSPENSION_UPDATED:
+      case NotificationType.CLIENT_RELIEF_UPDATED:
+      case NotificationType.TIME_ENTRY_UPDATED:
+        return settings.receiveOnUpdate;
+      default:
+        break;
     }
 
-    if (notificationType === NotificationType.TASK_COMPLETED && !settings.receiveOnTaskCompleted) {
-      return false;
+    // Deleted events
+    switch (notificationType) {
+      case NotificationType.TASK_DELETED:
+      case NotificationType.TASK_BULK_DELETED:
+      case NotificationType.CLIENT_DELETED:
+      case NotificationType.CLIENT_BULK_DELETED:
+      case NotificationType.CLIENT_SUSPENSION_DELETED:
+      case NotificationType.CLIENT_RELIEF_DELETED:
+      case NotificationType.TIME_ENTRY_DELETED:
+        return settings.receiveOnDelete;
+      default:
+        break;
     }
 
-    if (notificationType === NotificationType.TASK_OVERDUE && !settings.receiveOnTaskOverdue) {
-      return false;
-    }
-
+    // All other notification types are enabled by default
     return true;
   }
 }

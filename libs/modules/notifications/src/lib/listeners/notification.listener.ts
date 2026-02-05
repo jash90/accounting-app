@@ -5,11 +5,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { User, UserRole } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { RecipientResolver } from '../decorators/notify-on.decorator';
 import { NotificationEventPayload } from '../dto/notification-event-payload.dto';
 import { NotificationDispatcherService } from '../services/notification-dispatcher.service';
-import { SystemCompanyService } from '../services/system-company.service';
 
 @Injectable()
 export class NotificationListener {
