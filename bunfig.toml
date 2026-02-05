@@ -3,3 +3,17 @@ root = "."
 preload = ["./test/bun-setup.ts"]
 coverage = true
 coverageReporter = ["text", "lcov"]
+
+# NOTE: Bun doesn't support path exclusion in tests (only coverage exclusion)
+# Use specific paths instead: bun test libs/ apps/api/src
+# Run E2E tests with: bun run test:e2e
+# Run integration tests with: docker-compose up -d && bun run test:integration
+
+# Exclude from coverage reports only
+coveragePathIgnorePatterns = [
+  "**/node_modules/**",
+  "**/web-e2e/**",
+  "**/api-e2e/**",
+  "**/*.integration.spec.ts",
+  "**/test/**"
+]

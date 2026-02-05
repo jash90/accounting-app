@@ -1,13 +1,21 @@
 import {
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
   AmlGroup,
-  IconType,
-  type ConditionOperator,
   CustomFieldType,
+  EmploymentType,
+  IconType,
+  TaxScheme,
+  VatStatus,
+  ZusStatus,
+  type ConditionOperator,
 } from '@/types/enums';
+
+// PKD 2025 - Polska Klasyfikacja Działalności (657 kodów na poziomie klasy)
+// Import from browser-safe subpath (no TypeORM/Node.js dependencies)
+import {
+  getPkdCodesForFrontend,
+  getPkdSectionsForFrontend,
+  type PkdCodeOption,
+} from '@accounting/common/browser';
 
 // Employment Type Labels
 export const EmploymentTypeLabels: Record<EmploymentType, string> = {
@@ -103,14 +111,6 @@ export const GTU_CODES = [
 ] as const;
 
 export type GtuCode = (typeof GTU_CODES)[number]['code'];
-
-// PKD 2025 - Polska Klasyfikacja Działalności (657 kodów na poziomie klasy)
-// Import from browser-safe subpath (no TypeORM/Node.js dependencies)
-import {
-  getPkdCodesForFrontend,
-  getPkdSectionsForFrontend,
-  type PkdCodeOption,
-} from '@accounting/common/browser';
 
 // Re-export with backwards-compatible names and proper types
 export const PKD_CODES: PkdCodeOption[] = getPkdCodesForFrontend();

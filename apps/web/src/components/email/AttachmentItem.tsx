@@ -1,8 +1,8 @@
-import { FileIcon, X, Download, Loader2 } from 'lucide-react';
+import { Download, FileIcon, Loader2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
-import { type Attachment, formatFileSize } from './AttachmentList';
+import { formatFileSize, type Attachment } from './AttachmentList';
 
 interface AttachmentItemProps {
   attachment: Attachment;

@@ -1,13 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository, EntityManager } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 
 import {
-  User,
   Company,
-  Module as ModuleEntity,
   CompanyModuleAccess,
+  Module as ModuleEntity,
+  User,
   UserModulePermission,
   UserRole,
 } from '@accounting/common';

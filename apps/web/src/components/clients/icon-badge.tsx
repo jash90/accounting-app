@@ -1,9 +1,10 @@
-import * as LucideIcons from 'lucide-react';
-
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils/cn';
+import { getIconByKebabName, type LucideIconComponent } from '@/lib/utils/lucide-icon-registry';
 import { type ClientIcon } from '@/types/entities';
 import { IconType } from '@/types/enums';
+import { Image } from 'lucide-react';
+
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface IconBadgeProps {
   icon: ClientIcon;
@@ -31,34 +32,18 @@ const emojiSizeClasses = {
 };
 
 export function IconBadge({ icon, size = 'md', showTooltip = true, className }: IconBadgeProps) {
+  // Render icon based on type - getIconByKebabName returns cached components from registry
   const renderIcon = () => {
     switch (icon.iconType) {
       case IconType.LUCIDE: {
-        // Get Lucide icon dynamically
+        // Get Lucide icon dynamically from registry
         const iconName = icon.iconValue || 'Circle';
-        // Convert kebab-case to PascalCase for Lucide icons
-        const pascalCaseName = iconName
-          .split('-')
-          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-          .join('');
+        // Use the registry to get the icon component (handles kebab-case conversion)
+        const LucideIcon: LucideIconComponent = getIconByKebabName(iconName);
 
-        const LucideIcon = (
-          LucideIcons as unknown as Record<string, React.ComponentType<LucideIcons.LucideProps>>
-        )[pascalCaseName];
-
-        if (LucideIcon) {
-          // Use inline style for color - Tailwind can't detect dynamic classes like text-[${color}]
-          return (
-            <LucideIcon
-              size={iconSizeMap[size]}
-              className="shrink-0"
-              style={icon.color ? { color: icon.color } : undefined}
-            />
-          );
-        }
-        // Fallback to a circle if icon not found
+        // Use inline style for color - Tailwind can't detect dynamic classes like text-[${color}]
         return (
-          <LucideIcons.Circle
+          <LucideIcon
             size={iconSizeMap[size]}
             className="shrink-0"
             style={icon.color ? { color: icon.color } : undefined}
@@ -89,7 +74,7 @@ export function IconBadge({ icon, size = 'md', showTooltip = true, className }: 
               )}
               style={icon.color ? { backgroundColor: icon.color } : undefined}
             >
-              <LucideIcons.Image size={iconSizeMap[size] * 0.6} className="text-muted-foreground" />
+              <Image size={iconSizeMap[size] * 0.6} className="text-muted-foreground" />
             </div>
           );
         }
@@ -122,14 +107,12 @@ export function IconBadge({ icon, size = 'md', showTooltip = true, className }: 
 
   if (showTooltip && (icon.tooltip || icon.name)) {
     return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>{badge}</TooltipTrigger>
-          <TooltipContent>
-            <p>{icon.tooltip || icon.name}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{badge}</TooltipTrigger>
+        <TooltipContent>
+          <p>{icon.tooltip || icon.name}</p>
+        </TooltipContent>
+      </Tooltip>
     );
   }
 
@@ -158,29 +141,27 @@ export function IconBadgeList({
         <IconBadge key={icon.id} icon={icon} size={size} />
       ))}
       {hiddenCount > 0 && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div
-                className={cn(
-                  'bg-muted text-muted-foreground inline-flex items-center justify-center rounded-full text-xs font-medium',
-                  size === 'sm' && 'h-5 w-5',
-                  size === 'md' && 'h-6 w-6',
-                  size === 'lg' && 'h-8 w-8'
-                )}
-              >
-                +{hiddenCount}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <div className="flex flex-col gap-1">
-                {icons.slice(maxVisible).map((icon) => (
-                  <span key={icon.id}>{icon.name}</span>
-                ))}
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              className={cn(
+                'bg-muted text-muted-foreground inline-flex items-center justify-center rounded-full text-xs font-medium',
+                size === 'sm' && 'h-5 w-5',
+                size === 'md' && 'h-6 w-6',
+                size === 'lg' && 'h-8 w-8'
+              )}
+            >
+              +{hiddenCount}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <div className="flex flex-col gap-1">
+              {icons.slice(maxVisible).map((icon) => (
+                <span key={icon.id}>{icon.name}</span>
+              ))}
+            </div>
+          </TooltipContent>
+        </Tooltip>
       )}
     </div>
   );

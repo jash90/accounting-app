@@ -1,30 +1,35 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
 import { type ColumnDef } from '@tanstack/react-table';
-import { Edit, Trash2, Key, Users, UserPlus } from 'lucide-react';
+import { Edit, Key, Trash2, UserPlus, Users } from 'lucide-react';
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import { DataTable } from '@/components/common/data-table';
 import { PageHeader } from '@/components/common/page-header';
 import { EmployeeFormDialog } from '@/components/forms/employee-form-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
-  useEmployees,
-  useDeleteEmployee,
   useCreateEmployee,
+  useDeleteEmployee,
+  useEmployees,
   useUpdateEmployee,
 } from '@/lib/hooks/use-employees';
-import { type UserDto, type CreateEmployeeDto, type UpdateEmployeeDto } from '@/types/dtos';
+import { type CreateEmployeeDto, type UpdateEmployeeDto, type UserDto } from '@/types/dtos';
+
+// Lazy load DataTable for bundle size optimization
+const DataTable = lazy(() =>
+  import('@/components/common/data-table').then((m) => ({ default: m.DataTable }))
+);
 
 const columns: ColumnDef<UserDto>[] = [
   {
     accessorKey: 'email',
     header: 'Email',
-    cell: ({ row }) => <div className="text-apptax-navy font-medium">{row.original.email}</div>,
+    cell: ({ row }) => <div className="text-foreground font-medium">{row.original.email}</div>,
   },
   {
     accessorKey: 'firstName',
@@ -66,26 +71,26 @@ export default function EmployeesListPage() {
           <Button
             size="icon"
             variant="ghost"
-            className="hover:bg-apptax-soft-teal h-8 w-8"
+            className="hover:bg-accent/10 h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               navigate(`/company/employees/${row.original.id}/permissions`);
             }}
             title="Zarządzaj uprawnieniami"
           >
-            <Key className="text-apptax-teal h-4 w-4" />
+            <Key className="text-accent h-4 w-4" />
           </Button>
           <Button
             size="icon"
             variant="ghost"
-            className="hover:bg-apptax-soft-teal h-8 w-8"
+            className="hover:bg-accent/10 h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               setEditingEmployee(row.original);
             }}
             title="Edytuj pracownika"
           >
-            <Edit className="text-apptax-blue h-4 w-4" />
+            <Edit className="text-primary h-4 w-4" />
           </Button>
           <Button
             size="icon"
@@ -113,7 +118,7 @@ export default function EmployeesListPage() {
         action={
           <Button
             onClick={() => setCreateOpen(true)}
-            className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+            className="bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md transition-all"
           >
             <UserPlus className="mr-2 h-4 w-4" />
             Dodaj pracownika
@@ -121,9 +126,15 @@ export default function EmployeesListPage() {
         }
       />
 
-      <Card className="border-apptax-soft-teal/30">
+      <Card className="border-border">
         <CardContent className="p-0">
-          <DataTable columns={actionColumns} data={employees} isLoading={isPending} />
+          <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+            <DataTable
+              columns={actionColumns as never}
+              data={employees as never}
+              isLoading={isPending}
+            />
+          </Suspense>
         </CardContent>
       </Card>
 

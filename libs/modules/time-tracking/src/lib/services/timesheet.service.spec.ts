@@ -1,18 +1,19 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
-import { type Repository, DataSource } from 'typeorm';
+import { DataSource, type Repository } from 'typeorm';
 
 import {
   TimeEntry,
   TimeEntryStatus,
-  type User,
-  UserRole,
   TimeRoundingMethod,
+  UserRole,
   type TimeSettings,
+  type User,
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 
+import { TIME_TRACKING_LABELS } from '../constants';
 import { TimeCalculationService } from './time-calculation.service';
 import { TimeSettingsService } from './time-settings.service';
 import { TimesheetService } from './timesheet.service';
@@ -28,6 +29,15 @@ describe('TimesheetService', () => {
   // Mock data
   const mockCompanyId = 'company-123';
   const mockUserId = 'user-123';
+
+  // Create mocks at module level for proper instantiation
+  const mockTenantService = {
+    getEffectiveCompanyId: jest.fn(),
+  };
+
+  const mockSettingsService = {
+    getSettings: jest.fn(),
+  };
 
   const mockEmployee: Partial<User> = {
     id: mockUserId,
@@ -107,42 +117,59 @@ describe('TimesheetService', () => {
   };
 
   beforeEach(async () => {
+    // Reset mocks before each test
+    mockTenantService.getEffectiveCompanyId.mockReset();
+    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSettingsService.getSettings.mockReset();
+    mockSettingsService.getSettings.mockResolvedValue(mockSettings);
+
     const mockQueryBuilder = createMockQueryBuilder();
+
+    const mockEntryRepository = {
+      find: jest.fn(),
+      createQueryBuilder: jest.fn(() => mockQueryBuilder),
+    };
+
+    const mockDataSource = {
+      getRepository: jest.fn().mockReturnValue({
+        findOne: jest.fn().mockResolvedValue({
+          id: mockUserId,
+          companyId: mockCompanyId,
+          isActive: true,
+        }),
+      }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        TimesheetService,
-        TimeCalculationService,
+        // Use useFactory to manually wire dependencies (needed for Bun which doesn't emit decorator metadata)
+        {
+          provide: TimesheetService,
+          useFactory: () => {
+            return new TimesheetService(
+              mockEntryRepository as any,
+              new TimeCalculationService(),
+              mockSettingsService as any,
+              mockTenantService as any,
+              mockDataSource as any
+            );
+          },
+        },
         {
           provide: getRepositoryToken(TimeEntry),
-          useValue: {
-            find: jest.fn(),
-            createQueryBuilder: jest.fn(() => mockQueryBuilder),
-          },
+          useValue: mockEntryRepository,
         },
         {
           provide: TenantService,
-          useValue: {
-            getEffectiveCompanyId: jest.fn().mockResolvedValue(mockCompanyId),
-          },
+          useValue: mockTenantService,
         },
         {
           provide: TimeSettingsService,
-          useValue: {
-            getSettings: jest.fn().mockResolvedValue(mockSettings),
-          },
+          useValue: mockSettingsService,
         },
         {
           provide: DataSource,
-          useValue: {
-            getRepository: jest.fn().mockReturnValue({
-              findOne: jest.fn().mockResolvedValue({
-                id: mockUserId,
-                companyId: mockCompanyId,
-                isActive: true,
-              }),
-            }),
-          },
+          useValue: mockDataSource,
         },
       ],
     }).compile();
@@ -151,7 +178,7 @@ describe('TimesheetService', () => {
     entryRepository = module.get(getRepositoryToken(TimeEntry));
     tenantService = module.get(TenantService);
     settingsService = module.get(TimeSettingsService);
-    _calculationService = module.get(TimeCalculationService);
+    _calculationService = new TimeCalculationService();
   });
 
   describe('getDailyTimesheet', () => {
@@ -256,7 +283,7 @@ describe('TimesheetService', () => {
 
     it('should respect week start day from settings', async () => {
       entryRepository.find = jest.fn().mockResolvedValue([]);
-      settingsService.getSettings = jest.fn().mockResolvedValue({
+      mockSettingsService.getSettings.mockResolvedValue({
         ...mockSettings,
         weekStartDay: 0, // Sunday
       });
@@ -612,7 +639,7 @@ describe('TimesheetService', () => {
   });
 
   describe('groupEntries (via getReportSummary)', () => {
-    it('should use Polish labels for no-client grouping', async () => {
+    it('should use correct labels for no-client grouping', async () => {
       const mockEntries = [
         createMockEntry({
           clientId: undefined as any,
@@ -629,10 +656,10 @@ describe('TimesheetService', () => {
       );
 
       const noClientGroup = result.groupedData?.find((g) => g.groupId === 'no-client');
-      expect(noClientGroup?.groupName).toBe('Bez klienta');
+      expect(noClientGroup?.groupName).toBe(TIME_TRACKING_LABELS.NO_CLIENT);
     });
 
-    it('should use Polish labels for no-task grouping', async () => {
+    it('should use correct labels for no-task grouping', async () => {
       const mockEntries = [
         createMockEntry({
           taskId: undefined as any,
@@ -649,7 +676,7 @@ describe('TimesheetService', () => {
       );
 
       const noTaskGroup = result.groupedData?.find((g) => g.groupId === 'no-task');
-      expect(noTaskGroup?.groupName).toBe('Bez zadania');
+      expect(noTaskGroup?.groupName).toBe(TIME_TRACKING_LABELS.NO_TASK);
     });
 
     it('should calculate correct totals per group', async () => {

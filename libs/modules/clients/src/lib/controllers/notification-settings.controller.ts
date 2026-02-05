@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { User } from '@accounting/common';
 import {
@@ -18,6 +19,7 @@ import {
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
+
 import { UpdateNotificationSettingsDto } from '../dto/notification-settings.dto';
 import { NotificationSettingsService } from '../services/notification-settings.service';
 

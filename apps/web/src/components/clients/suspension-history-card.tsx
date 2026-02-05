@@ -69,7 +69,7 @@ const SuspensionEntry = memo(function SuspensionEntry({
       : 'Zakończone zawieszenie';
 
   return (
-    <div className="border-apptax-soft-teal relative border-l-2 pb-4 pl-4">
+    <div className="border-accent relative border-l-2 pb-4 pl-4">
       <div
         className={`absolute top-0 -left-[7px] h-3 w-3 rounded-full ${
           isActive ? 'bg-amber-500' : isFuture ? 'bg-blue-500' : 'bg-gray-400'

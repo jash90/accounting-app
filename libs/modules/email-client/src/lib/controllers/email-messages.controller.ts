@@ -1,26 +1,28 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
   Body,
+  Controller,
+  Delete,
+  Get,
   Param,
+  ParseIntPipe,
+  Patch,
+  Post,
   Query,
   UseGuards,
-  ParseIntPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
+import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
   PermissionGuard,
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
-import { User } from '@accounting/common';
-import { EmailClientService } from '../services/email-client.service';
+
 import { EmailAttachmentService } from '../services/email-attachment.service';
+import { EmailClientService } from '../services/email-client.service';
 
 /**
  * Email Messages Controller

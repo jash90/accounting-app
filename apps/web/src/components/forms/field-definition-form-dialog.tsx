@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useForm } from 'react-hook-form';
 
@@ -287,7 +287,7 @@ export function FieldDefinitionFormDialog({
               <Button
                 type="submit"
                 disabled={form.formState.isSubmitting}
-                className="bg-apptax-blue hover:bg-apptax-blue/90"
+                className="bg-primary hover:bg-primary/90"
               >
                 {isEditing ? 'Zapisz' : 'Dodaj'}
               </Button>

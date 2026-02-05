@@ -1,24 +1,25 @@
-import { useState, useCallback, useMemo } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
-import { format, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
+import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
-  CheckSquare,
   ArrowLeft,
-  List,
-  LayoutGrid,
   Calendar as CalendarIcon,
-  GanttChartSquare,
+  CheckSquare,
   ChevronLeft,
   ChevronRight,
+  GanttChartSquare,
+  LayoutGrid,
+  List,
   Plus,
 } from 'lucide-react';
 
 import { PageHeader } from '@/components/common/page-header';
-import { TaskFormDialog, TaskStatusBadge, TaskPriorityBadge } from '@/components/tasks';
 import { TaskFilters } from '@/components/tasks/task-filters';
+import { TaskPriorityBadge } from '@/components/tasks/task-priority-badge';
+import { TaskStatusBadge } from '@/components/tasks/task-status-badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,8 +28,31 @@ import { useAuthContext } from '@/contexts/auth-context';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import { useCalendarTasks, useCreateTask } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
-import { type CalendarTaskDto, type CreateTaskDto, type TaskFiltersDto } from '@/types/dtos';
+import {
+  type CalendarTaskDto,
+  type CreateTaskDto,
+  type TaskFiltersDto,
+  type UpdateTaskDto,
+} from '@/types/dtos';
 import { TaskPriority, UserRole } from '@/types/enums';
+
+
+// Lazy-load heavy form dialog to reduce initial bundle size - direct import for tree-shaking
+const TaskFormDialog = lazy(() =>
+  import('@/components/tasks/task-form-dialog').then((m) => ({
+    default: m.TaskFormDialog,
+  }))
+);
+
+// Loading fallback for dialog
+const DialogLoadingFallback = () => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="bg-background rounded-lg p-6 shadow-lg">
+      <Skeleton className="h-8 w-48 mb-4" />
+      <Skeleton className="h-64 w-96" />
+    </div>
+  </div>
+);
 
 export default function TasksCalendarPage() {
   const { user } = useAuthContext();
@@ -68,6 +92,14 @@ export default function TasksCalendarPage() {
   const handleFiltersChange = useCallback((newFilters: TaskFiltersDto) => {
     setFilters(newFilters);
   }, []);
+
+  // Memoized submit handler to avoid recreating on each render
+  const handleCreateSubmit = useCallback(
+    async (data: CreateTaskDto | UpdateTaskDto) => {
+      await createTask.mutateAsync(data as CreateTaskDto);
+    },
+    [createTask]
+  );
 
   const handlePreviousMonth = () => {
     setCurrentMonth(subMonths(currentMonth, 1));
@@ -329,15 +361,15 @@ export default function TasksCalendarPage() {
         </CardContent>
       </Card>
 
-      {hasWritePermission && (
-        <TaskFormDialog
-          open={createOpen}
-          onOpenChange={setCreateOpen}
-          onSubmit={async (data) => {
-            await createTask.mutateAsync(data as CreateTaskDto);
-          }}
-          isLoading={createTask.isPending}
-        />
+      {hasWritePermission && createOpen && (
+        <Suspense fallback={<DialogLoadingFallback />}>
+          <TaskFormDialog
+            open={createOpen}
+            onOpenChange={setCreateOpen}
+            onSubmit={handleCreateSubmit}
+            isLoading={createTask.isPending}
+          />
+        </Suspense>
       )}
     </div>
   );

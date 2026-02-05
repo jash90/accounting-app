@@ -7,7 +7,7 @@ import { Task, TaskComment, User } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 
 import { CreateTaskCommentDto, UpdateTaskCommentDto } from '../dto/task-comment.dto';
-import { TaskNotFoundException, TaskCommentNotFoundException } from '../exceptions';
+import { TaskCommentNotFoundException, TaskNotFoundException } from '../exceptions';
 
 @Injectable()
 export class TaskCommentsService {

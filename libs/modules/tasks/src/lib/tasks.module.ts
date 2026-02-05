@@ -2,15 +2,15 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import {
+  Client,
+  Company,
+  NotificationSettings,
   Task,
+  TaskComment,
+  TaskDependency,
   TaskLabel,
   TaskLabelAssignment,
-  TaskDependency,
-  TaskComment,
-  Company,
   User,
-  Client,
-  NotificationSettings,
 } from '@accounting/common';
 import { CommonModule } from '@accounting/common/backend';
 import { EmailModule } from '@accounting/email';

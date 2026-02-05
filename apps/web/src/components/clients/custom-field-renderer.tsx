@@ -1,5 +1,8 @@
 import { memo } from 'react';
 
+import { type ClientFieldDefinition } from '@/types/entities';
+import { CustomFieldType } from '@/types/enums';
+
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import {
@@ -10,8 +13,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { type ClientFieldDefinition } from '@/types/entities';
-import { CustomFieldType } from '@/types/enums';
 
 interface CustomFieldRendererProps {
   definition: ClientFieldDefinition;
@@ -20,6 +21,10 @@ interface CustomFieldRendererProps {
   disabled?: boolean;
   /** Unique ID for the input element, used for label association */
   id?: string;
+  /** ARIA describedby attribute for accessibility */
+  'aria-describedby'?: string;
+  /** ARIA invalid attribute for accessibility */
+  'aria-invalid'?: boolean;
 }
 
 /**
@@ -32,8 +37,14 @@ export const CustomFieldRenderer = memo(function CustomFieldRenderer({
   onChange,
   disabled = false,
   id,
+  'aria-describedby': ariaDescribedBy,
+  'aria-invalid': ariaInvalid,
 }: CustomFieldRendererProps) {
   const inputId = id || `custom-field-${definition.id}`;
+  const ariaProps = {
+    ...(ariaDescribedBy && { 'aria-describedby': ariaDescribedBy }),
+    ...(ariaInvalid !== undefined && { 'aria-invalid': ariaInvalid }),
+  };
 
   switch (definition.fieldType) {
     case CustomFieldType.TEXT:
@@ -45,6 +56,7 @@ export const CustomFieldRenderer = memo(function CustomFieldRenderer({
           placeholder={definition.label}
           disabled={disabled}
           aria-label={definition.label}
+          {...ariaProps}
         />
       );
 
@@ -58,6 +70,7 @@ export const CustomFieldRenderer = memo(function CustomFieldRenderer({
           placeholder={definition.label}
           disabled={disabled}
           aria-label={definition.label}
+          {...ariaProps}
         />
       );
 
@@ -80,6 +93,7 @@ export const CustomFieldRenderer = memo(function CustomFieldRenderer({
             onCheckedChange={(checked) => onChange(String(checked))}
             disabled={disabled}
             aria-label={definition.label}
+            {...ariaProps}
           />
           <span className="text-muted-foreground text-sm" aria-hidden="true">
             {value === 'true' ? 'Tak' : 'Nie'}
@@ -90,7 +104,7 @@ export const CustomFieldRenderer = memo(function CustomFieldRenderer({
     case CustomFieldType.ENUM:
       return (
         <Select value={value} onValueChange={onChange} disabled={disabled}>
-          <SelectTrigger id={inputId} aria-label={definition.label}>
+          <SelectTrigger id={inputId} aria-label={definition.label} {...ariaProps}>
             <SelectValue placeholder="Wybierz..." />
           </SelectTrigger>
           <SelectContent>
@@ -112,6 +126,7 @@ export const CustomFieldRenderer = memo(function CustomFieldRenderer({
           placeholder={definition.label}
           disabled={disabled}
           aria-label={definition.label}
+          {...ariaProps}
         />
       );
   }

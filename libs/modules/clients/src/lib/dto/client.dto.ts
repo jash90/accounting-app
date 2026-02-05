@@ -1,39 +1,39 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
-import { Type, Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   Allow,
-  IsString,
-  IsOptional,
+  IsArray,
+  IsBoolean,
+  IsDateString,
   IsEmail,
   IsEnum,
-  IsBoolean,
-  MaxLength,
-  MinLength,
-  IsUUID,
-  IsArray,
-  IsObject,
   IsInt,
-  Min,
-  Max,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUUID,
   Matches,
-  IsDateString,
-  ValidateNested,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
   registerDecorator,
-  ValidationOptions,
+  ValidateNested,
   ValidationArguments,
+  ValidationOptions,
 } from 'class-validator';
 
 import {
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
   AmlGroup,
-  Sanitize,
-  SanitizeWithFormatting,
+  EmploymentType,
   PKD_CODE_REGEX,
   PKD_CODE_VALIDATION_MESSAGE,
+  Sanitize,
+  SanitizeWithFormatting,
+  TaxScheme,
+  VatStatus,
+  ZusStatus,
 } from '@accounting/common';
 
 export class CreateClientDto {

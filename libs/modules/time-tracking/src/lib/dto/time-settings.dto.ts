@@ -1,16 +1,16 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 import {
-  IsString,
-  IsOptional,
-  IsEnum,
   IsBoolean,
+  IsEnum,
   IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
   MaxLength,
   Min,
-  Max,
-  IsNumber,
-  Matches,
 } from 'class-validator';
 
 import { TimeRoundingMethod } from '@accounting/common';

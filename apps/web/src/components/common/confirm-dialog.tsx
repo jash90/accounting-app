@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 import { AlertTriangle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -22,7 +24,7 @@ interface ConfirmDialogProps {
   isLoading?: boolean;
 }
 
-export function ConfirmDialog({
+export const ConfirmDialog = memo(function ConfirmDialog({
   open,
   onOpenChange,
   title,
@@ -67,4 +69,4 @@ export function ConfirmDialog({
       </DialogContent>
     </Dialog>
   );
-}
+});

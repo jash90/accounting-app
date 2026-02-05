@@ -1,26 +1,26 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
-import { Type, Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
-  IsString,
-  IsOptional,
-  IsEnum,
-  IsBoolean,
-  IsUUID,
-  IsInt,
-  IsArray,
   ArrayMaxSize,
   ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  Max,
   MaxLength,
   Min,
-  Max,
-  IsDateString,
-  IsNumber,
-  IsNotEmpty,
-  Matches,
 } from 'class-validator';
 
-import { TimeEntryStatus, Sanitize } from '@accounting/common';
+import { Sanitize, TimeEntryStatus } from '@accounting/common';
 
 export class CreateTimeEntryDto {
   @ApiPropertyOptional({ description: 'Description of the time entry', maxLength: 255 })
@@ -45,9 +45,9 @@ export class CreateTimeEntryDto {
     maximum: 1440,
   })
   @IsOptional()
-  @IsInt()
-  @Min(0)
-  @Max(1440, { message: 'Duration cannot exceed 24 hours (1440 minutes)' })
+  @IsInt({ message: 'Czas trwania musi być liczbą całkowitą' })
+  @Min(0, { message: 'Czas trwania nie może być ujemny' })
+  @Max(1440, { message: 'Czas trwania nie może przekraczać 24 godzin (1440 minut)' })
   durationMinutes?: number;
 
   @ApiPropertyOptional({ description: 'Is this entry billable', default: true })
@@ -57,9 +57,9 @@ export class CreateTimeEntryDto {
 
   @ApiPropertyOptional({ description: 'Hourly rate for billing', minimum: 0, maximum: 10000 })
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
-  @Max(10000, { message: 'Hourly rate cannot exceed 10000' })
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Stawka godzinowa musi być liczbą' })
+  @Min(0, { message: 'Stawka godzinowa nie może być ujemna' })
+  @Max(10000, { message: 'Stawka godzinowa nie może przekraczać 10000' })
   hourlyRate?: number;
 
   @ApiPropertyOptional({ description: 'Currency code (ISO 4217)', default: 'PLN', maxLength: 3 })
@@ -72,11 +72,11 @@ export class CreateTimeEntryDto {
 
   @ApiPropertyOptional({ description: 'Tags for categorization', type: [String] })
   @IsOptional()
-  @IsArray()
-  @ArrayMaxSize(10, { message: 'Maximum 10 tags allowed' })
+  @IsArray({ message: 'Tagi muszą być tablicą' })
+  @ArrayMaxSize(10, { message: 'Maksymalnie 10 tagów dozwolonych' })
   @Transform(({ value }) => value?.map((t: string) => t.trim()).filter((t: string) => t.length > 0))
-  @IsString({ each: true })
-  @MaxLength(50, { each: true, message: 'Each tag must be max 50 characters' })
+  @IsString({ each: true, message: 'Każdy tag musi być tekstem' })
+  @MaxLength(50, { each: true, message: 'Każdy tag może mieć maksymalnie 50 znaków' })
   tags?: string[];
 
   @ApiPropertyOptional({ description: 'Associated client ID' })
@@ -187,19 +187,19 @@ export class RejectTimeEntryDto {
 
 export class BulkApproveDto {
   @ApiProperty({ description: 'Time entry IDs to approve (max 100)', type: [String] })
-  @IsArray()
-  @ArrayMinSize(1, { message: 'At least one entry ID is required' })
-  @ArrayMaxSize(100, { message: 'Cannot process more than 100 entries at once' })
-  @IsUUID('4', { each: true })
+  @IsArray({ message: 'Identyfikatory wpisów muszą być tablicą' })
+  @ArrayMinSize(1, { message: 'Wymagany jest co najmniej jeden identyfikator wpisu' })
+  @ArrayMaxSize(100, { message: 'Nie można przetwarzać więcej niż 100 wpisów naraz' })
+  @IsUUID('4', { each: true, message: 'Każdy identyfikator musi być prawidłowym UUID' })
   entryIds!: string[];
 }
 
 export class BulkRejectDto {
   @ApiProperty({ description: 'Time entry IDs to reject (max 100)', type: [String] })
-  @IsArray()
-  @ArrayMinSize(1, { message: 'At least one entry ID is required' })
-  @ArrayMaxSize(100, { message: 'Cannot process more than 100 entries at once' })
-  @IsUUID('4', { each: true })
+  @IsArray({ message: 'Identyfikatory wpisów muszą być tablicą' })
+  @ArrayMinSize(1, { message: 'Wymagany jest co najmniej jeden identyfikator wpisu' })
+  @ArrayMaxSize(100, { message: 'Nie można przetwarzać więcej niż 100 wpisów naraz' })
+  @IsUUID('4', { each: true, message: 'Każdy identyfikator musi być prawidłowym UUID' })
   entryIds!: string[];
 
   @ApiProperty({ description: 'Reason for rejection', maxLength: 500 })

@@ -1,41 +1,82 @@
+import { useMemo } from 'react';
+
 import {
-  Clock,
-  List,
+  AlertTriangle,
+  BarChart3,
   Calendar,
   CalendarDays,
-  BarChart3,
+  Clock,
+  DollarSign,
+  List,
+  RefreshCw,
   Settings,
   Timer,
-  DollarSign,
   TrendingUp,
 } from 'lucide-react';
 
-import { TimerWidget } from '@/components/time-tracking';
+import { ErrorBoundary } from '@/components/common/error-boundary';
+import { TimerWidget } from '@/components/time-tracking/timer-widget';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
-import { useTimeEntries, useActiveTimer } from '@/lib/hooks/use-time-tracking';
+import { useActiveTimer, useTimeEntries } from '@/lib/hooks/use-time-tracking';
 import { UserRole } from '@/types/enums';
+
+// Hoisted outside component - static JSX that doesn't depend on component state
+// Prevents recreation on every render
+const timerErrorFallback = (
+  <Card className="w-full border-destructive/50 bg-destructive/5">
+    <CardContent className="flex items-center justify-between p-4">
+      <div className="flex items-center gap-3">
+        <AlertTriangle className="h-5 w-5 text-destructive" />
+        <div>
+          <p className="font-medium text-destructive">Błąd timera</p>
+          <p className="text-muted-foreground text-sm">
+            Nie udało się załadować timera. Odśwież stronę, aby spróbować ponownie.
+          </p>
+        </div>
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => window.location.reload()}
+        className="gap-2"
+      >
+        <RefreshCw className="h-4 w-4" />
+        Odśwież
+      </Button>
+    </CardContent>
+  </Card>
+);
 
 export default function TimeTrackingDashboardPage() {
   const { user } = useAuthContext();
   const { data: entriesData, isPending: entriesLoading } = useTimeEntries({ limit: 100 });
   const { data: activeTimer } = useActiveTimer();
 
-  const entries = entriesData?.data ?? [];
-
-  // Calculate statistics
-  const totalEntries = entries.length;
-  const runningEntries = entries.filter((e) => e.isRunning).length;
-  const billableMinutes = entries
-    .filter((e) => e.isBillable && !e.isRunning)
-    .reduce((sum, e) => sum + (e.durationMinutes || 0), 0);
-  const totalAmount = entries
-    .filter((e) => !e.isRunning)
-    .reduce((sum, e) => {
-      const amount = e.totalAmount != null ? parseFloat(String(e.totalAmount)) : 0;
-      return sum + (isNaN(amount) ? 0 : amount);
-    }, 0);
+  // Calculate statistics - memoized to prevent recalculation on every render
+  const { totalEntries, runningEntries, billableMinutes, totalAmount } = useMemo(() => {
+    const entries = entriesData?.data ?? [];
+    const total = entries.length;
+    const running = entries.filter((e) => e.isRunning).length;
+    const billable = entries
+      .filter((e) => e.isBillable && !e.isRunning)
+      .reduce((sum, e) => sum + (e.durationMinutes || 0), 0);
+    const amount = entries
+      .filter((e) => !e.isRunning)
+      .reduce((sum, e) => {
+        const amt = e.totalAmount != null ? parseFloat(String(e.totalAmount)) : 0;
+        return sum + (isNaN(amt) ? 0 : amt);
+      }, 0);
+    return {
+      totalEntries: total,
+      runningEntries: running,
+      billableMinutes: billable,
+      totalAmount: amount,
+    };
+  }, [entriesData?.data]);
 
   // Determine the base path based on user role
   const getBasePath = () => {
@@ -57,37 +98,40 @@ export default function TimeTrackingDashboardPage() {
     return `${hours}h ${mins}m`;
   };
 
-  // View options
-  const views = [
-    {
-      title: 'Lista wpisów',
-      description: 'Przeglądaj wszystkie wpisy czasu z filtrowaniem i edycją',
-      icon: List,
-      href: `${basePath}/entries`,
-      gradient: 'bg-apptax-gradient',
-    },
-    {
-      title: 'Timesheet dzienny',
-      description: 'Widok dzienny z podsumowaniem czasu pracy',
-      icon: Calendar,
-      href: `${basePath}/timesheet/daily`,
-      gradient: 'bg-apptax-dark-gradient',
-    },
-    {
-      title: 'Timesheet tygodniowy',
-      description: 'Widok tygodniowy z analizą czasu',
-      icon: CalendarDays,
-      href: `${basePath}/timesheet/weekly`,
-      gradient: 'bg-gradient-to-br from-purple-500 to-pink-500',
-    },
-    {
-      title: 'Raporty',
-      description: 'Generuj raporty rozliczeniowe i eksportuj dane do CSV/Excel',
-      icon: BarChart3,
-      href: `${basePath}/reports`,
-      gradient: 'bg-gradient-to-br from-emerald-500 to-teal-500',
-    },
-  ];
+  // View options - memoized to prevent array recreation on every render
+  const views = useMemo(
+    () => [
+      {
+        title: 'Lista wpisów',
+        description: 'Przeglądaj wszystkie wpisy czasu z filtrowaniem i edycją',
+        icon: List,
+        href: `${basePath}/entries`,
+        gradient: 'bg-primary',
+      },
+      {
+        title: 'Timesheet dzienny',
+        description: 'Widok dzienny z podsumowaniem czasu pracy',
+        icon: Calendar,
+        href: `${basePath}/timesheet/daily`,
+        gradient: 'bg-primary',
+      },
+      {
+        title: 'Timesheet tygodniowy',
+        description: 'Widok tygodniowy z analizą czasu',
+        icon: CalendarDays,
+        href: `${basePath}/timesheet/weekly`,
+        gradient: 'bg-gradient-to-br from-purple-500 to-pink-500',
+      },
+      {
+        title: 'Raporty',
+        description: 'Generuj raporty rozliczeniowe i eksportuj dane do CSV/Excel',
+        icon: BarChart3,
+        href: `${basePath}/reports`,
+        gradient: 'bg-gradient-to-br from-emerald-500 to-teal-500',
+      },
+    ],
+    [basePath]
+  );
 
   // Settings option (only for admins and company owners)
   const showSettings = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER;
@@ -95,17 +139,19 @@ export default function TimeTrackingDashboardPage() {
   return (
     <div className="container mx-auto space-y-6 p-6">
       <div>
-        <h1 className="text-apptax-navy flex items-center gap-3 text-3xl font-bold">
+        <h1 className="text-foreground flex items-center gap-3 text-3xl font-bold">
           Logowanie czasu
-          <div className="bg-apptax-teal h-3 w-3 rounded-full" />
+          <div className="bg-accent h-3 w-3 rounded-full" />
         </h1>
         <p className="text-muted-foreground mt-1">
           Śledź czas pracy i generuj raporty rozliczeniowe
         </p>
       </div>
 
-      {/* Timer Widget */}
-      <TimerWidget />
+      {/* Timer Widget - wrapped in ErrorBoundary to prevent full page crash */}
+      <ErrorBoundary fallback={timerErrorFallback}>
+        <TimerWidget />
+      </ErrorBoundary>
 
       {/* Statistics Cards */}
       <div className="flex flex-wrap gap-6">
@@ -114,9 +160,9 @@ export default function TimeTrackingDashboardPage() {
           label="Wszystkie wpisy"
           value={totalEntries}
           icon={Clock}
-          iconBg="bg-apptax-gradient"
-          valueColor="text-apptax-navy"
-          borderColor="border-apptax-soft-teal/30"
+          iconBg="bg-primary"
+          valueColor="text-foreground"
+          borderColor="border-accent/30"
           isLoading={entriesLoading}
         />
 

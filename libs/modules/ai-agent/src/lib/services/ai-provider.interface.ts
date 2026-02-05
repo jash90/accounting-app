@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
-import { Observable } from 'rxjs';
+
+import { type Observable } from 'rxjs';
 
 /**
  * Custom error class for AI provider errors with user-friendly messages.

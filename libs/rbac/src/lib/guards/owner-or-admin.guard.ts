@@ -1,6 +1,8 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+
 import { UserRole } from '@accounting/common';
+
 import { OWNER_OR_ADMIN_KEY } from '../decorators/owner-or-admin.decorator';
 
 @Injectable()

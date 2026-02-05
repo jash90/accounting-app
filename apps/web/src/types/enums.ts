@@ -152,12 +152,12 @@ export const TaskStatusLabels: Record<TaskStatus, string> = {
 };
 
 export const TaskStatusColors: Record<TaskStatus, string> = {
-  [TaskStatus.BACKLOG]: 'bg-slate-100 text-slate-700',
-  [TaskStatus.TODO]: 'bg-blue-100 text-blue-700',
-  [TaskStatus.IN_PROGRESS]: 'bg-yellow-100 text-yellow-700',
-  [TaskStatus.IN_REVIEW]: 'bg-purple-100 text-purple-700',
-  [TaskStatus.DONE]: 'bg-green-100 text-green-700',
-  [TaskStatus.CANCELLED]: 'bg-red-100 text-red-700',
+  [TaskStatus.BACKLOG]: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+  [TaskStatus.TODO]: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  [TaskStatus.IN_PROGRESS]: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
+  [TaskStatus.IN_REVIEW]: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
+  [TaskStatus.DONE]: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+  [TaskStatus.CANCELLED]: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
 };
 
 export enum TaskPriority {
@@ -177,11 +177,11 @@ export const TaskPriorityLabels: Record<TaskPriority, string> = {
 };
 
 export const TaskPriorityColors: Record<TaskPriority, string> = {
-  [TaskPriority.URGENT]: 'bg-red-100 text-red-700',
-  [TaskPriority.HIGH]: 'bg-orange-100 text-orange-700',
-  [TaskPriority.MEDIUM]: 'bg-yellow-100 text-yellow-700',
-  [TaskPriority.LOW]: 'bg-blue-100 text-blue-700',
-  [TaskPriority.NONE]: 'bg-slate-100 text-slate-700',
+  [TaskPriority.URGENT]: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+  [TaskPriority.HIGH]: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
+  [TaskPriority.MEDIUM]: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
+  [TaskPriority.LOW]: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  [TaskPriority.NONE]: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
 };
 
 export enum TaskDependencyType {
@@ -214,11 +214,11 @@ export const TimeEntryStatusLabels: Record<TimeEntryStatus, string> = {
 };
 
 export const TimeEntryStatusColors: Record<TimeEntryStatus, string> = {
-  [TimeEntryStatus.DRAFT]: 'bg-slate-100 text-slate-700',
-  [TimeEntryStatus.SUBMITTED]: 'bg-blue-100 text-blue-700',
-  [TimeEntryStatus.APPROVED]: 'bg-green-100 text-green-700',
-  [TimeEntryStatus.REJECTED]: 'bg-red-100 text-red-700',
-  [TimeEntryStatus.BILLED]: 'bg-purple-100 text-purple-700',
+  [TimeEntryStatus.DRAFT]: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+  [TimeEntryStatus.SUBMITTED]: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  [TimeEntryStatus.APPROVED]: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+  [TimeEntryStatus.REJECTED]: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+  [TimeEntryStatus.BILLED]: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
 };
 
 export enum TimeRoundingMethod {

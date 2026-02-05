@@ -1,8 +1,8 @@
 import { useState } from 'react';
 
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
-import { ArrowLeft, Plus, Trash2, Shield, Key, Package } from 'lucide-react';
+import { ArrowLeft, Key, Package, Plus, Shield, Trash2 } from 'lucide-react';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
@@ -22,8 +22,8 @@ import {
   useCompanyModules,
   useEmployeeModules,
   useGrantModuleAccess,
-  useUpdateModulePermission,
   useRevokeModuleAccess,
+  useUpdateModulePermission,
 } from '@/lib/hooks/use-permissions';
 import { ModulePermission } from '@/types/enums';
 
@@ -109,15 +109,15 @@ export default function EmployeePermissionsPage() {
   if (employeeLoading || permissionsLoading || _modulesLoading) {
     return (
       <div className="space-y-6">
-        <div className="bg-apptax-soft-teal/30 h-8 w-1/3 animate-pulse rounded" />
+        <div className="bg-accent/10 h-8 w-1/3 animate-pulse rounded" />
         <div className="space-y-4">
           {[1, 2].map((i) => (
-            <Card key={i} className="border-apptax-soft-teal/30 animate-pulse">
+            <Card key={i} className="border-border animate-pulse">
               <CardHeader>
-                <div className="bg-apptax-soft-teal/30 h-5 w-1/2 rounded" />
+                <div className="bg-accent/10 h-5 w-1/2 rounded" />
               </CardHeader>
               <CardContent>
-                <div className="bg-apptax-soft-teal/20 h-4 w-3/4 rounded" />
+                <div className="bg-accent/5 h-4 w-3/4 rounded" />
               </CardContent>
             </Card>
           ))}
@@ -137,7 +137,7 @@ export default function EmployeePermissionsPage() {
             <Button
               variant="outline"
               onClick={() => navigate('/company/employees')}
-              className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50 hover:border-apptax-teal"
+              className="border-accent hover:bg-accent/20 hover:border-accent"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Wróć
@@ -145,7 +145,7 @@ export default function EmployeePermissionsPage() {
             {availableModulesForGrant.length > 0 && (
               <Button
                 onClick={() => setGrantDialogOpen(true)}
-                className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+                className="bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md transition-all"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Nadaj dostęp do modułu
@@ -156,12 +156,12 @@ export default function EmployeePermissionsPage() {
       />
 
       {employeeModules.length === 0 ? (
-        <Card className="border-apptax-soft-teal border-dashed">
+        <Card className="border-accent border-dashed">
           <CardContent className="py-12 text-center">
-            <div className="bg-apptax-soft-teal mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
-              <Shield className="text-apptax-teal h-8 w-8" />
+            <div className="bg-accent/10 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+              <Shield className="text-accent h-8 w-8" />
             </div>
-            <p className="text-apptax-navy font-medium">Brak przyznanych dostępów do modułów.</p>
+            <p className="text-foreground font-medium">Brak przyznanych dostępów do modułów.</p>
             <p className="text-muted-foreground mt-1 text-sm">
               Kliknij &quot;Nadaj dostęp do modułu&quot;, aby rozpocząć.
             </p>
@@ -179,24 +179,22 @@ export default function EmployeePermissionsPage() {
             return (
               <Card
                 key={employeeModule.id}
-                className="border-apptax-soft-teal/30 hover:shadow-apptax-md transition-all duration-300"
+                className="border-border hover:shadow-md transition-all duration-300"
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div
                         className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                          isAiModule ? 'bg-apptax-ai-gradient ai-glow' : 'bg-apptax-gradient'
+                          isAiModule ? 'bg-accent ai-glow' : 'bg-primary'
                         }`}
                       >
                         <Package className="h-5 w-5 text-white" />
                       </div>
                       <div>
-                        <CardTitle className="text-apptax-navy flex items-center gap-2 text-lg">
+                        <CardTitle className="text-foreground flex items-center gap-2 text-lg">
                           {module.name}
-                          {isAiModule && (
-                            <div className="bg-apptax-teal ai-glow h-2 w-2 rounded-full" />
-                          )}
+                          {isAiModule && <div className="bg-accent ai-glow h-2 w-2 rounded-full" />}
                         </CardTitle>
                         <CardDescription>{module.description}</CardDescription>
                       </div>
@@ -214,7 +212,7 @@ export default function EmployeePermissionsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="text-apptax-navy text-sm font-semibold">Uprawnienia:</div>
+                    <div className="text-foreground text-sm font-semibold">Uprawnienia:</div>
                     <div className="flex flex-wrap gap-6">
                       {[ModulePermission.READ, ModulePermission.WRITE, ModulePermission.DELETE].map(
                         (permission) => {
@@ -233,7 +231,7 @@ export default function EmployeePermissionsPage() {
                               />
                               <label
                                 htmlFor={`${module.slug}-${permission}`}
-                                className="text-apptax-navy/80 cursor-pointer text-sm font-medium"
+                                className="text-foreground/80 cursor-pointer text-sm font-medium"
                               >
                                 {permission.charAt(0).toUpperCase() + permission.slice(1)}
                               </label>
@@ -265,7 +263,7 @@ export default function EmployeePermissionsPage() {
             <div>
               <label
                 htmlFor="grant-module-select"
-                className="text-apptax-navy mb-2 block text-sm font-medium"
+                className="text-foreground mb-2 block text-sm font-medium"
               >
                 Moduł
               </label>
@@ -276,7 +274,7 @@ export default function EmployeePermissionsPage() {
               ) : (
                 <select
                   id="grant-module-select"
-                  className="focus:ring-apptax-blue/20 focus:border-apptax-blue w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm focus:ring-2 focus:outline-none"
+                  className="focus:ring-primary/20 focus:border-primary w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:ring-2 focus:outline-none"
                   value={selectedModule || ''}
                   onChange={(e) => {
                     setSelectedModule(e.target.value);
@@ -295,7 +293,7 @@ export default function EmployeePermissionsPage() {
 
             {selectedModule && (
               <div>
-                <span className="text-apptax-navy mb-2 block text-sm font-medium">Uprawnienia</span>
+                <span className="text-foreground mb-2 block text-sm font-medium">Uprawnienia</span>
                 <div className="mt-2 space-y-3">
                   {[ModulePermission.READ, ModulePermission.WRITE, ModulePermission.DELETE].map(
                     (permission) => (
@@ -315,7 +313,7 @@ export default function EmployeePermissionsPage() {
                         />
                         <label
                           htmlFor={`grant-${permission}`}
-                          className="cursor-pointer text-sm text-gray-700"
+                          className="cursor-pointer text-sm text-foreground"
                         >
                           {permission.charAt(0).toUpperCase() + permission.slice(1)}
                         </label>
@@ -330,7 +328,7 @@ export default function EmployeePermissionsPage() {
             <Button
               variant="outline"
               onClick={() => setGrantDialogOpen(false)}
-              className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50"
+              className="border-accent hover:bg-accent/20"
             >
               Anuluj
             </Button>
@@ -339,7 +337,7 @@ export default function EmployeePermissionsPage() {
               disabled={
                 !selectedModule || selectedPermissions.length === 0 || grantAccess.isPending
               }
-              className="bg-apptax-blue hover:bg-apptax-blue/90"
+              className="bg-primary hover:bg-primary/90"
             >
               Nadaj dostęp
             </Button>

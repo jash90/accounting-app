@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { Building2, Edit, Trash2, Plus, Server, Lock, AlertCircle } from 'lucide-react';
+import { AlertCircle, Building2, Edit, Lock, Plus, Server, Trash2 } from 'lucide-react';
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { PageHeader } from '@/components/common/page-header';
@@ -13,10 +13,10 @@ import { useToast } from '@/components/ui/use-toast';
 import {
   useCompanyEmailConfig,
   useCreateCompanyEmailConfig,
-  useUpdateCompanyEmailConfig,
   useDeleteCompanyEmailConfig,
-  useTestCompanySmtp,
   useTestCompanyImap,
+  useTestCompanySmtp,
+  useUpdateCompanyEmailConfig,
 } from '@/lib/hooks/use-email-config';
 import {
   type CreateEmailConfigFormData,
@@ -105,14 +105,14 @@ export default function CompanyEmailConfigPage() {
       />
 
       {/* Important Notice */}
-      <Card className="border-apptax-blue bg-apptax-soft-teal/30">
+      <Card className="border-primary bg-accent/10">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
-            <div className="bg-apptax-blue/10 rounded p-2">
-              <AlertCircle className="text-apptax-blue h-5 w-5" />
+            <div className="bg-primary/10 rounded p-2">
+              <AlertCircle className="text-primary h-5 w-5" />
             </div>
             <div className="flex-1 space-y-2">
-              <h4 className="text-apptax-navy font-semibold">Konfiguracja email dla całej firmy</h4>
+              <h4 className="text-foreground font-semibold">Konfiguracja email dla całej firmy</h4>
               <p className="text-muted-foreground text-sm">
                 Ta konfiguracja email będzie używana do wszystkich komunikacji firmowych,
                 powiadomień i automatycznych wiadomości wysyłanych w imieniu Twojej organizacji.
@@ -139,11 +139,11 @@ export default function CompanyEmailConfigPage() {
         <Card className="border-dashed">
           <CardContent className="p-12 text-center">
             <div className="flex flex-col items-center gap-4">
-              <div className="bg-apptax-soft-teal rounded-full p-4">
-                <Building2 className="text-apptax-blue h-8 w-8" />
+              <div className="bg-accent/10 rounded-full p-4">
+                <Building2 className="text-primary h-8 w-8" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-apptax-navy text-lg font-semibold">
+                <h3 className="text-foreground text-lg font-semibold">
                   Brak konfiguracji email firmy
                 </h3>
                 <p className="text-muted-foreground max-w-md">
@@ -187,7 +187,7 @@ export default function CompanyEmailConfigPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Server className="text-apptax-blue h-5 w-5" />
+                  <Server className="text-primary h-5 w-5" />
                   <CardTitle>Konfiguracja SMTP</CardTitle>
                 </div>
                 <Badge variant={emailConfig.isActive ? 'success' : 'muted'}>
@@ -200,11 +200,11 @@ export default function CompanyEmailConfigPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Host</span>
-                  <span className="text-apptax-navy font-medium">{emailConfig.smtpHost}</span>
+                  <span className="text-foreground font-medium">{emailConfig.smtpHost}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Port</span>
-                  <span className="text-apptax-navy font-medium">{emailConfig.smtpPort}</span>
+                  <span className="text-foreground font-medium">{emailConfig.smtpPort}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Zabezpieczenia</span>
@@ -214,12 +214,12 @@ export default function CompanyEmailConfigPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Użytkownik</span>
-                  <span className="text-apptax-navy font-medium">{emailConfig.smtpUser}</span>
+                  <span className="text-foreground font-medium">{emailConfig.smtpUser}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Hasło</span>
                   <div className="flex items-center gap-2">
-                    <Lock className="text-apptax-teal h-3 w-3" />
+                    <Lock className="text-accent h-3 w-3" />
                     <span className="text-muted-foreground text-xs">Zaszyfrowane</span>
                   </div>
                 </div>
@@ -232,7 +232,7 @@ export default function CompanyEmailConfigPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Server className="text-apptax-teal h-5 w-5" />
+                  <Server className="text-accent h-5 w-5" />
                   <CardTitle>Konfiguracja IMAP</CardTitle>
                 </div>
                 <Badge variant={emailConfig.isActive ? 'success' : 'muted'}>
@@ -245,11 +245,11 @@ export default function CompanyEmailConfigPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Host</span>
-                  <span className="text-apptax-navy font-medium">{emailConfig.imapHost}</span>
+                  <span className="text-foreground font-medium">{emailConfig.imapHost}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Port</span>
-                  <span className="text-apptax-navy font-medium">{emailConfig.imapPort}</span>
+                  <span className="text-foreground font-medium">{emailConfig.imapPort}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Zabezpieczenia</span>
@@ -259,12 +259,12 @@ export default function CompanyEmailConfigPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Użytkownik</span>
-                  <span className="text-apptax-navy font-medium">{emailConfig.imapUser}</span>
+                  <span className="text-foreground font-medium">{emailConfig.imapUser}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Hasło</span>
                   <div className="flex items-center gap-2">
-                    <Lock className="text-apptax-teal h-3 w-3" />
+                    <Lock className="text-accent h-3 w-3" />
                     <span className="text-muted-foreground text-xs">Zaszyfrowane</span>
                   </div>
                 </div>
@@ -273,14 +273,14 @@ export default function CompanyEmailConfigPage() {
           </Card>
 
           {/* Info Card */}
-          <Card className="from-apptax-soft-teal to-apptax-soft-teal/50 bg-gradient-to-r md:col-span-2">
+          <Card className="from-accent/10 to-accent/5 bg-gradient-to-r md:col-span-2">
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
-                <div className="rounded bg-white p-2">
-                  <Building2 className="text-apptax-blue h-5 w-5" />
+                <div className="rounded bg-background p-2">
+                  <Building2 className="text-primary h-5 w-5" />
                 </div>
                 <div className="flex-1 space-y-2">
-                  <h4 className="text-apptax-navy font-semibold">
+                  <h4 className="text-foreground font-semibold">
                     {emailConfig.displayName || 'Konfiguracja email firmy aktywna'}
                   </h4>
                   <div className="text-muted-foreground space-y-1 text-sm">
@@ -289,7 +289,7 @@ export default function CompanyEmailConfigPage() {
                       konfiguracja jest używana do wszystkich operacji email w całej firmie.
                     </p>
                     {emailConfig.company && (
-                      <p className="text-apptax-navy font-medium">
+                      <p className="text-foreground font-medium">
                         Firma: {emailConfig.company.name}
                       </p>
                     )}

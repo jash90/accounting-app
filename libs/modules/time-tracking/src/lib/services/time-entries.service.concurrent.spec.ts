@@ -3,14 +3,14 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { DataSource, type Repository } from 'typeorm';
 
-import { TimeEntry, TimeEntryStatus, type User, UserRole, type Company } from '@accounting/common';
+import { TimeEntry, TimeEntryStatus, UserRole, type Company, type User } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
+import { TimerAlreadyRunningException, TimerNotRunningException } from '../exceptions';
 import { TimeCalculationService } from './time-calculation.service';
 import { TimeEntriesService } from './time-entries.service';
 import { TimeSettingsService } from './time-settings.service';
-import { TimerAlreadyRunningException, TimerNotRunningException } from '../exceptions';
 
 /**
  * Concurrent update tests for TimeEntriesService
@@ -65,54 +65,84 @@ describe('TimeEntriesService - Concurrent Operations', () => {
     ),
   });
 
+  // Create mocks at module level for proper instantiation
+  const mockEntryRepository = {
+    findOne: jest.fn(),
+    find: jest.fn(),
+    save: jest.fn(),
+    create: jest.fn(),
+    createQueryBuilder: jest.fn(),
+  };
+
+  const mockDataSource = {
+    transaction: jest.fn(),
+  };
+
+  const mockTenantService = {
+    getEffectiveCompanyId: jest.fn().mockResolvedValue(mockCompanyId),
+  };
+
+  const mockChangeLogService = {
+    logCreate: jest.fn(),
+    logUpdate: jest.fn(),
+    logDelete: jest.fn(),
+  };
+
+  const mockCalculationService = {
+    calculateDuration: jest.fn().mockReturnValue(60),
+    roundDuration: jest.fn().mockImplementation((d: number) => d),
+    calculateTotalAmount: jest.fn().mockReturnValue(100),
+  };
+
+  const mockSettingsService = {
+    getRoundingConfig: jest.fn().mockResolvedValue({ method: 'none', interval: 1 }),
+    getSettings: jest.fn().mockResolvedValue({ defaultHourlyRate: 100 }),
+  };
+
   beforeEach(async () => {
+    // Reset mocks before each test
+    jest.clearAllMocks();
+    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        TimeEntriesService,
+        // Use useFactory to manually wire dependencies (needed for Bun which doesn't emit decorator metadata)
+        {
+          provide: TimeEntriesService,
+          useFactory: () => {
+            return new TimeEntriesService(
+              mockEntryRepository as any,
+              mockChangeLogService as any,
+              mockTenantService as any,
+              mockCalculationService as any,
+              mockSettingsService as any,
+              mockDataSource as any
+            );
+          },
+        },
         {
           provide: getRepositoryToken(TimeEntry),
-          useValue: {
-            findOne: jest.fn(),
-            find: jest.fn(),
-            save: jest.fn(),
-            create: jest.fn(),
-            createQueryBuilder: jest.fn(),
-          },
+          useValue: mockEntryRepository,
         },
         {
           provide: DataSource,
-          useValue: {
-            transaction: jest.fn(),
-          },
+          useValue: mockDataSource,
         },
         {
           provide: TenantService,
-          useValue: {
-            getEffectiveCompanyId: jest.fn().mockResolvedValue(mockCompanyId),
-          },
+          useValue: mockTenantService,
         },
         {
           provide: ChangeLogService,
-          useValue: {
-            logCreate: jest.fn(),
-            logUpdate: jest.fn(),
-            logDelete: jest.fn(),
-          },
+          useValue: mockChangeLogService,
         },
         {
           provide: TimeCalculationService,
-          useValue: {
-            calculateDuration: jest.fn().mockReturnValue(60),
-            roundDuration: jest.fn().mockImplementation((d) => d),
-            calculateTotalAmount: jest.fn().mockReturnValue(100),
-          },
+          useValue: mockCalculationService,
         },
         {
           provide: TimeSettingsService,
-          useValue: {
-            getRoundingConfig: jest.fn().mockResolvedValue({ method: 'none', interval: 1 }),
-            getSettings: jest.fn().mockResolvedValue({ defaultHourlyRate: 100 }),
-          },
+          useValue: mockSettingsService,
         },
       ],
     }).compile();
@@ -180,7 +210,7 @@ describe('TimeEntriesService - Concurrent Operations', () => {
 
       await expect(
         service.startTimer({ description: 'Second timer' }, mockUser as User)
-      ).rejects.toThrow(TimerAlreadyRunningException);
+      ).rejects.toBeInstanceOf(TimerAlreadyRunningException);
     });
 
     it('should handle unique constraint violation (concurrent starts)', async () => {
@@ -193,7 +223,7 @@ describe('TimeEntriesService - Concurrent Operations', () => {
 
       await expect(
         service.startTimer({ description: 'Concurrent timer' }, mockUser as User)
-      ).rejects.toThrow(TimerAlreadyRunningException);
+      ).rejects.toBeInstanceOf(TimerAlreadyRunningException);
     });
 
     it('should re-throw non-constraint errors', async () => {
@@ -201,9 +231,9 @@ describe('TimeEntriesService - Concurrent Operations', () => {
 
       dataSource.transaction = jest.fn().mockRejectedValue(genericError);
 
-      await expect(service.startTimer({ description: 'Test' }, mockUser as User)).rejects.toThrow(
-        'Database connection lost'
-      );
+      await expect(
+        service.startTimer({ description: 'Test' }, mockUser as User)
+      ).rejects.toHaveProperty('message', 'Database connection lost');
     });
   });
 
@@ -257,7 +287,7 @@ describe('TimeEntriesService - Concurrent Operations', () => {
         return callback(mockManager);
       });
 
-      await expect(service.stopTimer({}, mockUser as User)).rejects.toThrow(
+      await expect(service.stopTimer({}, mockUser as User)).rejects.toBeInstanceOf(
         TimerNotRunningException
       );
     });
@@ -310,7 +340,7 @@ describe('TimeEntriesService - Concurrent Operations', () => {
       expect(result1).toBeDefined();
 
       // Second call fails
-      await expect(service.stopTimer({}, mockUser as User)).rejects.toThrow(
+      await expect(service.stopTimer({}, mockUser as User)).rejects.toBeInstanceOf(
         TimerNotRunningException
       );
     });
@@ -409,7 +439,7 @@ describe('TimeEntriesService - Concurrent Operations', () => {
       await service.discardTimer(mockUser as User);
 
       // Second discard throws (no running timer)
-      await expect(service.discardTimer(mockUser as User)).rejects.toThrow(
+      await expect(service.discardTimer(mockUser as User)).rejects.toBeInstanceOf(
         TimerNotRunningException
       );
     });
@@ -530,7 +560,7 @@ describe('TimeEntriesService - Concurrent Operations', () => {
       // User 1 should fail (already has timer)
       await expect(
         service.startTimer({ description: 'Another task' }, user1 as User)
-      ).rejects.toThrow(TimerAlreadyRunningException);
+      ).rejects.toBeInstanceOf(TimerAlreadyRunningException);
 
       // User 2 should succeed
       const result = await service.startTimer({ description: 'User 2 task' }, user2 as User);
@@ -546,9 +576,9 @@ describe('TimeEntriesService - Concurrent Operations', () => {
 
       dataSource.transaction = jest.fn().mockRejectedValue(lockTimeoutError);
 
-      await expect(service.startTimer({ description: 'Test' }, mockUser as User)).rejects.toThrow(
-        'canceling statement due to lock timeout'
-      );
+      await expect(
+        service.startTimer({ description: 'Test' }, mockUser as User)
+      ).rejects.toHaveProperty('message', 'canceling statement due to lock timeout');
     });
 
     it('should handle deadlock detection', async () => {
@@ -558,9 +588,9 @@ describe('TimeEntriesService - Concurrent Operations', () => {
 
       dataSource.transaction = jest.fn().mockRejectedValue(deadlockError);
 
-      await expect(service.startTimer({ description: 'Test' }, mockUser as User)).rejects.toThrow(
-        'deadlock detected'
-      );
+      await expect(
+        service.startTimer({ description: 'Test' }, mockUser as User)
+      ).rejects.toHaveProperty('message', 'deadlock detected');
     });
   });
 
@@ -581,10 +611,12 @@ describe('TimeEntriesService - Concurrent Operations', () => {
         };
 
         // The transaction should be rolled back on error
-        await expect(callback(mockManager)).rejects.toThrow('Validation failed');
+        await expect(callback(mockManager)).rejects.toHaveProperty('message', 'Validation failed');
       });
 
-      await expect(service.startTimer({ description: 'Test' }, mockUser as User)).rejects.toThrow();
+      await expect(
+        service.startTimer({ description: 'Test' }, mockUser as User)
+      ).rejects.toBeInstanceOf(Error);
     });
   });
 });

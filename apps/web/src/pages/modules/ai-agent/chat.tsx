@@ -1,17 +1,17 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
 import {
-  Send,
-  Plus,
-  Trash2,
-  Bot,
-  User,
-  Sparkles,
-  MessageSquare,
-  Zap,
   AlertCircle,
+  Bot,
+  MessageSquare,
+  Plus,
+  Send,
+  Sparkles,
+  Trash2,
+  User,
+  Zap,
 } from 'lucide-react';
 
 import {
@@ -30,13 +30,13 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import {
-  useConversations,
+  useAIConfiguration,
   useConversation,
+  useConversations,
   useCreateConversation,
+  useDeleteConversation,
   useSendMessage,
   useSendMessageStream,
-  useDeleteConversation,
-  useAIConfiguration,
 } from '@/lib/hooks/use-ai-agent';
 import { cn } from '@/lib/utils/cn';
 import { MessageRole } from '@/types/dtos';
@@ -156,8 +156,8 @@ export default function AIAgentChatPage() {
   if (conversationsLoading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="text-apptax-navy flex items-center gap-3">
-          <div className="bg-apptax-teal ai-glow h-3 w-3 animate-pulse rounded-full" />
+        <div className="text-foreground flex items-center gap-3">
+          <div className="bg-accent ai-glow h-3 w-3 animate-pulse rounded-full" />
           Ładowanie...
         </div>
       </div>
@@ -173,7 +173,7 @@ export default function AIAgentChatPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2" data-testid="conversations-title">
                 Rozmowy
-                <div className="bg-apptax-teal ai-glow h-2 w-2 rounded-full" />
+                <div className="bg-accent ai-glow h-2 w-2 rounded-full" />
               </CardTitle>
               <Button
                 onClick={handleNewConversation}
@@ -205,8 +205,8 @@ export default function AIAgentChatPage() {
                     className={cn(
                       'group w-full cursor-pointer rounded-lg p-3 text-left transition-all duration-200',
                       selectedConversationId === conv.id
-                        ? 'bg-apptax-blue shadow-apptax-sm text-white'
-                        : 'hover:bg-apptax-soft-teal'
+                        ? 'bg-primary shadow-sm text-white'
+                        : 'hover:bg-accent/10'
                     )}
                     data-testid="conversation-item"
                   >
@@ -269,7 +269,7 @@ export default function AIAgentChatPage() {
         <Card className="flex flex-1 flex-col" data-testid="chat-area">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2" data-testid="ai-assistant-title">
-              <Sparkles className="text-apptax-teal h-5 w-5" />
+              <Sparkles className="text-accent h-5 w-5" />
               Asystent AI
             </CardTitle>
             <CardDescription>
@@ -286,10 +286,10 @@ export default function AIAgentChatPage() {
                   data-testid="empty-chat"
                 >
                   <div className="text-center">
-                    <div className="bg-apptax-ai-gradient mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+                    <div className="bg-accent mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
                       <Bot className="h-8 w-8 text-white" />
                     </div>
-                    <p className="text-apptax-navy text-lg font-medium">Rozpocznij rozmowę</p>
+                    <p className="text-foreground text-lg font-medium">Rozpocznij rozmowę</p>
                     <p className="text-muted-foreground mt-1 text-sm">
                       Zapytaj asystenta AI o cokolwiek
                     </p>
@@ -311,7 +311,7 @@ export default function AIAgentChatPage() {
                       }
                     >
                       {msg.role === MessageRole.ASSISTANT && (
-                        <div className="bg-apptax-ai-gradient ai-glow flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
+                        <div className="bg-accent ai-glow flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
                           <Bot className="h-4 w-4 text-white" />
                         </div>
                       )}
@@ -319,8 +319,8 @@ export default function AIAgentChatPage() {
                         className={cn(
                           'max-w-[70%] rounded-xl px-4 py-3',
                           msg.role === MessageRole.USER
-                            ? 'bg-apptax-blue text-white'
-                            : 'bg-apptax-soft-teal text-apptax-navy'
+                            ? 'bg-primary text-white'
+                            : 'bg-accent/10 text-foreground'
                         )}
                       >
                         <p className="whitespace-pre-wrap" data-testid="message-content">
@@ -329,7 +329,7 @@ export default function AIAgentChatPage() {
                         <p
                           className={cn(
                             'mt-2 text-xs',
-                            msg.role === MessageRole.USER ? 'text-white/70' : 'text-apptax-navy/50'
+                            msg.role === MessageRole.USER ? 'text-white/70' : 'text-foreground/50'
                           )}
                           data-testid="token-count"
                         >
@@ -338,7 +338,7 @@ export default function AIAgentChatPage() {
                         </p>
                       </div>
                       {msg.role === MessageRole.USER && (
-                        <div className="bg-apptax-navy flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
+                        <div className="bg-primary flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
                           <User className="h-4 w-4 text-white" />
                         </div>
                       )}
@@ -347,13 +347,13 @@ export default function AIAgentChatPage() {
                 {/* Streaming content or thinking indicator */}
                 {isStreaming && streamingContent && (
                   <div className="flex gap-3" data-testid="streaming-message">
-                    <div className="bg-apptax-ai-gradient ai-glow flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
+                    <div className="bg-accent ai-glow flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
                       <Bot className="h-4 w-4 text-white" />
                     </div>
-                    <div className="bg-apptax-soft-teal max-w-[70%] rounded-xl px-4 py-3">
-                      <p className="text-apptax-navy whitespace-pre-wrap">{streamingContent}</p>
-                      <p className="text-apptax-navy/50 mt-2 flex items-center gap-2 text-xs">
-                        <span className="bg-apptax-teal inline-block h-2 w-2 animate-pulse rounded-full" />
+                    <div className="bg-accent/10 max-w-[70%] rounded-xl px-4 py-3">
+                      <p className="text-foreground whitespace-pre-wrap">{streamingContent}</p>
+                      <p className="text-foreground/50 mt-2 flex items-center gap-2 text-xs">
+                        <span className="bg-accent inline-block h-2 w-2 animate-pulse rounded-full" />
                         Przesyłanie...
                       </p>
                     </div>
@@ -361,12 +361,12 @@ export default function AIAgentChatPage() {
                 )}
                 {isSending && !streamingContent && (
                   <div className="flex gap-3" data-testid="thinking-indicator">
-                    <div className="bg-apptax-ai-gradient ai-glow flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
+                    <div className="bg-accent ai-glow flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
                       <Bot className="h-4 w-4 animate-pulse text-white" />
                     </div>
-                    <div className="bg-apptax-soft-teal rounded-xl px-4 py-3">
-                      <p className="text-apptax-navy flex items-center gap-2">
-                        <span className="bg-apptax-teal inline-block h-2 w-2 animate-pulse rounded-full" />
+                    <div className="bg-accent/10 rounded-xl px-4 py-3">
+                      <p className="text-foreground flex items-center gap-2">
+                        <span className="bg-accent inline-block h-2 w-2 animate-pulse rounded-full" />
                         Myślę...
                       </p>
                     </div>
@@ -377,7 +377,7 @@ export default function AIAgentChatPage() {
 
             {/* Token/Message Info Bar */}
             {currentConversation && (
-              <div className="bg-apptax-warm-gray/30 text-muted-foreground flex items-center justify-between border-t px-4 py-2 text-xs">
+              <div className="bg-muted/30 text-muted-foreground flex items-center justify-between border-t px-4 py-2 text-xs">
                 <div className="flex items-center gap-4">
                   <span className="flex items-center gap-1">
                     <MessageSquare className="h-3 w-3" />
@@ -401,7 +401,7 @@ export default function AIAgentChatPage() {
             )}
 
             {/* Input Form */}
-            <div className="bg-apptax-warm-gray/50 border-t p-4" data-testid="message-input-area">
+            <div className="bg-muted/50 border-t p-4" data-testid="message-input-area">
               <form onSubmit={handleSendMessage} className="flex gap-3">
                 <Input
                   type="text"

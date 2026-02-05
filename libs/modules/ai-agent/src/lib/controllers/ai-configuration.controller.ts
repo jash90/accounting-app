@@ -1,34 +1,36 @@
 import {
+  Body,
   Controller,
   Get,
-  Post,
-  Patch,
-  Body,
   HttpCode,
   HttpStatus,
+  Patch,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
   ApiBearerAuth,
   ApiBody,
-  ApiForbiddenResponse,
-  ApiUnauthorizedResponse,
-  ApiOkResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+
 import { CurrentUser } from '@accounting/auth';
-import { ModuleAccessGuard, PermissionGuard, RequireModule } from '@accounting/rbac';
 import { User } from '@accounting/common';
-import { AIConfigurationService } from '../services/ai-configuration.service';
-import { OpenRouterModelsService, OpenRouterModel } from '../services/openrouter-models.service';
-import { OpenAIModelsService, OpenAIModel } from '../services/openai-models.service';
-import { CreateAIConfigurationDto } from '../dto/create-ai-configuration.dto';
-import { UpdateAIConfigurationDto } from '../dto/update-ai-configuration.dto';
+import { ModuleAccessGuard, PermissionGuard, RequireModule } from '@accounting/rbac';
+
 import { AIConfigurationResponseDto } from '../dto/ai-configuration-response.dto';
+import { CreateAIConfigurationDto } from '../dto/create-ai-configuration.dto';
 import { OpenAIModelDto } from '../dto/openai-model.dto';
+import { UpdateAIConfigurationDto } from '../dto/update-ai-configuration.dto';
+import { AIConfigurationService } from '../services/ai-configuration.service';
+import { OpenAIModel, OpenAIModelsService } from '../services/openai-models.service';
+import { OpenRouterModel, OpenRouterModelsService } from '../services/openrouter-models.service';
 
 @ApiTags('ai-agent')
 @ApiBearerAuth('JWT-auth')

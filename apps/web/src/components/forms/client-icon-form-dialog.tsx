@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { useForm } from 'react-hook-form';
-import type { Resolver } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -178,7 +177,7 @@ export function ClientIconFormDialog({
               <Button
                 type="submit"
                 disabled={form.formState.isSubmitting}
-                className="bg-apptax-blue hover:bg-apptax-blue/90"
+                className="bg-primary hover:bg-primary/90"
               >
                 {isEditing ? 'Zapisz' : 'Dodaj'}
               </Button>

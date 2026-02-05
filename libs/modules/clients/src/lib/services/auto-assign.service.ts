@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository, Not, IsNull, DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, IsNull, Not, Repository } from 'typeorm';
 
-import { ClientIcon, ClientIconAssignment, Client } from '@accounting/common';
+import { Client, ClientIcon, ClientIconAssignment } from '@accounting/common';
 
+import { ClientErrorCode, ClientException } from '../exceptions';
 import { ConditionEvaluatorService } from './condition-evaluator.service';
-import { ClientException, ClientErrorCode } from '../exceptions';
 
 const BATCH_SIZE = 100;
 

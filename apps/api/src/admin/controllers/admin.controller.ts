@@ -1,36 +1,36 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
   Body,
-  Param,
-  Query,
+  Controller,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
+  ApiBadRequestResponse,
   ApiBearerAuth,
-  ApiOkResponse,
+  ApiBody,
+  ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
-  ApiBadRequestResponse,
-  ApiUnauthorizedResponse,
-  ApiForbiddenResponse,
-  ApiConflictResponse,
+  ApiOkResponse,
+  ApiOperation,
   ApiParam,
-  ApiBody,
   ApiQuery,
+  ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 
 import { Roles, RolesGuard } from '@accounting/auth';
-import { UserRole, UserResponseDto, CompanyResponseDto } from '@accounting/common';
+import { CompanyResponseDto, UserResponseDto, UserRole } from '@accounting/common';
 
 import { CreateCompanyDto } from '../dto/create-company.dto';
 import { CreateUserDto } from '../dto/create-user.dto';

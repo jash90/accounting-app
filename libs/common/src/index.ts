@@ -19,6 +19,8 @@ export * from './lib/enums/lead-status.enum';
 export * from './lib/enums/lead-source.enum';
 export * from './lib/enums/offer-status.enum';
 export * from './lib/enums/offer-activity-type.enum';
+export * from './lib/enums/settlement-status.enum';
+export * from './lib/enums/relief-type.enum';
 
 // Constants
 export * from './lib/constants';
@@ -51,6 +53,8 @@ export * from './lib/entities/client-custom-field-value.entity';
 export * from './lib/entities/client-icon.entity';
 export * from './lib/entities/client-icon-assignment.entity';
 export * from './lib/entities/client-suspension.entity';
+export * from './lib/entities/client-relief-period.entity';
+export * from './lib/entities/custom-field-reminder.entity';
 export * from './lib/entities/notification-settings.entity';
 export * from './lib/entities/client-delete-request.entity';
 export * from './lib/entities/task.entity';
@@ -66,6 +70,8 @@ export * from './lib/entities/offer-template.entity';
 export * from './lib/entities/offer.entity';
 export * from './lib/entities/offer-activity.entity';
 export type { ActivityMetadata } from './lib/entities/offer-activity.entity';
+export * from './lib/entities/monthly-settlement.entity';
+export * from './lib/entities/settlement-comment.entity';
 export { AIProvider } from './lib/entities/ai-configuration.entity';
 export { AIMessageRole } from './lib/entities/ai-message.entity';
 export * from './lib/dto/responses';

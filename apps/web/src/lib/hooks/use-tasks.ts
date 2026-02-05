@@ -1,28 +1,70 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
+
+import { useMutation, useQuery, useQueryClient, type Query } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
 import { type ApiErrorResponse } from '@/types/api';
 import {
-  type CreateTaskDto,
-  type UpdateTaskDto,
-  type TaskFiltersDto,
-  type ReorderTasksDto,
   type BulkUpdateStatusDto,
-  type CreateTaskLabelDto,
-  type UpdateTaskLabelDto,
   type CreateTaskCommentDto,
-  type UpdateTaskCommentDto,
   type CreateTaskDependencyDto,
+  type CreateTaskDto,
+  type CreateTaskLabelDto,
+  type ReorderTasksDto,
+  type TaskFiltersDto,
+  type UpdateTaskCommentDto,
+  type UpdateTaskDto,
+  type UpdateTaskLabelDto,
 } from '@/types/dtos';
 
+
 import {
-  tasksApi,
-  taskLabelsApi,
   taskCommentsApi,
   taskDependenciesApi,
+  taskLabelsApi,
+  tasksApi,
   type TaskLabelQueryDto,
 } from '../api/endpoints/tasks';
 import { queryKeys } from '../api/query-client';
+
+// ============================================
+// Helper Functions
+// ============================================
+
+/**
+ * Predicate to invalidate task list/view queries (list, kanban, calendar) but not detail queries.
+ * This consolidates the common invalidation pattern and prevents unnecessary refetches.
+ */
+const isTaskViewQuery = (query: Query): boolean => {
+  const key = query.queryKey;
+  return (
+    Array.isArray(key) &&
+    key[0] === 'tasks' &&
+    (key[1] === 'list' || key[1] === 'kanban' || key[1] === 'calendar')
+  );
+};
+
+// ============================================
+// Cache Time Constants
+// ============================================
+
+/** Cache times for task list and kanban views - data changes frequently */
+const TASK_LIST_CACHE = {
+  staleTime: 30 * 1000, // 30 seconds
+  gcTime: 5 * 60 * 1000, // 5 minutes
+};
+
+/** Cache times for task detail views - slightly longer */
+const TASK_DETAIL_CACHE = {
+  staleTime: 60 * 1000, // 1 minute
+  gcTime: 10 * 60 * 1000, // 10 minutes
+};
+
+/** Cache times for lookup data - changes infrequently */
+const TASK_LOOKUP_CACHE = {
+  staleTime: 5 * 60 * 1000, // 5 minutes
+  gcTime: 10 * 60 * 1000, // 10 minutes
+};
 
 // ============================================
 // Task Hooks
@@ -30,8 +72,9 @@ import { queryKeys } from '../api/query-client';
 
 export function useTasks(filters?: TaskFiltersDto) {
   return useQuery({
-    queryKey: queryKeys.tasks.list(filters as Record<string, unknown> | undefined),
+    queryKey: queryKeys.tasks.list(filters),
     queryFn: () => tasksApi.getAll(filters),
+    ...TASK_LIST_CACHE,
   });
 }
 
@@ -40,6 +83,7 @@ export function useTask(id: string) {
     queryKey: queryKeys.tasks.detail(id),
     queryFn: () => tasksApi.getById(id),
     enabled: !!id,
+    ...TASK_DETAIL_CACHE,
   });
 }
 
@@ -47,6 +91,7 @@ export function useKanbanBoard(filters?: Omit<TaskFiltersDto, 'page' | 'limit'>)
   return useQuery({
     queryKey: queryKeys.tasks.kanban(filters),
     queryFn: () => tasksApi.getKanbanBoard(filters),
+    ...TASK_LIST_CACHE,
   });
 }
 
@@ -60,6 +105,7 @@ export function useCalendarTasks(params: {
     queryKey: queryKeys.tasks.calendar(params),
     queryFn: () => tasksApi.getCalendarTasks(params),
     enabled: !!params.startDate && !!params.endDate,
+    ...TASK_LIST_CACHE,
   });
 }
 
@@ -68,14 +114,17 @@ export function useSubtasks(taskId: string) {
     queryKey: queryKeys.tasks.subtasks(taskId),
     queryFn: () => tasksApi.getSubtasks(taskId),
     enabled: !!taskId,
+    ...TASK_DETAIL_CACHE,
   });
 }
 
 // Task lookup hooks for assignees and clients
+// These use staleTime to prevent refetches on window focus for data that changes infrequently
 export function useTaskAssignees() {
   return useQuery({
     queryKey: queryKeys.tasks.lookupAssignees,
     queryFn: () => tasksApi.getAssignees(),
+    ...TASK_LOOKUP_CACHE,
   });
 }
 
@@ -85,6 +134,7 @@ export function useTaskClients() {
     queryFn: () => tasksApi.getClients(),
     retry: false, // Don't retry on 403 (module not accessible)
     throwOnError: false, // Don't throw on error, handle gracefully
+    ...TASK_LOOKUP_CACHE,
   });
 }
 
@@ -93,6 +143,7 @@ export function useClientTaskStatistics(clientId: string) {
     queryKey: queryKeys.tasks.clientStatistics(clientId),
     queryFn: () => tasksApi.getClientStatistics(clientId),
     enabled: !!clientId,
+    ...TASK_DETAIL_CACHE,
   });
 }
 
@@ -103,10 +154,8 @@ export function useCreateTask() {
   return useMutation({
     mutationFn: (taskData: CreateTaskDto) => tasksApi.create(taskData),
     onSuccess: (newTask) => {
-      // Invalidate list views that need to show the new task
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'list'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'kanban'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'calendar'], exact: false });
+      // Invalidate all task view queries (list, kanban, calendar) in one predicate call
+      queryClient.invalidateQueries({ predicate: isTaskViewQuery });
       // Invalidate statistics if client was assigned
       if (newTask.clientId) {
         queryClient.invalidateQueries({
@@ -135,14 +184,11 @@ export function useUpdateTask() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateTaskDto }) => tasksApi.update(id, data),
     onSuccess: (_updatedTask, variables) => {
-      // Invalidate the specific task detail
+      // Invalidate the specific task detail and subtasks
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.id) });
-      // Invalidate list views (status/assignee/client might have changed)
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'list'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'kanban'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'calendar'], exact: false });
-      // Invalidate subtasks if parent changed
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.subtasks(variables.id) });
+      // Invalidate all task view queries (list, kanban, calendar) in one predicate call
+      queryClient.invalidateQueries({ predicate: isTaskViewQuery });
       toast({
         title: 'Sukces',
         description: 'Zadanie zostało zaktualizowane',
@@ -165,11 +211,10 @@ export function useDeleteTask() {
   return useMutation({
     mutationFn: (id: string) => tasksApi.delete(id),
     onSuccess: (_, deletedId) => {
-      // Remove from cache and invalidate list views
+      // Remove from cache
       queryClient.removeQueries({ queryKey: queryKeys.tasks.detail(deletedId) });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'list'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'kanban'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'calendar'], exact: false });
+      // Invalidate all task view queries (list, kanban, calendar) in one predicate call
+      queryClient.invalidateQueries({ predicate: isTaskViewQuery });
       toast({
         title: 'Sukces',
         description: 'Zadanie zostało usunięte',
@@ -192,9 +237,8 @@ export function useReorderTasks() {
   return useMutation({
     mutationFn: (reorderData: ReorderTasksDto) => tasksApi.reorderTasks(reorderData),
     onSuccess: () => {
-      // Only invalidate views that show task order
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'kanban'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'list'], exact: false });
+      // Invalidate all task view queries (list, kanban, calendar) in one predicate call
+      queryClient.invalidateQueries({ predicate: isTaskViewQuery });
     },
     onError: (error: ApiErrorResponse) => {
       toast({
@@ -213,14 +257,23 @@ export function useBulkUpdateStatus() {
   return useMutation({
     mutationFn: (bulkData: BulkUpdateStatusDto) => tasksApi.bulkUpdateStatus(bulkData),
     onSuccess: (_, variables) => {
-      // Invalidate detail queries for affected tasks
-      variables.taskIds.forEach((id) => {
-        queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(id) });
+      // Batch invalidation using Set predicate - O(1) vs O(n) individual calls
+      // This single predicate call replaces the previous forEach loop
+      const affectedTaskIds = new Set(variables.taskIds);
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return (
+            Array.isArray(key) &&
+            key[0] === 'tasks' &&
+            key[1] === 'detail' &&
+            typeof key[2] === 'string' &&
+            affectedTaskIds.has(key[2])
+          );
+        },
       });
-      // Invalidate list views
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'list'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'kanban'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'calendar'], exact: false });
+      // Invalidate all task view queries (list, kanban, calendar) in one predicate call
+      queryClient.invalidateQueries({ predicate: isTaskViewQuery });
       toast({
         title: 'Sukces',
         description: `Zaktualizowano status ${variables.taskIds.length} zadań`,
@@ -240,10 +293,39 @@ export function useBulkUpdateStatus() {
 // Task Label Hooks
 // ============================================
 
+/**
+ * Stabilize filter object for consistent query key serialization.
+ * Returns undefined for empty/undefined queries to ensure deduplication.
+ */
+function stableTaskLabelFilterKey(query?: TaskLabelQueryDto): TaskLabelQueryDto | undefined {
+  if (!query) return undefined;
+  // Only include defined properties to ensure stable serialization
+  const stable: Partial<TaskLabelQueryDto> = {};
+  if (query.search !== undefined) stable.search = query.search;
+  if (query.isActive !== undefined) stable.isActive = query.isActive;
+  return Object.keys(stable).length > 0 ? (stable as TaskLabelQueryDto) : undefined;
+}
+
 export function useTaskLabels(query?: TaskLabelQueryDto) {
+  // Memoize the stable query key based on primitive values to prevent
+  // unnecessary query refetches when the parent component re-renders
+  // with a new object reference containing the same values.
+  // ESLint exhaustive-deps rule disabled intentionally:
+  // We depend on primitive values (search, isActive) rather than the query object reference.
+  // This is necessary because parent components may pass inline objects that create new
+  // references on every render, even when the actual values haven't changed.
+  // By depending on primitive values, we only recalculate when actual filter values change.
+  const stableQuery = useMemo(
+    () => stableTaskLabelFilterKey(query),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [query?.search, query?.isActive]
+  );
+
   return useQuery({
-    queryKey: [...queryKeys.taskLabels.all, query],
-    queryFn: () => taskLabelsApi.getAll(query),
+    queryKey: queryKeys.taskLabels.list(stableQuery),
+    // Use stableQuery in queryFn to ensure consistency with queryKey
+    queryFn: () => taskLabelsApi.getAll(stableQuery),
+    ...TASK_LOOKUP_CACHE,
   });
 }
 
@@ -252,6 +334,7 @@ export function useTaskLabel(id: string) {
     queryKey: queryKeys.taskLabels.detail(id),
     queryFn: () => taskLabelsApi.getById(id),
     enabled: !!id,
+    ...TASK_LOOKUP_CACHE,
   });
 }
 
@@ -334,10 +417,9 @@ export function useAssignTaskLabel() {
     mutationFn: ({ taskId, labelId }: { taskId: string; labelId: string }) =>
       taskLabelsApi.assignToTask(taskId, { labelId }),
     onSuccess: (_, variables) => {
-      // Only invalidate the specific task and list views showing labels
+      // Invalidate the specific task detail and all task view queries
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'list'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'kanban'], exact: false });
+      queryClient.invalidateQueries({ predicate: isTaskViewQuery });
       toast({
         title: 'Sukces',
         description: 'Etykieta została przypisana',
@@ -361,10 +443,9 @@ export function useUnassignTaskLabel() {
     mutationFn: ({ taskId, labelId }: { taskId: string; labelId: string }) =>
       taskLabelsApi.unassignFromTask(taskId, labelId),
     onSuccess: (_, variables) => {
-      // Only invalidate the specific task and list views showing labels
+      // Invalidate the specific task detail and all task view queries
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'list'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'kanban'], exact: false });
+      queryClient.invalidateQueries({ predicate: isTaskViewQuery });
       toast({
         title: 'Sukces',
         description: 'Etykieta została usunięta z zadania',
@@ -389,6 +470,7 @@ export function useTaskComments(taskId: string) {
     queryKey: queryKeys.tasks.comments(taskId),
     queryFn: () => taskCommentsApi.getByTaskId(taskId),
     enabled: !!taskId,
+    ...TASK_DETAIL_CACHE,
   });
 }
 
@@ -480,6 +562,7 @@ export function useTaskDependencies(taskId: string) {
     queryKey: queryKeys.tasks.dependencies(taskId),
     queryFn: () => taskDependenciesApi.getByTaskId(taskId),
     enabled: !!taskId,
+    ...TASK_DETAIL_CACHE,
   });
 }
 
@@ -488,6 +571,7 @@ export function useTaskBlockedBy(taskId: string) {
     queryKey: [...queryKeys.tasks.dependencies(taskId), 'blocked-by'],
     queryFn: () => taskDependenciesApi.getBlockedBy(taskId),
     enabled: !!taskId,
+    ...TASK_DETAIL_CACHE,
   });
 }
 
@@ -496,6 +580,7 @@ export function useTaskBlocking(taskId: string) {
     queryKey: [...queryKeys.tasks.dependencies(taskId), 'blocking'],
     queryFn: () => taskDependenciesApi.getBlocking(taskId),
     enabled: !!taskId,
+    ...TASK_DETAIL_CACHE,
   });
 }
 

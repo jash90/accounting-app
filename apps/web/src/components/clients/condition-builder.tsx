@@ -1,22 +1,5 @@
-import { memo, useCallback, useLayoutEffect, useRef } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 
-import { Check, ChevronDown, FolderPlus, Plus, Trash2 } from 'lucide-react';
-
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { DatePicker } from '@/components/ui/date-picker';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import {
   AmlGroupLabels,
   CONDITION_FIELDS,
@@ -38,6 +21,23 @@ import {
   type LogicalOperator,
   type SingleCondition,
 } from '@/types/enums';
+import { Check, ChevronDown, FolderPlus, Plus, Trash2 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 
 // Generate unique ID for condition tracking (stable React keys)
 // Uses crypto.randomUUID() for SSR-safe, collision-resistant IDs
@@ -197,39 +197,43 @@ const GroupConditionRenderer = memo(function GroupConditionRenderer({
   onRemove,
   isRoot = false,
 }: GroupConditionRendererProps) {
-  // Store current group in ref for stable callback access
-  // This prevents callback recreation when group object changes
-  const groupRef = useRef(group);
-  useLayoutEffect(() => {
-    groupRef.current = group;
-  });
+  // Extract primitive/stable values from group to use in dependencies
+  // This prevents callback recreation when group object reference changes
+  const groupId = group.id;
+  const groupLogicalOperator = group.logicalOperator;
+  const groupConditions = group.conditions;
+
+  // Memoize conditions length for dependency - this is a primitive that only changes
+  // when the actual number of conditions changes, not when conditions are edited
+  const conditionsCount = groupConditions.length;
 
   const handleLogicalOperatorChange = useCallback(
     (operator: LogicalOperator) => {
       onChange({
-        ...groupRef.current,
+        id: groupId,
         logicalOperator: operator,
+        conditions: groupConditions,
       });
     },
-    [onChange]
+    [onChange, groupId, groupConditions]
   );
 
   const handleConditionChange = useCallback(
     (index: number, newCondition: AutoAssignCondition) => {
-      const newConditions = [...groupRef.current.conditions];
+      const newConditions = [...groupConditions];
       newConditions[index] = newCondition;
       onChange({
-        ...groupRef.current,
+        id: groupId,
+        logicalOperator: groupLogicalOperator,
         conditions: newConditions,
       });
     },
-    [onChange]
+    [onChange, groupId, groupLogicalOperator, groupConditions]
   );
 
   const handleConditionRemove = useCallback(
     (index: number) => {
-      const current = groupRef.current;
-      const newConditions = current.conditions.filter((_, i) => i !== index);
+      const newConditions = groupConditions.filter((_, i) => i !== index);
       if (newConditions.length === 0) {
         onRemove();
       } else if (newConditions.length === 1 && isRoot) {
@@ -237,14 +241,17 @@ const GroupConditionRenderer = memo(function GroupConditionRenderer({
         onChange(newConditions[0]);
       } else {
         onChange({
-          ...current,
+          id: groupId,
+          logicalOperator: groupLogicalOperator,
           conditions: newConditions,
         });
       }
     },
-    [onChange, onRemove, isRoot]
+    [onChange, onRemove, isRoot, groupId, groupLogicalOperator, groupConditions]
   );
 
+  // These callbacks only need to depend on conditionsCount since they just append
+  // The actual conditions array is spread at execution time
   const handleAddCondition = useCallback(() => {
     const newCondition: SingleCondition = {
       id: generateConditionId(),
@@ -253,16 +260,17 @@ const GroupConditionRenderer = memo(function GroupConditionRenderer({
       value: '',
     };
     onChange({
-      ...groupRef.current,
-      conditions: [...groupRef.current.conditions, newCondition],
+      id: groupId,
+      logicalOperator: groupLogicalOperator,
+      conditions: [...groupConditions, newCondition],
     });
-  }, [onChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onChange, groupId, groupLogicalOperator, conditionsCount]);
 
   const handleAddNestedGroup = useCallback(() => {
-    const current = groupRef.current;
     const newGroup: ConditionGroup = {
       id: generateConditionId(),
-      logicalOperator: current.logicalOperator === 'and' ? 'or' : 'and',
+      logicalOperator: groupLogicalOperator === 'and' ? 'or' : 'and',
       conditions: [
         {
           id: generateConditionId(),
@@ -273,10 +281,12 @@ const GroupConditionRenderer = memo(function GroupConditionRenderer({
       ],
     };
     onChange({
-      ...current,
-      conditions: [...current.conditions, newGroup],
+      id: groupId,
+      logicalOperator: groupLogicalOperator,
+      conditions: [...groupConditions, newGroup],
     });
-  }, [onChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onChange, groupId, groupLogicalOperator, conditionsCount]);
 
   return (
     <Card className={cn(isRoot ? 'border-primary' : 'border-muted')}>
@@ -344,70 +354,77 @@ const SingleConditionRenderer = memo(function SingleConditionRenderer({
   onChange,
   onRemove,
 }: SingleConditionRendererProps) {
-  // Store current condition in ref for stable callback access
-  // This prevents callback recreation when condition object changes
-  const conditionRef = useRef(condition);
-  useLayoutEffect(() => {
-    conditionRef.current = condition;
-  });
-
   const fieldConfig = CONDITION_FIELDS.find((f) => f.field === condition.field);
   const fieldType = fieldConfig?.type || 'string';
   const availableOperators = OPERATORS_BY_TYPE[fieldType] || OPERATORS_BY_TYPE.string;
 
+  // Extract primitive/stable values from condition to use in dependencies
+  // This prevents callback recreation when condition object reference changes
+  const conditionId = condition.id;
+  const conditionField = condition.field;
+  const conditionOperator = condition.operator;
+  const conditionValue = condition.value;
+  const conditionSecondValue = condition.secondValue;
+
   const handleFieldChange = useCallback(
     (field: string) => {
-      const current = conditionRef.current;
       const newFieldConfig = CONDITION_FIELDS.find((f) => f.field === field);
       const newType = newFieldConfig?.type || 'string';
       const newOperators = OPERATORS_BY_TYPE[newType] || OPERATORS_BY_TYPE.string;
 
       // Reset operator and value if field type changes
-      const newOperator = newOperators.includes(current.operator)
-        ? current.operator
+      const newOperator = newOperators.includes(conditionOperator)
+        ? conditionOperator
         : newOperators[0];
 
       onChange({
-        id: current.id, // Preserve condition ID for stable React keys
+        id: conditionId, // Preserve condition ID for stable React keys
         field,
         operator: newOperator,
         value: newType === 'boolean' ? false : '',
       });
     },
-    [onChange]
+    [onChange, conditionId, conditionOperator]
   );
 
   const handleOperatorChange = useCallback(
     (operator: ConditionOperator) => {
-      const current = conditionRef.current;
       onChange({
-        ...current,
+        id: conditionId,
+        field: conditionField,
         operator,
+        value: conditionValue,
         // Clear secondary value if not between
-        secondValue: operator === 'between' ? current.secondValue : undefined,
+        secondValue: operator === 'between' ? conditionSecondValue : undefined,
       });
     },
-    [onChange]
+    [onChange, conditionId, conditionField, conditionValue, conditionSecondValue]
   );
 
   const handleValueChange = useCallback(
     (value: string | number | boolean | string[]) => {
       onChange({
-        ...conditionRef.current,
+        id: conditionId,
+        field: conditionField,
+        operator: conditionOperator,
         value,
+        secondValue: conditionSecondValue,
       });
     },
-    [onChange]
+    [onChange, conditionId, conditionField, conditionOperator, conditionSecondValue]
   );
 
   const handleSecondValueChange = useCallback(
     (secondValue: string | number) => {
       onChange({
-        ...conditionRef.current,
+        id: conditionId,
+        field: conditionField,
+        operator: conditionOperator,
+        value: conditionValue,
         secondValue,
       });
     },
-    [onChange]
+    [onChange, conditionId, conditionField, conditionOperator, conditionValue]
   );
 
   const needsValue = !['isEmpty', 'isNotEmpty'].includes(condition.operator);
@@ -502,17 +519,36 @@ const ValueInput = memo(function ValueInput({
   value,
   onChange,
 }: ValueInputProps) {
-  // Multi-select for 'in' and 'notIn' operators - use proper multi-select with checkboxes
-  if (['in', 'notIn'].includes(operator) && fieldConfig?.type === 'enum') {
-    const selectedValues = Array.isArray(value) ? value : [];
-    const options = getEnumOptions(fieldConfig.field);
+  // Compute derived values at the top of the component to allow hooks below
+  const isMultiSelect = ['in', 'notIn'].includes(operator) && fieldConfig?.type === 'enum';
+  const selectedValues = useMemo(() => (Array.isArray(value) ? value : []), [value]);
+  // Use Set for O(1) lookup instead of O(n) array.includes()
+  const selectedValuesSet = useMemo(() => new Set(selectedValues), [selectedValues]);
+  const effectiveEnumKey = fieldConfig?.field || '';
 
-    const handleToggle = (optValue: string) => {
-      const newValues = selectedValues.includes(optValue)
+  // Single event handler using data attributes to avoid creating functions per option
+  // Moved outside conditional to satisfy rules of hooks
+  const handleOptionClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement> | React.KeyboardEvent<HTMLDivElement>) => {
+      const optValue = e.currentTarget.dataset.value;
+      if (!optValue) return;
+
+      // For keyboard events, only handle Enter and Space
+      if ('key' in e && e.key !== 'Enter' && e.key !== ' ') return;
+      if ('key' in e) e.preventDefault();
+
+      // Use Set for O(1) lookup
+      const newValues = selectedValuesSet.has(optValue)
         ? selectedValues.filter((v) => v !== optValue)
         : [...selectedValues, optValue];
       onChange(newValues);
-    };
+    },
+    [selectedValues, selectedValuesSet, onChange]
+  );
+
+  // Multi-select for 'in' and 'notIn' operators - use proper multi-select with checkboxes
+  if (isMultiSelect) {
+    const options = ENUM_OPTIONS_MAP[effectiveEnumKey] || [];
 
     return (
       <Popover>
@@ -536,21 +572,18 @@ const ValueInput = memo(function ValueInput({
             aria-label="Wybierz wartości"
           >
             {options.map((opt) => {
-              const isSelected = selectedValues.includes(opt.value);
+              // Use Set for O(1) lookup
+              const isSelected = selectedValuesSet.has(opt.value);
               return (
                 <div
                   key={opt.value}
                   role="option"
                   aria-selected={isSelected}
                   tabIndex={0}
+                  data-value={opt.value}
                   className="hover:bg-accent focus:bg-accent flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm focus:outline-none"
-                  onClick={() => handleToggle(opt.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleToggle(opt.value);
-                    }
-                  }}
+                  onClick={handleOptionClick}
+                  onKeyDown={handleOptionClick}
                 >
                   <Checkbox
                     checked={isSelected}
@@ -651,35 +684,31 @@ const ValueInput = memo(function ValueInput({
   );
 });
 
+// Cache enum options at module level to prevent recreation on every render
+const ENUM_OPTIONS_MAP: Record<string, { value: string; label: string }[]> = {
+  employmentType: Object.entries(EmploymentTypeLabels).map(([value, label]) => ({
+    value,
+    label,
+  })),
+  vatStatus: Object.entries(VatStatusLabels).map(([value, label]) => ({
+    value,
+    label,
+  })),
+  taxScheme: Object.entries(TaxSchemeLabels).map(([value, label]) => ({
+    value,
+    label,
+  })),
+  zusStatus: Object.entries(ZusStatusLabels).map(([value, label]) => ({
+    value,
+    label,
+  })),
+  amlGroupEnum: Object.entries(AmlGroupLabels).map(([value, label]) => ({
+    value,
+    label,
+  })),
+};
+
 // Helper function to get enum options based on field
 function getEnumOptions(field: string): { value: string; label: string }[] {
-  switch (field) {
-    case 'employmentType':
-      return Object.entries(EmploymentTypeLabels).map(([value, label]) => ({
-        value,
-        label,
-      }));
-    case 'vatStatus':
-      return Object.entries(VatStatusLabels).map(([value, label]) => ({
-        value,
-        label,
-      }));
-    case 'taxScheme':
-      return Object.entries(TaxSchemeLabels).map(([value, label]) => ({
-        value,
-        label,
-      }));
-    case 'zusStatus':
-      return Object.entries(ZusStatusLabels).map(([value, label]) => ({
-        value,
-        label,
-      }));
-    case 'amlGroupEnum':
-      return Object.entries(AmlGroupLabels).map(([value, label]) => ({
-        value,
-        label,
-      }));
-    default:
-      return [];
-  }
+  return ENUM_OPTIONS_MAP[field] || [];
 }

@@ -173,12 +173,14 @@ The navigation is built dynamically from the API using the `useNavigationItems` 
 
 ```typescript
 import { useMemo } from 'react';
-import { LayoutDashboard, Users, Building2, Package } from 'lucide-react';
+
+import { NavItem } from '@/components/sidebar';
 import { UserDto } from '@/types/dtos';
 import { UserRole } from '@/types/enums';
+import { Building2, LayoutDashboard, Package, Users } from 'lucide-react';
+
 import { useModules } from '@/lib/hooks/use-modules';
 import { useCompanyModules } from '@/lib/hooks/use-permissions';
-import { NavItem } from '@/components/sidebar';
 
 export function useNavigationItems(user: UserDto | null): NavItem[] {
   // Fetch modules based on user role
@@ -269,7 +271,7 @@ All user-facing text must be in Polish. Use the constants file for reusable labe
 **File Location**: `apps/web/src/lib/constants/polish-labels.ts`
 
 ```typescript
-import { TaskStatus, TaskPriority, CustomFieldType } from '@/types/enums';
+import { CustomFieldType, TaskPriority, TaskStatus } from '@/types/enums';
 
 // Task Status Labels
 export const TaskStatusLabels: Record<TaskStatus, string> = {

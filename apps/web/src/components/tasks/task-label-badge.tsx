@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils/cn';
 import { type TaskLabel } from '@/types/entities';
 
+
 interface TaskLabelBadgeProps {
   label: TaskLabel;
   size?: 'sm' | 'md' | 'lg';

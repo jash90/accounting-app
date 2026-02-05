@@ -1,19 +1,19 @@
-import {
-  PKD_SECTIONS,
-  PKD_DIVISIONS,
-  getPkdLabel,
-  getSectionName,
-  getPkdDivisionsBySection,
-  getPkdClassesBySection,
-  getPkdClassesByDivision,
-  isValidPkdCode,
-  getValidPkdCodes,
-  getPkdCodesForFrontend,
-  getPkdSectionsForFrontend,
-  getPkdSectionGroups,
-  getPkdComboboxOptions,
-} from './pkd-codes';
 import { PKD_CLASSES } from './pkd-classes';
+import {
+  getPkdClassesByDivision,
+  getPkdClassesBySection,
+  getPkdCodesForFrontend,
+  getPkdComboboxOptions,
+  getPkdDivisionsBySection,
+  getPkdLabel,
+  getPkdSectionGroups,
+  getPkdSectionsForFrontend,
+  getSectionName,
+  getValidPkdCodes,
+  isValidPkdCode,
+  PKD_DIVISIONS,
+  PKD_SECTIONS,
+} from './pkd-codes';
 
 describe('PKD Codes Constants', () => {
   describe('PKD_SECTIONS', () => {

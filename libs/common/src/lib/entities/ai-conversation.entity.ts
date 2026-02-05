@@ -1,16 +1,17 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
   ManyToOne,
   OneToMany,
-  JoinColumn,
-  CreateDateColumn,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+
+import { AIMessage } from './ai-message.entity';
 import { Company } from './company.entity';
 import { User } from './user.entity';
-import { AIMessage } from './ai-message.entity';
 
 @Entity('ai_conversations')
 export class AIConversation {

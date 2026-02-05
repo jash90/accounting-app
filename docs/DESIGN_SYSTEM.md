@@ -131,16 +131,16 @@ import { Button } from '@/components/ui/button';
 ### Input & Forms
 
 ```tsx
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Form,
+  FormControl,
   FormField,
   FormItem,
   FormLabel,
-  FormControl,
   FormMessage,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 // Complete form field
 <FormField
@@ -238,10 +238,10 @@ import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 
 // Controlled dialog

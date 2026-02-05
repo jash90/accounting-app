@@ -1,22 +1,22 @@
 import { type PaginatedResponse } from '@/types/api';
 import {
-  type CreateTaskDto,
-  type UpdateTaskDto,
-  type TaskFiltersDto,
-  type TaskResponseDto,
-  type ReorderTasksDto,
-  type BulkUpdateStatusDto,
-  type KanbanBoardDto,
-  type CalendarTaskDto,
-  type CreateTaskLabelDto,
-  type UpdateTaskLabelDto,
-  type TaskLabelResponseDto,
   type AssignLabelDto,
+  type BulkUpdateStatusDto,
+  type CalendarTaskDto,
   type CreateTaskCommentDto,
-  type UpdateTaskCommentDto,
-  type TaskCommentResponseDto,
   type CreateTaskDependencyDto,
+  type CreateTaskDto,
+  type CreateTaskLabelDto,
+  type KanbanBoardDto,
+  type ReorderTasksDto,
+  type TaskCommentResponseDto,
   type TaskDependencyResponseDto,
+  type TaskFiltersDto,
+  type TaskLabelResponseDto,
+  type TaskResponseDto,
+  type UpdateTaskCommentDto,
+  type UpdateTaskDto,
+  type UpdateTaskLabelDto,
 } from '@/types/dtos';
 
 import apiClient from '../client';
@@ -152,6 +152,8 @@ const LABELS_URL = `${BASE_URL}/labels`;
 export interface TaskLabelQueryDto {
   page?: number;
   limit?: number;
+  search?: string;
+  isActive?: boolean;
 }
 
 export const taskLabelsApi = {

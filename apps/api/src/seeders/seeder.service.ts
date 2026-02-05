@@ -133,8 +133,11 @@ export class SeederService {
     // When adding new entities, update this list to include them.
     // Order matters: tables with foreign key dependencies should come first.
     //
-    // Last updated: 2025-01 (time tracking tables added)
+    // Last updated: 2026-02 (settlement tables added)
     const tablesToTruncate = [
+      // Settlement module tables
+      'settlement_comments',
+      'monthly_settlements',
       // AI module tables
       'ai_messages',
       'ai_conversations',
@@ -256,83 +259,24 @@ export class SeederService {
   // Modules are now auto-discovered from libs/modules/*/module.json files
 
   private async seedModuleAccess(companyA: Company, modules: ModuleEntity[]) {
-    // Company A: ai-agent, clients, email-client, tasks, time-tracking, offers
-    const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
-    const clientsModule = modules.find((m) => m.slug === 'clients');
-    const emailClientModule = modules.find((m) => m.slug === 'email-client');
-    const tasksModule = modules.find((m) => m.slug === 'tasks');
-    const timeTrackingModule = modules.find((m) => m.slug === 'time-tracking');
-    const offersModule = modules.find((m) => m.slug === 'offers');
-
-    if (aiAgentModule) {
+    // Enable all discovered modules for Company A
+    // New modules are automatically included when added via module.json
+    for (const module of modules) {
       await this.companyModuleAccessRepository.save(
         this.companyModuleAccessRepository.create({
           companyId: companyA.id,
-          moduleId: aiAgentModule.id,
+          moduleId: module.id,
           isEnabled: true,
         })
       );
     }
 
-    if (clientsModule) {
-      await this.companyModuleAccessRepository.save(
-        this.companyModuleAccessRepository.create({
-          companyId: companyA.id,
-          moduleId: clientsModule.id,
-          isEnabled: true,
-        })
-      );
-    }
-
-    if (emailClientModule) {
-      await this.companyModuleAccessRepository.save(
-        this.companyModuleAccessRepository.create({
-          companyId: companyA.id,
-          moduleId: emailClientModule.id,
-          isEnabled: true,
-        })
-      );
-    }
-
-    if (tasksModule) {
-      await this.companyModuleAccessRepository.save(
-        this.companyModuleAccessRepository.create({
-          companyId: companyA.id,
-          moduleId: tasksModule.id,
-          isEnabled: true,
-        })
-      );
-    }
-
-    if (timeTrackingModule) {
-      await this.companyModuleAccessRepository.save(
-        this.companyModuleAccessRepository.create({
-          companyId: companyA.id,
-          moduleId: timeTrackingModule.id,
-          isEnabled: true,
-        })
-      );
-    }
-
-    if (offersModule) {
-      await this.companyModuleAccessRepository.save(
-        this.companyModuleAccessRepository.create({
-          companyId: companyA.id,
-          moduleId: offersModule.id,
-          isEnabled: true,
-        })
-      );
-    }
+    this.logger.log(
+      `Enabled ${modules.length} modules for ${companyA.name}: ${modules.map((m) => m.slug).join(', ')}`
+    );
   }
 
   private async seedEmployeePermissions(employeesA: User[], modules: ModuleEntity[]) {
-    const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
-    const clientsModule = modules.find((m) => m.slug === 'clients');
-    const emailClientModule = modules.find((m) => m.slug === 'email-client');
-    const tasksModule = modules.find((m) => m.slug === 'tasks');
-    const timeTrackingModule = modules.find((m) => m.slug === 'time-tracking');
-    const offersModule = modules.find((m) => m.slug === 'offers');
-
     // Employee 1A: read, write for all modules
     const employee = employeesA[0];
     if (!employee) return;
@@ -348,71 +292,25 @@ export class SeederService {
     }
     const grantedById = company.ownerId;
 
-    if (aiAgentModule) {
+    // Grant read/write permissions for all modules using defaultPermissions from module.json
+    // New modules are automatically included when added via module.json
+    for (const module of modules) {
+      // Use defaultPermissions from module.json if available, otherwise use ['read', 'write']
+      const permissions = module.defaultPermissions ?? ['read', 'write'];
+
       await this.userModulePermissionRepository.save(
         this.userModulePermissionRepository.create({
           userId: employee.id,
-          moduleId: aiAgentModule.id,
-          permissions: ['read', 'write'],
+          moduleId: module.id,
+          permissions,
           grantedById,
         })
       );
     }
 
-    if (clientsModule) {
-      await this.userModulePermissionRepository.save(
-        this.userModulePermissionRepository.create({
-          userId: employee.id,
-          moduleId: clientsModule.id,
-          permissions: ['read', 'write'],
-          grantedById,
-        })
-      );
-    }
-
-    if (emailClientModule) {
-      await this.userModulePermissionRepository.save(
-        this.userModulePermissionRepository.create({
-          userId: employee.id,
-          moduleId: emailClientModule.id,
-          permissions: ['read', 'write'],
-          grantedById,
-        })
-      );
-    }
-
-    if (tasksModule) {
-      await this.userModulePermissionRepository.save(
-        this.userModulePermissionRepository.create({
-          userId: employee.id,
-          moduleId: tasksModule.id,
-          permissions: ['read', 'write'],
-          grantedById,
-        })
-      );
-    }
-
-    if (timeTrackingModule) {
-      await this.userModulePermissionRepository.save(
-        this.userModulePermissionRepository.create({
-          userId: employee.id,
-          moduleId: timeTrackingModule.id,
-          permissions: ['read', 'write'],
-          grantedById,
-        })
-      );
-    }
-
-    if (offersModule) {
-      await this.userModulePermissionRepository.save(
-        this.userModulePermissionRepository.create({
-          userId: employee.id,
-          moduleId: offersModule.id,
-          permissions: ['read', 'write'],
-          grantedById,
-        })
-      );
-    }
+    this.logger.log(
+      `Granted permissions for ${modules.length} modules to employee ${employee.email}`
+    );
   }
 
   private async seedClients(companyA: Company, ownerA: User) {

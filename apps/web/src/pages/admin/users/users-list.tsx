@@ -1,23 +1,28 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 
 import { type ColumnDef } from '@tanstack/react-table';
-import { Edit, Trash2, Users, UserPlus } from 'lucide-react';
+import { Edit, Trash2, UserPlus, Users } from 'lucide-react';
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import { DataTable } from '@/components/common/data-table';
 import { PageHeader } from '@/components/common/page-header';
 import { UserFormDialog } from '@/components/forms/user-form-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useUsers, useDeleteUser, useCreateUser, useUpdateUser } from '@/lib/hooks/use-users';
-import { type UserDto, type CreateUserDto, type UpdateUserDto, UserRole } from '@/types/dtos';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useCreateUser, useDeleteUser, useUpdateUser, useUsers } from '@/lib/hooks/use-users';
+import { UserRole, type CreateUserDto, type UpdateUserDto, type UserDto } from '@/types/dtos';
+
+// Lazy load DataTable for bundle size optimization
+const DataTable = lazy(() =>
+  import('@/components/common/data-table').then((m) => ({ default: m.DataTable }))
+);
 
 const columns: ColumnDef<UserDto>[] = [
   {
     accessorKey: 'email',
     header: 'Email',
-    cell: ({ row }) => <div className="text-apptax-navy font-medium">{row.original.email}</div>,
+    cell: ({ row }) => <div className="text-foreground font-medium">{row.original.email}</div>,
   },
   {
     accessorKey: 'firstName',
@@ -80,14 +85,14 @@ export default function UsersListPage() {
           <Button
             size="icon"
             variant="ghost"
-            className="hover:bg-apptax-soft-teal h-8 w-8"
+            className="hover:bg-accent/10 h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               setEditingUser(row.original);
             }}
             title="Edytuj użytkownika"
           >
-            <Edit className="text-apptax-blue h-4 w-4" />
+            <Edit className="text-primary h-4 w-4" />
           </Button>
           <Button
             size="icon"
@@ -115,7 +120,7 @@ export default function UsersListPage() {
         action={
           <Button
             onClick={() => setCreateOpen(true)}
-            className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+            className="bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md transition-all"
           >
             <UserPlus className="mr-2 h-4 w-4" />
             Utwórz użytkownika
@@ -123,9 +128,15 @@ export default function UsersListPage() {
         }
       />
 
-      <Card className="border-apptax-soft-teal/30">
+      <Card className="border-border">
         <CardContent className="p-0">
-          <DataTable columns={actionColumns} data={users} isLoading={isPending} />
+          <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+            <DataTable
+              columns={actionColumns as never}
+              data={users as never}
+              isLoading={isPending}
+            />
+          </Suspense>
         </CardContent>
       </Card>
 

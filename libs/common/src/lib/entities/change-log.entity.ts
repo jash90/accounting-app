@@ -1,14 +1,15 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
-import { User } from './user.entity';
+
 import { Company } from './company.entity';
+import { User } from './user.entity';
 import { ChangeAction } from '../enums/change-action.enum';
 
 export interface ChangeDetail {

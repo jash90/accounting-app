@@ -1,10 +1,10 @@
 import {
+  BarChart3,
+  CheckCircle2,
+  FolderOpen,
   MessageSquare,
   Settings,
-  FolderOpen,
-  BarChart3,
   Sparkles,
-  CheckCircle2,
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +18,7 @@ export default function AdminAIAgentDashboard() {
         'Rozpocznij rozmowy z asystentem AI. Uzyskaj inteligentne odpowiedzi na podstawie bazy wiedzy.',
       icon: MessageSquare,
       href: '/admin/modules/ai-agent/chat',
-      gradient: 'bg-apptax-ai-gradient',
+      gradient: 'bg-accent',
     },
     {
       title: 'Konfiguracja AI',
@@ -26,7 +26,7 @@ export default function AdminAIAgentDashboard() {
         'Skonfiguruj dostawcę AI (OpenAI/OpenRouter), model, klucze API i prompt systemowy.',
       icon: Settings,
       href: '/admin/modules/ai-agent/configuration',
-      gradient: 'bg-apptax-gradient',
+      gradient: 'bg-primary',
     },
     {
       title: 'Pliki bazy wiedzy',
@@ -34,23 +34,23 @@ export default function AdminAIAgentDashboard() {
         'Prześlij i zarządzaj plikami PDF, TXT i MD dla RAG (Retrieval Augmented Generation).',
       icon: FolderOpen,
       href: '/admin/modules/ai-agent/context',
-      gradient: 'bg-apptax-dark-gradient',
+      gradient: 'bg-primary',
     },
     {
       title: 'Zużycie tokenów',
       description: 'Zobacz zużycie tokenów we wszystkich firmach w systemie.',
       icon: BarChart3,
       href: '/admin/modules/ai-agent/token-usage',
-      gradient: 'bg-gradient-to-br from-apptax-teal to-apptax-navy',
+      gradient: 'bg-gradient-to-br from-accent to-primary',
     },
   ];
 
   return (
     <div className="container mx-auto space-y-8 p-8">
       <div>
-        <h1 className="text-apptax-navy flex items-center gap-3 text-3xl font-bold">
+        <h1 className="text-foreground flex items-center gap-3 text-3xl font-bold">
           Moduł Agent AI
-          <div className="bg-apptax-teal ai-glow h-3 w-3 rounded-full" />
+          <div className="bg-accent ai-glow h-3 w-3 rounded-full" />
         </h1>
         <p className="text-muted-foreground mt-1">
           Inteligentny asystent AI z funkcjami RAG i zarządzaniem tokenami
@@ -70,36 +70,36 @@ export default function AdminAIAgentDashboard() {
         ))}
       </div>
 
-      <Card className="bg-apptax-warm-gray border-0">
+      <Card className="bg-muted border-0">
         <CardHeader>
-          <CardTitle className="text-apptax-navy flex items-center gap-2">
-            <Sparkles className="text-apptax-teal h-5 w-5" />
+          <CardTitle className="text-foreground flex items-center gap-2">
+            <Sparkles className="text-accent h-5 w-5" />
             Szybki start
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-start gap-3">
-            <CheckCircle2 className="text-apptax-teal mt-0.5 h-5 w-5 flex-shrink-0" />
+            <CheckCircle2 className="text-accent mt-0.5 h-5 w-5 flex-shrink-0" />
             <div>
-              <p className="text-apptax-navy font-medium">1. Skonfiguruj dostawcę AI</p>
+              <p className="text-foreground font-medium">1. Skonfiguruj dostawcę AI</p>
               <p className="text-muted-foreground text-sm">
                 Ustaw dostawcę AI (OpenAI/OpenRouter) i model w Konfiguracji
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <CheckCircle2 className="text-apptax-teal mt-0.5 h-5 w-5 flex-shrink-0" />
+            <CheckCircle2 className="text-accent mt-0.5 h-5 w-5 flex-shrink-0" />
             <div>
-              <p className="text-apptax-navy font-medium">2. Prześlij bazę wiedzy</p>
+              <p className="text-foreground font-medium">2. Prześlij bazę wiedzy</p>
               <p className="text-muted-foreground text-sm">
                 Dodaj pliki PDF, TXT lub MD, aby wzbogacić odpowiedzi AI o Twoje treści
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <CheckCircle2 className="text-apptax-teal mt-0.5 h-5 w-5 flex-shrink-0" />
+            <CheckCircle2 className="text-accent mt-0.5 h-5 w-5 flex-shrink-0" />
             <div>
-              <p className="text-apptax-navy font-medium">3. Rozpocznij czat</p>
+              <p className="text-foreground font-medium">3. Rozpocznij czat</p>
               <p className="text-muted-foreground text-sm">
                 Zacznij rozmowy z odpowiedziami AI świadomymi kontekstu
               </p>

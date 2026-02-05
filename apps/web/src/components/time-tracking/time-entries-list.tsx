@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 
 import { Clock, Filter } from 'lucide-react';
 
@@ -8,14 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTaskClients } from '@/lib/hooks/use-tasks';
 import {
-  useTimeEntries,
-  useDeleteTimeEntry,
-  useSubmitTimeEntry,
   useApproveTimeEntry,
+  useDeleteTimeEntry,
   useRejectTimeEntry,
+  useSubmitTimeEntry,
+  useTimeEntries,
 } from '@/lib/hooks/use-time-tracking';
 import { cn } from '@/lib/utils/cn';
-import { type TimeEntryResponseDto, type TimeEntryFiltersDto } from '@/types/dtos';
+import { type TimeEntryFiltersDto, type TimeEntryResponseDto } from '@/types/dtos';
 
 import { TimeEntryDeleteDialog, TimeEntryRejectDialog } from './time-entry-dialogs';
 import { TimeEntryEmptyState } from './time-entry-empty-state';
@@ -32,7 +32,7 @@ interface TimeEntriesListProps {
 
 const PAGE_SIZE = 20;
 
-export function TimeEntriesList({
+export const TimeEntriesList = memo(function TimeEntriesList({
   className,
   showHeader = true,
   initialFilters,
@@ -279,4 +279,4 @@ export function TimeEntriesList({
       />
     </>
   );
-}
+});

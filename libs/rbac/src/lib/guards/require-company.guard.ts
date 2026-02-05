@@ -1,11 +1,12 @@
 import {
-  Injectable,
   CanActivate,
   ExecutionContext,
   ForbiddenException,
+  Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+
 import { REQUIRE_COMPANY_KEY } from '../decorators/require-company.decorator';
 
 /**

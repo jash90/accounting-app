@@ -1,8 +1,8 @@
 import {
-  EmailConfig,
-  EmailConfigOptions,
-  SmtpConfig,
-  ImapConfig,
+  type EmailConfig,
+  type EmailConfigOptions,
+  type ImapConfig,
+  type SmtpConfig,
 } from '../interfaces/email-config.interface';
 
 // TLS validation - secure by default, configurable via env

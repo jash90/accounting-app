@@ -226,7 +226,7 @@ apps/web/
 
 ```tsx
 // lib/hooks/use-users.ts
-import { useQuery, useMutation, queryOptions } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
 
 // Reusable query definition
 export const usersQueryOptions = () =>

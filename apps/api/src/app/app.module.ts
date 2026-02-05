@@ -1,3 +1,4 @@
+
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
@@ -21,17 +22,21 @@ import {
   ClientFieldDefinition,
   ClientIcon,
   ClientIconAssignment,
+  ClientReliefPeriod,
   ClientSuspension,
   Company,
   CompanyModuleAccess,
+  CustomFieldReminder,
   EmailConfiguration,
   Lead,
   Module as ModuleEntity,
+  MonthlySettlement,
   Notification,
   NotificationSettings,
   Offer,
   OfferActivity,
   OfferTemplate,
+  SettlementComment,
   Task,
   TaskComment,
   TaskDependency,
@@ -52,6 +57,7 @@ import { ClientsModule } from '@accounting/modules/clients';
 import { EmailClientModule, EmailDraft } from '@accounting/modules/email-client';
 import { NotificationsModule } from '@accounting/modules/notifications';
 import { OffersModule } from '@accounting/modules/offers';
+import { SettlementsModule } from '@accounting/modules/settlements';
 import { TasksModule } from '@accounting/modules/tasks';
 import { TimeTrackingModule } from '@accounting/modules/time-tracking';
 
@@ -84,6 +90,8 @@ const ENTITIES = [
   ClientIcon,
   ClientIconAssignment,
   ClientSuspension,
+  ClientReliefPeriod,
+  CustomFieldReminder,
   NotificationSettings,
   Notification,
   ClientDeleteRequest,
@@ -100,6 +108,8 @@ const ENTITIES = [
   OfferTemplate,
   Offer,
   OfferActivity,
+  MonthlySettlement,
+  SettlementComment,
 ];
 
 @Module({
@@ -163,6 +173,7 @@ const ENTITIES = [
     TasksModule,
     TimeTrackingModule,
     OffersModule,
+    SettlementsModule,
     NotificationsModule,
     ModulesModule,
     SeedersModule,

@@ -1,30 +1,30 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
-import { type Repository, DataSource } from 'typeorm';
+import { DataSource, type Repository } from 'typeorm';
 
 import {
   TimeEntry,
   TimeEntryStatus,
-  type User,
-  UserRole,
   TimeRoundingMethod,
+  UserRole,
+  type User,
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
-import { TimeCalculationService } from './time-calculation.service';
-import { TimeEntriesService } from './time-entries.service';
-import { TimeSettingsService } from './time-settings.service';
 import { type CreateTimeEntryDto, type UpdateTimeEntryDto } from '../dto/time-entry.dto';
 import { type StartTimerDto, type StopTimerDto } from '../dto/timer.dto';
 import {
+  TimeEntryInvalidStatusException,
+  TimeEntryLockedException,
   TimeEntryNotFoundException,
   TimerAlreadyRunningException,
   TimerNotRunningException,
-  TimeEntryLockedException,
-  TimeEntryInvalidStatusException,
 } from '../exceptions';
+import { TimeCalculationService } from './time-calculation.service';
+import { TimeEntriesService } from './time-entries.service';
+import { TimeSettingsService } from './time-settings.service';
 
 describe('TimeEntriesService', () => {
   let service: TimeEntriesService;
@@ -115,56 +115,87 @@ describe('TimeEntriesService', () => {
       .mockImplementation((entry) => Promise.resolve({ ...entry, id: entry.id || 'new-entry-id' })),
   });
 
+  // Create mocks at module level for proper instantiation
+  const mockChangeLogService = {
+    logCreate: jest.fn(),
+    logUpdate: jest.fn(),
+    logDelete: jest.fn(),
+  };
+
+  const mockTenantService = {
+    getEffectiveCompanyId: jest.fn(),
+  };
+
+  const mockSettingsService = {
+    getSettings: jest.fn(),
+    getRoundingConfig: jest.fn(),
+    allowsOverlapping: jest.fn(),
+  };
+
   beforeEach(async () => {
+    // Reset mocks before each test
+    jest.clearAllMocks();
+    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSettingsService.getSettings.mockResolvedValue(mockSettings);
+    mockSettingsService.getRoundingConfig.mockResolvedValue({
+      method: TimeRoundingMethod.NONE,
+      interval: 15,
+    });
+    mockSettingsService.allowsOverlapping.mockResolvedValue(true);
+
     const mockQueryBuilder = createMockQueryBuilder();
     const mockEntityManager = createMockEntityManager();
 
+    const mockEntryRepository = {
+      create: jest.fn(),
+      save: jest.fn(),
+      findOne: jest.fn(),
+      remove: jest.fn(),
+      count: jest.fn(),
+      update: jest.fn(),
+      createQueryBuilder: jest.fn(() => mockQueryBuilder),
+    };
+
+    const mockDataSource = {
+      transaction: jest.fn().mockImplementation((callback) => callback(mockEntityManager)),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        TimeEntriesService,
+        // Use useFactory to manually wire dependencies (needed for Bun which doesn't emit decorator metadata)
+        {
+          provide: TimeEntriesService,
+          useFactory: () => {
+            return new TimeEntriesService(
+              mockEntryRepository as any,
+              mockChangeLogService as any,
+              mockTenantService as any,
+              new TimeCalculationService(),
+              mockSettingsService as any,
+              mockDataSource as any
+            );
+          },
+        },
         TimeCalculationService,
         {
           provide: getRepositoryToken(TimeEntry),
-          useValue: {
-            create: jest.fn(),
-            save: jest.fn(),
-            findOne: jest.fn(),
-            remove: jest.fn(),
-            count: jest.fn(),
-            update: jest.fn(),
-            createQueryBuilder: jest.fn(() => mockQueryBuilder),
-          },
+          useValue: mockEntryRepository,
         },
         {
           provide: DataSource,
-          useValue: {
-            transaction: jest.fn().mockImplementation((callback) => callback(mockEntityManager)),
-          },
+          useValue: mockDataSource,
         },
         {
           provide: ChangeLogService,
-          useValue: {
-            logCreate: jest.fn(),
-            logUpdate: jest.fn(),
-            logDelete: jest.fn(),
-          },
+          useValue: mockChangeLogService,
         },
         {
           provide: TenantService,
-          useValue: {
-            getEffectiveCompanyId: jest.fn().mockResolvedValue(mockCompanyId),
-          },
+          useValue: mockTenantService,
         },
         {
           provide: TimeSettingsService,
-          useValue: {
-            getSettings: jest.fn().mockResolvedValue(mockSettings),
-            getRoundingConfig: jest.fn().mockResolvedValue({
-              method: TimeRoundingMethod.NONE,
-              interval: 15,
-            }),
-            allowsOverlapping: jest.fn().mockResolvedValue(true),
-          },
+          useValue: mockSettingsService,
         },
       ],
     }).compile();
@@ -271,7 +302,7 @@ describe('TimeEntriesService', () => {
     it('should throw TimeEntryNotFoundException when not found', async () => {
       entryRepository.findOne = jest.fn().mockResolvedValue(null);
 
-      await expect(service.findOne('non-existent', mockUser as User)).rejects.toThrow(
+      await expect(service.findOne('non-existent', mockUser as User)).rejects.toBeInstanceOf(
         TimeEntryNotFoundException
       );
     });
@@ -280,7 +311,7 @@ describe('TimeEntriesService', () => {
       const otherUserEntry = { ...mockTimeEntry, userId: 'other-user-123' };
       entryRepository.findOne = jest.fn().mockResolvedValue(otherUserEntry);
 
-      await expect(service.findOne(mockEntryId, mockUser as User)).rejects.toThrow(
+      await expect(service.findOne(mockEntryId, mockUser as User)).rejects.toBeInstanceOf(
         TimeEntryNotFoundException
       );
     });
@@ -384,11 +415,13 @@ describe('TimeEntriesService', () => {
       const existingEntry = { ...mockTimeEntry };
       const updatedEntry = { ...existingEntry, ...updateDto };
 
-      // First findOne is called outside transaction for validation
-      entryRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(existingEntry)
-        .mockResolvedValueOnce(updatedEntry);
+      // Mock findOne to return existing entry first, then updated entry after save
+      let findOneCallCount = 0;
+      entryRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(existingEntry);
+        return Promise.resolve(updatedEntry);
+      });
 
       // Transaction mock with entity manager
       const mockQueryBuilder = createMockQueryBuilder();
@@ -412,16 +445,16 @@ describe('TimeEntriesService', () => {
     it('should throw when entry not found', async () => {
       entryRepository.findOne = jest.fn().mockResolvedValue(null);
 
-      await expect(service.update('non-existent', updateDto, mockUser as User)).rejects.toThrow(
-        TimeEntryNotFoundException
-      );
+      await expect(
+        service.update('non-existent', updateDto, mockUser as User)
+      ).rejects.toBeInstanceOf(TimeEntryNotFoundException);
     });
 
     it('should throw when non-manager tries to update another user entry', async () => {
       const otherUserEntry = { ...mockTimeEntry, userId: 'other-user-123' };
       entryRepository.findOne = jest.fn().mockResolvedValue(otherUserEntry);
 
-      await expect(service.update(mockEntryId, updateDto, mockUser as User)).rejects.toThrow(
+      await expect(service.update(mockEntryId, updateDto, mockUser as User)).rejects.toBeInstanceOf(
         TimeEntryNotFoundException
       );
     });
@@ -430,10 +463,13 @@ describe('TimeEntriesService', () => {
       const existingEntry = { ...mockTimeEntry };
       const updatedEntry = { ...existingEntry, ...updateDto };
 
-      entryRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(existingEntry)
-        .mockResolvedValueOnce(updatedEntry);
+      // Mock findOne to return existing entry first, then updated entry after save
+      let findOneCallCount = 0;
+      entryRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(existingEntry);
+        return Promise.resolve(updatedEntry);
+      });
 
       const mockQueryBuilder = createMockQueryBuilder();
       mockQueryBuilder.getOne = jest.fn().mockResolvedValue(existingEntry);
@@ -473,7 +509,7 @@ describe('TimeEntriesService', () => {
     it('should throw when entry not found', async () => {
       entryRepository.findOne = jest.fn().mockResolvedValue(null);
 
-      await expect(service.remove('non-existent', mockUser as User)).rejects.toThrow(
+      await expect(service.remove('non-existent', mockUser as User)).rejects.toBeInstanceOf(
         TimeEntryNotFoundException
       );
     });
@@ -525,7 +561,7 @@ describe('TimeEntriesService', () => {
         .fn()
         .mockImplementation((callback) => callback(mockEntityManager));
 
-      await expect(service.startTimer(startDto, mockUser as User)).rejects.toThrow(
+      await expect(service.startTimer(startDto, mockUser as User)).rejects.toBeInstanceOf(
         TimerAlreadyRunningException
       );
     });
@@ -619,7 +655,7 @@ describe('TimeEntriesService', () => {
         .fn()
         .mockImplementation((callback) => callback(mockEntityManager));
 
-      await expect(service.stopTimer(stopDto, mockUser as User)).rejects.toThrow(
+      await expect(service.stopTimer(stopDto, mockUser as User)).rejects.toBeInstanceOf(
         TimerNotRunningException
       );
     });
@@ -719,7 +755,7 @@ describe('TimeEntriesService', () => {
         .fn()
         .mockImplementation((callback) => callback(mockEntityManager));
 
-      await expect(service.discardTimer(mockUser as User)).rejects.toThrow(
+      await expect(service.discardTimer(mockUser as User)).rejects.toBeInstanceOf(
         TimerNotRunningException
       );
     });
@@ -728,13 +764,16 @@ describe('TimeEntriesService', () => {
   describe('submitEntry', () => {
     it('should submit draft entry for approval', async () => {
       const draftEntry = { ...mockTimeEntry, status: TimeEntryStatus.DRAFT };
-      entryRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(draftEntry)
-        .mockResolvedValueOnce({ ...draftEntry, status: TimeEntryStatus.SUBMITTED });
-      entryRepository.save = jest
-        .fn()
-        .mockResolvedValue({ ...draftEntry, status: TimeEntryStatus.SUBMITTED });
+      const submittedEntry = { ...draftEntry, status: TimeEntryStatus.SUBMITTED };
+
+      // Mock findOne to return draft entry first, then submitted entry after save
+      let findOneCallCount = 0;
+      entryRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(draftEntry);
+        return Promise.resolve(submittedEntry);
+      });
+      entryRepository.save = jest.fn().mockResolvedValue(submittedEntry);
 
       const result = await service.submitEntry(mockEntryId, mockUser as User);
 
@@ -750,7 +789,7 @@ describe('TimeEntriesService', () => {
       const approvedEntry = { ...mockTimeEntry, status: TimeEntryStatus.APPROVED };
       entryRepository.findOne = jest.fn().mockResolvedValue(approvedEntry);
 
-      await expect(service.submitEntry(mockEntryId, mockUser as User)).rejects.toThrow(
+      await expect(service.submitEntry(mockEntryId, mockUser as User)).rejects.toBeInstanceOf(
         TimeEntryInvalidStatusException
       );
     });
@@ -763,7 +802,7 @@ describe('TimeEntriesService', () => {
       };
       entryRepository.findOne = jest.fn().mockResolvedValue(otherUserEntry);
 
-      await expect(service.submitEntry(mockEntryId, mockUser as User)).rejects.toThrow(
+      await expect(service.submitEntry(mockEntryId, mockUser as User)).rejects.toBeInstanceOf(
         TimeEntryNotFoundException
       );
     });
@@ -772,13 +811,16 @@ describe('TimeEntriesService', () => {
   describe('approveEntry', () => {
     it('should approve submitted entry', async () => {
       const submittedEntry = { ...mockTimeEntry, status: TimeEntryStatus.SUBMITTED };
-      entryRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(submittedEntry)
-        .mockResolvedValueOnce({ ...submittedEntry, status: TimeEntryStatus.APPROVED });
-      entryRepository.save = jest
-        .fn()
-        .mockResolvedValue({ ...submittedEntry, status: TimeEntryStatus.APPROVED });
+      const approvedEntry = { ...submittedEntry, status: TimeEntryStatus.APPROVED };
+
+      // Mock findOne to return submitted entry first, then approved entry after save
+      let findOneCallCount = 0;
+      entryRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(submittedEntry);
+        return Promise.resolve(approvedEntry);
+      });
+      entryRepository.save = jest.fn().mockResolvedValue(approvedEntry);
 
       const result = await service.approveEntry(mockEntryId, mockOwner as User);
 
@@ -795,7 +837,7 @@ describe('TimeEntriesService', () => {
       const draftEntry = { ...mockTimeEntry, status: TimeEntryStatus.DRAFT };
       entryRepository.findOne = jest.fn().mockResolvedValue(draftEntry);
 
-      await expect(service.approveEntry(mockEntryId, mockOwner as User)).rejects.toThrow(
+      await expect(service.approveEntry(mockEntryId, mockOwner as User)).rejects.toBeInstanceOf(
         TimeEntryInvalidStatusException
       );
     });
@@ -804,13 +846,16 @@ describe('TimeEntriesService', () => {
   describe('rejectEntry', () => {
     it('should reject submitted entry with note', async () => {
       const submittedEntry = { ...mockTimeEntry, status: TimeEntryStatus.SUBMITTED };
-      entryRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(submittedEntry)
-        .mockResolvedValueOnce({ ...submittedEntry, status: TimeEntryStatus.REJECTED });
-      entryRepository.save = jest
-        .fn()
-        .mockResolvedValue({ ...submittedEntry, status: TimeEntryStatus.REJECTED });
+      const rejectedEntry = { ...submittedEntry, status: TimeEntryStatus.REJECTED };
+
+      // Use call counter pattern for robust mocking
+      let findOneCallCount = 0;
+      entryRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(submittedEntry);
+        return Promise.resolve(rejectedEntry);
+      });
+      entryRepository.save = jest.fn().mockResolvedValue(rejectedEntry);
 
       const result = await service.rejectEntry(
         mockEntryId,
@@ -831,9 +876,9 @@ describe('TimeEntriesService', () => {
       const draftEntry = { ...mockTimeEntry, status: TimeEntryStatus.DRAFT };
       entryRepository.findOne = jest.fn().mockResolvedValue(draftEntry);
 
-      await expect(service.rejectEntry(mockEntryId, 'Rejected', mockOwner as User)).rejects.toThrow(
-        TimeEntryInvalidStatusException
-      );
+      await expect(
+        service.rejectEntry(mockEntryId, 'Rejected', mockOwner as User)
+      ).rejects.toBeInstanceOf(TimeEntryInvalidStatusException);
     });
   });
 
@@ -909,7 +954,7 @@ describe('TimeEntriesService', () => {
         .mockImplementation((callback) => callback(mockEntityManager));
       entryRepository.findOne = jest.fn().mockResolvedValue(savedEntry);
 
-      await expect(service.create(createDto, mockUser as User)).resolves.not.toThrow();
+      await expect(service.create(createDto, mockUser as User)).resolves.toBeDefined();
 
       // Overlap check should not be called when setting allows overlapping
       expect(mockQueryBuilder.setLock).not.toHaveBeenCalledWith('pessimistic_read');
@@ -933,7 +978,7 @@ describe('TimeEntriesService', () => {
         .fn()
         .mockImplementation((callback) => callback(mockEntityManager));
 
-      await expect(service.create(createDto, mockUser as User)).rejects.toThrow();
+      await expect(service.create(createDto, mockUser as User)).rejects.toBeInstanceOf(Error);
     });
 
     it('should allow non-overlapping entries when setting is false', async () => {
@@ -955,7 +1000,7 @@ describe('TimeEntriesService', () => {
         .mockImplementation((callback) => callback(mockEntityManager));
       entryRepository.findOne = jest.fn().mockResolvedValue(savedEntry);
 
-      await expect(service.create(createDto, mockUser as User)).resolves.not.toThrow();
+      await expect(service.create(createDto, mockUser as User)).resolves.toBeDefined();
     });
 
     it('should exclude current entry when checking overlap during update', async () => {
@@ -967,11 +1012,13 @@ describe('TimeEntriesService', () => {
       const existingEntry = { ...mockTimeEntry };
       const updatedEntry = { ...existingEntry, startTime: new Date('2024-01-15T09:30:00Z') };
 
-      // First findOne for validation, second for return
-      entryRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(existingEntry)
-        .mockResolvedValueOnce(updatedEntry);
+      // Use call counter pattern for robust mocking
+      let findOneCallCount = 0;
+      entryRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(existingEntry);
+        return Promise.resolve(updatedEntry);
+      });
 
       const mockQueryBuilder = createMockQueryBuilder();
       mockQueryBuilder.getOne = jest.fn().mockResolvedValue(existingEntry);
@@ -1015,7 +1062,7 @@ describe('TimeEntriesService', () => {
         .fn()
         .mockImplementation((callback) => callback(mockEntityManager));
 
-      await expect(service.startTimer(startDto, mockUser as User)).rejects.toThrow(
+      await expect(service.startTimer(startDto, mockUser as User)).rejects.toBeInstanceOf(
         TimerAlreadyRunningException
       );
     });
@@ -1033,7 +1080,8 @@ describe('TimeEntriesService', () => {
         .fn()
         .mockImplementation((callback) => callback(mockEntityManager));
 
-      await expect(service.startTimer(startDto, mockUser as User)).rejects.toThrow(
+      await expect(service.startTimer(startDto, mockUser as User)).rejects.toHaveProperty(
+        'message',
         'Connection timeout'
       );
     });
@@ -1050,7 +1098,10 @@ describe('TimeEntriesService', () => {
         .fn()
         .mockImplementation((callback) => callback(mockEntityManager));
 
-      await expect(service.startTimer(startDto, mockUser as User)).rejects.toThrow('Unknown error');
+      await expect(service.startTimer(startDto, mockUser as User)).rejects.toHaveProperty(
+        'message',
+        'Unknown error'
+      );
     });
   });
 
@@ -1067,10 +1118,13 @@ describe('TimeEntriesService', () => {
       };
       const updatedEntry = { ...recentEntry, description: 'Updated' };
 
-      entryRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(recentEntry)
-        .mockResolvedValueOnce(updatedEntry);
+      // Use call counter pattern for robust mocking
+      let findOneCallCount = 0;
+      entryRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(recentEntry);
+        return Promise.resolve(updatedEntry);
+      });
 
       const mockQueryBuilder = createMockQueryBuilder();
       mockQueryBuilder.getOne = jest.fn().mockResolvedValue(recentEntry);
@@ -1085,7 +1139,7 @@ describe('TimeEntriesService', () => {
 
       await expect(
         service.update(mockEntryId, { description: 'Updated' }, mockUser as User)
-      ).resolves.not.toThrow();
+      ).resolves.toBeDefined();
     });
 
     it('should block editing entries past lock period', async () => {
@@ -1102,7 +1156,7 @@ describe('TimeEntriesService', () => {
 
       await expect(
         service.update(mockEntryId, { description: 'Updated' }, mockUser as User)
-      ).rejects.toThrow(TimeEntryLockedException);
+      ).rejects.toBeInstanceOf(TimeEntryLockedException);
     });
 
     it('should not lock entries when lockEntriesAfterDays is 0', async () => {
@@ -1117,10 +1171,13 @@ describe('TimeEntriesService', () => {
       };
       const updatedEntry = { ...oldEntry, description: 'Updated' };
 
-      entryRepository.findOne = jest
-        .fn()
-        .mockResolvedValueOnce(oldEntry)
-        .mockResolvedValueOnce(updatedEntry);
+      // Use call counter pattern for robust mocking
+      let findOneCallCount = 0;
+      entryRepository.findOne = jest.fn().mockImplementation(() => {
+        findOneCallCount++;
+        if (findOneCallCount === 1) return Promise.resolve(oldEntry);
+        return Promise.resolve(updatedEntry);
+      });
 
       const mockQueryBuilder = createMockQueryBuilder();
       mockQueryBuilder.getOne = jest.fn().mockResolvedValue(oldEntry);
@@ -1135,7 +1192,7 @@ describe('TimeEntriesService', () => {
 
       await expect(
         service.update(mockEntryId, { description: 'Updated' }, mockUser as User)
-      ).resolves.not.toThrow();
+      ).resolves.toBeDefined();
     });
   });
 });

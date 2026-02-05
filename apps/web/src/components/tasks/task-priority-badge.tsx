@@ -1,8 +1,9 @@
-import { AlertTriangle, ArrowUp, ArrowRight, ArrowDown, Minus } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Minus } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils/cn';
-import { TaskPriority, TaskPriorityLabels, TaskPriorityColors } from '@/types/enums';
+import { TaskPriority, TaskPriorityColors, TaskPriorityLabels } from '@/types/enums';
+
 
 interface TaskPriorityBadgeProps {
   priority: TaskPriority;

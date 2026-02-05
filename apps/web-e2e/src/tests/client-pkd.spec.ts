@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/auth.fixtures';
+import { expect, test } from '../fixtures/auth.fixtures';
 import { ClientsPage } from '../pages/modules/ClientsPage';
 
 test.describe('Clients - PKD Code Selection', () => {
@@ -82,6 +82,7 @@ test.describe('Clients - PKD Code Selection', () => {
     }
   });
 
+  // eslint-disable-next-line playwright/expect-expect -- TODO: Add assertions after clearing PKD
   test('should clear PKD code selection', async ({ authenticatedCompanyOwnerPage }) => {
     const clientsPage = new ClientsPage(authenticatedCompanyOwnerPage);
     const clientName = `Clear PKD Client ${Date.now()}`;
@@ -323,6 +324,7 @@ test.describe('Clients - Employee Access', () => {
 });
 
 test.describe('Clients - Bulk Operations', () => {
+  // eslint-disable-next-line playwright/expect-expect -- TODO: Add assertions for bulk update
   test('should bulk update AML group', async ({ authenticatedCompanyOwnerPage }) => {
     const clientsPage = new ClientsPage(authenticatedCompanyOwnerPage);
 

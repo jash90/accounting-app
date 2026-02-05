@@ -356,6 +356,7 @@ const companyData = TestDataFactory.createCompanyData();
 
 ```typescript
 import { Page } from '@playwright/test';
+
 import { BasePage } from '../base/BasePage';
 
 export class MyNewPage extends BasePage {

@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * Standardized error response format for all API errors
@@ -60,10 +60,9 @@ export class ErrorResponseDto {
   })
   errorCode: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Additional error context and metadata',
     example: { clientId: 'abc-123', companyId: 'xyz-456' },
-    required: false,
   })
   context?: Record<string, unknown>;
 

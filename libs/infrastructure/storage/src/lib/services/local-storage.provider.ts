@@ -1,9 +1,11 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+
 import * as fs from 'fs';
 import { promises as fsPromises } from 'fs';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+
 import { StorageProvider, StorageResult } from '../interfaces/storage-provider.interface';
 
 @Injectable()

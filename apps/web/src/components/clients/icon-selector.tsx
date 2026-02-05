@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import * as LucideIcons from 'lucide-react';
+import { Circle, Image, Palette, Shapes, Upload } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,9 +9,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { IconTypeLabels } from '@/lib/constants/polish-labels';
 import { cn } from '@/lib/utils/cn';
+import { ICON_REGISTRY, type LucideIconComponent } from '@/lib/utils/lucide-icon-registry';
 import { IconType } from '@/types/enums';
 
-// Popular Lucide icons for quick selection
+// Popular Lucide icons for quick selection - these must match keys in ICON_REGISTRY
 const POPULAR_LUCIDE_ICONS = [
   'Star',
   'Heart',
@@ -220,22 +221,27 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
     [value, onChange]
   );
 
-  const filteredLucideIcons = searchTerm
-    ? POPULAR_LUCIDE_ICONS.filter((icon) => icon.toLowerCase().includes(searchTerm.toLowerCase()))
-    : POPULAR_LUCIDE_ICONS;
+  // Memoize filtered icons to avoid recalculating on every render
+  const filteredLucideIcons = useMemo(
+    () =>
+      searchTerm
+        ? POPULAR_LUCIDE_ICONS.filter((icon) =>
+            icon.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        : POPULAR_LUCIDE_ICONS,
+    [searchTerm]
+  );
 
   const renderIconPreview = () => {
     switch (value.iconType) {
       case IconType.LUCIDE: {
-        const IconComponent = value.iconValue
-          ? (
-              LucideIcons as unknown as Record<string, React.ComponentType<LucideIcons.LucideProps>>
-            )[value.iconValue]
-          : null;
+        const IconComponent: LucideIconComponent | undefined = value.iconValue
+          ? ICON_REGISTRY[value.iconValue]
+          : undefined;
         return IconComponent ? (
           <IconComponent size={32} style={value.color ? { color: value.color } : undefined} />
         ) : (
-          <LucideIcons.Circle size={32} className="text-muted-foreground" />
+          <Circle size={32} className="text-muted-foreground" />
         );
       }
       case IconType.EMOJI:
@@ -244,10 +250,10 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
         return filePreviewUrl ? (
           <img src={filePreviewUrl} alt="Podgląd ikony" className="h-8 w-8 object-contain" />
         ) : (
-          <LucideIcons.Image size={32} className="text-muted-foreground" />
+          <Image size={32} className="text-muted-foreground" />
         );
       default:
-        return <LucideIcons.Circle size={32} className="text-muted-foreground" />;
+        return <Circle size={32} className="text-muted-foreground" />;
     }
   };
 
@@ -280,7 +286,7 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
       <Tabs value={value.iconType} onValueChange={handleIconTypeChange}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value={IconType.LUCIDE}>
-            <LucideIcons.Shapes className="mr-2 h-4 w-4" />
+            <Shapes className="mr-2 h-4 w-4" />
             {IconTypeLabels[IconType.LUCIDE]}
           </TabsTrigger>
           <TabsTrigger value={IconType.EMOJI}>
@@ -288,7 +294,7 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
             {IconTypeLabels[IconType.EMOJI]}
           </TabsTrigger>
           <TabsTrigger value={IconType.CUSTOM}>
-            <LucideIcons.Upload className="mr-2 h-4 w-4" />
+            <Upload className="mr-2 h-4 w-4" />
             {IconTypeLabels[IconType.CUSTOM]}
           </TabsTrigger>
         </TabsList>
@@ -302,12 +308,7 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
           />
           <div className="grid max-h-48 grid-cols-8 gap-2 overflow-y-auto p-1">
             {filteredLucideIcons.map((iconName) => {
-              const IconComponent = (
-                LucideIcons as unknown as Record<
-                  string,
-                  React.ComponentType<LucideIcons.LucideProps>
-                >
-              )[iconName];
+              const IconComponent = ICON_REGISTRY[iconName];
               // Only render button if IconComponent exists to avoid empty buttons
               if (!IconComponent) return null;
               return (
@@ -395,7 +396,7 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
                   className="h-10 w-10 p-0"
                   style={{ backgroundColor: value.color || 'transparent' }}
                 >
-                  {!value.color && <LucideIcons.Palette className="h-5 w-5" />}
+                  {!value.color && <Palette className="h-5 w-5" />}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-3">

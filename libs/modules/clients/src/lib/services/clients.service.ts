@@ -1,36 +1,38 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
+
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
 import { randomUUID } from 'crypto';
-import { Repository, In, DataSource } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 
 import {
   Client,
-  User,
-  PaginatedResponseDto,
   isValidPkdCode,
+  PaginatedResponseDto,
   PKD_CLASSES,
   PKD_SECTIONS,
+  User,
   type PkdCodeOption,
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
-import { AutoAssignService } from './auto-assign.service';
-import { ClientChangelogService } from './client-changelog.service';
+import { CLIENT_VALIDATION_MESSAGES } from '../constants';
 import {
   BulkDeleteClientsDto,
-  BulkRestoreClientsDto,
   BulkEditClientsDto,
   BulkOperationResultDto,
+  BulkRestoreClientsDto,
 } from '../dto/bulk-operations.dto';
 import {
-  CreateClientDto,
-  UpdateClientDto,
   ClientFiltersDto,
+  CreateClientDto,
   CustomFieldFilter,
+  UpdateClientDto,
 } from '../dto/client.dto';
 import { ClientNotFoundException } from '../exceptions';
+import { AutoAssignService } from './auto-assign.service';
+import { ClientChangelogService } from './client-changelog.service';
 
 @Injectable()
 export class ClientsService {
@@ -245,7 +247,9 @@ export class ClientsService {
       normalizedPkdCode = undefined;
     }
     if (normalizedPkdCode && !isValidPkdCode(normalizedPkdCode)) {
-      throw new BadRequestException(`Nieprawidłowy kod PKD: ${normalizedPkdCode}`);
+      throw new BadRequestException(
+        `${CLIENT_VALIDATION_MESSAGES.INVALID_PKD_CODE}: ${normalizedPkdCode}`
+      );
     }
 
     const client = this.clientRepository.create({
@@ -293,7 +297,9 @@ export class ClientsService {
       normalizedPkdCode = undefined;
     }
     if (normalizedPkdCode && !isValidPkdCode(normalizedPkdCode)) {
-      throw new BadRequestException(`Nieprawidłowy kod PKD: ${normalizedPkdCode}`);
+      throw new BadRequestException(
+        `${CLIENT_VALIDATION_MESSAGES.INVALID_PKD_CODE}: ${normalizedPkdCode}`
+      );
     }
 
     const oldValues = this.sanitizeClientForLog(client);
@@ -496,6 +502,8 @@ export class ClientsService {
       await clientRepo.save(clients);
 
       // Prepare changelog entries with old and new values
+      // Note: Non-null assertion is safe here because oldValuesMap is populated
+      // from the same `clients` array being iterated - every client.id has an entry.
       const changelogEntries = clients.map((client) => ({
         entityId: client.id,
         oldData: {
@@ -537,7 +545,9 @@ export class ClientsService {
       normalizedPkdCode = undefined;
     }
     if (normalizedPkdCode && !isValidPkdCode(normalizedPkdCode)) {
-      throw new BadRequestException(`Nieprawidłowy kod PKD: ${normalizedPkdCode}`);
+      throw new BadRequestException(
+        `${CLIENT_VALIDATION_MESSAGES.INVALID_PKD_CODE}: ${normalizedPkdCode}`
+      );
     }
 
     // Build update payload from non-undefined values (outside transaction for validation)
@@ -583,6 +593,8 @@ export class ClientsService {
       await clientRepo.save(clients);
 
       // Prepare changelog entries with old and new values
+      // Note: Non-null assertion is safe here because oldValuesMap is populated
+      // from the same `clients` array being iterated - every client.id has an entry.
       const changelogEntries = clients.map((client) => ({
         entityId: client.id,
         oldData: {
@@ -599,6 +611,7 @@ export class ClientsService {
       await this.changeLogService.logBulkUpdate('Client', changelogEntries, user);
 
       // Prepare updates for batch notification
+      // Note: Non-null assertion is safe - same invariant as changelogEntries above.
       const notificationUpdates = clients.map((client) => ({
         client,
         oldValues: oldValuesMap.get(client.id)!,

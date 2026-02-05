@@ -80,7 +80,7 @@ export default function AccountSettingsPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Shield className="text-apptax-blue h-5 w-5" />
+              <Shield className="text-primary h-5 w-5" />
               <CardTitle>Informacje o koncie</CardTitle>
             </div>
             <CardDescription>Podstawowe informacje o Twoim koncie</CardDescription>
@@ -89,19 +89,19 @@ export default function AccountSettingsPage() {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Email</span>
-                <span className="text-apptax-navy font-medium">{user?.email}</span>
+                <span className="text-foreground font-medium">{user?.email}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Imię</span>
-                <span className="text-apptax-navy font-medium">{user?.firstName}</span>
+                <span className="text-foreground font-medium">{user?.firstName}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Nazwisko</span>
-                <span className="text-apptax-navy font-medium">{user?.lastName}</span>
+                <span className="text-foreground font-medium">{user?.lastName}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Rola</span>
-                <span className="text-apptax-navy font-medium">{user?.role}</span>
+                <span className="text-foreground font-medium">{user?.role}</span>
               </div>
             </div>
           </CardContent>
@@ -110,7 +110,7 @@ export default function AccountSettingsPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <KeyRound className="text-apptax-teal h-5 w-5" />
+              <KeyRound className="text-accent h-5 w-5" />
               <CardTitle>Zmień hasło</CardTitle>
             </div>
             <CardDescription>Zaktualizuj swoje hasło do konta</CardDescription>

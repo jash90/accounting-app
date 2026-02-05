@@ -1,34 +1,34 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository, In, DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
 
 import {
+  Client,
+  PaginatedResponseDto,
+  Task,
   TimeEntry,
   TimeEntryStatus,
   TimeRoundingMethod,
   User,
   UserRole,
-  PaginatedResponseDto,
-  Client,
-  Task,
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
-import { TimeCalculationService } from './time-calculation.service';
-import { TimeSettingsService } from './time-settings.service';
-import { CreateTimeEntryDto, UpdateTimeEntryDto, TimeEntryFiltersDto } from '../dto/time-entry.dto';
+import { CreateTimeEntryDto, TimeEntryFiltersDto, UpdateTimeEntryDto } from '../dto/time-entry.dto';
 import { StartTimerDto, StopTimerDto, UpdateTimerDto } from '../dto/timer.dto';
 import {
+  TimeEntryInvalidStatusException,
+  TimeEntryLockedException,
   TimeEntryNotFoundException,
+  TimeEntryOverlapException,
+  TimeEntryUnlockNotAuthorizedException,
   TimerAlreadyRunningException,
   TimerNotRunningException,
-  TimeEntryOverlapException,
-  TimeEntryLockedException,
-  TimeEntryInvalidStatusException,
-  TimeEntryUnlockNotAuthorizedException,
 } from '../exceptions';
+import { TimeCalculationService } from './time-calculation.service';
+import { TimeSettingsService } from './time-settings.service';
 
 /**
  * Far future date used for overlap detection with running timers.
