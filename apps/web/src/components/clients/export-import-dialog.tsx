@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 
-import { cn } from '@/lib/utils/cn';
 import { AlertCircle, CheckCircle2, Download, FileSpreadsheet, Upload } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -16,6 +15,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils/cn';
 
 interface ExportImportDialogProps {
   open: boolean;
@@ -88,8 +88,9 @@ export function ExportImportDialog({
     try {
       const result = await onImport(selectedFile);
       setImportResult(result);
-    } catch {
-      // Error is handled by the hook
+    } catch (error) {
+      // Error is handled by the hook, but log for debugging
+      console.error('Import failed:', error);
     }
   };
 
@@ -186,6 +187,7 @@ export function ExportImportDialog({
                           type="button"
                           className="text-primary underline hover:no-underline"
                           onClick={() => fileInputRef.current?.click()}
+                          aria-label="Wybierz plik CSV z dysku"
                         >
                           wybierz z dysku
                         </button>
