@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type Query } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
 import { type ApiErrorResponse } from '@/types/api';
@@ -22,6 +22,33 @@ import {
   timesheetApi,
 } from '../api/endpoints/time-tracking';
 import { queryKeys } from '../api/query-client';
+
+// ============================================
+// Helper Functions
+// ============================================
+
+/**
+ * Predicate to match time entry list queries for selective cache invalidation.
+ *
+ * Used with `queryClient.invalidateQueries({ predicate })` to selectively invalidate
+ * only list queries while preserving cached detail and timer queries.
+ *
+ * @param query - TanStack Query's Query object containing queryKey
+ * @returns true if the query matches the time entry list pattern
+ *
+ * @example
+ * // Matches: ['time-entries', 'list'] or ['time-entries', 'list', { filters }]
+ * // Does NOT match: ['time-entries', 'abc-123'] (detail query)
+ * // Does NOT match: ['time-tracking', 'timer', 'active'] (timer query)
+ *
+ * queryClient.invalidateQueries({ predicate: isTimeEntryListQuery });
+ *
+ * @see isEmailInboxQuery in use-email-client.ts for similar pattern
+ */
+const isTimeEntryListQuery = (query: Query): boolean => {
+  const key = query.queryKey;
+  return Array.isArray(key) && key[0] === 'time-entries' && key[1] === 'list';
+};
 
 // Named constants for timer intervals and timeouts
 // Sync timer state with server periodically to keep elapsed time accurate on multiple devices/tabs
@@ -89,7 +116,8 @@ export function useCreateTimeEntry() {
   return useMutation({
     mutationFn: (entryData: CreateTimeEntryDto) => timeEntriesApi.create(entryData),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.all });
+      // Only invalidate list queries, not detail/timer queries
+      queryClient.invalidateQueries({ predicate: isTimeEntryListQuery });
       toast({
         title: 'Sukces',
         description: 'Wpis czasu został utworzony',
@@ -113,10 +141,12 @@ export function useUpdateTimeEntry() {
     mutationFn: ({ id, data }: { id: string; data: UpdateTimeEntryDto }) =>
       timeEntriesApi.update(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.all });
+      // Invalidate the specific detail query
       queryClient.invalidateQueries({
         queryKey: queryKeys.timeTracking.entries.detail(variables.id),
       });
+      // Only invalidate list queries, not all time-entries queries
+      queryClient.invalidateQueries({ predicate: isTimeEntryListQuery });
       toast({
         title: 'Sukces',
         description: 'Wpis czasu został zaktualizowany',
@@ -138,8 +168,11 @@ export function useDeleteTimeEntry() {
 
   return useMutation({
     mutationFn: (id: string) => timeEntriesApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.all });
+    onSuccess: (_, deletedId) => {
+      // Remove the specific detail query from cache
+      queryClient.removeQueries({ queryKey: queryKeys.timeTracking.entries.detail(deletedId) });
+      // Only invalidate list queries
+      queryClient.invalidateQueries({ predicate: isTimeEntryListQuery });
       toast({
         title: 'Sukces',
         description: 'Wpis czasu został usunięty',
@@ -166,8 +199,10 @@ export function useSubmitTimeEntry() {
   return useMutation({
     mutationFn: (id: string) => timeEntriesApi.submit(id),
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.all });
+      // Invalidate the specific detail query
       queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.detail(id) });
+      // Only invalidate list queries
+      queryClient.invalidateQueries({ predicate: isTimeEntryListQuery });
       toast({
         title: 'Sukces',
         description: 'Wpis czasu został wysłany do zatwierdzenia',
@@ -190,8 +225,10 @@ export function useApproveTimeEntry() {
   return useMutation({
     mutationFn: (id: string) => timeEntriesApi.approve(id),
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.all });
+      // Invalidate the specific detail query
       queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.detail(id) });
+      // Only invalidate list queries
+      queryClient.invalidateQueries({ predicate: isTimeEntryListQuery });
       toast({
         title: 'Sukces',
         description: 'Wpis czasu został zatwierdzony',
@@ -215,10 +252,12 @@ export function useRejectTimeEntry() {
     mutationFn: ({ id, data }: { id: string; data: RejectTimeEntryDto }) =>
       timeEntriesApi.reject(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.all });
+      // Invalidate the specific detail query
       queryClient.invalidateQueries({
         queryKey: queryKeys.timeTracking.entries.detail(variables.id),
       });
+      // Only invalidate list queries
+      queryClient.invalidateQueries({ predicate: isTimeEntryListQuery });
       toast({
         title: 'Sukces',
         description: 'Wpis czasu został odrzucony',
@@ -255,7 +294,8 @@ export function useStartTimer() {
     mutationFn: (dto: StartTimerDto) => timerApi.start(dto),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.timer.active });
-      queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.all });
+      // Only invalidate list queries
+      queryClient.invalidateQueries({ predicate: isTimeEntryListQuery });
       toast({
         title: 'Sukces',
         description: 'Timer został uruchomiony',
@@ -279,7 +319,8 @@ export function useStopTimer() {
     mutationFn: (dto?: StopTimerDto) => timerApi.stop(dto),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.timer.active });
-      queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.all });
+      // Only invalidate list queries (new entry was created)
+      queryClient.invalidateQueries({ predicate: isTimeEntryListQuery });
       toast({
         title: 'Sukces',
         description: 'Timer został zatrzymany, wpis czasu zapisany',
