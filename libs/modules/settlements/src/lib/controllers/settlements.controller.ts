@@ -24,8 +24,6 @@ import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
-  OwnerOrAdmin,
-  OwnerOrAdminGuard,
   PermissionGuard,
   RequireModule,
   RequirePermission,
@@ -123,8 +121,6 @@ export class SettlementsController {
     description: 'Employee statistics list',
     type: EmployeeStatsListDto,
   })
-  @UseGuards(OwnerOrAdminGuard)
-  @OwnerOrAdmin()
   @RequirePermission('settlements', 'manage')
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async getEmployeeStats(
@@ -163,8 +159,6 @@ export class SettlementsController {
     status: 200,
     description: 'List of assignable users',
   })
-  @UseGuards(OwnerOrAdminGuard)
-  @OwnerOrAdmin()
   @RequirePermission('settlements', 'manage')
   async getAllAssignableUsers(@CurrentUser() user: User) {
     return this.settlementsService.getAllAssignableUsers(user);
@@ -215,8 +209,6 @@ export class SettlementsController {
     status: 200,
     description: 'List of assignable users',
   })
-  @UseGuards(OwnerOrAdminGuard)
-  @OwnerOrAdmin()
   @RequirePermission('settlements', 'manage')
   async getAssignableUsers(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.settlementsService.getAssignableUsers(id, user);
@@ -235,8 +227,6 @@ export class SettlementsController {
     description: 'Initialization result',
     type: InitializeMonthResultDto,
   })
-  @UseGuards(OwnerOrAdminGuard)
-  @OwnerOrAdmin()
   @RequirePermission('settlements', 'manage')
   async initializeMonth(
     @Body() dto: InitializeMonthDto,
@@ -313,8 +303,6 @@ export class SettlementsController {
     description: 'Updated settlement',
     type: SettlementResponseDto,
   })
-  @UseGuards(OwnerOrAdminGuard)
-  @OwnerOrAdmin()
   @RequirePermission('settlements', 'manage')
   async assignToEmployee(
     @Param('id', ParseUUIDPipe) id: string,
@@ -336,8 +324,6 @@ export class SettlementsController {
     description: 'Bulk assignment result',
     type: BulkAssignResultDto,
   })
-  @UseGuards(OwnerOrAdminGuard)
-  @OwnerOrAdmin()
   @RequirePermission('settlements', 'manage')
   async bulkAssign(
     @Body() dto: BulkAssignDto,
