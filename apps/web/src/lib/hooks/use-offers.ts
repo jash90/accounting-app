@@ -1,7 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
-import { type ApiErrorResponse } from '@/types/api';
 import {
   type ConvertLeadToClientDto,
   type CreateLeadDto,
@@ -10,6 +9,7 @@ import {
   type DuplicateOfferDto,
   type LeadFiltersDto,
   type OfferFiltersDto,
+  type OfferResponseDto,
   type OfferTemplateFiltersDto,
   type SendOfferDto,
   type UpdateLeadDto,
@@ -20,6 +20,18 @@ import {
 
 import { leadsApi, offersApi, offerTemplatesApi } from '../api/endpoints/offers';
 import { queryKeys } from '../api/query-client';
+import { downloadBlob } from '../utils/download';
+import {
+  invalidateOfferQueries,
+  isLeadListQuery,
+  isOfferListQuery,
+  isOfferTemplateListQuery,
+  OFFERS_CACHE_TIMES,
+  performOptimisticOfferUpdate,
+  rollbackOptimisticOfferUpdate,
+  type OfferOptimisticContext,
+} from '../utils/optimistic-offers-updates';
+import { buildQueryFilters, getApiErrorMessage } from '../utils/query-filters';
 
 // ============================================
 // Offer Hooks
@@ -27,9 +39,9 @@ import { queryKeys } from '../api/query-client';
 
 export function useOffers(filters?: OfferFiltersDto) {
   return useQuery({
-    // eslint-disable-next-line @tanstack/query/exhaustive-deps
-    queryKey: queryKeys.offers.list(filters as Record<string, unknown> | undefined),
+    queryKey: queryKeys.offers.list(buildQueryFilters(filters)),
     queryFn: () => offersApi.getAll(filters),
+    staleTime: OFFERS_CACHE_TIMES.list,
   });
 }
 
@@ -53,13 +65,47 @@ export function useOfferStatistics() {
   return useQuery({
     queryKey: queryKeys.offers.statistics,
     queryFn: () => offersApi.getStatistics(),
+    staleTime: OFFERS_CACHE_TIMES.statistics,
   });
+}
+
+/**
+ * Hook that fetches offer and lead statistics in parallel using useQueries.
+ * This prevents the waterfall effect of sequential queries.
+ */
+export function useDashboardStatistics() {
+  const results = useQueries({
+    queries: [
+      {
+        queryKey: queryKeys.offers.statistics,
+        queryFn: () => offersApi.getStatistics(),
+        staleTime: OFFERS_CACHE_TIMES.statistics,
+      },
+      {
+        queryKey: queryKeys.leads.statistics,
+        queryFn: () => leadsApi.getStatistics(),
+        staleTime: OFFERS_CACHE_TIMES.statistics,
+      },
+    ],
+  });
+
+  const [offerStatsResult, leadStatsResult] = results;
+
+  return {
+    offerStats: offerStatsResult.data,
+    leadStats: leadStatsResult.data,
+    isPending: offerStatsResult.isPending || leadStatsResult.isPending,
+    offersLoading: offerStatsResult.isPending,
+    leadsLoading: leadStatsResult.isPending,
+    isError: offerStatsResult.isError || leadStatsResult.isError,
+  };
 }
 
 export function useStandardPlaceholders() {
   return useQuery({
     queryKey: queryKeys.offers.placeholders,
     queryFn: () => offersApi.getStandardPlaceholders(),
+    staleTime: OFFERS_CACHE_TIMES.placeholders,
   });
 }
 
@@ -70,17 +116,20 @@ export function useCreateOffer() {
   return useMutation({
     mutationFn: (offerData: CreateOfferDto) => offersApi.create(offerData),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['offers', 'list'], exact: false });
+      queryClient.invalidateQueries({
+        predicate: isOfferListQuery,
+        refetchType: 'active',
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.offers.statistics });
       toast({
         title: 'Sukces',
         description: 'Oferta została utworzona',
       });
     },
-    onError: (error: ApiErrorResponse) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się utworzyć oferty',
+        description: getApiErrorMessage(error, 'Nie udało się utworzyć oferty'),
         variant: 'destructive',
       });
     },
@@ -93,21 +142,28 @@ export function useUpdateOffer() {
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateOfferDto }) => offersApi.update(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.offers.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: ['offers', 'list'], exact: false });
-      queryClient.invalidateQueries({ queryKey: queryKeys.offers.activities(variables.id) });
+    onMutate: async ({ id, data }) => {
+      // Perform optimistic update
+      return performOptimisticOfferUpdate(queryClient, id, data as Partial<OfferResponseDto>);
+    },
+    onError: (error: unknown, variables, context) => {
+      // Rollback on error
+      rollbackOptimisticOfferUpdate(queryClient, variables.id, context as OfferOptimisticContext);
+      toast({
+        title: 'Błąd',
+        description: getApiErrorMessage(error, 'Nie udało się zaktualizować oferty'),
+        variant: 'destructive',
+      });
+    },
+    onSuccess: () => {
       toast({
         title: 'Sukces',
         description: 'Oferta została zaktualizowana',
       });
     },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować oferty',
-        variant: 'destructive',
-      });
+    onSettled: (_, __, variables) => {
+      // Always refetch after mutation settles
+      invalidateOfferQueries(queryClient, variables.id, { includeActivities: true });
     },
   });
 }
@@ -120,17 +176,20 @@ export function useDeleteOffer() {
     mutationFn: (id: string) => offersApi.delete(id),
     onSuccess: (_, deletedId) => {
       queryClient.removeQueries({ queryKey: queryKeys.offers.detail(deletedId) });
-      queryClient.invalidateQueries({ queryKey: ['offers', 'list'], exact: false });
+      queryClient.invalidateQueries({
+        predicate: isOfferListQuery,
+        refetchType: 'active',
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.offers.statistics });
       toast({
         title: 'Sukces',
         description: 'Oferta została usunięta',
       });
     },
-    onError: (error: ApiErrorResponse) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć oferty',
+        description: getApiErrorMessage(error, 'Nie udało się usunąć oferty'),
         variant: 'destructive',
       });
     },
@@ -144,21 +203,32 @@ export function useUpdateOfferStatus() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateOfferStatusDto }) =>
       offersApi.updateStatus(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.offers.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: ['offers', 'list'], exact: false });
-      queryClient.invalidateQueries({ queryKey: queryKeys.offers.activities(variables.id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.offers.statistics });
+    onMutate: async ({ id, data }) => {
+      // Perform optimistic update with new status
+      return performOptimisticOfferUpdate(queryClient, id, {
+        status: data.status,
+      } as Partial<OfferResponseDto>);
+    },
+    onError: (error: unknown, variables, context) => {
+      // Rollback on error
+      rollbackOptimisticOfferUpdate(queryClient, variables.id, context as OfferOptimisticContext);
+      toast({
+        title: 'Błąd',
+        description: getApiErrorMessage(error, 'Nie udało się zmienić statusu oferty'),
+        variant: 'destructive',
+      });
+    },
+    onSuccess: () => {
       toast({
         title: 'Sukces',
         description: 'Status oferty został zmieniony',
       });
     },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zmienić statusu oferty',
-        variant: 'destructive',
+    onSettled: (_, __, variables) => {
+      // Always refetch after mutation settles
+      invalidateOfferQueries(queryClient, variables.id, {
+        includeActivities: true,
+        includeStatistics: true,
       });
     },
   });
@@ -178,10 +248,10 @@ export function useGenerateOfferDocument() {
         description: 'Dokument został wygenerowany',
       });
     },
-    onError: (error: ApiErrorResponse) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się wygenerować dokumentu',
+        description: getApiErrorMessage(error, 'Nie udało się wygenerować dokumentu'),
         variant: 'destructive',
       });
     },
@@ -194,19 +264,15 @@ export function useDownloadOfferDocument() {
   return useMutation({
     mutationFn: async ({ id, filename }: { id: string; filename: string }) => {
       const blob = await offersApi.downloadDocument(id);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename || 'oferta.docx';
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      const result = downloadBlob(blob, filename || 'oferta.docx');
+      if (!result.success) {
+        throw new Error(result.error || 'Nie udało się pobrać pliku');
+      }
     },
-    onError: (error: ApiErrorResponse) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się pobrać dokumentu',
+        description: getApiErrorMessage(error, 'Nie udało się pobrać dokumentu'),
         variant: 'destructive',
       });
     },
@@ -219,21 +285,32 @@ export function useSendOffer() {
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: SendOfferDto }) => offersApi.sendEmail(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.offers.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: ['offers', 'list'], exact: false });
-      queryClient.invalidateQueries({ queryKey: queryKeys.offers.activities(variables.id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.offers.statistics });
+    onMutate: async ({ id }) => {
+      // Optimistically mark offer as sent (status: 'sent')
+      return performOptimisticOfferUpdate(queryClient, id, {
+        status: 'sent',
+      } as Partial<OfferResponseDto>);
+    },
+    onError: (error: unknown, variables, context) => {
+      // Rollback on error
+      rollbackOptimisticOfferUpdate(queryClient, variables.id, context as OfferOptimisticContext);
+      toast({
+        title: 'Błąd',
+        description: getApiErrorMessage(error, 'Nie udało się wysłać oferty'),
+        variant: 'destructive',
+      });
+    },
+    onSuccess: () => {
       toast({
         title: 'Sukces',
         description: 'Oferta została wysłana',
       });
     },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się wysłać oferty',
-        variant: 'destructive',
+    onSettled: (_, __, variables) => {
+      // Always refetch after mutation settles
+      invalidateOfferQueries(queryClient, variables.id, {
+        includeActivities: true,
+        includeStatistics: true,
       });
     },
   });
@@ -247,17 +324,20 @@ export function useDuplicateOffer() {
     mutationFn: ({ id, data }: { id: string; data?: DuplicateOfferDto }) =>
       offersApi.duplicate(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['offers', 'list'], exact: false });
+      queryClient.invalidateQueries({
+        predicate: isOfferListQuery,
+        refetchType: 'active',
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.offers.statistics });
       toast({
         title: 'Sukces',
         description: 'Oferta została zduplikowana',
       });
     },
-    onError: (error: ApiErrorResponse) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zduplikować oferty',
+        description: getApiErrorMessage(error, 'Nie udało się zduplikować oferty'),
         variant: 'destructive',
       });
     },
@@ -270,9 +350,9 @@ export function useDuplicateOffer() {
 
 export function useLeads(filters?: LeadFiltersDto) {
   return useQuery({
-    // eslint-disable-next-line @tanstack/query/exhaustive-deps
-    queryKey: queryKeys.leads.list(filters as Record<string, unknown> | undefined),
+    queryKey: queryKeys.leads.list(buildQueryFilters(filters)),
     queryFn: () => leadsApi.getAll(filters),
+    staleTime: OFFERS_CACHE_TIMES.list,
   });
 }
 
@@ -288,6 +368,7 @@ export function useLeadStatistics() {
   return useQuery({
     queryKey: queryKeys.leads.statistics,
     queryFn: () => leadsApi.getStatistics(),
+    staleTime: OFFERS_CACHE_TIMES.statistics,
   });
 }
 
@@ -295,6 +376,7 @@ export function useLeadAssignees() {
   return useQuery({
     queryKey: queryKeys.leads.lookupAssignees,
     queryFn: () => leadsApi.getAssignees(),
+    staleTime: OFFERS_CACHE_TIMES.templates,
   });
 }
 
@@ -305,17 +387,20 @@ export function useCreateLead() {
   return useMutation({
     mutationFn: (leadData: CreateLeadDto) => leadsApi.create(leadData),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leads', 'list'], exact: false });
+      queryClient.invalidateQueries({
+        predicate: isLeadListQuery,
+        refetchType: 'active',
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.leads.statistics });
       toast({
         title: 'Sukces',
         description: 'Lead został utworzony',
       });
     },
-    onError: (error: ApiErrorResponse) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się utworzyć leada',
+        description: getApiErrorMessage(error, 'Nie udało się utworzyć leada'),
         variant: 'destructive',
       });
     },
@@ -330,17 +415,20 @@ export function useUpdateLead() {
     mutationFn: ({ id, data }: { id: string; data: UpdateLeadDto }) => leadsApi.update(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.leads.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: ['leads', 'list'], exact: false });
+      queryClient.invalidateQueries({
+        predicate: isLeadListQuery,
+        refetchType: 'active',
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.leads.statistics });
       toast({
         title: 'Sukces',
         description: 'Lead został zaktualizowany',
       });
     },
-    onError: (error: ApiErrorResponse) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować leada',
+        description: getApiErrorMessage(error, 'Nie udało się zaktualizować leada'),
         variant: 'destructive',
       });
     },
@@ -355,17 +443,20 @@ export function useDeleteLead() {
     mutationFn: (id: string) => leadsApi.delete(id),
     onSuccess: (_, deletedId) => {
       queryClient.removeQueries({ queryKey: queryKeys.leads.detail(deletedId) });
-      queryClient.invalidateQueries({ queryKey: ['leads', 'list'], exact: false });
+      queryClient.invalidateQueries({
+        predicate: isLeadListQuery,
+        refetchType: 'active',
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.leads.statistics });
       toast({
         title: 'Sukces',
         description: 'Lead został usunięty',
       });
     },
-    onError: (error: ApiErrorResponse) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć leada',
+        description: getApiErrorMessage(error, 'Nie udało się usunąć leada'),
         variant: 'destructive',
       });
     },
@@ -381,18 +472,24 @@ export function useConvertLeadToClient() {
       leadsApi.convertToClient(id, data),
     onSuccess: (result, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.leads.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: ['leads', 'list'], exact: false });
+      queryClient.invalidateQueries({
+        predicate: isLeadListQuery,
+        refetchType: 'active',
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.leads.statistics });
-      queryClient.invalidateQueries({ queryKey: ['clients', 'list'], exact: false });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.clients.all,
+        refetchType: 'active',
+      });
       toast({
         title: 'Sukces',
         description: result.message || 'Lead został przekonwertowany na klienta',
       });
     },
-    onError: (error: ApiErrorResponse) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się przekonwertować leada',
+        description: getApiErrorMessage(error, 'Nie udało się przekonwertować leada'),
         variant: 'destructive',
       });
     },
@@ -405,9 +502,9 @@ export function useConvertLeadToClient() {
 
 export function useOfferTemplates(filters?: OfferTemplateFiltersDto) {
   return useQuery({
-    // eslint-disable-next-line @tanstack/query/exhaustive-deps
-    queryKey: queryKeys.offerTemplates.list(filters as Record<string, unknown> | undefined),
+    queryKey: queryKeys.offerTemplates.list(buildQueryFilters(filters)),
     queryFn: () => offerTemplatesApi.getAll(filters),
+    staleTime: OFFERS_CACHE_TIMES.templates,
   });
 }
 
@@ -416,6 +513,7 @@ export function useOfferTemplate(id: string) {
     queryKey: queryKeys.offerTemplates.detail(id),
     queryFn: () => offerTemplatesApi.getById(id),
     enabled: !!id,
+    staleTime: OFFERS_CACHE_TIMES.templates,
   });
 }
 
@@ -423,6 +521,7 @@ export function useDefaultOfferTemplate() {
   return useQuery({
     queryKey: queryKeys.offerTemplates.default,
     queryFn: () => offerTemplatesApi.getDefault(),
+    staleTime: OFFERS_CACHE_TIMES.templates,
   });
 }
 
@@ -433,17 +532,20 @@ export function useCreateOfferTemplate() {
   return useMutation({
     mutationFn: (templateData: CreateOfferTemplateDto) => offerTemplatesApi.create(templateData),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['offer-templates', 'list'], exact: false });
+      queryClient.invalidateQueries({
+        predicate: isOfferTemplateListQuery,
+        refetchType: 'active',
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.offerTemplates.default });
       toast({
         title: 'Sukces',
         description: 'Szablon został utworzony',
       });
     },
-    onError: (error: ApiErrorResponse) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się utworzyć szablonu',
+        description: getApiErrorMessage(error, 'Nie udało się utworzyć szablonu'),
         variant: 'destructive',
       });
     },
@@ -459,17 +561,20 @@ export function useUpdateOfferTemplate() {
       offerTemplatesApi.update(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.offerTemplates.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: ['offer-templates', 'list'], exact: false });
+      queryClient.invalidateQueries({
+        predicate: isOfferTemplateListQuery,
+        refetchType: 'active',
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.offerTemplates.default });
       toast({
         title: 'Sukces',
         description: 'Szablon został zaktualizowany',
       });
     },
-    onError: (error: ApiErrorResponse) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować szablonu',
+        description: getApiErrorMessage(error, 'Nie udało się zaktualizować szablonu'),
         variant: 'destructive',
       });
     },
@@ -484,17 +589,20 @@ export function useDeleteOfferTemplate() {
     mutationFn: (id: string) => offerTemplatesApi.delete(id),
     onSuccess: (_, deletedId) => {
       queryClient.removeQueries({ queryKey: queryKeys.offerTemplates.detail(deletedId) });
-      queryClient.invalidateQueries({ queryKey: ['offer-templates', 'list'], exact: false });
+      queryClient.invalidateQueries({
+        predicate: isOfferTemplateListQuery,
+        refetchType: 'active',
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.offerTemplates.default });
       toast({
         title: 'Sukces',
         description: 'Szablon został usunięty',
       });
     },
-    onError: (error: ApiErrorResponse) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć szablonu',
+        description: getApiErrorMessage(error, 'Nie udało się usunąć szablonu'),
         variant: 'destructive',
       });
     },
@@ -510,16 +618,19 @@ export function useUploadOfferTemplateFile() {
       offerTemplatesApi.uploadTemplate(id, file),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.offerTemplates.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: ['offer-templates', 'list'], exact: false });
+      queryClient.invalidateQueries({
+        predicate: isOfferTemplateListQuery,
+        refetchType: 'active',
+      });
       toast({
         title: 'Sukces',
         description: 'Plik szablonu został przesłany',
       });
     },
-    onError: (error: ApiErrorResponse) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się przesłać pliku szablonu',
+        description: getApiErrorMessage(error, 'Nie udało się przesłać pliku szablonu'),
         variant: 'destructive',
       });
     },
@@ -532,19 +643,15 @@ export function useDownloadOfferTemplateFile() {
   return useMutation({
     mutationFn: async ({ id, filename }: { id: string; filename: string }) => {
       const blob = await offerTemplatesApi.downloadTemplate(id);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename || 'szablon.docx';
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      const result = downloadBlob(blob, filename || 'szablon.docx');
+      if (!result.success) {
+        throw new Error(result.error || 'Nie udało się pobrać pliku');
+      }
     },
-    onError: (error: ApiErrorResponse) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się pobrać pliku szablonu',
+        description: getApiErrorMessage(error, 'Nie udało się pobrać pliku szablonu'),
         variant: 'destructive',
       });
     },

@@ -1,17 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 
 import { Link, useNavigate } from 'react-router-dom';
 
 import {
-  type ColumnDef,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
-  type SortingState,
   useReactTable,
+  type ColumnDef,
+  type SortingState,
 } from '@tanstack/react-table';
 import {
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
   Copy,
   Eye,
   FileDown,
@@ -63,6 +65,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAuthContext } from '@/contexts/auth-context';
+import { PAGINATION } from '@/lib/constants';
 import {
   useCreateOffer,
   useDeleteOffer,
@@ -73,18 +76,58 @@ import {
   useSendOffer,
   useUpdateOffer,
 } from '@/lib/hooks/use-offers';
-import { type OfferFiltersDto, type OfferResponseDto, type SendOfferDto } from '@/types/dtos';
+import { type CreateOfferFormData, type UpdateOfferFormData } from '@/lib/validation/schemas';
+import {
+  type CreateOfferDto,
+  type OfferFiltersDto,
+  type OfferResponseDto,
+  type SendOfferDto,
+  type UpdateOfferDto,
+} from '@/types/dtos';
 import { OfferStatus, OfferStatusLabels, UserRole } from '@/types/enums';
+
+/**
+ * Converts form data (with Date objects) to DTO format (with ISO strings).
+ * The form uses Date objects for date pickers, but the API expects ISO string format.
+ */
+function formDataToCreateDto(data: CreateOfferFormData): CreateOfferDto {
+  return {
+    ...data,
+    offerDate: data.offerDate?.toISOString(),
+    validUntil: data.validUntil?.toISOString(),
+  };
+}
+
+function formDataToUpdateDto(data: UpdateOfferFormData): UpdateOfferDto {
+  return {
+    ...data,
+    offerDate: data.offerDate?.toISOString(),
+    validUntil: data.validUntil?.toISOString(),
+  };
+}
 
 export default function OffersListPage() {
   const navigate = useNavigate();
   const { user } = useAuthContext();
-  const [filters, setFilters] = useState<OfferFiltersDto>({});
+
+  // Separate search state from filters for deferred updates
+  const [searchValue, setSearchValue] = useState('');
+  const deferredSearch = useDeferredValue(searchValue);
+
+  const [filters, setFilters] = useState<OfferFiltersDto>({
+    page: 1,
+    limit: PAGINATION.DEFAULT_PAGE_SIZE,
+  });
   const [sorting, setSorting] = useState<SortingState>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingOffer, setEditingOffer] = useState<OfferResponseDto | undefined>();
   const [deletingOfferId, setDeletingOfferId] = useState<string | null>(null);
   const [sendingOffer, setSendingOffer] = useState<OfferResponseDto | null>(null);
+
+  // Sync deferred search value to filters
+  useEffect(() => {
+    setFilters((prev) => ({ ...prev, search: deferredSearch || undefined, page: 1 }));
+  }, [deferredSearch]);
 
   const { data, isPending, refetch } = useOffers(filters);
   const offers = data?.data ?? [];
@@ -110,22 +153,52 @@ export default function OffersListPage() {
 
   const basePath = getBasePath();
 
-  const handleGenerateDocument = async (offer: OfferResponseDto) => {
-    await generateDocMutation.mutateAsync(offer.id);
-    refetch();
-  };
+  const handleGenerateDocument = useCallback(
+    async (offer: OfferResponseDto) => {
+      await generateDocMutation.mutateAsync(offer.id);
+      refetch();
+    },
+    [generateDocMutation, refetch]
+  );
 
-  const handleDownloadDocument = async (offer: OfferResponseDto) => {
-    if (!offer.generatedDocumentName) return;
-    await downloadDocMutation.mutateAsync({
-      id: offer.id,
-      filename: offer.generatedDocumentName,
-    });
-  };
+  const handleDownloadDocument = useCallback(
+    async (offer: OfferResponseDto) => {
+      if (!offer.generatedDocumentName) return;
+      await downloadDocMutation.mutateAsync({
+        id: offer.id,
+        filename: offer.generatedDocumentName,
+      });
+    },
+    [downloadDocMutation]
+  );
 
-  const handleDuplicate = async (offer: OfferResponseDto) => {
-    await duplicateMutation.mutateAsync({ id: offer.id });
-  };
+  const handleDuplicate = useCallback(
+    async (offer: OfferResponseDto) => {
+      await duplicateMutation.mutateAsync({ id: offer.id });
+    },
+    [duplicateMutation]
+  );
+
+  // Stable action handlers for column definitions
+  // These extract only the .mutate function reference which is stable
+  const handleDeleteClick = useCallback((offerId: string) => {
+    setDeletingOfferId(offerId);
+  }, []);
+
+  const handleEditClick = useCallback((offer: OfferResponseDto) => {
+    setEditingOffer(offer);
+  }, []);
+
+  const handleSendClick = useCallback((offer: OfferResponseDto) => {
+    setSendingOffer(offer);
+  }, []);
+
+  const handleNavigateToDetails = useCallback(
+    (offerId: string) => {
+      navigate(`${basePath}/${offerId}`);
+    },
+    [navigate, basePath]
+  );
 
   const columns: ColumnDef<OfferResponseDto>[] = useMemo(
     () => [
@@ -195,12 +268,12 @@ export default function OffersListPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate(`${basePath}/${offer.id}`)}>
+                <DropdownMenuItem onClick={() => handleNavigateToDetails(offer.id)}>
                   <Eye className="mr-2 h-4 w-4" />
                   Szczegóły
                 </DropdownMenuItem>
                 {offer.status === OfferStatus.DRAFT && (
-                  <DropdownMenuItem onClick={() => setEditingOffer(offer)}>
+                  <DropdownMenuItem onClick={() => handleEditClick(offer)}>
                     <Pencil className="mr-2 h-4 w-4" />
                     Edytuj
                   </DropdownMenuItem>
@@ -219,7 +292,7 @@ export default function OffersListPage() {
                   </DropdownMenuItem>
                 )}
                 {offer.status === OfferStatus.READY && (
-                  <DropdownMenuItem onClick={() => setSendingOffer(offer)}>
+                  <DropdownMenuItem onClick={() => handleSendClick(offer)}>
                     <Send className="mr-2 h-4 w-4" />
                     Wyślij ofertę
                   </DropdownMenuItem>
@@ -231,7 +304,7 @@ export default function OffersListPage() {
                 <DropdownMenuSeparator />
                 {offer.status === OfferStatus.DRAFT && (
                   <DropdownMenuItem
-                    onClick={() => setDeletingOfferId(offer.id)}
+                    onClick={() => handleDeleteClick(offer.id)}
                     className="text-destructive"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
@@ -244,8 +317,16 @@ export default function OffersListPage() {
         },
       },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [basePath, navigate]
+    [
+      basePath,
+      handleNavigateToDetails,
+      handleEditClick,
+      handleSendClick,
+      handleDeleteClick,
+      handleGenerateDocument,
+      handleDownloadDocument,
+      handleDuplicate,
+    ]
   );
 
   const table = useReactTable({
@@ -257,16 +338,18 @@ export default function OffersListPage() {
     onSortingChange: setSorting,
   });
 
-  const handleCreateOffer = async (data: unknown) => {
-    await createMutation.mutateAsync(data as Parameters<typeof createMutation.mutateAsync>[0]);
+  const handleCreateOffer = async (data: CreateOfferFormData | UpdateOfferFormData) => {
+    const dto = formDataToCreateDto(data as CreateOfferFormData);
+    await createMutation.mutateAsync(dto);
     setIsCreateDialogOpen(false);
   };
 
-  const handleUpdateOffer = async (data: unknown) => {
+  const handleUpdateOffer = async (data: CreateOfferFormData | UpdateOfferFormData) => {
     if (!editingOffer) return;
+    const dto = formDataToUpdateDto(data as UpdateOfferFormData);
     await updateMutation.mutateAsync({
       id: editingOffer.id,
-      data: data as Parameters<typeof updateMutation.mutateAsync>[0]['data'],
+      data: dto,
     });
     setEditingOffer(undefined);
   };
@@ -314,8 +397,8 @@ export default function OffersListPage() {
         <Input
           placeholder="Szukaj..."
           className="w-64"
-          value={filters.search || ''}
-          onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
         />
         <Select
           value={filters.status || 'all'}
@@ -323,6 +406,7 @@ export default function OffersListPage() {
             setFilters({
               ...filters,
               status: value === 'all' ? undefined : (value as OfferStatus),
+              page: 1,
             })
           }
         >
@@ -388,10 +472,43 @@ export default function OffersListPage() {
         </Table>
       </div>
 
-      {/* Pagination info */}
-      {data && (
-        <div className="text-muted-foreground text-sm">
-          Wyświetlono {offers.length} z {data.total} ofert
+      {/* Pagination */}
+      {data && data.meta.total > 0 && (
+        <div className="flex items-center justify-between px-2">
+          <p className="text-muted-foreground text-sm">
+            Wyświetlanie{' '}
+            <span className="text-foreground font-medium">
+              {((filters.page ?? 1) - 1) * (filters.limit ?? PAGINATION.DEFAULT_PAGE_SIZE) + 1}
+            </span>{' '}
+            -{' '}
+            <span className="text-foreground font-medium">
+              {Math.min(
+                (filters.page ?? 1) * (filters.limit ?? PAGINATION.DEFAULT_PAGE_SIZE),
+                data.meta.total
+              )}
+            </span>{' '}
+            z <span className="text-foreground font-medium">{data.meta.total}</span> ofert
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page ?? 1) - 1 }))}
+              disabled={(filters.page ?? 1) <= 1}
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Poprzednia
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page ?? 1) + 1 }))}
+              disabled={(filters.page ?? 1) >= (data.meta.totalPages ?? 1)}
+            >
+              Następna
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
 

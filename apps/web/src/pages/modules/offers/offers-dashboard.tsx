@@ -1,4 +1,7 @@
+import { useMemo } from 'react';
+
 import {
+  AlertTriangle,
   CheckCircle2,
   Clock,
   FileText,
@@ -9,18 +12,19 @@ import {
   XCircle,
 } from 'lucide-react';
 
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
-import { useLeadStatistics, useOfferStatistics } from '@/lib/hooks/use-offers';
+import { useDashboardStatistics } from '@/lib/hooks/use-offers';
 import { UserRole } from '@/types/enums';
 
 export default function OffersDashboardPage() {
   const { user } = useAuthContext();
-  const { data: offerStats, isPending: offersLoading } = useOfferStatistics();
-  const { data: leadStats, isPending: leadsLoading } = useLeadStatistics();
+  // Use parallel queries hook instead of sequential queries
+  const { offerStats, leadStats, offersLoading, leadsLoading, isError } = useDashboardStatistics();
 
-  const getBasePath = () => {
+  const basePath = useMemo(() => {
     switch (user?.role) {
       case UserRole.ADMIN:
         return '/admin/modules/offers';
@@ -29,33 +33,34 @@ export default function OffersDashboardPage() {
       default:
         return '/modules/offers';
     }
-  };
+  }, [user?.role]);
 
-  const basePath = getBasePath();
-
-  const views = [
-    {
-      title: 'Lista ofert',
-      description: 'Przeglądaj i zarządzaj wszystkimi ofertami w systemie',
-      icon: FileText,
-      href: `${basePath}/list`,
-      gradient: 'bg-apptax-gradient',
-    },
-    {
-      title: 'Leady',
-      description: 'Zarządzaj potencjalnymi klientami i procesem sprzedaży',
-      icon: Users,
-      href: `${basePath}/leads`,
-      gradient: 'bg-apptax-dark-gradient',
-    },
-    {
-      title: 'Szablony',
-      description: 'Twórz i edytuj szablony ofert z domyślnymi ustawieniami',
-      icon: FileType,
-      href: `${basePath}/templates`,
-      gradient: 'bg-gradient-to-br from-purple-500 to-pink-500',
-    },
-  ];
+  const views = useMemo(
+    () => [
+      {
+        title: 'Lista ofert',
+        description: 'Przeglądaj i zarządzaj wszystkimi ofertami w systemie',
+        icon: FileText,
+        href: `${basePath}/list`,
+        gradient: 'bg-apptax-gradient',
+      },
+      {
+        title: 'Leady',
+        description: 'Zarządzaj potencjalnymi klientami i procesem sprzedaży',
+        icon: Users,
+        href: `${basePath}/leads`,
+        gradient: 'bg-apptax-dark-gradient',
+      },
+      {
+        title: 'Szablony',
+        description: 'Twórz i edytuj szablony ofert z domyślnymi ustawieniami',
+        icon: FileType,
+        href: `${basePath}/templates`,
+        gradient: 'bg-gradient-to-br from-purple-500 to-pink-500',
+      },
+    ],
+    [basePath]
+  );
 
   const showSettings = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER;
 
@@ -70,6 +75,17 @@ export default function OffersDashboardPage() {
           Zarządzanie ofertami handlowymi i procesem sprzedaży
         </p>
       </div>
+
+      {/* Error Alert */}
+      {isError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Błąd ładowania</AlertTitle>
+          <AlertDescription>
+            Nie udało się załadować statystyk. Spróbuj odświeżyć stronę.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Offer Statistics */}
       <div className="space-y-3">
