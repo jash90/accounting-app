@@ -1,39 +1,39 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
   Body,
+  Controller,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
-  UseGuards,
+  Post,
+  Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
+  ApiBadRequestResponse,
   ApiBearerAuth,
-  ApiOkResponse,
+  ApiBody,
+  ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
-  ApiBadRequestResponse,
-  ApiUnauthorizedResponse,
-  ApiForbiddenResponse,
-  ApiConflictResponse,
-  ApiBody,
+  ApiOkResponse,
+  ApiOperation,
   ApiQuery,
+  ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 
 import { CurrentUser, Roles, RolesGuard } from '@accounting/auth';
-import { User, UserRole, EmailConfiguration } from '@accounting/common';
+import { EmailConfiguration, User, UserRole } from '@accounting/common';
 import { CreateEmailConfigDto, UpdateEmailConfigDto } from '@accounting/email';
 import { OwnerOrAdminGuard, RequireCompany, RequireCompanyGuard } from '@accounting/rbac';
 
 import { SendEmailDto } from '../dto/send-email.dto';
-import { TestSmtpDto, TestImapDto, TestConnectionResultDto } from '../dto/test-connection.dto';
+import { TestConnectionResultDto, TestImapDto, TestSmtpDto } from '../dto/test-connection.dto';
 import { EmailConfigService } from '../services/email-config.service';
 import { SmtpImapService } from '../services/smtp-imap.service';
 

@@ -14,14 +14,14 @@
 
 import { ConflictException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
-import { TypeOrmModule, getDataSourceToken } from '@nestjs/typeorm';
+import { getDataSourceToken, TypeOrmModule } from '@nestjs/typeorm';
 
 import { type DataSource, type Repository } from 'typeorm';
 
 import { TimeEntry } from '@accounting/common';
 
 import { TimeEntriesService } from './time-entries.service';
-import { TEST_DB_CONFIG, runConcurrently } from '../../../../../../test/integration/setup';
+import { runConcurrently, TEST_DB_CONFIG } from '../../../../../../test/integration/setup';
 
 describe('TimeEntriesService Integration Tests', () => {
   let module: TestingModule;

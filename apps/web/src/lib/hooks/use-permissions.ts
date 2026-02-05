@@ -1,12 +1,13 @@
 import { useMemo } from 'react';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthContext } from '@/contexts/auth-context';
 import { type ApiErrorResponse } from '@/types/api';
 import { type GrantModuleAccessDto, type UpdateModulePermissionDto } from '@/types/dtos';
 import { UserRole } from '@/types/enums';
+
 
 import { permissionsApi } from '../api/endpoints/permissions';
 import { queryKeys } from '../api/query-client';
@@ -31,9 +32,10 @@ export type ModulePermissionType = (typeof ModulePermission)[keyof typeof Module
  * - EMPLOYEE: Limited access (READ, WRITE - DELETE requires owner approval)
  *
  * @param moduleSlug - The module identifier (e.g., 'clients')
+ *   Note: Currently unused but kept for API consistency and future per-module permissions.
+ *   The underscore prefix indicates intentional non-use.
  * @returns Object with permission flags and helper functions
  */
-
 export function useModulePermissions(_moduleSlug: string) {
   const { user, isAuthenticated } = useAuthContext();
 
@@ -44,9 +46,11 @@ export function useModulePermissions(_moduleSlug: string) {
         hasReadPermission: false,
         hasWritePermission: false,
         hasDeletePermission: false,
+        hasManagePermission: false,
         canRead: false,
         canWrite: false,
         canDelete: false,
+        canManage: false,
         isAdmin: false,
         isOwner: false,
         isEmployee: false,
@@ -59,10 +63,11 @@ export function useModulePermissions(_moduleSlug: string) {
     const isEmployee = user.role === UserRole.EMPLOYEE;
 
     // ADMIN and COMPANY_OWNER have full permissions
-    // EMPLOYEE has READ and WRITE but NOT DELETE (per module specification)
+    // EMPLOYEE has READ and WRITE but NOT DELETE or MANAGE (per module specification)
     const hasReadPermission = isAdmin || isOwner || isEmployee;
     const hasWritePermission = isAdmin || isOwner || isEmployee;
     const hasDeletePermission = isAdmin || isOwner; // Employees cannot delete
+    const hasManagePermission = isAdmin || isOwner; // Only admin/owner can manage
 
     const checkPermission = (permission: ModulePermissionType): boolean => {
       switch (permission) {
@@ -82,10 +87,12 @@ export function useModulePermissions(_moduleSlug: string) {
       hasReadPermission,
       hasWritePermission,
       hasDeletePermission,
+      hasManagePermission,
       // Aliases for semantic clarity
       canRead: hasReadPermission,
       canWrite: hasWritePermission,
       canDelete: hasDeletePermission,
+      canManage: hasManagePermission,
       // Role flags for edge cases
       isAdmin,
       isOwner,
@@ -98,7 +105,7 @@ export function useModulePermissions(_moduleSlug: string) {
 
 export function useCompanyModules() {
   return useQuery({
-    queryKey: ['company', 'modules'],
+    queryKey: queryKeys.permissions.companyModules,
     queryFn: permissionsApi.getCompanyModules,
   });
 }

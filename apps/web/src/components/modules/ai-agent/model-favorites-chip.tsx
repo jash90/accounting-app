@@ -1,4 +1,4 @@
-import { X, Star, Clock } from 'lucide-react';
+import { Clock, Star, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils/cn';
 
@@ -25,7 +25,7 @@ export function ModelFavoritesChip({
         'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
         'hover:bg-accent/50 border',
         isSelected
-          ? 'bg-apptax-soft-teal border-apptax-teal text-apptax-navy'
+          ? 'bg-accent/10 border-accent text-foreground'
           : 'bg-background border-border text-muted-foreground hover:text-foreground'
       )}
     >

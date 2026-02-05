@@ -1,9 +1,9 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 import { useForm } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Search, X, Filter, ChevronDown } from 'lucide-react';
+import { ChevronDown, Filter, Search, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,15 +26,15 @@ import { cn } from '@/lib/utils/cn';
 import { clientFiltersSchema, type ClientFiltersFormData } from '@/lib/validation/schemas';
 import { type ClientFiltersDto, type CustomFieldFilter } from '@/types/dtos';
 import {
-  type EmploymentType,
   EmploymentTypeLabels,
-  type VatStatus,
-  VatStatusLabels,
-  type TaxScheme,
   TaxSchemeLabels,
-  type ZusStatus,
+  VatStatusLabels,
   ZusStatusLabels,
   type AmlGroup,
+  type EmploymentType,
+  type TaxScheme,
+  type VatStatus,
+  type ZusStatus,
 } from '@/types/enums';
 
 import { ClientCustomFilters } from './client-custom-filters';
@@ -46,12 +46,20 @@ interface ClientFiltersProps {
 
 const SEARCH_DEBOUNCE_MS = 300;
 
-export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) {
+/**
+ * Client filters component wrapped in memo() for performance.
+ * Only re-renders when filters or onFiltersChange change.
+ */
+export const ClientFilters = memo(function ClientFilters({
+  filters,
+  onFiltersChange,
+}: ClientFiltersProps) {
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [customFieldFilters, setCustomFieldFilters] = useState<CustomFieldFilter[]>(
     filters.customFieldFilters || []
   );
+  const [isPending, startTransition] = useTransition();
 
   // Sync customFieldFilters when filters prop changes
   useEffect(() => {
@@ -143,6 +151,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
   }, [debouncedSearch]);
 
   // Watch form changes and update filters with debounced search
+  // Note: form.watch returns a stable subscription, form object itself is stable from useForm
   useEffect(() => {
     const subscription = form.watch((value) => {
       const currentSearch = value.search || '';
@@ -156,21 +165,22 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
       const searchChanged = currentSearch !== debouncedSearchRef.current;
 
       if (searchChanged) {
-        // Debounce search changes
+        // Debounce search changes - use transition only for search to prevent UI blocking
         searchTimeoutRef.current = setTimeout(() => {
           setDebouncedSearch(currentSearch);
-          // Cast value - we handle customFieldFilters separately via customFieldFiltersRef
-          onFiltersChange(
-            buildFilters(
-              value as Partial<ClientFiltersFormData>,
-              currentSearch,
-              customFieldFiltersRef.current
-            )
-          );
+          startTransition(() => {
+            onFiltersChange(
+              buildFilters(
+                value as Partial<ClientFiltersFormData>,
+                currentSearch,
+                customFieldFiltersRef.current
+              )
+            );
+          });
         }, SEARCH_DEBOUNCE_MS);
       } else {
-        // Immediate update for non-search filters
-        // Cast value - we handle customFieldFilters separately via customFieldFiltersRef
+        // Direct update for instant operations (dropdowns, checkboxes)
+        // No transition needed - these are fast and shouldn't show "Filtrowanie..." spinner
         onFiltersChange(
           buildFilters(
             value as Partial<ClientFiltersFormData>,
@@ -187,12 +197,15 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
         clearTimeout(searchTimeoutRef.current);
       }
     };
+    // form object is stable from useForm, but we need it in the closure
+    // onFiltersChange and buildFilters are memoized callbacks
   }, [form, onFiltersChange, buildFilters]);
 
   const handleCustomFieldFiltersChange = useCallback(
     (newCustomFilters: CustomFieldFilter[]) => {
       setCustomFieldFilters(newCustomFilters);
       const formValues = form.getValues();
+      // Direct update for custom field filters - these are instant operations
       onFiltersChange(buildFilters(formValues, debouncedSearch, newCustomFilters));
     },
     [form, onFiltersChange, buildFilters, debouncedSearch]
@@ -267,7 +280,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
   );
 
   return (
-    <Card className="border-apptax-soft-teal/30">
+    <Card className="border-border">
       <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
         <CardContent className="p-4">
           <CollapsibleTrigger asChild>
@@ -276,12 +289,13 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
               className="flex w-full cursor-pointer items-center gap-2 text-left select-none"
               aria-expanded={filtersOpen}
             >
-              <Filter className="text-apptax-blue h-4 w-4" aria-hidden="true" />
-              <span className="text-apptax-navy font-medium">Filtry</span>
-              {hasActiveFilters && (
-                <span className="bg-apptax-blue rounded px-1.5 py-0.5 text-xs text-white">
-                  Aktywne
-                </span>
+              <Filter className="text-primary h-4 w-4" aria-hidden="true" />
+              <span className="text-foreground font-medium">Filtry</span>
+              {isPending && (
+                <span className="text-muted-foreground animate-pulse text-xs">Filtrowanie...</span>
+              )}
+              {hasActiveFilters && !isPending && (
+                <span className="bg-primary rounded px-1.5 py-0.5 text-xs text-white">Aktywne</span>
               )}
               <ChevronDown
                 className={cn('ml-auto h-4 w-4 transition-transform', filtersOpen && 'rotate-180')}
@@ -486,7 +500,7 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
                       <span className="flex items-center gap-2">
                         Filtry zaawansowane
                         {hasAdvancedFilters && (
-                          <span className="bg-apptax-blue rounded px-1.5 py-0.5 text-xs text-white">
+                          <span className="bg-primary rounded px-1.5 py-0.5 text-xs text-white">
                             Aktywne
                           </span>
                         )}
@@ -644,4 +658,4 @@ export function ClientFilters({ filters, onFiltersChange }: ClientFiltersProps) 
       </Collapsible>
     </Card>
   );
-}
+});

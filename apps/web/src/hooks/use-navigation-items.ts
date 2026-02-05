@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { LayoutDashboard, Users, Building2, Package } from 'lucide-react';
+import { Building2, LayoutDashboard, Package, Users } from 'lucide-react';
 
 import { type NavItem } from '@/components/sidebar';
 import { useModules } from '@/lib/hooks/use-modules';
@@ -8,6 +8,7 @@ import { useCompanyModules } from '@/lib/hooks/use-permissions';
 import { getModuleIcon } from '@/lib/utils/module-icons';
 import { type UserDto } from '@/types/dtos';
 import { UserRole } from '@/types/enums';
+
 
 export function useNavigationItems(user: UserDto | null): NavItem[] {
   // Fetch modules based on user role

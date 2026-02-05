@@ -1,4 +1,4 @@
-import { type ModuleDto, type CreateModuleDto, type UpdateModuleDto } from '@/types/dtos';
+import { type CreateModuleDto, type ModuleDto, type UpdateModuleDto } from '@/types/dtos';
 
 import apiClient from '../client';
 

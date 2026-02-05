@@ -2,10 +2,10 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import {
-  User,
   Company,
-  Module as ModuleEntity,
   CompanyModuleAccess,
+  Module as ModuleEntity,
+  User,
   UserModulePermission,
 } from '@accounting/common';
 import { RBACModule } from '@accounting/rbac';

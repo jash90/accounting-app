@@ -1,19 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { Type, Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+  IsBoolean,
+  IsDateString,
+  IsEnum,
+  IsInt,
   IsOptional,
   IsUUID,
-  IsDateString,
-  IsInt,
-  Min,
   Max,
-  IsEnum,
-  IsBoolean,
+  Min,
+  Validate,
+  ValidationArguments,
   ValidatorConstraint,
   ValidatorConstraintInterface,
-  ValidationArguments,
-  Validate,
 } from 'class-validator';
 
 // Maximum allowed date range in days to prevent excessive queries

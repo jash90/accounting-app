@@ -1,28 +1,38 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 
-import { Mail, Edit, Trash2, Plus, Server, Lock } from 'lucide-react';
+import { Edit, Lock, Mail, Plus, Server, Trash2 } from 'lucide-react';
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { PageHeader } from '@/components/common/page-header';
-import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/use-toast';
 import {
-  useUserEmailConfig,
   useCreateUserEmailConfig,
-  useUpdateUserEmailConfig,
   useDeleteUserEmailConfig,
-  useTestSmtp,
   useTestImap,
+  useTestSmtp,
+  useUpdateUserEmailConfig,
+  useUserEmailConfig,
 } from '@/lib/hooks/use-email-config';
 import {
   type CreateEmailConfigFormData,
   type UpdateEmailConfigFormData,
 } from '@/lib/validation/schemas';
 
+// Lazy-load heavy form dialog (533 lines)
+const EmailConfigFormDialog = lazy(() =>
+  import('@/components/forms/email-config-form-dialog').then((m) => ({
+    default: m.EmailConfigFormDialog,
+  }))
+);
+
+// Preload function for form dialog - triggered on mouse enter
+const preloadEmailConfigFormDialog = () => {
+  import('@/components/forms/email-config-form-dialog');
+};
 export default function UserEmailConfigPage() {
   const { data: emailConfig, isPending, isError, error } = useUserEmailConfig();
   const createConfig = useCreateUserEmailConfig();
@@ -86,7 +96,12 @@ export default function UserEmailConfigPage() {
         action={
           hasConfig ? (
             <div className="flex gap-2">
-              <Button onClick={() => setFormOpen(true)} variant="secondary" size="sm">
+              <Button
+                onClick={() => setFormOpen(true)}
+                onMouseEnter={preloadEmailConfigFormDialog}
+                variant="secondary"
+                size="sm"
+              >
                 <Edit className="mr-2 h-4 w-4" />
                 Edit Configuration
               </Button>
@@ -96,7 +111,11 @@ export default function UserEmailConfigPage() {
               </Button>
             </div>
           ) : (
-            <Button onClick={() => setFormOpen(true)} size="sm">
+            <Button
+              onClick={() => setFormOpen(true)}
+              onMouseEnter={preloadEmailConfigFormDialog}
+              size="sm"
+            >
               <Plus className="mr-2 h-4 w-4" />
               Create Configuration
             </Button>
@@ -120,17 +139,21 @@ export default function UserEmailConfigPage() {
         <Card className="border-dashed">
           <CardContent className="p-12 text-center">
             <div className="flex flex-col items-center gap-4">
-              <div className="bg-apptax-soft-teal rounded-full p-4">
-                <Mail className="text-apptax-blue h-8 w-8" />
+              <div className="bg-accent/10 rounded-full p-4">
+                <Mail className="text-primary h-8 w-8" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-apptax-navy text-lg font-semibold">No Email Configuration</h3>
+                <h3 className="text-foreground text-lg font-semibold">No Email Configuration</h3>
                 <p className="text-muted-foreground max-w-md">
                   You haven&apos;t configured your email settings yet. Create a configuration to
                   start sending and receiving emails through the platform.
                 </p>
               </div>
-              <Button onClick={() => setFormOpen(true)} className="mt-4">
+              <Button
+                onClick={() => setFormOpen(true)}
+                onMouseEnter={preloadEmailConfigFormDialog}
+                className="mt-4"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Create Email Configuration
               </Button>
@@ -166,7 +189,7 @@ export default function UserEmailConfigPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Server className="text-apptax-blue h-5 w-5" />
+                  <Server className="text-primary h-5 w-5" />
                   <CardTitle>SMTP Configuration</CardTitle>
                 </div>
                 <Badge variant={emailConfig.isActive ? 'success' : 'muted'}>
@@ -179,11 +202,11 @@ export default function UserEmailConfigPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Host</span>
-                  <span className="text-apptax-navy font-medium">{emailConfig.smtpHost}</span>
+                  <span className="text-foreground font-medium">{emailConfig.smtpHost}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Port</span>
-                  <span className="text-apptax-navy font-medium">{emailConfig.smtpPort}</span>
+                  <span className="text-foreground font-medium">{emailConfig.smtpPort}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Security</span>
@@ -193,12 +216,12 @@ export default function UserEmailConfigPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Username</span>
-                  <span className="text-apptax-navy font-medium">{emailConfig.smtpUser}</span>
+                  <span className="text-foreground font-medium">{emailConfig.smtpUser}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Password</span>
                   <div className="flex items-center gap-2">
-                    <Lock className="text-apptax-teal h-3 w-3" />
+                    <Lock className="text-accent h-3 w-3" />
                     <span className="text-muted-foreground text-xs">Encrypted</span>
                   </div>
                 </div>
@@ -211,7 +234,7 @@ export default function UserEmailConfigPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Server className="text-apptax-teal h-5 w-5" />
+                  <Server className="text-accent h-5 w-5" />
                   <CardTitle>IMAP Configuration</CardTitle>
                 </div>
                 <Badge variant={emailConfig.isActive ? 'success' : 'muted'}>
@@ -224,11 +247,11 @@ export default function UserEmailConfigPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Host</span>
-                  <span className="text-apptax-navy font-medium">{emailConfig.imapHost}</span>
+                  <span className="text-foreground font-medium">{emailConfig.imapHost}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Port</span>
-                  <span className="text-apptax-navy font-medium">{emailConfig.imapPort}</span>
+                  <span className="text-foreground font-medium">{emailConfig.imapPort}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Security</span>
@@ -238,12 +261,12 @@ export default function UserEmailConfigPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Username</span>
-                  <span className="text-apptax-navy font-medium">{emailConfig.imapUser}</span>
+                  <span className="text-foreground font-medium">{emailConfig.imapUser}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Password</span>
                   <div className="flex items-center gap-2">
-                    <Lock className="text-apptax-teal h-3 w-3" />
+                    <Lock className="text-accent h-3 w-3" />
                     <span className="text-muted-foreground text-xs">Encrypted</span>
                   </div>
                 </div>
@@ -252,14 +275,14 @@ export default function UserEmailConfigPage() {
           </Card>
 
           {/* Info Card */}
-          <Card className="bg-apptax-soft-teal border-apptax-blue/20 md:col-span-2">
+          <Card className="bg-accent/10 border-primary/20 md:col-span-2">
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
-                <div className="bg-apptax-blue/10 rounded p-2">
-                  <Mail className="text-apptax-blue h-5 w-5" />
+                <div className="bg-primary/10 rounded p-2">
+                  <Mail className="text-primary h-5 w-5" />
                 </div>
                 <div className="flex-1 space-y-2">
-                  <h4 className="text-apptax-navy font-semibold">
+                  <h4 className="text-foreground font-semibold">
                     {emailConfig.displayName || 'Email Configuration Active'}
                   </h4>
                   <p className="text-muted-foreground text-sm">
@@ -274,18 +297,35 @@ export default function UserEmailConfigPage() {
         </div>
       )}
 
-      {/* Form Dialog */}
-      <EmailConfigFormDialog
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        config={hasConfig ? emailConfig : undefined}
-        onSubmit={handleSubmit}
-        type="user"
-        onTestSmtp={(data) => testSmtp.mutate(data)}
-        onTestImap={(data) => testImap.mutate(data)}
-        isTestingSmtp={testSmtp.isPending}
-        isTestingImap={testImap.isPending}
-      />
+      {/* Form Dialog - Lazy-loaded with Suspense */}
+      {formOpen && (
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <Card className="w-[400px]">
+                <CardContent className="space-y-4 p-6">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </CardContent>
+              </Card>
+            </div>
+          }
+        >
+          <EmailConfigFormDialog
+            open={formOpen}
+            onOpenChange={setFormOpen}
+            config={hasConfig ? emailConfig : undefined}
+            onSubmit={handleSubmit}
+            type="user"
+            onTestSmtp={(data) => testSmtp.mutate(data)}
+            onTestImap={(data) => testImap.mutate(data)}
+            isTestingSmtp={testSmtp.isPending}
+            isTestingImap={testImap.isPending}
+          />
+        </Suspense>
+      )}
 
       {/* Delete Confirmation */}
       <ConfirmDialog

@@ -1,19 +1,19 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLocation, useSearchParams } from 'react-router-dom';
 
 import {
-  Send,
-  Save,
   ArrowLeft,
-  Loader2,
   ChevronDown,
   ChevronUp,
-  Sparkles,
-  Paperclip,
-  X,
   FileIcon,
+  Loader2,
+  Paperclip,
+  Save,
+  Send,
+  Sparkles,
   Upload,
+  X,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -23,11 +23,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import {
-  useSendEmail,
   useCreateDraft,
   useDraft,
-  useUpdateDraft,
   useGenerateAiDraftStream,
+  useSendEmail,
+  useUpdateDraft,
   useUploadAttachment,
 } from '@/lib/hooks/use-email-client';
 import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';

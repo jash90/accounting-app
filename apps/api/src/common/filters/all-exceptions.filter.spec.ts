@@ -1,8 +1,8 @@
-import { type ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Logger, type ArgumentsHost } from '@nestjs/common';
 
 import { type Request, type Response } from 'express';
 
-import { ClientException, ClientErrorCode } from '@accounting/modules/clients';
+import { ClientErrorCode, ClientException } from '@accounting/modules/clients';
 
 import { AllExceptionsFilter } from './all-exceptions.filter';
 

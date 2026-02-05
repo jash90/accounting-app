@@ -127,7 +127,7 @@ git push origin feature/your-feature
 ### Multi-Tenant Service Pattern
 
 ```typescript
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -195,6 +195,7 @@ export class EntityService {
 
 ```typescript
 import { Controller, Get, Post, UseGuards } from '@nestjs/common';
+
 import { RequireModule, RequirePermission } from '@accounting/rbac';
 
 @Controller('modules/entity')
@@ -220,8 +221,8 @@ export class EntityController {
 ### DTO with Validation
 
 ```typescript
-import { IsString, IsOptional, MinLength, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateEntityDto {
   @ApiProperty({ description: 'Entity title', example: 'My Entity' })

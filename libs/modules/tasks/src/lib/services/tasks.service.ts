@@ -1,33 +1,33 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository, In, Brackets, DataSource } from 'typeorm';
+import { Brackets, DataSource, In, Repository } from 'typeorm';
 
 import {
+  PaginatedResponseDto,
   Task,
   TaskLabel,
   TaskLabelAssignment,
-  User,
   TaskStatus,
   TaskStatusLabels,
-  PaginatedResponseDto,
+  User,
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import {
+  ClientTaskStatisticsDto,
   KanbanBoardResponseDto,
   KanbanColumnDto,
-  ClientTaskStatisticsDto,
 } from '../dto/task-response.dto';
 import {
-  CreateTaskDto,
-  UpdateTaskDto,
-  TaskFiltersDto,
-  ReorderTasksDto,
   BulkUpdateStatusDto,
+  CreateTaskDto,
+  ReorderTasksDto,
+  TaskFiltersDto,
+  UpdateTaskDto,
 } from '../dto/task.dto';
-import { TaskNotFoundException, TaskInvalidParentException } from '../exceptions';
+import { TaskInvalidParentException, TaskNotFoundException } from '../exceptions';
 import { TaskNotificationService } from './task-notification.service';
 
 /**

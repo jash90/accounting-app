@@ -1,37 +1,37 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook, waitFor, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useToast } from '@/components/ui/use-toast';
 
 import {
-  useTimeEntries,
-  useTimeEntry,
-  useCreateTimeEntry,
-  useUpdateTimeEntry,
-  useDeleteTimeEntry,
-  useSubmitTimeEntry,
-  useApproveTimeEntry,
-  useRejectTimeEntry,
   useActiveTimer,
+  useApproveTimeEntry,
+  useCreateTimeEntry,
+  useDailyTimesheet,
+  useDeleteTimeEntry,
+  useDiscardTimer,
+  useExportTimeReport,
+  useRejectTimeEntry,
   useStartTimer,
   useStopTimer,
-  useUpdateTimer,
-  useDiscardTimer,
-  useTimeSettings,
-  useUpdateTimeSettings,
-  useDailyTimesheet,
-  useWeeklyTimesheet,
-  useTimeSummaryReport,
+  useSubmitTimeEntry,
   useTimeByClientReport,
-  useExportTimeReport,
+  useTimeEntries,
+  useTimeEntry,
+  useTimeSettings,
+  useTimeSummaryReport,
+  useUpdateTimeEntry,
+  useUpdateTimer,
+  useUpdateTimeSettings,
+  useWeeklyTimesheet,
 } from './use-time-tracking';
 import {
   timeEntriesApi,
   timerApi,
+  timeReportsApi,
   timeSettingsApi,
   timesheetApi,
-  timeReportsApi,
 } from '../api/endpoints/time-tracking';
 
 // Mock the API modules

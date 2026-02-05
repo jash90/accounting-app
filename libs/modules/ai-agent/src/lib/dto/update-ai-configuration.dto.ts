@@ -1,14 +1,16 @@
-import {
-  IsString,
-  IsEnum,
-  IsOptional,
-  IsNumber,
-  IsNotEmpty,
-  IsBoolean,
-  Min,
-  Max,
-} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+
+import {
+  IsBoolean,
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
+
 import { AIProvider } from '@accounting/common';
 
 export class UpdateAIConfigurationDto {

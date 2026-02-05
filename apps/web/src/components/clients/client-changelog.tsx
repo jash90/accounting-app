@@ -1,4 +1,6 @@
-import { History, Plus, Edit, Trash2 } from 'lucide-react';
+import { memo } from 'react';
+
+import { Edit, History, Plus, Trash2 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,8 +46,8 @@ function ChangelogEntry({ entry }: { entry: ChangeLogResponseDto }) {
   const changedKeys = new Set([...Object.keys(oldValues), ...Object.keys(newValues)]);
 
   return (
-    <div className="border-apptax-soft-teal relative border-l-2 pb-4 pl-4">
-      <div className="bg-apptax-blue absolute top-0 -left-[7px] h-3 w-3 rounded-full" />
+    <div className="border-accent relative border-l-2 pb-4 pl-4">
+      <div className="bg-primary absolute top-0 -left-[7px] h-3 w-3 rounded-full" />
 
       <div className="mb-2 flex items-center gap-2">
         <Badge variant={config.variant} className="gap-1">
@@ -86,7 +88,11 @@ function ChangelogEntry({ entry }: { entry: ChangeLogResponseDto }) {
   );
 }
 
-export function ClientChangelog({ clientId }: ClientChangelogProps) {
+/**
+ * Client changelog component wrapped in memo() for performance.
+ * Only re-renders when clientId changes.
+ */
+export const ClientChangelog = memo(function ClientChangelog({ clientId }: ClientChangelogProps) {
   const { data: changelog, isPending, error } = useClientChangelog(clientId);
 
   if (isPending) {
@@ -156,4 +162,4 @@ export function ClientChangelog({ clientId }: ClientChangelogProps) {
       </CardContent>
     </Card>
   );
-}
+});

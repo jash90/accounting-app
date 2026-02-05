@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -6,8 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { CalendarIcon, X, Loader2, Maximize2 } from 'lucide-react';
-import { z } from 'zod';
+import { CalendarIcon, Loader2, Maximize2, X } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -39,33 +38,17 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuthContext } from '@/contexts/auth-context';
-import { useTaskLabels, useTaskAssignees, useTaskClients } from '@/lib/hooks/use-tasks';
+import { useTaskAssignees, useTaskClients, useTaskLabels } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
-import { type TaskResponseDto, type CreateTaskDto, type UpdateTaskDto } from '@/types/dtos';
+import { taskFormSchema, type TaskFormData } from '@/lib/validation/schemas';
+import { type CreateTaskDto, type TaskResponseDto, type UpdateTaskDto } from '@/types/dtos';
 import {
-  UserRole,
-  TaskStatus,
-  TaskStatusLabels,
   TaskPriority,
   TaskPriorityLabels,
+  TaskStatus,
+  TaskStatusLabels,
+  UserRole,
 } from '@/types/enums';
-
-const taskFormSchema = z.object({
-  title: z.string().min(1, 'Tytuł jest wymagany').max(255),
-  description: z.string().optional(),
-  status: z.nativeEnum(TaskStatus),
-  priority: z.nativeEnum(TaskPriority),
-  dueDate: z.date().optional().nullable(),
-  startDate: z.date().optional().nullable(),
-  estimatedMinutes: z.number().min(0).optional().nullable(),
-  storyPoints: z.number().min(1).max(13).optional().nullable(),
-  clientId: z.string().optional().nullable(),
-  assigneeId: z.string().optional().nullable(),
-  parentTaskId: z.string().optional().nullable(),
-  labelIds: z.array(z.string()).optional(),
-});
-
-type TaskFormData = z.infer<typeof taskFormSchema>;
 
 interface TaskFormDialogProps {
   open: boolean;
@@ -109,31 +92,15 @@ export function TaskFormDialog({
     navigate(getCreatePath());
   };
 
-  const assignees = useMemo(() => assigneesData || [], [assigneesData]);
-  const clients = useMemo(() => clientsData || [], [clientsData]);
-  const labels = useMemo(() => labelsData?.data || [], [labelsData]);
+  const assignees = assigneesData ?? [];
+  const clients = clientsData ?? [];
+  const labels = labelsData?.data ?? [];
 
-  const form = useForm<TaskFormData>({
-    resolver: zodResolver(taskFormSchema),
-    defaultValues: {
-      title: '',
-      description: '',
-      status: TaskStatus.TODO,
-      priority: TaskPriority.MEDIUM,
-      dueDate: null,
-      startDate: null,
-      estimatedMinutes: null,
-      storyPoints: null,
-      clientId: null,
-      assigneeId: null,
-      parentTaskId: parentTaskId || null,
-      labelIds: [],
-    },
-  });
-
-  useEffect(() => {
+  // Compute form values synchronously - avoids useEffect render cycle
+  // react-hook-form's `values` prop syncs external values without extra re-renders
+  const formValues = useMemo((): TaskFormData => {
     if (task) {
-      form.reset({
+      return {
         title: task.title,
         description: task.description || '',
         status: task.status,
@@ -146,24 +113,31 @@ export function TaskFormDialog({
         assigneeId: task.assigneeId || null,
         parentTaskId: task.parentTaskId || parentTaskId || null,
         labelIds: task.labels?.map((la) => la.labelId) || [],
-      });
-    } else {
-      form.reset({
-        title: '',
-        description: '',
-        status: TaskStatus.TODO,
-        priority: TaskPriority.MEDIUM,
-        dueDate: null,
-        startDate: null,
-        estimatedMinutes: null,
-        storyPoints: null,
-        clientId: null,
-        assigneeId: null,
-        parentTaskId: parentTaskId || null,
-        labelIds: [],
-      });
+      };
     }
-  }, [task, parentTaskId, form]);
+    return {
+      title: '',
+      description: '',
+      status: TaskStatus.TODO,
+      priority: TaskPriority.MEDIUM,
+      dueDate: null,
+      startDate: null,
+      estimatedMinutes: null,
+      storyPoints: null,
+      clientId: null,
+      assigneeId: null,
+      parentTaskId: parentTaskId || null,
+      labelIds: [],
+    };
+  }, [task, parentTaskId]);
+
+  const form = useForm<TaskFormData>({
+    resolver: zodResolver(taskFormSchema),
+    values: formValues, // Syncs values without useEffect - reduces render cycles
+    resetOptions: {
+      keepDirtyValues: false, // Reset all values when formValues changes
+    },
+  });
 
   const handleSubmit = async (data: TaskFormData) => {
     const submitData: CreateTaskDto | UpdateTaskDto = {
@@ -187,17 +161,23 @@ export function TaskFormDialog({
 
   const selectedLabelIds = form.watch('labelIds') || [];
 
-  const toggleLabel = (labelId: string) => {
-    const current = form.getValues('labelIds') || [];
-    if (current.includes(labelId)) {
-      form.setValue(
-        'labelIds',
-        current.filter((id) => id !== labelId)
-      );
-    } else {
-      form.setValue('labelIds', [...current, labelId]);
-    }
-  };
+  // Extract stable form methods to use as dependencies instead of entire form object
+  const { getValues, setValue } = form;
+
+  const toggleLabel = useCallback(
+    (labelId: string) => {
+      const current = getValues('labelIds') || [];
+      if (current.includes(labelId)) {
+        setValue(
+          'labelIds',
+          current.filter((id) => id !== labelId)
+        );
+      } else {
+        setValue('labelIds', [...current, labelId]);
+      }
+    },
+    [getValues, setValue]
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

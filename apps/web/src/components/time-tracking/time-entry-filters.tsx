@@ -14,13 +14,14 @@ import {
 import { toDateString } from '@/lib/utils/date';
 import {
   ALL_FILTER_VALUE,
-  toFilterValue,
-  fromFilterValue,
   booleanToSelectValue,
+  fromFilterValue,
   selectValueToBoolean,
+  toFilterValue,
 } from '@/lib/utils/filter-types';
 import { type TimeEntryFiltersDto } from '@/types/dtos';
-import { type TimeEntryStatus, TimeEntryStatusLabels } from '@/types/enums';
+import { TimeEntryStatusLabels, type TimeEntryStatus } from '@/types/enums';
+
 
 interface Client {
   id: string;

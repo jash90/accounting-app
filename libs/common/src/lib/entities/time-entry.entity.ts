@@ -1,17 +1,18 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
-import { Company } from './company.entity';
-import { User } from './user.entity';
+
 import { Client } from './client.entity';
+import { Company } from './company.entity';
 import { Task } from './task.entity';
+import { User } from './user.entity';
 import { TimeEntryStatus } from '../enums/time-entry-status.enum';
 
 @Entity('time_entries')

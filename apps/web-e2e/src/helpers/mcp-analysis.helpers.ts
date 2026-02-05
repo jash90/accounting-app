@@ -1,5 +1,6 @@
 import { Page } from '@playwright/test';
-import { ScreenshotMetadata, Issue, Recommendation, DesignAnalysis, Metrics } from './types';
+
+import { DesignAnalysis, Issue, Metrics, Recommendation, ScreenshotMetadata } from './types';
 
 export class MCPAnalysisHelper {
   constructor(private page: Page) {}

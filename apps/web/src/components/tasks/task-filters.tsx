@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useForm } from 'react-hook-form';
 
@@ -79,13 +79,23 @@ export const TaskFilters = memo(function TaskFilters({
     );
   }, [filters]);
 
+  // Use refs to avoid stale closures while keeping effect deps minimal
+  const filtersRef = useRef(filters);
+  const onFiltersChangeRef = useRef(onFiltersChange);
+
+  // Update refs in effect to be React Compiler compliant
+  useEffect(() => {
+    filtersRef.current = filters;
+    onFiltersChangeRef.current = onFiltersChange;
+  });
+
   // Sync debounced search value to filters
   useEffect(() => {
     const searchValue = debouncedSearch || undefined;
-    if (searchValue !== filters.search) {
-      onFiltersChange({ ...filters, search: searchValue });
+    if (searchValue !== filtersRef.current.search) {
+      onFiltersChangeRef.current({ ...filtersRef.current, search: searchValue });
     }
-  }, [debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
 
   const handleSelectChange = (field: keyof TaskFiltersDto, value: string) => {
     const newValue = toFilterValue(value);

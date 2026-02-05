@@ -1,7 +1,9 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
+
 import { VatStatus } from '@accounting/common';
+
 import { AppModule } from '../../../api/src/app/app.module';
 
 describe('Delete Request Workflow E2E Tests', () => {

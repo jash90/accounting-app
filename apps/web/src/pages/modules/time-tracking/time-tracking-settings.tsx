@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 
-import { ArrowLeft, Settings, Save } from 'lucide-react';
+import { ArrowLeft, Save, Settings } from 'lucide-react';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,7 @@ import { Switch } from '@/components/ui/switch';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useTimeSettings, useUpdateTimeSettings } from '@/lib/hooks/use-time-tracking';
 import { type UpdateTimeSettingsDto } from '@/types/dtos';
-import { UserRole, TimeRoundingMethod, TimeRoundingMethodLabels } from '@/types/enums';
+import { TimeRoundingMethod, TimeRoundingMethodLabels, UserRole } from '@/types/enums';
 
 interface FormData {
   roundingMethod: TimeRoundingMethod;

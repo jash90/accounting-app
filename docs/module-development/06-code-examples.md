@@ -181,15 +181,16 @@ Complete entity example showcasing all common patterns including multi-tenancy, 
 
 ```typescript
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
   CreateDateColumn,
-  UpdateDateColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
+
 import { Company } from './company.entity';
 import { User } from './user.entity';
 

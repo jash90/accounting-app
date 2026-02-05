@@ -1,20 +1,23 @@
 import {
-  Injectable,
   ForbiddenException,
+  Injectable,
+  Logger,
   NotFoundException,
   Optional,
-  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
+
 import {
-  User,
   Company,
-  Module,
   CompanyModuleAccess,
+  Module,
+  User,
   UserModulePermission,
   UserRole,
 } from '@accounting/common';
+
 import { ModuleDiscoveryService } from './module-discovery.service';
 
 @Injectable()

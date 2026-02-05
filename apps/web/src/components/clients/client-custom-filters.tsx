@@ -1,8 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { ChevronDown, CalendarIcon, X, Loader2 } from 'lucide-react';
+import { CalendarIcon, ChevronDown, Loader2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -100,9 +100,25 @@ interface CustomFieldFilterControlProps {
 }
 
 function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilterControlProps) {
-  const operators = getOperatorsForFieldType(field.fieldType);
+  // Memoize operators to prevent recalculation on every render
+  const operators = useMemo(() => getOperatorsForFieldType(field.fieldType), [field.fieldType]);
   const currentOperator = filter?.operator || getDefaultOperator(field.fieldType);
   const currentValue = filter?.value || '';
+
+  // Memoize selectedValues and Set for ENUM field type to prevent recreation on every render
+  // This is computed unconditionally so useMemo can be used
+  const selectedValuesData = useMemo(() => {
+    if (field.fieldType !== CustomFieldType.ENUM) return null;
+    const selectedValues = Array.isArray(currentValue)
+      ? currentValue
+      : currentValue
+        ? [currentValue]
+        : [];
+    return {
+      values: selectedValues,
+      set: new Set(selectedValues),
+    };
+  }, [field.fieldType, currentValue]);
 
   const handleOperatorChange = useCallback(
     (newOperator: string) => {
@@ -311,11 +327,9 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
 
     case CustomFieldType.ENUM: {
       const enumValues = field.enumValues || [];
-      const selectedValues = Array.isArray(currentValue)
-        ? currentValue
-        : currentValue
-          ? [currentValue]
-          : [];
+      // Use memoized selectedValues and Set computed at the top of the component
+      const selectedValues = selectedValuesData?.values ?? [];
+      const selectedValuesSet = selectedValuesData?.set ?? new Set<string>();
       const isMultiSelect = currentOperator === 'in';
 
       if (isMultiSelect) {
@@ -338,13 +352,13 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
               <div className="flex-1 space-y-1">
                 <div className="flex min-h-[40px] flex-wrap gap-2 rounded-md border p-2">
                   {enumValues.map((enumValue) => {
-                    const isSelected = selectedValues.includes(enumValue);
+                    const isSelected = selectedValuesSet.has(enumValue);
                     return (
                       <label
                         key={enumValue}
                         className={cn(
                           'flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-sm transition-colors',
-                          isSelected ? 'bg-apptax-blue text-white' : 'bg-muted hover:bg-muted/80'
+                          isSelected ? 'bg-primary text-white' : 'bg-muted hover:bg-muted/80'
                         )}
                       >
                         <Checkbox
@@ -479,7 +493,7 @@ export function ClientCustomFilters({ filters, onFiltersChange }: ClientCustomFi
           <span className="flex items-center gap-2">
             Pola niestandardowe
             {hasActiveFilters && (
-              <span className="bg-apptax-soft-teal text-apptax-navy rounded px-1.5 py-0.5 text-xs">
+              <span className="bg-accent/10 text-foreground rounded px-1.5 py-0.5 text-xs">
                 {filters.length}
               </span>
             )}

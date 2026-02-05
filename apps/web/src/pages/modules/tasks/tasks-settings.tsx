@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
-import { Settings, ArrowLeft, Plus, Edit, Trash2, Tag } from 'lucide-react';
+import { ArrowLeft, Edit, Plus, Settings, Tag, Trash2 } from 'lucide-react';
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { PageHeader } from '@/components/common/page-header';
@@ -30,14 +30,14 @@ import {
 import { useAuthContext } from '@/contexts/auth-context';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import {
-  useTaskLabels,
   useCreateTaskLabel,
-  useUpdateTaskLabel,
   useDeleteTaskLabel,
+  useTaskLabels,
+  useUpdateTaskLabel,
 } from '@/lib/hooks/use-tasks';
 import {
-  type TaskLabelResponseDto,
   type CreateTaskLabelDto,
+  type TaskLabelResponseDto,
   type UpdateTaskLabelDto,
 } from '@/types/dtos';
 import { UserRole } from '@/types/enums';

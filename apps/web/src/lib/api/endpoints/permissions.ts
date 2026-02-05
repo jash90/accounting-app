@@ -1,8 +1,8 @@
 import {
-  type ManageModulePermissionDto,
   PermissionTargetType,
-  type UserModulePermission,
+  type ManageModulePermissionDto,
   type ModuleDto,
+  type UserModulePermission,
 } from '@/types/dtos';
 
 import apiClient from '../client';

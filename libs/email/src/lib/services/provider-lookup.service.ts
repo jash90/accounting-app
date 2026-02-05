@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AutodiscoveryResult, DiscoveredConfig } from '../interfaces/autodiscovery.interface';
+
 import { PROVIDER_LOOKUP } from '../data/known-providers';
+import { AutodiscoveryResult, DiscoveredConfig } from '../interfaces/autodiscovery.interface';
 
 /**
  * Service for looking up known email providers and inferring configuration from MX records

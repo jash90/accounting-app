@@ -1,7 +1,7 @@
 import {
-  ExceptionFilter,
-  Catch,
   ArgumentsHost,
+  Catch,
+  ExceptionFilter,
   HttpException,
   HttpStatus,
   Logger,
@@ -10,7 +10,7 @@ import {
 import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 
-import { ClientException, ClientErrorCode } from '@accounting/modules/clients';
+import { ClientErrorCode, ClientException } from '@accounting/modules/clients';
 
 import { ErrorResponseDto } from '../dto/error-response.dto';
 

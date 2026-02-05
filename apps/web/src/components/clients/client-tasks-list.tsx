@@ -1,23 +1,27 @@
-import { useState, useCallback } from 'react';
-
+import { memo, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
-import {
-  CheckSquare,
-  Plus,
-  Calendar,
-  ArrowRight,
-  ChevronLeft,
-  ChevronRight,
-  LayoutGrid,
-  Filter,
-  X,
-} from 'lucide-react';
 
 import { TaskPriorityBadge } from '@/components/tasks/task-priority-badge';
 import { TaskStatusBadge } from '@/components/tasks/task-status-badge';
+import { useAuthContext } from '@/contexts/auth-context';
+import { cn } from '@/lib/utils/cn';
+import { type TaskFiltersDto } from '@/types/dtos';
+import { TaskPriority, TaskStatus as TaskStatusEnum, UserRole } from '@/types/enums';
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
+import {
+  ArrowRight,
+  Calendar,
+  CheckSquare,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  LayoutGrid,
+  Plus,
+  X,
+} from 'lucide-react';
+
+import { useTaskAssignees, useTasks } from '@/lib/hooks/use-tasks';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,11 +33,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuthContext } from '@/contexts/auth-context';
-import { useTasks, useTaskAssignees } from '@/lib/hooks/use-tasks';
-import { cn } from '@/lib/utils/cn';
-import { type TaskFiltersDto } from '@/types/dtos';
-import { UserRole, TaskStatus as TaskStatusEnum, TaskPriority } from '@/types/enums';
 
 import { QuickAddTaskDialog } from './quick-add-task-dialog';
 
@@ -61,7 +60,10 @@ const TaskPriorityLabels: Record<TaskPriority, string> = {
   [TaskPriority.URGENT]: 'Pilny',
 };
 
-export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) {
+export const ClientTasksList = memo(function ClientTasksList({
+  clientId,
+  clientName,
+}: ClientTasksListProps) {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const [addTaskOpen, setAddTaskOpen] = useState(false);
@@ -173,7 +175,7 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
               variant="ghost"
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
-              className={cn(hasActiveFilters && 'text-apptax-blue')}
+              className={cn(hasActiveFilters && 'text-primary')}
             >
               <Filter className="mr-1 h-4 w-4" />
               Filtry
@@ -395,4 +397,4 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
       />
     </>
   );
-}
+});

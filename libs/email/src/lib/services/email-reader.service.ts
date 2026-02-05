@@ -1,18 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { ImapFlow, FetchMessageObject } from 'imapflow';
-import { simpleParser, ParsedMail } from 'mailparser';
+import { FetchMessageObject, ImapFlow } from 'imapflow';
+import { ParsedMail, simpleParser } from 'mailparser';
 
 import { ImapConfig } from '../interfaces/email-config.interface';
-import { ReceivedEmail, FetchEmailsOptions } from '../interfaces/email-message.interface';
+import { FetchEmailsOptions, ReceivedEmail } from '../interfaces/email-message.interface';
 import { convertParsedMailToReceivedEmail } from '../utils/email-message.parser';
 import {
-  createImapFlowClient,
-  sendClientIdentification,
   buildSearchCriteria,
+  createImapFlowClient,
   extractMailboxNames,
+  sendClientIdentification,
 } from '../utils/imap-connection.factory';
-import { findSentMailboxFromList, findDraftsMailboxFromList } from '../utils/imap-folder-discovery';
+import { findDraftsMailboxFromList, findSentMailboxFromList } from '../utils/imap-folder-discovery';
 
 /**
  * Service for reading emails via IMAP using ImapFlow

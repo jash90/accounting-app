@@ -565,6 +565,14 @@ export interface ClientFiltersDto {
   companyStartDateFrom?: string;
   companyStartDateTo?: string;
   customFieldFilters?: CustomFieldFilter[];
+  status?: string;
+  type?: string;
+  assignedUserId?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  includeDeleted?: boolean;
 }
 
 export interface SetCustomFieldValuesDto {

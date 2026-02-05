@@ -3,7 +3,11 @@
  * Provides a standardized format for email autodiscovery results
  */
 
-import { AutodiscoveryResult, DiscoverySource, ConfidenceLevel } from './autodiscovery.interface';
+import {
+  type AutodiscoveryResult,
+  type ConfidenceLevel,
+  type DiscoverySource,
+} from './autodiscovery.interface';
 
 /**
  * Security type for email connections

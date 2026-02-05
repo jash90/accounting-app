@@ -1,24 +1,25 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
   ManyToOne,
   OneToMany,
   OneToOne,
-  JoinColumn,
-  CreateDateColumn,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
-  Index,
 } from 'typeorm';
-import { User } from './user.entity';
-import { CompanyModuleAccess } from './company-module-access.entity';
+
 import { AIConfiguration } from './ai-configuration.entity';
-import { AIConversation } from './ai-conversation.entity';
 import { AIContext } from './ai-context.entity';
-import { TokenUsage } from './token-usage.entity';
-import { TokenLimit } from './token-limit.entity';
-import { EmailConfiguration } from './email-configuration.entity';
+import { AIConversation } from './ai-conversation.entity';
 import { Client } from './client.entity';
+import { CompanyModuleAccess } from './company-module-access.entity';
+import { EmailConfiguration } from './email-configuration.entity';
+import { TokenLimit } from './token-limit.entity';
+import { TokenUsage } from './token-usage.entity';
+import { User } from './user.entity';
 
 @Entity('companies')
 @Index(['ownerId']) // For owner's companies queries

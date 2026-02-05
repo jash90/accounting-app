@@ -1,15 +1,16 @@
 import {
-  Injectable,
   CanActivate,
   ExecutionContext,
   ForbiddenException,
-  Optional,
+  Injectable,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RBACService } from '../services/rbac.service';
-import { ModuleDiscoveryService } from '../services/module-discovery.service';
+
 import { REQUIRE_MODULE_KEY } from '../decorators/require-module.decorator';
+import { ModuleDiscoveryService } from '../services/module-discovery.service';
+import { RBACService } from '../services/rbac.service';
 
 @Injectable()
 export class ModuleAccessGuard implements CanActivate {

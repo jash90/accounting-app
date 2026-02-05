@@ -1,20 +1,23 @@
 import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
   BadRequestException,
+  ConflictException,
+  Injectable,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
-import { EmailConfiguration, Company } from '@accounting/common';
+
+import { Company, EmailConfiguration } from '@accounting/common';
 import { EncryptionService } from '@accounting/common/backend';
-import { CreateEmailConfigDto } from '../dto/create-email-config.dto';
-import { UpdateEmailConfigDto } from '../dto/update-email-config.dto';
-import { EmailConfigResponseDto } from '../dto/email-config-response.dto';
-import { EmailSenderService } from './email-sender.service';
+
 import { EmailReaderService } from './email-reader.service';
-import { SmtpConfig, ImapConfig } from '../interfaces/email-config.interface';
+import { EmailSenderService } from './email-sender.service';
+import { CreateEmailConfigDto } from '../dto/create-email-config.dto';
+import { EmailConfigResponseDto } from '../dto/email-config-response.dto';
+import { UpdateEmailConfigDto } from '../dto/update-email-config.dto';
+import { ImapConfig, SmtpConfig } from '../interfaces/email-config.interface';
 
 // TLS validation - secure by default, configurable via env
 // TODO: Future enhancement - move to per-company EmailConfiguration entity

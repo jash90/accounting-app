@@ -1,19 +1,35 @@
-import { useState, useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { type ApiErrorResponse } from '@/types/api';
 import {
+  type CreateAIConfigurationDto,
   type CreateConversationDto,
   type SendMessageDto,
-  type CreateAIConfigurationDto,
-  type UpdateAIConfigurationDto,
   type SetTokenLimitDto,
+  type UpdateAIConfigurationDto,
 } from '@/types/dtos';
 
 import { aiAgentApi } from '../api/endpoints/ai-agent';
 import { queryKeys } from '../api/query-client';
+
+// ============================================
+// Cache Time Constants
+// ============================================
+
+/** Cache times for conversation list - conversations can change frequently */
+const CONVERSATION_LIST_CACHE = {
+  staleTime: 30 * 1000, // 30 seconds - refetch on focus after 30s
+  gcTime: 5 * 60 * 1000, // 5 minutes
+};
+
+/** Cache times for conversation detail - needs real-time updates during active chat */
+const CONVERSATION_DETAIL_CACHE = {
+  staleTime: 5 * 1000, // 5 seconds - balance freshness with avoiding constant refetches
+  gcTime: 5 * 60 * 1000, // 5 minutes
+};
 
 // ============================================================================
 // Conversation Hooks
@@ -23,6 +39,7 @@ export function useConversations() {
   return useQuery({
     queryKey: queryKeys.aiAgent.conversations.all,
     queryFn: aiAgentApi.conversations.getAll,
+    ...CONVERSATION_LIST_CACHE,
   });
 }
 
@@ -31,6 +48,7 @@ export function useConversation(id: string) {
     queryKey: queryKeys.aiAgent.conversations.detail(id),
     queryFn: () => aiAgentApi.conversations.getById(id),
     enabled: !!id,
+    ...CONVERSATION_DETAIL_CACHE,
   });
 }
 
@@ -75,11 +93,26 @@ export function useSendMessage(conversationId: string) {
  * Hook for sending messages with streaming response.
  * Provides real-time content updates as the AI generates its response.
  */
+/** Maximum streaming content size (100KB) to prevent memory issues on large responses */
+const MAX_STREAM_SIZE = 100_000;
+
 export function useSendMessageStream(conversationId: string) {
   const queryClient = useQueryClient();
   const [streamingContent, setStreamingContent] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Store queryClient in ref to avoid it being a dependency of the sendMessage callback.
+  // Why this pattern is necessary:
+  // 1. queryClient from useQueryClient() is a stable singleton - it never changes during the app lifecycle
+  // 2. However, ESLint's exhaustive-deps rule doesn't understand this stability
+  // 3. Adding queryClient to sendMessage's dependency array would cause unnecessary recreations
+  // 4. Using a ref allows the callback to always access the current queryClient without being a dependency
+  // 5. The useEffect ensures the ref stays synchronized (defensive coding, though queryClient never actually changes)
+  const queryClientRef = useRef(queryClient);
+  useEffect(() => {
+    queryClientRef.current = queryClient;
+  }, [queryClient]);
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -97,19 +130,33 @@ export function useSendMessageStream(conversationId: string) {
           conversationId,
           { content },
           // onChunk - called for each content piece
+          // Includes size limit to prevent memory issues on large responses
           (chunk) => {
-            setStreamingContent((prev) => prev + chunk);
+            setStreamingContent((prev) => {
+              const next = prev + chunk;
+              // Cap content size to prevent memory issues
+              if (next.length > MAX_STREAM_SIZE) {
+                toast.warning('Odpowiedź została obcięta - przekroczono limit 100KB');
+                return next.slice(-MAX_STREAM_SIZE);
+              }
+              return next;
+            });
           },
           // onDone - called when streaming completes
           () => {
             setIsStreaming(false);
             // Invalidate queries to refresh data with final message
-            queryClient.invalidateQueries({
+            // Use ref to avoid queryClient being a callback dependency
+            queryClientRef.current.invalidateQueries({
               queryKey: queryKeys.aiAgent.conversations.detail(conversationId),
             });
-            queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.me });
-            queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.myDetailed });
-            queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.company });
+            queryClientRef.current.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.me });
+            queryClientRef.current.invalidateQueries({
+              queryKey: queryKeys.aiAgent.tokenUsage.myDetailed,
+            });
+            queryClientRef.current.invalidateQueries({
+              queryKey: queryKeys.aiAgent.tokenUsage.company,
+            });
           },
           // onError - called if streaming fails
           (error) => {
@@ -125,12 +172,18 @@ export function useSendMessageStream(conversationId: string) {
         toast.error(message);
       }
     },
-    [conversationId, queryClient]
+    [conversationId]
   );
 
   const cancelStream = useCallback(() => {
-    abortControllerRef.current?.abort();
+    try {
+      abortControllerRef.current?.abort();
+    } catch {
+      // AbortController.abort() can throw in edge cases (e.g., already aborted)
+      // Silently ignore as the intent is to stop streaming regardless
+    }
     setIsStreaming(false);
+    setStreamingContent(''); // Clear content on cancel to free memory
   }, []);
 
   const resetStream = useCallback(() => {
@@ -171,6 +224,7 @@ export function useAIConfiguration() {
     queryKey: queryKeys.aiAgent.configuration,
     queryFn: aiAgentApi.configuration.get,
     retry: false, // Don't retry if no configuration exists
+    staleTime: 5 * 60 * 1000, // 5 minutes - configuration changes infrequently
   });
 }
 
@@ -256,6 +310,7 @@ export function useMyTokenUsageSummary() {
   return useQuery({
     queryKey: queryKeys.aiAgent.tokenUsage.me,
     queryFn: aiAgentApi.tokenUsage.getMySummary,
+    staleTime: 30 * 1000, // 30 seconds
   });
 }
 
@@ -263,6 +318,7 @@ export function useMyTokenUsageDetailed() {
   return useQuery({
     queryKey: queryKeys.aiAgent.tokenUsage.myDetailed,
     queryFn: aiAgentApi.tokenUsage.getMyUsage,
+    staleTime: 30 * 1000, // 30 seconds
   });
 }
 
@@ -270,6 +326,7 @@ export function useCompanyTokenUsage() {
   return useQuery({
     queryKey: queryKeys.aiAgent.tokenUsage.company,
     queryFn: aiAgentApi.tokenUsage.getCompanyUsage,
+    staleTime: 30 * 1000, // 30 seconds
   });
 }
 
@@ -277,6 +334,7 @@ export function useAllCompaniesTokenUsage() {
   return useQuery({
     queryKey: queryKeys.aiAgent.tokenUsage.allCompanies,
     queryFn: aiAgentApi.tokenUsage.getAllCompaniesUsage,
+    staleTime: 60 * 1000, // 1 minute
   });
 }
 
@@ -285,6 +343,7 @@ export function useCompanyTokenUsageById(companyId: string) {
     queryKey: queryKeys.aiAgent.tokenUsage.companyById(companyId),
     queryFn: () => aiAgentApi.tokenUsage.getCompanyUsageById(companyId),
     enabled: !!companyId,
+    staleTime: 30 * 1000, // 30 seconds
   });
 }
 
@@ -298,6 +357,7 @@ export function useTokenLimit(targetType: 'company' | 'user', targetId: string) 
     queryFn: () => aiAgentApi.tokenLimit.get(targetType, targetId),
     enabled: !!targetId,
     retry: false, // Don't retry if no limit exists
+    staleTime: 5 * 60 * 1000, // 5 minutes - limits change infrequently
   });
 }
 
@@ -344,6 +404,7 @@ export function useContextFiles() {
   return useQuery({
     queryKey: queryKeys.aiAgent.context.all,
     queryFn: aiAgentApi.context.getAll,
+    staleTime: 60 * 1000, // 1 minute
   });
 }
 
@@ -352,6 +413,7 @@ export function useContextFile(id: string | null) {
     queryKey: queryKeys.aiAgent.context.detail(id!),
     queryFn: () => aiAgentApi.context.getOne(id!),
     enabled: !!id,
+    staleTime: 60 * 1000, // 1 minute
   });
 }
 

@@ -17,7 +17,8 @@ export { UserFormDialog } from './user-form-dialog';
 export { NotificationSettingsForm } from './notification-settings-form';
 
 // Form sections (for client form)
-export * from './client-form-sections';
+export * from './client-sections';
 
 // Shared form fields
-export * from './shared-form-fields';
+export { SelectFormField } from './select-form-field';
+export { DateFormField } from './date-form-field';

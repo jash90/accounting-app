@@ -3,10 +3,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ImapConfig } from '../interfaces/email-config.interface';
 import {
   createImapFlowClient,
-  sendClientIdentification,
   extractMailboxNames,
+  sendClientIdentification,
 } from '../utils/imap-connection.factory';
-import { findSentMailboxFromList, findDraftsMailboxFromList } from '../utils/imap-folder-discovery';
+import { findDraftsMailboxFromList, findSentMailboxFromList } from '../utils/imap-folder-discovery';
 
 /**
  * Service for IMAP mailbox operations using ImapFlow

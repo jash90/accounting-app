@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { Play, Square, Trash2, Clock } from 'lucide-react';
+import { Clock, Play, Square, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,10 +17,10 @@ import { Switch } from '@/components/ui/switch';
 import { useTaskClients } from '@/lib/hooks/use-tasks';
 import {
   useActiveTimer,
+  useDiscardTimer,
   useStartTimer,
   useStopTimer,
   useUpdateTimer,
-  useDiscardTimer,
 } from '@/lib/hooks/use-time-tracking';
 import { cn } from '@/lib/utils/cn';
 import { formatDurationSeconds } from '@/lib/utils/time';
@@ -215,7 +215,7 @@ function TimerForm({
             <div
               className={cn(
                 'flex items-center gap-2 font-mono text-xl font-semibold tabular-nums',
-                isRunning && 'text-green-600'
+                isRunning && 'text-green-600 dark:text-green-400'
               )}
               aria-live="polite"
               aria-atomic="true"
@@ -223,7 +223,7 @@ function TimerForm({
               {formattedTime}
               {isRunning && (
                 <span
-                  className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-normal text-green-700"
+                  className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-normal text-green-700 dark:bg-green-900 dark:text-green-300"
                   aria-label="Timer aktywny"
                 >
                   Aktywny
@@ -264,7 +264,7 @@ function TimerForm({
                 size="sm"
                 onClick={handleStart}
                 disabled={startTimer.isPending}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
                 aria-label="Rozpocznij timer"
               >
                 <Play className="h-4 w-4" aria-hidden="true" />
@@ -284,7 +284,7 @@ function TimerForm({
             <div
               className={cn(
                 'min-w-[140px] font-mono text-3xl font-semibold tabular-nums',
-                isRunning && 'text-green-600'
+                isRunning && 'text-green-600 dark:text-green-400'
               )}
               aria-live="polite"
               aria-atomic="true"
@@ -293,7 +293,7 @@ function TimerForm({
             </div>
             {isRunning && (
               <span
-                className="rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-700"
+                className="rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-700 dark:bg-green-900 dark:text-green-300"
                 aria-label="Timer aktywny"
               >
                 Aktywny
@@ -332,7 +332,7 @@ function TimerForm({
             <Button
               onClick={handleStart}
               disabled={startTimer.isPending}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
               aria-label="Rozpocznij timer"
             >
               <Play className="mr-2 h-4 w-4" aria-hidden="true" />

@@ -1,15 +1,16 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
   Unique,
 } from 'typeorm';
-import { Task } from './task.entity';
+
 import { TaskLabel } from './task-label.entity';
+import { Task } from './task.entity';
 import { User } from './user.entity';
 
 @Entity('task_label_assignments')

@@ -1,9 +1,9 @@
 import {
   createContext,
-  useContext,
+  use,
+  useCallback,
   useEffect,
   useMemo,
-  useCallback,
   useReducer,
   type ReactNode,
 } from 'react';
@@ -16,16 +16,27 @@ import { useAuth } from '@/lib/hooks/use-auth';
 import { type RegisterFormData } from '@/lib/validation/schemas';
 import { type UserDto } from '@/types/dtos';
 
+/**
+ * Auth context value for user data and auth methods (stable between loading state changes)
+ */
 interface AuthContextType {
   user: UserDto | null;
   isAuthenticated: boolean;
-  isLoading: boolean;
   login: (email: string, password: string) => void;
   register: (userData: RegisterFormData) => void;
   logout: () => void;
 }
 
+/**
+ * Separate loading context to prevent re-renders of components that only need user/auth methods
+ * when loading state changes. Components that need loading state can use useAuthLoading().
+ */
+interface AuthLoadingContextType {
+  isLoading: boolean;
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthLoadingContext = createContext<AuthLoadingContextType>({ isLoading: true });
 
 /**
  * Auth state managed by reducer to avoid setState-in-effect lint warnings.
@@ -45,12 +56,20 @@ type AuthAction =
 function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
     case 'SET_TOKEN':
+      // Return same reference if token hasn't changed
+      if (state.token === action.payload) return state;
       return { ...state, token: action.payload };
     case 'SET_MUTATION_USER':
+      // Return same reference if user hasn't changed
+      if (state.mutationUser === action.payload) return state;
       return { ...state, mutationUser: action.payload };
     case 'CLEAR_AUTH':
+      // Return same reference if already cleared
+      if (state.token === null && state.mutationUser === null) return state;
       return { token: null, mutationUser: null };
     case 'CLEAR_MUTATION_USER':
+      // Return same reference if already null
+      if (state.mutationUser === null) return state;
       return { ...state, mutationUser: null };
     default:
       return state;
@@ -157,25 +176,73 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logoutMutation();
   }, [logoutMutation]);
 
-  const contextValue = useMemo(
+  // Separate context values to prevent unnecessary re-renders
+  // Auth context value is stable when only loading state changes
+  const authContextValue = useMemo(
     () => ({
       user,
       isAuthenticated: !!user,
-      isLoading,
       login,
       register,
       logout,
     }),
-    [user, isLoading, login, register, logout]
+    [user, login, register, logout]
   );
 
-  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
+  // Loading context value changes independently
+  const loadingContextValue = useMemo(() => ({ isLoading }), [isLoading]);
+
+  return (
+    <AuthLoadingContext.Provider value={loadingContextValue}>
+      <AuthContext.Provider value={authContextValue}>{children}</AuthContext.Provider>
+    </AuthLoadingContext.Provider>
+  );
 }
 
+/**
+ * Hook to access auth loading state.
+ * Use this when you only need to know if auth is loading (e.g., showing loaders).
+ * This prevents re-renders when user/auth methods change.
+ */
+export function useAuthLoading() {
+  return use(AuthLoadingContext);
+}
+
+/**
+ * Hook to access auth data only (user, isAuthenticated, methods).
+ * Does NOT include loading state - use useAuthLoading() for that.
+ * Prevents re-renders when loading state changes.
+ *
+ * Use this in components that only need user data and don't need to react
+ * to loading state changes (e.g., permission checks, user display).
+ */
+export function useAuthData() {
+  const authContext = use(AuthContext);
+  if (authContext === undefined) {
+    throw new Error('useAuthData must be used within an AuthProvider');
+  }
+  return authContext;
+}
+
+/**
+ * Hook to access auth context (user, isAuthenticated, login, register, logout).
+ * Note: This no longer includes isLoading - use useAuthLoading() for that.
+ * For components that need both, use useAuthContext() which combines them.
+ */
 export function useAuthContext() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
+  const authContext = use(AuthContext);
+  const loadingContext = use(AuthLoadingContext);
+
+  if (authContext === undefined) {
     throw new Error('useAuthContext must be used within an AuthProvider');
   }
-  return context;
+
+  // Return combined value for backwards compatibility
+  return useMemo(
+    () => ({
+      ...authContext,
+      isLoading: loadingContext.isLoading,
+    }),
+    [authContext, loadingContext.isLoading]
+  );
 }

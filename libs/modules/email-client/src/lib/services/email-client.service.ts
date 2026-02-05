@@ -1,19 +1,20 @@
 import {
-  Injectable,
-  Logger,
   BadRequestException,
-  RequestTimeoutException,
+  Injectable,
   InternalServerErrorException,
+  Logger,
+  RequestTimeoutException,
 } from '@nestjs/common';
+
 import { User, UserRole } from '@accounting/common';
 import {
+  EmailConfigurationService,
   EmailReaderService,
   EmailSenderService,
-  EmailConfigurationService,
-  ReceivedEmail,
   FetchEmailsOptions,
-  SmtpConfig,
   ImapConfig,
+  ReceivedEmail,
+  SmtpConfig,
 } from '@accounting/email';
 
 /** Default timeout for IMAP operations in milliseconds */

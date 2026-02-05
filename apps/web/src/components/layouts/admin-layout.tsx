@@ -11,14 +11,14 @@ export default function AdminLayout() {
   const navItems = useNavigationItems(user);
 
   return (
-    <div className="bg-apptax-warm-gray flex h-screen overflow-hidden">
+    <div className="bg-muted flex h-screen overflow-hidden">
       <Sidebar title="Panel Admina" navItems={navItems} />
 
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <header className="shadow-apptax-sm border-b border-gray-200 bg-white">
-          <div className="flex h-16 items-center justify-between px-6">
+        <header className="h-16 border-b border-sidebar-border bg-sidebar">
+          <div className="flex h-full items-center justify-between px-6">
             <div className="flex-1" />
             <div className="flex items-center gap-3">
               <NotificationBell />

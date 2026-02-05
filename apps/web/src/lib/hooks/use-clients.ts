@@ -1,42 +1,124 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
+
+import { useMutation, useQuery, useQueryClient, type Query } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
 import { type ApiErrorResponse } from '@/types/api';
 import {
-  type CreateClientDto,
-  type UpdateClientDto,
   type ClientFiltersDto,
-  type SetCustomFieldValuesDto,
+  type CreateClientDto,
   type CreateClientFieldDefinitionDto,
-  type UpdateClientFieldDefinitionDto,
   type CreateClientIconDto,
-  type UpdateClientIconDto,
   type CreateNotificationSettingsDto,
+  type SetCustomFieldValuesDto,
+  type UpdateClientDto,
+  type UpdateClientFieldDefinitionDto,
+  type UpdateClientIconDto,
   type UpdateNotificationSettingsDto,
 } from '@/types/dtos';
 
+
 import {
+  clientIconsApi,
   clientsApi,
   fieldDefinitionsApi,
-  clientIconsApi,
   notificationSettingsApi,
+  type BulkDeleteClientsDto,
+  type BulkEditClientsDto,
+  type BulkRestoreClientsDto,
+  type CheckDuplicatesDto,
   type FieldDefinitionQueryDto,
   type IconQueryDto,
-  type BulkDeleteClientsDto,
-  type BulkRestoreClientsDto,
-  type BulkEditClientsDto,
-  type CheckDuplicatesDto,
 } from '../api/endpoints/clients';
 import { queryKeys } from '../api/query-client';
+
+// ============================================
+// Cache Time Constants
+// ============================================
+
+/** Cache times for client list views - data may change frequently */
+const CLIENT_LIST_CACHE = {
+  staleTime: 60 * 1000, // 1 minute
+  gcTime: 5 * 60 * 1000, // 5 minutes
+};
+
+/** Cache times for client detail views - slightly longer */
+const CLIENT_DETAIL_CACHE = {
+  staleTime: 2 * 60 * 1000, // 2 minutes
+  gcTime: 10 * 60 * 1000, // 10 minutes
+};
+
+/** Cache times for lookup/metadata - changes infrequently */
+const CLIENT_LOOKUP_CACHE = {
+  staleTime: 5 * 60 * 1000, // 5 minutes
+  gcTime: 10 * 60 * 1000, // 10 minutes
+};
+
+// ============================================
+// Helper Functions
+// ============================================
+
+/**
+ * Predicate to invalidate client list queries only, not individual detail queries.
+ * This prevents unnecessary refetches of client details that haven't changed.
+ */
+const isClientListQuery = (query: Query): boolean => {
+  const key = query.queryKey;
+  // Match list queries: ['clients', 'list', ...] but not detail queries: ['clients', 'detail', id]
+  return Array.isArray(key) && key[0] === 'clients' && key[1] !== 'detail';
+};
 
 // ============================================
 // Client Hooks
 // ============================================
 
 export function useClients(filters?: ClientFiltersDto) {
+  // Stabilize filters object to prevent query key instability
+  // We reconstruct the object from individual properties to ensure referential stability
+  // when the actual filter values haven't changed
+  const stableFilters = useMemo(
+    (): ClientFiltersDto | undefined => {
+      if (!filters) return undefined;
+      // Reconstruct object from primitive values to ensure stable reference
+      const result: ClientFiltersDto = {};
+      if (filters.search !== undefined) result.search = filters.search;
+      if (filters.status !== undefined) result.status = filters.status;
+      if (filters.type !== undefined) result.type = filters.type;
+      if (filters.assignedUserId !== undefined) result.assignedUserId = filters.assignedUserId;
+      if (filters.page !== undefined) result.page = filters.page;
+      if (filters.limit !== undefined) result.limit = filters.limit;
+      if (filters.sortBy !== undefined) result.sortBy = filters.sortBy;
+      if (filters.sortOrder !== undefined) result.sortOrder = filters.sortOrder;
+      if (filters.includeDeleted !== undefined) result.includeDeleted = filters.includeDeleted;
+      return Object.keys(result).length > 0 ? result : undefined;
+    },
+    // ESLint exhaustive-deps rule disabled intentionally:
+    // This pattern uses primitive values extracted from the filters object rather than
+    // the object reference itself. This is necessary because:
+    // 1. Parent components often pass inline objects: useClients({ search: 'foo', page: 1 })
+    // 2. Inline objects create new references on every render, even when values are identical
+    // 3. Using `filters` directly would cause unnecessary query refetches on every parent re-render
+    // 4. By depending on primitive values (strings, numbers, booleans), we only recalculate
+    //    when actual filter values change, not when the object reference changes
+    // This is a deliberate optimization pattern for React Query stability.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      filters?.search,
+      filters?.status,
+      filters?.type,
+      filters?.assignedUserId,
+      filters?.page,
+      filters?.limit,
+      filters?.sortBy,
+      filters?.sortOrder,
+      filters?.includeDeleted,
+    ]
+  );
+
   return useQuery({
-    queryKey: queryKeys.clients.list(filters as Record<string, unknown> | undefined),
-    queryFn: () => clientsApi.getAll(filters),
+    queryKey: queryKeys.clients.list(stableFilters),
+    queryFn: () => clientsApi.getAll(stableFilters),
+    ...CLIENT_LIST_CACHE,
   });
 }
 
@@ -45,6 +127,7 @@ export function useClient(id: string) {
     queryKey: queryKeys.clients.detail(id),
     queryFn: () => clientsApi.getById(id),
     enabled: !!id,
+    ...CLIENT_DETAIL_CACHE,
   });
 }
 
@@ -55,9 +138,8 @@ export function useCreateClient() {
   return useMutation({
     mutationFn: (clientData: CreateClientDto) => clientsApi.create(clientData),
     onSuccess: () => {
-      // Invalidate list views and statistics
-      queryClient.invalidateQueries({ queryKey: ['clients', 'list'], exact: false });
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.statistics });
+      // Only invalidate list queries, not detail queries (new client won't have detail cache)
+      queryClient.invalidateQueries({ predicate: isClientListQuery });
       toast({
         title: 'Sukces',
         description: 'Klient został utworzony',
@@ -80,10 +162,10 @@ export function useUpdateClient() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateClientDto }) =>
       clientsApi.update(id, data),
-    onSuccess: (_, variables) => {
-      // Invalidate specific client and list views
+    onSuccess: (_data, variables) => {
+      // Invalidate the specific client detail and list queries
       queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: ['clients', 'list'], exact: false });
+      queryClient.invalidateQueries({ predicate: isClientListQuery });
       toast({
         title: 'Sukces',
         description: 'Klient został zaktualizowany',
@@ -106,10 +188,10 @@ export function useDeleteClient() {
   return useMutation({
     mutationFn: (id: string) => clientsApi.delete(id),
     onSuccess: (_, deletedId) => {
-      // Remove from cache and invalidate list views
+      // Remove specific client from cache first
       queryClient.removeQueries({ queryKey: queryKeys.clients.detail(deletedId) });
-      queryClient.invalidateQueries({ queryKey: ['clients', 'list'], exact: false });
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.statistics });
+      // Only invalidate list queries
+      queryClient.invalidateQueries({ predicate: isClientListQuery });
       toast({
         title: 'Sukces',
         description: 'Klient został usunięty',
@@ -131,11 +213,10 @@ export function useRestoreClient() {
 
   return useMutation({
     mutationFn: (id: string) => clientsApi.restore(id),
-    onSuccess: (_, restoredId) => {
-      // Invalidate restored client and list views
+    onSuccess: (_data, restoredId) => {
+      // Invalidate the specific client detail and list queries
       queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(restoredId) });
-      queryClient.invalidateQueries({ queryKey: ['clients', 'list'], exact: false });
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.statistics });
+      queryClient.invalidateQueries({ predicate: isClientListQuery });
       toast({
         title: 'Sukces',
         description: 'Klient został przywrócony',
@@ -158,9 +239,13 @@ export function useAssignClientIcon() {
   return useMutation({
     mutationFn: ({ clientId, iconId }: { clientId: string; iconId: string }) =>
       clientIconsApi.assignIcon(clientId, iconId),
-    onSuccess: (_, variables) => {
+    onSuccess: (_data, variables) => {
+      // Invalidate the specific client and its icons
       queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(variables.clientId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.clientIcons.all });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.clientIcons.byClient(variables.clientId),
+      });
+      queryClient.invalidateQueries({ predicate: isClientListQuery });
       toast({
         title: 'Sukces',
         description: 'Ikona została przypisana do klienta',
@@ -183,9 +268,13 @@ export function useUnassignClientIcon() {
   return useMutation({
     mutationFn: ({ clientId, iconId }: { clientId: string; iconId: string }) =>
       clientIconsApi.unassignIcon(clientId, iconId),
-    onSuccess: (_, variables) => {
+    onSuccess: (_data, variables) => {
+      // Invalidate the specific client and its icons
       queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(variables.clientId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.clientIcons.all });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.clientIcons.byClient(variables.clientId),
+      });
+      queryClient.invalidateQueries({ predicate: isClientListQuery });
       toast({
         title: 'Sukces',
         description: 'Ikona została odłączona od klienta',
@@ -206,6 +295,7 @@ export function useIconsForClient(clientId: string) {
     queryKey: queryKeys.clientIcons.byClient(clientId),
     queryFn: () => clientIconsApi.getClientIcons(clientId),
     enabled: !!clientId,
+    ...CLIENT_DETAIL_CACHE,
   });
 }
 
@@ -238,6 +328,7 @@ export function useClientChangelog(clientId: string) {
     queryKey: queryKeys.clients.changelog(clientId),
     queryFn: () => clientsApi.getChangelog(clientId),
     enabled: !!clientId,
+    ...CLIENT_DETAIL_CACHE,
   });
 }
 
@@ -249,6 +340,7 @@ export function useClientStatistics() {
   return useQuery({
     queryKey: queryKeys.clients.statistics,
     queryFn: () => clientsApi.getStatistics(),
+    ...CLIENT_LOOKUP_CACHE,
   });
 }
 
@@ -273,13 +365,23 @@ export function useBulkDeleteClients() {
   return useMutation({
     mutationFn: (dto: BulkDeleteClientsDto) => clientsApi.bulkDelete(dto),
     onSuccess: (result, variables) => {
-      // Remove deleted clients from cache
-      variables.clientIds.forEach((id: string) => {
-        queryClient.removeQueries({ queryKey: queryKeys.clients.detail(id) });
+      // Remove deleted clients from cache using batch predicate (O(1) vs O(n) individual calls)
+      const idsToRemove = new Set(variables.clientIds);
+      queryClient.removeQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return (
+            Array.isArray(key) &&
+            key[0] === 'clients' &&
+            typeof key[1] === 'string' &&
+            key[1] !== 'list' &&
+            key[1] !== 'statistics' &&
+            idsToRemove.has(key[1])
+          );
+        },
       });
-      // Invalidate list views and statistics
-      queryClient.invalidateQueries({ queryKey: ['clients', 'list'], exact: false });
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.statistics });
+      // Only invalidate list queries
+      queryClient.invalidateQueries({ predicate: isClientListQuery });
       toast({
         title: 'Sukces',
         description: `Usunięto ${result.affected} klientów`,
@@ -302,13 +404,22 @@ export function useBulkRestoreClients() {
   return useMutation({
     mutationFn: (dto: BulkRestoreClientsDto) => clientsApi.bulkRestore(dto),
     onSuccess: (result, variables) => {
-      // Invalidate restored clients
-      variables.clientIds.forEach((id: string) => {
-        queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(id) });
+      // Invalidate restored client details using batch predicate (O(1) vs O(n) individual calls)
+      const idsToInvalidate = new Set(variables.clientIds);
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return (
+            Array.isArray(key) &&
+            key[0] === 'clients' &&
+            key[1] === 'detail' &&
+            typeof key[2] === 'string' &&
+            idsToInvalidate.has(key[2])
+          );
+        },
       });
-      // Invalidate list views and statistics
-      queryClient.invalidateQueries({ queryKey: ['clients', 'list'], exact: false });
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.statistics });
+      // Only invalidate list queries
+      queryClient.invalidateQueries({ predicate: isClientListQuery });
       toast({
         title: 'Sukces',
         description: `Przywrócono ${result.affected} klientów`,
@@ -331,12 +442,22 @@ export function useBulkEditClients() {
   return useMutation({
     mutationFn: (dto: BulkEditClientsDto) => clientsApi.bulkEdit(dto),
     onSuccess: (result, variables) => {
-      // Invalidate edited clients
-      variables.clientIds.forEach((id: string) => {
-        queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(id) });
+      // Invalidate edited client details using batch predicate (O(1) vs O(n) individual calls)
+      const idsToInvalidate = new Set(variables.clientIds);
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return (
+            Array.isArray(key) &&
+            key[0] === 'clients' &&
+            key[1] === 'detail' &&
+            typeof key[2] === 'string' &&
+            idsToInvalidate.has(key[2])
+          );
+        },
       });
-      // Invalidate list views
-      queryClient.invalidateQueries({ queryKey: ['clients', 'list'], exact: false });
+      // Only invalidate list queries
+      queryClient.invalidateQueries({ predicate: isClientListQuery });
       toast({
         title: 'Sukces',
         description: `Zaktualizowano ${result.affected} klientów`,
@@ -362,20 +483,23 @@ export function useExportClients() {
   return useMutation({
     mutationFn: (filters?: ClientFiltersDto) => clientsApi.exportCsv(filters),
     onSuccess: (blob) => {
-      // Create download link
+      // Create download link with try/finally for guaranteed cleanup
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
-      link.download = `klienci-${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      try {
+        link.href = url;
+        link.download = `klienci-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
-      toast({
-        title: 'Sukces',
-        description: 'Plik CSV został pobrany',
-      });
+        toast({
+          title: 'Sukces',
+          description: 'Plik CSV został pobrany',
+        });
+      } finally {
+        window.URL.revokeObjectURL(url);
+      }
     },
     onError: (error: ApiErrorResponse) => {
       toast({
@@ -393,19 +517,23 @@ export function useDownloadImportTemplate() {
   return useMutation({
     mutationFn: () => clientsApi.getImportTemplate(),
     onSuccess: (blob) => {
+      // Create download link with try/finally for guaranteed cleanup
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
-      link.download = 'szablon-importu-klientow.csv';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      try {
+        link.href = url;
+        link.download = 'szablon-importu-klientow.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
-      toast({
-        title: 'Sukces',
-        description: 'Szablon CSV został pobrany',
-      });
+        toast({
+          title: 'Sukces',
+          description: 'Szablon CSV został pobrany',
+        });
+      } finally {
+        window.URL.revokeObjectURL(url);
+      }
     },
     onError: (error: ApiErrorResponse) => {
       toast({
@@ -424,8 +552,8 @@ export function useImportClients() {
   return useMutation({
     mutationFn: (file: File) => clientsApi.importCsv(file),
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.statistics });
+      // Only invalidate list queries - imported/updated clients will be fetched fresh
+      queryClient.invalidateQueries({ predicate: isClientListQuery });
 
       const hasErrors = result.errors.length > 0;
       toast({
@@ -450,8 +578,9 @@ export function useImportClients() {
 
 export function useFieldDefinitions(query?: FieldDefinitionQueryDto) {
   return useQuery({
-    queryKey: [...queryKeys.clientFieldDefinitions.all, query],
+    queryKey: queryKeys.clientFieldDefinitions.list(query),
     queryFn: () => fieldDefinitionsApi.getAll(query),
+    ...CLIENT_LOOKUP_CACHE,
   });
 }
 
@@ -460,6 +589,7 @@ export function useFieldDefinition(id: string) {
     queryKey: queryKeys.clientFieldDefinitions.detail(id),
     queryFn: () => fieldDefinitionsApi.getById(id),
     enabled: !!id,
+    ...CLIENT_LOOKUP_CACHE,
   });
 }
 
@@ -494,11 +624,9 @@ export function useUpdateFieldDefinition() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateClientFieldDefinitionDto }) =>
       fieldDefinitionsApi.update(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clientFieldDefinitions.all });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.clientFieldDefinitions.detail(variables.id),
-      });
+    onSuccess: () => {
+      // Simple prefix invalidation - invalidates all field definition queries
+      queryClient.invalidateQueries({ queryKey: ['client-field-definitions'] });
       toast({
         title: 'Sukces',
         description: 'Definicja pola została zaktualizowana',
@@ -566,8 +694,9 @@ export function useReorderFieldDefinitions() {
 
 export function useClientIcons(query?: IconQueryDto) {
   return useQuery({
-    queryKey: [...queryKeys.clientIcons.all, query],
+    queryKey: queryKeys.clientIcons.list(query),
     queryFn: () => clientIconsApi.getAll(query),
+    ...CLIENT_LOOKUP_CACHE,
   });
 }
 
@@ -576,6 +705,7 @@ export function useClientIcon(id: string) {
     queryKey: queryKeys.clientIcons.detail(id),
     queryFn: () => clientIconsApi.getById(id),
     enabled: !!id,
+    ...CLIENT_LOOKUP_CACHE,
   });
 }
 
@@ -610,9 +740,9 @@ export function useUpdateClientIcon() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateClientIconDto }) =>
       clientIconsApi.update(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clientIcons.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.clientIcons.detail(variables.id) });
+    onSuccess: () => {
+      // Simple prefix invalidation - invalidates all icon queries
+      queryClient.invalidateQueries({ queryKey: ['client-icons'] });
       toast({
         title: 'Sukces',
         description: 'Ikona została zaktualizowana',
@@ -659,6 +789,7 @@ export function useNotificationSettings() {
   return useQuery({
     queryKey: queryKeys.notificationSettings.me,
     queryFn: notificationSettingsApi.getMe,
+    ...CLIENT_LOOKUP_CACHE,
   });
 }
 

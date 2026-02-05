@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
 
+
 const scryptAsync = promisify(scrypt);
 
 // Path for persisting dev encryption key

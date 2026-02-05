@@ -1,9 +1,9 @@
-import { useEffect } from 'react';
+import { memo, useCallback, useEffect } from 'react';
 
 import { useForm } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format, parseISO, parse } from 'date-fns';
+import { format, parse, parseISO } from 'date-fns';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
@@ -76,7 +76,11 @@ interface TimeEntryFormDialogProps {
   entry?: TimeEntryResponseDto | null;
 }
 
-export function TimeEntryFormDialog({ open, onOpenChange, entry }: TimeEntryFormDialogProps) {
+export const TimeEntryFormDialog = memo(function TimeEntryFormDialog({
+  open,
+  onOpenChange,
+  entry,
+}: TimeEntryFormDialogProps) {
   const createEntry = useCreateTimeEntry();
   const updateEntry = useUpdateTimeEntry();
   const { data: clientsData } = useTaskClients();
@@ -134,51 +138,58 @@ export function TimeEntryFormDialog({ open, onOpenChange, entry }: TimeEntryForm
     }
   }, [entry, open, reset]);
 
-  const onSubmit = (data: FormData) => {
-    // Use date-fns parse for consistent timezone handling across DST boundaries
-    const startDateTime = parse(`${data.date} ${data.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
-    const endDateTime = data.endTime
-      ? parse(`${data.date} ${data.endTime}`, 'yyyy-MM-dd HH:mm', new Date())
-      : undefined;
+  const onSubmit = useCallback(
+    (data: FormData) => {
+      // Use date-fns parse for consistent timezone handling across DST boundaries
+      const startDateTime = parse(`${data.date} ${data.startTime}`, 'yyyy-MM-dd HH:mm', new Date());
+      const endDateTime = data.endTime
+        ? parse(`${data.date} ${data.endTime}`, 'yyyy-MM-dd HH:mm', new Date())
+        : undefined;
 
-    const entryData: CreateTimeEntryDto = {
-      description: data.description || undefined,
-      startTime: startDateTime.toISOString(),
-      endTime: endDateTime?.toISOString(),
-      clientId: data.clientId && data.clientId !== '__none__' ? data.clientId : undefined,
-      isBillable: data.isBillable,
-      hourlyRate: data.hourlyRate ? parseFloat(data.hourlyRate) : undefined,
-      tags: data.tags
-        ? data.tags
-            .split(',')
-            .map((t) => t.trim())
-            .filter(Boolean)
-        : undefined,
-    };
+      const entryData: CreateTimeEntryDto = {
+        description: data.description || undefined,
+        startTime: startDateTime.toISOString(),
+        endTime: endDateTime?.toISOString(),
+        clientId: data.clientId && data.clientId !== '__none__' ? data.clientId : undefined,
+        isBillable: data.isBillable,
+        hourlyRate: data.hourlyRate ? parseFloat(data.hourlyRate) : undefined,
+        tags: data.tags
+          ? data.tags
+              .split(',')
+              .map((t) => t.trim())
+              .filter(Boolean)
+          : undefined,
+      };
 
-    if (entry) {
-      updateEntry.mutate(
-        { id: entry.id, data: entryData },
-        {
+      if (entry) {
+        updateEntry.mutate(
+          { id: entry.id, data: entryData },
+          {
+            onSuccess: () => {
+              onOpenChange(false);
+            },
+            onError: (error) => {
+              if (import.meta.env.DEV) {
+                console.error('Failed to update time entry:', error);
+              }
+            },
+          }
+        );
+      } else {
+        createEntry.mutate(entryData, {
           onSuccess: () => {
             onOpenChange(false);
           },
           onError: (error) => {
-            console.error('Failed to update time entry:', error);
+            if (import.meta.env.DEV) {
+              console.error('Failed to create time entry:', error);
+            }
           },
-        }
-      );
-    } else {
-      createEntry.mutate(entryData, {
-        onSuccess: () => {
-          onOpenChange(false);
-        },
-        onError: (error) => {
-          console.error('Failed to create time entry:', error);
-        },
-      });
-    }
-  };
+        });
+      }
+    },
+    [entry, updateEntry, createEntry, onOpenChange]
+  );
 
   const isLoading = createEntry.isPending || updateEntry.isPending;
 
@@ -339,4 +350,4 @@ export function TimeEntryFormDialog({ open, onOpenChange, entry }: TimeEntryForm
       </DialogContent>
     </Dialog>
   );
-}
+});
