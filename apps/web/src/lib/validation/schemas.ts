@@ -642,7 +642,7 @@ export const createOfferSchema = z
     validityDays: z.number().int().min(1).max(365).optional(),
   })
   .refine((data) => data.clientId || data.leadId, {
-    message: 'Wybierz klienta lub leada',
+    message: 'Wybierz klienta lub prospekt',
     path: ['clientId'],
   });
 

@@ -40,22 +40,22 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuthContext } from '@/contexts/auth-context';
+import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import {
   useConvertLeadToClient,
   useCreateOffer,
   useLead,
   useUpdateLead,
 } from '@/lib/hooks/use-offers';
-import { type UpdateLeadDto } from '@/types/dtos';
-import { LeadSourceLabels, LeadStatus, LeadStatusLabels, UserRole } from '@/types/enums';
+import { type CreateOfferDto, type UpdateLeadDto } from '@/types/dtos';
+import { LeadSourceLabels, LeadStatus, LeadStatusLabels } from '@/types/enums';
 
 export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuthContext();
+  const basePath = useModuleBasePath('offers');
 
-  const { data: lead, isPending, refetch } = useLead(id || '');
+  const { data: lead, isPending } = useLead(id || '');
 
   const updateMutation = useUpdateLead();
   const convertMutation = useConvertLeadToClient();
@@ -64,19 +64,6 @@ export default function LeadDetailPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
   const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false);
-
-  const getBasePath = () => {
-    switch (user?.role) {
-      case UserRole.ADMIN:
-        return '/admin/modules/offers';
-      case UserRole.COMPANY_OWNER:
-        return '/company/modules/offers';
-      default:
-        return '/modules/offers';
-    }
-  };
-
-  const basePath = getBasePath();
 
   if (isPending) {
     return (
@@ -90,7 +77,7 @@ export default function LeadDetailPage() {
   if (!lead) {
     return (
       <div className="container mx-auto p-6">
-        <p>Lead nie został znaleziony.</p>
+        <p>Prospekt nie został znaleziony.</p>
       </div>
     );
   }
@@ -113,11 +100,8 @@ export default function LeadDetailPage() {
   };
 
   const handleCreateOffer = async (data: unknown) => {
-    await createOfferMutation.mutateAsync(
-      data as Parameters<typeof createOfferMutation.mutateAsync>[0]
-    );
+    await createOfferMutation.mutateAsync(data as CreateOfferDto);
     setIsOfferDialogOpen(false);
-    refetch();
   };
 
   const statusOptions = Object.values(LeadStatus);
@@ -139,7 +123,11 @@ export default function LeadDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Select value={lead.status} onValueChange={(v) => handleStatusChange(v as LeadStatus)}>
+          <Select
+            value={lead.status}
+            onValueChange={(v) => handleStatusChange(v as LeadStatus)}
+            disabled={updateMutation.isPending}
+          >
             <SelectTrigger className="w-48">
               <SelectValue />
             </SelectTrigger>
@@ -359,7 +347,7 @@ export default function LeadDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle>Szybkie akcje</CardTitle>
-              <CardDescription>Wykonaj typowe operacje na tym leadzie</CardDescription>
+              <CardDescription>Wykonaj typowe operacje na tym prospekcie</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               {lead.email && (
@@ -411,20 +399,21 @@ export default function LeadDetailPage() {
       <AlertDialog open={isConvertDialogOpen} onOpenChange={setIsConvertDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Przekonwertuj leada na klienta</AlertDialogTitle>
+            <AlertDialogTitle>Przekonwertuj prospekt na klienta</AlertDialogTitle>
             <AlertDialogDescription>
-              Lead &quot;{lead.name}&quot; zostanie przekonwertowany na klienta. Dane leada zostaną
-              skopiowane do nowego rekordu klienta.
+              Prospekt &quot;{lead.name}&quot; zostanie przekonwertowany na klienta. Dane prospektu
+              zostaną skopiowane do nowego rekordu klienta.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Anuluj</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConvert}
+              disabled={convertMutation.isPending}
               className="bg-apptax-blue hover:bg-apptax-blue/90"
             >
               <UserCheck className="mr-2 h-4 w-4" />
-              Przekonwertuj
+              {convertMutation.isPending ? 'Konwertowanie...' : 'Przekonwertuj'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

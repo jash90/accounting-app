@@ -13,6 +13,7 @@ import {
   Mail,
   MapPin,
   Phone,
+  RefreshCw,
   Send,
   XCircle,
 } from 'lucide-react';
@@ -49,7 +50,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useAuthContext } from '@/contexts/auth-context';
+import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import {
   useDownloadOfferDocument,
   useDuplicateOffer,
@@ -65,13 +66,13 @@ import {
   OfferActivityTypeLabels,
   OfferStatus,
   OfferStatusLabels,
-  UserRole,
+  VALID_OFFER_STATUS_TRANSITIONS,
 } from '@/types/enums';
 
 export default function OfferDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuthContext();
+  const basePath = useModuleBasePath('offers');
 
   const { data: offer, isPending } = useOffer(id || '');
   const { data: activities } = useOfferActivities(id || '');
@@ -84,19 +85,6 @@ export default function OfferDetailPage() {
 
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
   const [statusToChange, setStatusToChange] = useState<OfferStatus | null>(null);
-
-  const getBasePath = () => {
-    switch (user?.role) {
-      case UserRole.ADMIN:
-        return '/admin/modules/offers';
-      case UserRole.COMPANY_OWNER:
-        return '/company/modules/offers';
-      default:
-        return '/modules/offers';
-    }
-  };
-
-  const basePath = getBasePath();
 
   if (isPending) {
     return (
@@ -173,18 +161,7 @@ export default function OfferDetailPage() {
     }
   };
 
-  const allowedStatusTransitions: Record<OfferStatus, OfferStatus[]> = {
-    [OfferStatus.DRAFT]: [OfferStatus.READY, OfferStatus.CANCELLED],
-    [OfferStatus.READY]: [OfferStatus.SENT, OfferStatus.DRAFT, OfferStatus.CANCELLED],
-    [OfferStatus.SENT]: [OfferStatus.VIEWED, OfferStatus.ACCEPTED, OfferStatus.REJECTED],
-    [OfferStatus.VIEWED]: [OfferStatus.ACCEPTED, OfferStatus.REJECTED],
-    [OfferStatus.ACCEPTED]: [],
-    [OfferStatus.REJECTED]: [],
-    [OfferStatus.EXPIRED]: [],
-    [OfferStatus.CANCELLED]: [],
-  };
-
-  const availableStatuses = allowedStatusTransitions[offer.status] || [];
+  const availableStatuses = VALID_OFFER_STATUS_TRANSITIONS[offer.status] || [];
 
   return (
     <div className="container mx-auto space-y-6 p-6">
@@ -223,16 +200,30 @@ export default function OfferDetailPage() {
               </SelectContent>
             </Select>
           )}
-          {!offer.generatedDocumentPath && (
-            <Button variant="outline" onClick={handleGenerateDocument}>
+          <Button
+            variant="outline"
+            onClick={handleGenerateDocument}
+            disabled={generateDocMutation.isPending}
+          >
+            {offer.generatedDocumentPath ? (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            ) : (
               <FileText className="mr-2 h-4 w-4" />
-              Generuj dokument
-            </Button>
-          )}
+            )}
+            {generateDocMutation.isPending
+              ? 'Generowanie...'
+              : offer.generatedDocumentPath
+                ? 'Generuj ponownie'
+                : 'Generuj dokument'}
+          </Button>
           {offer.generatedDocumentPath && (
-            <Button variant="outline" onClick={handleDownloadDocument}>
+            <Button
+              variant="outline"
+              onClick={handleDownloadDocument}
+              disabled={downloadDocMutation.isPending}
+            >
               <FileDown className="mr-2 h-4 w-4" />
-              Pobierz
+              {downloadDocMutation.isPending ? 'Pobieranie...' : 'Pobierz'}
             </Button>
           )}
           {offer.status === OfferStatus.READY && (
@@ -244,9 +235,13 @@ export default function OfferDetailPage() {
               Wyślij
             </Button>
           )}
-          <Button variant="outline" onClick={handleDuplicate}>
+          <Button
+            variant="outline"
+            onClick={handleDuplicate}
+            disabled={duplicateMutation.isPending}
+          >
             <Copy className="mr-2 h-4 w-4" />
-            Duplikuj
+            {duplicateMutation.isPending ? 'Duplikowanie...' : 'Duplikuj'}
           </Button>
         </div>
       </div>
@@ -263,35 +258,35 @@ export default function OfferDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="text-lg font-semibold">{offer.recipientSnapshot.name}</div>
-              {offer.recipientSnapshot.nip && (
+              <div className="text-lg font-semibold">{offer.recipientSnapshot?.name ?? '-'}</div>
+              {offer.recipientSnapshot?.nip && (
                 <div className="text-muted-foreground text-sm">
                   NIP: {offer.recipientSnapshot.nip}
                 </div>
               )}
-              {(offer.recipientSnapshot.street ||
-                offer.recipientSnapshot.city ||
-                offer.recipientSnapshot.postalCode) && (
+              {(offer.recipientSnapshot?.street ||
+                offer.recipientSnapshot?.city ||
+                offer.recipientSnapshot?.postalCode) && (
                 <div className="text-muted-foreground flex items-start gap-2 text-sm">
                   <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0" />
                   <span>
                     {[
-                      offer.recipientSnapshot.street,
-                      offer.recipientSnapshot.postalCode,
-                      offer.recipientSnapshot.city,
+                      offer.recipientSnapshot?.street,
+                      offer.recipientSnapshot?.postalCode,
+                      offer.recipientSnapshot?.city,
                     ]
                       .filter(Boolean)
                       .join(', ')}
                   </span>
                 </div>
               )}
-              {offer.recipientSnapshot.email && (
+              {offer.recipientSnapshot?.email && (
                 <div className="text-muted-foreground flex items-center gap-2 text-sm">
                   <Mail className="h-4 w-4" />
                   <span>{offer.recipientSnapshot.email}</span>
                 </div>
               )}
-              {offer.recipientSnapshot.phone && (
+              {offer.recipientSnapshot?.phone && (
                 <div className="text-muted-foreground flex items-center gap-2 text-sm">
                   <Phone className="h-4 w-4" />
                   <span>{offer.recipientSnapshot.phone}</span>
@@ -518,13 +513,18 @@ export default function OfferDetailPage() {
             <AlertDialogCancel>Anuluj</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmStatusChange}
+              disabled={updateStatusMutation.isPending}
               className={
                 statusToChange === OfferStatus.ACCEPTED
                   ? 'bg-green-600 hover:bg-green-700'
                   : 'bg-destructive hover:bg-destructive/90'
               }
             >
-              {statusToChange === OfferStatus.ACCEPTED ? 'Zaakceptuj' : 'Odrzuć'}
+              {updateStatusMutation.isPending
+                ? 'Zmienianie statusu...'
+                : statusToChange === OfferStatus.ACCEPTED
+                  ? 'Zaakceptuj'
+                  : 'Odrzuć'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

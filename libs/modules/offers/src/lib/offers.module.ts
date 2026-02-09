@@ -21,6 +21,7 @@ import { LeadsController } from './controllers/leads.controller';
 import { OfferTemplatesController } from './controllers/offer-templates.controller';
 import { OffersController } from './controllers/offers.controller';
 import { OfferActivityListener } from './listeners/offer-activity.listener';
+import { DocxBlockRendererService } from './services/docx-block-renderer.service';
 import { DocxGenerationService } from './services/docx-generation.service';
 import { LeadsService } from './services/leads.service';
 import { OfferActivityService } from './services/offer-activity.service';
@@ -63,6 +64,7 @@ import { OffersService } from './services/offers.service';
     OfferActivityService,
     OfferEmailService,
     DocxGenerationService,
+    DocxBlockRendererService,
     // Event listeners
     OfferActivityListener,
   ],
@@ -73,6 +75,7 @@ import { OffersService } from './services/offers.service';
     OfferNumberingService,
     OfferActivityService,
     DocxGenerationService,
+    DocxBlockRendererService,
   ],
 })
 export class OffersModule {}

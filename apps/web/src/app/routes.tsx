@@ -99,6 +99,7 @@ const OfferDetailPage = lazy(() => import('@/pages/modules/offers/offer-detail')
 const LeadsListPage = lazy(() => import('@/pages/modules/offers/leads-list'));
 const LeadDetailPage = lazy(() => import('@/pages/modules/offers/lead-detail'));
 const TemplatesListPage = lazy(() => import('@/pages/modules/offers/templates-list'));
+const TemplateEditorPage = lazy(() => import('@/pages/modules/offers/template-editor'));
 
 // Settlements Pages
 const SettlementsDashboardPage = lazy(
@@ -626,6 +627,14 @@ export default function Routes() {
             </Suspense>
           }
         />
+        <Route
+          path="modules/offers/templates/:id/editor"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TemplateEditorPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -1017,6 +1026,14 @@ export default function Routes() {
             </Suspense>
           }
         />
+        <Route
+          path="modules/offers/templates/:id/editor"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TemplateEditorPage />
+            </Suspense>
+          }
+        />
       </Route>
 
       <Route
@@ -1324,6 +1341,14 @@ export default function Routes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <TemplatesListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="offers/templates/:id/editor"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TemplateEditorPage />
             </Suspense>
           }
         />

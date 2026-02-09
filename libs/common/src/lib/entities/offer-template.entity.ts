@@ -11,6 +11,7 @@ import {
 
 import { Company } from './company.entity';
 import { User } from './user.entity';
+import { type ContentBlock } from '../types/content-block.types';
 
 export interface OfferServiceItem {
   name: string;
@@ -61,6 +62,12 @@ export class OfferTemplate {
 
   @Column({ type: 'boolean', default: false })
   isDefault!: boolean;
+
+  @Column({ type: 'jsonb', nullable: true })
+  contentBlocks?: ContentBlock[];
+
+  @Column({ type: 'varchar', length: 20, default: 'file' })
+  documentSourceType!: 'file' | 'blocks';
 
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;

@@ -206,6 +206,7 @@ export const queryKeys = {
       ['offer-templates', 'list', stableFilterKey(filters)] as const,
     detail: (id: string) => ['offer-templates', id] as const,
     default: ['offer-templates', 'default'] as const,
+    contentBlocks: (id: string) => ['offer-templates', id, 'content-blocks'] as const,
   },
   settlements: {
     all: ['settlements'] as const,

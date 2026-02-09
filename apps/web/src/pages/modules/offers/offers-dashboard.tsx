@@ -45,7 +45,7 @@ export default function OffersDashboardPage() {
         gradient: 'bg-apptax-gradient',
       },
       {
-        title: 'Leady',
+        title: 'Prospekci',
         description: 'Zarządzaj potencjalnymi klientami i procesem sprzedaży',
         icon: Users,
         href: `${basePath}/leads`,
@@ -132,10 +132,10 @@ export default function OffersDashboardPage() {
 
       {/* Lead Statistics */}
       <div className="space-y-3">
-        <h2 className="text-apptax-navy text-lg font-semibold">Statystyki leadów</h2>
+        <h2 className="text-apptax-navy text-lg font-semibold">Statystyki prospektów</h2>
         <div className="flex flex-wrap gap-6">
           <StatCard
-            label="Wszystkie leady"
+            label="Wszyscy prospekci"
             value={leadStats?.totalLeads ?? 0}
             icon={Users}
             iconBg="bg-apptax-dark-gradient"

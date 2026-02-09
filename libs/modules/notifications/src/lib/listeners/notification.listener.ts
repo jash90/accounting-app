@@ -157,10 +157,15 @@ export class NotificationListener {
     }
   }
 
+  private static readonly ALLOWED_ACTOR_FIELDS = new Set(['firstName', 'lastName', 'email', 'id']);
+
   private interpolateTemplate(template: string, result: unknown, actor: User): string {
     let output = template;
 
-    output = output.replace(/\{\{actor\.(\w+)\}\}/g, (_, key) => {
+    output = output.replace(/\{\{actor\.(\w+)\}\}/g, (_, key: string) => {
+      if (!NotificationListener.ALLOWED_ACTOR_FIELDS.has(key)) {
+        return '';
+      }
       return String((actor as unknown as Record<string, unknown>)[key] || '');
     });
 

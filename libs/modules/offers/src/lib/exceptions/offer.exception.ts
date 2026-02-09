@@ -2,6 +2,15 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 import { OfferErrorCode } from './error-codes.enum';
 
+export class ClientNotFoundException extends NotFoundException {
+  constructor(id: string) {
+    super({
+      code: OfferErrorCode.CLIENT_NOT_FOUND,
+      message: `Klient o ID ${id} nie został znaleziony`,
+    });
+  }
+}
+
 export class LeadNotFoundException extends NotFoundException {
   constructor(id: string) {
     super({
@@ -105,7 +114,7 @@ export class OfferNoRecipientException extends BadRequestException {
   constructor() {
     super({
       code: OfferErrorCode.OFFER_NO_RECIPIENT,
-      message: 'Oferta musi mieć przypisanego klienta lub leada',
+      message: 'Oferta musi mieć przypisanego klienta lub prospekt',
     });
   }
 }
