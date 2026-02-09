@@ -6,6 +6,7 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
@@ -43,6 +44,7 @@ export interface ServiceTerms {
 }
 
 @Entity('offers')
+@Unique(['companyId', 'offerNumber'])
 @Index(['companyId'])
 @Index(['status'])
 @Index(['offerNumber'])
@@ -55,7 +57,7 @@ export class Offer {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'varchar', length: 50, unique: true })
+  @Column({ type: 'varchar', length: 50 })
   offerNumber!: string;
 
   @Column({ type: 'varchar', length: 255 })

@@ -1,18 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
 import {
-  type ColumnDef,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
-  type SortingState,
   useReactTable,
+  type ColumnDef,
+  type SortingState,
 } from '@tanstack/react-table';
 import {
   ArrowLeft,
   Download,
+  FileText,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -52,7 +53,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useAuthContext } from '@/contexts/auth-context';
+import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import {
   useCreateOfferTemplate,
   useDeleteOfferTemplate,
@@ -61,17 +62,35 @@ import {
   useUpdateOfferTemplate,
   useUploadOfferTemplateFile,
 } from '@/lib/hooks/use-offers';
+import {
+  type CreateOfferTemplateFormData,
+  type UpdateOfferTemplateFormData,
+} from '@/lib/validation/schemas';
 import { type OfferTemplateFiltersDto, type OfferTemplateResponseDto } from '@/types/dtos';
-import { UserRole } from '@/types/enums';
 
 export default function TemplatesListPage() {
   const navigate = useNavigate();
-  const { user } = useAuthContext();
+  const basePath = useModuleBasePath('offers');
+
+  const [searchValue, setSearchValue] = useState('');
+
   const [filters, setFilters] = useState<OfferTemplateFiltersDto>({});
   const [sorting, setSorting] = useState<SortingState>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<OfferTemplateResponseDto | undefined>();
   const [deletingTemplateId, setDeletingTemplateId] = useState<string | null>(null);
+
+  // Hidden file input ref for accessible file uploads (H4)
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingTemplateId, setUploadingTemplateId] = useState<string | null>(null);
+
+  // Debounce search input to avoid firing API calls on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, search: searchValue || undefined }));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchValue]);
 
   const { data, isPending, refetch } = useOfferTemplates(filters);
   const templates = data?.data ?? [];
@@ -82,40 +101,35 @@ export default function TemplatesListPage() {
   const uploadFileMutation = useUploadOfferTemplateFile();
   const downloadFileMutation = useDownloadOfferTemplateFile();
 
-  const getBasePath = () => {
-    switch (user?.role) {
-      case UserRole.ADMIN:
-        return '/admin/modules/offers';
-      case UserRole.COMPANY_OWNER:
-        return '/company/modules/offers';
-      default:
-        return '/modules/offers';
-    }
-  };
+  const handleFileUpload = useCallback((template: OfferTemplateResponseDto) => {
+    setUploadingTemplateId(template.id);
+    fileInputRef.current?.click();
+  }, []);
 
-  const basePath = getBasePath();
-
-  const handleFileUpload = async (template: OfferTemplateResponseDto) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.docx,.doc';
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        await uploadFileMutation.mutateAsync({ id: template.id, file });
+  const handleFileInputChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file && uploadingTemplateId) {
+        await uploadFileMutation.mutateAsync({ id: uploadingTemplateId, file });
         refetch();
       }
-    };
-    input.click();
-  };
+      // Reset input so the same file can be selected again
+      e.target.value = '';
+      setUploadingTemplateId(null);
+    },
+    [uploadingTemplateId, uploadFileMutation, refetch]
+  );
 
-  const handleFileDownload = async (template: OfferTemplateResponseDto) => {
-    if (!template.templateFileName) return;
-    await downloadFileMutation.mutateAsync({
-      id: template.id,
-      filename: template.templateFileName,
-    });
-  };
+  const handleFileDownload = useCallback(
+    async (template: OfferTemplateResponseDto) => {
+      if (!template.templateFileName) return;
+      await downloadFileMutation.mutateAsync({
+        id: template.id,
+        filename: template.templateFileName,
+      });
+    },
+    [downloadFileMutation]
+  );
 
   const columns: ColumnDef<OfferTemplateResponseDto>[] = useMemo(
     () => [
@@ -188,7 +202,7 @@ export default function TemplatesListPage() {
           return (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" aria-label="Akcje">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -196,6 +210,12 @@ export default function TemplatesListPage() {
                 <DropdownMenuItem onClick={() => setEditingTemplate(template)}>
                   <Pencil className="mr-2 h-4 w-4" />
                   Edytuj
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => navigate(`${basePath}/templates/${template.id}/editor`)}
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  Edytuj treść
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => handleFileUpload(template)}>
@@ -222,8 +242,7 @@ export default function TemplatesListPage() {
         },
       },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [handleFileUpload, handleFileDownload, basePath, navigate]
   );
 
   const table = useReactTable({
@@ -235,16 +254,20 @@ export default function TemplatesListPage() {
     onSortingChange: setSorting,
   });
 
-  const handleCreateTemplate = async (data: unknown) => {
-    await createMutation.mutateAsync(data as Parameters<typeof createMutation.mutateAsync>[0]);
+  const handleCreateTemplate = async (
+    data: CreateOfferTemplateFormData | UpdateOfferTemplateFormData
+  ) => {
+    await createMutation.mutateAsync(data as CreateOfferTemplateFormData);
     setIsCreateDialogOpen(false);
   };
 
-  const handleUpdateTemplate = async (data: unknown) => {
+  const handleUpdateTemplate = async (
+    data: CreateOfferTemplateFormData | UpdateOfferTemplateFormData
+  ) => {
     if (!editingTemplate) return;
     await updateMutation.mutateAsync({
       id: editingTemplate.id,
-      data: data as Parameters<typeof updateMutation.mutateAsync>[0]['data'],
+      data: data as UpdateOfferTemplateFormData,
     });
     setEditingTemplate(undefined);
   };
@@ -259,7 +282,7 @@ export default function TemplatesListPage() {
     <div className="container mx-auto space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(basePath)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(basePath)} aria-label="Wróć">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -268,7 +291,7 @@ export default function TemplatesListPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={() => refetch()}>
+          <Button variant="outline" size="icon" onClick={() => refetch()} aria-label="Odśwież">
             <RefreshCw className="h-4 w-4" />
           </Button>
           <Button
@@ -286,8 +309,8 @@ export default function TemplatesListPage() {
         <Input
           placeholder="Szukaj..."
           className="w-64"
-          value={filters.search || ''}
-          onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
         />
       </div>
 
@@ -342,9 +365,19 @@ export default function TemplatesListPage() {
       {/* Pagination info */}
       {data && (
         <div className="text-muted-foreground text-sm">
-          Wyświetlono {templates.length} z {data.total} szablonów
+          Wyświetlono {templates.length} z {data.meta.total} szablonów
         </div>
       )}
+
+      {/* Hidden file input for template upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".docx"
+        className="hidden"
+        aria-label="Prześlij plik szablonu DOCX"
+        onChange={handleFileInputChange}
+      />
 
       {/* Dialogs */}
       <OfferTemplateFormDialog

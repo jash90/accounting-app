@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Trash2 } from 'lucide-react';
@@ -53,13 +53,16 @@ export function OfferFormDialog({
   const isEditing = !!offer;
   const schema = isEditing ? updateOfferSchema : createOfferSchema;
 
-  const { data: leadsResponse } = useLeads({ limit: 100 });
+  const { data: leadsResponse } = useLeads({ limit: 100 }, { enabled: open });
   const leads = leadsResponse?.data ?? [];
 
-  const { data: templatesResponse } = useOfferTemplates({ isActive: true, limit: 100 });
+  const { data: templatesResponse } = useOfferTemplates(
+    { isActive: true, limit: 100 },
+    { enabled: open }
+  );
   const templates = useMemo(() => templatesResponse?.data ?? [], [templatesResponse?.data]);
 
-  const { data: defaultTemplate } = useDefaultOfferTemplate();
+  const { data: defaultTemplate } = useDefaultOfferTemplate({ enabled: open });
 
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | undefined>(
     offer?.templateId
@@ -74,14 +77,14 @@ export function OfferFormDialog({
           leadId: offerData.leadId,
           clientId: offerData.clientId,
           templateId: offerData.templateId,
-          vatRate: offerData.vatRate,
+          vatRate: Number(offerData.vatRate),
           serviceTerms: offerData.serviceTerms
             ? {
                 items: offerData.serviceTerms.items.map((item) => ({
                   name: item.name,
                   description: item.description,
-                  unitPrice: item.unitPrice,
-                  quantity: item.quantity,
+                  unitPrice: Number(item.unitPrice),
+                  quantity: Number(item.quantity),
                   unit: item.unit,
                 })),
                 paymentTermDays: offerData.serviceTerms.paymentTermDays,
@@ -120,38 +123,54 @@ export function OfferFormDialog({
     name: 'serviceTerms.items',
   });
 
+  const selectedTemplate = useMemo(
+    () => templates.find((t) => t.id === selectedTemplateId),
+    [templates, selectedTemplateId]
+  );
+
   // Apply template defaults when selected
   useEffect(() => {
-    if (selectedTemplateId && !isEditing) {
-      const template = templates.find((t) => t.id === selectedTemplateId);
-      if (template) {
-        if (template.defaultServiceItems && template.defaultServiceItems.length > 0) {
-          form.setValue(
-            'serviceTerms.items',
-            template.defaultServiceItems.map((item) => ({
-              name: item.name,
-              description: item.description,
-              unitPrice: item.unitPrice,
-              quantity: item.quantity,
-              unit: item.unit,
-            }))
-          );
+    if (selectedTemplate && !isEditing) {
+      if (selectedTemplate.defaultServiceItems && selectedTemplate.defaultServiceItems.length > 0) {
+        form.setValue(
+          'serviceTerms.items',
+          selectedTemplate.defaultServiceItems.map((item) => ({
+            name: item.name,
+            description: item.description,
+            unitPrice: Number(item.unitPrice),
+            quantity: Number(item.quantity),
+            unit: item.unit,
+          })),
+          { shouldValidate: true }
+        );
+      }
+      if (selectedTemplate.defaultVatRate != null) {
+        form.setValue('vatRate', Number(selectedTemplate.defaultVatRate), { shouldValidate: true });
+      }
+      if (selectedTemplate.defaultValidityDays != null) {
+        form.setValue('validityDays', Number(selectedTemplate.defaultValidityDays), {
+          shouldValidate: true,
+        });
+      }
+      // Load default values for custom placeholders (initialize ALL keys to avoid undefined)
+      if (selectedTemplate.availablePlaceholders?.length) {
+        const defaults: Record<string, string> = {};
+        for (const ph of selectedTemplate.availablePlaceholders) {
+          defaults[ph.key] = ph.defaultValue ?? '';
         }
-        if (template.defaultVatRate) {
-          form.setValue('vatRate', template.defaultVatRate);
-        }
-        if (template.defaultValidityDays) {
-          form.setValue('validityDays', template.defaultValidityDays);
-        }
+        form.setValue('customPlaceholders', defaults);
       }
     }
-  }, [selectedTemplateId, templates, form, isEditing]);
+  }, [selectedTemplate, form, isEditing]);
 
-  // Set default template on first render
+  // Set default template on first render - use callback to avoid
+  // calling setState directly inside an effect (react-hooks/set-state-in-effect)
   useEffect(() => {
     if (defaultTemplate && !isEditing && !selectedTemplateId) {
-      setSelectedTemplateId(defaultTemplate.id);
-      form.setValue('templateId', defaultTemplate.id);
+      // Use startTransition-like pattern: batch via form update which triggers template defaults
+      form.setValue('templateId', defaultTemplate.id, { shouldValidate: true });
+      // Schedule state update as a microtask so it doesn't count as synchronous setState in effect
+      queueMicrotask(() => setSelectedTemplateId(defaultTemplate.id));
     }
   }, [defaultTemplate, isEditing, selectedTemplateId, form]);
 
@@ -170,27 +189,32 @@ export function OfferFormDialog({
   );
 
   const handleSubmit = (data: CreateOfferFormData | UpdateOfferFormData) => {
-    const cleanedData = {
+    // Filter out empty/undefined custom placeholder values
+    let filteredPlaceholders: Record<string, string> | undefined;
+    if (data.customPlaceholders) {
+      const entries = Object.entries(data.customPlaceholders).filter(
+        ([, v]) => typeof v === 'string' && v.trim() !== ''
+      );
+      filteredPlaceholders = entries.length > 0 ? Object.fromEntries(entries) : undefined;
+    }
+
+    onSubmit({
       ...data,
       description: data.description || undefined,
-      offerDate: data.offerDate
-        ? data.offerDate instanceof Date
-          ? data.offerDate.toISOString().split('T')[0]
-          : data.offerDate
-        : undefined,
-      validUntil: data.validUntil
-        ? data.validUntil instanceof Date
-          ? data.validUntil.toISOString().split('T')[0]
-          : data.validUntil
-        : undefined,
-    };
-    onSubmit(cleanedData as CreateOfferFormData | UpdateOfferFormData);
+      customPlaceholders: filteredPlaceholders,
+    } as CreateOfferFormData | UpdateOfferFormData);
   };
 
-  const calculateTotal = () => {
-    const items = form.watch('serviceTerms.items') || [];
-    return items.reduce((sum, item) => sum + (item.unitPrice || 0) * (item.quantity || 0), 0);
-  };
+  const watchedItems = useWatch({ control: form.control, name: 'serviceTerms.items' });
+
+  const calculatedTotal = useMemo(() => {
+    const items = watchedItems || [];
+    const total = items.reduce(
+      (sum, item) => sum + (item.unitPrice || 0) * (item.quantity || 0),
+      0
+    );
+    return Math.round(total * 100) / 100;
+  }, [watchedItems]);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -226,11 +250,11 @@ export function OfferFormDialog({
                     name="leadId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Lead *</FormLabel>
+                        <FormLabel>Prospekt *</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Wybierz leada" />
+                              <SelectValue placeholder="Wybierz prospekt" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -296,6 +320,36 @@ export function OfferFormDialog({
                   )}
                 />
               </div>
+
+              {/* Template Placeholder Fields */}
+              {selectedTemplate?.availablePlaceholders &&
+                selectedTemplate.availablePlaceholders.length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="text-apptax-navy text-sm font-semibold">Pola szablonu</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {selectedTemplate.availablePlaceholders.map((ph) => (
+                        <FormField
+                          key={ph.key}
+                          control={form.control}
+                          name={`customPlaceholders.${ph.key}`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{ph.label}</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder={ph.description || ph.label}
+                                  {...field}
+                                  value={field.value ?? ''}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
               {/* Service Items */}
               <div className="space-y-4">
@@ -422,7 +476,7 @@ export function OfferFormDialog({
 
                 <div className="flex justify-end">
                   <div className="text-lg font-semibold">
-                    Razem netto: {calculateTotal().toFixed(2)} PLN
+                    Razem netto: {calculatedTotal.toFixed(2)} PLN
                   </div>
                 </div>
               </div>

@@ -3,7 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Brackets, DataSource, Repository } from 'typeorm';
 
-import { Client, isForeignKeyViolation, Lead, LeadStatus, User } from '@accounting/common';
+import {
+  Client,
+  createPaginatedResponse,
+  isForeignKeyViolation,
+  Lead,
+  LeadStatus,
+  User,
+  type PaginatedResponseDto,
+} from '@accounting/common';
 import { SystemCompanyService } from '@accounting/common/backend';
 
 import {
@@ -12,7 +20,7 @@ import {
   LeadFiltersDto,
   UpdateLeadDto,
 } from '../dto/lead.dto';
-import { LeadStatisticsDto, PaginatedLeadsResponseDto } from '../dto/offer-response.dto';
+import { LeadStatisticsDto } from '../dto/offer-response.dto';
 import {
   LeadAlreadyConvertedException,
   LeadHasOffersException,
@@ -34,7 +42,11 @@ export class LeadsService {
     return this.systemCompanyService.getCompanyIdForUser(user);
   }
 
-  async findAll(user: User, filters: LeadFiltersDto): Promise<PaginatedLeadsResponseDto> {
+  private escapeLikePattern(pattern: string): string {
+    return pattern.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+  }
+
+  async findAll(user: User, filters: LeadFiltersDto): Promise<PaginatedResponseDto<Lead>> {
     const companyId = await this.getCompanyId(user);
     const {
       page = 1,
@@ -54,12 +66,13 @@ export class LeadsService {
       .where('lead.companyId = :companyId', { companyId });
 
     if (search) {
+      const escapedSearch = `%${this.escapeLikePattern(search)}%`;
       query.andWhere(
         new Brackets((qb) => {
-          qb.where('lead.name ILIKE :search', { search: `%${search}%` })
-            .orWhere('lead.email ILIKE :search', { search: `%${search}%` })
-            .orWhere('lead.nip ILIKE :search', { search: `%${search}%` })
-            .orWhere('lead.contactPerson ILIKE :search', { search: `%${search}%` });
+          qb.where('lead.name ILIKE :search', { search: escapedSearch })
+            .orWhere('lead.email ILIKE :search', { search: escapedSearch })
+            .orWhere('lead.nip ILIKE :search', { search: escapedSearch })
+            .orWhere('lead.contactPerson ILIKE :search', { search: escapedSearch });
         })
       );
     }
@@ -91,13 +104,7 @@ export class LeadsService {
       .take(limit)
       .getManyAndCount();
 
-    return {
-      data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    return createPaginatedResponse(data, total, page, limit);
   }
 
   async findOne(id: string, user: User): Promise<Lead> {
@@ -135,7 +142,25 @@ export class LeadsService {
       throw new LeadAlreadyConvertedException(id);
     }
 
-    Object.assign(lead, dto, { updatedById: user.id });
+    // Explicit field assignment to prevent overwriting protected fields (e.g. companyId, id)
+    if (dto.name !== undefined) lead.name = dto.name;
+    if (dto.nip !== undefined) lead.nip = dto.nip;
+    if (dto.regon !== undefined) lead.regon = dto.regon;
+    if (dto.street !== undefined) lead.street = dto.street;
+    if (dto.postalCode !== undefined) lead.postalCode = dto.postalCode;
+    if (dto.city !== undefined) lead.city = dto.city;
+    if (dto.country !== undefined) lead.country = dto.country;
+    if (dto.contactPerson !== undefined) lead.contactPerson = dto.contactPerson;
+    if (dto.contactPosition !== undefined) lead.contactPosition = dto.contactPosition;
+    if (dto.email !== undefined) lead.email = dto.email;
+    if (dto.phone !== undefined) lead.phone = dto.phone;
+    if (dto.source !== undefined) lead.source = dto.source;
+    if (dto.notes !== undefined) lead.notes = dto.notes;
+    if (dto.estimatedValue !== undefined) lead.estimatedValue = dto.estimatedValue;
+    if (dto.assignedToId !== undefined) lead.assignedToId = dto.assignedToId;
+    if (dto.status !== undefined) lead.status = dto.status;
+    lead.updatedById = user.id;
+
     return this.leadRepository.save(lead);
   }
 

@@ -1,14 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { Link, useNavigate } from 'react-router-dom';
 
 import {
-  type ColumnDef,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
-  type SortingState,
   useReactTable,
+  type ColumnDef,
+  type SortingState,
 } from '@tanstack/react-table';
 import {
   ArrowLeft,
@@ -58,7 +58,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useAuthContext } from '@/contexts/auth-context';
+import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import {
   useConvertLeadToClient,
   useCreateLead,
@@ -66,24 +66,35 @@ import {
   useLeads,
   useUpdateLead,
 } from '@/lib/hooks/use-offers';
-import { type LeadFiltersDto, type LeadResponseDto } from '@/types/dtos';
+import { type CreateLeadFormData, type UpdateLeadFormData } from '@/lib/validation/schemas';
 import {
-  LeadSource,
-  LeadSourceLabels,
-  LeadStatus,
-  LeadStatusLabels,
-  UserRole,
-} from '@/types/enums';
+  type CreateLeadDto,
+  type LeadFiltersDto,
+  type LeadResponseDto,
+  type UpdateLeadDto,
+} from '@/types/dtos';
+import { LeadSource, LeadSourceLabels, LeadStatus, LeadStatusLabels } from '@/types/enums';
 
 export default function LeadsListPage() {
   const navigate = useNavigate();
-  const { user } = useAuthContext();
+  const basePath = useModuleBasePath('offers');
+
+  const [searchValue, setSearchValue] = useState('');
+
   const [filters, setFilters] = useState<LeadFiltersDto>({});
   const [sorting, setSorting] = useState<SortingState>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<LeadResponseDto | undefined>();
   const [deletingLeadId, setDeletingLeadId] = useState<string | null>(null);
   const [convertingLeadId, setConvertingLeadId] = useState<string | null>(null);
+
+  // Debounce search input to avoid firing API calls on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, search: searchValue || undefined }));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchValue]);
 
   const { data, isPending, refetch } = useLeads(filters);
   const leads = data?.data ?? [];
@@ -92,19 +103,6 @@ export default function LeadsListPage() {
   const updateMutation = useUpdateLead();
   const deleteMutation = useDeleteLead();
   const convertMutation = useConvertLeadToClient();
-
-  const getBasePath = () => {
-    switch (user?.role) {
-      case UserRole.ADMIN:
-        return '/admin/modules/offers';
-      case UserRole.COMPANY_OWNER:
-        return '/company/modules/offers';
-      default:
-        return '/modules/offers';
-    }
-  };
-
-  const basePath = getBasePath();
 
   const columns: ColumnDef<LeadResponseDto>[] = useMemo(
     () => [
@@ -166,7 +164,7 @@ export default function LeadsListPage() {
         cell: ({ row }) => (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" aria-label="Akcje">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -211,16 +209,16 @@ export default function LeadsListPage() {
     onSortingChange: setSorting,
   });
 
-  const handleCreateLead = async (data: unknown) => {
-    await createMutation.mutateAsync(data as Parameters<typeof createMutation.mutateAsync>[0]);
+  const handleCreateLead = async (data: CreateLeadFormData | UpdateLeadFormData) => {
+    await createMutation.mutateAsync(data as CreateLeadDto);
     setIsCreateDialogOpen(false);
   };
 
-  const handleUpdateLead = async (data: unknown) => {
+  const handleUpdateLead = async (data: CreateLeadFormData | UpdateLeadFormData) => {
     if (!editingLead) return;
     await updateMutation.mutateAsync({
       id: editingLead.id,
-      data: data as Parameters<typeof updateMutation.mutateAsync>[0]['data'],
+      data: data as UpdateLeadDto,
     });
     setEditingLead(undefined);
   };
@@ -244,16 +242,16 @@ export default function LeadsListPage() {
     <div className="container mx-auto space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(basePath)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(basePath)} aria-label="Wróć">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-apptax-navy text-2xl font-bold">Leady</h1>
+            <h1 className="text-apptax-navy text-2xl font-bold">Prospekty</h1>
             <p className="text-muted-foreground">Zarządzaj potencjalnymi klientami</p>
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={() => refetch()}>
+          <Button variant="outline" size="icon" onClick={() => refetch()} aria-label="Odśwież">
             <RefreshCw className="h-4 w-4" />
           </Button>
           <Button
@@ -261,7 +259,7 @@ export default function LeadsListPage() {
             className="bg-apptax-blue hover:bg-apptax-blue/90"
           >
             <Plus className="mr-2 h-4 w-4" />
-            Dodaj leada
+            Dodaj prospekt
           </Button>
         </div>
       </div>
@@ -271,8 +269,8 @@ export default function LeadsListPage() {
         <Input
           placeholder="Szukaj..."
           className="w-64"
-          value={filters.search || ''}
-          onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
         />
         <Select
           value={filters.status || 'all'}
@@ -345,7 +343,7 @@ export default function LeadsListPage() {
             ) : table.getRowModel().rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  Brak leadów do wyświetlenia.
+                  Brak prospektów do wyświetlenia.
                 </TableCell>
               </TableRow>
             ) : (
@@ -366,7 +364,7 @@ export default function LeadsListPage() {
       {/* Pagination info */}
       {data && (
         <div className="text-muted-foreground text-sm">
-          Wyświetlono {leads.length} z {data.total} leadów
+          Wyświetlono {leads.length} z {data.meta.total} prospektów
         </div>
       )}
 
@@ -387,9 +385,9 @@ export default function LeadsListPage() {
       <AlertDialog open={!!deletingLeadId} onOpenChange={() => setDeletingLeadId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Czy na pewno chcesz usunąć tego leada?</AlertDialogTitle>
+            <AlertDialogTitle>Czy na pewno chcesz usunąć tego prospekta?</AlertDialogTitle>
             <AlertDialogDescription>
-              Ta operacja jest nieodwracalna. Lead zostanie trwale usunięty z systemu.
+              Ta operacja jest nieodwracalna. Prospekt zostanie trwale usunięty z systemu.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -407,10 +405,10 @@ export default function LeadsListPage() {
       <AlertDialog open={!!convertingLeadId} onOpenChange={() => setConvertingLeadId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Przekonwertuj leada na klienta</AlertDialogTitle>
+            <AlertDialogTitle>Przekonwertuj prospekt na klienta</AlertDialogTitle>
             <AlertDialogDescription>
-              Lead zostanie przekonwertowany na klienta. Dane leada zostaną skopiowane do nowego
-              rekordu klienta.
+              Prospekt zostanie przekonwertowany na klienta. Dane prospektu zostaną skopiowane do
+              nowego rekordu klienta.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

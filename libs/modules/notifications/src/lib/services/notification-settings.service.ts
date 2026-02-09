@@ -201,6 +201,42 @@ export class NotificationSettingsService {
     return this.checkEventTypeEnabled(settings, notificationType);
   }
 
+  /**
+   * Batch-check notification channels for multiple recipients at once.
+   * Returns a map of recipientId -> { inApp: boolean, email: boolean }.
+   */
+  async batchCheckChannels(
+    recipientIds: string[],
+    companyId: string,
+    moduleSlug: string,
+    notificationType: NotificationType
+  ): Promise<Map<string, { inApp: boolean; email: boolean }>> {
+    if (recipientIds.length === 0) {
+      return new Map();
+    }
+
+    const allSettings = await this.settingsRepository.find({
+      where: {
+        companyId,
+        moduleSlug,
+        userId: In(recipientIds),
+      },
+    });
+
+    const settingsMap = new Map(allSettings.map((s) => [s.userId, s]));
+    const result = new Map<string, { inApp: boolean; email: boolean }>();
+
+    for (const recipientId of recipientIds) {
+      const settings = settingsMap.get(recipientId);
+      result.set(recipientId, {
+        inApp: this.shouldSendForChannel(settings, notificationType, 'inApp'),
+        email: this.shouldSendForChannel(settings, notificationType, 'email'),
+      });
+    }
+
+    return result;
+  }
+
   private async createDefaultSettings(
     user: User,
     moduleSlug: string,

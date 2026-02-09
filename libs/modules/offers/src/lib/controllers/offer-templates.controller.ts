@@ -40,6 +40,7 @@ import {
   RequirePermission,
 } from '@accounting/rbac';
 
+import { UpdateContentBlocksDto } from '../dto/content-blocks.dto';
 import {
   OfferErrorResponseDto,
   OfferSuccessResponseDto,
@@ -113,6 +114,51 @@ export class OfferTemplatesController {
   @RequirePermission('offers', 'read')
   async findDefault(@CurrentUser() user: User) {
     return this.templatesService.findDefault(user);
+  }
+
+  @Get(':id/content-blocks')
+  @ApiOperation({
+    summary: 'Get content blocks for a template',
+    description: 'Returns the content blocks and document source type for a template.',
+  })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiResponse({
+    status: 200,
+    description: 'Content blocks data',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Template not found',
+    type: OfferErrorResponseDto,
+  })
+  @RequirePermission('offers', 'read')
+  async getContentBlocks(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return this.templatesService.getContentBlocks(id, user);
+  }
+
+  @Patch(':id/content-blocks')
+  @ApiOperation({
+    summary: 'Update content blocks for a template',
+    description: 'Updates the content blocks and/or document source type for a template.',
+  })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiResponse({
+    status: 200,
+    description: 'Template updated successfully',
+    type: OfferTemplateResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Template not found',
+    type: OfferErrorResponseDto,
+  })
+  @RequirePermission('offers', 'write')
+  async updateContentBlocks(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateContentBlocksDto,
+    @CurrentUser() user: User
+  ) {
+    return this.templatesService.updateContentBlocks(id, dto, user);
   }
 
   @Get(':id')
@@ -240,7 +286,7 @@ export class OfferTemplatesController {
           new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
           new FileTypeValidator({
             fileType:
-              /^(application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|application\/msword)$/,
+              /^application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document$/,
           }),
         ],
         fileIsRequired: true,
@@ -282,7 +328,7 @@ export class OfferTemplatesController {
 
     res.set({
       'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'Content-Disposition': `attachment; filename="${fileName}"`,
+      'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
     });
     res.send(buffer);
   }

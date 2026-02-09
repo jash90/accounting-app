@@ -1,16 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Brackets, Repository } from 'typeorm';
+import { Brackets, DataSource, Repository } from 'typeorm';
 
-import { OfferTemplate, User } from '@accounting/common';
+import {
+  createPaginatedResponse,
+  isForeignKeyViolation,
+  OfferTemplate,
+  User,
+  type PaginatedResponseDto,
+} from '@accounting/common';
 import { SystemCompanyService } from '@accounting/common/backend';
 import { StorageService } from '@accounting/infrastructure/storage';
 
-import {
-  PaginatedOfferTemplatesResponseDto,
-  StandardPlaceholdersResponseDto,
-} from '../dto/offer-response.dto';
+import { UpdateContentBlocksDto } from '../dto/content-blocks.dto';
+import { StandardPlaceholdersResponseDto } from '../dto/offer-response.dto';
 import {
   CreateOfferTemplateDto,
   OfferTemplateFiltersDto,
@@ -59,17 +63,22 @@ export class OfferTemplatesService {
     @InjectRepository(OfferTemplate)
     private readonly templateRepository: Repository<OfferTemplate>,
     private readonly systemCompanyService: SystemCompanyService,
-    private readonly storageService: StorageService
+    private readonly storageService: StorageService,
+    private readonly dataSource: DataSource
   ) {}
 
   private async getCompanyId(user: User): Promise<string> {
     return this.systemCompanyService.getCompanyIdForUser(user);
   }
 
+  private escapeLikePattern(pattern: string): string {
+    return pattern.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+  }
+
   async findAll(
     user: User,
     filters: OfferTemplateFiltersDto
-  ): Promise<PaginatedOfferTemplatesResponseDto> {
+  ): Promise<PaginatedResponseDto<OfferTemplate>> {
     const companyId = await this.getCompanyId(user);
     const { page = 1, limit = 20, search, isActive } = filters;
 
@@ -78,11 +87,12 @@ export class OfferTemplatesService {
       .where('template.companyId = :companyId', { companyId });
 
     if (search) {
+      const escapedSearch = `%${this.escapeLikePattern(search)}%`;
       query.andWhere(
         new Brackets((qb) => {
-          qb.where('template.name ILIKE :search', { search: `%${search}%` }).orWhere(
+          qb.where('template.name ILIKE :search', { search: escapedSearch }).orWhere(
             'template.description ILIKE :search',
-            { search: `%${search}%` }
+            { search: escapedSearch }
           );
         })
       );
@@ -99,13 +109,7 @@ export class OfferTemplatesService {
       .take(limit)
       .getManyAndCount();
 
-    return {
-      data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    return createPaginatedResponse(data, total, page, limit);
   }
 
   async findOne(id: string, user: User): Promise<OfferTemplate> {
@@ -133,31 +137,52 @@ export class OfferTemplatesService {
   async create(dto: CreateOfferTemplateDto, user: User): Promise<OfferTemplate> {
     const companyId = await this.getCompanyId(user);
 
-    // If this is set as default, unset other defaults
-    if (dto.isDefault) {
-      await this.templateRepository.update({ companyId, isDefault: true }, { isDefault: false });
-    }
+    return this.dataSource.transaction(async (manager) => {
+      const templateRepo = manager.getRepository(OfferTemplate);
 
-    const template = this.templateRepository.create({
-      ...dto,
-      companyId,
-      createdById: user.id,
+      // If this is set as default, unset other defaults atomically
+      if (dto.isDefault) {
+        await templateRepo.update({ companyId, isDefault: true }, { isDefault: false });
+      }
+
+      const template = templateRepo.create({
+        ...dto,
+        companyId,
+        createdById: user.id,
+      });
+
+      return templateRepo.save(template);
     });
-
-    return this.templateRepository.save(template);
   }
 
   async update(id: string, dto: UpdateOfferTemplateDto, user: User): Promise<OfferTemplate> {
     const template = await this.findOne(id, user);
     const companyId = await this.getCompanyId(user);
 
-    // If this is set as default, unset other defaults
-    if (dto.isDefault && !template.isDefault) {
-      await this.templateRepository.update({ companyId, isDefault: true }, { isDefault: false });
-    }
+    return this.dataSource.transaction(async (manager) => {
+      const templateRepo = manager.getRepository(OfferTemplate);
 
-    Object.assign(template, dto, { updatedById: user.id });
-    return this.templateRepository.save(template);
+      // If this is set as default, unset other defaults atomically
+      if (dto.isDefault && !template.isDefault) {
+        await templateRepo.update({ companyId, isDefault: true }, { isDefault: false });
+      }
+
+      // Explicit field assignment to prevent overwriting protected fields (e.g. companyId, id)
+      if (dto.name !== undefined) template.name = dto.name;
+      if (dto.description !== undefined) template.description = dto.description;
+      if (dto.availablePlaceholders !== undefined)
+        template.availablePlaceholders = dto.availablePlaceholders;
+      if (dto.defaultServiceItems !== undefined)
+        template.defaultServiceItems = dto.defaultServiceItems;
+      if (dto.defaultValidityDays !== undefined)
+        template.defaultValidityDays = dto.defaultValidityDays;
+      if (dto.defaultVatRate !== undefined) template.defaultVatRate = dto.defaultVatRate;
+      if (dto.isDefault !== undefined) template.isDefault = dto.isDefault;
+      if (dto.isActive !== undefined) template.isActive = dto.isActive;
+      template.updatedById = user.id;
+
+      return templateRepo.save(template);
+    });
   }
 
   async remove(id: string, user: User): Promise<void> {
@@ -175,8 +200,7 @@ export class OfferTemplatesService {
     try {
       await this.templateRepository.remove(template);
     } catch (error: unknown) {
-      // Check if it's a foreign key constraint violation (PostgreSQL error code 23503)
-      if (error && typeof error === 'object' && 'code' in error && error.code === '23503') {
+      if (isForeignKeyViolation(error)) {
         throw new OfferTemplateHasOffersException(id);
       }
       throw error;
@@ -190,10 +214,9 @@ export class OfferTemplatesService {
   ): Promise<OfferTemplate> {
     const template = await this.findOne(id, user);
 
-    // Validate file type
+    // Validate file type - only .docx is supported by docxtemplater
     const allowedMimeTypes = [
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/msword',
     ];
 
     if (!allowedMimeTypes.includes(file.mimetype)) {
@@ -235,6 +258,40 @@ export class OfferTemplatesService {
       buffer,
       fileName: template.templateFileName || 'template.docx',
     };
+  }
+
+  async getContentBlocks(
+    id: string,
+    user: User
+  ): Promise<{
+    contentBlocks: OfferTemplate['contentBlocks'];
+    documentSourceType: OfferTemplate['documentSourceType'];
+    name: string;
+  }> {
+    const template = await this.findOne(id, user);
+    return {
+      contentBlocks: template.contentBlocks,
+      documentSourceType: template.documentSourceType,
+      name: template.name,
+    };
+  }
+
+  async updateContentBlocks(
+    id: string,
+    dto: UpdateContentBlocksDto,
+    user: User
+  ): Promise<OfferTemplate> {
+    const template = await this.findOne(id, user);
+
+    if (dto.contentBlocks !== undefined) {
+      template.contentBlocks = dto.contentBlocks;
+    }
+    if (dto.documentSourceType !== undefined) {
+      template.documentSourceType = dto.documentSourceType;
+    }
+    template.updatedById = user.id;
+
+    return this.templateRepository.save(template);
   }
 
   getStandardPlaceholders(): StandardPlaceholdersResponseDto {

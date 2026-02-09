@@ -3,10 +3,11 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import Decimal from 'decimal.js';
-import { Brackets, Repository } from 'typeorm';
+import { Brackets, DataSource, Repository } from 'typeorm';
 
 import {
   Client,
+  createPaginatedResponse,
   Lead,
   LeadStatus,
   Offer,
@@ -15,6 +16,8 @@ import {
   OfferTemplate,
   RecipientSnapshot,
   User,
+  VALID_OFFER_STATUS_TRANSITIONS,
+  type PaginatedResponseDto,
 } from '@accounting/common';
 import { SystemCompanyService } from '@accounting/common/backend';
 import { StorageService } from '@accounting/infrastructure/storage';
@@ -25,7 +28,7 @@ import { OfferActivityService } from './offer-activity.service';
 import { OfferEmailService } from './offer-email.service';
 import { OfferNumberingService } from './offer-numbering.service';
 import { OfferTemplatesService } from './offer-templates.service';
-import { OfferStatisticsDto, PaginatedOffersResponseDto } from '../dto/offer-response.dto';
+import { OfferStatisticsDto } from '../dto/offer-response.dto';
 import {
   CreateOfferDto,
   DuplicateOfferDto,
@@ -44,34 +47,14 @@ import {
   OfferUpdatedEvent,
 } from '../events/offer.events';
 import {
+  ClientNotFoundException,
+  LeadNotFoundException,
   OfferCannotModifyException,
+  OfferDocumentNotGeneratedException,
   OfferInvalidStatusTransitionException,
   OfferNoRecipientException,
   OfferNotFoundException,
 } from '../exceptions/offer.exception';
-
-// Valid status transitions
-const VALID_STATUS_TRANSITIONS: Record<OfferStatus, OfferStatus[]> = {
-  [OfferStatus.DRAFT]: [OfferStatus.READY, OfferStatus.CANCELLED],
-  [OfferStatus.READY]: [OfferStatus.DRAFT, OfferStatus.SENT, OfferStatus.CANCELLED],
-  [OfferStatus.SENT]: [
-    OfferStatus.VIEWED,
-    OfferStatus.ACCEPTED,
-    OfferStatus.REJECTED,
-    OfferStatus.EXPIRED,
-    OfferStatus.CANCELLED,
-  ],
-  [OfferStatus.VIEWED]: [
-    OfferStatus.ACCEPTED,
-    OfferStatus.REJECTED,
-    OfferStatus.EXPIRED,
-    OfferStatus.CANCELLED,
-  ],
-  [OfferStatus.ACCEPTED]: [],
-  [OfferStatus.REJECTED]: [],
-  [OfferStatus.EXPIRED]: [],
-  [OfferStatus.CANCELLED]: [OfferStatus.DRAFT],
-};
 
 @Injectable()
 export class OffersService {
@@ -94,11 +77,16 @@ export class OffersService {
     private readonly offerEmailService: OfferEmailService,
     private readonly leadsService: LeadsService,
     private readonly storageService: StorageService,
-    private readonly eventEmitter: EventEmitter2
+    private readonly eventEmitter: EventEmitter2,
+    private readonly dataSource: DataSource
   ) {}
 
   private async getCompanyId(user: User): Promise<string> {
     return this.systemCompanyService.getCompanyIdForUser(user);
+  }
+
+  private escapeLikePattern(pattern: string): string {
+    return pattern.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
   }
 
   /**
@@ -166,7 +154,7 @@ export class OffersService {
     return new Decimal(unitPrice).times(quantity).toDecimalPlaces(2).toNumber();
   }
 
-  async findAll(user: User, filters: OfferFiltersDto): Promise<PaginatedOffersResponseDto> {
+  async findAll(user: User, filters: OfferFiltersDto): Promise<PaginatedResponseDto<Offer>> {
     const companyId = await this.getCompanyId(user);
     const {
       page = 1,
@@ -194,11 +182,12 @@ export class OffersService {
       .where('offer.companyId = :companyId', { companyId });
 
     if (search) {
+      const escapedSearch = `%${this.escapeLikePattern(search)}%`;
       query.andWhere(
         new Brackets((qb) => {
-          qb.where('offer.offerNumber ILIKE :search', { search: `%${search}%` })
-            .orWhere('offer.title ILIKE :search', { search: `%${search}%` })
-            .orWhere("offer.recipientSnapshot->>'name' ILIKE :search", { search: `%${search}%` });
+          qb.where('offer.offerNumber ILIKE :search', { search: escapedSearch })
+            .orWhere('offer.title ILIKE :search', { search: escapedSearch })
+            .orWhere("offer.recipientSnapshot->>'name' ILIKE :search", { search: escapedSearch });
         })
       );
     }
@@ -250,13 +239,7 @@ export class OffersService {
       .take(limit)
       .getManyAndCount();
 
-    return {
-      data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    return createPaginatedResponse(data, total, page, limit);
   }
 
   async findOne(id: string, user: User): Promise<Offer> {
@@ -277,7 +260,7 @@ export class OffersService {
   async create(dto: CreateOfferDto, user: User): Promise<Offer> {
     const companyId = await this.getCompanyId(user);
 
-    // Get recipient (client or lead)
+    // Get recipient (client or lead) - throw specific errors
     let client: Client | null = null;
     let lead: Lead | null = null;
 
@@ -285,12 +268,18 @@ export class OffersService {
       client = await this.clientRepository.findOne({
         where: { id: dto.clientId, companyId },
       });
+      if (!client) {
+        throw new ClientNotFoundException(dto.clientId);
+      }
     }
 
     if (dto.leadId) {
       lead = await this.leadRepository.findOne({
         where: { id: dto.leadId, companyId },
       });
+      if (!lead) {
+        throw new LeadNotFoundException(dto.leadId);
+      }
     }
 
     if (!client && !lead) {
@@ -299,9 +288,6 @@ export class OffersService {
 
     // Build recipient snapshot
     const recipientSnapshot = this.buildRecipientSnapshot(client, lead);
-
-    // Generate offer number
-    const offerNumber = await this.offerNumberingService.generateOfferNumber(companyId);
 
     // Get template defaults if template is provided
     let template: OfferTemplate | null = null;
@@ -339,28 +325,33 @@ export class OffersService {
       };
     }
 
-    // Create offer
-    const offer = this.offerRepository.create({
-      offerNumber,
-      title: dto.title,
-      description: dto.description,
-      status: OfferStatus.DRAFT,
-      clientId: client?.id,
-      leadId: lead?.id,
-      recipientSnapshot,
-      templateId: template?.id,
-      totalNetAmount,
-      vatRate,
-      totalGrossAmount,
-      serviceTerms,
-      customPlaceholders: dto.customPlaceholders,
-      offerDate,
-      validUntil,
-      companyId,
-      createdById: user.id,
-    });
+    // Use SERIALIZABLE transaction to prevent race conditions on offer number generation
+    const savedOffer = await this.dataSource.transaction('SERIALIZABLE', async (manager) => {
+      // Generate offer number inside the transaction with pessimistic locking
+      const offerNumber = await this.offerNumberingService.generateOfferNumber(companyId, manager);
 
-    const savedOffer = await this.offerRepository.save(offer);
+      const offer = manager.create(Offer, {
+        offerNumber,
+        title: dto.title,
+        description: dto.description,
+        status: OfferStatus.DRAFT,
+        clientId: client?.id,
+        leadId: lead?.id,
+        recipientSnapshot,
+        templateId: template?.id,
+        totalNetAmount,
+        vatRate,
+        totalGrossAmount,
+        serviceTerms,
+        customPlaceholders: dto.customPlaceholders,
+        offerDate,
+        validUntil,
+        companyId,
+        createdById: user.id,
+      });
+
+      return manager.save(Offer, offer);
+    });
 
     // Emit event for async activity logging (decoupled from main flow)
     this.eventEmitter.emit(OFFER_EVENTS.CREATED, new OfferCreatedEvent(savedOffer, user));
@@ -390,19 +381,31 @@ export class OffersService {
         client = await this.clientRepository.findOne({
           where: { id: dto.clientId, companyId },
         });
-      } else if (dto.leadId) {
+        if (!client) {
+          throw new ClientNotFoundException(dto.clientId);
+        }
+      }
+
+      if (dto.leadId) {
         lead = await this.leadRepository.findOne({
           where: { id: dto.leadId, companyId },
         });
+        if (!lead) {
+          throw new LeadNotFoundException(dto.leadId);
+        }
       }
 
-      if (client || lead) {
-        const newSnapshot = this.buildRecipientSnapshot(client, lead);
-        changes['recipient'] = { old: offer.recipientSnapshot, new: newSnapshot };
-        offer.recipientSnapshot = newSnapshot;
-        offer.clientId = client?.id || undefined;
-        offer.leadId = lead?.id || undefined;
+      if (!client && !lead) {
+        throw new OfferNoRecipientException();
       }
+
+      const newSnapshot = this.buildRecipientSnapshot(client, lead);
+      changes['recipient'] = { old: offer.recipientSnapshot, new: newSnapshot };
+      offer.recipientSnapshot = newSnapshot;
+      // Use null (not undefined) to ensure TypeORM actually clears the column.
+      // TypeORM treats undefined as "don't update" but null as "set to NULL".
+      offer.clientId = (client?.id ?? null) as string | undefined;
+      offer.leadId = (lead?.id ?? null) as string | undefined;
     }
 
     // Update other fields
@@ -484,7 +487,7 @@ export class OffersService {
     const offer = await this.findOne(id, user);
 
     // Validate status transition
-    const validTransitions = VALID_STATUS_TRANSITIONS[offer.status];
+    const validTransitions = VALID_OFFER_STATUS_TRANSITIONS[offer.status];
     if (!validTransitions.includes(dto.status)) {
       throw new OfferInvalidStatusTransitionException(offer.status, dto.status);
     }
@@ -514,7 +517,7 @@ export class OffersService {
       } catch (error) {
         this.logger.warn(
           `Failed to delete document for offer ${id}: ${offer.generatedDocumentPath}`,
-          error
+          error instanceof Error ? error.stack : String(error)
         );
       }
     }
@@ -536,7 +539,16 @@ export class OffersService {
     // Generate document
     let documentBuffer: Buffer;
 
-    if (template?.templateFilePath) {
+    if (template?.documentSourceType === 'blocks' && template.contentBlocks?.length) {
+      const placeholderData = this.docxGenerationService.buildPlaceholderData(
+        offer,
+        offer.customPlaceholders || undefined
+      );
+      documentBuffer = this.docxGenerationService.generateFromBlocks(
+        template.contentBlocks,
+        placeholderData
+      );
+    } else if (template?.templateFilePath) {
       documentBuffer = await this.docxGenerationService.generateFromTemplate(
         template,
         offer,
@@ -559,12 +571,26 @@ export class OffersService {
     );
     const filePath = result.path;
 
-    // Update offer
+    // Update offer - clean up storage file if DB save fails
     offer.generatedDocumentPath = filePath;
     offer.generatedDocumentName = fileName;
     offer.updatedById = user.id;
 
-    const savedOffer = await this.offerRepository.save(offer);
+    let savedOffer: Offer;
+    try {
+      savedOffer = await this.offerRepository.save(offer);
+    } catch (error) {
+      // Roll back: delete the orphaned storage file
+      try {
+        await this.storageService.deleteFile(filePath);
+      } catch (cleanupError) {
+        this.logger.warn(
+          `Failed to clean up orphaned document after DB save failure: ${filePath}`,
+          cleanupError instanceof Error ? cleanupError.stack : String(cleanupError)
+        );
+      }
+      throw error;
+    }
 
     // Emit event for async activity logging
     this.eventEmitter.emit(
@@ -579,7 +605,7 @@ export class OffersService {
     const offer = await this.findOne(id, user);
 
     if (!offer.generatedDocumentPath) {
-      throw new OfferNotFoundException(id);
+      throw new OfferDocumentNotGeneratedException(id);
     }
 
     const buffer = await this.storageService.downloadFile(offer.generatedDocumentPath);
@@ -652,9 +678,6 @@ export class OffersService {
       }
     }
 
-    // Generate new offer number
-    const offerNumber = await this.offerNumberingService.generateOfferNumber(companyId);
-
     // Calculate new dates
     const offerDate = new Date();
     const validityDays = Math.ceil(
@@ -663,28 +686,32 @@ export class OffersService {
     );
     const validUntil = new Date(offerDate.getTime() + validityDays * 24 * 60 * 60 * 1000);
 
-    // Create duplicate
-    const newOffer = this.offerRepository.create({
-      offerNumber,
-      title: dto.title || sourceOffer.title,
-      description: sourceOffer.description,
-      status: OfferStatus.DRAFT,
-      clientId,
-      leadId,
-      recipientSnapshot,
-      templateId: sourceOffer.templateId,
-      totalNetAmount: sourceOffer.totalNetAmount,
-      vatRate: sourceOffer.vatRate,
-      totalGrossAmount: sourceOffer.totalGrossAmount,
-      serviceTerms: sourceOffer.serviceTerms,
-      customPlaceholders: sourceOffer.customPlaceholders,
-      offerDate,
-      validUntil,
-      companyId,
-      createdById: user.id,
-    });
+    // Use SERIALIZABLE transaction for atomic number generation + save
+    const savedOffer = await this.dataSource.transaction('SERIALIZABLE', async (manager) => {
+      const offerNumber = await this.offerNumberingService.generateOfferNumber(companyId, manager);
 
-    const savedOffer = await this.offerRepository.save(newOffer);
+      const newOffer = manager.create(Offer, {
+        offerNumber,
+        title: dto.title || sourceOffer.title,
+        description: sourceOffer.description,
+        status: OfferStatus.DRAFT,
+        clientId,
+        leadId,
+        recipientSnapshot,
+        templateId: sourceOffer.templateId,
+        totalNetAmount: sourceOffer.totalNetAmount,
+        vatRate: sourceOffer.vatRate,
+        totalGrossAmount: sourceOffer.totalGrossAmount,
+        serviceTerms: sourceOffer.serviceTerms,
+        customPlaceholders: sourceOffer.customPlaceholders,
+        offerDate,
+        validUntil,
+        companyId,
+        createdById: user.id,
+      });
+
+      return manager.save(Offer, newOffer);
+    });
 
     // Emit event for async activity logging
     this.eventEmitter.emit(

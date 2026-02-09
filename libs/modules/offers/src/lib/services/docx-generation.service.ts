@@ -1,8 +1,9 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
-import { Offer, OfferTemplate, RecipientSnapshot } from '@accounting/common';
+import { Offer, OfferTemplate, RecipientSnapshot, type ContentBlock } from '@accounting/common';
 import { StorageService } from '@accounting/infrastructure/storage';
 
+import { DocxBlockRendererService } from './docx-block-renderer.service';
 import {
   DocumentGenerationFailedException,
   DocumentTemplateInvalidException,
@@ -31,6 +32,17 @@ const ALLOWED_CUSTOM_PLACEHOLDER_KEYS: ReadonlySet<string> = new Set([
   // Custom dates
   'data_realizacji',
   'data_rozpoczecia',
+  // Contract-specific fields
+  'numer_umowy',
+  'data_umowy',
+  'imie_nazwisko',
+  'zwrot_pan_pani',
+  'zwrot_zwany_zwana',
+  'miejsce_zawarcia',
+  'nazwa_firmy_klienta',
+  'adres_klienta',
+  'nip_klienta',
+  'regon_klienta',
 ]);
 
 /**
@@ -74,7 +86,10 @@ export class DocxGenerationService implements OnModuleInit {
   private docxtemplater: typeof import('docxtemplater') | null = null;
   private pizzip: typeof import('pizzip') | null = null;
 
-  constructor(private readonly storageService: StorageService) {}
+  constructor(
+    private readonly storageService: StorageService,
+    private readonly blockRenderer: DocxBlockRendererService
+  ) {}
 
   async onModuleInit(): Promise<void> {
     await this.loadDependencies();
@@ -359,6 +374,14 @@ export class DocxGenerationService implements OnModuleInit {
       }
       throw new DocumentGenerationFailedException('Nieznany błąd');
     }
+  }
+
+  /**
+   * Generates a DOCX document from content blocks.
+   * Delegates to DocxBlockRendererService.
+   */
+  generateFromBlocks(blocks: ContentBlock[], placeholderData?: Record<string, string>): Buffer {
+    return this.blockRenderer.renderBlocksToDocx(blocks, placeholderData);
   }
 
   /**

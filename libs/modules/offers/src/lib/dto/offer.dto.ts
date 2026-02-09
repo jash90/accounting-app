@@ -2,6 +2,8 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
 import { Transform, Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsDateString,
   IsEmail,
@@ -16,16 +18,34 @@ import {
   MaxLength,
   Min,
   MinLength,
+  Validate,
   ValidateNested,
+  ValidatorConstraint,
+  type ValidatorConstraintInterface,
 } from 'class-validator';
 
 import { OfferStatus, Sanitize, SanitizeWithFormatting } from '@accounting/common';
 
 import { OfferServiceItemDto } from './offer-template.dto';
 
+@ValidatorConstraint({ name: 'customPlaceholders', async: false })
+class CustomPlaceholdersConstraint implements ValidatorConstraintInterface {
+  validate(value: Record<string, string>): boolean {
+    if (!value || typeof value !== 'object') return true;
+    const keys = Object.keys(value);
+    if (keys.length > 50) return false;
+    return keys.every((key) => typeof value[key] === 'string' && value[key].length <= 1000);
+  }
+
+  defaultMessage(): string {
+    return 'customPlaceholders może zawierać maksymalnie 50 kluczy, a każda wartość max 1000 znaków';
+  }
+}
+
 export class ServiceTermsDto {
   @ApiProperty({ description: 'Service items', type: [OfferServiceItemDto] })
   @IsArray()
+  @ArrayMinSize(1, { message: 'Oferta musi zawierać co najmniej jedną pozycję' })
   @ValidateNested({ each: true })
   @Type(() => OfferServiceItemDto)
   items!: OfferServiceItemDto[];
@@ -94,9 +114,12 @@ export class CreateOfferDto {
   @Type(() => ServiceTermsDto)
   serviceTerms?: ServiceTermsDto;
 
-  @ApiPropertyOptional({ description: 'Custom placeholder values for mail merge' })
+  @ApiPropertyOptional({
+    description: 'Custom placeholder values for mail merge (max 50 keys, max 1000 chars per value)',
+  })
   @IsOptional()
   @IsObject()
+  @Validate(CustomPlaceholdersConstraint)
   customPlaceholders?: Record<string, string>;
 
   @ApiPropertyOptional({ description: 'Offer date (ISO date string)' })
@@ -150,11 +173,13 @@ export class SendOfferDto {
   @IsOptional()
   @SanitizeWithFormatting()
   @IsString()
+  @MaxLength(10000)
   body?: string;
 
-  @ApiPropertyOptional({ description: 'CC recipients', type: [String] })
+  @ApiPropertyOptional({ description: 'CC recipients (max 10)', type: [String] })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(10, { message: 'Maksymalnie 10 adresów CC' })
   @IsEmail({}, { each: true, message: 'Nieprawidłowy format adresu email w CC' })
   cc?: string[];
 }

@@ -1,4 +1,4 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -64,8 +64,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useAuthContext } from '@/contexts/auth-context';
 import { PAGINATION } from '@/lib/constants';
+import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import {
   useCreateOffer,
   useDeleteOffer,
@@ -76,43 +76,16 @@ import {
   useSendOffer,
   useUpdateOffer,
 } from '@/lib/hooks/use-offers';
+import { formDataToCreateDto, formDataToUpdateDto } from '@/lib/utils/offer-converters';
 import { type CreateOfferFormData, type UpdateOfferFormData } from '@/lib/validation/schemas';
-import {
-  type CreateOfferDto,
-  type OfferFiltersDto,
-  type OfferResponseDto,
-  type SendOfferDto,
-  type UpdateOfferDto,
-} from '@/types/dtos';
-import { OfferStatus, OfferStatusLabels, UserRole } from '@/types/enums';
-
-/**
- * Converts form data (with Date objects) to DTO format (with ISO strings).
- * The form uses Date objects for date pickers, but the API expects ISO string format.
- */
-function formDataToCreateDto(data: CreateOfferFormData): CreateOfferDto {
-  return {
-    ...data,
-    offerDate: data.offerDate?.toISOString(),
-    validUntil: data.validUntil?.toISOString(),
-  };
-}
-
-function formDataToUpdateDto(data: UpdateOfferFormData): UpdateOfferDto {
-  return {
-    ...data,
-    offerDate: data.offerDate?.toISOString(),
-    validUntil: data.validUntil?.toISOString(),
-  };
-}
+import { type OfferFiltersDto, type OfferResponseDto, type SendOfferDto } from '@/types/dtos';
+import { OfferStatus, OfferStatusLabels } from '@/types/enums';
 
 export default function OffersListPage() {
   const navigate = useNavigate();
-  const { user } = useAuthContext();
+  const basePath = useModuleBasePath('offers');
 
-  // Separate search state from filters for deferred updates
   const [searchValue, setSearchValue] = useState('');
-  const deferredSearch = useDeferredValue(searchValue);
 
   const [filters, setFilters] = useState<OfferFiltersDto>({
     page: 1,
@@ -124,10 +97,13 @@ export default function OffersListPage() {
   const [deletingOfferId, setDeletingOfferId] = useState<string | null>(null);
   const [sendingOffer, setSendingOffer] = useState<OfferResponseDto | null>(null);
 
-  // Sync deferred search value to filters
+  // Debounce search input to avoid firing API calls on every keystroke
   useEffect(() => {
-    setFilters((prev) => ({ ...prev, search: deferredSearch || undefined, page: 1 }));
-  }, [deferredSearch]);
+    const timer = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, search: searchValue || undefined, page: 1 }));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchValue]);
 
   const { data, isPending, refetch } = useOffers(filters);
   const offers = data?.data ?? [];
@@ -139,19 +115,6 @@ export default function OffersListPage() {
   const downloadDocMutation = useDownloadOfferDocument();
   const sendMutation = useSendOffer();
   const duplicateMutation = useDuplicateOffer();
-
-  const getBasePath = () => {
-    switch (user?.role) {
-      case UserRole.ADMIN:
-        return '/admin/modules/offers';
-      case UserRole.COMPANY_OWNER:
-        return '/company/modules/offers';
-      default:
-        return '/modules/offers';
-    }
-  };
-
-  const basePath = getBasePath();
 
   const handleGenerateDocument = useCallback(
     async (offer: OfferResponseDto) => {
@@ -263,7 +226,7 @@ export default function OffersListPage() {
           return (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" aria-label="Akcje">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -370,7 +333,7 @@ export default function OffersListPage() {
     <div className="container mx-auto space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(basePath)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(basePath)} aria-label="Wróć">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -379,7 +342,7 @@ export default function OffersListPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={() => refetch()}>
+          <Button variant="outline" size="icon" onClick={() => refetch()} aria-label="Odśwież">
             <RefreshCw className="h-4 w-4" />
           </Button>
           <Button

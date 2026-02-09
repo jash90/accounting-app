@@ -269,6 +269,28 @@ export const OfferStatusColors: Record<OfferStatus, string> = {
   [OfferStatus.CANCELLED]: 'bg-gray-100 text-gray-700',
 };
 
+export const VALID_OFFER_STATUS_TRANSITIONS: Record<OfferStatus, OfferStatus[]> = {
+  [OfferStatus.DRAFT]: [OfferStatus.READY, OfferStatus.CANCELLED],
+  [OfferStatus.READY]: [OfferStatus.DRAFT, OfferStatus.SENT, OfferStatus.CANCELLED],
+  [OfferStatus.SENT]: [
+    OfferStatus.VIEWED,
+    OfferStatus.ACCEPTED,
+    OfferStatus.REJECTED,
+    OfferStatus.EXPIRED,
+    OfferStatus.CANCELLED,
+  ],
+  [OfferStatus.VIEWED]: [
+    OfferStatus.ACCEPTED,
+    OfferStatus.REJECTED,
+    OfferStatus.EXPIRED,
+    OfferStatus.CANCELLED,
+  ],
+  [OfferStatus.ACCEPTED]: [],
+  [OfferStatus.REJECTED]: [],
+  [OfferStatus.EXPIRED]: [],
+  [OfferStatus.CANCELLED]: [OfferStatus.DRAFT],
+};
+
 export enum LeadStatus {
   NEW = 'NEW',
   CONTACTED = 'CONTACTED',

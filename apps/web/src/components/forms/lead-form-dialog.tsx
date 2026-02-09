@@ -115,7 +115,7 @@ export function LeadFormDialog({ open, onOpenChange, lead, onSubmit }: LeadFormD
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] sm:max-w-[700px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edytuj leada' : 'Dodaj leada'}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edytuj prospekt' : 'Dodaj prospekt'}</DialogTitle>
         </DialogHeader>
 
         <ScrollArea className="max-h-[70vh] pr-4">
@@ -298,7 +298,7 @@ export function LeadFormDialog({ open, onOpenChange, lead, onSubmit }: LeadFormD
 
               {/* Lead Details */}
               <div className="space-y-4">
-                <h3 className="text-apptax-navy text-sm font-semibold">Szczegóły leada</h3>
+                <h3 className="text-apptax-navy text-sm font-semibold">Szczegóły prospektu</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -433,7 +433,7 @@ export function LeadFormDialog({ open, onOpenChange, lead, onSubmit }: LeadFormD
                   disabled={form.formState.isSubmitting}
                   className="bg-apptax-blue hover:bg-apptax-blue/90"
                 >
-                  {isEditing ? 'Zapisz zmiany' : 'Dodaj leada'}
+                  {isEditing ? 'Zapisz zmiany' : 'Dodaj prospekt'}
                 </Button>
               </div>
             </form>

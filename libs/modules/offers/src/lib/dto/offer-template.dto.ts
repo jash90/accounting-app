@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -56,7 +56,7 @@ export class OfferServiceItemDto {
 
   @ApiProperty({ description: 'Unit price (net)' })
   @IsNumber()
-  @Min(0)
+  @Min(0.01, { message: 'Cena jednostkowa musi być większa od 0' })
   @Type(() => Number)
   unitPrice!: number;
 
@@ -143,6 +143,11 @@ export class OfferTemplateFiltersDto {
 
   @ApiPropertyOptional({ description: 'Filter by active status' })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return value;
+  })
   @IsBoolean()
   isActive?: boolean;
 

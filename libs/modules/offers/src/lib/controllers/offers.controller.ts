@@ -278,7 +278,7 @@ export class OffersController {
 
     res.set({
       'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'Content-Disposition': `attachment; filename="${fileName}"`,
+      'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
     });
     res.send(buffer);
   }

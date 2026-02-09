@@ -1,5 +1,6 @@
 import { type PaginatedResponse } from '@/types/api';
 import {
+  type ContentBlocksResponseDto,
   type ConvertLeadToClientDto,
   type CreateLeadDto,
   type CreateOfferDto,
@@ -16,6 +17,7 @@ import {
   type OfferTemplateResponseDto,
   type SendOfferDto,
   type StandardPlaceholdersResponseDto,
+  type UpdateContentBlocksDto,
   type UpdateLeadDto,
   type UpdateOfferDto,
   type UpdateOfferStatusDto,
@@ -198,8 +200,13 @@ export const offerTemplatesApi = {
     try {
       const { data } = await apiClient.get<OfferTemplateResponseDto>(`${TEMPLATES_URL}/default`);
       return data;
-    } catch {
-      return null;
+    } catch (error: unknown) {
+      const status =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { status?: number } }).response?.status
+          : undefined;
+      if (status === 404) return null;
+      throw error;
     }
   },
 
@@ -242,6 +249,24 @@ export const offerTemplatesApi = {
     const { data } = await apiClient.get<Blob>(`${TEMPLATES_URL}/${id}/download`, {
       responseType: 'blob',
     });
+    return data;
+  },
+
+  getContentBlocks: async (id: string): Promise<ContentBlocksResponseDto> => {
+    const { data } = await apiClient.get<ContentBlocksResponseDto>(
+      `${TEMPLATES_URL}/${id}/content-blocks`
+    );
+    return data;
+  },
+
+  updateContentBlocks: async (
+    id: string,
+    payload: UpdateContentBlocksDto
+  ): Promise<OfferTemplateResponseDto> => {
+    const { data } = await apiClient.patch<OfferTemplateResponseDto>(
+      `${TEMPLATES_URL}/${id}/content-blocks`,
+      payload
+    );
     return data;
   },
 };

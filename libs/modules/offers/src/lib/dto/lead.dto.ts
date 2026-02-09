@@ -94,6 +94,9 @@ export class CreateLeadDto {
   @Sanitize()
   @IsString()
   @MaxLength(50)
+  @Matches(/^\+?[\d\s\-()]{9,20}$/, {
+    message: 'Nieprawidłowy format numeru telefonu',
+  })
   phone?: string;
 
   @ApiPropertyOptional({ enum: LeadSource, description: 'Lead source' })

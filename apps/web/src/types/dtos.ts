@@ -1122,8 +1122,21 @@ export interface OfferTemplateResponseDto {
   isDefault: boolean;
   isActive: boolean;
   companyId: string;
+  contentBlocks?: import('./content-blocks').ContentBlock[];
+  documentSourceType?: 'file' | 'blocks';
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface ContentBlocksResponseDto {
+  contentBlocks?: import('./content-blocks').ContentBlock[];
+  documentSourceType: 'file' | 'blocks';
+  name: string;
+}
+
+export interface UpdateContentBlocksDto {
+  contentBlocks?: import('./content-blocks').ContentBlock[];
+  documentSourceType?: 'file' | 'blocks';
 }
 
 // Offer DTOs
