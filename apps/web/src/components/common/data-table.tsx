@@ -86,6 +86,7 @@ function DataTableInner<TData, TValue>({
   getRowId,
   columnVisibility: visibleColumnIds,
 }: DataTableProps<TData, TValue>) {
+  'use no memo';
   const [sorting, setSorting] = useState<SortingState>([]);
   const [internalRowSelection, setInternalRowSelection] = useState<RowSelectionState>({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});

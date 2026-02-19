@@ -57,6 +57,7 @@ export function EmailConfigFormDialog({
   isTestingSmtp = false,
   isTestingImap = false,
 }: EmailConfigFormDialogProps) {
+  'use no memo';
   const isEditing = !!config;
   const schema = isEditing ? updateEmailConfigSchema : createEmailConfigSchema;
 

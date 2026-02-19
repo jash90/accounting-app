@@ -39,6 +39,7 @@ export function ClientIconFormDialog({
   icon,
   onSubmit,
 }: ClientIconFormDialogProps) {
+  'use no memo';
   const isEditing = !!icon;
   const schema = isEditing ? updateClientIconSchema : createClientIconSchema;
 

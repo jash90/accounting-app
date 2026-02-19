@@ -33,6 +33,7 @@ export function NotificationSettingsForm({
   onSubmit,
   isLoading,
 }: NotificationSettingsFormProps) {
+  'use no memo';
   const form = useForm<NotificationSettingsFormData>({
     resolver: zodResolver(notificationSettingsSchema) as Resolver<NotificationSettingsFormData>,
     defaultValues: {

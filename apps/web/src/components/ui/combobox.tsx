@@ -105,6 +105,7 @@ export function Combobox({
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            aria-controls={`${instanceId}-listbox`}
             disabled={disabled}
             className={cn(
               'w-full justify-between pr-14 font-normal',
@@ -149,7 +150,6 @@ export function Combobox({
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={handleKeyDown}
             className="h-9"
-            autoFocus
             aria-activedescendant={
               highlightedIndex >= 0 ? `${instanceId}-option-${highlightedIndex}` : undefined
             }
@@ -159,7 +159,12 @@ export function Combobox({
           {filteredOptions.length === 0 ? (
             <div className="text-muted-foreground py-6 text-center text-sm">{emptyText}</div>
           ) : (
-            <div className="p-1" role="listbox" aria-label={placeholder}>
+            <div
+              className="p-1"
+              role="listbox"
+              id={`${instanceId}-listbox`}
+              aria-label={placeholder}
+            >
               {filteredOptions.map((option, index) => (
                 <button
                   key={option.value}

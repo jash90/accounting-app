@@ -313,7 +313,7 @@ export default function OfferDetailPage() {
                   </TableHeader>
                   <TableBody>
                     {offer.serviceTerms.items.map((item, index) => (
-                      <TableRow key={index}>
+                      <TableRow key={`${item.name}-${index}`}>
                         <TableCell>
                           <div>{item.name}</div>
                           {item.description && (

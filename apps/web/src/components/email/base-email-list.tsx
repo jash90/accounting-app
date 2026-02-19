@@ -179,15 +179,11 @@ export function BaseEmailList({
     return sortedEmails.every((email) => selectedUids.has(email.uid));
   }, [sortedEmails, selectedUids]);
 
-  const someSelected = useMemo(() => {
-    return selectedUids.size > 0;
-  }, [selectedUids]);
+  const someSelected = selectedUids.size > 0;
 
-  const unreadSelectedCount = useMemo(() => {
-    return sortedEmails.filter(
-      (email) => selectedUids.has(email.uid) && !email.flags.includes('\\Seen')
-    ).length;
-  }, [sortedEmails, selectedUids]);
+  const unreadSelectedCount = sortedEmails.filter(
+    (email) => selectedUids.has(email.uid) && !email.flags.includes('\\Seen')
+  ).length;
 
   // Selection handlers
   const toggleSelectAll = () => {

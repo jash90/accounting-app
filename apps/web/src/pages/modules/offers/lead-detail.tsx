@@ -48,8 +48,222 @@ import {
   useUpdateLead,
 } from '@/lib/hooks/use-offers';
 import { type CreateLeadFormData, type UpdateLeadFormData } from '@/lib/validation/schemas';
-import { type CreateOfferDto, type UpdateLeadDto } from '@/types/dtos';
+import { type CreateOfferDto, type LeadResponseDto, type UpdateLeadDto } from '@/types/dtos';
 import { LeadSourceLabels, LeadStatus, LeadStatusLabels } from '@/types/enums';
+
+// -- Company Info Card sub-component --
+function LeadCompanyInfoCard({ lead }: { lead: LeadResponseDto }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Building2 className="h-5 w-5" />
+          Dane firmy
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <div className="text-muted-foreground text-sm">Nazwa firmy</div>
+            <div className="font-medium">{lead.name}</div>
+          </div>
+          {lead.nip && (
+            <div>
+              <div className="text-muted-foreground text-sm">NIP</div>
+              <div className="font-medium">{lead.nip}</div>
+            </div>
+          )}
+          {lead.regon && (
+            <div>
+              <div className="text-muted-foreground text-sm">REGON</div>
+              <div className="font-medium">{lead.regon}</div>
+            </div>
+          )}
+        </div>
+
+        {(lead.street || lead.city || lead.postalCode) && (
+          <>
+            <Separator />
+            <div className="flex items-start gap-2">
+              <MapPin className="text-muted-foreground mt-0.5 h-4 w-4 flex-shrink-0" />
+              <div>
+                <div className="text-muted-foreground text-sm">Adres</div>
+                <div className="font-medium">
+                  {[lead.street, lead.postalCode, lead.city].filter(Boolean).join(', ')}
+                </div>
+                {lead.country && lead.country !== 'Polska' && (
+                  <div className="text-muted-foreground text-sm">{lead.country}</div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// -- Contact Info Card sub-component --
+function LeadContactInfoCard({ lead }: { lead: LeadResponseDto }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <User className="h-5 w-5" />
+          Dane kontaktowe
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {lead.contactPerson && (
+          <div>
+            <div className="text-muted-foreground text-sm">Osoba kontaktowa</div>
+            <div className="font-medium">
+              {lead.contactPerson}
+              {lead.contactPosition && (
+                <span className="text-muted-foreground"> - {lead.contactPosition}</span>
+              )}
+            </div>
+          </div>
+        )}
+        {lead.email && (
+          <div className="flex items-center gap-2">
+            <Mail className="text-muted-foreground h-4 w-4" />
+            <div>
+              <div className="text-muted-foreground text-sm">Email</div>
+              <a href={`mailto:${lead.email}`} className="text-apptax-blue hover:underline">
+                {lead.email}
+              </a>
+            </div>
+          </div>
+        )}
+        {lead.phone && (
+          <div className="flex items-center gap-2">
+            <Phone className="text-muted-foreground h-4 w-4" />
+            <div>
+              <div className="text-muted-foreground text-sm">Telefon</div>
+              <a href={`tel:${lead.phone}`} className="text-apptax-blue hover:underline">
+                {lead.phone}
+              </a>
+            </div>
+          </div>
+        )}
+        {!lead.contactPerson && !lead.email && !lead.phone && (
+          <p className="text-muted-foreground text-sm">Brak danych kontaktowych</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// -- Details Sidebar sub-component --
+interface LeadDetailsSidebarProps {
+  lead: LeadResponseDto;
+  onCreateOfferClick: () => void;
+}
+
+function LeadDetailsSidebar({ lead, onCreateOfferClick }: LeadDetailsSidebarProps) {
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Szczegóły</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {lead.source && (
+            <>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Źródło</span>
+                <span className="font-medium">{LeadSourceLabels[lead.source]}</span>
+              </div>
+              <Separator />
+            </>
+          )}
+          {lead.estimatedValue !== undefined && lead.estimatedValue !== null && (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Szacowana wartość
+                </span>
+                <span className="font-semibold text-green-600">
+                  {Number(lead.estimatedValue).toFixed(2)} PLN
+                </span>
+              </div>
+              <Separator />
+            </>
+          )}
+          {lead.assignedTo && (
+            <>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Przypisany do</span>
+                <span className="font-medium">
+                  {lead.assignedTo.firstName} {lead.assignedTo.lastName}
+                </span>
+              </div>
+              <Separator />
+            </>
+          )}
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Utworzono
+            </span>
+            <span className="font-medium">
+              {new Date(lead.createdAt).toLocaleDateString('pl-PL')}
+            </span>
+          </div>
+          {lead.createdBy && (
+            <div className="text-muted-foreground text-right text-sm">
+              Przez: {lead.createdBy.firstName} {lead.createdBy.lastName}
+            </div>
+          )}
+          {lead.convertedAt && (
+            <>
+              <Separator />
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Przekonwertowano</span>
+                <span className="font-medium text-green-600">
+                  {new Date(lead.convertedAt).toLocaleDateString('pl-PL')}
+                </span>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Szybkie akcje</CardTitle>
+          <CardDescription>Wykonaj typowe operacje na tym prospekcie</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {lead.email && (
+            <Button variant="outline" className="w-full justify-start" asChild>
+              <a href={`mailto:${lead.email}`}>
+                <Mail className="mr-2 h-4 w-4" />
+                Wyślij email
+              </a>
+            </Button>
+          )}
+          {lead.phone && (
+            <Button variant="outline" className="w-full justify-start" asChild>
+              <a href={`tel:${lead.phone}`}>
+                <Phone className="mr-2 h-4 w-4" />
+                Zadzwoń
+              </a>
+            </Button>
+          )}
+          {lead.status !== LeadStatus.CONVERTED && lead.status !== LeadStatus.LOST && (
+            <Button variant="outline" className="w-full justify-start" onClick={onCreateOfferClick}>
+              <FileText className="mr-2 h-4 w-4" />
+              Utwórz ofertę
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -165,101 +379,8 @@ export default function LeadDetailPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main Content */}
         <div className="space-y-6 lg:col-span-2">
-          {/* Company Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                Dane firmy
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <div className="text-muted-foreground text-sm">Nazwa firmy</div>
-                  <div className="font-medium">{lead.name}</div>
-                </div>
-                {lead.nip && (
-                  <div>
-                    <div className="text-muted-foreground text-sm">NIP</div>
-                    <div className="font-medium">{lead.nip}</div>
-                  </div>
-                )}
-                {lead.regon && (
-                  <div>
-                    <div className="text-muted-foreground text-sm">REGON</div>
-                    <div className="font-medium">{lead.regon}</div>
-                  </div>
-                )}
-              </div>
-
-              {(lead.street || lead.city || lead.postalCode) && (
-                <>
-                  <Separator />
-                  <div className="flex items-start gap-2">
-                    <MapPin className="text-muted-foreground mt-0.5 h-4 w-4 flex-shrink-0" />
-                    <div>
-                      <div className="text-muted-foreground text-sm">Adres</div>
-                      <div className="font-medium">
-                        {[lead.street, lead.postalCode, lead.city].filter(Boolean).join(', ')}
-                      </div>
-                      {lead.country && lead.country !== 'Polska' && (
-                        <div className="text-muted-foreground text-sm">{lead.country}</div>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Contact Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Dane kontaktowe
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {lead.contactPerson && (
-                <div>
-                  <div className="text-muted-foreground text-sm">Osoba kontaktowa</div>
-                  <div className="font-medium">
-                    {lead.contactPerson}
-                    {lead.contactPosition && (
-                      <span className="text-muted-foreground"> - {lead.contactPosition}</span>
-                    )}
-                  </div>
-                </div>
-              )}
-              {lead.email && (
-                <div className="flex items-center gap-2">
-                  <Mail className="text-muted-foreground h-4 w-4" />
-                  <div>
-                    <div className="text-muted-foreground text-sm">Email</div>
-                    <a href={`mailto:${lead.email}`} className="text-apptax-blue hover:underline">
-                      {lead.email}
-                    </a>
-                  </div>
-                </div>
-              )}
-              {lead.phone && (
-                <div className="flex items-center gap-2">
-                  <Phone className="text-muted-foreground h-4 w-4" />
-                  <div>
-                    <div className="text-muted-foreground text-sm">Telefon</div>
-                    <a href={`tel:${lead.phone}`} className="text-apptax-blue hover:underline">
-                      {lead.phone}
-                    </a>
-                  </div>
-                </div>
-              )}
-              {!lead.contactPerson && !lead.email && !lead.phone && (
-                <p className="text-muted-foreground text-sm">Brak danych kontaktowych</p>
-              )}
-            </CardContent>
-          </Card>
+          <LeadCompanyInfoCard lead={lead} />
+          <LeadContactInfoCard lead={lead} />
 
           {/* Notes */}
           {lead.notes && (
@@ -275,111 +396,7 @@ export default function LeadDetailPage() {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Szczegóły</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {lead.source && (
-                <>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Źródło</span>
-                    <span className="font-medium">{LeadSourceLabels[lead.source]}</span>
-                  </div>
-                  <Separator />
-                </>
-              )}
-              {lead.estimatedValue !== undefined && lead.estimatedValue !== null && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4" />
-                      Szacowana wartość
-                    </span>
-                    <span className="font-semibold text-green-600">
-                      {Number(lead.estimatedValue).toFixed(2)} PLN
-                    </span>
-                  </div>
-                  <Separator />
-                </>
-              )}
-              {lead.assignedTo && (
-                <>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Przypisany do</span>
-                    <span className="font-medium">
-                      {lead.assignedTo.firstName} {lead.assignedTo.lastName}
-                    </span>
-                  </div>
-                  <Separator />
-                </>
-              )}
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Utworzono
-                </span>
-                <span className="font-medium">
-                  {new Date(lead.createdAt).toLocaleDateString('pl-PL')}
-                </span>
-              </div>
-              {lead.createdBy && (
-                <div className="text-muted-foreground text-right text-sm">
-                  Przez: {lead.createdBy.firstName} {lead.createdBy.lastName}
-                </div>
-              )}
-              {lead.convertedAt && (
-                <>
-                  <Separator />
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Przekonwertowano</span>
-                    <span className="font-medium text-green-600">
-                      {new Date(lead.convertedAt).toLocaleDateString('pl-PL')}
-                    </span>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Szybkie akcje</CardTitle>
-              <CardDescription>Wykonaj typowe operacje na tym prospekcie</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {lead.email && (
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <a href={`mailto:${lead.email}`}>
-                    <Mail className="mr-2 h-4 w-4" />
-                    Wyślij email
-                  </a>
-                </Button>
-              )}
-              {lead.phone && (
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <a href={`tel:${lead.phone}`}>
-                    <Phone className="mr-2 h-4 w-4" />
-                    Zadzwoń
-                  </a>
-                </Button>
-              )}
-              {lead.status !== LeadStatus.CONVERTED && lead.status !== LeadStatus.LOST && (
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => setIsOfferDialogOpen(true)}
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  Utwórz ofertę
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        <LeadDetailsSidebar lead={lead} onCreateOfferClick={() => setIsOfferDialogOpen(true)} />
       </div>
 
       {/* Dialogs */}

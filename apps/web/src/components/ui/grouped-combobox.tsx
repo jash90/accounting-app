@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useId } from 'react';
 
 import { Check, ChevronsUpDown, Loader2, X } from 'lucide-react';
 
@@ -54,6 +55,7 @@ export function GroupedCombobox({
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
   const [highlightedIndex, setHighlightedIndex] = React.useState(-1);
+  const instanceId = useId();
 
   const selectedOption = options.find((option) => option.value === value);
 
@@ -160,6 +162,7 @@ export function GroupedCombobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-controls={`${instanceId}-listbox`}
           disabled={disabled}
           className={cn(
             'w-full justify-between font-normal',
@@ -214,9 +217,8 @@ export function GroupedCombobox({
             }}
             onKeyDown={handleKeyDown}
             className="h-9"
-            autoFocus
             aria-activedescendant={
-              highlightedIndex >= 0 ? `grouped-combobox-option-${highlightedIndex}` : undefined
+              highlightedIndex >= 0 ? `${instanceId}-option-${highlightedIndex}` : undefined
             }
           />
         </div>
@@ -229,7 +231,12 @@ export function GroupedCombobox({
           ) : groupedOptions.length === 0 ? (
             <div className="text-muted-foreground py-6 text-center text-sm">{emptyText}</div>
           ) : (
-            <div className="p-1" role="listbox" aria-label="Opcje wyboru">
+            <div
+              className="p-1"
+              role="listbox"
+              id={`${instanceId}-listbox`}
+              aria-label="Opcje wyboru"
+            >
               {groupedOptions.map((group) => (
                 <div key={group.key} role="group" aria-labelledby={`group-${group.key}`}>
                   <div
@@ -243,7 +250,7 @@ export function GroupedCombobox({
                     return (
                       <button
                         key={option.value}
-                        id={`grouped-combobox-option-${currentIndex}`}
+                        id={`${instanceId}-option-${currentIndex}`}
                         role="option"
                         aria-selected={value === option.value}
                         onClick={() => handleSelect(option.value)}

@@ -187,7 +187,11 @@ export default function EmailMessage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {email.attachments.map((attachment, index) => (
-                    <Badge key={index} variant="outline" className="hover:bg-muted cursor-pointer">
+                    <Badge
+                      key={attachment.filename || `attachment-${index}`}
+                      variant="outline"
+                      className="hover:bg-muted cursor-pointer"
+                    >
                       {attachment.filename || `Załącznik ${index + 1}`}
                       {attachment.size && (
                         <span className="text-muted-foreground ml-1">

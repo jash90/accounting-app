@@ -250,8 +250,8 @@ export function ExportImportDialog({
                   <div className="max-h-40 overflow-y-auto rounded border p-2">
                     <p className="mb-2 text-sm font-medium">Szczegóły błędów:</p>
                     <ul className="text-muted-foreground space-y-1 text-sm">
-                      {importResult.errors.map((error, index) => (
-                        <li key={index}>
+                      {importResult.errors.map((error) => (
+                        <li key={`${error.row}-${error.field}`}>
                           Wiersz {error.row}, pole &quot;{error.field}&quot;: {error.message}
                         </li>
                       ))}

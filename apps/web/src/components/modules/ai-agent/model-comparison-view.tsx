@@ -48,9 +48,9 @@ function ComparisonRow({
       <td className="text-muted-foreground border-border border-r px-4 py-3 text-sm font-medium whitespace-nowrap">
         {label}
       </td>
-      {values.map((value, i) => (
+      {values.map((value, columnIndex) => (
         <td
-          key={i}
+          key={`${label}-col-${columnIndex}`}
           className="border-border border-r px-4 py-3 text-center text-sm last:border-r-0"
         >
           {value}

@@ -1,8 +1,10 @@
+import { createElement } from 'react';
+
 import { Image } from 'lucide-react';
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils/cn';
-import { getIconByKebabName, type LucideIconComponent } from '@/lib/utils/lucide-icon-registry';
+import { getIconByKebabName } from '@/lib/utils/lucide-icon-registry';
 import { type ClientIcon } from '@/types/entities';
 import { IconType } from '@/types/enums';
 
@@ -32,68 +34,60 @@ const emojiSizeClasses = {
   lg: 'text-xl',
 };
 
-export function IconBadge({ icon, size = 'md', showTooltip = true, className }: IconBadgeProps) {
-  // Render icon based on type - getIconByKebabName returns cached components from registry
-  const renderIcon = () => {
-    switch (icon.iconType) {
-      case IconType.LUCIDE: {
-        // Get Lucide icon dynamically from registry
-        const iconName = icon.iconValue || 'Circle';
-        // Use the registry to get the icon component (handles kebab-case conversion)
-        const LucideIcon: LucideIconComponent = getIconByKebabName(iconName);
-
-        // Use inline style for color - Tailwind can't detect dynamic classes like text-[${color}]
-        return (
-          <LucideIcon
-            size={iconSizeMap[size]}
-            className="shrink-0"
-            style={icon.color ? { color: icon.color } : undefined}
-          />
-        );
-      }
-
-      case IconType.EMOJI: {
-        return (
-          <span
-            className={cn('flex shrink-0 items-center justify-center', emojiSizeClasses[size])}
-            role="img"
-            aria-label={icon.name}
-          >
-            {icon.iconValue || '⭐'}
-          </span>
-        );
-      }
-
-      case IconType.CUSTOM: {
-        if (!icon.filePath) {
-          // Fallback if no file path
-          return (
-            <div
-              className={cn(
-                'bg-muted flex items-center justify-center rounded-full',
-                sizeClasses[size]
-              )}
-              style={icon.color ? { backgroundColor: icon.color } : undefined}
-            >
-              <Image size={iconSizeMap[size] * 0.6} className="text-muted-foreground" />
-            </div>
-          );
-        }
-
-        return (
-          <img
-            src={`/api/modules/clients/icons/${icon.id}/file`}
-            alt={icon.name}
-            className={cn('rounded object-contain', sizeClasses[size])}
-          />
-        );
-      }
-
-      default:
-        return null;
+function IconRenderer({ icon, size }: { icon: ClientIcon; size: 'sm' | 'md' | 'lg' }) {
+  switch (icon.iconType) {
+    case IconType.LUCIDE: {
+      const iconName = icon.iconValue || 'Circle';
+      const LucideIcon = getIconByKebabName(iconName);
+      return createElement(LucideIcon, {
+        size: iconSizeMap[size],
+        className: 'shrink-0',
+        style: icon.color ? { color: icon.color } : undefined,
+      });
     }
-  };
 
+    case IconType.EMOJI: {
+      return (
+        <span
+          className={cn('flex shrink-0 items-center justify-center', emojiSizeClasses[size])}
+          role="img"
+          aria-label={icon.name}
+        >
+          {icon.iconValue || '⭐'}
+        </span>
+      );
+    }
+
+    case IconType.CUSTOM: {
+      if (!icon.filePath) {
+        return (
+          <div
+            className={cn(
+              'bg-muted flex items-center justify-center rounded-full',
+              sizeClasses[size]
+            )}
+            style={icon.color ? { backgroundColor: icon.color } : undefined}
+          >
+            <Image size={iconSizeMap[size] * 0.6} className="text-muted-foreground" />
+          </div>
+        );
+      }
+
+      return (
+        <img
+          src={`/api/modules/clients/icons/${icon.id}/file`}
+          alt={icon.name}
+          className={cn('rounded object-contain', sizeClasses[size])}
+        />
+      );
+    }
+
+    default:
+      return null;
+  }
+}
+
+export function IconBadge({ icon, size = 'md', showTooltip = true, className }: IconBadgeProps) {
   const badge = (
     <div
       className={cn(
@@ -102,7 +96,7 @@ export function IconBadge({ icon, size = 'md', showTooltip = true, className }: 
         className
       )}
     >
-      {renderIcon()}
+      <IconRenderer icon={icon} size={size} />
     </div>
   );
 

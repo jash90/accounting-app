@@ -54,6 +54,7 @@ export const ClientFilters = memo(function ClientFilters({
   filters,
   onFiltersChange,
 }: ClientFiltersProps) {
+  'use no memo';
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [customFieldFilters, setCustomFieldFilters] = useState<CustomFieldFilter[]>(
