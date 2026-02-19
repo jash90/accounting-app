@@ -37,7 +37,7 @@ export const createStatsInvalidationPredicate = (month: number, year: number) =>
  */
 export interface SettlementOptimisticContext {
   previousDetail: SettlementResponseDto | undefined;
-  listQueries: [unknown[], PaginatedResponse<SettlementResponseDto> | undefined][];
+  listQueries: [readonly unknown[], PaginatedResponse<SettlementResponseDto> | undefined][];
 }
 
 /**

@@ -65,7 +65,7 @@ export interface OfferOptimisticContext {
   /** Previous detail query data (undefined if query didn't exist) */
   previousDetail: OfferResponseDto | undefined;
   /** Array of [queryKey, data] tuples for all list queries */
-  listQueries: [unknown[], PaginatedResponse<OfferResponseDto> | undefined][];
+  listQueries: [readonly unknown[], PaginatedResponse<OfferResponseDto> | undefined][];
   /** Timestamp when this optimistic update was applied */
   timestamp: number;
   /** Whether this context is valid for rollback (prevents stale rollbacks) */
