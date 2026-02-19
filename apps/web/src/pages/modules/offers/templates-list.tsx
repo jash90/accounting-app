@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -68,7 +68,48 @@ import {
 } from '@/lib/validation/schemas';
 import { type OfferTemplateFiltersDto, type OfferTemplateResponseDto } from '@/types/dtos';
 
+// -- Reducer for template dialog states --
+interface TemplateDialogState {
+  isCreateDialogOpen: boolean;
+  editingTemplate: OfferTemplateResponseDto | undefined;
+  deletingTemplateId: string | null;
+  uploadingTemplateId: string | null;
+}
+
+type TemplateDialogAction =
+  | { type: 'OPEN_CREATE' }
+  | { type: 'CLOSE_CREATE' }
+  | { type: 'SET_EDITING'; payload: OfferTemplateResponseDto | undefined }
+  | { type: 'SET_DELETING'; payload: string | null }
+  | { type: 'SET_UPLOADING'; payload: string | null };
+
+const templateDialogInitialState: TemplateDialogState = {
+  isCreateDialogOpen: false,
+  editingTemplate: undefined,
+  deletingTemplateId: null,
+  uploadingTemplateId: null,
+};
+
+function templateDialogReducer(
+  state: TemplateDialogState,
+  action: TemplateDialogAction
+): TemplateDialogState {
+  switch (action.type) {
+    case 'OPEN_CREATE':
+      return { ...state, isCreateDialogOpen: true };
+    case 'CLOSE_CREATE':
+      return { ...state, isCreateDialogOpen: false };
+    case 'SET_EDITING':
+      return { ...state, editingTemplate: action.payload };
+    case 'SET_DELETING':
+      return { ...state, deletingTemplateId: action.payload };
+    case 'SET_UPLOADING':
+      return { ...state, uploadingTemplateId: action.payload };
+  }
+}
+
 export default function TemplatesListPage() {
+  'use no memo';
   const navigate = useNavigate();
   const basePath = useModuleBasePath('offers');
 
@@ -76,13 +117,15 @@ export default function TemplatesListPage() {
 
   const [filters, setFilters] = useState<OfferTemplateFiltersDto>({});
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<OfferTemplateResponseDto | undefined>();
-  const [deletingTemplateId, setDeletingTemplateId] = useState<string | null>(null);
+  const [dialogState, dispatchDialog] = useReducer(
+    templateDialogReducer,
+    templateDialogInitialState
+  );
+  const { isCreateDialogOpen, editingTemplate, deletingTemplateId, uploadingTemplateId } =
+    dialogState;
 
   // Hidden file input ref for accessible file uploads (H4)
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingTemplateId, setUploadingTemplateId] = useState<string | null>(null);
 
   // Debounce search input to avoid firing API calls on every keystroke
   useEffect(() => {
@@ -101,10 +144,13 @@ export default function TemplatesListPage() {
   const uploadFileMutation = useUploadOfferTemplateFile();
   const downloadFileMutation = useDownloadOfferTemplateFile();
 
-  const handleFileUpload = useCallback((template: OfferTemplateResponseDto) => {
-    setUploadingTemplateId(template.id);
-    fileInputRef.current?.click();
-  }, []);
+  const handleFileUpload = useCallback(
+    (template: OfferTemplateResponseDto) => {
+      dispatchDialog({ type: 'SET_UPLOADING', payload: template.id });
+      fileInputRef.current?.click();
+    },
+    [dispatchDialog]
+  );
 
   const handleFileInputChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,7 +161,7 @@ export default function TemplatesListPage() {
       }
       // Reset input so the same file can be selected again
       e.target.value = '';
-      setUploadingTemplateId(null);
+      dispatchDialog({ type: 'SET_UPLOADING', payload: null });
     },
     [uploadingTemplateId, uploadFileMutation, refetch]
   );
@@ -207,7 +253,9 @@ export default function TemplatesListPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setEditingTemplate(template)}>
+                <DropdownMenuItem
+                  onClick={() => dispatchDialog({ type: 'SET_EDITING', payload: template })}
+                >
                   <Pencil className="mr-2 h-4 w-4" />
                   Edytuj
                 </DropdownMenuItem>
@@ -230,7 +278,7 @@ export default function TemplatesListPage() {
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={() => setDeletingTemplateId(template.id)}
+                  onClick={() => dispatchDialog({ type: 'SET_DELETING', payload: template.id })}
                   className="text-destructive"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
@@ -258,7 +306,7 @@ export default function TemplatesListPage() {
     data: CreateOfferTemplateFormData | UpdateOfferTemplateFormData
   ) => {
     await createMutation.mutateAsync(data as CreateOfferTemplateFormData);
-    setIsCreateDialogOpen(false);
+    dispatchDialog({ type: 'CLOSE_CREATE' });
   };
 
   const handleUpdateTemplate = async (
@@ -269,13 +317,13 @@ export default function TemplatesListPage() {
       id: editingTemplate.id,
       data: data as UpdateOfferTemplateFormData,
     });
-    setEditingTemplate(undefined);
+    dispatchDialog({ type: 'SET_EDITING', payload: undefined });
   };
 
   const handleDeleteTemplate = async () => {
     if (!deletingTemplateId) return;
     await deleteMutation.mutateAsync(deletingTemplateId);
-    setDeletingTemplateId(null);
+    dispatchDialog({ type: 'SET_DELETING', payload: null });
   };
 
   return (
@@ -295,7 +343,7 @@ export default function TemplatesListPage() {
             <RefreshCw className="h-4 w-4" />
           </Button>
           <Button
-            onClick={() => setIsCreateDialogOpen(true)}
+            onClick={() => dispatchDialog({ type: 'OPEN_CREATE' })}
             className="bg-apptax-blue hover:bg-apptax-blue/90"
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -382,18 +430,23 @@ export default function TemplatesListPage() {
       {/* Dialogs */}
       <OfferTemplateFormDialog
         open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
+        onOpenChange={(open) => dispatchDialog({ type: open ? 'OPEN_CREATE' : 'CLOSE_CREATE' })}
         onSubmit={handleCreateTemplate}
       />
 
       <OfferTemplateFormDialog
         open={!!editingTemplate}
-        onOpenChange={(open) => !open && setEditingTemplate(undefined)}
+        onOpenChange={(open) =>
+          !open && dispatchDialog({ type: 'SET_EDITING', payload: undefined })
+        }
         template={editingTemplate}
         onSubmit={handleUpdateTemplate}
       />
 
-      <AlertDialog open={!!deletingTemplateId} onOpenChange={() => setDeletingTemplateId(null)}>
+      <AlertDialog
+        open={!!deletingTemplateId}
+        onOpenChange={() => dispatchDialog({ type: 'SET_DELETING', payload: null })}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Czy na pewno chcesz usunąć ten szablon?</AlertDialogTitle>

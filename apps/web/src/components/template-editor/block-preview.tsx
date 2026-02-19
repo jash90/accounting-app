@@ -23,13 +23,16 @@ function renderTextSegment(text: string, key: number) {
   const parts = text.split(PLACEHOLDER_RE);
   return (
     <span key={key}>
-      {parts.map((part, i) =>
+      {parts.map((part, partIndex) =>
         PLACEHOLDER_RE.test(part) ? (
-          <span key={i} className="text-blue-600 underline decoration-blue-400 decoration-dotted">
+          <span
+            key={`${partIndex}-${part}`}
+            className="text-blue-600 underline decoration-blue-400 decoration-dotted"
+          >
             {part}
           </span>
         ) : (
-          <span key={i}>{part}</span>
+          <span key={`${partIndex}-text`}>{part}</span>
         )
       )}
     </span>
@@ -38,10 +41,11 @@ function renderTextSegment(text: string, key: number) {
 
 function renderTextRuns(runs: TextRun[]) {
   return runs.map((run, i) => {
+    const runKey = `run-${i}-${run.text.slice(0, 20)}`;
     let el = renderTextSegment(run.text, i);
-    if (run.bold) el = <strong key={i}>{el}</strong>;
-    if (run.italic) el = <em key={i}>{el}</em>;
-    if (run.underline) el = <u key={i}>{el}</u>;
+    if (run.bold) el = <strong key={`bold-${runKey}`}>{el}</strong>;
+    if (run.italic) el = <em key={`italic-${runKey}`}>{el}</em>;
+    if (run.underline) el = <u key={`underline-${runKey}`}>{el}</u>;
     return el;
   });
 }
@@ -124,7 +128,9 @@ function ListPreview({ block }: { block: ListBlock }) {
   return (
     <Tag className={listCls}>
       {block.items.map((item, i) => (
-        <li key={i}>{renderTextRuns(item.content)}</li>
+        <li key={`li-${i}-${item.content[0]?.text.slice(0, 20) ?? ''}`}>
+          {renderTextRuns(item.content)}
+        </li>
       ))}
     </Tag>
   );
@@ -171,7 +177,7 @@ function ClientDataPreview({ block }: { block: ClientDataBlock }) {
       <table className="w-full border-collapse text-sm">
         <tbody>
           {block.fields.map((field, i) => (
-            <tr key={i} className="border-b border-gray-200">
+            <tr key={field.label || `field-${i}`} className="border-b border-gray-200">
               <td className="w-1/3 py-1.5 pr-4 font-medium text-gray-700">{field.label}</td>
               <td className="py-1.5">
                 <span className="text-blue-600 underline decoration-blue-400 decoration-dotted">

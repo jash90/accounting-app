@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangle, ArrowLeft, Loader2, Plus, Users } from 'lucide-react';
 
-import { CustomFieldRenderer } from '@/components/clients/custom-field-renderer';
 import { DuplicateWarningDialog } from '@/components/clients/duplicate-warning-dialog';
 import { ErrorBoundary } from '@/components/common/error-boundary';
 import { PageHeader } from '@/components/common/page-header';
@@ -64,6 +63,7 @@ export default function ClientCreatePage() {
 }
 
 function ClientCreateForm() {
+  'use no memo';
   const navigate = useNavigate();
   const basePath = useModuleBasePath('clients');
   const { toast } = useToast();
@@ -238,18 +238,6 @@ function ClientCreateForm() {
     }
   };
 
-  const renderCustomField = (definition: (typeof activeFieldDefinitions)[0]) => {
-    const value = customFieldValues[definition.id] || '';
-
-    return (
-      <CustomFieldRenderer
-        definition={definition}
-        value={value}
-        onChange={(newValue) => handleCustomFieldChange(definition.id, newValue)}
-      />
-    );
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -277,7 +265,7 @@ function ClientCreateForm() {
                 definitions={activeFieldDefinitions}
                 values={customFieldValues}
                 isSubmitted={form.formState.isSubmitted}
-                renderField={renderCustomField}
+                onFieldChange={handleCustomFieldChange}
               />
             </div>
 

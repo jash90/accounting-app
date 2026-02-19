@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useReducer, useState } from 'react';
 
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -75,7 +75,45 @@ import {
 } from '@/types/dtos';
 import { LeadSource, LeadSourceLabels, LeadStatus, LeadStatusLabels } from '@/types/enums';
 
+// -- Reducer for lead dialog states --
+interface LeadDialogState {
+  isCreateDialogOpen: boolean;
+  editingLead: LeadResponseDto | undefined;
+  deletingLeadId: string | null;
+  convertingLeadId: string | null;
+}
+
+type LeadDialogAction =
+  | { type: 'OPEN_CREATE' }
+  | { type: 'CLOSE_CREATE' }
+  | { type: 'SET_EDITING'; payload: LeadResponseDto | undefined }
+  | { type: 'SET_DELETING'; payload: string | null }
+  | { type: 'SET_CONVERTING'; payload: string | null };
+
+const leadDialogInitialState: LeadDialogState = {
+  isCreateDialogOpen: false,
+  editingLead: undefined,
+  deletingLeadId: null,
+  convertingLeadId: null,
+};
+
+function leadDialogReducer(state: LeadDialogState, action: LeadDialogAction): LeadDialogState {
+  switch (action.type) {
+    case 'OPEN_CREATE':
+      return { ...state, isCreateDialogOpen: true };
+    case 'CLOSE_CREATE':
+      return { ...state, isCreateDialogOpen: false };
+    case 'SET_EDITING':
+      return { ...state, editingLead: action.payload };
+    case 'SET_DELETING':
+      return { ...state, deletingLeadId: action.payload };
+    case 'SET_CONVERTING':
+      return { ...state, convertingLeadId: action.payload };
+  }
+}
+
 export default function LeadsListPage() {
+  'use no memo';
   const navigate = useNavigate();
   const basePath = useModuleBasePath('offers');
 
@@ -83,10 +121,8 @@ export default function LeadsListPage() {
 
   const [filters, setFilters] = useState<LeadFiltersDto>({});
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingLead, setEditingLead] = useState<LeadResponseDto | undefined>();
-  const [deletingLeadId, setDeletingLeadId] = useState<string | null>(null);
-  const [convertingLeadId, setConvertingLeadId] = useState<string | null>(null);
+  const [dialogState, dispatchDialog] = useReducer(leadDialogReducer, leadDialogInitialState);
+  const { isCreateDialogOpen, editingLead, deletingLeadId, convertingLeadId } = dialogState;
 
   // Debounce search input to avoid firing API calls on every keystroke
   useEffect(() => {
@@ -173,20 +209,26 @@ export default function LeadsListPage() {
                 <Eye className="mr-2 h-4 w-4" />
                 Szczegóły
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setEditingLead(row.original)}>
+              <DropdownMenuItem
+                onClick={() => dispatchDialog({ type: 'SET_EDITING', payload: row.original })}
+              >
                 <Pencil className="mr-2 h-4 w-4" />
                 Edytuj
               </DropdownMenuItem>
               {row.original.status !== LeadStatus.CONVERTED &&
                 row.original.status !== LeadStatus.LOST && (
-                  <DropdownMenuItem onClick={() => setConvertingLeadId(row.original.id)}>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      dispatchDialog({ type: 'SET_CONVERTING', payload: row.original.id })
+                    }
+                  >
                     <UserCheck className="mr-2 h-4 w-4" />
                     Przekonwertuj na klienta
                   </DropdownMenuItem>
                 )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={() => setDeletingLeadId(row.original.id)}
+                onClick={() => dispatchDialog({ type: 'SET_DELETING', payload: row.original.id })}
                 className="text-destructive"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
@@ -211,7 +253,7 @@ export default function LeadsListPage() {
 
   const handleCreateLead = async (data: CreateLeadFormData | UpdateLeadFormData) => {
     await createMutation.mutateAsync(data as CreateLeadDto);
-    setIsCreateDialogOpen(false);
+    dispatchDialog({ type: 'CLOSE_CREATE' });
   };
 
   const handleUpdateLead = async (data: CreateLeadFormData | UpdateLeadFormData) => {
@@ -220,19 +262,19 @@ export default function LeadsListPage() {
       id: editingLead.id,
       data: data as UpdateLeadDto,
     });
-    setEditingLead(undefined);
+    dispatchDialog({ type: 'SET_EDITING', payload: undefined });
   };
 
   const handleDeleteLead = async () => {
     if (!deletingLeadId) return;
     await deleteMutation.mutateAsync(deletingLeadId);
-    setDeletingLeadId(null);
+    dispatchDialog({ type: 'SET_DELETING', payload: null });
   };
 
   const handleConvertLead = async () => {
     if (!convertingLeadId) return;
     const result = await convertMutation.mutateAsync({ id: convertingLeadId });
-    setConvertingLeadId(null);
+    dispatchDialog({ type: 'SET_CONVERTING', payload: null });
     if (result.clientId) {
       // Optionally navigate to the new client
     }
@@ -255,7 +297,7 @@ export default function LeadsListPage() {
             <RefreshCw className="h-4 w-4" />
           </Button>
           <Button
-            onClick={() => setIsCreateDialogOpen(true)}
+            onClick={() => dispatchDialog({ type: 'OPEN_CREATE' })}
             className="bg-apptax-blue hover:bg-apptax-blue/90"
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -371,18 +413,23 @@ export default function LeadsListPage() {
       {/* Dialogs */}
       <LeadFormDialog
         open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
+        onOpenChange={(open) => dispatchDialog({ type: open ? 'OPEN_CREATE' : 'CLOSE_CREATE' })}
         onSubmit={handleCreateLead}
       />
 
       <LeadFormDialog
         open={!!editingLead}
-        onOpenChange={(open) => !open && setEditingLead(undefined)}
+        onOpenChange={(open) =>
+          !open && dispatchDialog({ type: 'SET_EDITING', payload: undefined })
+        }
         lead={editingLead}
         onSubmit={handleUpdateLead}
       />
 
-      <AlertDialog open={!!deletingLeadId} onOpenChange={() => setDeletingLeadId(null)}>
+      <AlertDialog
+        open={!!deletingLeadId}
+        onOpenChange={() => dispatchDialog({ type: 'SET_DELETING', payload: null })}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Czy na pewno chcesz usunąć tego prospekta?</AlertDialogTitle>
@@ -402,7 +449,10 @@ export default function LeadsListPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={!!convertingLeadId} onOpenChange={() => setConvertingLeadId(null)}>
+      <AlertDialog
+        open={!!convertingLeadId}
+        onOpenChange={() => dispatchDialog({ type: 'SET_CONVERTING', payload: null })}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Przekonwertuj prospekt na klienta</AlertDialogTitle>

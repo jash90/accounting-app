@@ -66,6 +66,7 @@ function getInitialState(): boolean {
 }
 
 export function NavigationProvider({ children }: { children: ReactNode }) {
+  'use no memo';
   const [isOpen, setIsOpen] = useState<boolean>(getInitialState);
 
   // Persist state to localStorage with versioning

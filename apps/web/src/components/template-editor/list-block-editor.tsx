@@ -50,7 +50,7 @@ export function ListBlockEditor({ block, onChange }: Props) {
       </Select>
       <div className="space-y-1">
         {block.items.map((item, index) => (
-          <div key={index} className="flex items-center gap-2">
+          <div key={`list-item-${index}`} className="flex items-center gap-2">
             <span className="text-muted-foreground w-6 text-sm text-right">
               {block.style === 'numbered' ? `${index + 1}.` : '\u2022'}
             </span>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -81,7 +81,45 @@ import { type CreateOfferFormData, type UpdateOfferFormData } from '@/lib/valida
 import { type OfferFiltersDto, type OfferResponseDto, type SendOfferDto } from '@/types/dtos';
 import { OfferStatus, OfferStatusLabels } from '@/types/enums';
 
+// -- Reducer for offer dialog states --
+interface OfferDialogState {
+  isCreateDialogOpen: boolean;
+  editingOffer: OfferResponseDto | undefined;
+  deletingOfferId: string | null;
+  sendingOffer: OfferResponseDto | null;
+}
+
+type OfferDialogAction =
+  | { type: 'OPEN_CREATE' }
+  | { type: 'CLOSE_CREATE' }
+  | { type: 'SET_EDITING'; payload: OfferResponseDto | undefined }
+  | { type: 'SET_DELETING'; payload: string | null }
+  | { type: 'SET_SENDING'; payload: OfferResponseDto | null };
+
+const offerDialogInitialState: OfferDialogState = {
+  isCreateDialogOpen: false,
+  editingOffer: undefined,
+  deletingOfferId: null,
+  sendingOffer: null,
+};
+
+function offerDialogReducer(state: OfferDialogState, action: OfferDialogAction): OfferDialogState {
+  switch (action.type) {
+    case 'OPEN_CREATE':
+      return { ...state, isCreateDialogOpen: true };
+    case 'CLOSE_CREATE':
+      return { ...state, isCreateDialogOpen: false };
+    case 'SET_EDITING':
+      return { ...state, editingOffer: action.payload };
+    case 'SET_DELETING':
+      return { ...state, deletingOfferId: action.payload };
+    case 'SET_SENDING':
+      return { ...state, sendingOffer: action.payload };
+  }
+}
+
 export default function OffersListPage() {
+  'use no memo';
   const navigate = useNavigate();
   const basePath = useModuleBasePath('offers');
 
@@ -92,10 +130,8 @@ export default function OffersListPage() {
     limit: PAGINATION.DEFAULT_PAGE_SIZE,
   });
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingOffer, setEditingOffer] = useState<OfferResponseDto | undefined>();
-  const [deletingOfferId, setDeletingOfferId] = useState<string | null>(null);
-  const [sendingOffer, setSendingOffer] = useState<OfferResponseDto | null>(null);
+  const [dialogState, dispatchDialog] = useReducer(offerDialogReducer, offerDialogInitialState);
+  const { isCreateDialogOpen, editingOffer, deletingOfferId, sendingOffer } = dialogState;
 
   // Debounce search input to avoid firing API calls on every keystroke
   useEffect(() => {
@@ -145,15 +181,15 @@ export default function OffersListPage() {
   // Stable action handlers for column definitions
   // These extract only the .mutate function reference which is stable
   const handleDeleteClick = useCallback((offerId: string) => {
-    setDeletingOfferId(offerId);
+    dispatchDialog({ type: 'SET_DELETING', payload: offerId });
   }, []);
 
   const handleEditClick = useCallback((offer: OfferResponseDto) => {
-    setEditingOffer(offer);
+    dispatchDialog({ type: 'SET_EDITING', payload: offer });
   }, []);
 
   const handleSendClick = useCallback((offer: OfferResponseDto) => {
-    setSendingOffer(offer);
+    dispatchDialog({ type: 'SET_SENDING', payload: offer });
   }, []);
 
   const handleNavigateToDetails = useCallback(
@@ -304,7 +340,7 @@ export default function OffersListPage() {
   const handleCreateOffer = async (data: CreateOfferFormData | UpdateOfferFormData) => {
     const dto = formDataToCreateDto(data as CreateOfferFormData);
     await createMutation.mutateAsync(dto);
-    setIsCreateDialogOpen(false);
+    dispatchDialog({ type: 'CLOSE_CREATE' });
   };
 
   const handleUpdateOffer = async (data: CreateOfferFormData | UpdateOfferFormData) => {
@@ -314,19 +350,19 @@ export default function OffersListPage() {
       id: editingOffer.id,
       data: dto,
     });
-    setEditingOffer(undefined);
+    dispatchDialog({ type: 'SET_EDITING', payload: undefined });
   };
 
   const handleDeleteOffer = async () => {
     if (!deletingOfferId) return;
     await deleteMutation.mutateAsync(deletingOfferId);
-    setDeletingOfferId(null);
+    dispatchDialog({ type: 'SET_DELETING', payload: null });
   };
 
   const handleSendOffer = async (data: SendOfferDto) => {
     if (!sendingOffer) return;
     await sendMutation.mutateAsync({ id: sendingOffer.id, data });
-    setSendingOffer(null);
+    dispatchDialog({ type: 'SET_SENDING', payload: null });
   };
 
   return (
@@ -346,7 +382,7 @@ export default function OffersListPage() {
             <RefreshCw className="h-4 w-4" />
           </Button>
           <Button
-            onClick={() => setIsCreateDialogOpen(true)}
+            onClick={() => dispatchDialog({ type: 'OPEN_CREATE' })}
             className="bg-apptax-blue hover:bg-apptax-blue/90"
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -478,13 +514,15 @@ export default function OffersListPage() {
       {/* Dialogs */}
       <OfferFormDialog
         open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
+        onOpenChange={(open) => dispatchDialog({ type: open ? 'OPEN_CREATE' : 'CLOSE_CREATE' })}
         onSubmit={handleCreateOffer}
       />
 
       <OfferFormDialog
         open={!!editingOffer}
-        onOpenChange={(open) => !open && setEditingOffer(undefined)}
+        onOpenChange={(open) =>
+          !open && dispatchDialog({ type: 'SET_EDITING', payload: undefined })
+        }
         offer={editingOffer}
         onSubmit={handleUpdateOffer}
       />
@@ -492,14 +530,17 @@ export default function OffersListPage() {
       {sendingOffer && (
         <SendOfferDialog
           open={!!sendingOffer}
-          onOpenChange={(open) => !open && setSendingOffer(null)}
+          onOpenChange={(open) => !open && dispatchDialog({ type: 'SET_SENDING', payload: null })}
           offer={sendingOffer}
           onSubmit={handleSendOffer}
           isLoading={sendMutation.isPending}
         />
       )}
 
-      <AlertDialog open={!!deletingOfferId} onOpenChange={() => setDeletingOfferId(null)}>
+      <AlertDialog
+        open={!!deletingOfferId}
+        onOpenChange={() => dispatchDialog({ type: 'SET_DELETING', payload: null })}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Czy na pewno chcesz usunąć tę ofertę?</AlertDialogTitle>

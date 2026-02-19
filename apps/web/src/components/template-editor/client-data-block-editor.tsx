@@ -45,7 +45,7 @@ export function ClientDataBlockEditor({ block, onChange }: Props) {
 
       <div className="space-y-2">
         {block.fields.map((field, index) => (
-          <div key={index} className="flex items-center gap-2">
+          <div key={`field-${index}`} className="flex items-center gap-2">
             <Input
               value={field.label}
               onChange={(e) => updateField(index, 'label', e.target.value)}

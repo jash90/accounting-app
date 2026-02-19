@@ -61,14 +61,15 @@ export function KanbanBoard({
   // Track if we're currently dragging - when not dragging, use props directly
   const [isDragging, setIsDragging] = useState(false);
   // Local state only used during drag operations for optimistic updates
-  const [dragData, setDragData] = useState<KanbanBoardDto>(data);
+  // Initialized to null - only populated when a drag starts via handleDragStart
+  const [dragData, setDragData] = useState<KanbanBoardDto | null>(null);
 
   // Store drag state in ref to avoid re-renders during drag (optimized performance)
   // Note: This ref is only accessed/modified in event handlers, not during render
   const dragStateRef = useRef<KanbanBoardDto>(data);
 
   // Use prop data when not dragging, local drag data when dragging
-  const localData = isDragging ? dragData : data;
+  const localData = isDragging && dragData ? dragData : data;
 
   // Build task ID → column Map for O(1) lookups during drag operations
   const taskColumnMap = useMemo(() => {
@@ -170,6 +171,7 @@ export function KanbanBoard({
     const { active, over } = event;
     setActiveTask(null);
     setIsDragging(false);
+    setDragData(null);
 
     if (!over) {
       // Drag cancelled - reset happens automatically since we're no longer using dragData

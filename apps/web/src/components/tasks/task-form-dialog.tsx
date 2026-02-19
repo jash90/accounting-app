@@ -69,6 +69,7 @@ export function TaskFormDialog({
   onSubmit,
   isLoading = false,
 }: TaskFormDialogProps) {
+  'use no memo';
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const isEditing = !!task;

@@ -40,6 +40,7 @@ function formatDateSync(date: Date): string {
 }
 
 export default function SettlementCommentsPage() {
+  'use no memo';
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const basePath = useModuleBasePath('settlements');

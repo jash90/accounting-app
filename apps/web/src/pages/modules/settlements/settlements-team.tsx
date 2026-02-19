@@ -72,14 +72,14 @@ function EmployeeStatsErrorFallback() {
 }
 
 export default function SettlementsTeamPage() {
+  'use no memo';
   const navigate = useNavigate();
   const location = useLocation();
   const basePath = useModuleBasePath('settlements');
 
   // Month/year state
-  const currentDate = new Date();
-  const [month, setMonth] = useState(currentDate.getMonth() + 1);
-  const [year, setYear] = useState(currentDate.getFullYear());
+  const [month, setMonth] = useState(() => new Date().getMonth() + 1);
+  const [year, setYear] = useState(() => new Date().getFullYear());
 
   // Bulk assignment state
   const [selectedSettlements, setSelectedSettlements] = useState<string[]>([]);
