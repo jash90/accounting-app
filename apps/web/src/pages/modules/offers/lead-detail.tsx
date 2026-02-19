@@ -47,6 +47,7 @@ import {
   useLead,
   useUpdateLead,
 } from '@/lib/hooks/use-offers';
+import { type CreateLeadFormData, type UpdateLeadFormData } from '@/lib/validation/schemas';
 import { type CreateOfferDto, type UpdateLeadDto } from '@/types/dtos';
 import { LeadSourceLabels, LeadStatus, LeadStatusLabels } from '@/types/enums';
 
@@ -86,8 +87,8 @@ export default function LeadDetailPage() {
     await updateMutation.mutateAsync({ id: lead.id, data: { status: newStatus } });
   };
 
-  const handleUpdateLead = async (data: UpdateLeadDto) => {
-    await updateMutation.mutateAsync({ id: lead.id, data });
+  const handleUpdateLead = async (data: CreateLeadFormData | UpdateLeadFormData) => {
+    await updateMutation.mutateAsync({ id: lead.id, data: data as UpdateLeadDto });
     setIsEditDialogOpen(false);
   };
 

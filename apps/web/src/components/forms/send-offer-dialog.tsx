@@ -69,7 +69,7 @@ Z poważaniem`;
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: 'cc',
+    name: 'cc' as never,
   });
 
   useEffect(() => {
