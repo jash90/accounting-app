@@ -1,13 +1,8 @@
-import { useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
+
+import { ChevronDown, Edit, RotateCcw, Trash2, X } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -17,24 +12,31 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Label } from '@/components/ui/label';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Trash2, RotateCcw, Edit, ChevronDown, X } from 'lucide-react';
-import { ClientResponseDto } from '@/types/dtos';
+import { type ClientResponseDto } from '@/types/dtos';
 import {
-  EmploymentType,
   EmploymentTypeLabels,
-  VatStatus,
-  VatStatusLabels,
-  TaxScheme,
   TaxSchemeLabels,
-  ZusStatus,
+  VatStatusLabels,
   ZusStatusLabels,
+  type EmploymentType,
+  type TaxScheme,
+  type VatStatus,
+  type ZusStatus,
 } from '@/types/enums';
 
 interface BulkActionsToolbarProps {
@@ -56,7 +58,7 @@ export interface BulkEditChanges {
   zusStatus?: ZusStatus;
 }
 
-export function BulkActionsToolbar({
+export const BulkActionsToolbar = memo(function BulkActionsToolbar({
   selectedClients,
   onClearSelection,
   onBulkDelete,
@@ -67,38 +69,57 @@ export function BulkActionsToolbar({
   isEditing = false,
   canDelete = false,
 }: BulkActionsToolbarProps) {
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  // Consolidate dialog state into single union type - reduces re-renders for mutually exclusive state
+  type DialogType = 'delete' | 'restore' | 'edit' | null;
+  const [openDialog, setOpenDialog] = useState<DialogType>(null);
   const [editChanges, setEditChanges] = useState<BulkEditChanges>({});
 
-  const activeClients = selectedClients.filter((c) => c.isActive);
-  const inactiveClients = selectedClients.filter((c) => !c.isActive);
+  // Single loop to partition clients by active status - avoids iterating twice
+  const { activeClients, inactiveClients } = useMemo(() => {
+    const active: ClientResponseDto[] = [];
+    const inactive: ClientResponseDto[] = [];
+    for (const client of selectedClients) {
+      if (client.isActive) {
+        active.push(client);
+      } else {
+        inactive.push(client);
+      }
+    }
+    return { activeClients: active, inactiveClients: inactive };
+  }, [selectedClients]);
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = useCallback(() => {
     onBulkDelete(activeClients.map((c) => c.id));
-    setDeleteDialogOpen(false);
-  };
+    setOpenDialog(null);
+  }, [onBulkDelete, activeClients]);
 
-  const handleBulkRestore = () => {
+  const handleBulkRestore = useCallback(() => {
     onBulkRestore(inactiveClients.map((c) => c.id));
-    setRestoreDialogOpen(false);
-  };
+    setOpenDialog(null);
+  }, [onBulkRestore, inactiveClients]);
 
-  const handleBulkEdit = () => {
+  const handleBulkEdit = useCallback(() => {
     if (Object.keys(editChanges).length === 0) return;
-    onBulkEdit(activeClients.map((c) => c.id), editChanges);
-    setEditDialogOpen(false);
+    onBulkEdit(
+      activeClients.map((c) => c.id),
+      editChanges
+    );
+    setOpenDialog(null);
     setEditChanges({});
-  };
+  }, [onBulkEdit, activeClients, editChanges]);
 
   if (selectedClients.length === 0) return null;
 
   return (
     <>
-      <div className="flex items-center gap-2 p-3 bg-apptax-soft-teal/30 rounded-lg border border-apptax-soft-teal">
-        <span className="text-sm font-medium text-apptax-navy">
-          Zaznaczono {selectedClients.length} {selectedClients.length === 1 ? 'klienta' : selectedClients.length < 5 ? 'klientów' : 'klientów'}
+      <div className="bg-accent/10 border-accent flex items-center gap-2 rounded-lg border p-3">
+        <span className="text-foreground text-sm font-medium">
+          Zaznaczono {selectedClients.length}{' '}
+          {selectedClients.length === 1
+            ? 'klienta'
+            : selectedClients.length < 5
+              ? 'klientów'
+              : 'klientów'}
         </span>
 
         <div className="flex-1" />
@@ -115,7 +136,7 @@ export function BulkActionsToolbar({
             <DropdownMenuSeparator />
 
             {activeClients.length > 0 && (
-              <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
+              <DropdownMenuItem onClick={() => setOpenDialog('edit')}>
                 <Edit className="mr-2 h-4 w-4" />
                 Edytuj ({activeClients.length})
               </DropdownMenuItem>
@@ -123,7 +144,7 @@ export function BulkActionsToolbar({
 
             {canDelete && activeClients.length > 0 && (
               <DropdownMenuItem
-                onClick={() => setDeleteDialogOpen(true)}
+                onClick={() => setOpenDialog('delete')}
                 className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
@@ -132,7 +153,7 @@ export function BulkActionsToolbar({
             )}
 
             {inactiveClients.length > 0 && (
-              <DropdownMenuItem onClick={() => setRestoreDialogOpen(true)}>
+              <DropdownMenuItem onClick={() => setOpenDialog('restore')}>
                 <RotateCcw className="mr-2 h-4 w-4" />
                 Przywróć ({inactiveClients.length})
               </DropdownMenuItem>
@@ -146,33 +167,31 @@ export function BulkActionsToolbar({
       </div>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <Dialog
+        open={openDialog === 'delete'}
+        onOpenChange={(open) => setOpenDialog(open ? 'delete' : null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Usuń {activeClients.length} klientów</DialogTitle>
             <DialogDescription>
-              Czy na pewno chcesz usunąć zaznaczonych klientów? Operacja ta jest odwracalna - klienci zostaną dezaktywowani i będzie można ich przywrócić.
+              Czy na pewno chcesz usunąć zaznaczonych klientów? Operacja ta jest odwracalna -
+              klienci zostaną dezaktywowani i będzie można ich przywrócić.
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-40 overflow-y-auto">
-            <ul className="text-sm text-muted-foreground space-y-1">
+            <ul className="text-muted-foreground space-y-1 text-sm">
               {activeClients.slice(0, 10).map((client) => (
                 <li key={client.id}>• {client.name}</li>
               ))}
-              {activeClients.length > 10 && (
-                <li>... i {activeClients.length - 10} więcej</li>
-              )}
+              {activeClients.length > 10 && <li>... i {activeClients.length - 10} więcej</li>}
             </ul>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setOpenDialog(null)}>
               Anuluj
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleBulkDelete}
-              disabled={isDeleting}
-            >
+            <Button variant="destructive" onClick={handleBulkDelete} disabled={isDeleting}>
               {isDeleting ? 'Usuwanie...' : 'Usuń'}
             </Button>
           </DialogFooter>
@@ -180,7 +199,10 @@ export function BulkActionsToolbar({
       </Dialog>
 
       {/* Restore Confirmation Dialog */}
-      <Dialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
+      <Dialog
+        open={openDialog === 'restore'}
+        onOpenChange={(open) => setOpenDialog(open ? 'restore' : null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Przywróć {inactiveClients.length} klientów</DialogTitle>
@@ -189,17 +211,15 @@ export function BulkActionsToolbar({
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-40 overflow-y-auto">
-            <ul className="text-sm text-muted-foreground space-y-1">
+            <ul className="text-muted-foreground space-y-1 text-sm">
               {inactiveClients.slice(0, 10).map((client) => (
                 <li key={client.id}>• {client.name}</li>
               ))}
-              {inactiveClients.length > 10 && (
-                <li>... i {inactiveClients.length - 10} więcej</li>
-              )}
+              {inactiveClients.length > 10 && <li>... i {inactiveClients.length - 10} więcej</li>}
             </ul>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRestoreDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setOpenDialog(null)}>
               Anuluj
             </Button>
             <Button onClick={handleBulkRestore} disabled={isRestoring}>
@@ -210,7 +230,10 @@ export function BulkActionsToolbar({
       </Dialog>
 
       {/* Bulk Edit Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      <Dialog
+        open={openDialog === 'edit'}
+        onOpenChange={(open) => setOpenDialog(open ? 'edit' : null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edytuj {activeClients.length} klientów</DialogTitle>
@@ -227,7 +250,7 @@ export function BulkActionsToolbar({
                 onValueChange={(value) =>
                   setEditChanges((prev) => ({
                     ...prev,
-                    employmentType: value === '__none__' ? undefined : value as EmploymentType,
+                    employmentType: value === '__none__' ? undefined : (value as EmploymentType),
                   }))
                 }
               >
@@ -252,7 +275,7 @@ export function BulkActionsToolbar({
                 onValueChange={(value) =>
                   setEditChanges((prev) => ({
                     ...prev,
-                    vatStatus: value === '__none__' ? undefined : value as VatStatus,
+                    vatStatus: value === '__none__' ? undefined : (value as VatStatus),
                   }))
                 }
               >
@@ -277,7 +300,7 @@ export function BulkActionsToolbar({
                 onValueChange={(value) =>
                   setEditChanges((prev) => ({
                     ...prev,
-                    taxScheme: value === '__none__' ? undefined : value as TaxScheme,
+                    taxScheme: value === '__none__' ? undefined : (value as TaxScheme),
                   }))
                 }
               >
@@ -302,7 +325,7 @@ export function BulkActionsToolbar({
                 onValueChange={(value) =>
                   setEditChanges((prev) => ({
                     ...prev,
-                    zusStatus: value === '__none__' ? undefined : value as ZusStatus,
+                    zusStatus: value === '__none__' ? undefined : (value as ZusStatus),
                   }))
                 }
               >
@@ -322,12 +345,16 @@ export function BulkActionsToolbar({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setOpenDialog(null)}>
               Anuluj
             </Button>
             <Button
               onClick={handleBulkEdit}
-              disabled={isEditing || Object.keys(editChanges).filter(k => editChanges[k as keyof BulkEditChanges]).length === 0}
+              disabled={
+                isEditing ||
+                Object.keys(editChanges).filter((k) => editChanges[k as keyof BulkEditChanges])
+                  .length === 0
+              }
             >
               {isEditing ? 'Zapisywanie...' : 'Zapisz zmiany'}
             </Button>
@@ -336,4 +363,4 @@ export function BulkActionsToolbar({
       </Dialog>
     </>
   );
-}
+});

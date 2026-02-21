@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
 export class RemoveSimpleTextsTable1768600000000 implements MigrationInterface {
   name = 'RemoveSimpleTextsTable1768600000000';

@@ -1,11 +1,26 @@
-import { useState, useCallback } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { useTasks, useTaskAssignees } from '@/lib/hooks/use-tasks';
-import { useAuthContext } from '@/contexts/auth-context';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
+import {
+  ArrowRight,
+  Calendar,
+  CheckSquare,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  LayoutGrid,
+  Plus,
+  X,
+} from 'lucide-react';
+
+import { TaskPriorityBadge } from '@/components/tasks/task-priority-badge';
+import { TaskStatusBadge } from '@/components/tasks/task-status-badge';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -13,24 +28,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { TaskStatusBadge } from '@/components/tasks/task-status-badge';
-import { TaskPriorityBadge } from '@/components/tasks/task-priority-badge';
-import {
-  CheckSquare,
-  Plus,
-  Calendar,
-  ArrowRight,
-  ChevronLeft,
-  ChevronRight,
-  LayoutGrid,
-  Filter,
-  X,
-} from 'lucide-react';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthContext } from '@/contexts/auth-context';
+import { PAGINATION, TaskPriorityLabels, TaskStatusLabels } from '@/lib/constants';
+import { useTaskAssignees, useTasks } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
-import { UserRole, TaskStatus, TaskPriority } from '@/types/enums';
-import { TaskFiltersDto } from '@/types/dtos';
+import { type TaskFiltersDto } from '@/types/dtos';
+import { TaskStatus as TaskStatusEnum, UserRole, type TaskPriority } from '@/types/enums';
+
 import { QuickAddTaskDialog } from './quick-add-task-dialog';
 
 interface ClientTasksListProps {
@@ -38,23 +43,10 @@ interface ClientTasksListProps {
   clientName: string;
 }
 
-const PAGE_SIZE = 10;
-
-const TaskStatusLabels: Record<TaskStatus, string> = {
-  [TaskStatus.TODO]: 'Do zrobienia',
-  [TaskStatus.IN_PROGRESS]: 'W trakcie',
-  [TaskStatus.REVIEW]: 'Do przeglądu',
-  [TaskStatus.DONE]: 'Zakończone',
-};
-
-const TaskPriorityLabels: Record<TaskPriority, string> = {
-  [TaskPriority.LOW]: 'Niski',
-  [TaskPriority.MEDIUM]: 'Średni',
-  [TaskPriority.HIGH]: 'Wysoki',
-  [TaskPriority.URGENT]: 'Pilny',
-};
-
-export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) {
+export const ClientTasksList = memo(function ClientTasksList({
+  clientId,
+  clientName,
+}: ClientTasksListProps) {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const [addTaskOpen, setAddTaskOpen] = useState(false);
@@ -62,7 +54,7 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
   const [filters, setFilters] = useState<TaskFiltersDto>({
     clientId,
     page: 1,
-    limit: PAGE_SIZE,
+    limit: PAGINATION.COMPACT_PAGE_SIZE,
   });
 
   const { data: tasksData, isPending, error } = useTasks(filters);
@@ -101,14 +93,33 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
     setFilters({
       clientId,
       page: 1,
-      limit: PAGE_SIZE,
+      limit: PAGINATION.COMPACT_PAGE_SIZE,
     });
   }, [clientId]);
 
-  const hasActiveFilters = filters.status || filters.priority || filters.assigneeId;
+  // Memoize to avoid recalculating on every render
+  const hasActiveFilters = useMemo(
+    () => Boolean(filters.status || filters.priority || filters.assigneeId),
+    [filters.status, filters.priority, filters.assigneeId]
+  );
 
-  const totalPages = tasksData ? Math.ceil(tasksData.total / PAGE_SIZE) : 0;
+  const totalPages = tasksData ? Math.ceil(tasksData.meta.total / PAGINATION.COMPACT_PAGE_SIZE) : 0;
   const currentPage = filters.page || 1;
+
+  // Memoize overdue task IDs to avoid recalculating on every render
+  // This is O(n) once per tasks change instead of O(n) on every render
+  const overdueTaskIds = useMemo(() => {
+    const tasks = tasksData?.data ?? [];
+    const now = new Date();
+    return new Set(
+      tasks
+        .filter(
+          (task) =>
+            task.dueDate && new Date(task.dueDate) < now && task.status !== TaskStatusEnum.DONE
+        )
+        .map((task) => task.id)
+    );
+  }, [tasksData?.data]);
 
   if (isPending) {
     return (
@@ -140,9 +151,7 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-destructive">
-            Nie udało się załadować zadań
-          </p>
+          <p className="text-destructive text-sm">Nie udało się załadować zadań</p>
         </CardContent>
       </Card>
     );
@@ -157,9 +166,9 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
           <CardTitle className="flex items-center gap-2">
             <CheckSquare className="h-5 w-5" />
             Zadania klienta
-            {tasksData?.total !== undefined && (
+            {tasksData?.meta.total !== undefined && (
               <Badge variant="secondary" className="ml-2">
-                {tasksData.total}
+                {tasksData.meta.total}
               </Badge>
             )}
           </CardTitle>
@@ -168,41 +177,41 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
               variant="ghost"
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
-              className={cn(hasActiveFilters && 'text-apptax-blue')}
+              className={cn(hasActiveFilters && 'text-primary')}
             >
-              <Filter className="h-4 w-4 mr-1" />
+              <Filter className="mr-1 h-4 w-4" />
               Filtry
               {hasActiveFilters && (
-                <Badge variant="default" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                <Badge
+                  variant="default"
+                  className="ml-1 flex h-5 w-5 items-center justify-center p-0 text-xs"
+                >
                   !
                 </Badge>
               )}
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleViewKanban}
-            >
-              <LayoutGrid className="h-4 w-4 mr-1" />
+            <Button variant="ghost" size="sm" onClick={handleViewKanban}>
+              <LayoutGrid className="mr-1 h-4 w-4" />
               Kanban
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setAddTaskOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-1" />
+            <Button variant="outline" size="sm" onClick={() => setAddTaskOpen(true)}>
+              <Plus className="mr-1 h-4 w-4" />
               Dodaj zadanie
             </Button>
           </div>
         </CardHeader>
 
         {showFilters && (
-          <div className="px-6 pb-4 border-b">
+          <div className="border-b px-6 pb-4">
             <div className="flex flex-wrap items-center gap-3">
               <Select
                 value={filters.status || '__all__'}
-                onValueChange={(value) => handleFilterChange('status', value === '__all__' ? undefined : value as TaskStatus)}
+                onValueChange={(value) =>
+                  handleFilterChange(
+                    'status',
+                    value === '__all__' ? undefined : (value as TaskStatusEnum)
+                  )
+                }
               >
                 <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Status" />
@@ -219,7 +228,12 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
 
               <Select
                 value={filters.priority || '__all__'}
-                onValueChange={(value) => handleFilterChange('priority', value === '__all__' ? undefined : value as TaskPriority)}
+                onValueChange={(value) =>
+                  handleFilterChange(
+                    'priority',
+                    value === '__all__' ? undefined : (value as TaskPriority)
+                  )
+                }
               >
                 <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Priorytet" />
@@ -236,7 +250,9 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
 
               <Select
                 value={filters.assigneeId || '__all__'}
-                onValueChange={(value) => handleFilterChange('assigneeId', value === '__all__' ? undefined : value)}
+                onValueChange={(value) =>
+                  handleFilterChange('assigneeId', value === '__all__' ? undefined : value)
+                }
               >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Przypisany do" />
@@ -258,7 +274,7 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
                   onClick={clearFilters}
                   className="text-muted-foreground"
                 >
-                  <X className="h-4 w-4 mr-1" />
+                  <X className="mr-1 h-4 w-4" />
                   Wyczyść
                 </Button>
               )}
@@ -268,9 +284,9 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
 
         <CardContent className={cn(!showFilters && 'pt-4')}>
           {tasks.length === 0 ? (
-            <div className="text-center py-6">
-              <CheckSquare className="h-12 w-12 mx-auto text-muted-foreground/50 mb-2" />
-              <p className="text-sm text-muted-foreground">
+            <div className="py-6 text-center">
+              <CheckSquare className="text-muted-foreground/50 mx-auto mb-2 h-12 w-12" />
+              <p className="text-muted-foreground text-sm">
                 {hasActiveFilters
                   ? 'Brak zadań spełniających kryteria filtrowania'
                   : 'Brak zadań przypisanych do tego klienta'}
@@ -289,39 +305,37 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
           ) : (
             <div className="space-y-2">
               {tasks.map((task) => {
-                const isOverdue =
-                  task.dueDate &&
-                  new Date(task.dueDate) < new Date() &&
-                  task.status !== 'done';
+                // Use memoized set for O(1) lookup instead of recalculating
+                const isOverdue = overdueTaskIds.has(task.id);
 
                 return (
                   <div
                     key={task.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => handleTaskClick(task.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleTaskClick(task.id);
+                      }
+                    }}
                     className={cn(
-                      'flex items-center justify-between p-3 rounded-lg border cursor-pointer',
+                      'flex cursor-pointer items-center justify-between rounded-lg border p-3',
                       'hover:bg-muted/50 transition-colors',
                       isOverdue && 'border-red-300 bg-red-50/50'
                     )}
                   >
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm truncate">
-                        {task.title}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="truncate text-sm font-medium">{task.title}</h4>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
                         <TaskStatusBadge status={task.status} size="sm" />
-                        <TaskPriorityBadge
-                          priority={task.priority}
-                          size="sm"
-                          showLabel={false}
-                        />
+                        <TaskPriorityBadge priority={task.priority} size="sm" showLabel={false} />
                         {task.dueDate && (
                           <span
                             className={cn(
                               'flex items-center gap-1 text-xs',
-                              isOverdue
-                                ? 'text-red-600'
-                                : 'text-muted-foreground'
+                              isOverdue ? 'text-red-600' : 'text-muted-foreground'
                             )}
                           >
                             <Calendar size={12} />
@@ -331,22 +345,22 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
                           </span>
                         )}
                         {task.assignee && (
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-muted-foreground text-xs">
                             • {task.assignee.firstName} {task.assignee.lastName?.[0]}.
                           </span>
                         )}
                       </div>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-2" />
+                    <ArrowRight className="text-muted-foreground ml-2 h-4 w-4 flex-shrink-0" />
                   </div>
                 );
               })}
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between pt-4 border-t mt-4">
-                  <p className="text-sm text-muted-foreground">
-                    Strona {currentPage} z {totalPages} ({tasksData?.total} zadań)
+                <div className="mt-4 flex items-center justify-between border-t pt-4">
+                  <p className="text-muted-foreground text-sm">
+                    Strona {currentPage} z {totalPages} ({tasksData?.meta.total} zadań)
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -355,7 +369,7 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
                       onClick={() => handleFilterChange('page', currentPage - 1)}
                       disabled={currentPage <= 1}
                     >
-                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      <ChevronLeft className="mr-1 h-4 w-4" />
                       Poprzednia
                     </Button>
                     <Button
@@ -365,7 +379,7 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
                       disabled={currentPage >= totalPages}
                     >
                       Następna
-                      <ChevronRight className="h-4 w-4 ml-1" />
+                      <ChevronRight className="ml-1 h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -383,4 +397,4 @@ export function ClientTasksList({ clientId, clientName }: ClientTasksListProps) 
       />
     </>
   );
-}
+});

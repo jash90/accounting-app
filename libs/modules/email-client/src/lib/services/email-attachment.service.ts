@@ -1,8 +1,11 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+
+import * as path from 'path';
+
 import { User } from '@accounting/common';
 import { StorageService } from '@accounting/infrastructure/storage';
-import * as path from 'path';
 
 @Injectable()
 export class EmailAttachmentService {
@@ -12,11 +15,9 @@ export class EmailAttachmentService {
 
   constructor(
     private readonly storageService: StorageService,
-    private readonly configService: ConfigService,
+    private readonly configService: ConfigService
   ) {
-    this.basePath = path.resolve(
-      this.configService.get<string>('STORAGE_LOCAL_PATH', './uploads')
-    );
+    this.basePath = path.resolve(this.configService.get<string>('STORAGE_LOCAL_PATH', './uploads'));
   }
 
   async uploadAttachment(user: User, file: Express.Multer.File): Promise<string> {
@@ -53,7 +54,10 @@ export class EmailAttachmentService {
     return result.path;
   }
 
-  async downloadAttachment(user: User, filePath: string): Promise<{ buffer: Buffer; filename: string }> {
+  async downloadAttachment(
+    user: User,
+    filePath: string
+  ): Promise<{ buffer: Buffer; filename: string }> {
     if (!user.companyId || !filePath.startsWith(user.companyId)) {
       throw new BadRequestException('Access denied');
     }

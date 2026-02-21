@@ -21,7 +21,7 @@ async function testRateLimiting() {
       try {
         const response = await axios.post(`${API_URL}/auth/login`, {
           email: TEST_EMAIL,
-          password: TEST_PASSWORD
+          password: TEST_PASSWORD,
         });
         successfulLoginRequests++;
         console.log(`   Request ${i}: ✅ Accepted (${response.status})`);
@@ -32,17 +32,21 @@ async function testRateLimiting() {
         } else if (error.response) {
           // 401 Unauthorized is expected for wrong credentials
           successfulLoginRequests++;
-          console.log(`   Request ${i}: ✅ Accepted (${error.response.status} - ${error.response.data?.message || error.response.statusText})`);
+          console.log(
+            `   Request ${i}: ✅ Accepted (${error.response.status} - ${error.response.data?.message || error.response.statusText})`
+          );
         } else {
           // Network error or no response
           console.log(`   Request ${i}: ⚠️ Network error (${error.message})`);
         }
       }
       // Small delay between requests
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
-    console.log(`\n   Summary: ${successfulLoginRequests} accepted, ${throttledLoginRequests} throttled`);
+    console.log(
+      `\n   Summary: ${successfulLoginRequests} accepted, ${throttledLoginRequests} throttled`
+    );
     console.log(`   Expected: First 5 accepted, then throttled`);
 
     if (throttledLoginRequests > 0) {
@@ -52,7 +56,7 @@ async function testRateLimiting() {
     }
 
     // Wait a bit before next test
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Test 2: Register endpoint rate limiting (3 requests per minute)
     console.log('\n2️⃣  Testing Register Rate Limiting (3 req/min)...\n');
@@ -64,10 +68,10 @@ async function testRateLimiting() {
       try {
         const response = await axios.post(`${API_URL}/auth/register`, {
           email: `test${i}@example.com`,
-          password: 'Test123!',
+          password: 'Test123456!',
           firstName: 'Test',
           lastName: 'User',
-          role: 'EMPLOYEE'
+          role: 'EMPLOYEE',
         });
         successfulRegisterRequests++;
         console.log(`   Request ${i}: ✅ Accepted (${response.status})`);
@@ -78,16 +82,20 @@ async function testRateLimiting() {
         } else if (error.response) {
           // Other errors (400, 409) count as accepted (not throttled)
           successfulRegisterRequests++;
-          console.log(`   Request ${i}: ✅ Accepted (${error.response.status} - ${error.response.data?.message || error.response.statusText})`);
+          console.log(
+            `   Request ${i}: ✅ Accepted (${error.response.status} - ${error.response.data?.message || error.response.statusText})`
+          );
         } else {
           // Network error or no response
           console.log(`   Request ${i}: ⚠️ Network error (${error.message})`);
         }
       }
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
-    console.log(`\n   Summary: ${successfulRegisterRequests} accepted, ${throttledRegisterRequests} throttled`);
+    console.log(
+      `\n   Summary: ${successfulRegisterRequests} accepted, ${throttledRegisterRequests} throttled`
+    );
     console.log(`   Expected: First 3 accepted, then throttled`);
 
     if (throttledRegisterRequests > 0) {
@@ -106,7 +114,7 @@ async function testRateLimiting() {
     for (let i = 1; i <= 10; i++) {
       try {
         const response = await axios.post(`${API_URL}/auth/refresh`, {
-          refresh_token: 'invalid-token'
+          refresh_token: 'invalid-token',
         });
         successfulGlobalRequests++;
       } catch (error) {
@@ -117,10 +125,12 @@ async function testRateLimiting() {
           successfulGlobalRequests++;
         }
       }
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
     }
 
-    console.log(`   Summary: ${successfulGlobalRequests} accepted, ${throttledGlobalRequests} throttled`);
+    console.log(
+      `   Summary: ${successfulGlobalRequests} accepted, ${throttledGlobalRequests} throttled`
+    );
     console.log(`   Expected: All accepted (below 100 req/min limit)`);
 
     if (throttledGlobalRequests === 0) {
@@ -158,7 +168,6 @@ async function testRateLimiting() {
     console.log('   • Register: 3 requests per minute (spam prevention)');
     console.log('   • Throttled requests return HTTP 429 status code');
     console.log('\n');
-
   } catch (error) {
     console.error('\n❌ Error during testing:');
     console.error(`   ${error.message}`);

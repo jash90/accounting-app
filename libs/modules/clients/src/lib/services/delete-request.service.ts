@@ -1,23 +1,26 @@
-import { Injectable, HttpStatus } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+
+import { DataSource, Repository } from 'typeorm';
+
 import {
-  ClientDeleteRequest,
   Client,
+  ClientDeleteRequest,
+  DeleteRequestStatus,
   User,
   UserRole,
-  DeleteRequestStatus,
-  TenantService,
 } from '@accounting/common';
-import { ClientsService } from './clients.service';
-import { ClientChangelogService } from './client-changelog.service';
+import { TenantService } from '@accounting/common/backend';
+
 import {
-  ClientNotFoundException,
-  DeleteRequestNotFoundException,
-  DeleteRequestAlreadyProcessedException,
-  ClientException,
   ClientErrorCode,
+  ClientException,
+  ClientNotFoundException,
+  DeleteRequestAlreadyProcessedException,
+  DeleteRequestNotFoundException,
 } from '../exceptions';
+import { ClientChangelogService } from './client-changelog.service';
+import { ClientsService } from './clients.service';
 
 export interface CreateDeleteRequestDto {
   reason?: string;
@@ -37,13 +40,13 @@ export class DeleteRequestService {
     private readonly clientsService: ClientsService,
     private readonly clientChangelogService: ClientChangelogService,
     private readonly dataSource: DataSource,
-    private readonly tenantService: TenantService,
+    private readonly tenantService: TenantService
   ) {}
 
   async createDeleteRequest(
     clientId: string,
     dto: CreateDeleteRequestDto,
-    user: User,
+    user: User
   ): Promise<ClientDeleteRequest> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
@@ -67,7 +70,7 @@ export class DeleteRequestService {
     if (existingRequest) {
       throw new DeleteRequestAlreadyProcessedException(
         existingRequest.id,
-        DeleteRequestStatus.PENDING,
+        DeleteRequestStatus.PENDING
       );
     }
 
@@ -95,10 +98,7 @@ export class DeleteRequestService {
     });
   }
 
-  async findAllRequests(
-    user: User,
-    status?: DeleteRequestStatus,
-  ): Promise<ClientDeleteRequest[]> {
+  async findAllRequests(user: User, status?: DeleteRequestStatus): Promise<ClientDeleteRequest[]> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     const whereClause: Record<string, unknown> = { companyId };
@@ -130,7 +130,7 @@ export class DeleteRequestService {
 
   async approveRequest(
     id: string,
-    user: User,
+    user: User
   ): Promise<{ message: string; deletedClient: Client }> {
     // Only Owner or Admin can approve
     if (user.role === UserRole.EMPLOYEE) {
@@ -143,7 +143,7 @@ export class DeleteRequestService {
             userRole: user.role,
           },
         },
-        HttpStatus.FORBIDDEN,
+        HttpStatus.FORBIDDEN
       );
     }
 
@@ -206,7 +206,7 @@ export class DeleteRequestService {
   async rejectRequest(
     id: string,
     dto: ProcessDeleteRequestDto,
-    user: User,
+    user: User
   ): Promise<ClientDeleteRequest> {
     // Only Owner or Admin can reject
     if (user.role === UserRole.EMPLOYEE) {
@@ -219,7 +219,7 @@ export class DeleteRequestService {
             userRole: user.role,
           },
         },
-        HttpStatus.FORBIDDEN,
+        HttpStatus.FORBIDDEN
       );
     }
 
@@ -251,7 +251,7 @@ export class DeleteRequestService {
             requestedById: request.requestedById,
           },
         },
-        HttpStatus.FORBIDDEN,
+        HttpStatus.FORBIDDEN
       );
     }
 

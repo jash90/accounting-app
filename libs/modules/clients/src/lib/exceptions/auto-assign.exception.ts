@@ -1,4 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
+
 import { ClientException } from './client.exception';
 import { ClientErrorCode } from './error-codes.enum';
 
@@ -6,11 +7,7 @@ import { ClientErrorCode } from './error-codes.enum';
  * Exception thrown when auto-assign condition evaluation fails
  */
 export class AutoAssignEvaluationException extends ClientException {
-  constructor(
-    conditionId: string,
-    reason: string,
-    context?: Record<string, any>,
-  ) {
+  constructor(conditionId: string, reason: string, context?: Record<string, any>) {
     super(
       ClientErrorCode.AUTO_ASSIGN_EVALUATION_FAILED,
       `Auto-assign condition evaluation failed: ${reason}`,
@@ -21,7 +18,7 @@ export class AutoAssignEvaluationException extends ClientException {
           reason,
         },
       },
-      HttpStatus.INTERNAL_SERVER_ERROR,
+      HttpStatus.INTERNAL_SERVER_ERROR
     );
   }
 }
@@ -40,7 +37,7 @@ export class InvalidConditionException extends ClientException {
           reason,
         },
       },
-      HttpStatus.BAD_REQUEST,
+      HttpStatus.BAD_REQUEST
     );
   }
 }
@@ -59,7 +56,7 @@ export class BatchAssignException extends ClientException {
           failures: failedAssignments,
         },
       },
-      HttpStatus.MULTI_STATUS,
+      HttpStatus.MULTI_STATUS
     );
   }
 }

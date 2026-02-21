@@ -1,30 +1,27 @@
 import {
+  BadRequestException,
+  Body,
   Controller,
+  Delete,
   Get,
+  Patch,
   Post,
   Put,
-  Patch,
-  Delete,
-  Body,
   UseGuards,
-  BadRequestException,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
-import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
+import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
   PermissionGuard,
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
-import { User } from '@accounting/common';
-import { NotificationSettingsService } from '../services/notification-settings.service';
+
 import { UpdateNotificationSettingsDto } from '../dto/notification-settings.dto';
+import { NotificationSettingsService } from '../services/notification-settings.service';
 
 @ApiTags('Client Notification Settings')
 @ApiBearerAuth()
@@ -32,9 +29,7 @@ import { UpdateNotificationSettingsDto } from '../dto/notification-settings.dto'
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('clients')
 export class NotificationSettingsController {
-  constructor(
-    private readonly notificationSettingsService: NotificationSettingsService,
-  ) {}
+  constructor(private readonly notificationSettingsService: NotificationSettingsService) {}
 
   // /me endpoints (for frontend compatibility)
   @Get('me')
@@ -49,10 +44,7 @@ export class NotificationSettingsController {
   @ApiOperation({ summary: 'Update current user notification settings' })
   @ApiResponse({ status: 200, description: 'Notification settings updated' })
   @RequirePermission('clients', 'write')
-  async updateMySettings(
-    @Body() dto: UpdateNotificationSettingsDto,
-    @CurrentUser() user: User,
-  ) {
+  async updateMySettings(@Body() dto: UpdateNotificationSettingsDto, @CurrentUser() user: User) {
     return this.notificationSettingsService.updateSettings(user, dto);
   }
 
@@ -80,10 +72,7 @@ export class NotificationSettingsController {
   @ApiOperation({ summary: 'Create or update current user notification settings' })
   @ApiResponse({ status: 201, description: 'Notification settings created/updated' })
   @RequirePermission('clients', 'write')
-  async createSettings(
-    @Body() dto: UpdateNotificationSettingsDto,
-    @CurrentUser() user: User,
-  ) {
+  async createSettings(@Body() dto: UpdateNotificationSettingsDto, @CurrentUser() user: User) {
     return this.notificationSettingsService.updateSettings(user, dto);
   }
 
@@ -91,10 +80,7 @@ export class NotificationSettingsController {
   @ApiOperation({ summary: 'Update current user notification settings' })
   @ApiResponse({ status: 200, description: 'Notification settings updated' })
   @RequirePermission('clients', 'write')
-  async updateSettings(
-    @Body() dto: UpdateNotificationSettingsDto,
-    @CurrentUser() user: User,
-  ) {
+  async updateSettings(@Body() dto: UpdateNotificationSettingsDto, @CurrentUser() user: User) {
     return this.notificationSettingsService.updateSettings(user, dto);
   }
 

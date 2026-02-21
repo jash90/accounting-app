@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
 export class AddModuleDiscoveryColumns1768700000000 implements MigrationInterface {
   name = 'AddModuleDiscoveryColumns1768700000000';

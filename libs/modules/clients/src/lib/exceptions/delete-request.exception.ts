@@ -1,4 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
+
 import { ClientException } from './client.exception';
 import { ClientErrorCode } from './error-codes.enum';
 
@@ -16,7 +17,7 @@ export class DeleteRequestNotFoundException extends ClientException {
           requestId,
         },
       },
-      HttpStatus.NOT_FOUND,
+      HttpStatus.NOT_FOUND
     );
   }
 }
@@ -35,7 +36,7 @@ export class DeleteRequestAlreadyProcessedException extends ClientException {
           currentStatus: status,
         },
       },
-      HttpStatus.CONFLICT,
+      HttpStatus.CONFLICT
     );
   }
 }
@@ -55,7 +56,7 @@ export class DeleteRequestFailedException extends ClientException {
           reason,
         },
       },
-      HttpStatus.INTERNAL_SERVER_ERROR,
+      HttpStatus.INTERNAL_SERVER_ERROR
     );
   }
 }

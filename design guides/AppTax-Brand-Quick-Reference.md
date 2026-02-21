@@ -1,4 +1,5 @@
 # AppTax Visual Identity System
+
 ## Quick Reference Guide
 
 ---
@@ -8,6 +9,7 @@
 **AppTax** is an AI-powered accounting CRM platform for the Polish market, combining traditional accounting reliability with innovative AI capabilities.
 
 ### Brand Personality
+
 - **Intelligent** — Powered by advanced AI
 - **Trustworthy** — Professional and reliable
 - **Progressive** — Forward-thinking innovation
@@ -18,21 +20,25 @@
 ## Logo System
 
 ### The Smart Calculator Concept
+
 Our logo combines familiar calculator iconography with an AI indicator (teal glow), creating instant industry recognition while signaling technological innovation.
 
 ### Logo Versions
-| Version | Use Case | File |
-|---------|----------|------|
-| Primary Horizontal | Main applications, website header | `apptax-logo-primary.svg` |
-| Stacked | Square formats, limited horizontal space | `apptax-logo-stacked.svg` |
-| Logomark | App icons, favicons, small applications | `apptax-logomark.svg` |
-| White/Reversed | Dark backgrounds | `apptax-logo-white.svg` |
-| Monochrome | Single-color printing | `apptax-logo-mono.svg` |
+
+| Version            | Use Case                                 | File                      |
+| ------------------ | ---------------------------------------- | ------------------------- |
+| Primary Horizontal | Main applications, website header        | `apptax-logo-primary.svg` |
+| Stacked            | Square formats, limited horizontal space | `apptax-logo-stacked.svg` |
+| Logomark           | App icons, favicons, small applications  | `apptax-logomark.svg`     |
+| White/Reversed     | Dark backgrounds                         | `apptax-logo-white.svg`   |
+| Monochrome         | Single-color printing                    | `apptax-logo-mono.svg`    |
 
 ### Clear Space
+
 Maintain minimum clear space equal to the height of the "A" in AppTax around all sides.
 
 ### Minimum Sizes
+
 - Horizontal Logo: 120px width
 - Logomark: 24px height
 
@@ -42,21 +48,22 @@ Maintain minimum clear space equal to the height of the "A" in AppTax around all
 
 ### Primary Colors
 
-| Color | HEX | RGB | CMYK | Pantone | Usage |
-|-------|-----|-----|------|---------|-------|
-| **AppTax Blue** | `#0A66C2` | 10, 102, 194 | 95, 47, 0, 24 | 2935 C | Primary brand color, CTAs |
-| **Professional Navy** | `#1E3A5F` | 30, 58, 95 | 68, 39, 0, 63 | 289 C | Text, backgrounds |
-| **Innovation Teal** | `#00BFA6` | 0, 191, 166 | 100, 0, 13, 25 | 3268 C | AI indicators, accents |
+| Color                 | HEX       | RGB          | CMYK           | Pantone | Usage                     |
+| --------------------- | --------- | ------------ | -------------- | ------- | ------------------------- |
+| **AppTax Blue**       | `#0A66C2` | 10, 102, 194 | 95, 47, 0, 24  | 2935 C  | Primary brand color, CTAs |
+| **Professional Navy** | `#1E3A5F` | 30, 58, 95   | 68, 39, 0, 63  | 289 C   | Text, backgrounds         |
+| **Innovation Teal**   | `#00BFA6` | 0, 191, 166  | 100, 0, 13, 25 | 3268 C  | AI indicators, accents    |
 
 ### Secondary Colors
 
-| Color | HEX | RGB | Usage |
-|-------|-----|-----|-------|
-| **Light Blue** | `#4A90D9` | 74, 144, 217 | UI elements, links |
-| **Soft Teal** | `#E0F7F4` | 224, 247, 244 | Backgrounds, highlights |
-| **Warm Gray** | `#F5F5F5` | 245, 245, 245 | Page backgrounds |
+| Color          | HEX       | RGB           | Usage                   |
+| -------------- | --------- | ------------- | ----------------------- |
+| **Light Blue** | `#4A90D9` | 74, 144, 217  | UI elements, links      |
+| **Soft Teal**  | `#E0F7F4` | 224, 247, 244 | Backgrounds, highlights |
+| **Warm Gray**  | `#F5F5F5` | 245, 245, 245 | Page backgrounds        |
 
 ### Color Usage Ratios
+
 - Professional Navy: 60%
 - AppTax Blue: 30%
 - Innovation Teal: 10%
@@ -68,6 +75,7 @@ Maintain minimum clear space equal to the height of the "A" in AppTax around all
 ### Primary Typeface: Inter
 
 Inter is selected for:
+
 - Exceptional screen legibility
 - Complete Polish character support (ą ć ę ł ń ó ś ź ż)
 - Modern professional aesthetic
@@ -75,18 +83,19 @@ Inter is selected for:
 
 ### Type Scale
 
-| Style | Font | Size | Weight | Line Height |
-|-------|------|------|--------|-------------|
-| Display 1 | Inter | 56px | 800 (ExtraBold) | 1.1 |
-| Display 2 | Inter | 40px | 700 (Bold) | 1.2 |
-| Heading 1 | Inter | 32px | 700 (Bold) | 1.3 |
-| Heading 2 | Inter | 24px | 600 (SemiBold) | 1.4 |
-| Heading 3 | Inter | 20px | 600 (SemiBold) | 1.4 |
-| Body | Inter | 16px | 400 (Regular) | 1.7 |
-| Small | Inter | 14px | 400 (Regular) | 1.6 |
-| Caption | Inter | 12px | 400 (Regular) | 1.5 |
+| Style     | Font  | Size | Weight          | Line Height |
+| --------- | ----- | ---- | --------------- | ----------- |
+| Display 1 | Inter | 56px | 800 (ExtraBold) | 1.1         |
+| Display 2 | Inter | 40px | 700 (Bold)      | 1.2         |
+| Heading 1 | Inter | 32px | 700 (Bold)      | 1.3         |
+| Heading 2 | Inter | 24px | 600 (SemiBold)  | 1.4         |
+| Heading 3 | Inter | 20px | 600 (SemiBold)  | 1.4         |
+| Body      | Inter | 16px | 400 (Regular)   | 1.7         |
+| Small     | Inter | 14px | 400 (Regular)   | 1.6         |
+| Caption   | Inter | 12px | 400 (Regular)   | 1.5         |
 
 ### Available Weights
+
 - Light (300)
 - Regular (400)
 - Medium (500)
@@ -99,12 +108,14 @@ Inter is selected for:
 ## Visual Elements
 
 ### Border Radius
+
 - Small: 4px (inputs, small buttons)
 - Medium: 8px (buttons, cards)
 - Large: 12px (larger cards)
 - XL: 16px (modals, hero sections)
 
 ### Shadows
+
 ```css
 /* Small */
 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -117,24 +128,27 @@ box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16);
 ```
 
 ### Gradients
+
 ```css
 /* Primary gradient */
-background: linear-gradient(135deg, #0A66C2 0%, #1E3A5F 100%);
+background: linear-gradient(135deg, #0a66c2 0%, #1e3a5f 100%);
 
 /* Dark gradient */
-background: linear-gradient(135deg, #1E3A5F 0%, #0d2137 100%);
+background: linear-gradient(135deg, #1e3a5f 0%, #0d2137 100%);
 
 /* AI accent gradient */
-background: linear-gradient(135deg, #00BFA6 0%, #0A66C2 100%);
+background: linear-gradient(135deg, #00bfa6 0%, #0a66c2 100%);
 ```
 
 ### AI Indicator
+
 The teal glow effect represents AI intelligence throughout the interface:
+
 ```css
 .ai-indicator {
   width: 12px;
   height: 12px;
-  background: #00BFA6;
+  background: #00bfa6;
   border-radius: 50%;
   box-shadow: 0 0 8px rgba(0, 191, 166, 0.5);
 }
@@ -145,29 +159,31 @@ The teal glow effect represents AI intelligence throughout the interface:
 ## Implementation Code
 
 ### CSS Variables
+
 ```css
 :root {
   /* Primary */
-  --apptax-blue: #0A66C2;
-  --professional-navy: #1E3A5F;
-  --innovation-teal: #00BFA6;
-  
+  --apptax-blue: #0a66c2;
+  --professional-navy: #1e3a5f;
+  --innovation-teal: #00bfa6;
+
   /* Secondary */
-  --light-blue: #4A90D9;
-  --soft-teal: #E0F7F4;
-  --warm-gray: #F5F5F5;
-  
+  --light-blue: #4a90d9;
+  --soft-teal: #e0f7f4;
+  --warm-gray: #f5f5f5;
+
   /* Neutrals */
-  --dark-text: #1A1A2E;
-  --medium-gray: #6B7280;
-  --light-gray: #E5E7EB;
-  
+  --dark-text: #1a1a2e;
+  --medium-gray: #6b7280;
+  --light-gray: #e5e7eb;
+
   /* Typography */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 ```
 
 ### Tailwind Configuration
+
 ```javascript
 // tailwind.config.js
 module.exports = {
@@ -180,20 +196,21 @@ module.exports = {
           teal: '#00BFA6',
           'light-blue': '#4A90D9',
           'soft-teal': '#E0F7F4',
-        }
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
-        'apptax': '8px',
-      }
-    }
-  }
-}
+        apptax: '8px',
+      },
+    },
+  },
+};
 ```
 
 ### Swift (iOS)
+
 ```swift
 extension UIColor {
     static let apptaxBlue = UIColor(red: 10/255, green: 102/255, blue: 194/255, alpha: 1)
@@ -204,6 +221,7 @@ extension UIColor {
 ```
 
 ### Android (Kotlin)
+
 ```kotlin
 object AppTaxColors {
     val ApptaxBlue = Color(0xFF0A66C2)
@@ -219,6 +237,7 @@ object AppTaxColors {
 ## Usage Guidelines
 
 ### ✓ Do
+
 - Use the logo with adequate clear space
 - Maintain color consistency across applications
 - Use Inter typeface for all communications
@@ -228,6 +247,7 @@ object AppTaxColors {
 - Use approved color combinations
 
 ### ✗ Don't
+
 - Distort or stretch the logo
 - Use unapproved colors
 - Add effects like drop shadows to the logo
@@ -242,6 +262,7 @@ object AppTaxColors {
 ## File Inventory
 
 ### Logos
+
 ```
 /logos/
 ├── apptax-logo-primary.svg      # Main horizontal logo
@@ -253,6 +274,7 @@ object AppTaxColors {
 ```
 
 ### Guidelines
+
 ```
 /guidelines/
 └── AppTax-Brand-Guidelines.html  # Complete interactive brand book
@@ -263,10 +285,11 @@ object AppTaxColors {
 ## Contact
 
 For brand-related questions or asset requests:
+
 - Email: brand@apptax.pl
 - Website: www.apptax.pl
 
 ---
 
-*Visual Identity Guidelines v1.0 — 2025*
-*AppTax — AI-Powered Accounting Intelligence*
+_Visual Identity Guidelines v1.0 — 2025_
+_AppTax — AI-Powered Accounting Intelligence_

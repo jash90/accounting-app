@@ -1,29 +1,34 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+
+import { AlertCircle, Edit, Lock, Mail, Plus, Server, Shield, Trash2, User } from 'lucide-react';
+
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { PageHeader } from '@/components/common/page-header';
+import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PageHeader } from '@/components/common/page-header';
-import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
 import {
-  useUserEmailConfig,
-  useCreateUserEmailConfig,
-  useUpdateUserEmailConfig,
-  useDeleteUserEmailConfig,
-  useTestSmtp,
-  useTestImap,
-  useSystemAdminEmailConfig,
   useCreateSystemAdminEmailConfig,
-  useUpdateSystemAdminEmailConfig,
+  useCreateUserEmailConfig,
   useDeleteSystemAdminEmailConfig,
-  useTestSystemAdminSmtp,
+  useDeleteUserEmailConfig,
+  useSystemAdminEmailConfig,
+  useTestImap,
+  useTestSmtp,
   useTestSystemAdminImap,
+  useTestSystemAdminSmtp,
+  useUpdateSystemAdminEmailConfig,
+  useUpdateUserEmailConfig,
+  useUserEmailConfig,
 } from '@/lib/hooks/use-email-config';
-import { CreateEmailConfigFormData, UpdateEmailConfigFormData } from '@/lib/validation/schemas';
-import { Mail, Edit, Trash2, Plus, Server, Lock, AlertCircle, Shield, User } from 'lucide-react';
-import { EmailConfigResponseDto } from '@/types/dtos';
+import {
+  type CreateEmailConfigFormData,
+  type UpdateEmailConfigFormData,
+} from '@/lib/validation/schemas';
+import { type EmailConfigResponseDto } from '@/types/dtos';
 
 // Reusable Email Config Display Component
 function EmailConfigDisplay({
@@ -39,7 +44,7 @@ function EmailConfigDisplay({
   emailConfig: EmailConfigResponseDto | undefined;
   isPending: boolean;
   isError: boolean;
-  error: any;
+  error: Error | null;
   type: 'user' | 'system-admin';
   onEdit: () => void;
   onDelete: () => void;
@@ -56,17 +61,17 @@ function EmailConfigDisplay({
         {hasConfig ? (
           <div className="flex gap-2">
             <Button onClick={onEdit} variant="secondary" size="sm">
-              <Edit className="h-4 w-4 mr-2" />
+              <Edit className="mr-2 h-4 w-4" />
               Edytuj konfigurację
             </Button>
             <Button onClick={onDelete} variant="destructive" size="sm">
-              <Trash2 className="h-4 w-4 mr-2" />
+              <Trash2 className="mr-2 h-4 w-4" />
               Usuń
             </Button>
           </div>
         ) : (
           <Button onClick={onCreate} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Utwórz konfigurację
           </Button>
         )}
@@ -75,7 +80,7 @@ function EmailConfigDisplay({
       {/* Loading State */}
       {isPending && (
         <Card>
-          <CardContent className="p-6 space-y-4">
+          <CardContent className="space-y-4 p-6">
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-4 w-1/2" />
             <Skeleton className="h-4 w-2/3" />
@@ -84,17 +89,15 @@ function EmailConfigDisplay({
       )}
 
       {/* Error State - No Configuration */}
-      {isError && error?.response?.status === 404 && (
+      {isError && (error as { response?: { status?: number } })?.response?.status === 404 && (
         <Card className="border-dashed">
           <CardContent className="p-12 text-center">
             <div className="flex flex-col items-center gap-4">
-              <div className="p-4 bg-apptax-soft-teal rounded-full">
-                <Icon className="h-8 w-8 text-apptax-blue" />
+              <div className="bg-accent/10 rounded-full p-4">
+                <Icon className="text-primary h-8 w-8" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-apptax-navy">
-                  Brak konfiguracji {title}
-                </h3>
+                <h3 className="text-foreground text-lg font-semibold">Brak konfiguracji {title}</h3>
                 <p className="text-muted-foreground max-w-md">
                   {type === 'system-admin'
                     ? 'Konfiguracja email System Admin nie została jeszcze utworzona. Utwórz ją, aby umożliwić komunikację email dla wszystkich administratorów.'
@@ -102,7 +105,7 @@ function EmailConfigDisplay({
                 </p>
               </div>
               <Button onClick={onCreate} className="mt-4">
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="mr-2 h-4 w-4" />
                 Utwórz konfigurację {title}
               </Button>
             </div>
@@ -111,17 +114,17 @@ function EmailConfigDisplay({
       )}
 
       {/* Error State - Other Errors */}
-      {isError && error?.response?.status !== 404 && (
+      {isError && (error as { response?: { status?: number } })?.response?.status !== 404 && (
         <Card className="border-destructive">
           <CardContent className="p-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-destructive/10 rounded">
-                <Icon className="h-5 w-5 text-destructive" />
+              <div className="bg-destructive/10 rounded p-2">
+                <Icon className="text-destructive h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-semibold text-destructive">Błąd ładowania konfiguracji</h3>
-                <p className="text-sm text-muted-foreground">
-                  {error.message || 'Nie udało się załadować konfiguracji email'}
+                <h3 className="text-destructive font-semibold">Błąd ładowania konfiguracji</h3>
+                <p className="text-muted-foreground text-sm">
+                  {error?.message || 'Nie udało się załadować konfiguracji email'}
                 </p>
               </div>
             </div>
@@ -137,7 +140,7 @@ function EmailConfigDisplay({
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Server className="h-5 w-5 text-apptax-blue" />
+                  <Server className="text-primary h-5 w-5" />
                   <CardTitle>Konfiguracja SMTP</CardTitle>
                 </div>
                 <Badge variant={emailConfig.isActive ? 'success' : 'muted'}>
@@ -150,11 +153,11 @@ function EmailConfigDisplay({
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Host</span>
-                  <span className="font-medium text-apptax-navy">{emailConfig.smtpHost}</span>
+                  <span className="text-foreground font-medium">{emailConfig.smtpHost}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Port</span>
-                  <span className="font-medium text-apptax-navy">{emailConfig.smtpPort}</span>
+                  <span className="text-foreground font-medium">{emailConfig.smtpPort}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Zabezpieczenia</span>
@@ -164,13 +167,13 @@ function EmailConfigDisplay({
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Użytkownik</span>
-                  <span className="font-medium text-apptax-navy">{emailConfig.smtpUser}</span>
+                  <span className="text-foreground font-medium">{emailConfig.smtpUser}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Hasło</span>
                   <div className="flex items-center gap-2">
-                    <Lock className="h-3 w-3 text-apptax-teal" />
-                    <span className="text-xs text-muted-foreground">Zaszyfrowane</span>
+                    <Lock className="text-accent h-3 w-3" />
+                    <span className="text-muted-foreground text-xs">Zaszyfrowane</span>
                   </div>
                 </div>
               </div>
@@ -182,7 +185,7 @@ function EmailConfigDisplay({
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Server className="h-5 w-5 text-apptax-teal" />
+                  <Server className="text-accent h-5 w-5" />
                   <CardTitle>Konfiguracja IMAP</CardTitle>
                 </div>
                 <Badge variant={emailConfig.isActive ? 'success' : 'muted'}>
@@ -195,11 +198,11 @@ function EmailConfigDisplay({
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Host</span>
-                  <span className="font-medium text-apptax-navy">{emailConfig.imapHost}</span>
+                  <span className="text-foreground font-medium">{emailConfig.imapHost}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Port</span>
-                  <span className="font-medium text-apptax-navy">{emailConfig.imapPort}</span>
+                  <span className="text-foreground font-medium">{emailConfig.imapPort}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Zabezpieczenia</span>
@@ -209,13 +212,13 @@ function EmailConfigDisplay({
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Użytkownik</span>
-                  <span className="font-medium text-apptax-navy">{emailConfig.imapUser}</span>
+                  <span className="text-foreground font-medium">{emailConfig.imapUser}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Hasło</span>
                   <div className="flex items-center gap-2">
-                    <Lock className="h-3 w-3 text-apptax-teal" />
-                    <span className="text-xs text-muted-foreground">Zaszyfrowane</span>
+                    <Lock className="text-accent h-3 w-3" />
+                    <span className="text-muted-foreground text-xs">Zaszyfrowane</span>
                   </div>
                 </div>
               </div>
@@ -223,23 +226,24 @@ function EmailConfigDisplay({
           </Card>
 
           {/* Info Card */}
-          <Card className="md:col-span-2 bg-apptax-soft-teal border-apptax-blue/20">
+          <Card className="bg-accent/10 border-primary/20 md:col-span-2">
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
-                <div className="p-2 bg-apptax-blue/10 rounded">
-                  <Icon className="h-5 w-5 text-apptax-blue" />
+                <div className="bg-primary/10 rounded p-2">
+                  <Icon className="text-primary h-5 w-5" />
                 </div>
                 <div className="flex-1 space-y-2">
-                  <h4 className="font-semibold text-apptax-navy">
+                  <h4 className="text-foreground font-semibold">
                     {emailConfig.displayName || `Konfiguracja ${title} aktywna`}
                   </h4>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     {type === 'system-admin'
                       ? 'Ta konfiguracja email jest współdzielona przez wszystkich administratorów systemu. Wszystkie hasła są bezpiecznie zaszyfrowane.'
                       : 'Twoja osobista konfiguracja email jest aktywna i gotowa do użycia. Hasła są bezpiecznie zaszyfrowane.'}
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    Ostatnia aktualizacja: {new Date(emailConfig.updatedAt).toLocaleDateString('pl-PL')}
+                  <p className="text-muted-foreground text-sm">
+                    Ostatnia aktualizacja:{' '}
+                    {new Date(emailConfig.updatedAt).toLocaleDateString('pl-PL')}
                   </p>
                 </div>
               </div>
@@ -324,20 +328,25 @@ export default function AdminEmailConfigPage() {
       />
 
       {/* Important Notice */}
-      <Card className="border-apptax-blue bg-apptax-soft-teal/30">
+      <Card className="border-primary bg-accent/10/30">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
-            <div className="p-2 bg-apptax-blue/10 rounded">
-              <AlertCircle className="h-5 w-5 text-apptax-blue" />
+            <div className="bg-primary/10 rounded p-2">
+              <AlertCircle className="text-primary h-5 w-5" />
             </div>
             <div className="flex-1 space-y-2">
-              <h4 className="font-semibold text-apptax-navy">Dwie konfiguracje email</h4>
-              <p className="text-sm text-muted-foreground">
+              <h4 className="text-foreground font-semibold">Dwie konfiguracje email</h4>
+              <p className="text-muted-foreground text-sm">
                 Jako administrator masz dostęp do dwóch konfiguracji email:
               </p>
-              <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
-                <li><strong>Mój email</strong> - Twoja osobista konfiguracja email</li>
-                <li><strong>Email System Admin</strong> - Współdzielona konfiguracja dla wszystkich administratorów systemu</li>
+              <ul className="text-muted-foreground list-inside list-disc space-y-1 text-sm">
+                <li>
+                  <strong>Mój email</strong> - Twoja osobista konfiguracja email
+                </li>
+                <li>
+                  <strong>Email System Admin</strong> - Współdzielona konfiguracja dla wszystkich
+                  administratorów systemu
+                </li>
               </ul>
             </div>
           </div>
@@ -346,7 +355,7 @@ export default function AdminEmailConfigPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="user" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="user" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Mój email
@@ -391,7 +400,13 @@ export default function AdminEmailConfigPage() {
         open={userFormOpen}
         onOpenChange={setUserFormOpen}
         config={hasUserConfig ? userConfig.data : undefined}
-        onSubmit={hasUserConfig ? handleUserUpdate : handleUserCreate}
+        onSubmit={(data) => {
+          if (hasUserConfig) {
+            handleUserUpdate(data as UpdateEmailConfigFormData);
+          } else {
+            handleUserCreate(data as CreateEmailConfigFormData);
+          }
+        }}
         type="user"
         onTestSmtp={(data) => testSmtp.mutate(data)}
         onTestImap={(data) => testImap.mutate(data)}
@@ -415,7 +430,13 @@ export default function AdminEmailConfigPage() {
         open={systemAdminFormOpen}
         onOpenChange={setSystemAdminFormOpen}
         config={hasSystemAdminConfig ? systemAdminConfig.data : undefined}
-        onSubmit={hasSystemAdminConfig ? handleSystemAdminUpdate : handleSystemAdminCreate}
+        onSubmit={(data) => {
+          if (hasSystemAdminConfig) {
+            handleSystemAdminUpdate(data as UpdateEmailConfigFormData);
+          } else {
+            handleSystemAdminCreate(data as CreateEmailConfigFormData);
+          }
+        }}
         type="system-admin"
         onTestSmtp={(data) => testSystemAdminSmtp.mutate(data)}
         onTestImap={(data) => testSystemAdminImap.mutate(data)}

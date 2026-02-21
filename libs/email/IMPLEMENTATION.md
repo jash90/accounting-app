@@ -34,6 +34,7 @@ libs/email/
 ## Key Features
 
 ### 1. **SMTP Email Sending** (`EmailSenderService`)
+
 - ✅ Send single emails
 - ✅ Send batch emails
 - ✅ Support for HTML and plain text
@@ -43,6 +44,7 @@ libs/email/
 - ✅ Automatic transporter caching for performance
 
 ### 2. **IMAP Email Reading** (`EmailReaderService`)
+
 - ✅ Fetch emails with filtering
 - ✅ Search by criteria (UNSEEN, date, sender, etc.)
 - ✅ Mark emails as read/unread
@@ -52,12 +54,14 @@ libs/email/
 - ✅ Extract email metadata
 
 ### 3. **Configuration Management**
+
 - ✅ Type-safe configuration interfaces
 - ✅ Helper for LH.pl mail servers
 - ✅ Environment variable support
 - ✅ Validation utilities
 
 ### 4. **Multi-Tenant Support**
+
 - ✅ Per-request configuration
 - ✅ No global state
 - ✅ Easy integration with company-specific settings
@@ -65,6 +69,7 @@ libs/email/
 ## How It Works
 
 ### IMAP Protocol
+
 - **Purpose**: Reading emails from mail server
 - **Port**: 993 (with SSL/TLS)
 - **Connection**: Client connects → authenticates → selects mailbox → fetches messages
@@ -72,6 +77,7 @@ libs/email/
 - **Library**: `node-imap` (established, reliable IMAP client)
 
 ### SMTP Protocol
+
 - **Purpose**: Sending emails
 - **Port**: 465 (with SSL/TLS)
 - **Connection**: Client connects → authenticates → sends message → server delivers
@@ -79,6 +85,7 @@ libs/email/
 - **Library**: `nodemailer` (de facto standard for Node.js email sending)
 
 ### Email Parsing
+
 - **Library**: `mailparser` (part of nodemailer ecosystem)
 - **Features**: Parse MIME, extract headers, decode bodies, handle attachments
 
@@ -87,8 +94,9 @@ libs/email/
 ### Example: AI Agent Module
 
 ```typescript
-import { Module } from '@nestjs/common';
 import { EmailModule } from '@accounting/email';
+import { Module } from '@nestjs/common';
+
 import { AIAgentService } from './ai-agent.service';
 
 @Module({
@@ -99,14 +107,14 @@ export class AIAgentModule {}
 ```
 
 ```typescript
-import { Injectable } from '@nestjs/common';
 import { EmailReaderService, EmailSenderService } from '@accounting/email';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class AIAgentService {
   constructor(
     private readonly emailReader: EmailReaderService,
-    private readonly emailSender: EmailSenderService,
+    private readonly emailSender: EmailSenderService
   ) {}
 
   async processIncomingEmails(companyId: string) {
@@ -136,18 +144,14 @@ export class AIAgentService {
 ### Example: Simple Text Module
 
 ```typescript
-import { Injectable } from '@nestjs/common';
 import { EmailSenderService } from '@accounting/email';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class SimpleTextNotificationService {
   constructor(private readonly emailSender: EmailSenderService) {}
 
-  async notifySimpleTextCreated(
-    companyConfig: any,
-    recipientEmail: string,
-    simpleTextId: string
-  ) {
+  async notifySimpleTextCreated(companyConfig: any, recipientEmail: string, simpleTextId: string) {
     await this.emailSender.sendEmail(companyConfig.smtp, {
       to: recipientEmail,
       subject: 'New Simple Text Created',
@@ -245,7 +249,7 @@ export class YourModule {}
 ### 3. Use Services
 
 ```typescript
-import { EmailSenderService, EmailConfigHelper } from '@accounting/email';
+import { EmailConfigHelper, EmailSenderService } from '@accounting/email';
 
 @Injectable()
 export class YourService {
@@ -268,8 +272,8 @@ export class YourService {
 ### Unit Tests
 
 ```typescript
-import { Test } from '@nestjs/testing';
 import { EmailSenderService } from '@accounting/email';
+import { Test } from '@nestjs/testing';
 
 describe('EmailSenderService', () => {
   let service: EmailSenderService;
@@ -283,7 +287,9 @@ describe('EmailSenderService', () => {
   });
 
   it('should verify SMTP connection', async () => {
-    const config = { /* test config */ };
+    const config = {
+      /* test config */
+    };
     const result = await service.verifyConnection(config);
     expect(result).toBeDefined();
   });
@@ -339,6 +345,7 @@ Use a test SMTP server like [Ethereal](https://ethereal.email/) or [MailHog](htt
 ## Support
 
 For questions or issues:
+
 1. Review the documentation files
 2. Check the TypeScript interfaces for type definitions
 3. Look at service implementations for advanced usage

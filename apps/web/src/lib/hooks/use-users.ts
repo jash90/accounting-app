@@ -1,8 +1,17 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { type AxiosError } from 'axios';
+
+import { useToast } from '@/components/ui/use-toast';
+import { type CreateUserDto, type UpdateUserDto } from '@/types/dtos';
+
 import { usersApi } from '../api/endpoints/users';
 import { queryKeys } from '../api/query-client';
-import { CreateUserDto, UpdateUserDto, UserDto } from '@/types/dtos';
-import { useToast } from '@/components/ui/use-toast';
+
+interface ApiErrorResponse {
+  message?: string;
+  error?: string;
+  statusCode?: number;
+}
 
 export function useUsers() {
   return useQuery({
@@ -36,7 +45,7 @@ export function useCreateUser() {
         description: 'Użytkownik został utworzony',
       });
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<ApiErrorResponse>) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się utworzyć użytkownika',
@@ -51,8 +60,7 @@ export function useUpdateUser() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateUserDto }) =>
-      usersApi.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateUserDto }) => usersApi.update(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(variables.id) });
@@ -61,7 +69,7 @@ export function useUpdateUser() {
         description: 'Użytkownik został zaktualizowany',
       });
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<ApiErrorResponse>) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się zaktualizować użytkownika',
@@ -84,7 +92,7 @@ export function useDeleteUser() {
         description: 'Użytkownik został usunięty',
       });
     },
-    onError: (error: any) => {
+    onError: (error: AxiosError<ApiErrorResponse>) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się usunąć użytkownika',
@@ -100,4 +108,3 @@ export function useAvailableOwners() {
     queryFn: usersApi.getAvailableOwners,
   });
 }
-

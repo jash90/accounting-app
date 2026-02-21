@@ -1,11 +1,9 @@
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -15,9 +13,13 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { createModuleSchema, updateModuleSchema, CreateModuleFormData, UpdateModuleFormData } from '@/lib/validation/schemas';
-import { ModuleDto } from '@/types/dtos';
+import {
+  createModuleSchema,
+  updateModuleSchema,
+  type CreateModuleFormData,
+  type UpdateModuleFormData,
+} from '@/lib/validation/schemas';
+import { type ModuleDto } from '@/types/dtos';
 
 interface ModuleFormDialogProps {
   open: boolean;
@@ -107,4 +109,3 @@ export function ModuleFormDialog({ open, onOpenChange, module, onSubmit }: Modul
     </Dialog>
   );
 }
-

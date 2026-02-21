@@ -1,24 +1,28 @@
-import { useState } from 'react';
-import { ColumnDef } from '@tanstack/react-table';
-import { useUsers, useDeleteUser } from '@/lib/hooks/use-users';
-import { useCreateUser, useUpdateUser } from '@/lib/hooks/use-users';
-import { PageHeader } from '@/components/common/page-header';
-import { DataTable } from '@/components/common/data-table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Users, UserPlus } from 'lucide-react';
-import { UserDto, UserRole } from '@/types/dtos';
-import { UserFormDialog } from '@/components/forms/user-form-dialog';
+import { lazy, Suspense, useState } from 'react';
+
+import { type ColumnDef } from '@tanstack/react-table';
+import { Edit, Trash2, UserPlus, Users } from 'lucide-react';
+
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { PageHeader } from '@/components/common/page-header';
+import { UserFormDialog } from '@/components/forms/user-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useCreateUser, useDeleteUser, useUpdateUser, useUsers } from '@/lib/hooks/use-users';
+import { UserRole, type CreateUserDto, type UpdateUserDto, type UserDto } from '@/types/dtos';
+
+// Lazy load DataTable for bundle size optimization
+const DataTable = lazy(() =>
+  import('@/components/common/data-table').then((m) => ({ default: m.DataTable }))
+);
 
 const columns: ColumnDef<UserDto>[] = [
   {
     accessorKey: 'email',
     header: 'Email',
-    cell: ({ row }) => (
-      <div className="font-medium text-apptax-navy">{row.original.email}</div>
-    ),
+    cell: ({ row }) => <div className="text-foreground font-medium">{row.original.email}</div>,
   },
   {
     accessorKey: 'firstName',
@@ -33,7 +37,12 @@ const columns: ColumnDef<UserDto>[] = [
     header: 'Rola',
     cell: ({ row }) => {
       const role = row.original.role;
-      const variant = role === UserRole.ADMIN ? 'destructive' : role === UserRole.COMPANY_OWNER ? 'default' : 'muted';
+      const variant =
+        role === UserRole.ADMIN
+          ? 'destructive'
+          : role === UserRole.COMPANY_OWNER
+            ? 'default'
+            : 'muted';
       return <Badge variant={variant}>{role}</Badge>;
     },
   },
@@ -49,7 +58,7 @@ const columns: ColumnDef<UserDto>[] = [
   {
     id: 'actions',
     header: 'Akcje',
-    cell: ({ row }) => {
+    cell: ({ row: _row }) => {
       // Actions will be handled by the parent component
       return null;
     },
@@ -76,26 +85,26 @@ export default function UsersListPage() {
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:bg-apptax-soft-teal"
+            className="hover:bg-accent/10 h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               setEditingUser(row.original);
             }}
             title="Edytuj użytkownika"
           >
-            <Edit className="h-4 w-4 text-apptax-blue" />
+            <Edit className="text-primary h-4 w-4" />
           </Button>
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:bg-destructive/10"
+            className="hover:bg-destructive/10 h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               setDeletingUser(row.original);
             }}
             title="Usuń użytkownika"
           >
-            <Trash2 className="h-4 w-4 text-destructive" />
+            <Trash2 className="text-destructive h-4 w-4" />
           </Button>
         </div>
       ),
@@ -111,7 +120,7 @@ export default function UsersListPage() {
         action={
           <Button
             onClick={() => setCreateOpen(true)}
-            className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+            className="bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md transition-all"
           >
             <UserPlus className="mr-2 h-4 w-4" />
             Utwórz użytkownika
@@ -119,18 +128,28 @@ export default function UsersListPage() {
         }
       />
 
-      <Card className="border-apptax-soft-teal/30">
+      <Card className="border-border">
         <CardContent className="p-0">
-          <DataTable columns={actionColumns} data={users} isLoading={isPending} />
+          <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+            <DataTable
+              columns={actionColumns as never}
+              data={users as never}
+              isLoading={isPending}
+            />
+          </Suspense>
         </CardContent>
       </Card>
 
       <UserFormDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        onSubmit={(data) => {
-          createUser.mutate(data);
-          setCreateOpen(false);
+        onSubmit={async (data) => {
+          try {
+            await createUser.mutateAsync(data as CreateUserDto);
+            setCreateOpen(false);
+          } catch {
+            // Error handled by mutation's onError
+          }
         }}
       />
 
@@ -139,9 +158,13 @@ export default function UsersListPage() {
           open={!!editingUser}
           onOpenChange={(open) => !open && setEditingUser(null)}
           user={editingUser}
-          onSubmit={(data) => {
-            updateUser.mutate({ id: editingUser.id, data });
-            setEditingUser(null);
+          onSubmit={async (data) => {
+            try {
+              await updateUser.mutateAsync({ id: editingUser.id, data: data as UpdateUserDto });
+              setEditingUser(null);
+            } catch {
+              // Error handled by mutation's onError
+            }
           }}
         />
       )}

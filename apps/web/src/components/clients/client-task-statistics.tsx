@@ -1,8 +1,11 @@
-import { useClientTaskStatistics } from '@/lib/hooks/use-tasks';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { memo } from 'react';
+
 import { BarChart3, Clock, Target } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useClientTaskStatistics } from '@/lib/hooks/use-tasks';
 import { TaskStatus, TaskStatusLabels } from '@/types/enums';
 
 interface ClientTaskStatisticsProps {
@@ -10,12 +13,12 @@ interface ClientTaskStatisticsProps {
 }
 
 const statusColors: Record<TaskStatus, string> = {
-  [TaskStatus.BACKLOG]: 'bg-gray-100 text-gray-700 hover:bg-gray-100',
-  [TaskStatus.TODO]: 'bg-blue-100 text-blue-700 hover:bg-blue-100',
-  [TaskStatus.IN_PROGRESS]: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100',
-  [TaskStatus.IN_REVIEW]: 'bg-purple-100 text-purple-700 hover:bg-purple-100',
-  [TaskStatus.DONE]: 'bg-green-100 text-green-700 hover:bg-green-100',
-  [TaskStatus.CANCELLED]: 'bg-red-100 text-red-700 hover:bg-red-100',
+  [TaskStatus.BACKLOG]: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+  [TaskStatus.TODO]: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  [TaskStatus.IN_PROGRESS]: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
+  [TaskStatus.IN_REVIEW]: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
+  [TaskStatus.DONE]: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+  [TaskStatus.CANCELLED]: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
 };
 
 function formatTime(minutes: number): string {
@@ -27,7 +30,9 @@ function formatTime(minutes: number): string {
   return `${hours} godz ${mins} min`;
 }
 
-export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
+export const ClientTaskStatistics = memo(function ClientTaskStatistics({
+  clientId,
+}: ClientTaskStatisticsProps) {
   const { data: statistics, isPending, error } = useClientTaskStatistics(clientId);
 
   if (isPending) {
@@ -60,9 +65,7 @@ export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Nie udało się załadować statystyk
-          </p>
+          <p className="text-muted-foreground text-sm">Nie udało się załadować statystyk</p>
         </CardContent>
       </Card>
     );
@@ -79,9 +82,7 @@ export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Brak zadań do wyświetlenia
-          </p>
+          <p className="text-muted-foreground text-sm">Brak zadań do wyświetlenia</p>
         </CardContent>
       </Card>
     );
@@ -107,7 +108,7 @@ export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
       <CardContent className="space-y-4">
         {/* Total count */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Wszystkie</span>
+          <span className="text-muted-foreground text-sm">Wszystkie</span>
           <Badge variant="secondary" className="font-semibold">
             {statistics.totalCount}
           </Badge>
@@ -121,9 +122,7 @@ export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
 
             return (
               <div key={status} className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">
-                  {TaskStatusLabels[status]}
-                </span>
+                <span className="text-muted-foreground text-sm">{TaskStatusLabels[status]}</span>
                 <Badge className={statusColors[status]}>{count}</Badge>
               </div>
             );
@@ -132,8 +131,8 @@ export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
 
         {/* Estimated time */}
         {statistics.totalEstimatedMinutes > 0 && (
-          <div className="flex items-center justify-between pt-2 border-t">
-            <span className="text-sm text-muted-foreground flex items-center gap-1">
+          <div className="flex items-center justify-between border-t pt-2">
+            <span className="text-muted-foreground flex items-center gap-1 text-sm">
               <Clock className="h-3 w-3" />
               Estymowany czas
             </span>
@@ -146,16 +145,14 @@ export function ClientTaskStatistics({ clientId }: ClientTaskStatisticsProps) {
         {/* Story points */}
         {statistics.totalStoryPoints > 0 && (
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground flex items-center gap-1">
+            <span className="text-muted-foreground flex items-center gap-1 text-sm">
               <Target className="h-3 w-3" />
               Story points
             </span>
-            <span className="text-sm font-medium">
-              {statistics.totalStoryPoints}
-            </span>
+            <span className="text-sm font-medium">{statistics.totalStoryPoints}</span>
           </div>
         )}
       </CardContent>
     </Card>
   );
-}
+});

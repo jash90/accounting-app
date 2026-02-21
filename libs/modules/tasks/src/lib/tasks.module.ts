@@ -1,29 +1,31 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
 import {
+  Client,
+  Company,
+  NotificationSettings,
   Task,
+  TaskComment,
+  TaskDependency,
   TaskLabel,
   TaskLabelAssignment,
-  TaskDependency,
-  TaskComment,
-  Company,
   User,
-  Client,
-  NotificationSettings,
-  CommonModule,
 } from '@accounting/common';
-import { RBACModule } from '@accounting/rbac';
+import { CommonModule } from '@accounting/common/backend';
 import { EmailModule } from '@accounting/email';
-import { TasksService } from './services/tasks.service';
-import { TaskLabelsService } from './services/task-labels.service';
-import { TaskCommentsService } from './services/task-comments.service';
-import { TaskDependenciesService } from './services/task-dependencies.service';
-import { TaskNotificationService } from './services/task-notification.service';
-import { TasksController } from './controllers/tasks.controller';
-import { TaskLabelsController } from './controllers/task-labels.controller';
+import { RBACModule } from '@accounting/rbac';
+
 import { TaskCommentsController } from './controllers/task-comments.controller';
 import { TaskDependenciesController } from './controllers/task-dependencies.controller';
+import { TaskLabelsController } from './controllers/task-labels.controller';
 import { TasksLookupController } from './controllers/tasks-lookup.controller';
+import { TasksController } from './controllers/tasks.controller';
+import { TaskCommentsService } from './services/task-comments.service';
+import { TaskDependenciesService } from './services/task-dependencies.service';
+import { TaskLabelsService } from './services/task-labels.service';
+import { TaskNotificationService } from './services/task-notification.service';
+import { TasksService } from './services/tasks.service';
 
 @Module({
   imports: [
@@ -57,11 +59,6 @@ import { TasksLookupController } from './controllers/tasks-lookup.controller';
     TaskDependenciesService,
     TaskNotificationService,
   ],
-  exports: [
-    TasksService,
-    TaskLabelsService,
-    TaskCommentsService,
-    TaskDependenciesService,
-  ],
+  exports: [TasksService, TaskLabelsService, TaskCommentsService, TaskDependenciesService],
 })
 export class TasksModule {}

@@ -1,31 +1,47 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Brackets } from 'typeorm';
+
+import { Brackets, DataSource, In, Repository } from 'typeorm';
+
 import {
+  PaginatedResponseDto,
   Task,
   TaskLabel,
   TaskLabelAssignment,
-  User,
   TaskStatus,
   TaskStatusLabels,
-  PaginatedResponseDto,
-  TenantService,
+  User,
 } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
-import { TaskNotFoundException, TaskInvalidParentException } from '../exceptions';
+
 import {
-  CreateTaskDto,
-  UpdateTaskDto,
-  TaskFiltersDto,
-  ReorderTasksDto,
-  BulkUpdateStatusDto,
-} from '../dto/task.dto';
-import {
+  ClientTaskStatisticsDto,
   KanbanBoardResponseDto,
   KanbanColumnDto,
-  ClientTaskStatisticsDto,
 } from '../dto/task-response.dto';
+import {
+  BulkUpdateStatusDto,
+  CreateTaskDto,
+  ReorderTasksDto,
+  TaskFiltersDto,
+  UpdateTaskDto,
+} from '../dto/task.dto';
+import { TaskInvalidParentException, TaskNotFoundException } from '../exceptions';
 import { TaskNotificationService } from './task-notification.service';
+
+/**
+ * Valid status transitions for tasks.
+ * Prevents invalid state changes and ensures workflow integrity.
+ */
+const VALID_STATUS_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
+  [TaskStatus.BACKLOG]: [TaskStatus.TODO, TaskStatus.CANCELLED],
+  [TaskStatus.TODO]: [TaskStatus.IN_PROGRESS, TaskStatus.BACKLOG, TaskStatus.CANCELLED],
+  [TaskStatus.IN_PROGRESS]: [TaskStatus.IN_REVIEW, TaskStatus.TODO, TaskStatus.CANCELLED],
+  [TaskStatus.IN_REVIEW]: [TaskStatus.DONE, TaskStatus.IN_PROGRESS, TaskStatus.CANCELLED],
+  [TaskStatus.DONE]: [TaskStatus.IN_PROGRESS], // Allow reopening
+  [TaskStatus.CANCELLED]: [TaskStatus.BACKLOG, TaskStatus.TODO], // Allow restoring
+};
 
 @Injectable()
 export class TasksService {
@@ -41,13 +57,11 @@ export class TasksService {
     private readonly changeLogService: ChangeLogService,
     private readonly tenantService: TenantService,
     private readonly taskNotificationService: TaskNotificationService,
+    private readonly dataSource: DataSource
   ) {}
 
   private escapeLikePattern(pattern: string): string {
-    return pattern
-      .replace(/\\/g, '\\\\')
-      .replace(/%/g, '\\%')
-      .replace(/_/g, '\\_');
+    return pattern.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
   }
 
   async findAll(user: User, filters?: TaskFiltersDto): Promise<PaginatedResponseDto<Task>> {
@@ -69,9 +83,12 @@ export class TasksService {
       const escapedSearch = this.escapeLikePattern(filters.search);
       queryBuilder.andWhere(
         new Brackets((qb) => {
-          qb.where("task.title ILIKE :search ESCAPE '\\'", { search: `%${escapedSearch}%` })
-            .orWhere("task.description ILIKE :search ESCAPE '\\'", { search: `%${escapedSearch}%` });
-        }),
+          qb.where("task.title ILIKE :search ESCAPE '\\'", {
+            search: `%${escapedSearch}%`,
+          }).orWhere("task.description ILIKE :search ESCAPE '\\'", {
+            search: `%${escapedSearch}%`,
+          });
+        })
       );
     }
 
@@ -268,10 +285,7 @@ export class TasksService {
     return tasks;
   }
 
-  async getClientTaskStatistics(
-    clientId: string,
-    user: User,
-  ): Promise<ClientTaskStatisticsDto> {
+  async getClientTaskStatistics(clientId: string, user: User): Promise<ClientTaskStatisticsDto> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     // Verify client belongs to the company (multi-tenant isolation)
@@ -341,6 +355,11 @@ export class TasksService {
       }
     }
 
+    // Validate assignee ownership if provided
+    if (dto.assigneeId) {
+      await this.validateAssigneeOwnership(dto.assigneeId, companyId);
+    }
+
     // Get max sort order
     const maxSortOrder = await this.taskRepository
       .createQueryBuilder('task')
@@ -370,7 +389,7 @@ export class TasksService {
           taskId: savedTask.id,
           labelId: label.id,
           assignedById: user.id,
-        }),
+        })
       );
       await this.labelAssignmentRepository.save(assignments);
       (savedTask as Task & { labels?: TaskLabel[] }).labels = labels;
@@ -383,35 +402,42 @@ export class TasksService {
       'Task',
       savedTask.id,
       this.sanitizeTaskForLog(savedTask),
-      user,
+      user
     );
 
     // Send notification if task is associated with a client
     if (savedTask.clientId) {
       // Load task with relations for notification
       const taskWithRelations = await this.findOne(savedTask.id, user);
-      this.taskNotificationService
-        .notifyTaskCreated(taskWithRelations, user)
-        .catch((error) => {
-          this.logger.error('Failed to send task created notification', {
-            taskId: savedTask.id,
-            error: (error as Error).message,
-          });
+      this.taskNotificationService.notifyTaskCreated(taskWithRelations, user).catch((error) => {
+        this.logger.error('Failed to send task created notification', {
+          taskId: savedTask.id,
+          error: (error as Error).message,
         });
+      });
     }
 
     return savedTask as Task & { labels?: TaskLabel[] };
   }
 
-  async update(id: string, dto: UpdateTaskDto, user: User): Promise<Task & { labels?: TaskLabel[] }> {
+  async update(
+    id: string,
+    dto: UpdateTaskDto,
+    user: User
+  ): Promise<Task & { labels?: TaskLabel[] }> {
     const task = await this.findOne(id, user);
     const oldValues = this.sanitizeTaskForLog(task);
     const oldClientId = task.clientId;
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+
+    // Validate status transition if status is being changed
+    if (dto.status !== undefined && dto.status !== task.status) {
+      this.validateStatusTransition(task.status, dto.status);
+    }
 
     // Validate new parent if provided
     if (dto.parentTaskId !== undefined && dto.parentTaskId !== task.parentTaskId) {
       if (dto.parentTaskId) {
-        const companyId = await this.tenantService.getEffectiveCompanyId(user);
         const parentTask = await this.taskRepository.findOne({
           where: { id: dto.parentTaskId, companyId },
         });
@@ -419,10 +445,19 @@ export class TasksService {
           throw new TaskInvalidParentException(id, dto.parentTaskId);
         }
         // Prevent setting parent to itself or descendant
-        if (dto.parentTaskId === id || await this.isDescendant(dto.parentTaskId, id)) {
+        if (dto.parentTaskId === id || (await this.isDescendant(dto.parentTaskId, id))) {
           throw new TaskInvalidParentException(id, dto.parentTaskId);
         }
       }
+    }
+
+    // Validate assignee ownership if being changed
+    if (
+      dto.assigneeId !== undefined &&
+      dto.assigneeId !== task.assigneeId &&
+      dto.assigneeId !== null
+    ) {
+      await this.validateAssigneeOwnership(dto.assigneeId, companyId);
     }
 
     const { labelIds, ...taskData } = dto;
@@ -436,7 +471,6 @@ export class TasksService {
       await this.labelAssignmentRepository.delete({ taskId: id });
 
       if (labelIds.length > 0) {
-        const companyId = await this.tenantService.getEffectiveCompanyId(user);
         const labels = await this.labelRepository.find({
           where: { id: In(labelIds), companyId, isActive: true },
         });
@@ -446,7 +480,7 @@ export class TasksService {
             taskId: id,
             labelId: label.id,
             assignedById: user.id,
-          }),
+          })
         );
         await this.labelAssignmentRepository.save(assignments);
         (savedTask as Task & { labels?: TaskLabel[] }).labels = labels;
@@ -461,7 +495,7 @@ export class TasksService {
       savedTask.id,
       oldValues,
       this.sanitizeTaskForLog(savedTask),
-      user,
+      user
     );
 
     // Send notification if task is/was associated with a client
@@ -492,14 +526,12 @@ export class TasksService {
 
     // Send notification if task was associated with a client
     if (task.clientId) {
-      this.taskNotificationService
-        .notifyTaskDeleted(task, user)
-        .catch((error) => {
-          this.logger.error('Failed to send task deleted notification', {
-            taskId: task.id,
-            error: (error as Error).message,
-          });
+      this.taskNotificationService.notifyTaskDeleted(task, user).catch((error) => {
+        this.logger.error('Failed to send task deleted notification', {
+          taskId: task.id,
+          error: (error as Error).message,
         });
+      });
     }
   }
 
@@ -518,11 +550,20 @@ export class TasksService {
       });
     }
 
+    // Validate status transitions if newStatus is provided
+    if (dto.newStatus) {
+      for (const task of tasks) {
+        if (task.status !== dto.newStatus) {
+          this.validateStatusTransition(task.status, dto.newStatus);
+        }
+      }
+    }
+
     // Update sort orders
     for (let i = 0; i < dto.taskIds.length; i++) {
       await this.taskRepository.update(
         { id: dto.taskIds[i], companyId },
-        { sortOrder: i, ...(dto.newStatus ? { status: dto.newStatus } : {}) },
+        { sortOrder: i, ...(dto.newStatus ? { status: dto.newStatus } : {}) }
       );
     }
   }
@@ -530,9 +571,20 @@ export class TasksService {
   async bulkUpdateStatus(dto: BulkUpdateStatusDto, user: User): Promise<{ updated: number }> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
+    // Validate status transitions for all tasks
+    const tasks = await this.taskRepository.find({
+      where: { id: In(dto.taskIds), companyId },
+    });
+
+    for (const task of tasks) {
+      if (task.status !== dto.status) {
+        this.validateStatusTransition(task.status, dto.status);
+      }
+    }
+
     const result = await this.taskRepository.update(
       { id: In(dto.taskIds), companyId },
-      { status: dto.status },
+      { status: dto.status }
     );
 
     return { updated: result.affected ?? 0 };
@@ -573,6 +625,43 @@ export class TasksService {
     }
 
     return false;
+  }
+
+  /**
+   * Validates that a status transition is allowed.
+   * Throws BadRequestException if the transition is invalid.
+   *
+   * @param from - Current task status
+   * @param to - Target task status
+   * @throws BadRequestException if transition is not allowed
+   */
+  private validateStatusTransition(from: TaskStatus, to: TaskStatus): void {
+    const allowedTransitions = VALID_STATUS_TRANSITIONS[from];
+
+    if (!allowedTransitions || !allowedTransitions.includes(to)) {
+      const fromLabel = TaskStatusLabels[from] || from;
+      const toLabel = TaskStatusLabels[to] || to;
+      const allowedLabels =
+        allowedTransitions?.map((s) => TaskStatusLabels[s] || s).join(', ') || 'none';
+
+      throw new BadRequestException(
+        `Nieprawidłowa zmiana statusu: ${fromLabel} → ${toLabel}. ` +
+          `Dozwolone przejścia z "${fromLabel}": ${allowedLabels}`
+      );
+    }
+  }
+
+  /**
+   * Validates that an assignee belongs to the specified company.
+   * Throws NotFoundException if user doesn't exist or doesn't belong to company.
+   */
+  private async validateAssigneeOwnership(assigneeId: string, companyId: string): Promise<void> {
+    const user = await this.dataSource.getRepository('User').findOne({
+      where: { id: assigneeId, companyId, isActive: true },
+    });
+    if (!user) {
+      throw new NotFoundException('Użytkownik nie należy do tej firmy lub nie istnieje');
+    }
   }
 
   private sanitizeTaskForLog(task: Task): Record<string, unknown> {

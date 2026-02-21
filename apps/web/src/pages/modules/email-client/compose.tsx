@@ -1,37 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
+
 import {
-  useSendEmail,
-  useCreateDraft,
-  useDraft,
-  useUpdateDraft,
-  useGenerateAiDraftStream,
-  useUploadAttachment,
-} from '@/lib/hooks/use-email-client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import {
-  Send,
-  Save,
   ArrowLeft,
-  Loader2,
   ChevronDown,
   ChevronUp,
-  Sparkles,
-  Paperclip,
-  X,
   FileIcon,
+  Loader2,
+  Paperclip,
+  Save,
+  Send,
+  Sparkles,
   Upload,
+  X,
 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+  useCreateDraft,
+  useDraft,
+  useGenerateAiDraftStream,
+  useSendEmail,
+  useUpdateDraft,
+  useUploadAttachment,
+} from '@/lib/hooks/use-email-client';
+import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 
 interface LocationState {
   replyTo?: {
@@ -46,93 +45,166 @@ interface LocationState {
   messageUid?: number;
 }
 
-export default function EmailCompose() {
-  const emailNav = useEmailClientNavigation();
-  const location = useLocation();
-  const [searchParams] = useSearchParams();
+interface EmailDraft {
+  id: string;
+  to?: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject?: string;
+  textContent?: string;
+  isAiGenerated?: boolean;
+}
+
+interface AiStreamState {
+  content: string;
+  draftId: string | null;
+  isStreaming: boolean;
+  error: string | null;
+  startStream: (params: { messageUid: number }) => void;
+  reset: () => void;
+}
+
+interface EmailComposeFormProps {
+  initialData: {
+    to: string;
+    cc: string;
+    subject: string;
+    content: string;
+    showCcBcc: boolean;
+  };
+  draftId: string | null;
+  existingDraft: EmailDraft | undefined;
+  aiStream: AiStreamState;
+  locationState: LocationState | null;
+  onNavigateToInbox: () => void;
+  onNavigateToDraft: (draftId: string, options?: { replace?: boolean }) => void;
+}
+
+// -- Reducer for email form fields --
+interface EmailFormState {
+  to: string;
+  cc: string;
+  bcc: string;
+  subject: string;
+  content: string;
+  showCcBcc: boolean;
+}
+
+type EmailFormAction =
+  | { type: 'SET_TO'; payload: string }
+  | { type: 'SET_CC'; payload: string }
+  | { type: 'SET_BCC'; payload: string }
+  | { type: 'SET_SUBJECT'; payload: string }
+  | { type: 'SET_CONTENT'; payload: string }
+  | { type: 'SET_SHOW_CC_BCC'; payload: boolean };
+
+function emailFormReducer(state: EmailFormState, action: EmailFormAction): EmailFormState {
+  switch (action.type) {
+    case 'SET_TO':
+      return { ...state, to: action.payload };
+    case 'SET_CC':
+      return { ...state, cc: action.payload };
+    case 'SET_BCC':
+      return { ...state, bcc: action.payload };
+    case 'SET_SUBJECT':
+      return { ...state, subject: action.payload };
+    case 'SET_CONTENT':
+      return { ...state, content: action.payload };
+    case 'SET_SHOW_CC_BCC':
+      return { ...state, showCcBcc: action.payload };
+  }
+}
+
+function EmailComposeForm({
+  initialData,
+  draftId,
+  existingDraft,
+  aiStream,
+  locationState,
+  onNavigateToInbox,
+  onNavigateToDraft,
+}: EmailComposeFormProps) {
+  'use no memo';
   const { toast } = useToast();
 
-  // Get draftId from URL query params
-  const draftId = searchParams.get('draftId');
-  const locationState = location.state as LocationState | null;
+  // Destructure aiStream properties for explicit dependencies
+  const {
+    content: aiStreamContent,
+    draftId: aiStreamDraftId,
+    isStreaming: aiStreamIsStreaming,
+    error: aiStreamError,
+    startStream,
+    reset: resetAiStream,
+  } = aiStream;
 
   // Hooks
   const sendEmail = useSendEmail();
   const createDraft = useCreateDraft();
   const updateDraft = useUpdateDraft();
-  const aiStream = useGenerateAiDraftStream();
   const uploadAttachment = useUploadAttachment();
-  const { data: existingDraft, isLoading: isDraftLoading } = useDraft(draftId || undefined);
 
-  // Form state
-  const [to, setTo] = useState('');
-  const [cc, setCc] = useState('');
-  const [bcc, setBcc] = useState('');
-  const [subject, setSubject] = useState('');
-  const [content, setContent] = useState('');
-  const [showCcBcc, setShowCcBcc] = useState(false);
-  const [attachments, setAttachments] = useState<Array<{ path: string; filename: string; size: number }>>([]);
+  // Form state - initialized from props (no useEffect needed due to key prop in parent)
+  const [formState, dispatchForm] = useReducer(emailFormReducer, {
+    to: initialData.to,
+    cc: initialData.cc,
+    bcc: '',
+    subject: initialData.subject,
+    content: initialData.content,
+    showCcBcc: initialData.showCcBcc,
+  });
+  const { to, cc, bcc, subject, content, showCcBcc } = formState;
+  const [attachments, setAttachments] = useState<
+    Array<{ path: string; filename: string; size: number }>
+  >([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Sync streaming content to textarea
-  useEffect(() => {
-    if (aiStream.content) {
-      setContent(aiStream.content);
-    }
-  }, [aiStream.content]);
+  // Ref to track if AI generation was triggered to prevent re-triggering
+  const aiGenerateTriggeredRef = useRef(false);
+
+  // Derive display content: use streaming content during AI generation, otherwise use editable content
+  // This replaces the useEffect that was syncing aiStreamContent to content state
+  const displayContent = aiStreamIsStreaming && aiStreamContent ? aiStreamContent : content;
 
   // Navigate to draft when streaming completes
+  // Note: No need to sync content here - navigation causes remount and draft is loaded from server
   useEffect(() => {
-    if (aiStream.draftId && !aiStream.isStreaming) {
-      emailNav.toComposeWithQuery(`draftId=${aiStream.draftId}`, { replace: true });
+    if (aiStreamDraftId && !aiStreamIsStreaming) {
+      onNavigateToDraft(aiStreamDraftId, { replace: true });
       toast({ title: 'Sukces', description: 'Odpowiedź AI została wygenerowana' });
-      aiStream.reset();
+      resetAiStream();
     }
-  }, [aiStream.draftId, aiStream.isStreaming]);
+  }, [aiStreamDraftId, aiStreamIsStreaming, resetAiStream, onNavigateToDraft, toast]);
 
   // Show error if streaming fails
   useEffect(() => {
-    if (aiStream.error) {
+    if (aiStreamError) {
       toast({
         title: 'Błąd',
-        description: aiStream.error,
+        description: aiStreamError,
         variant: 'destructive',
       });
     }
-  }, [aiStream.error]);
+  }, [aiStreamError, toast]);
 
-  // Load draft data or reply state
+  const handleGenerateAiReply = useCallback(
+    (messageUid: number) => {
+      // Clear content first to show skeleton
+      dispatchForm({ type: 'SET_CONTENT', payload: '' });
+      // Start streaming - text will appear progressively in textarea
+      startStream({ messageUid });
+    },
+    [startStream]
+  );
+
+  // Trigger AI generation on mount if requested via navigation state
+  // Uses ref to ensure this only runs once per component mount
+  // Note: Content is already empty via initialData when aiGenerate is used
   useEffect(() => {
-    if (existingDraft) {
-      // Loading existing draft
-      setTo(existingDraft.to?.join(', ') || '');
-      setCc(existingDraft.cc?.join(', ') || '');
-      setSubject(existingDraft.subject || '');
-      setContent(existingDraft.textContent || '');
-      if (existingDraft.cc && existingDraft.cc.length > 0) {
-        setShowCcBcc(true);
-      }
-    } else if (locationState) {
-      // Loading from reply state
-      if (locationState.to) {
-        setTo(locationState.to);
-      }
-      if (locationState.subject) {
-        setSubject(locationState.subject);
-      }
-      // Handle AI generation
-      if (locationState.aiGenerate && locationState.messageUid) {
-        handleGenerateAiReply(locationState.messageUid);
-      }
+    if (locationState?.aiGenerate && locationState.messageUid && !aiGenerateTriggeredRef.current) {
+      aiGenerateTriggeredRef.current = true;
+      startStream({ messageUid: locationState.messageUid });
     }
-  }, [existingDraft, locationState]);
-
-  const handleGenerateAiReply = (messageUid: number) => {
-    // Clear content first to show skeleton
-    setContent('');
-    // Start streaming - text will appear progressively in textarea
-    aiStream.startStream({ messageUid });
-  };
+  }, [locationState?.aiGenerate, locationState?.messageUid, startStream]);
 
   // Attachment handlers
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -157,7 +229,7 @@ export default function EmailCompose() {
           title: 'Sukces',
           description: `Przesłano "${file.name}"`,
         });
-      } catch (error) {
+      } catch {
         toast({
           title: 'Błąd',
           description: `Nie udało się przesłać "${file.name}"`,
@@ -214,8 +286,8 @@ export default function EmailCompose() {
       });
 
       toast({ title: 'Sukces', description: 'Wiadomość została wysłana' });
-      emailNav.toInbox();
-    } catch (error) {
+      onNavigateToInbox();
+    } catch {
       toast({
         title: 'Błąd',
         description: 'Nie udało się wysłać wiadomości',
@@ -256,10 +328,10 @@ export default function EmailCompose() {
           textContent: content,
         });
         // Navigate to edit the new draft so subsequent saves are updates
-        emailNav.toComposeWithQuery(`draftId=${newDraft.id}`, { replace: true });
+        onNavigateToDraft(newDraft.id, { replace: true });
         toast({ title: 'Sukces', description: 'Szkic zapisany' });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Błąd',
         description: 'Nie udało się zapisać szkicu',
@@ -268,61 +340,37 @@ export default function EmailCompose() {
     }
   };
 
-  if (isDraftLoading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
-          <p className="mt-2 text-sm text-muted-foreground">
-            Ładowanie szkicu...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   const isSaving = createDraft.isPending || updateDraft.isPending;
   const isSending = sendEmail.isPending;
   const isUploading = uploadAttachment.isPending;
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="border-b p-4 flex items-center justify-between">
+    <div className="flex h-full flex-col">
+      <div className="flex items-center justify-between border-b p-4">
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => emailNav.toInbox()}
-          >
+          <Button variant="ghost" size="sm" onClick={onNavigateToInbox}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold">
-            {draftId ? 'Edytuj szkic' : 'Nowa wiadomość'}
-          </h1>
+          <h1 className="text-2xl font-bold">{draftId ? 'Edytuj szkic' : 'Nowa wiadomość'}</h1>
           {existingDraft?.isAiGenerated && (
-            <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full flex items-center gap-1">
+            <span className="flex items-center gap-1 rounded-full bg-purple-100 px-2 py-1 text-xs text-purple-800">
               <Sparkles className="h-3 w-3" />
               Wygenerowane przez AI
             </span>
           )}
           {attachments.length > 0 && (
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full flex items-center gap-1">
+            <span className="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800">
               <Paperclip className="h-3 w-3" />
               {attachments.length} {attachments.length === 1 ? 'załącznik' : 'załączniki'}
             </span>
           )}
         </div>
         <div className="flex gap-2">
-          <Button
-            onClick={handleSaveDraft}
-            variant="outline"
-            size="sm"
-            disabled={isSaving}
-          >
+          <Button onClick={handleSaveDraft} variant="outline" size="sm" disabled={isSaving}>
             {isSaving ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="mr-2 h-4 w-4" />
             )}
             {draftId ? 'Zapisz zmiany' : 'Zapisz szkic'}
           </Button>
@@ -331,61 +379,62 @@ export default function EmailCompose() {
               variant="outline"
               size="sm"
               onClick={() => handleGenerateAiReply(locationState.replyTo!.uid)}
-              disabled={aiStream.isStreaming}
+              disabled={aiStreamIsStreaming}
             >
-              {aiStream.isStreaming ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              {aiStreamIsStreaming ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <Sparkles className="h-4 w-4 mr-2" />
+                <Sparkles className="mr-2 h-4 w-4" />
               )}
               Wygeneruj AI
             </Button>
           )}
           <Button onClick={handleSend} size="sm" disabled={isSending}>
             {isSending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <Send className="h-4 w-4 mr-2" />
+              <Send className="mr-2 h-4 w-4" />
             )}
             Wyślij
           </Button>
         </div>
       </div>
 
-      <div className="flex-1 p-6 overflow-auto">
-        <div className="max-w-4xl mx-auto space-y-4">
+      <div className="flex-1 overflow-auto p-6">
+        <div className="mx-auto max-w-4xl space-y-4">
           <div>
             <Label htmlFor="to">Do</Label>
             <Input
               id="to"
               placeholder="adresat@example.com"
               value={to}
-              onChange={(e) => setTo(e.target.value)}
+              onChange={(e) => dispatchForm({ type: 'SET_TO', payload: e.target.value })}
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              Oddziel wiele adresów przecinkami
-            </p>
+            <p className="text-muted-foreground mt-1 text-xs">Oddziel wiele adresów przecinkami</p>
           </div>
 
-          <Collapsible open={showCcBcc} onOpenChange={setShowCcBcc}>
+          <Collapsible
+            open={showCcBcc}
+            onOpenChange={(open) => dispatchForm({ type: 'SET_SHOW_CC_BCC', payload: open })}
+          >
             <CollapsibleTrigger asChild>
               <Button variant="ghost" size="sm" className="text-muted-foreground">
                 {showCcBcc ? (
-                  <ChevronUp className="h-4 w-4 mr-1" />
+                  <ChevronUp className="mr-1 h-4 w-4" />
                 ) : (
-                  <ChevronDown className="h-4 w-4 mr-1" />
+                  <ChevronDown className="mr-1 h-4 w-4" />
                 )}
                 {showCcBcc ? 'Ukryj DW/UDW' : 'Dodaj DW/UDW'}
               </Button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 mt-2">
+            <CollapsibleContent className="mt-2 space-y-4">
               <div>
                 <Label htmlFor="cc">DW (Do wiadomości)</Label>
                 <Input
                   id="cc"
                   placeholder="dw@example.com"
                   value={cc}
-                  onChange={(e) => setCc(e.target.value)}
+                  onChange={(e) => dispatchForm({ type: 'SET_CC', payload: e.target.value })}
                 />
               </div>
               <div>
@@ -394,7 +443,7 @@ export default function EmailCompose() {
                   id="bcc"
                   placeholder="udw@example.com"
                   value={bcc}
-                  onChange={(e) => setBcc(e.target.value)}
+                  onChange={(e) => dispatchForm({ type: 'SET_BCC', payload: e.target.value })}
                 />
               </div>
             </CollapsibleContent>
@@ -406,38 +455,38 @@ export default function EmailCompose() {
               id="subject"
               placeholder="Temat wiadomości"
               value={subject}
-              onChange={(e) => setSubject(e.target.value)}
+              onChange={(e) => dispatchForm({ type: 'SET_SUBJECT', payload: e.target.value })}
             />
           </div>
 
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
+            <div className="mb-1.5 flex items-center gap-2">
               <Label htmlFor="content">Wiadomość</Label>
-              {(aiStream.isStreaming || (locationState?.aiGenerate && !content)) && (
-                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+              {(aiStreamIsStreaming || (locationState?.aiGenerate && !content)) && (
+                <span className="flex animate-pulse items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-800">
                   <Sparkles className="h-3 w-3" />
                   Generowanie AI...
                 </span>
               )}
             </div>
             <div className="relative">
-              {(aiStream.isStreaming || locationState?.aiGenerate) && !content && (
-                <div className="absolute inset-0 bg-background rounded-md border p-3 space-y-2 z-10">
-                  <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
-                  <div className="h-4 bg-muted rounded animate-pulse w-full" />
-                  <div className="h-4 bg-muted rounded animate-pulse w-5/6" />
-                  <div className="h-4 bg-muted rounded animate-pulse w-2/3" />
-                  <div className="h-4 bg-muted rounded animate-pulse w-4/5" />
+              {(aiStreamIsStreaming || locationState?.aiGenerate) && !displayContent && (
+                <div className="bg-background absolute inset-0 z-10 space-y-2 rounded-md border p-3">
+                  <div className="bg-muted h-4 w-3/4 animate-pulse rounded" />
+                  <div className="bg-muted h-4 w-full animate-pulse rounded" />
+                  <div className="bg-muted h-4 w-5/6 animate-pulse rounded" />
+                  <div className="bg-muted h-4 w-2/3 animate-pulse rounded" />
+                  <div className="bg-muted h-4 w-4/5 animate-pulse rounded" />
                 </div>
               )}
               <Textarea
                 id="content"
                 placeholder="Wpisz treść wiadomości..."
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
+                value={displayContent}
+                onChange={(e) => dispatchForm({ type: 'SET_CONTENT', payload: e.target.value })}
                 rows={15}
-                className={`font-mono ${(aiStream.isStreaming || locationState?.aiGenerate) ? 'border-purple-300 focus:border-purple-500' : ''}`}
-                disabled={aiStream.isStreaming || (locationState?.aiGenerate && !content)}
+                className={`font-mono ${aiStreamIsStreaming || locationState?.aiGenerate ? 'border-purple-300 focus:border-purple-500' : ''}`}
+                disabled={aiStreamIsStreaming || (locationState?.aiGenerate && !displayContent)}
               />
             </div>
           </div>
@@ -448,10 +497,20 @@ export default function EmailCompose() {
 
             {/* Drag & Drop Zone */}
             <div
+              role="button"
+              tabIndex={0}
+              aria-label="Strefa upuszczania załączników. Naciśnij Enter lub Spację aby otworzyć wybór plików."
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+              onClick={() => document.getElementById('file-upload')?.click()}
+              onKeyDown={(e: React.KeyboardEvent) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  document.getElementById('file-upload')?.click();
+                }
+              }}
+              className={`focus:ring-ring cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors focus:ring-2 focus:ring-offset-2 focus:outline-none ${
                 isDragging
                   ? 'border-primary bg-primary/5'
                   : 'border-muted-foreground/25 hover:border-muted-foreground/50'
@@ -466,19 +525,19 @@ export default function EmailCompose() {
               />
               <label
                 htmlFor="file-upload"
-                className="cursor-pointer flex flex-col items-center gap-2"
+                className="flex cursor-pointer flex-col items-center gap-2"
               >
                 {isUploading ? (
-                  <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
+                  <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
                 ) : (
-                  <Upload className="h-8 w-8 text-muted-foreground" />
+                  <Upload className="text-muted-foreground h-8 w-8" />
                 )}
-                <span className="text-sm text-muted-foreground">
+                <span className="text-muted-foreground text-sm">
                   {isUploading
                     ? 'Przesyłanie...'
                     : 'Przeciągnij i upuść pliki tutaj lub kliknij, aby przeglądać'}
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-muted-foreground text-xs">
                   Maksymalny rozmiar pliku: 10MB
                 </span>
               </label>
@@ -489,14 +548,14 @@ export default function EmailCompose() {
               <div className="space-y-2">
                 {attachments.map((attachment, index) => (
                   <div
-                    key={index}
-                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                    key={attachment.path}
+                    className="bg-muted/50 flex items-center justify-between rounded-lg p-3"
                   >
                     <div className="flex items-center gap-3">
-                      <FileIcon className="h-5 w-5 text-muted-foreground" />
+                      <FileIcon className="text-muted-foreground h-5 w-5" />
                       <div>
                         <p className="text-sm font-medium">{attachment.filename}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-muted-foreground text-xs">
                           {formatFileSize(attachment.size)}
                         </p>
                       </div>
@@ -517,5 +576,76 @@ export default function EmailCompose() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function EmailCompose() {
+  const emailNav = useEmailClientNavigation();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+
+  // Get draftId from URL query params
+  const draftId = searchParams.get('draftId');
+  const locationState = location.state as LocationState | null;
+
+  // Fetch existing draft
+  const aiStream = useGenerateAiDraftStream();
+  const { data: existingDraft, isLoading: isDraftLoading } = useDraft(draftId || undefined);
+
+  // Compute initial form data from draft or location state
+  const initialFormData = useMemo(() => {
+    if (existingDraft) {
+      return {
+        to: existingDraft.to?.join(', ') || '',
+        cc: existingDraft.cc?.join(', ') || '',
+        subject: existingDraft.subject || '',
+        content: existingDraft.textContent || '',
+        showCcBcc: (existingDraft.cc?.length ?? 0) > 0,
+      };
+    }
+    if (locationState) {
+      return {
+        to: locationState.to || '',
+        cc: '',
+        subject: locationState.subject || '',
+        content: '',
+        showCcBcc: false,
+      };
+    }
+    return { to: '', cc: '', subject: '', content: '', showCcBcc: false };
+  }, [existingDraft, locationState]);
+
+  // Key to reset form when draft or reply context changes
+  const formKey = existingDraft?.id ?? locationState?.replyTo?.uid ?? 'new';
+
+  const handleNavigateToDraft = useCallback(
+    (newDraftId: string, options?: { replace?: boolean }) => {
+      emailNav.toComposeWithQuery(`draftId=${newDraftId}`, options);
+    },
+    [emailNav]
+  );
+
+  if (isDraftLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="text-muted-foreground mx-auto h-8 w-8 animate-spin" />
+          <p className="text-muted-foreground mt-2 text-sm">Ładowanie szkicu...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <EmailComposeForm
+      key={formKey}
+      initialData={initialFormData}
+      draftId={draftId}
+      existingDraft={existingDraft}
+      aiStream={aiStream}
+      locationState={locationState}
+      onNavigateToInbox={() => emailNav.toInbox()}
+      onNavigateToDraft={handleNavigateToDraft}
+    />
   );
 }

@@ -1,14 +1,23 @@
-import { Injectable, ForbiddenException, NotFoundException, Optional, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
 import {
-  User,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+
+import { Repository } from 'typeorm';
+
+import {
   Company,
-  Module,
   CompanyModuleAccess,
+  Module,
+  User,
   UserModulePermission,
   UserRole,
 } from '@accounting/common';
+
 import { ModuleDiscoveryService } from './module-discovery.service';
 
 @Injectable()
@@ -38,7 +47,7 @@ export class RBACService {
     @InjectRepository(UserModulePermission)
     private userModulePermissionRepository: Repository<UserModulePermission>,
     @Optional()
-    private moduleDiscoveryService?: ModuleDiscoveryService,
+    private moduleDiscoveryService?: ModuleDiscoveryService
   ) {}
 
   async canAccessModule(userId: string, moduleSlug: string): Promise<boolean> {
@@ -105,11 +114,7 @@ export class RBACService {
     return false;
   }
 
-  async hasPermission(
-    userId: string,
-    moduleSlug: string,
-    permission: string,
-  ): Promise<boolean> {
+  async hasPermission(userId: string, moduleSlug: string, permission: string): Promise<boolean> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
     });
@@ -167,7 +172,7 @@ export class RBACService {
     granterId: string,
     targetId: string,
     moduleSlug: string,
-    permissions: string[],
+    permissions: string[]
   ): Promise<void> {
     const granter = await this.userRepository.findOne({
       where: { id: granterId },
@@ -361,9 +366,7 @@ export class RBACService {
         relations: ['module'],
       });
 
-      return companyAccesses
-        .map((access) => access.module)
-        .filter((module) => module.isActive);
+      return companyAccesses.map((access) => access.module).filter((module) => module.isActive);
     }
 
     // EMPLOYEE sees only modules they have explicit permissions for
@@ -387,17 +390,13 @@ export class RBACService {
       });
 
       // Create set of company module IDs for fast lookup
-      const companyModuleIds = new Set(
-        companyAccesses.map((access) => access.module.id)
-      );
+      const companyModuleIds = new Set(companyAccesses.map((access) => access.module.id));
 
       // Return only modules that employee has permissions for
       // AND company has enabled access to
       return userPermissions
         .map((permission) => permission.module)
-        .filter((module) =>
-          module.isActive && companyModuleIds.has(module.id)
-        );
+        .filter((module) => module.isActive && companyModuleIds.has(module.id));
     }
 
     return [];
@@ -466,7 +465,7 @@ export class RBACService {
     const cached = this.moduleCache.get(moduleSlug);
     const now = Date.now();
 
-    if (cached && (now - cached.timestamp) < this.cacheTTL) {
+    if (cached && now - cached.timestamp < this.cacheTTL) {
       return cached.module;
     }
 
@@ -590,4 +589,3 @@ export class RBACService {
     };
   }
 }
-

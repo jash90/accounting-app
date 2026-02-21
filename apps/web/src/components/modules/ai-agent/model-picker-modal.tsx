@@ -1,13 +1,11 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+
+import { ChevronRight, Clock, GitCompare, Loader2, Search, Star, X } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
@@ -16,20 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Search,
-  X,
-  GitCompare,
-  Star,
-  Clock,
-  Loader2,
-  ChevronRight,
-} from 'lucide-react';
-import { OpenRouterModelDto } from '@/types/dtos';
-import { cn } from '@/lib/utils/cn';
 import { useModelPreferences } from '@/lib/hooks/use-model-preferences';
-import { ModelDetailPanel } from './model-detail-panel';
+import { cn } from '@/lib/utils/cn';
+import { type OpenRouterModelDto } from '@/types/dtos';
+
 import { ModelComparisonView } from './model-comparison-view';
+import { ModelDetailPanel } from './model-detail-panel';
 import { ModelFavoritesChip } from './model-favorites-chip';
 
 interface ModelPickerModalProps {
@@ -96,67 +86,48 @@ function matchesContextFilter(model: OpenRouterModelDto, filter: ContextFilter):
 }
 
 // Provider display order
-const PROVIDER_ORDER = [
-  'Anthropic',
-  'OpenAI',
-  'Google',
-  'Meta',
-  'Mistral',
-  'Cohere',
-  'DeepSeek',
-];
+const PROVIDER_ORDER = ['Anthropic', 'OpenAI', 'Google', 'Meta', 'Mistral', 'Cohere', 'DeepSeek'];
 
 function getProviderOrder(provider: string): number {
   const index = PROVIDER_ORDER.indexOf(provider);
   return index === -1 ? PROVIDER_ORDER.length : index;
 }
 
-export function ModelPickerModal({
-  open,
+// Inner content component - remounts when dialog opens to reset state
+interface ModelPickerModalContentProps {
+  onOpenChange: (open: boolean) => void;
+  models: OpenRouterModelDto[];
+  isLoading: boolean;
+  selectedModelId?: string;
+  onSelect: (modelId: string) => void;
+}
+
+const ModelPickerModalContent = memo(function ModelPickerModalContent({
   onOpenChange,
   models,
-  isLoading = false,
+  isLoading,
   selectedModelId,
   onSelect,
-}: ModelPickerModalProps) {
+}: ModelPickerModalContentProps) {
+  // State initializes fresh on each mount (when dialog opens)
   const [searchQuery, setSearchQuery] = useState('');
   const [costFilter, setCostFilter] = useState<CostFilter>('all');
   const [contextFilter, setContextFilter] = useState<ContextFilter>('all');
-  const [selectedModel, setSelectedModel] = useState<OpenRouterModelDto | null>(null);
+  // Initialize selectedModel from prop
+  const [selectedModel, setSelectedModel] = useState<OpenRouterModelDto | null>(() => {
+    if (selectedModelId) {
+      return models.find((m) => m.id === selectedModelId) || null;
+    }
+    return null;
+  });
   const [comparisonModels, setComparisonModels] = useState<OpenRouterModelDto[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('browse');
   const [showFavoritesBar, setShowFavoritesBar] = useState(true);
 
-  const {
-    favorites,
-    recents,
-    toggleFavorite,
-    isFavorite,
-    addRecent,
-  } = useModelPreferences();
+  const { favorites, recents, toggleFavorite, isFavorite, addRecent } = useModelPreferences();
 
-  // Reset state when modal opens
+  // Keyboard shortcuts - component only renders when open
   useEffect(() => {
-    if (open) {
-      setSearchQuery('');
-      setCostFilter('all');
-      setContextFilter('all');
-      setViewMode('browse');
-      setComparisonModels([]);
-      // Select the currently saved model if it exists
-      if (selectedModelId) {
-        const model = models.find((m) => m.id === selectedModelId);
-        setSelectedModel(model || null);
-      } else {
-        setSelectedModel(null);
-      }
-    }
-  }, [open, selectedModelId, models]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    if (!open) return;
-
     function handleKeyDown(e: KeyboardEvent) {
       // Ctrl+K: Focus search
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -186,7 +157,7 @@ export function ModelPickerModal({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, viewMode, comparisonModels.length]);
+  }, [viewMode, comparisonModels.length]);
 
   // Filter and group models
   const { groupedModels, totalCount, filteredCount } = useMemo(() => {
@@ -211,14 +182,17 @@ export function ModelPickerModal({
     });
 
     // Group by provider
-    const grouped = filtered.reduce((acc, model) => {
-      const provider = model.provider || 'Other';
-      if (!acc[provider]) {
-        acc[provider] = [];
-      }
-      acc[provider].push(model);
-      return acc;
-    }, {} as Record<string, OpenRouterModelDto[]>);
+    const grouped = filtered.reduce(
+      (acc, model) => {
+        const provider = model.provider || 'Other';
+        if (!acc[provider]) {
+          acc[provider] = [];
+        }
+        acc[provider].push(model);
+        return acc;
+      },
+      {} as Record<string, OpenRouterModelDto[]>
+    );
 
     // Sort providers by priority
     const sortedProviders = Object.keys(grouped).sort(
@@ -228,9 +202,7 @@ export function ModelPickerModal({
     const sortedGrouped: Record<string, OpenRouterModelDto[]> = {};
     for (const provider of sortedProviders) {
       // Sort models within each provider by popularity/name
-      sortedGrouped[provider] = grouped[provider].sort((a, b) =>
-        a.name.localeCompare(b.name)
-      );
+      sortedGrouped[provider] = grouped[provider].sort((a, b) => a.name.localeCompare(b.name));
     }
 
     return {
@@ -277,21 +249,18 @@ export function ModelPickerModal({
     [addRecent, onSelect, onOpenChange]
   );
 
-  const handleToggleComparison = useCallback(
-    (model: OpenRouterModelDto) => {
-      setComparisonModels((prev) => {
-        const isInComparison = prev.some((m) => m.id === model.id);
-        if (isInComparison) {
-          return prev.filter((m) => m.id !== model.id);
-        }
-        if (prev.length >= 3) {
-          return prev; // Max 3 models
-        }
-        return [...prev, model];
-      });
-    },
-    []
-  );
+  const handleToggleComparison = useCallback((model: OpenRouterModelDto) => {
+    setComparisonModels((prev) => {
+      const isInComparison = prev.some((m) => m.id === model.id);
+      if (isInComparison) {
+        return prev.filter((m) => m.id !== model.id);
+      }
+      if (prev.length >= 3) {
+        return prev; // Max 3 models
+      }
+      return [...prev, model];
+    });
+  }, []);
 
   const handleRemoveFromComparison = useCallback((modelId: string) => {
     setComparisonModels((prev) => prev.filter((m) => m.id !== modelId));
@@ -315,21 +284,19 @@ export function ModelPickerModal({
   }, [selectedModel, handleToggleComparison]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl h-[80vh] p-0 flex flex-col">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border flex-shrink-0">
+    <>
+      <DialogContent className="flex h-[80vh] max-w-5xl flex-col p-0">
+        <DialogHeader className="border-border flex-shrink-0 border-b px-6 pt-6 pb-4">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-semibold">
-              Wybierz model AI
-            </DialogTitle>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">⌘K</kbd>
+            <DialogTitle className="text-xl font-semibold">Wybierz model AI</DialogTitle>
+            <div className="text-muted-foreground flex items-center gap-2 text-xs">
+              <kbd className="bg-muted rounded px-1.5 py-0.5 text-[10px]">⌘K</kbd>
               <span>Szukaj</span>
-              <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">⌘⇧F</kbd>
+              <kbd className="bg-muted rounded px-1.5 py-0.5 text-[10px]">⌘⇧F</kbd>
               <span>Ulubione</span>
               {comparisonModels.length > 0 && (
                 <>
-                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px]">⌘⇧C</kbd>
+                  <kbd className="bg-muted rounded px-1.5 py-0.5 text-[10px]">⌘⇧C</kbd>
                   <span>Porównaj</span>
                 </>
               )}
@@ -339,12 +306,12 @@ export function ModelPickerModal({
 
         {/* Favorites & Recents Bar */}
         {showFavoritesBar && (favoriteModels.length > 0 || recentModels.length > 0) && (
-          <div className="px-6 py-3 border-b border-border bg-muted/30 flex-shrink-0">
-            <div className="flex items-center gap-4 flex-wrap">
+          <div className="border-border bg-muted/30 flex-shrink-0 border-b px-6 py-3">
+            <div className="flex flex-wrap items-center gap-4">
               {favoriteModels.length > 0 && (
                 <div className="flex items-center gap-2">
-                  <Star className="w-3.5 h-3.5 text-yellow-500 fill-current" />
-                  <div className="flex items-center gap-1.5 flex-wrap">
+                  <Star className="h-3.5 w-3.5 fill-current text-yellow-500" />
+                  <div className="flex flex-wrap items-center gap-1.5">
                     {favoriteModels.map((model) => (
                       <ModelFavoritesChip
                         key={model.id}
@@ -360,8 +327,8 @@ export function ModelPickerModal({
               )}
               {recentModels.length > 0 && (
                 <div className="flex items-center gap-2">
-                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                  <div className="flex items-center gap-1.5 flex-wrap">
+                  <Clock className="text-muted-foreground h-3.5 w-3.5" />
+                  <div className="flex flex-wrap items-center gap-1.5">
                     {recentModels.map((model) => (
                       <ModelFavoritesChip
                         key={model.id}
@@ -387,36 +354,33 @@ export function ModelPickerModal({
             onBack={() => setViewMode('browse')}
           />
         ) : (
-          <div className="flex-1 flex overflow-hidden">
+          <div className="flex flex-1 overflow-hidden">
             {/* Left Panel - Search & List */}
-            <div className="w-3/5 flex flex-col border-r border-border">
+            <div className="border-border flex w-3/5 flex-col border-r">
               {/* Search & Filters */}
-              <div className="px-4 py-3 border-b border-border space-y-3">
+              <div className="border-border space-y-3 border-b px-4 py-3">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                   <Input
                     id="model-search"
                     placeholder="Szukaj modeli..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 pr-9"
+                    className="pr-9 pl-9"
                   />
                   {searchQuery && (
                     <button
                       type="button"
                       onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted"
+                      className="hover:bg-muted absolute top-1/2 right-3 -translate-y-1/2 rounded p-0.5"
                     >
-                      <X className="w-3.5 h-3.5 text-muted-foreground" />
+                      <X className="text-muted-foreground h-3.5 w-3.5" />
                     </button>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Select
-                    value={costFilter}
-                    onValueChange={(v) => setCostFilter(v as CostFilter)}
-                  >
-                    <SelectTrigger className="w-[130px] h-8 text-xs">
+                  <Select value={costFilter} onValueChange={(v) => setCostFilter(v as CostFilter)}>
+                    <SelectTrigger className="h-8 w-[130px] text-xs">
                       <SelectValue placeholder="Cost" />
                     </SelectTrigger>
                     <SelectContent>
@@ -431,7 +395,7 @@ export function ModelPickerModal({
                     value={contextFilter}
                     onValueChange={(v) => setContextFilter(v as ContextFilter)}
                   >
-                    <SelectTrigger className="w-[120px] h-8 text-xs">
+                    <SelectTrigger className="h-8 w-[120px] text-xs">
                       <SelectValue placeholder="Context" />
                     </SelectTrigger>
                     <SelectContent>
@@ -442,7 +406,7 @@ export function ModelPickerModal({
                       ))}
                     </SelectContent>
                   </Select>
-                  <span className="text-xs text-muted-foreground ml-auto">
+                  <span className="text-muted-foreground ml-auto text-xs">
                     {filteredCount} z {totalCount} modeli
                   </span>
                 </div>
@@ -451,12 +415,12 @@ export function ModelPickerModal({
               {/* Model List */}
               <ScrollArea className="flex-1">
                 {isLoading ? (
-                  <div className="flex items-center justify-center h-40">
-                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  <div className="flex h-40 items-center justify-center">
+                    <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
                   </div>
                 ) : Object.keys(groupedModels).length === 0 ? (
-                  <div className="flex items-center justify-center h-40">
-                    <p className="text-sm text-muted-foreground">
+                  <div className="flex h-40 items-center justify-center">
+                    <p className="text-muted-foreground text-sm">
                       Nie znaleziono modeli spełniających kryteria
                     </p>
                   </div>
@@ -464,7 +428,7 @@ export function ModelPickerModal({
                   <div className="py-2">
                     {Object.entries(groupedModels).map(([provider, providerModels]) => (
                       <div key={provider} className="mb-2">
-                        <div className="px-4 py-1.5 text-xs font-medium text-muted-foreground uppercase tracking-wider bg-muted/50 sticky top-0 z-10">
+                        <div className="text-muted-foreground bg-muted/50 sticky top-0 z-10 px-4 py-1.5 text-xs font-medium tracking-wider uppercase">
                           {provider} ({providerModels.length})
                         </div>
                         {providerModels.map((model) => (
@@ -473,25 +437,23 @@ export function ModelPickerModal({
                             type="button"
                             onClick={() => handleModelClick(model)}
                             className={cn(
-                              'w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-accent/50 transition-colors',
+                              'hover:bg-accent/50 flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors',
                               selectedModel?.id === model.id && 'bg-accent'
                             )}
                           >
-                            <div className="flex-1 min-w-0">
+                            <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium text-sm truncate">
-                                  {model.name}
-                                </span>
+                                <span className="truncate text-sm font-medium">{model.name}</span>
                                 {isFavorite(model.id) && (
-                                  <Star className="w-3 h-3 text-yellow-500 fill-current flex-shrink-0" />
+                                  <Star className="h-3 w-3 flex-shrink-0 fill-current text-yellow-500" />
                                 )}
                                 {isInComparison(model.id) && (
-                                  <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                                  <Badge variant="secondary" className="px-1 py-0 text-[10px]">
                                     Compare
                                   </Badge>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                              <div className="text-muted-foreground mt-0.5 flex items-center gap-2 text-xs">
                                 <span>
                                   {model.costPer1kInput === 0
                                     ? 'Darmowy'
@@ -512,7 +474,7 @@ export function ModelPickerModal({
                                 )}
                               </div>
                             </div>
-                            <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                            <ChevronRight className="text-muted-foreground h-4 w-4 flex-shrink-0" />
                           </button>
                         ))}
                       </div>
@@ -537,9 +499,9 @@ export function ModelPickerModal({
 
         {/* Footer */}
         {viewMode === 'browse' && (
-          <div className="px-6 py-4 border-t border-border flex items-center justify-between bg-muted/30 flex-shrink-0">
+          <div className="border-border bg-muted/30 flex flex-shrink-0 items-center justify-between border-t px-6 py-4">
             <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground text-sm">
                 {filteredCount} dostępnych modeli
               </span>
               {comparisonModels.length > 0 && (
@@ -549,7 +511,7 @@ export function ModelPickerModal({
                   onClick={() => setViewMode('compare')}
                   className="gap-2"
                 >
-                  <GitCompare className="w-4 h-4" />
+                  <GitCompare className="h-4 w-4" />
                   Porównaj ({comparisonModels.length})
                 </Button>
               )}
@@ -561,7 +523,7 @@ export function ModelPickerModal({
               <Button
                 onClick={handleSelectModel}
                 disabled={!selectedModel}
-                className="bg-apptax-blue hover:bg-apptax-blue/90"
+                className="bg-primary hover:bg-primary/90"
               >
                 Wybierz model
               </Button>
@@ -569,6 +531,30 @@ export function ModelPickerModal({
           </div>
         )}
       </DialogContent>
+    </>
+  );
+});
+
+// Main exported component - wraps Dialog and conditionally renders content
+export function ModelPickerModal({
+  open,
+  onOpenChange,
+  models,
+  isLoading = false,
+  selectedModelId,
+  onSelect,
+}: ModelPickerModalProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open && (
+        <ModelPickerModalContent
+          onOpenChange={onOpenChange}
+          models={models}
+          isLoading={isLoading}
+          selectedModelId={selectedModelId}
+          onSelect={onSelect}
+        />
+      )}
     </Dialog>
   );
 }

@@ -1,13 +1,23 @@
 import {
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
   AmlGroup,
-  IconType,
-  ConditionOperator,
   CustomFieldType,
+  EmploymentType,
+  IconType,
+  TaskPriority,
+  TaskStatus,
+  TaxScheme,
+  VatStatus,
+  ZusStatus,
+  type ConditionOperator,
 } from '@/types/enums';
+
+// PKD 2025 - Polska Klasyfikacja Działalności (657 kodów na poziomie klasy)
+// Import from browser-safe subpath (no TypeORM/Node.js dependencies)
+import {
+  getPkdCodesForFrontend,
+  getPkdSectionsForFrontend,
+  type PkdCodeOption,
+} from '@accounting/common/browser';
 
 // Employment Type Labels
 export const EmploymentTypeLabels: Record<EmploymentType, string> = {
@@ -44,7 +54,8 @@ export const ZusStatusLabels: Record<ZusStatus, string> = {
 // AML Group Labels
 export const AmlGroupLabels: Record<AmlGroup, string> = {
   [AmlGroup.LOW]: 'Niskie ryzyko',
-  [AmlGroup.MEDIUM]: 'Średnie ryzyko',
+  [AmlGroup.STANDARD]: 'Standardowe ryzyko',
+  [AmlGroup.ELEVATED]: 'Podwyższone ryzyko',
   [AmlGroup.HIGH]: 'Wysokie ryzyko',
 };
 
@@ -83,22 +94,38 @@ export const ConditionOperatorLabels: Record<ConditionOperator, string> = {
 
 // GTU Codes with Polish Labels
 export const GTU_CODES = [
-  { code: 'GTU_01', label: 'GTU_01 - Dostawa napojów alkoholowych' },
-  { code: 'GTU_02', label: 'GTU_02 - Dostawa towarów, o których mowa w art. 103 ust. 5aa' },
-  { code: 'GTU_03', label: 'GTU_03 - Dostawa oleju opałowego' },
-  { code: 'GTU_04', label: 'GTU_04 - Dostawa wyrobów tytoniowych' },
-  { code: 'GTU_05', label: 'GTU_05 - Dostawa odpadów' },
-  { code: 'GTU_06', label: 'GTU_06 - Dostawa urządzeń elektronicznych' },
-  { code: 'GTU_07', label: 'GTU_07 - Dostawa pojazdów oraz części samochodowych' },
-  { code: 'GTU_08', label: 'GTU_08 - Dostawa metali szlachetnych i nieszlachetnych' },
-  { code: 'GTU_09', label: 'GTU_09 - Dostawa leków oraz wyrobów medycznych' },
-  { code: 'GTU_10', label: 'GTU_10 - Dostawa budynków, budowli i gruntów' },
-  { code: 'GTU_11', label: 'GTU_11 - Świadczenie usług w zakresie przenoszenia uprawnień do emisji gazów cieplarnianych' },
-  { code: 'GTU_12', label: 'GTU_12 - Świadczenie usług o charakterze niematerialnym' },
-  { code: 'GTU_13', label: 'GTU_13 - Świadczenie usług transportowych i gospodarki magazynowej' },
+  { code: 'GTU_01', label: 'GTU_01 - Napoje alkoholowe' },
+  { code: 'GTU_02', label: 'GTU_02 - Paliwa i oleje napędowe' },
+  { code: 'GTU_03', label: 'GTU_03 - Oleje opałowe i smary' },
+  { code: 'GTU_04', label: 'GTU_04 - Wyroby tytoniowe, susz, płyny do e-papierosów' },
+  { code: 'GTU_05', label: 'GTU_05 - Odpady (złom, surowce wtórne)' },
+  { code: 'GTU_06', label: 'GTU_06 - Urządzenia elektroniczne (telefony, laptopy, konsole)' },
+  { code: 'GTU_07', label: 'GTU_07 - Pojazdy i części samochodowe' },
+  { code: 'GTU_08', label: 'GTU_08 - Metale szlachetne i jubilerstwo' },
+  { code: 'GTU_09', label: 'GTU_09 - Leki i wyroby medyczne' },
+  { code: 'GTU_10', label: 'GTU_10 - Budynki, budowle i grunty' },
+  { code: 'GTU_11', label: 'GTU_11 - Przenoszenie uprawnień do emisji gazów cieplarnianych' },
+  {
+    code: 'GTU_12',
+    label: 'GTU_12 - Usługi niematerialne (doradcze, księgowe, prawne, marketingowe)',
+  },
+  { code: 'GTU_13', label: 'GTU_13 - Usługi transportowe i magazynowe' },
 ] as const;
 
-export type GtuCode = typeof GTU_CODES[number]['code'];
+export type GtuCode = (typeof GTU_CODES)[number]['code'];
+
+// Re-export with backwards-compatible names and proper types
+export const PKD_CODES: PkdCodeOption[] = getPkdCodesForFrontend();
+export const PKD_SECTIONS: Record<string, string> = getPkdSectionsForFrontend();
+
+// Re-export types
+export type PkdCode = PkdCodeOption;
+export type PkdSection = string;
+
+// Backwards-compatible helper function
+export function getPkdCodesBySection(section: string): PkdCodeOption[] {
+  return PKD_CODES.filter((code) => code.section === section);
+}
 
 // Client field labels for condition builder
 export const ClientFieldLabels: Record<string, string> = {
@@ -108,10 +135,10 @@ export const ClientFieldLabels: Record<string, string> = {
   phone: 'Telefon',
   companyStartDate: 'Data założenia firmy',
   cooperationStartDate: 'Data rozpoczęcia współpracy',
-  suspensionDate: 'Data zawieszenia',
   companySpecificity: 'Specyfika firmy',
   additionalInfo: 'Dodatkowe informacje',
   gtuCodes: 'Kody GTU',
+  pkdCode: 'Główny kod PKD',
   amlGroupEnum: 'Grupa AML',
   receiveEmailCopy: 'Otrzymuje kopię email',
   employmentType: 'Forma zatrudnienia',
@@ -127,9 +154,19 @@ export const CONDITION_FIELDS = [
   { field: 'nip', label: 'NIP', type: 'string' },
   { field: 'email', label: 'Email', type: 'string' },
   { field: 'phone', label: 'Telefon', type: 'string' },
-  { field: 'employmentType', label: 'Forma zatrudnienia', type: 'enum', enumValues: Object.values(EmploymentType) },
+  {
+    field: 'employmentType',
+    label: 'Forma zatrudnienia',
+    type: 'enum',
+    enumValues: Object.values(EmploymentType),
+  },
   { field: 'vatStatus', label: 'Status VAT', type: 'enum', enumValues: Object.values(VatStatus) },
-  { field: 'taxScheme', label: 'Forma opodatkowania', type: 'enum', enumValues: Object.values(TaxScheme) },
+  {
+    field: 'taxScheme',
+    label: 'Forma opodatkowania',
+    type: 'enum',
+    enumValues: Object.values(TaxScheme),
+  },
   { field: 'zusStatus', label: 'Status ZUS', type: 'enum', enumValues: Object.values(ZusStatus) },
   { field: 'amlGroupEnum', label: 'Grupa AML', type: 'enum', enumValues: Object.values(AmlGroup) },
   { field: 'gtuCodes', label: 'Kody GTU', type: 'array' },
@@ -137,15 +174,34 @@ export const CONDITION_FIELDS = [
   { field: 'isActive', label: 'Aktywny', type: 'boolean' },
   { field: 'companyStartDate', label: 'Data założenia firmy', type: 'date' },
   { field: 'cooperationStartDate', label: 'Data rozpoczęcia współpracy', type: 'date' },
-  { field: 'suspensionDate', label: 'Data zawieszenia', type: 'date' },
 ] as const;
 
 // Operators available for each field type
 export const OPERATORS_BY_TYPE: Record<string, ConditionOperator[]> = {
   string: ['equals', 'notEquals', 'contains', 'notContains', 'isEmpty', 'isNotEmpty'],
-  number: ['equals', 'notEquals', 'greaterThan', 'lessThan', 'greaterThanOrEqual', 'lessThanOrEqual', 'between', 'isEmpty', 'isNotEmpty'],
+  number: [
+    'equals',
+    'notEquals',
+    'greaterThan',
+    'lessThan',
+    'greaterThanOrEqual',
+    'lessThanOrEqual',
+    'between',
+    'isEmpty',
+    'isNotEmpty',
+  ],
   boolean: ['equals'],
-  date: ['equals', 'notEquals', 'greaterThan', 'lessThan', 'greaterThanOrEqual', 'lessThanOrEqual', 'between', 'isEmpty', 'isNotEmpty'],
+  date: [
+    'equals',
+    'notEquals',
+    'greaterThan',
+    'lessThan',
+    'greaterThanOrEqual',
+    'lessThanOrEqual',
+    'between',
+    'isEmpty',
+    'isNotEmpty',
+  ],
   enum: ['equals', 'notEquals', 'in', 'notIn', 'isEmpty', 'isNotEmpty'],
   array: ['contains', 'notContains', 'isEmpty', 'isNotEmpty'],
 };
@@ -155,3 +211,22 @@ export const LogicalOperatorLabels = {
   and: 'ORAZ',
   or: 'LUB',
 } as const;
+
+// Task Status Labels
+export const TaskStatusLabels: Record<TaskStatus, string> = {
+  [TaskStatus.BACKLOG]: 'Backlog',
+  [TaskStatus.TODO]: 'Do zrobienia',
+  [TaskStatus.IN_PROGRESS]: 'W trakcie',
+  [TaskStatus.IN_REVIEW]: 'Do przeglądu',
+  [TaskStatus.DONE]: 'Zakończone',
+  [TaskStatus.CANCELLED]: 'Anulowane',
+};
+
+// Task Priority Labels
+export const TaskPriorityLabels: Record<TaskPriority, string> = {
+  [TaskPriority.NONE]: 'Brak',
+  [TaskPriority.LOW]: 'Niski',
+  [TaskPriority.MEDIUM]: 'Średni',
+  [TaskPriority.HIGH]: 'Wysoki',
+  [TaskPriority.URGENT]: 'Pilny',
+};

@@ -74,8 +74,6 @@ export const LogicalOperatorLabels: Record<LogicalOperator, string> = {
 /**
  * Type guard to check if a condition is a ConditionGroup
  */
-export function isConditionGroup(
-  condition: AutoAssignCondition
-): condition is ConditionGroup {
+export function isConditionGroup(condition: AutoAssignCondition): condition is ConditionGroup {
   return 'logicalOperator' in condition && 'conditions' in condition;
 }

@@ -8,33 +8,52 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "importHelpers": true,
-    "target": "es2015",
-    "module": "esnext",
-    "lib": ["es2020", "dom"],
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
+    "strict": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": false,
+    "noPropertyAccessFromIndexSignature": false,
+    "useUnknownInCatchVariables": true,
+    "exactOptionalPropertyTypes": false,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
     "paths": {
       "@accounting/api/admin": ["apps/api/src/admin/src/index.ts"],
       "@accounting/auth": ["libs/auth/src/index.ts"],
       "@accounting/common": ["libs/common/src/index.ts"],
+      "@accounting/common/backend": ["libs/common/src/backend.ts"],
+      "@accounting/common/browser": ["libs/common/src/browser.ts"],
       "@accounting/email": ["libs/email/src/index.ts"],
       "@accounting/modules/ai-agent": ["libs/modules/ai-agent/src/index.ts"],
       "@accounting/modules/clients": ["libs/modules/clients/src/index.ts"],
       "@accounting/modules/email-client": ["libs/modules/email-client/src/index.ts"],
       "@accounting/modules/tasks": ["libs/modules/tasks/src/index.ts"],
+      "@accounting/modules/time-tracking": ["libs/modules/time-tracking/src/index.ts"],
       "@accounting/rbac": ["libs/rbac/src/index.ts"],
-      "@accounting/infrastructure/email": [
-        "libs/infrastructure/email/src/index.ts"
-      ],
-      "@accounting/infrastructure/storage": [
-        "libs/infrastructure/storage/src/index.ts"
-      ],
-      "@accounting/infrastructure/change-log": [
-        "libs/infrastructure/change-log/src/index.ts"
-      ],
-      "@/*": ["apps/web/src/*"]
+      "@accounting/infrastructure/email": ["libs/infrastructure/email/src/index.ts"],
+      "@accounting/infrastructure/storage": ["libs/infrastructure/storage/src/index.ts"],
+      "@accounting/infrastructure/change-log": ["libs/infrastructure/change-log/src/index.ts"],
+      "@/*": ["apps/web/src/*"],
+      "@accounting/modules/notifications": ["libs/modules/notifications/src/index.ts"],
+      "@accounting/modules/offers": ["libs/modules/offers/src/index.ts"],
+      "@accounting/modules/settlements": ["libs/modules/settlements/src/index.ts"]
     }
   },
-  "exclude": ["node_modules", "tmp"]
+  "exclude": ["node_modules", "tmp", "dist"]
 }

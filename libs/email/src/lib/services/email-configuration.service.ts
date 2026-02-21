@@ -1,19 +1,23 @@
 import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
   BadRequestException,
+  ConflictException,
+  Injectable,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
-import { EmailConfiguration, Company, EncryptionService } from '@accounting/common';
-import { CreateEmailConfigDto } from '../dto/create-email-config.dto';
-import { UpdateEmailConfigDto } from '../dto/update-email-config.dto';
-import { EmailConfigResponseDto } from '../dto/email-config-response.dto';
-import { EmailSenderService } from './email-sender.service';
+
+import { Company, EmailConfiguration } from '@accounting/common';
+import { EncryptionService } from '@accounting/common/backend';
+
 import { EmailReaderService } from './email-reader.service';
-import { SmtpConfig, ImapConfig } from '../interfaces/email-config.interface';
+import { EmailSenderService } from './email-sender.service';
+import { CreateEmailConfigDto } from '../dto/create-email-config.dto';
+import { EmailConfigResponseDto } from '../dto/email-config-response.dto';
+import { UpdateEmailConfigDto } from '../dto/update-email-config.dto';
+import { ImapConfig, SmtpConfig } from '../interfaces/email-config.interface';
 
 // TLS validation - secure by default, configurable via env
 // TODO: Future enhancement - move to per-company EmailConfiguration entity
@@ -35,7 +39,7 @@ export class EmailConfigurationService {
     private readonly companyRepo: Repository<Company>,
     private readonly encryptionService: EncryptionService,
     private readonly emailSenderService: EmailSenderService,
-    private readonly emailReaderService: EmailReaderService,
+    private readonly emailReaderService: EmailReaderService
   ) {}
 
   /**
@@ -44,7 +48,7 @@ export class EmailConfigurationService {
   async createUserConfig(
     userId: string,
     dto: CreateEmailConfigDto,
-    skipVerification = false,
+    skipVerification = false
   ): Promise<EmailConfigResponseDto> {
     // Check if user already has a configuration
     const existing = await this.emailConfigRepo.findOne({
@@ -52,9 +56,7 @@ export class EmailConfigurationService {
     });
 
     if (existing) {
-      throw new ConflictException(
-        'User already has an email configuration. Use update instead.',
-      );
+      throw new ConflictException('User already has an email configuration. Use update instead.');
     }
 
     // Verify connection before saving (unless skipped for dev/test)
@@ -94,7 +96,7 @@ export class EmailConfigurationService {
   async createCompanyConfig(
     companyId: string,
     dto: CreateEmailConfigDto,
-    skipVerification = false,
+    skipVerification = false
   ): Promise<EmailConfigResponseDto> {
     // Check if company already has a configuration
     const existing = await this.emailConfigRepo.findOne({
@@ -103,7 +105,7 @@ export class EmailConfigurationService {
 
     if (existing) {
       throw new ConflictException(
-        'Company already has an email configuration. Use update instead.',
+        'Company already has an email configuration. Use update instead.'
       );
     }
 
@@ -147,9 +149,7 @@ export class EmailConfigurationService {
     });
 
     if (!config) {
-      throw new NotFoundException(
-        'User does not have an email configuration',
-      );
+      throw new NotFoundException('User does not have an email configuration');
     }
 
     return EmailConfigResponseDto.fromEntity(config);
@@ -164,9 +164,7 @@ export class EmailConfigurationService {
     });
 
     if (!config) {
-      throw new NotFoundException(
-        'Company does not have an email configuration',
-      );
+      throw new NotFoundException('Company does not have an email configuration');
     }
 
     return EmailConfigResponseDto.fromEntity(config);
@@ -226,16 +224,14 @@ export class EmailConfigurationService {
    */
   async updateUserConfig(
     userId: string,
-    dto: UpdateEmailConfigDto,
+    dto: UpdateEmailConfigDto
   ): Promise<EmailConfigResponseDto> {
     const config = await this.emailConfigRepo.findOne({
       where: { userId },
     });
 
     if (!config) {
-      throw new NotFoundException(
-        'User does not have an email configuration',
-      );
+      throw new NotFoundException('User does not have an email configuration');
     }
 
     // Verify connection if credentials changed
@@ -272,16 +268,14 @@ export class EmailConfigurationService {
    */
   async updateCompanyConfig(
     companyId: string,
-    dto: UpdateEmailConfigDto,
+    dto: UpdateEmailConfigDto
   ): Promise<EmailConfigResponseDto> {
     const config = await this.emailConfigRepo.findOne({
       where: { companyId },
     });
 
     if (!config) {
-      throw new NotFoundException(
-        'Company does not have an email configuration',
-      );
+      throw new NotFoundException('Company does not have an email configuration');
     }
 
     // Verify connection if credentials changed
@@ -322,9 +316,7 @@ export class EmailConfigurationService {
     });
 
     if (!config) {
-      throw new NotFoundException(
-        'User does not have an email configuration',
-      );
+      throw new NotFoundException('User does not have an email configuration');
     }
 
     await this.emailConfigRepo.remove(config);
@@ -340,9 +332,7 @@ export class EmailConfigurationService {
     });
 
     if (!config) {
-      throw new NotFoundException(
-        'Company does not have an email configuration',
-      );
+      throw new NotFoundException('Company does not have an email configuration');
     }
 
     await this.emailConfigRepo.remove(config);
@@ -353,7 +343,9 @@ export class EmailConfigurationService {
    * Verify SMTP connection
    * Throws error if connection fails
    */
-  private async verifyConfiguration(dto: CreateEmailConfigDto | UpdateEmailConfigDto): Promise<void> {
+  private async verifyConfiguration(
+    dto: CreateEmailConfigDto | UpdateEmailConfigDto
+  ): Promise<void> {
     const smtpConfig: SmtpConfig = {
       host: dto.smtpHost!,
       port: dto.smtpPort!,
@@ -368,7 +360,7 @@ export class EmailConfigurationService {
 
     if (!isValid) {
       throw new BadRequestException(
-        'Failed to verify SMTP connection. Please check your credentials.',
+        'Failed to verify SMTP connection. Please check your credentials.'
       );
     }
 
@@ -396,19 +388,19 @@ export class EmailConfigurationService {
    */
   private async mergeWithExisting(
     config: EmailConfiguration,
-    dto: UpdateEmailConfigDto,
+    dto: UpdateEmailConfigDto
   ): Promise<CreateEmailConfigDto> {
     return {
       smtpHost: dto.smtpHost ?? config.smtpHost,
       smtpPort: dto.smtpPort ?? config.smtpPort,
       smtpSecure: dto.smtpSecure ?? config.smtpSecure,
       smtpUser: dto.smtpUser ?? config.smtpUser,
-      smtpPassword: dto.smtpPassword ?? await this.encryptionService.decrypt(config.smtpPassword),
+      smtpPassword: dto.smtpPassword ?? (await this.encryptionService.decrypt(config.smtpPassword)),
       imapHost: dto.imapHost ?? config.imapHost,
       imapPort: dto.imapPort ?? config.imapPort,
       imapTls: dto.imapTls ?? config.imapTls,
       imapUser: dto.imapUser ?? config.imapUser,
-      imapPassword: dto.imapPassword ?? await this.encryptionService.decrypt(config.imapPassword),
+      imapPassword: dto.imapPassword ?? (await this.encryptionService.decrypt(config.imapPassword)),
       displayName: dto.displayName ?? config.displayName,
     };
   }
@@ -466,7 +458,7 @@ export class EmailConfigurationService {
       };
     } catch (error) {
       this.logger.error(
-        `Failed to decrypt SMTP config for company ${companyId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to decrypt SMTP config for company ${companyId}: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
       return null;
     }
@@ -531,7 +523,7 @@ export class EmailConfigurationService {
       return { smtp, imap };
     } catch (error) {
       this.logger.error(
-        `Failed to decrypt email config for company ${companyId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to decrypt email config for company ${companyId}: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
       return null;
     }
@@ -597,7 +589,7 @@ export class EmailConfigurationService {
       return { smtp, imap };
     } catch (error) {
       this.logger.error(
-        `Failed to decrypt System Admin email config: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to decrypt System Admin email config: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
       return null;
     }

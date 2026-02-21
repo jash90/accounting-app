@@ -1,6 +1,8 @@
-import { IsEmail, IsString, MinLength, IsEnum, IsOptional, ValidateIf } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+
 import { Transform } from 'class-transformer';
+import { IsEmail, IsEnum, IsOptional, IsString, MinLength, ValidateIf } from 'class-validator';
+
 import { UserRole } from '@accounting/common';
 
 export class RegisterDto {
@@ -32,4 +34,3 @@ export class RegisterDto {
   @ValidateIf((o) => o.role === UserRole.COMPANY_OWNER || o.role === UserRole.EMPLOYEE)
   companyId?: string;
 }
-

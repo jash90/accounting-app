@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
+
 import { ClientErrorCode } from './error-codes.enum';
 
 export interface ClientExceptionContext {
@@ -18,7 +19,7 @@ export class ClientException extends HttpException {
     public readonly errorCode: ClientErrorCode,
     message: string,
     public readonly context?: ClientExceptionContext,
-    statusCode: HttpStatus = HttpStatus.BAD_REQUEST,
+    statusCode: HttpStatus = HttpStatus.BAD_REQUEST
   ) {
     super(
       {
@@ -28,7 +29,7 @@ export class ClientException extends HttpException {
         context,
         timestamp: new Date().toISOString(),
       },
-      statusCode,
+      statusCode
     );
   }
 }
@@ -43,7 +44,7 @@ export class ClientNotFoundException extends ClientException {
       ClientErrorCode.CLIENT_NOT_FOUND,
       `Client with ID ${clientId} not found`,
       { clientId, companyId },
-      HttpStatus.NOT_FOUND,
+      HttpStatus.NOT_FOUND
     );
   }
 }
@@ -53,15 +54,12 @@ export class ClientNotFoundException extends ClientException {
  * Use when some items in batch fail
  */
 export class ClientBatchOperationException extends ClientException {
-  constructor(
-    failedItems: Array<{ id: string; error: string }>,
-    context?: ClientExceptionContext,
-  ) {
+  constructor(failedItems: Array<{ id: string; error: string }>, context?: ClientExceptionContext) {
     super(
       ClientErrorCode.CLIENT_BATCH_OPERATION_FAILED,
       `Batch operation failed for ${failedItems.length} item(s)`,
       { ...context, additionalInfo: { failedItems } },
-      HttpStatus.MULTI_STATUS,
+      HttpStatus.MULTI_STATUS
     );
   }
 }

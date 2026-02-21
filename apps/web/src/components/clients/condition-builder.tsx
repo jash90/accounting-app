@@ -1,28 +1,14 @@
-import { useCallback } from 'react';
-import { cn } from '@/lib/utils/cn';
-import {
-  AutoAssignCondition,
-  SingleCondition,
-  ConditionGroup,
-  ConditionOperator,
-  LogicalOperator,
-  isConditionGroup,
-} from '@/types/enums';
-import {
-  CONDITION_FIELDS,
-  OPERATORS_BY_TYPE,
-  ConditionOperatorLabels,
-  LogicalOperatorLabels,
-  EmploymentTypeLabels,
-  VatStatusLabels,
-  TaxSchemeLabels,
-  ZusStatusLabels,
-  AmlGroupLabels,
-  GTU_CODES,
-} from '@/lib/constants/polish-labels';
+import { memo, useCallback, useId, useMemo } from 'react';
+
+import { Check, ChevronDown, FolderPlus, Plus, Trash2 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -31,14 +17,27 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Card, CardContent } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Plus, Trash2, FolderPlus, ChevronDown, Check } from 'lucide-react';
+  AmlGroupLabels,
+  CONDITION_FIELDS,
+  ConditionOperatorLabels,
+  EmploymentTypeLabels,
+  GTU_CODES,
+  LogicalOperatorLabels,
+  OPERATORS_BY_TYPE,
+  TaxSchemeLabels,
+  VatStatusLabels,
+  ZusStatusLabels,
+} from '@/lib/constants/polish-labels';
+import { cn } from '@/lib/utils/cn';
+import {
+  isConditionGroup,
+  type AutoAssignCondition,
+  type ConditionGroup,
+  type ConditionOperator,
+  type LogicalOperator,
+  type SingleCondition,
+} from '@/types/enums';
 
 // Generate unique ID for condition tracking (stable React keys)
 // Uses crypto.randomUUID() for SSR-safe, collision-resistant IDs
@@ -57,7 +56,7 @@ interface ConditionBuilderProps {
   className?: string;
 }
 
-export function ConditionBuilder({
+export const ConditionBuilder = memo(function ConditionBuilder({
   value,
   onChange,
   className,
@@ -127,32 +126,17 @@ export function ConditionBuilder({
       <div className="flex items-center justify-between">
         <Label className="text-base font-medium">Warunki automatycznego przypisania</Label>
         <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleAddCondition}
-          >
-            <Plus className="w-4 h-4 mr-1" />
+          <Button type="button" variant="outline" size="sm" onClick={handleAddCondition}>
+            <Plus className="mr-1 h-4 w-4" />
             Warunek
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleAddGroup}
-          >
-            <FolderPlus className="w-4 h-4 mr-1" />
+          <Button type="button" variant="outline" size="sm" onClick={handleAddGroup}>
+            <FolderPlus className="mr-1 h-4 w-4" />
             Grupa
           </Button>
           {value && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleClear}
-            >
-              <Trash2 className="w-4 h-4 mr-1" />
+            <Button type="button" variant="ghost" size="sm" onClick={handleClear}>
+              <Trash2 className="mr-1 h-4 w-4" />
               Wyczyść
             </Button>
           )}
@@ -160,23 +144,18 @@ export function ConditionBuilder({
       </div>
 
       {value ? (
-        <ConditionRenderer
-          condition={value}
-          onChange={onChange}
-          onRemove={handleClear}
-          isRoot
-        />
+        <ConditionRenderer condition={value} onChange={onChange} onRemove={handleClear} isRoot />
       ) : (
-        <div className="text-center py-8 border-2 border-dashed rounded-lg text-muted-foreground">
+        <div className="text-muted-foreground rounded-lg border-2 border-dashed py-8 text-center">
           <p>Brak warunków. Ikona będzie przypisywana tylko ręcznie.</p>
-          <p className="text-sm mt-1">
+          <p className="mt-1 text-sm">
             Kliknij &quot;Warunek&quot; lub &quot;Grupa&quot;, aby dodać automatyczne przypisywanie.
           </p>
         </div>
       )}
     </div>
   );
-}
+});
 
 interface ConditionRendererProps {
   condition: AutoAssignCondition;
@@ -202,13 +181,7 @@ function ConditionRenderer({
     );
   }
 
-  return (
-    <SingleConditionRenderer
-      condition={condition}
-      onChange={onChange}
-      onRemove={onRemove}
-    />
-  );
+  return <SingleConditionRenderer condition={condition} onChange={onChange} onRemove={onRemove} />;
 }
 
 interface GroupConditionRendererProps {
@@ -218,37 +191,50 @@ interface GroupConditionRendererProps {
   isRoot?: boolean;
 }
 
-function GroupConditionRenderer({
+const GroupConditionRenderer = memo(function GroupConditionRenderer({
   group,
   onChange,
   onRemove,
   isRoot = false,
 }: GroupConditionRendererProps) {
+  'use no memo';
+  // Extract primitive/stable values from group to use in dependencies
+  // This prevents callback recreation when group object reference changes
+  const groupId = group.id;
+  const groupLogicalOperator = group.logicalOperator;
+  const groupConditions = group.conditions;
+
+  // Memoize conditions length for dependency - this is a primitive that only changes
+  // when the actual number of conditions changes, not when conditions are edited
+  const conditionsCount = groupConditions.length;
+
   const handleLogicalOperatorChange = useCallback(
     (operator: LogicalOperator) => {
       onChange({
-        ...group,
+        id: groupId,
         logicalOperator: operator,
+        conditions: groupConditions,
       });
     },
-    [group, onChange]
+    [onChange, groupId, groupConditions]
   );
 
   const handleConditionChange = useCallback(
     (index: number, newCondition: AutoAssignCondition) => {
-      const newConditions = [...group.conditions];
+      const newConditions = [...groupConditions];
       newConditions[index] = newCondition;
       onChange({
-        ...group,
+        id: groupId,
+        logicalOperator: groupLogicalOperator,
         conditions: newConditions,
       });
     },
-    [group, onChange]
+    [onChange, groupId, groupLogicalOperator, groupConditions]
   );
 
   const handleConditionRemove = useCallback(
     (index: number) => {
-      const newConditions = group.conditions.filter((_, i) => i !== index);
+      const newConditions = groupConditions.filter((_, i) => i !== index);
       if (newConditions.length === 0) {
         onRemove();
       } else if (newConditions.length === 1 && isRoot) {
@@ -256,14 +242,17 @@ function GroupConditionRenderer({
         onChange(newConditions[0]);
       } else {
         onChange({
-          ...group,
+          id: groupId,
+          logicalOperator: groupLogicalOperator,
           conditions: newConditions,
         });
       }
     },
-    [group, onChange, onRemove, isRoot]
+    [onChange, onRemove, isRoot, groupId, groupLogicalOperator, groupConditions]
   );
 
+  // These callbacks only need to depend on conditionsCount since they just append
+  // The actual conditions array is spread at execution time
   const handleAddCondition = useCallback(() => {
     const newCondition: SingleCondition = {
       id: generateConditionId(),
@@ -272,15 +261,21 @@ function GroupConditionRenderer({
       value: '',
     };
     onChange({
-      ...group,
-      conditions: [...group.conditions, newCondition],
+      id: groupId,
+      logicalOperator: groupLogicalOperator,
+      conditions: [...groupConditions, newCondition],
     });
-  }, [group, onChange]);
+    // Intentionally using conditionsCount instead of groupConditions to prevent callback recreation
+    // on every condition edit. Since this callback only appends to the array, we only need to know
+    // when the array length changes (conditionsCount), not when individual items change.
+    // The current groupConditions is read via closure at execution time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onChange, groupId, groupLogicalOperator, conditionsCount]);
 
   const handleAddNestedGroup = useCallback(() => {
     const newGroup: ConditionGroup = {
       id: generateConditionId(),
-      logicalOperator: group.logicalOperator === 'and' ? 'or' : 'and',
+      logicalOperator: groupLogicalOperator === 'and' ? 'or' : 'and',
       conditions: [
         {
           id: generateConditionId(),
@@ -291,14 +286,20 @@ function GroupConditionRenderer({
       ],
     };
     onChange({
-      ...group,
-      conditions: [...group.conditions, newGroup],
+      id: groupId,
+      logicalOperator: groupLogicalOperator,
+      conditions: [...groupConditions, newGroup],
     });
-  }, [group, onChange]);
+    // Intentionally using conditionsCount instead of groupConditions to prevent callback recreation
+    // on every condition edit. Since this callback only appends to the array, we only need to know
+    // when the array length changes (conditionsCount), not when individual items change.
+    // The current groupConditions is read via closure at execution time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onChange, groupId, groupLogicalOperator, conditionsCount]);
 
   return (
     <Card className={cn(isRoot ? 'border-primary' : 'border-muted')}>
-      <CardContent className="pt-4 space-y-3">
+      <CardContent className="space-y-3 pt-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Spełnij</span>
@@ -319,18 +320,13 @@ function GroupConditionRenderer({
             </span>
           </div>
           {!isRoot && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={onRemove}
-            >
-              <Trash2 className="w-4 h-4" />
+            <Button type="button" variant="ghost" size="icon" onClick={onRemove}>
+              <Trash2 className="h-4 w-4" />
             </Button>
           )}
         </div>
 
-        <div className="space-y-2 pl-4 border-l-2 border-muted">
+        <div className="border-muted space-y-2 border-l-2 pl-4">
           {group.conditions.map((cond, index) => (
             <ConditionRenderer
               key={cond.id || `fallback-${index}`}
@@ -342,29 +338,19 @@ function GroupConditionRenderer({
         </div>
 
         <div className="flex gap-2 pl-4">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleAddCondition}
-          >
-            <Plus className="w-4 h-4 mr-1" />
+          <Button type="button" variant="ghost" size="sm" onClick={handleAddCondition}>
+            <Plus className="mr-1 h-4 w-4" />
             Warunek
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleAddNestedGroup}
-          >
-            <FolderPlus className="w-4 h-4 mr-1" />
+          <Button type="button" variant="ghost" size="sm" onClick={handleAddNestedGroup}>
+            <FolderPlus className="mr-1 h-4 w-4" />
             Grupa zagnieżdżona
           </Button>
         </div>
       </CardContent>
     </Card>
   );
-}
+});
 
 interface SingleConditionRendererProps {
   condition: SingleCondition;
@@ -372,7 +358,7 @@ interface SingleConditionRendererProps {
   onRemove: () => void;
 }
 
-function SingleConditionRenderer({
+const SingleConditionRenderer = memo(function SingleConditionRenderer({
   condition,
   onChange,
   onRemove,
@@ -381,6 +367,14 @@ function SingleConditionRenderer({
   const fieldType = fieldConfig?.type || 'string';
   const availableOperators = OPERATORS_BY_TYPE[fieldType] || OPERATORS_BY_TYPE.string;
 
+  // Extract primitive/stable values from condition to use in dependencies
+  // This prevents callback recreation when condition object reference changes
+  const conditionId = condition.id;
+  const conditionField = condition.field;
+  const conditionOperator = condition.operator;
+  const conditionValue = condition.value;
+  const conditionSecondValue = condition.secondValue;
+
   const handleFieldChange = useCallback(
     (field: string) => {
       const newFieldConfig = CONDITION_FIELDS.find((f) => f.field === field);
@@ -388,57 +382,65 @@ function SingleConditionRenderer({
       const newOperators = OPERATORS_BY_TYPE[newType] || OPERATORS_BY_TYPE.string;
 
       // Reset operator and value if field type changes
-      const newOperator = newOperators.includes(condition.operator)
-        ? condition.operator
+      const newOperator = newOperators.includes(conditionOperator)
+        ? conditionOperator
         : newOperators[0];
 
       onChange({
-        id: condition.id, // Preserve condition ID for stable React keys
+        id: conditionId, // Preserve condition ID for stable React keys
         field,
         operator: newOperator,
         value: newType === 'boolean' ? false : '',
       });
     },
-    [condition.id, condition.operator, onChange]
+    [onChange, conditionId, conditionOperator]
   );
 
   const handleOperatorChange = useCallback(
     (operator: ConditionOperator) => {
       onChange({
-        ...condition,
+        id: conditionId,
+        field: conditionField,
         operator,
+        value: conditionValue,
         // Clear secondary value if not between
-        secondValue: operator === 'between' ? condition.secondValue : undefined,
+        secondValue: operator === 'between' ? conditionSecondValue : undefined,
       });
     },
-    [condition, onChange]
+    [onChange, conditionId, conditionField, conditionValue, conditionSecondValue]
   );
 
   const handleValueChange = useCallback(
     (value: string | number | boolean | string[]) => {
       onChange({
-        ...condition,
+        id: conditionId,
+        field: conditionField,
+        operator: conditionOperator,
         value,
+        secondValue: conditionSecondValue,
       });
     },
-    [condition, onChange]
+    [onChange, conditionId, conditionField, conditionOperator, conditionSecondValue]
   );
 
   const handleSecondValueChange = useCallback(
     (secondValue: string | number) => {
       onChange({
-        ...condition,
+        id: conditionId,
+        field: conditionField,
+        operator: conditionOperator,
+        value: conditionValue,
         secondValue,
       });
     },
-    [condition, onChange]
+    [onChange, conditionId, conditionField, conditionOperator, conditionValue]
   );
 
   const needsValue = !['isEmpty', 'isNotEmpty'].includes(condition.operator);
   const needsSecondValue = condition.operator === 'between';
 
   return (
-    <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+    <div className="bg-muted/50 flex items-center gap-2 rounded-lg p-2">
       {/* Field Select */}
       <Select value={condition.field} onValueChange={handleFieldChange}>
         <SelectTrigger className="w-44">
@@ -484,50 +486,79 @@ function SingleConditionRenderer({
       {/* Second Value for 'between' */}
       {needsSecondValue && (
         <>
-          <span className="text-sm text-muted-foreground">i</span>
-          <Input
-            type={fieldType === 'number' ? 'number' : fieldType === 'date' ? 'date' : 'text'}
-            value={condition.secondValue?.toString() || ''}
-            onChange={(e) => handleSecondValueChange(fieldType === 'number' ? Number(e.target.value) : e.target.value)}
-            className="w-32"
-          />
+          <span className="text-muted-foreground text-sm">i</span>
+          {fieldType === 'date' ? (
+            <DatePicker
+              value={condition.secondValue?.toString() || undefined}
+              onChange={(value) => handleSecondValueChange(value || '')}
+              placeholder="Data końcowa"
+              className="w-40"
+            />
+          ) : (
+            <Input
+              type="text"
+              value={condition.secondValue?.toString() || ''}
+              onChange={(e) => handleSecondValueChange(e.target.value)}
+              className="w-32"
+            />
+          )}
         </>
       )}
 
       {/* Remove Button */}
       <Button type="button" variant="ghost" size="icon" onClick={onRemove}>
-        <Trash2 className="w-4 h-4" />
+        <Trash2 className="h-4 w-4" />
       </Button>
     </div>
   );
-}
+});
 
 interface ValueInputProps {
   fieldType: string;
-  fieldConfig?: typeof CONDITION_FIELDS[number];
+  fieldConfig?: (typeof CONDITION_FIELDS)[number];
   operator: ConditionOperator;
   value?: string | number | boolean | string[];
   onChange: (value: string | number | boolean | string[]) => void;
 }
 
-function ValueInput({
+const ValueInput = memo(function ValueInput({
   fieldType,
   fieldConfig,
   operator,
   value,
   onChange,
 }: ValueInputProps) {
-  // Multi-select for 'in' and 'notIn' operators - use proper multi-select with checkboxes
-  if (['in', 'notIn'].includes(operator) && fieldConfig?.type === 'enum') {
-    const selectedValues = Array.isArray(value) ? value : [];
-    const options = getEnumOptions(fieldConfig.field);
+  const instanceId = useId();
+  // Compute derived values at the top of the component to allow hooks below
+  const isMultiSelect = ['in', 'notIn'].includes(operator) && fieldConfig?.type === 'enum';
+  const selectedValues = useMemo(() => (Array.isArray(value) ? value : []), [value]);
+  // Use Set for O(1) lookup instead of O(n) array.includes()
+  const selectedValuesSet = useMemo(() => new Set(selectedValues), [selectedValues]);
+  const effectiveEnumKey = fieldConfig?.field || '';
 
-    const handleToggle = (optValue: string) => {
-      const newValues = selectedValues.includes(optValue)
+  // Single event handler using data attributes to avoid creating functions per option
+  // Moved outside conditional to satisfy rules of hooks
+  const handleOptionClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement> | React.KeyboardEvent<HTMLDivElement>) => {
+      const optValue = e.currentTarget.dataset.value;
+      if (!optValue) return;
+
+      // For keyboard events, only handle Enter and Space
+      if ('key' in e && e.key !== 'Enter' && e.key !== ' ') return;
+      if ('key' in e) e.preventDefault();
+
+      // Use Set for O(1) lookup
+      const newValues = selectedValuesSet.has(optValue)
         ? selectedValues.filter((v) => v !== optValue)
         : [...selectedValues, optValue];
       onChange(newValues);
-    };
+    },
+    [selectedValues, selectedValuesSet, onChange]
+  );
+
+  // Multi-select for 'in' and 'notIn' operators - use proper multi-select with checkboxes
+  if (isMultiSelect) {
+    const options = ENUM_OPTIONS_MAP[effectiveEnumKey] || [];
 
     return (
       <Popover>
@@ -535,41 +566,40 @@ function ValueInput({
           <Button
             variant="outline"
             role="combobox"
+            aria-controls={`${instanceId}-multiselect`}
             className="w-48 justify-between font-normal"
           >
             <span className="truncate">
               {selectedValues.length === 0
                 ? 'Wybierz wartości...'
                 : selectedValues.length === 1
-                ? options.find((o) => o.value === selectedValues[0])?.label
-                : `Wybrano ${selectedValues.length}`}
+                  ? options.find((o) => o.value === selectedValues[0])?.label
+                  : `Wybrano ${selectedValues.length}`}
             </span>
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-48 p-0" align="start">
           <div
+            id={`${instanceId}-multiselect`}
             className="max-h-60 overflow-auto p-1"
             role="listbox"
             aria-multiselectable="true"
             aria-label="Wybierz wartości"
           >
             {options.map((opt) => {
-              const isSelected = selectedValues.includes(opt.value);
+              // Use Set for O(1) lookup
+              const isSelected = selectedValuesSet.has(opt.value);
               return (
                 <div
                   key={opt.value}
                   role="option"
                   aria-selected={isSelected}
                   tabIndex={0}
-                  className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent focus:bg-accent focus:outline-none"
-                  onClick={() => handleToggle(opt.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleToggle(opt.value);
-                    }
-                  }}
+                  data-value={opt.value}
+                  className="hover:bg-accent focus:bg-accent flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm focus:outline-none"
+                  onClick={handleOptionClick}
+                  onKeyDown={handleOptionClick}
                 >
                   <Checkbox
                     checked={isSelected}
@@ -592,10 +622,7 @@ function ValueInput({
   if (fieldType === 'boolean') {
     return (
       <div className="flex items-center gap-2">
-        <Switch
-          checked={value === true}
-          onCheckedChange={(checked) => onChange(checked)}
-        />
+        <Switch checked={value === true} onCheckedChange={(checked) => onChange(checked)} />
         <span className="text-sm">{value ? 'Tak' : 'Nie'}</span>
       </div>
     );
@@ -604,10 +631,7 @@ function ValueInput({
   // Enum select
   if (fieldType === 'enum' && fieldConfig) {
     return (
-      <Select
-        value={value?.toString() || ''}
-        onValueChange={onChange}
-      >
+      <Select value={value?.toString() || ''} onValueChange={onChange}>
         <SelectTrigger className="w-48">
           <SelectValue placeholder="Wybierz..." />
         </SelectTrigger>
@@ -625,10 +649,7 @@ function ValueInput({
   // Array (GTU codes)
   if (fieldType === 'array' && fieldConfig?.field === 'gtuCodes') {
     return (
-      <Select
-        value={value?.toString() || ''}
-        onValueChange={onChange}
-      >
+      <Select value={value?.toString() || ''} onValueChange={onChange}>
         <SelectTrigger className="w-64">
           <SelectValue placeholder="Wybierz kod GTU..." />
         </SelectTrigger>
@@ -646,10 +667,10 @@ function ValueInput({
   // Date input
   if (fieldType === 'date') {
     return (
-      <Input
-        type="date"
-        value={value?.toString() || ''}
-        onChange={(e) => onChange(e.target.value)}
+      <DatePicker
+        value={value?.toString() || undefined}
+        onChange={(newValue) => onChange(newValue || '')}
+        placeholder="Wybierz datę"
         className="w-40"
       />
     );
@@ -677,37 +698,33 @@ function ValueInput({
       placeholder="Wartość..."
     />
   );
-}
+});
+
+// Cache enum options at module level to prevent recreation on every render
+const ENUM_OPTIONS_MAP: Record<string, { value: string; label: string }[]> = {
+  employmentType: Object.entries(EmploymentTypeLabels).map(([value, label]) => ({
+    value,
+    label,
+  })),
+  vatStatus: Object.entries(VatStatusLabels).map(([value, label]) => ({
+    value,
+    label,
+  })),
+  taxScheme: Object.entries(TaxSchemeLabels).map(([value, label]) => ({
+    value,
+    label,
+  })),
+  zusStatus: Object.entries(ZusStatusLabels).map(([value, label]) => ({
+    value,
+    label,
+  })),
+  amlGroupEnum: Object.entries(AmlGroupLabels).map(([value, label]) => ({
+    value,
+    label,
+  })),
+};
 
 // Helper function to get enum options based on field
 function getEnumOptions(field: string): { value: string; label: string }[] {
-  switch (field) {
-    case 'employmentType':
-      return Object.entries(EmploymentTypeLabels).map(([value, label]) => ({
-        value,
-        label,
-      }));
-    case 'vatStatus':
-      return Object.entries(VatStatusLabels).map(([value, label]) => ({
-        value,
-        label,
-      }));
-    case 'taxScheme':
-      return Object.entries(TaxSchemeLabels).map(([value, label]) => ({
-        value,
-        label,
-      }));
-    case 'zusStatus':
-      return Object.entries(ZusStatusLabels).map(([value, label]) => ({
-        value,
-        label,
-      }));
-    case 'amlGroupEnum':
-      return Object.entries(AmlGroupLabels).map(([value, label]) => ({
-        value,
-        label,
-      }));
-    default:
-      return [];
-  }
+  return ENUM_OPTIONS_MAP[field] || [];
 }

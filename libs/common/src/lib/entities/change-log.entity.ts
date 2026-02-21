@@ -1,14 +1,15 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
-import { User } from './user.entity';
+
 import { Company } from './company.entity';
+import { User } from './user.entity';
 import { ChangeAction } from '../enums/change-action.enum';
 
 export interface ChangeDetail {
@@ -26,10 +27,10 @@ export class ChangeLog {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   entityType!: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   entityId!: string;
 
   @Column({
@@ -41,14 +42,14 @@ export class ChangeLog {
   @Column({ type: 'jsonb' })
   changes!: ChangeDetail[];
 
-  @Column()
+  @Column({ type: 'uuid' })
   changedById!: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'changedById' })
   changedBy!: User;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   companyId!: string | null;
 
   @ManyToOne(() => Company, { onDelete: 'CASCADE', nullable: true })

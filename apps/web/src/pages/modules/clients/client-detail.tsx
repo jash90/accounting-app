@@ -1,51 +1,118 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { useClient, useUpdateClient, useSetClientCustomFields } from '@/lib/hooks/use-clients';
-import { useFieldDefinitions, useClientIcons } from '@/lib/hooks/use-clients';
-import { useAuthContext } from '@/contexts/auth-context';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ClientIcon } from '@/types/entities';
+import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
+
+import { useNavigate, useParams } from 'react-router-dom';
+
 import {
+  AlertTriangle,
   ArrowLeft,
-  Edit,
-  User,
   Building2,
   Calendar,
+  Edit,
   FileText,
   Tags,
-  CheckSquare,
+  User,
 } from 'lucide-react';
-import { useState } from 'react';
-import { ClientFormDialog } from '@/components/forms/client-form-dialog';
-import { ClientChangelog } from '@/components/clients/client-changelog';
-import { ClientTasksList } from '@/components/clients/client-tasks-list';
-import { ClientTaskStatistics } from '@/components/clients/client-task-statistics';
-import { UpdateClientDto } from '@/types/dtos';
+
+import { ErrorBoundary } from '@/components/common/error-boundary';
+import { type ClientReliefsData } from '@/components/forms/client-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { InfoItem } from '@/components/ui/info-item';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthContext } from '@/contexts/auth-context';
+import {
+  useClient,
+  useClientIcons,
+  useFieldDefinitions,
+  useSetClientCustomFields,
+  useUpdateClient,
+} from '@/lib/hooks/use-clients';
+import {
+  ReliefType,
+  useClientReliefPeriods,
+  useCreateReliefPeriod,
+  useDeleteReliefPeriod,
+  useUpdateReliefPeriod,
+} from '@/lib/hooks/use-relief-periods';
+import { formatDate } from '@/lib/utils/format-date';
+import { type UpdateClientDto } from '@/types/dtos';
+import { type ClientIcon } from '@/types/entities';
 import {
   EmploymentTypeLabels,
-  VatStatusLabels,
   TaxSchemeLabels,
-  ZusStatusLabels,
   UserRole,
+  VatStatusLabels,
+  ZusStatusLabels,
 } from '@/types/enums';
 
-function formatDate(date?: Date | string | null): string {
-  if (!date) return '-';
-  return new Date(date).toLocaleDateString('pl-PL');
-}
+// Lazy-load conditionally rendered sidebar components for better bundle splitting
+// These are only visible on client detail page and often scrolled to
+const ClientChangelog = lazy(() =>
+  import('@/components/clients/client-changelog').then((m) => ({
+    default: m.ClientChangelog,
+  }))
+);
+const ClientTaskStatistics = lazy(() =>
+  import('@/components/clients/client-task-statistics').then((m) => ({
+    default: m.ClientTaskStatistics,
+  }))
+);
+const ClientTasksList = lazy(() =>
+  import('@/components/clients/client-tasks-list').then((m) => ({
+    default: m.ClientTasksList,
+  }))
+);
+const ReliefPeriodsCard = lazy(() =>
+  import('@/components/clients/relief-periods-card').then((m) => ({
+    default: m.ReliefPeriodsCard,
+  }))
+);
+const SuspensionHistoryCard = lazy(() =>
+  import('@/components/clients/suspension-history-card').then((m) => ({
+    default: m.SuspensionHistoryCard,
+  }))
+);
 
-function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
+// Lazy-load heavy form dialog (976 lines) - only loaded when edit button is clicked
+const ClientFormDialog = lazy(() =>
+  import('@/components/forms/client-form-dialog').then((m) => ({
+    default: m.ClientFormDialog,
+  }))
+);
+/**
+ * Error fallback component for ClientDetailPage
+ */
+function ClientDetailErrorFallback() {
+  const navigate = useNavigate();
+
   return (
-    <div className="space-y-1">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="font-medium text-apptax-navy">{value || '-'}</p>
+    <div className="flex min-h-[400px] flex-col items-center justify-center space-y-4">
+      <AlertTriangle className="text-destructive h-16 w-16" />
+      <h2 className="text-xl font-semibold">Wystąpił błąd</h2>
+      <p className="text-muted-foreground max-w-md text-center">
+        Nie udało się załadować szczegółów klienta. Proszę odświeżyć stronę lub spróbować później.
+      </p>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Powrót
+        </Button>
+        <Button onClick={() => window.location.reload()}>Odśwież stronę</Button>
+      </div>
     </div>
   );
 }
 
 export default function ClientDetailPage() {
+  return (
+    <ErrorBoundary fallback={<ClientDetailErrorFallback />}>
+      <ClientDetailContent />
+    </ErrorBoundary>
+  );
+}
+
+function ClientDetailContent() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthContext();
@@ -60,10 +127,16 @@ export default function ClientDetailPage() {
   const updateClient = useUpdateClient();
   const setCustomFields = useSetClientCustomFields();
 
+  // Relief period hooks
+  const { data: reliefPeriods } = useClientReliefPeriods(clientId);
+  const createReliefPeriod = useCreateReliefPeriod();
+  const updateReliefPeriod = useUpdateReliefPeriod();
+  const deleteReliefPeriod = useDeleteReliefPeriod();
+
   const [editOpen, setEditOpen] = useState(false);
 
-  // Determine the base path based on user role
-  const getBasePath = () => {
+  // Memoize basePath to prevent unnecessary recalculations
+  const basePath = useMemo(() => {
     switch (user?.role) {
       case UserRole.ADMIN:
         return '/admin/modules/clients';
@@ -72,18 +145,110 @@ export default function ClientDetailPage() {
       default:
         return '/modules/clients';
     }
-  };
+  }, [user?.role]);
 
-  const basePath = getBasePath();
+  // Handler for updating relief periods from the form dialog
+  // Uses Promise.all for parallel execution instead of sequential awaits
+  const handleReliefPeriodsUpdate = useCallback(
+    async (reliefs: ClientReliefsData) => {
+      const existingUlgaNaStart = reliefPeriods?.find(
+        (r) => r.reliefType === ReliefType.ULGA_NA_START
+      );
+      const existingMalyZus = reliefPeriods?.find((r) => r.reliefType === ReliefType.MALY_ZUS);
+
+      const operations: Promise<unknown>[] = [];
+
+      // Collect Ulga na Start operation
+      if (reliefs.ulgaNaStart) {
+        if (existingUlgaNaStart) {
+          operations.push(
+            updateReliefPeriod.mutateAsync({
+              clientId,
+              reliefId: existingUlgaNaStart.id,
+              data: {
+                startDate: reliefs.ulgaNaStart.startDate.split('T')[0],
+                endDate: reliefs.ulgaNaStart.endDate?.split('T')[0],
+              },
+            })
+          );
+        } else {
+          operations.push(
+            createReliefPeriod.mutateAsync({
+              clientId,
+              data: {
+                reliefType: ReliefType.ULGA_NA_START,
+                startDate: reliefs.ulgaNaStart.startDate.split('T')[0],
+                endDate: reliefs.ulgaNaStart.endDate?.split('T')[0],
+              },
+            })
+          );
+        }
+      } else if (existingUlgaNaStart) {
+        operations.push(
+          deleteReliefPeriod.mutateAsync({
+            clientId,
+            reliefId: existingUlgaNaStart.id,
+          })
+        );
+      }
+
+      // Collect Mały ZUS operation
+      if (reliefs.malyZus) {
+        if (existingMalyZus) {
+          operations.push(
+            updateReliefPeriod.mutateAsync({
+              clientId,
+              reliefId: existingMalyZus.id,
+              data: {
+                startDate: reliefs.malyZus.startDate.split('T')[0],
+                endDate: reliefs.malyZus.endDate?.split('T')[0],
+              },
+            })
+          );
+        } else {
+          operations.push(
+            createReliefPeriod.mutateAsync({
+              clientId,
+              data: {
+                reliefType: ReliefType.MALY_ZUS,
+                startDate: reliefs.malyZus.startDate.split('T')[0],
+                endDate: reliefs.malyZus.endDate?.split('T')[0],
+              },
+            })
+          );
+        }
+      } else if (existingMalyZus) {
+        operations.push(
+          deleteReliefPeriod.mutateAsync({
+            clientId,
+            reliefId: existingMalyZus.id,
+          })
+        );
+      }
+
+      // Execute all operations in parallel
+      if (operations.length > 0) {
+        try {
+          await Promise.all(operations);
+        } catch (error) {
+          if (import.meta.env.DEV) {
+            console.error('Failed to update relief periods:', error);
+          }
+          // Error notification handled by mutation's onError
+        }
+      }
+    },
+    [clientId, reliefPeriods, createReliefPeriod, updateReliefPeriod, deleteReliefPeriod]
+  );
 
   // Handle missing id
   if (!id) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <h1 className="text-2xl font-semibold text-destructive">Błąd</h1>
+      <div className="flex min-h-[50vh] flex-col items-center justify-center">
+        <h1 className="text-destructive text-2xl font-semibold">Błąd</h1>
         <p className="text-muted-foreground mt-2">Nie podano identyfikatora klienta</p>
         <Button onClick={() => navigate(basePath)} className="mt-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Powrót do listy
         </Button>
       </div>
@@ -97,8 +262,8 @@ export default function ClientDetailPage() {
           <Skeleton className="h-10 w-10" />
           <Skeleton className="h-8 w-64" />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
             <Skeleton className="h-48" />
             <Skeleton className="h-48" />
           </div>
@@ -125,9 +290,12 @@ export default function ClientDetailPage() {
   }
 
   // Get assigned icons - use type predicate to properly narrow the type
-  const assignedIcons = (client.iconAssignments?.map((assignment) => {
-    return icons.find((i) => i.id === assignment.iconId);
-  }).filter((icon): icon is ClientIcon => icon !== undefined)) ?? [];
+  const assignedIcons =
+    client.iconAssignments
+      ?.map((assignment) => {
+        return icons.find((i) => i.id === assignment.iconId);
+      })
+      .filter((icon): icon is ClientIcon => icon !== undefined) ?? [];
 
   // Get custom field values
   const customFieldValues = client.customFieldValues || [];
@@ -141,7 +309,7 @@ export default function ClientDetailPage() {
             Powrót do listy
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-apptax-navy flex items-center gap-2">
+            <h1 className="text-foreground flex items-center gap-2 text-2xl font-bold">
               {client.name}
               {!client.isActive && (
                 <Badge variant="outline" className="ml-2">
@@ -149,25 +317,20 @@ export default function ClientDetailPage() {
                 </Badge>
               )}
             </h1>
-            {client.nip && (
-              <p className="text-muted-foreground font-mono">NIP: {client.nip}</p>
-            )}
+            {client.nip && <p className="text-muted-foreground font-mono">NIP: {client.nip}</p>}
           </div>
         </div>
 
         {client.isActive && (
-          <Button
-            onClick={() => setEditOpen(true)}
-            className="bg-apptax-blue hover:bg-apptax-blue/90"
-          >
+          <Button onClick={() => setEditOpen(true)} className="bg-primary hover:bg-primary/90">
             <Edit className="mr-2 h-4 w-4" />
             Edytuj
           </Button>
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
           {/* Basic Information */}
           <Card>
             <CardHeader>
@@ -177,17 +340,14 @@ export default function ClientDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
                 <InfoItem label="Nazwa" value={client.name} />
                 <InfoItem label="NIP" value={client.nip} />
                 <InfoItem
                   label="Email"
                   value={
                     client.email ? (
-                      <a
-                        href={`mailto:${client.email}`}
-                        className="text-apptax-blue hover:underline"
-                      >
+                      <a href={`mailto:${client.email}`} className="text-primary hover:underline">
                         {client.email}
                       </a>
                     ) : null
@@ -207,7 +367,7 @@ export default function ClientDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
                 <InfoItem
                   label="Forma zatrudnienia"
                   value={
@@ -222,9 +382,7 @@ export default function ClientDetailPage() {
                   label="Status VAT"
                   value={
                     client.vatStatus ? (
-                      <Badge variant="default">
-                        {VatStatusLabels[client.vatStatus]}
-                      </Badge>
+                      <Badge variant="default">{VatStatusLabels[client.vatStatus]}</Badge>
                     ) : null
                   }
                 />
@@ -232,9 +390,7 @@ export default function ClientDetailPage() {
                   label="Forma opodatkowania"
                   value={
                     client.taxScheme ? (
-                      <Badge variant="secondary">
-                        {TaxSchemeLabels[client.taxScheme]}
-                      </Badge>
+                      <Badge variant="secondary">{TaxSchemeLabels[client.taxScheme]}</Badge>
                     ) : null
                   }
                 />
@@ -242,9 +398,7 @@ export default function ClientDetailPage() {
                   label="Status ZUS"
                   value={
                     client.zusStatus ? (
-                      <Badge variant="secondary">
-                        {ZusStatusLabels[client.zusStatus]}
-                      </Badge>
+                      <Badge variant="secondary">{ZusStatusLabels[client.zusStatus]}</Badge>
                     ) : null
                   }
                 />
@@ -261,7 +415,7 @@ export default function ClientDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 gap-6">
                 <InfoItem
                   label="Data rozpoczęcia firmy"
                   value={formatDate(client.companyStartDate)}
@@ -269,10 +423,6 @@ export default function ClientDetailPage() {
                 <InfoItem
                   label="Data rozpoczęcia współpracy"
                   value={formatDate(client.cooperationStartDate)}
-                />
-                <InfoItem
-                  label="Data zawieszenia"
-                  value={formatDate(client.suspensionDate)}
                 />
               </div>
             </CardContent>
@@ -287,35 +437,29 @@ export default function ClientDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-6 mb-6">
+              <div className="mb-6 grid grid-cols-2 gap-6">
                 <InfoItem label="Kod GTU" value={client.gtuCode} />
                 <InfoItem label="Grupa AML" value={client.amlGroup} />
               </div>
               {client.companySpecificity && (
                 <div className="mb-4">
-                  <p className="text-sm text-muted-foreground mb-1">
-                    Specyfika firmy
-                  </p>
-                  <p className="text-apptax-navy whitespace-pre-wrap">
-                    {client.companySpecificity}
-                  </p>
+                  <p className="text-muted-foreground mb-1 text-sm">Specyfika firmy</p>
+                  <p className="text-foreground whitespace-pre-wrap">{client.companySpecificity}</p>
                 </div>
               )}
               {client.additionalInfo && (
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">
-                    Dodatkowe uwagi
-                  </p>
-                  <p className="text-apptax-navy whitespace-pre-wrap">
-                    {client.additionalInfo}
-                  </p>
+                  <p className="text-muted-foreground mb-1 text-sm">Dodatkowe uwagi</p>
+                  <p className="text-foreground whitespace-pre-wrap">{client.additionalInfo}</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* Client Tasks */}
-          <ClientTasksList clientId={clientId} clientName={client.name} />
+          <Suspense fallback={<Skeleton className="h-48" />}>
+            <ClientTasksList clientId={clientId} clientName={client.name} />
+          </Suspense>
 
           {/* Custom Fields */}
           {customFieldValues.length > 0 && (
@@ -327,7 +471,7 @@ export default function ClientDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 gap-6 md:grid-cols-3">
                   {customFieldValues.map((cfv) => {
                     const definition = fieldDefinitions.find(
                       (fd) => fd.id === cfv.fieldDefinitionId
@@ -360,20 +504,14 @@ export default function ClientDetailPage() {
                     icon ? (
                       <div
                         key={icon.id}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-full border"
+                        className="flex items-center gap-2 rounded-full border px-3 py-1.5"
                         style={{
                           borderColor: icon.color || '#e5e7eb',
-                          backgroundColor: icon.color
-                            ? `${icon.color}10`
-                            : 'transparent',
+                          backgroundColor: icon.color ? `${icon.color}10` : 'transparent',
                         }}
                       >
                         {icon.filePath && (
-                          <img
-                            src={icon.filePath}
-                            alt={icon.name}
-                            className="w-4 h-4"
-                          />
+                          <img src={icon.filePath} alt={icon.name} className="h-4 w-4" />
                         )}
                         <span className="text-sm">{icon.name}</span>
                       </div>
@@ -386,42 +524,99 @@ export default function ClientDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <ClientTaskStatistics clientId={clientId} />
+          <Suspense fallback={<Skeleton className="h-32" />}>
+            <ClientTaskStatistics clientId={clientId} />
+          </Suspense>
+          <Suspense fallback={<Skeleton className="h-32" />}>
+            <ReliefPeriodsCard clientId={clientId} />
+          </Suspense>
+          <Suspense fallback={<Skeleton className="h-32" />}>
+            <SuspensionHistoryCard clientId={clientId} />
+          </Suspense>
           <div id="changelog">
-            <ClientChangelog clientId={id} />
+            <Suspense fallback={<Skeleton className="h-48" />}>
+              <ClientChangelog clientId={id} />
+            </Suspense>
           </div>
         </div>
       </div>
 
       {editOpen && client && (
-        <ClientFormDialog
-          open={editOpen}
-          onOpenChange={setEditOpen}
-          client={client}
-          onSubmit={async (data, customFields) => {
-            updateClient.mutate({
-              id: client.id,
-              data: data as UpdateClientDto,
-            }, {
-              onSuccess: async () => {
-                if (customFields && Object.keys(customFields.values).length > 0) {
-                  try {
-                    await setCustomFields.mutateAsync({
-                      id: client.id,
-                      data: customFields,
-                    });
-                  } catch {
-                    // Custom fields error handled by the hook's onError
-                  }
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <Card>
+                <CardContent className="space-y-4 p-6">
+                  <Skeleton className="h-6 w-48" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                </CardContent>
+              </Card>
+            </div>
+          }
+        >
+          <ClientFormDialog
+            open={editOpen}
+            onOpenChange={setEditOpen}
+            client={client}
+            existingReliefs={reliefPeriods?.map((r) => ({
+              reliefType: r.reliefType as ReliefType,
+              startDate: r.startDate,
+              endDate: r.endDate,
+            }))}
+            onSubmit={async (data, customFields, reliefs) => {
+              updateClient.mutate(
+                {
+                  id: client.id,
+                  data: data as UpdateClientDto,
+                },
+                {
+                  onSuccess: async () => {
+                    // Execute custom fields and relief periods updates in parallel for faster saves
+                    const operations: Promise<unknown>[] = [];
+
+                    // Handle custom fields
+                    if (customFields && Object.keys(customFields.values).length > 0) {
+                      operations.push(
+                        setCustomFields.mutateAsync({
+                          id: client.id,
+                          data: customFields,
+                        })
+                      );
+                    }
+
+                    // Handle relief periods
+                    if (reliefs) {
+                      operations.push(handleReliefPeriodsUpdate(reliefs));
+                    }
+
+                    // Wait for all operations to complete in parallel
+                    if (operations.length > 0) {
+                      try {
+                        await Promise.all(operations);
+                      } catch (error) {
+                        if (import.meta.env.DEV) {
+                          console.error('Failed to update client data:', error);
+                        }
+                        // Error notification handled by mutation's onError
+                      }
+                    }
+
+                    setEditOpen(false);
+                  },
+                  onError: (error) => {
+                    if (import.meta.env.DEV) {
+                      console.error('Failed to update client:', error);
+                    }
+                    // Error notification handled by mutation's onError
+                  },
                 }
-                setEditOpen(false);
-              },
-              onError: () => {
-                // Error already handled by the mutation hook's toast
-              },
-            });
-          }}
-        />
+              );
+            }}
+          />
+        </Suspense>
       )}
     </div>
   );

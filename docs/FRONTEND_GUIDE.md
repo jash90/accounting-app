@@ -28,6 +28,7 @@
 Multi-tenant accounting SaaS frontend with role-based access control, built with modern React ecosystem.
 
 **Key Features**:
+
 - JWT-based authentication with auto-refresh
 - 3 role-based UIs (ADMIN, COMPANY_OWNER, EMPLOYEE)
 - Pluggable business modules with granular permissions
@@ -42,13 +43,14 @@ Multi-tenant accounting SaaS frontend with role-based access control, built with
 
 ### Core Framework
 
-| Technology | Version | Why Chosen |
-|------------|---------|------------|
-| **React** | 19.x | Auto-memoization Compiler, 30-40% fewer re-renders |
-| **TypeScript** | 5.7 | 30% faster type checking, compile caching |
-| **Vite** | 6.0 | 20% faster builds, enhanced HMR |
+| Technology     | Version | Why Chosen                                         |
+| -------------- | ------- | -------------------------------------------------- |
+| **React**      | 19.x    | Auto-memoization Compiler, 30-40% fewer re-renders |
+| **TypeScript** | 5.7     | 30% faster type checking, compile caching          |
+| **Vite**       | 6.0     | 20% faster builds, enhanced HMR                    |
 
 **React 19 Benefits**:
+
 ```tsx
 // Before (React 18) - Manual optimization
 const MemoizedComponent = React.memo(({ data }) => {
@@ -65,13 +67,14 @@ function Component({ data }) {
 
 ### State Management
 
-| Technology | Version | Why Chosen |
-|------------|---------|------------|
-| **TanStack Query** | v5 | 20% smaller bundle, better caching, `useSuspenseQuery` |
-| **React Context** | Built-in | Auth state, lightweight local state |
-| **React Hook Form** | Latest | 9KB, perfect Zod integration |
+| Technology          | Version  | Why Chosen                                             |
+| ------------------- | -------- | ------------------------------------------------------ |
+| **TanStack Query**  | v5       | 20% smaller bundle, better caching, `useSuspenseQuery` |
+| **React Context**   | Built-in | Auth state, lightweight local state                    |
+| **React Hook Form** | Latest   | 9KB, perfect Zod integration                           |
 
 **TanStack Query v5 Improvements**:
+
 - `isLoading` → `isPending` (clearer semantics)
 - `queryOptions` for type-safe reusable queries
 - `useSuspenseQuery` for React 19 Suspense
@@ -79,20 +82,20 @@ function Component({ data }) {
 
 ### UI & Styling
 
-| Technology | Purpose |
-|------------|---------|
-| **shadcn/ui** | Copy-paste components, full customization |
-| **Tailwind CSS** | Utility-first styling, design tokens |
-| **Lucide React** | Icon library |
+| Technology       | Purpose                                   |
+| ---------------- | ----------------------------------------- |
+| **shadcn/ui**    | Copy-paste components, full customization |
+| **Tailwind CSS** | Utility-first styling, design tokens      |
+| **Lucide React** | Icon library                              |
 
 ### Testing
 
-| Technology | Purpose |
-|------------|---------|
-| **Vitest** | Unit/integration tests, Vite integration |
-| **Testing Library** | Component testing, user-centric |
-| **Playwright** | E2E testing, cross-browser |
-| **MSW** | API mocking (dev + test) |
+| Technology          | Purpose                                  |
+| ------------------- | ---------------------------------------- |
+| **Vitest**          | Unit/integration tests, Vite integration |
+| **Testing Library** | Component testing, user-centric          |
+| **Playwright**      | E2E testing, cross-browser               |
+| **MSW**             | API mocking (dev + test)                 |
 
 **Why MSW**: Same mocks work across dev, unit tests, and E2E tests.
 
@@ -201,21 +204,21 @@ apps/web/
 
 ### Phase Overview
 
-| Phase | Status | Hours | Description |
-|-------|--------|-------|-------------|
-| 1 | ✅ | 8-10 | Setup: React 19, TS 5.7, Vite 6, MSW |
-| 2 | ✅ | 4-6 | TypeScript types & Zod schemas |
-| 3 | ✅ | 5-7 | Axios client with JWT interceptors |
-| 4 | ✅ | 6-8 | TanStack Query v5 & auth |
-| 5 | ✅ | 5-7 | React Router with role guards |
-| 6 | ✅ | 4-5 | shadcn/ui components |
-| 7-9 | ✅ | 21-27 | Admin CRUD (Users, Companies, Modules) |
-| 10-11 | ✅ | 14-18 | Company CRUD (Employees, Permissions) |
-| 12 | ✅ | 7-9 | Simple Text module |
-| 13 | ✅ | 6-8 | Layouts & navigation |
-| 14 | ✅ | 10-12 | Testing (Unit, Integration, E2E) |
-| 15 | ✅ | 8-10 | Production optimization |
-| **Total** | | **108-137** | **Full implementation** |
+| Phase     | Status | Hours       | Description                            |
+| --------- | ------ | ----------- | -------------------------------------- |
+| 1         | ✅     | 8-10        | Setup: React 19, TS 5.7, Vite 6, MSW   |
+| 2         | ✅     | 4-6         | TypeScript types & Zod schemas         |
+| 3         | ✅     | 5-7         | Axios client with JWT interceptors     |
+| 4         | ✅     | 6-8         | TanStack Query v5 & auth               |
+| 5         | ✅     | 5-7         | React Router with role guards          |
+| 6         | ✅     | 4-5         | shadcn/ui components                   |
+| 7-9       | ✅     | 21-27       | Admin CRUD (Users, Companies, Modules) |
+| 10-11     | ✅     | 14-18       | Company CRUD (Employees, Permissions)  |
+| 12        | ✅     | 7-9         | Simple Text module                     |
+| 13        | ✅     | 6-8         | Layouts & navigation                   |
+| 14        | ✅     | 10-12       | Testing (Unit, Integration, E2E)       |
+| 15        | ✅     | 8-10        | Production optimization                |
+| **Total** |        | **108-137** | **Full implementation**                |
 
 ### Key Implementation Patterns
 
@@ -223,14 +226,15 @@ apps/web/
 
 ```tsx
 // lib/hooks/use-users.ts
-import { useQuery, useMutation, queryOptions } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
 
 // Reusable query definition
-export const usersQueryOptions = () => queryOptions({
-  queryKey: ['users'],
-  queryFn: () => api.users.getAll(),
-  staleTime: 5 * 60 * 1000,
-});
+export const usersQueryOptions = () =>
+  queryOptions({
+    queryKey: ['users'],
+    queryFn: () => api.users.getAll(),
+    staleTime: 5 * 60 * 1000,
+  });
 
 export const useUsers = () => {
   const { data, isPending } = useQuery(usersQueryOptions());
@@ -280,7 +284,7 @@ function ProtectedRoute({ children, allowedRoles }) {
       <AdminLayout />
     </ProtectedRoute>
   }
-/>
+/>;
 ```
 
 #### 3. Form Handling with Zod
@@ -331,9 +335,7 @@ export const handlers = [
   }),
 
   http.get('/admin/users', () => {
-    return HttpResponse.json([
-      { id: '1', email: 'admin@test.com', role: 'ADMIN' },
-    ]);
+    return HttpResponse.json([{ id: '1', email: 'admin@test.com', role: 'ADMIN' }]);
   }),
 ];
 ```
@@ -387,6 +389,7 @@ CMD ["nginx", "-g", "daemon off;"]
 ```
 
 **nginx.conf**:
+
 ```nginx
 server {
   listen 80;
@@ -433,6 +436,7 @@ nx serve web
 #### Phase 2: Code Updates (2-3 hours)
 
 **Find & Replace**:
+
 ```typescript
 // BEFORE (v4)
 const { data, isLoading } = useQuery({ ... });
@@ -442,6 +446,7 @@ const { data, isPending } = useQuery({ ... });
 ```
 
 **Update all files**:
+
 ```bash
 # Find all instances
 grep -r "isLoading" apps/web/src
@@ -483,6 +488,7 @@ export default defineConfig({
 ```
 
 **Remove manual memoization** (optional):
+
 ```tsx
 // Before
 const MemoizedTable = React.memo(DataTable);
@@ -509,14 +515,14 @@ npm install @tanstack/react-query@4
 
 ### Performance Targets
 
-| Metric | Target | Achieved |
-|--------|--------|----------|
+| Metric         | Target | Achieved |
+| -------------- | ------ | -------- |
 | Initial Bundle | <380KB | ✅ 380KB |
-| Total Bundle | <2MB | ✅ 1.8MB |
-| LCP | <2.0s | ✅ 1.8s |
-| INP | <150ms | ✅ 120ms |
-| CLS | <0.1 | ✅ 0.05 |
-| Build Time | <8s | ✅ 7.5s |
+| Total Bundle   | <2MB   | ✅ 1.8MB |
+| LCP            | <2.0s  | ✅ 1.8s  |
+| INP            | <150ms | ✅ 120ms |
+| CLS            | <0.1   | ✅ 0.05  |
+| Build Time     | <8s    | ✅ 7.5s  |
 
 ### Optimization Techniques
 
@@ -529,22 +535,27 @@ npm install @tanstack/react-query@4
 ### Security Features
 
 **Authentication**:
+
 - JWT tokens with validation
 - Auto-refresh on 401
 - Token expiry checks
 
 **Protection**:
+
 - Content Security Policy headers
 - Role-based route guards
 - Permission-based UI rendering
 - Input validation (Zod)
 
 **CSP Configuration**:
+
 ```html
-<meta http-equiv="Content-Security-Policy"
-      content="default-src 'self';
+<meta
+  http-equiv="Content-Security-Policy"
+  content="default-src 'self';
                script-src 'self';
-               style-src 'self' 'unsafe-inline';">
+               style-src 'self' 'unsafe-inline';"
+/>
 ```
 
 ---
@@ -576,6 +587,7 @@ For archived documentation and detailed references:
 ## Support
 
 **Official Documentation**:
+
 - [React 19](https://react.dev/blog/2024/12/05/react-19)
 - [TypeScript 5.7](https://devblogs.microsoft.com/typescript/)
 - [Vite 6](https://vitejs.dev/)
@@ -583,6 +595,7 @@ For archived documentation and detailed references:
 - [MSW](https://mswjs.io/)
 
 **Community**:
+
 - React Discord: https://discord.gg/react
 - TanStack Discord: https://discord.gg/tanstack
 

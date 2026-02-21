@@ -1,4 +1,8 @@
-import { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
+
+import { AlertCircle, CheckCircle2, Download, FileSpreadsheet, Upload } from 'lucide-react';
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -8,10 +12,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { Download, Upload, FileSpreadsheet, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils/cn';
 
 interface ExportImportDialogProps {
@@ -39,6 +42,7 @@ export function ExportImportDialog({
   isExporting = false,
   isImporting = false,
 }: ExportImportDialogProps) {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'export' | 'import'>('export');
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -67,7 +71,11 @@ export function ExportImportDialog({
 
   const handleFileSelect = (file: File) => {
     if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-      alert('Proszę wybrać plik CSV');
+      toast({
+        title: 'Nieprawidłowy format pliku',
+        description: 'Proszę wybrać plik CSV',
+        variant: 'destructive',
+      });
       return;
     }
     setSelectedFile(file);
@@ -80,8 +88,9 @@ export function ExportImportDialog({
     try {
       const result = await onImport(selectedFile);
       setImportResult(result);
-    } catch {
-      // Error is handled by the hook
+    } catch (error) {
+      // Error is handled by the hook, but log for debugging
+      console.error('Import failed:', error);
     }
   };
 
@@ -109,11 +118,12 @@ export function ExportImportDialog({
           </TabsList>
 
           <TabsContent value="export" className="space-y-4">
-            <div className="text-center py-8">
-              <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground" />
+            <div className="py-8 text-center">
+              <FileSpreadsheet className="text-muted-foreground mx-auto h-12 w-12" />
               <h3 className="mt-4 text-lg font-medium">Eksport do CSV</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Pobierz listę wszystkich klientów w formacie CSV. Plik będzie zawierał wszystkie aktualnie przefiltrowane dane.
+              <p className="text-muted-foreground mt-2 text-sm">
+                Pobierz listę wszystkich klientów w formacie CSV. Plik będzie zawierał wszystkie
+                aktualnie przefiltrowane dane.
               </p>
             </div>
 
@@ -132,8 +142,9 @@ export function ExportImportDialog({
             {!importResult ? (
               <>
                 <div
+                  role="presentation"
                   className={cn(
-                    'border-2 border-dashed rounded-lg p-8 text-center transition-colors',
+                    'rounded-lg border-2 border-dashed p-8 text-center transition-colors',
                     dragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25',
                     selectedFile && 'border-green-500 bg-green-50'
                   )}
@@ -144,9 +155,11 @@ export function ExportImportDialog({
                 >
                   <input
                     ref={fileInputRef}
+                    id="csv-file-upload"
                     type="file"
                     accept=".csv,text/csv"
                     className="hidden"
+                    aria-label="Wybierz plik CSV do importu"
                     onChange={(e) => {
                       if (e.target.files?.[0]) {
                         handleFileSelect(e.target.files[0]);
@@ -158,26 +171,23 @@ export function ExportImportDialog({
                     <div>
                       <CheckCircle2 className="mx-auto h-10 w-10 text-green-500" />
                       <p className="mt-2 font-medium">{selectedFile.name}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-muted-foreground text-sm">
                         {(selectedFile.size / 1024).toFixed(1)} KB
                       </p>
-                      <Button
-                        variant="link"
-                        size="sm"
-                        onClick={() => setSelectedFile(null)}
-                      >
+                      <Button variant="link" size="sm" onClick={() => setSelectedFile(null)}>
                         Wybierz inny plik
                       </Button>
                     </div>
                   ) : (
                     <div>
-                      <Upload className="mx-auto h-10 w-10 text-muted-foreground" />
-                      <p className="mt-2 text-sm text-muted-foreground">
+                      <Upload className="text-muted-foreground mx-auto h-10 w-10" />
+                      <p className="text-muted-foreground mt-2 text-sm">
                         Przeciągnij plik CSV tutaj lub{' '}
                         <button
                           type="button"
                           className="text-primary underline hover:no-underline"
                           onClick={() => fileInputRef.current?.click()}
+                          aria-label="Wybierz plik CSV z dysku"
                         >
                           wybierz z dysku
                         </button>
@@ -187,9 +197,7 @@ export function ExportImportDialog({
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    Nie masz szablonu?
-                  </span>
+                  <span className="text-muted-foreground">Nie masz szablonu?</span>
                   <Button
                     variant="link"
                     size="sm"
@@ -203,7 +211,7 @@ export function ExportImportDialog({
 
                 {isImporting && (
                   <div className="space-y-2">
-                    <p className="text-sm text-center">Importowanie...</p>
+                    <p className="text-center text-sm">Importowanie...</p>
                     <Progress value={undefined} className="w-full" />
                   </div>
                 )}
@@ -212,10 +220,7 @@ export function ExportImportDialog({
                   <Button variant="outline" onClick={handleClose}>
                     Anuluj
                   </Button>
-                  <Button
-                    onClick={handleImport}
-                    disabled={!selectedFile || isImporting}
-                  >
+                  <Button onClick={handleImport} disabled={!selectedFile || isImporting}>
                     <Upload className="mr-2 h-4 w-4" />
                     {isImporting ? 'Importowanie...' : 'Importuj'}
                   </Button>
@@ -229,29 +234,25 @@ export function ExportImportDialog({
                   ) : (
                     <CheckCircle2 className="h-4 w-4" />
                   )}
-                  <AlertTitle>
-                    Import zakończony
-                  </AlertTitle>
+                  <AlertTitle>Import zakończony</AlertTitle>
                   <AlertDescription>
                     <ul className="mt-2 space-y-1">
                       <li>Zaimportowano: {importResult.imported} klientów</li>
                       <li>Zaktualizowano: {importResult.updated} klientów</li>
                       {importResult.errors.length > 0 && (
-                        <li className="text-destructive">
-                          Błędów: {importResult.errors.length}
-                        </li>
+                        <li className="text-destructive">Błędów: {importResult.errors.length}</li>
                       )}
                     </ul>
                   </AlertDescription>
                 </Alert>
 
                 {importResult.errors.length > 0 && (
-                  <div className="max-h-40 overflow-y-auto border rounded p-2">
-                    <p className="text-sm font-medium mb-2">Szczegóły błędów:</p>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      {importResult.errors.map((error, index) => (
-                        <li key={index}>
-                          Wiersz {error.row}, pole "{error.field}": {error.message}
+                  <div className="max-h-40 overflow-y-auto rounded border p-2">
+                    <p className="mb-2 text-sm font-medium">Szczegóły błędów:</p>
+                    <ul className="text-muted-foreground space-y-1 text-sm">
+                      {importResult.errors.map((error) => (
+                        <li key={`${error.row}-${error.field}`}>
+                          Wiersz {error.row}, pole &quot;{error.field}&quot;: {error.message}
                         </li>
                       ))}
                     </ul>
@@ -259,9 +260,7 @@ export function ExportImportDialog({
                 )}
 
                 <DialogFooter>
-                  <Button onClick={handleClose}>
-                    Zamknij
-                  </Button>
+                  <Button onClick={handleClose}>Zamknij</Button>
                 </DialogFooter>
               </>
             )}

@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not } from 'typeorm';
-import { Client, User, TenantService } from '@accounting/common';
+
+import { Not, Repository } from 'typeorm';
+
+import { Client, User } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
+
 import { DuplicateCheckResultDto, DuplicateClientInfo } from '../dto/bulk-operations.dto';
 
 @Injectable()
@@ -9,7 +13,7 @@ export class DuplicateDetectionService {
   constructor(
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
-    private readonly tenantService: TenantService,
+    private readonly tenantService: TenantService
   ) {}
 
   /**
@@ -20,7 +24,7 @@ export class DuplicateDetectionService {
     user: User,
     nip?: string,
     email?: string,
-    excludeId?: string,
+    excludeId?: string
   ): Promise<DuplicateCheckResultDto> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
@@ -85,11 +89,7 @@ export class DuplicateDetectionService {
   /**
    * Check if a specific NIP is already used by another client in the company.
    */
-  async isNipTaken(
-    user: User,
-    nip: string,
-    excludeId?: string,
-  ): Promise<boolean> {
+  async isNipTaken(user: User, nip: string, excludeId?: string): Promise<boolean> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     const count = await this.clientRepository.count({
@@ -107,11 +107,7 @@ export class DuplicateDetectionService {
   /**
    * Check if a specific email is already used by another client in the company.
    */
-  async isEmailTaken(
-    user: User,
-    email: string,
-    excludeId?: string,
-  ): Promise<boolean> {
+  async isEmailTaken(user: User, email: string, excludeId?: string): Promise<boolean> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
     const count = await this.clientRepository.count({

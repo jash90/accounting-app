@@ -82,7 +82,8 @@ export enum ChangeAction {
 
 export enum AmlGroup {
   LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
+  STANDARD = 'STANDARD',
+  ELEVATED = 'ELEVATED',
   HIGH = 'HIGH',
 }
 
@@ -127,9 +128,7 @@ export interface ConditionGroup {
 export type AutoAssignCondition = SingleCondition | ConditionGroup;
 
 // Type guard to check if condition is a group
-export function isConditionGroup(
-  condition: AutoAssignCondition
-): condition is ConditionGroup {
+export function isConditionGroup(condition: AutoAssignCondition): condition is ConditionGroup {
   return 'logicalOperator' in condition && 'conditions' in condition;
 }
 
@@ -153,12 +152,12 @@ export const TaskStatusLabels: Record<TaskStatus, string> = {
 };
 
 export const TaskStatusColors: Record<TaskStatus, string> = {
-  [TaskStatus.BACKLOG]: 'bg-slate-100 text-slate-700',
-  [TaskStatus.TODO]: 'bg-blue-100 text-blue-700',
-  [TaskStatus.IN_PROGRESS]: 'bg-yellow-100 text-yellow-700',
-  [TaskStatus.IN_REVIEW]: 'bg-purple-100 text-purple-700',
-  [TaskStatus.DONE]: 'bg-green-100 text-green-700',
-  [TaskStatus.CANCELLED]: 'bg-red-100 text-red-700',
+  [TaskStatus.BACKLOG]: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+  [TaskStatus.TODO]: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  [TaskStatus.IN_PROGRESS]: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
+  [TaskStatus.IN_REVIEW]: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
+  [TaskStatus.DONE]: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+  [TaskStatus.CANCELLED]: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
 };
 
 export enum TaskPriority {
@@ -178,11 +177,11 @@ export const TaskPriorityLabels: Record<TaskPriority, string> = {
 };
 
 export const TaskPriorityColors: Record<TaskPriority, string> = {
-  [TaskPriority.URGENT]: 'bg-red-100 text-red-700',
-  [TaskPriority.HIGH]: 'bg-orange-100 text-orange-700',
-  [TaskPriority.MEDIUM]: 'bg-yellow-100 text-yellow-700',
-  [TaskPriority.LOW]: 'bg-blue-100 text-blue-700',
-  [TaskPriority.NONE]: 'bg-slate-100 text-slate-700',
+  [TaskPriority.URGENT]: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+  [TaskPriority.HIGH]: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
+  [TaskPriority.MEDIUM]: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
+  [TaskPriority.LOW]: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  [TaskPriority.NONE]: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
 };
 
 export enum TaskDependencyType {
@@ -195,4 +194,171 @@ export const TaskDependencyTypeLabels: Record<TaskDependencyType, string> = {
   [TaskDependencyType.BLOCKS]: 'Blokuje',
   [TaskDependencyType.BLOCKED_BY]: 'Zablokowane przez',
   [TaskDependencyType.RELATES_TO]: 'Powiązane z',
+};
+
+// Time Tracking enums
+export enum TimeEntryStatus {
+  DRAFT = 'draft',
+  SUBMITTED = 'submitted',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  BILLED = 'billed',
+}
+
+export const TimeEntryStatusLabels: Record<TimeEntryStatus, string> = {
+  [TimeEntryStatus.DRAFT]: 'Wersja robocza',
+  [TimeEntryStatus.SUBMITTED]: 'Wysłane',
+  [TimeEntryStatus.APPROVED]: 'Zatwierdzone',
+  [TimeEntryStatus.REJECTED]: 'Odrzucone',
+  [TimeEntryStatus.BILLED]: 'Rozliczone',
+};
+
+export const TimeEntryStatusColors: Record<TimeEntryStatus, string> = {
+  [TimeEntryStatus.DRAFT]: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+  [TimeEntryStatus.SUBMITTED]: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  [TimeEntryStatus.APPROVED]: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+  [TimeEntryStatus.REJECTED]: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+  [TimeEntryStatus.BILLED]: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
+};
+
+export enum TimeRoundingMethod {
+  NONE = 'none',
+  UP = 'up',
+  DOWN = 'down',
+  NEAREST = 'nearest',
+}
+
+export const TimeRoundingMethodLabels: Record<TimeRoundingMethod, string> = {
+  [TimeRoundingMethod.NONE]: 'Brak zaokrąglenia',
+  [TimeRoundingMethod.UP]: 'W górę',
+  [TimeRoundingMethod.DOWN]: 'W dół',
+  [TimeRoundingMethod.NEAREST]: 'Do najbliższego',
+};
+
+// Offers module enums
+export enum OfferStatus {
+  DRAFT = 'DRAFT',
+  READY = 'READY',
+  SENT = 'SENT',
+  VIEWED = 'VIEWED',
+  ACCEPTED = 'ACCEPTED',
+  REJECTED = 'REJECTED',
+  EXPIRED = 'EXPIRED',
+  CANCELLED = 'CANCELLED',
+}
+
+export const OfferStatusLabels: Record<OfferStatus, string> = {
+  [OfferStatus.DRAFT]: 'Wersja robocza',
+  [OfferStatus.READY]: 'Gotowa',
+  [OfferStatus.SENT]: 'Wysłana',
+  [OfferStatus.VIEWED]: 'Przejrzana',
+  [OfferStatus.ACCEPTED]: 'Zaakceptowana',
+  [OfferStatus.REJECTED]: 'Odrzucona',
+  [OfferStatus.EXPIRED]: 'Wygasła',
+  [OfferStatus.CANCELLED]: 'Anulowana',
+};
+
+export const OfferStatusColors: Record<OfferStatus, string> = {
+  [OfferStatus.DRAFT]: 'bg-slate-100 text-slate-700',
+  [OfferStatus.READY]: 'bg-blue-100 text-blue-700',
+  [OfferStatus.SENT]: 'bg-purple-100 text-purple-700',
+  [OfferStatus.VIEWED]: 'bg-cyan-100 text-cyan-700',
+  [OfferStatus.ACCEPTED]: 'bg-green-100 text-green-700',
+  [OfferStatus.REJECTED]: 'bg-red-100 text-red-700',
+  [OfferStatus.EXPIRED]: 'bg-orange-100 text-orange-700',
+  [OfferStatus.CANCELLED]: 'bg-gray-100 text-gray-700',
+};
+
+export const VALID_OFFER_STATUS_TRANSITIONS: Record<OfferStatus, OfferStatus[]> = {
+  [OfferStatus.DRAFT]: [OfferStatus.READY, OfferStatus.CANCELLED],
+  [OfferStatus.READY]: [OfferStatus.DRAFT, OfferStatus.SENT, OfferStatus.CANCELLED],
+  [OfferStatus.SENT]: [
+    OfferStatus.VIEWED,
+    OfferStatus.ACCEPTED,
+    OfferStatus.REJECTED,
+    OfferStatus.EXPIRED,
+    OfferStatus.CANCELLED,
+  ],
+  [OfferStatus.VIEWED]: [
+    OfferStatus.ACCEPTED,
+    OfferStatus.REJECTED,
+    OfferStatus.EXPIRED,
+    OfferStatus.CANCELLED,
+  ],
+  [OfferStatus.ACCEPTED]: [],
+  [OfferStatus.REJECTED]: [],
+  [OfferStatus.EXPIRED]: [],
+  [OfferStatus.CANCELLED]: [OfferStatus.DRAFT],
+};
+
+export enum LeadStatus {
+  NEW = 'NEW',
+  CONTACTED = 'CONTACTED',
+  QUALIFIED = 'QUALIFIED',
+  PROPOSAL_SENT = 'PROPOSAL_SENT',
+  NEGOTIATION = 'NEGOTIATION',
+  CONVERTED = 'CONVERTED',
+  LOST = 'LOST',
+}
+
+export const LeadStatusLabels: Record<LeadStatus, string> = {
+  [LeadStatus.NEW]: 'Nowy',
+  [LeadStatus.CONTACTED]: 'Skontaktowano',
+  [LeadStatus.QUALIFIED]: 'Zakwalifikowany',
+  [LeadStatus.PROPOSAL_SENT]: 'Wysłano propozycję',
+  [LeadStatus.NEGOTIATION]: 'Negocjacje',
+  [LeadStatus.CONVERTED]: 'Przekonwertowany',
+  [LeadStatus.LOST]: 'Utracony',
+};
+
+export const LeadStatusColors: Record<LeadStatus, string> = {
+  [LeadStatus.NEW]: 'bg-blue-100 text-blue-700',
+  [LeadStatus.CONTACTED]: 'bg-cyan-100 text-cyan-700',
+  [LeadStatus.QUALIFIED]: 'bg-purple-100 text-purple-700',
+  [LeadStatus.PROPOSAL_SENT]: 'bg-indigo-100 text-indigo-700',
+  [LeadStatus.NEGOTIATION]: 'bg-yellow-100 text-yellow-700',
+  [LeadStatus.CONVERTED]: 'bg-green-100 text-green-700',
+  [LeadStatus.LOST]: 'bg-red-100 text-red-700',
+};
+
+export enum LeadSource {
+  WEBSITE = 'WEBSITE',
+  REFERRAL = 'REFERRAL',
+  PHONE = 'PHONE',
+  EMAIL = 'EMAIL',
+  SOCIAL_MEDIA = 'SOCIAL_MEDIA',
+  ADVERTISEMENT = 'ADVERTISEMENT',
+  OTHER = 'OTHER',
+}
+
+export const LeadSourceLabels: Record<LeadSource, string> = {
+  [LeadSource.WEBSITE]: 'Strona internetowa',
+  [LeadSource.REFERRAL]: 'Polecenie',
+  [LeadSource.PHONE]: 'Telefon',
+  [LeadSource.EMAIL]: 'Email',
+  [LeadSource.SOCIAL_MEDIA]: 'Media społecznościowe',
+  [LeadSource.ADVERTISEMENT]: 'Reklama',
+  [LeadSource.OTHER]: 'Inne',
+};
+
+export enum OfferActivityType {
+  CREATED = 'CREATED',
+  UPDATED = 'UPDATED',
+  STATUS_CHANGED = 'STATUS_CHANGED',
+  DOCUMENT_GENERATED = 'DOCUMENT_GENERATED',
+  EMAIL_SENT = 'EMAIL_SENT',
+  VIEWED = 'VIEWED',
+  DUPLICATED = 'DUPLICATED',
+  COMMENT_ADDED = 'COMMENT_ADDED',
+}
+
+export const OfferActivityTypeLabels: Record<OfferActivityType, string> = {
+  [OfferActivityType.CREATED]: 'Utworzono',
+  [OfferActivityType.UPDATED]: 'Zaktualizowano',
+  [OfferActivityType.STATUS_CHANGED]: 'Zmieniono status',
+  [OfferActivityType.DOCUMENT_GENERATED]: 'Wygenerowano dokument',
+  [OfferActivityType.EMAIL_SENT]: 'Wysłano email',
+  [OfferActivityType.VIEWED]: 'Przejrzano',
+  [OfferActivityType.DUPLICATED]: 'Zduplikowano',
+  [OfferActivityType.COMMENT_ADDED]: 'Dodano komentarz',
 };

@@ -1,35 +1,36 @@
 import {
+  Body,
   Controller,
   Get,
-  Post,
-  Patch,
-  Body,
   HttpCode,
   HttpStatus,
+  Patch,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
   ApiBearerAuth,
   ApiBody,
-  ApiForbiddenResponse,
-  ApiUnauthorizedResponse,
-  ApiOkResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+
 import { CurrentUser } from '@accounting/auth';
-import { ModuleAccessGuard, PermissionGuard, RequireModule } from '@accounting/rbac';
 import { User } from '@accounting/common';
-import { AIConfigurationService } from '../services/ai-configuration.service';
-import { OpenRouterModelsService, OpenRouterModel } from '../services/openrouter-models.service';
-import { OpenAIModelsService, OpenAIModel } from '../services/openai-models.service';
-import { CreateAIConfigurationDto } from '../dto/create-ai-configuration.dto';
-import { UpdateAIConfigurationDto } from '../dto/update-ai-configuration.dto';
+import { ModuleAccessGuard, PermissionGuard, RequireModule } from '@accounting/rbac';
+
 import { AIConfigurationResponseDto } from '../dto/ai-configuration-response.dto';
+import { CreateAIConfigurationDto } from '../dto/create-ai-configuration.dto';
 import { OpenAIModelDto } from '../dto/openai-model.dto';
+import { UpdateAIConfigurationDto } from '../dto/update-ai-configuration.dto';
+import { AIConfigurationService } from '../services/ai-configuration.service';
+import { OpenAIModel, OpenAIModelsService } from '../services/openai-models.service';
+import { OpenRouterModel, OpenRouterModelsService } from '../services/openrouter-models.service';
 
 @ApiTags('ai-agent')
 @ApiBearerAuth('JWT-auth')
@@ -40,13 +41,14 @@ export class AIConfigurationController {
   constructor(
     private readonly configService: AIConfigurationService,
     private readonly modelsService: OpenRouterModelsService,
-    private readonly openaiModelsService: OpenAIModelsService,
+    private readonly openaiModelsService: OpenAIModelsService
   ) {}
 
   @Get()
   @ApiOperation({
     summary: 'Get AI configuration',
-    description: 'Retrieve the AI agent configuration for the current user\'s company. ADMIN users get System Admin company configuration. API key is not returned for security.',
+    description:
+      "Retrieve the AI agent configuration for the current user's company. ADMIN users get System Admin company configuration. API key is not returned for security.",
   })
   @ApiOkResponse({
     description: 'Configuration retrieved successfully',
@@ -81,7 +83,8 @@ export class AIConfigurationController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Create AI configuration',
-    description: 'Create AI agent configuration. **ADMIN only**. Sets up the AI provider, model, system prompt, and API key for the System Admin company.',
+    description:
+      'Create AI agent configuration. **ADMIN only**. Sets up the AI provider, model, system prompt, and API key for the System Admin company.',
   })
   @ApiBody({
     type: CreateAIConfigurationDto,
@@ -97,10 +100,7 @@ export class AIConfigurationController {
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing JWT token',
   })
-  async create(
-    @Body() createDto: CreateAIConfigurationDto,
-    @CurrentUser() user: User,
-  ) {
+  async create(@Body() createDto: CreateAIConfigurationDto, @CurrentUser() user: User) {
     const config = await this.configService.create(createDto, user);
 
     // Don't return the actual API keys
@@ -116,7 +116,8 @@ export class AIConfigurationController {
   @Patch()
   @ApiOperation({
     summary: 'Update AI configuration',
-    description: 'Update AI agent configuration. **ADMIN only**. Partial updates supported. API key is re-encrypted if provided.',
+    description:
+      'Update AI agent configuration. **ADMIN only**. Partial updates supported. API key is re-encrypted if provided.',
   })
   @ApiBody({
     type: UpdateAIConfigurationDto,
@@ -135,10 +136,7 @@ export class AIConfigurationController {
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing JWT token',
   })
-  async update(
-    @Body() updateDto: UpdateAIConfigurationDto,
-    @CurrentUser() user: User,
-  ) {
+  async update(@Body() updateDto: UpdateAIConfigurationDto, @CurrentUser() user: User) {
     const config = await this.configService.update(updateDto, user);
 
     // Don't return the actual API keys
@@ -155,7 +153,8 @@ export class AIConfigurationController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Reset (clear) API key',
-    description: 'Clear the current API key. **ADMIN only**. After reset, AI features will be disabled until a new API key is configured.',
+    description:
+      'Clear the current API key. **ADMIN only**. After reset, AI features will be disabled until a new API key is configured.',
   })
   @ApiOkResponse({
     description: 'API key cleared successfully',
@@ -185,7 +184,8 @@ export class AIConfigurationController {
   @Get('models')
   @ApiOperation({
     summary: 'Get available OpenRouter models',
-    description: 'Retrieve list of available AI models from OpenRouter. Results are cached for 1 hour. Falls back to curated list if API unavailable.',
+    description:
+      'Retrieve list of available AI models from OpenRouter. Results are cached for 1 hour. Falls back to curated list if API unavailable.',
   })
   @ApiOkResponse({
     description: 'Models retrieved successfully',
@@ -221,7 +221,8 @@ export class AIConfigurationController {
   @Get('openai-models')
   @ApiOperation({
     summary: 'Get available OpenAI chat models',
-    description: 'Retrieve list of available chat models from OpenAI. Results are cached for 1 hour. Falls back to curated list if API unavailable. Requires valid API key in configuration.',
+    description:
+      'Retrieve list of available chat models from OpenAI. Results are cached for 1 hour. Falls back to curated list if API unavailable. Requires valid API key in configuration.',
   })
   @ApiOkResponse({
     description: 'Models retrieved successfully',
@@ -252,7 +253,8 @@ export class AIConfigurationController {
   @Get('openai-embedding-models')
   @ApiOperation({
     summary: 'Get available OpenAI embedding models',
-    description: 'Retrieve list of available embedding models from OpenAI. Results are cached for 1 hour. Falls back to curated list if API unavailable. Requires valid API key in configuration.',
+    description:
+      'Retrieve list of available embedding models from OpenAI. Results are cached for 1 hour. Falls back to curated list if API unavailable. Requires valid API key in configuration.',
   })
   @ApiOkResponse({
     description: 'Embedding models retrieved successfully',

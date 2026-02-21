@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
 export class InitialSchema1699999999998 implements MigrationInterface {
   name = 'InitialSchema1699999999998';
@@ -130,7 +130,9 @@ export class InitialSchema1699999999998 implements MigrationInterface {
     await queryRunner.query(`DROP TABLE IF EXISTS "modules"`);
 
     // Drop FK constraints before dropping tables
-    await queryRunner.query(`ALTER TABLE "companies" DROP CONSTRAINT IF EXISTS "FK_companies_owner"`);
+    await queryRunner.query(
+      `ALTER TABLE "companies" DROP CONSTRAINT IF EXISTS "FK_companies_owner"`
+    );
     await queryRunner.query(`ALTER TABLE "users" DROP CONSTRAINT IF EXISTS "FK_users_company"`);
 
     await queryRunner.query(`DROP TABLE IF EXISTS "companies"`);

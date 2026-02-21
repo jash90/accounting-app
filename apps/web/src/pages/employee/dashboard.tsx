@@ -1,13 +1,8 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Package, Users } from 'lucide-react';
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useEmployees } from '@/lib/hooks/use-employees';
 import { useCompanyModules } from '@/lib/hooks/use-permissions';
-import { Package, Users } from 'lucide-react';
 
 export default function EmployeeDashboard() {
   const { data: employees, isPending: employeesLoading } = useEmployees();
@@ -17,7 +12,7 @@ export default function EmployeeDashboard() {
     <div className="space-y-8">
       {/* Header Section */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-apptax-navy">Panel</h1>
+        <h1 className="text-foreground text-3xl font-bold tracking-tight">Panel</h1>
         <p className="text-muted-foreground mt-2">
           Przegląd Twojego obszaru roboczego i szybki dostęp do modułów
         </p>
@@ -30,18 +25,18 @@ export default function EmployeeDashboard() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Dostępne moduły</CardTitle>
-              <div className="p-2 bg-apptax-soft-teal rounded-lg">
-                <Package className="h-5 w-5 text-apptax-teal" />
+              <div className="bg-accent/10 rounded-lg p-2">
+                <Package className="text-accent h-5 w-5" />
               </div>
             </div>
             <CardDescription>Moduły, do których masz dostęp</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <p className="text-4xl font-bold text-apptax-blue">
+              <p className="text-primary text-4xl font-bold">
                 {modulesLoading ? '...' : modules?.length || 0}
               </p>
-              <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
+              <div className="bg-accent ai-glow h-2 w-2 rounded-full" />
             </div>
           </CardContent>
         </Card>
@@ -51,14 +46,14 @@ export default function EmployeeDashboard() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Członkowie zespołu</CardTitle>
-              <div className="p-2 bg-apptax-soft-teal rounded-lg">
-                <Users className="h-5 w-5 text-apptax-blue" />
+              <div className="bg-accent/10 rounded-lg p-2">
+                <Users className="text-primary h-5 w-5" />
               </div>
             </div>
             <CardDescription>Łączna liczba pracowników w Twojej firmie</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold text-apptax-blue">
+            <p className="text-primary text-4xl font-bold">
               {employeesLoading ? '...' : employees?.length || 0}
             </p>
           </CardContent>
@@ -66,18 +61,18 @@ export default function EmployeeDashboard() {
       </div>
 
       {/* Welcome Card - Uses accessible gradient with overlay for WCAG AA contrast */}
-      <Card className="bg-apptax-ai-gradient-accessible text-white border-0 overflow-hidden">
+      <Card className="bg-gradient-to-br from-accent to-primary text-white overflow-hidden border-0 text-white">
         <CardContent className="p-8">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-2xl font-bold mb-2">Witaj w AppTax</h2>
-              <p className="text-white max-w-xl">
+              <h2 className="mb-2 text-2xl font-bold">Witaj w AppTax</h2>
+              <p className="max-w-xl text-white">
                 Dostęp do przypisanych modułów znajdziesz w menu bocznym. Korzystaj z narzędzi AI,
                 aby usprawnić zadania księgowe i poprawić produktywność.
               </p>
             </div>
-            <div className="hidden md:flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-white ai-glow-lg" />
+            <div className="hidden items-center gap-2 md:flex">
+              <div className="ai-glow-lg h-3 w-3 rounded-full bg-white" />
               <span className="text-sm font-medium">Zasilane przez AI</span>
             </div>
           </div>

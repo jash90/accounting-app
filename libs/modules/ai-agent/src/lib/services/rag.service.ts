@@ -1,12 +1,15 @@
+
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { AIContext, User } from '@accounting/common';
-import { OpenAIProviderService } from './openai-provider.service';
-import { SystemCompanyService } from './system-company.service';
+
 import * as fs from 'fs/promises';
-import * as path from 'path';
 import * as pdfParse from 'pdf-parse';
+import { Repository } from 'typeorm';
+
+import { AIContext, User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
+
+import { OpenAIProviderService } from './openai-provider.service';
 
 @Injectable()
 export class RAGService {
@@ -16,22 +19,20 @@ export class RAGService {
     @InjectRepository(AIContext)
     private contextRepository: Repository<AIContext>,
     private openaiProvider: OpenAIProviderService,
-    private systemCompanyService: SystemCompanyService,
+    private systemCompanyService: SystemCompanyService
   ) {}
 
   /**
    * Extract text from uploaded file based on mime type
    */
-  async extractText(
-    filePath: string,
-    mimeType: string,
-  ): Promise<string> {
+  async extractText(filePath: string, mimeType: string): Promise<string> {
     const buffer = await fs.readFile(filePath);
 
     switch (mimeType) {
-      case 'application/pdf':
+      case 'application/pdf': {
         const pdfData = await (pdfParse as any).default(buffer);
         return pdfData.text;
+      }
 
       case 'text/plain':
       case 'text/markdown':
@@ -53,7 +54,7 @@ export class RAGService {
     companyId: string | null,
     user: User,
     apiKey: string,
-    embeddingModel?: string,
+    embeddingModel?: string
   ): Promise<AIContext> {
     // Extract text
     const extractedText = await this.extractText(filePath, mimeType);
@@ -62,7 +63,7 @@ export class RAGService {
     const embeddingResponse = await this.openaiProvider.generateEmbedding(
       extractedText,
       apiKey,
-      embeddingModel,
+      embeddingModel
     );
 
     // Create context entity
@@ -94,7 +95,7 @@ export class RAGService {
     } catch (error) {
       this.logger.warn(
         'Could not get system company for RAG check:',
-        error instanceof Error ? error.message : error,
+        error instanceof Error ? error.message : error
       );
       // Continue with just the user's company
     }
@@ -135,28 +136,164 @@ export class RAGService {
    */
   private readonly STOP_WORDS = new Set([
     // English stop words
-    'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been',
-    'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will',
-    'would', 'could', 'should', 'may', 'might', 'can', 'shall',
-    'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by', 'from',
-    'as', 'into', 'through', 'during', 'before', 'after',
-    'above', 'below', 'between', 'under', 'again', 'further',
-    'then', 'once', 'here', 'there', 'when', 'where', 'why',
-    'how', 'all', 'each', 'few', 'more', 'most', 'other',
-    'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same',
-    'so', 'than', 'too', 'very', 'just', 'and', 'but', 'if',
-    'or', 'because', 'until', 'while', 'about', 'what', 'which',
-    'who', 'this', 'that', 'these', 'those', 'am', 'it', 'its',
-    'you', 'your', 'we', 'our', 'they', 'their', 'he', 'she',
-    'him', 'her', 'me', 'my', 'i', 'us',
+    'the',
+    'a',
+    'an',
+    'is',
+    'are',
+    'was',
+    'were',
+    'be',
+    'been',
+    'being',
+    'have',
+    'has',
+    'had',
+    'do',
+    'does',
+    'did',
+    'will',
+    'would',
+    'could',
+    'should',
+    'may',
+    'might',
+    'can',
+    'shall',
+    'to',
+    'of',
+    'in',
+    'for',
+    'on',
+    'with',
+    'at',
+    'by',
+    'from',
+    'as',
+    'into',
+    'through',
+    'during',
+    'before',
+    'after',
+    'above',
+    'below',
+    'between',
+    'under',
+    'again',
+    'further',
+    'then',
+    'once',
+    'here',
+    'there',
+    'when',
+    'where',
+    'why',
+    'how',
+    'all',
+    'each',
+    'few',
+    'more',
+    'most',
+    'other',
+    'some',
+    'such',
+    'no',
+    'nor',
+    'not',
+    'only',
+    'own',
+    'same',
+    'so',
+    'than',
+    'too',
+    'very',
+    'just',
+    'and',
+    'but',
+    'if',
+    'or',
+    'because',
+    'until',
+    'while',
+    'about',
+    'what',
+    'which',
+    'who',
+    'this',
+    'that',
+    'these',
+    'those',
+    'am',
+    'it',
+    'its',
+    'you',
+    'your',
+    'we',
+    'our',
+    'they',
+    'their',
+    'he',
+    'she',
+    'him',
+    'her',
+    'me',
+    'my',
+    'i',
+    'us',
     // Polish stop words
-    'i', 'w', 'z', 'na', 'do', 'nie', 'się', 'jest', 'to',
-    'co', 'jak', 'za', 'po', 'ale', 'tak', 'czy', 'już',
-    'tylko', 'jego', 'jej', 'ich', 'my', 'wy', 'oni', 'one',
-    'ten', 'ta', 'te', 'być', 'o', 'od', 'przez', 'dla',
-    'że', 'go', 'jaki', 'jakie', 'który', 'która', 'które',
-    'tym', 'tej', 'tego', 'także', 'oraz', 'lub', 'ani',
-    'więc', 'jednak', 'kiedy', 'gdzie', 'dlaczego', 'czemu',
+    'i',
+    'w',
+    'z',
+    'na',
+    'do',
+    'nie',
+    'się',
+    'jest',
+    'to',
+    'co',
+    'jak',
+    'za',
+    'po',
+    'ale',
+    'tak',
+    'czy',
+    'już',
+    'tylko',
+    'jego',
+    'jej',
+    'ich',
+    'my',
+    'wy',
+    'oni',
+    'one',
+    'ten',
+    'ta',
+    'te',
+    'być',
+    'o',
+    'od',
+    'przez',
+    'dla',
+    'że',
+    'go',
+    'jaki',
+    'jakie',
+    'który',
+    'która',
+    'które',
+    'tym',
+    'tej',
+    'tego',
+    'także',
+    'oraz',
+    'lub',
+    'ani',
+    'więc',
+    'jednak',
+    'kiedy',
+    'gdzie',
+    'dlaczego',
+    'czemu',
   ]);
 
   /**
@@ -167,7 +304,7 @@ export class RAGService {
       .toLowerCase()
       .replace(/[^\w\sąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, ' ') // Keep Polish characters
       .split(/\s+/)
-      .filter(word => word.length > 2 && !this.STOP_WORDS.has(word))
+      .filter((word) => word.length > 2 && !this.STOP_WORDS.has(word))
       .slice(0, 5); // Max 5 keywords for performance
   }
 
@@ -180,7 +317,7 @@ export class RAGService {
   async findSimilarContext(
     query: string,
     companyId: string | null,
-    limit = 3,
+    limit = 3
   ): Promise<AIContext[]> {
     let systemCompanyId: string | null = null;
 
@@ -189,7 +326,7 @@ export class RAGService {
     } catch (error) {
       this.logger.warn(
         'Could not get system company for RAG search:',
-        error instanceof Error ? error.message : error,
+        error instanceof Error ? error.message : error
       );
       // Continue with just the user's company
     }
@@ -211,7 +348,7 @@ export class RAGService {
     }
 
     this.logger.debug(
-      `RAG search: query="${query.substring(0, 50)}...", companies=[${companyIdsToSearch.join(', ')}]`,
+      `RAG search: query="${query.substring(0, 50)}...", companies=[${companyIdsToSearch.join(', ')}]`
     );
 
     // Extract keywords from user query

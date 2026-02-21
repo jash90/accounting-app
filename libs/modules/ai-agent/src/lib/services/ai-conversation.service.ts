@@ -1,37 +1,39 @@
 import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
   BadRequestException,
-  Logger,
+  ForbiddenException,
   HttpException,
+  Injectable,
   InternalServerErrorException,
+  Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+
 import { Observable, Subject } from 'rxjs';
 import { finalize } from 'rxjs/operators';
+import { Repository } from 'typeorm';
+
 import {
+  AIContext,
   AIConversation,
   AIMessage,
   AIMessageRole,
-  AIContext,
+  AIProvider,
   User,
   UserRole,
-  AIProvider,
 } from '@accounting/common';
-import { CreateConversationDto } from '../dto/create-conversation.dto';
-import { SendMessageDto } from '../dto/send-message.dto';
-import { PaginationQueryDto, PaginatedResponseDto } from '../dto/pagination.dto';
+import { SystemCompanyService } from '@accounting/common/backend';
+
 import { AIConfigurationService } from './ai-configuration.service';
+import { AIProviderError, ChatStreamChunk } from './ai-provider.interface';
 import { OpenAIProviderService } from './openai-provider.service';
 import { OpenRouterProviderService } from './openrouter-provider.service';
-import { AIProviderError } from './ai-provider.interface';
 import { RAGService } from './rag.service';
 import { TokenLimitService } from './token-limit.service';
 import { TokenUsageService } from './token-usage.service';
-import { SystemCompanyService } from './system-company.service';
-import { ChatStreamChunk } from './ai-provider.interface';
+import { CreateConversationDto } from '../dto/create-conversation.dto';
+import { PaginatedResponseDto, PaginationQueryDto } from '../dto/pagination.dto';
+import { SendMessageDto } from '../dto/send-message.dto';
 
 @Injectable()
 export class AIConversationService {
@@ -48,12 +50,12 @@ export class AIConversationService {
     private ragService: RAGService,
     private tokenLimitService: TokenLimitService,
     private tokenUsageService: TokenUsageService,
-    private systemCompanyService: SystemCompanyService,
+    private systemCompanyService: SystemCompanyService
   ) {}
 
   async findAll(
     user: User,
-    pagination?: PaginationQueryDto,
+    pagination?: PaginationQueryDto
   ): Promise<PaginatedResponseDto<AIConversation> | AIConversation[]> {
     const page = pagination?.page || 1;
     const limit = pagination?.limit || 20;
@@ -122,7 +124,7 @@ export class AIConversationService {
     // Sort messages by createdAt ASC (oldest first)
     if (conversation.messages) {
       conversation.messages.sort(
-        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
     }
 
@@ -158,7 +160,7 @@ export class AIConversationService {
   async sendMessage(
     conversationId: string,
     sendDto: SendMessageDto,
-    user: User,
+    user: User
   ): Promise<AIMessage> {
     this.logger.debug(`sendMessage started for conversation: ${conversationId}`);
 
@@ -204,21 +206,17 @@ export class AIConversationService {
     // 1. Using OpenAI provider (OpenRouter doesn't support embeddings)
     // 2. There are active documents to search
     if (config.provider === AIProvider.OPENAI) {
-      const hasDocuments = await this.ragService.hasActiveDocuments(
-        conversation.companyId,
-      );
+      const hasDocuments = await this.ragService.hasActiveDocuments(conversation.companyId);
       if (hasDocuments) {
         try {
           similarContexts = await this.ragService.findSimilarContext(
             sendDto.content,
             conversation.companyId,
-            3,
+            3
           );
 
           if (similarContexts.length > 0) {
-            const ragContext = this.ragService.buildRAGContext(
-              similarContexts,
-            );
+            const ragContext = this.ragService.buildRAGContext(similarContexts);
             chatMessages.push({
               role: 'system',
               content: `You have access to the following knowledge base documents. Use them to provide accurate answers:\n${ragContext}`,
@@ -228,7 +226,7 @@ export class AIConversationService {
           // Log but don't fail - RAG is optional enhancement
           this.logger.warn(
             'RAG context retrieval failed:',
-            error instanceof Error ? error.message : error,
+            error instanceof Error ? error.message : error
           );
         }
       }
@@ -260,13 +258,11 @@ export class AIConversationService {
       contextUsed: similarContexts.map((ctx) => ctx.id),
     });
 
-    const savedUserMessage = await this.messageRepository.save(userMessage);
+    await this.messageRepository.save(userMessage);
 
     // Get AI response
     const provider =
-      config.provider === AIProvider.OPENAI
-        ? this.openaiProvider
-        : this.openrouterProvider;
+      config.provider === AIProvider.OPENAI ? this.openaiProvider : this.openrouterProvider;
 
     this.logger.debug(`Calling AI provider: ${config.provider}, model: ${config.model}`);
 
@@ -277,21 +273,17 @@ export class AIConversationService {
         config.model,
         config.temperature,
         config.maxTokens,
-        apiKey,
+        apiKey
       );
     } catch (error) {
       // Enhanced error logging for debugging
       if (error instanceof AIProviderError) {
-        this.logger.error(
-          `AI provider call failed: ${error.message}`,
-        );
-        this.logger.error(
-          `AI provider technical details: ${error.technicalDetails}`,
-        );
+        this.logger.error(`AI provider call failed: ${error.message}`);
+        this.logger.error(`AI provider technical details: ${error.technicalDetails}`);
       } else {
         this.logger.error(
           `AI provider call failed: ${error instanceof Error ? error.message : String(error)}`,
-          error instanceof Error ? error.stack : undefined,
+          error instanceof Error ? error.stack : undefined
         );
       }
 
@@ -301,9 +293,7 @@ export class AIConversationService {
       }
 
       // Wrap unknown errors
-      throw new InternalServerErrorException(
-        'Failed to get AI response. Please try again later.',
-      );
+      throw new InternalServerErrorException('Failed to get AI response. Please try again later.');
     }
 
     this.logger.debug(`AI response received: ${response.totalTokens} tokens`);
@@ -327,15 +317,11 @@ export class AIConversationService {
       {
         totalTokens: () => `"totalTokens" + ${response.totalTokens}`,
         messageCount: () => `"messageCount" + 2`,
-      },
+      }
     );
 
     // Track token usage
-    await this.tokenUsageService.trackUsage(
-      user,
-      response.inputTokens,
-      response.outputTokens,
-    );
+    await this.tokenUsageService.trackUsage(user, response.inputTokens, response.outputTokens);
 
     // Return assistant message (already has relations loaded)
     return savedAssistantMessage;
@@ -353,7 +339,7 @@ export class AIConversationService {
   sendMessageStream(
     conversationId: string,
     sendDto: SendMessageDto,
-    user: User,
+    user: User
   ): Observable<ChatStreamChunk> {
     const subject = new Subject<ChatStreamChunk>();
 
@@ -370,7 +356,7 @@ export class AIConversationService {
     conversationId: string,
     sendDto: SendMessageDto,
     user: User,
-    subject: Subject<ChatStreamChunk>,
+    subject: Subject<ChatStreamChunk>
   ): Promise<void> {
     try {
       this.logger.debug(`sendMessageStream started for conversation: ${conversationId}`);
@@ -416,21 +402,17 @@ export class AIConversationService {
       let similarContexts: AIContext[] = [];
 
       if (config.provider === AIProvider.OPENAI) {
-        const hasDocuments = await this.ragService.hasActiveDocuments(
-          conversation.companyId,
-        );
+        const hasDocuments = await this.ragService.hasActiveDocuments(conversation.companyId);
         if (hasDocuments) {
           try {
             similarContexts = await this.ragService.findSimilarContext(
               sendDto.content,
               conversation.companyId,
-              3,
+              3
             );
 
             if (similarContexts.length > 0) {
-              const ragContext = this.ragService.buildRAGContext(
-                similarContexts,
-              );
+              const ragContext = this.ragService.buildRAGContext(similarContexts);
               chatMessages.push({
                 role: 'system',
                 content: `You have access to the following knowledge base documents. Use them to provide accurate answers:\n${ragContext}`,
@@ -439,7 +421,7 @@ export class AIConversationService {
           } catch (error) {
             this.logger.warn(
               'RAG context retrieval failed:',
-              error instanceof Error ? error.message : error,
+              error instanceof Error ? error.message : error
             );
           }
         }
@@ -475,11 +457,11 @@ export class AIConversationService {
 
       // Get AI provider
       const provider =
-        config.provider === AIProvider.OPENAI
-          ? this.openaiProvider
-          : this.openrouterProvider;
+        config.provider === AIProvider.OPENAI ? this.openaiProvider : this.openrouterProvider;
 
-      this.logger.debug(`Starting streaming with provider: ${config.provider}, model: ${config.model}`);
+      this.logger.debug(
+        `Starting streaming with provider: ${config.provider}, model: ${config.model}`
+      );
 
       // Track accumulated content and tokens
       let accumulatedContent = '';
@@ -494,8 +476,10 @@ export class AIConversationService {
         .chatStream(chatMessages, config.model, config.temperature, config.maxTokens, apiKey)
         .pipe(
           finalize(async () => {
-            this.logger.debug(`Stream finalized, accumulated content: ${accumulatedContent.length} chars`);
-          }),
+            this.logger.debug(
+              `Stream finalized, accumulated content: ${accumulatedContent.length} chars`
+            );
+          })
         )
         .subscribe({
           next: async (chunk) => {
@@ -527,15 +511,11 @@ export class AIConversationService {
                   {
                     totalTokens: () => `"totalTokens" + ${totalTokens}`,
                     messageCount: () => `"messageCount" + 2`,
-                  },
+                  }
                 );
 
                 // Track token usage
-                await this.tokenUsageService.trackUsage(
-                  user,
-                  inputTokens,
-                  outputTokens,
-                );
+                await this.tokenUsageService.trackUsage(user, inputTokens, outputTokens);
 
                 this.logger.debug(`Streaming message saved: ${totalTokens} tokens`);
               } catch (saveError) {

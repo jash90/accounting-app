@@ -1,12 +1,13 @@
-import apiClient from '../client';
 import {
-  EmailConfigResponseDto,
-  CreateEmailConfigDto,
-  UpdateEmailConfigDto,
-  TestSmtpDto,
-  TestImapDto,
-  TestConnectionResultDto,
+  type CreateEmailConfigDto,
+  type EmailConfigResponseDto,
+  type TestConnectionResultDto,
+  type TestImapDto,
+  type TestSmtpDto,
+  type UpdateEmailConfigDto,
 } from '@/types/dtos';
+
+import apiClient from '../client';
 
 export const emailConfigApi = {
   // User Email Configuration

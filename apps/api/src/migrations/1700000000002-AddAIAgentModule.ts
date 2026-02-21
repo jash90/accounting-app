@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
 export class AddAIAgentModule1700000000002 implements MigrationInterface {
   name = 'AddAIAgentModule1700000000002';
@@ -365,20 +365,48 @@ export class AddAIAgentModule1700000000002 implements MigrationInterface {
     await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_ai_configurations_companyId"`);
 
     // Drop constraints (use IF EXISTS for safety)
-    await queryRunner.query(`ALTER TABLE "token_limits" DROP CONSTRAINT IF EXISTS "FK_token_limits_setBy"`);
-    await queryRunner.query(`ALTER TABLE "token_limits" DROP CONSTRAINT IF EXISTS "FK_token_limits_user"`);
-    await queryRunner.query(`ALTER TABLE "token_limits" DROP CONSTRAINT IF EXISTS "FK_token_limits_company"`);
-    await queryRunner.query(`ALTER TABLE "token_usages" DROP CONSTRAINT IF EXISTS "FK_token_usages_user"`);
-    await queryRunner.query(`ALTER TABLE "token_usages" DROP CONSTRAINT IF EXISTS "FK_token_usages_company"`);
-    await queryRunner.query(`ALTER TABLE "ai_contexts" DROP CONSTRAINT IF EXISTS "FK_ai_contexts_uploadedBy"`);
-    await queryRunner.query(`ALTER TABLE "ai_contexts" DROP CONSTRAINT IF EXISTS "FK_ai_contexts_company"`);
-    await queryRunner.query(`ALTER TABLE "ai_messages" DROP CONSTRAINT IF EXISTS "FK_ai_messages_user"`);
-    await queryRunner.query(`ALTER TABLE "ai_messages" DROP CONSTRAINT IF EXISTS "FK_ai_messages_conversation"`);
-    await queryRunner.query(`ALTER TABLE "ai_conversations" DROP CONSTRAINT IF EXISTS "FK_ai_conversations_createdBy"`);
-    await queryRunner.query(`ALTER TABLE "ai_conversations" DROP CONSTRAINT IF EXISTS "FK_ai_conversations_company"`);
-    await queryRunner.query(`ALTER TABLE "ai_configurations" DROP CONSTRAINT IF EXISTS "FK_ai_configurations_updatedBy"`);
-    await queryRunner.query(`ALTER TABLE "ai_configurations" DROP CONSTRAINT IF EXISTS "FK_ai_configurations_createdBy"`);
-    await queryRunner.query(`ALTER TABLE "ai_configurations" DROP CONSTRAINT IF EXISTS "FK_ai_configurations_company"`);
+    await queryRunner.query(
+      `ALTER TABLE "token_limits" DROP CONSTRAINT IF EXISTS "FK_token_limits_setBy"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "token_limits" DROP CONSTRAINT IF EXISTS "FK_token_limits_user"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "token_limits" DROP CONSTRAINT IF EXISTS "FK_token_limits_company"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "token_usages" DROP CONSTRAINT IF EXISTS "FK_token_usages_user"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "token_usages" DROP CONSTRAINT IF EXISTS "FK_token_usages_company"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "ai_contexts" DROP CONSTRAINT IF EXISTS "FK_ai_contexts_uploadedBy"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "ai_contexts" DROP CONSTRAINT IF EXISTS "FK_ai_contexts_company"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "ai_messages" DROP CONSTRAINT IF EXISTS "FK_ai_messages_user"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "ai_messages" DROP CONSTRAINT IF EXISTS "FK_ai_messages_conversation"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "ai_conversations" DROP CONSTRAINT IF EXISTS "FK_ai_conversations_createdBy"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "ai_conversations" DROP CONSTRAINT IF EXISTS "FK_ai_conversations_company"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "ai_configurations" DROP CONSTRAINT IF EXISTS "FK_ai_configurations_updatedBy"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "ai_configurations" DROP CONSTRAINT IF EXISTS "FK_ai_configurations_createdBy"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "ai_configurations" DROP CONSTRAINT IF EXISTS "FK_ai_configurations_company"`
+    );
 
     // Drop tables
     await queryRunner.query(`DROP TABLE IF EXISTS "token_limits"`);

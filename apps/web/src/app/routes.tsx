@@ -1,11 +1,18 @@
-import { lazy, Suspense } from 'react';
-import { Routes as RouterRoutes, Route, Navigate } from 'react-router-dom';
-import { useAuthContext } from '@/contexts/auth-context';
-import { UserRole } from '@/types/enums';
+import { lazy, memo, Suspense } from 'react';
+
+import { Navigate, Route, Routes as RouterRoutes, useLocation } from 'react-router-dom';
+
+import { AlertTriangle, RefreshCw } from 'lucide-react';
+
+import { ErrorBoundary } from '@/components/common/error-boundary';
 import AdminLayout from '@/components/layouts/admin-layout';
 import CompanyLayout from '@/components/layouts/company-layout';
 import EmployeeLayout from '@/components/layouts/employee-layout';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthContext } from '@/contexts/auth-context';
+import { UserRole } from '@/types/enums';
+
 
 // Lazy load pages for code splitting
 const LoginPage = lazy(() => import('@/pages/public/login-page'));
@@ -16,7 +23,9 @@ const CompanyModulesPage = lazy(() => import('@/pages/admin/companies/company-mo
 const ModulesListPage = lazy(() => import('@/pages/admin/modules/modules-list'));
 const CompanyDashboard = lazy(() => import('@/pages/company/dashboard'));
 const EmployeesListPage = lazy(() => import('@/pages/company/employees/employees-list'));
-const EmployeePermissionsPage = lazy(() => import('@/pages/company/employees/employee-permissions'));
+const EmployeePermissionsPage = lazy(
+  () => import('@/pages/company/employees/employee-permissions')
+);
 const CompanyModulesListPage = lazy(() => import('@/pages/company/modules/modules-list'));
 const EmployeeDashboard = lazy(() => import('@/pages/employee/dashboard'));
 
@@ -30,8 +39,10 @@ const AdminAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/admin-
 const CompanyAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/company-index'));
 const EmployeeAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/employee-index'));
 
-// Email Configuration Pages
+// Settings Pages
 const UserEmailConfigPage = lazy(() => import('@/pages/settings/email-config'));
+const AccountSettingsPage = lazy(() => import('@/pages/settings/account'));
+const AppearanceSettingsPage = lazy(() => import('@/pages/settings/appearance'));
 const CompanyEmailConfigPage = lazy(() => import('@/pages/company/email-config'));
 const AdminEmailConfigPage = lazy(() => import('@/pages/admin/email-config'));
 
@@ -40,6 +51,7 @@ const ClientsDashboardPage = lazy(() => import('@/pages/modules/clients/clients-
 const ClientsListPage = lazy(() => import('@/pages/modules/clients/clients-list'));
 const ClientDetailPage = lazy(() => import('@/pages/modules/clients/client-detail'));
 const ClientsSettingsPage = lazy(() => import('@/pages/modules/clients/clients-settings'));
+const ClientCreatePage = lazy(() => import('@/pages/modules/clients/client-create'));
 
 // Email Client Pages
 const EmailClientIndex = lazy(() => import('@/pages/modules/email-client/index'));
@@ -60,15 +72,99 @@ const TasksTimelinePage = lazy(() => import('@/pages/modules/tasks/tasks-timelin
 const TasksSettingsPage = lazy(() => import('@/pages/modules/tasks/tasks-settings'));
 const TaskCreatePage = lazy(() => import('@/pages/modules/tasks/task-create'));
 
+// Time Tracking Pages
+const TimeTrackingDashboardPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-dashboard')
+);
+const TimeTrackingEntriesPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-entries')
+);
+const TimeTrackingTimesheetDailyPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-timesheet-daily')
+);
+const TimeTrackingTimesheetWeeklyPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-timesheet-weekly')
+);
+const TimeTrackingReportsPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-reports')
+);
+const TimeTrackingSettingsPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-settings')
+);
+
+// Offers Pages
+const OffersDashboardPage = lazy(() => import('@/pages/modules/offers/offers-dashboard'));
+const OffersListPage = lazy(() => import('@/pages/modules/offers/offers-list'));
+const OfferDetailPage = lazy(() => import('@/pages/modules/offers/offer-detail'));
+const LeadsListPage = lazy(() => import('@/pages/modules/offers/leads-list'));
+const LeadDetailPage = lazy(() => import('@/pages/modules/offers/lead-detail'));
+const TemplatesListPage = lazy(() => import('@/pages/modules/offers/templates-list'));
+const TemplateEditorPage = lazy(() => import('@/pages/modules/offers/template-editor'));
+
+// Settlements Pages
+const SettlementsDashboardPage = lazy(
+  () => import('@/pages/modules/settlements/settlements-dashboard')
+);
+const SettlementsListPage = lazy(() => import('@/pages/modules/settlements/settlements-list'));
+const SettlementCommentsPage = lazy(
+  () => import('@/pages/modules/settlements/settlement-comments')
+);
+const SettlementAssignPage = lazy(() => import('@/pages/modules/settlements/settlement-assign'));
+const SettlementsTeamPage = lazy(() => import('@/pages/modules/settlements/settlements-team'));
+const SettlementsSettingsPage = lazy(
+  () => import('@/pages/modules/settlements/settlements-settings')
+);
+
+// Notifications Pages
+const NotificationsInboxPage = lazy(() => import('@/pages/notifications/notifications-inbox'));
+const NotificationsArchivePage = lazy(() => import('@/pages/notifications/notifications-archive'));
+const NotificationSettingsPage = lazy(() => import('@/pages/notifications/notifications-settings'));
+
 function PageLoader() {
   return (
     <div className="flex h-screen items-center justify-center">
-      <div className="space-y-4 w-full max-w-md p-6">
+      <div className="w-full max-w-md space-y-4 p-6">
         <Skeleton className="h-8 w-3/4" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-5/6" />
       </div>
     </div>
+  );
+}
+
+/**
+ * Error fallback for lazy-loaded route chunks that fail to load.
+ * Shows a retry UI when chunk loading fails (network issues, deployment, etc.)
+ */
+function LazyRouteErrorFallback() {
+  return (
+    <div className="flex h-screen flex-col items-center justify-center gap-4 p-6">
+      <AlertTriangle className="text-destructive h-12 w-12" />
+      <h2 className="text-xl font-semibold">Nie udało się załadować strony</h2>
+      <p className="text-muted-foreground max-w-md text-center">
+        Wystąpił problem z ładowaniem strony. Może to być spowodowane problemami z siecią lub
+        aktualizacją aplikacji.
+      </p>
+      <Button onClick={() => window.location.reload()}>
+        <RefreshCw className="mr-2 h-4 w-4" />
+        Odśwież stronę
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * Wrapper component that adds error boundary around lazy-loaded routes.
+ * Catches chunk load failures and shows a retry UI.
+ * Auto-resets when navigating to a different route via resetKeys.
+ */
+function LazyRoute({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+
+  return (
+    <ErrorBoundary fallback={<LazyRouteErrorFallback />} resetKeys={[location.pathname]}>
+      <Suspense fallback={<PageLoader />}>{children}</Suspense>
+    </ErrorBoundary>
   );
 }
 
@@ -80,19 +176,18 @@ function Unauthorized() {
   return (
     <div className="flex h-screen items-center justify-center">
       <div className="text-center">
-        <h1 className="text-2xl font-bold mb-4">Unauthorized</h1>
-        <p className="text-muted-foreground">
-          You don&apos;t have permission to access this page.
-        </p>
+        <h1 className="mb-4 text-2xl font-bold">Unauthorized</h1>
+        <p className="text-muted-foreground">You don&apos;t have permission to access this page.</p>
       </div>
     </div>
   );
 }
 
-// Protected Route Component
-function ProtectedRoute({
+// Protected Route Component - memoized to prevent unnecessary re-renders
+// when auth context updates (e.g., token refresh) but auth state hasn't changed
+const ProtectedRoute = memo(function ProtectedRoute({
   children,
-  allowedRoles
+  allowedRoles,
 }: {
   children: React.ReactNode;
   allowedRoles?: UserRole[];
@@ -112,7 +207,7 @@ function ProtectedRoute({
   }
 
   return <>{children}</>;
-}
+});
 
 export default function Routes() {
   return (
@@ -120,9 +215,9 @@ export default function Routes() {
       <Route
         path="/login"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <LoginPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route path="/unauthorized" element={<Unauthorized />} />
@@ -138,242 +233,405 @@ export default function Routes() {
         <Route
           index
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <AdminDashboard />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="users"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <UsersListPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="companies"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <CompaniesListPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="companies/:id/modules"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <CompanyModulesPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <ModulesListPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/ai-agent"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <AdminAIAgentDashboard />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/ai-agent/chat"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <AIAgentChatPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/ai-agent/configuration"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <AIAgentAdminConfigPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/ai-agent/context"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <AIAgentContextFilesPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/ai-agent/token-usage"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <AIAgentAdminTokenUsagePage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/clients"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <ClientsDashboardPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/clients/list"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <ClientsListPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/clients/settings"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <ClientsSettingsPage />
-            </Suspense>
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/clients/create"
+          element={
+            <LazyRoute>
+              <ClientCreatePage />
+            </LazyRoute>
           }
         />
         <Route
           path="modules/clients/:id"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <ClientDetailPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="email-config"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <AdminEmailConfigPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         {/* Email Client Routes for Admin */}
         <Route
           path="modules/email-client"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailClientIndex />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/email-client/inbox"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailInboxPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/email-client/compose"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailComposePage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/email-client/drafts"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailDraftsPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/email-client/sent"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailSentPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/email-client/trash"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailTrashPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/email-client/folder/:folderName"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailFolderPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/email-client/message/:uid"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailMessagePage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         {/* Tasks Routes for Admin */}
         <Route
           path="modules/tasks"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TasksDashboardPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/tasks/list"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TasksListPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/tasks/kanban"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TasksKanbanPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/tasks/calendar"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TasksCalendarPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/tasks/timeline"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TasksTimelinePage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/tasks/settings"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TasksSettingsPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/tasks/create"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TaskCreatePage />
+            </LazyRoute>
+          }
+        />
+        {/* Time Tracking Routes for Admin */}
+        <Route
+          path="modules/time-tracking"
+          element={
+            <LazyRoute>
+              <TimeTrackingDashboardPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/time-tracking/entries"
+          element={
+            <LazyRoute>
+              <TimeTrackingEntriesPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/time-tracking/timesheet/daily"
+          element={
+            <LazyRoute>
+              <TimeTrackingTimesheetDailyPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/time-tracking/timesheet/weekly"
+          element={
+            <LazyRoute>
+              <TimeTrackingTimesheetWeeklyPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/time-tracking/reports"
+          element={
+            <LazyRoute>
+              <TimeTrackingReportsPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/time-tracking/settings"
+          element={
+            <LazyRoute>
+              <TimeTrackingSettingsPage />
+            </LazyRoute>
+          }
+        />
+        {/* Settlements Routes for Admin */}
+        <Route
+          path="modules/settlements"
+          element={
+            <LazyRoute>
+              <SettlementsDashboardPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/settlements/list"
+          element={
+            <LazyRoute>
+              <SettlementsListPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/settlements/:id/comments"
+          element={
+            <LazyRoute>
+              <SettlementCommentsPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/settlements/:id/assign"
+          element={
+            <LazyRoute>
+              <SettlementAssignPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/settlements/team"
+          element={
+            <LazyRoute>
+              <SettlementsTeamPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/settlements/settings"
+          element={
+            <LazyRoute>
+              <SettlementsSettingsPage />
+            </LazyRoute>
+          }
+        />
+        {/* Offers Routes for Admin */}
+        <Route
+          path="modules/offers"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <OffersDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/list"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <OffersListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <OfferDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/leads"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <LeadsListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/leads/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <LeadDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/templates"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TemplatesListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/templates/:id/editor"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TemplateEditorPage />
             </Suspense>
           }
         />
@@ -390,226 +648,389 @@ export default function Routes() {
         <Route
           index
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <CompanyDashboard />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="employees"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmployeesListPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="employees/:id/permissions"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmployeePermissionsPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <CompanyModulesListPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/ai-agent"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <CompanyAIAgentDashboard />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/ai-agent/chat"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <AIAgentChatPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/ai-agent/token-usage"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <AIAgentTokenUsagePage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/ai-agent/context"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <AIAgentContextFilesPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/clients"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <ClientsDashboardPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/clients/list"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <ClientsListPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/clients/settings"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <ClientsSettingsPage />
-            </Suspense>
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/clients/create"
+          element={
+            <LazyRoute>
+              <ClientCreatePage />
+            </LazyRoute>
           }
         />
         <Route
           path="modules/clients/:id"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <ClientDetailPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="email-config"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <CompanyEmailConfigPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         {/* Email Client Routes for Company Owner */}
         <Route
           path="modules/email-client"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailClientIndex />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/email-client/inbox"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailInboxPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/email-client/compose"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailComposePage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/email-client/drafts"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailDraftsPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/email-client/sent"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailSentPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/email-client/trash"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailTrashPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/email-client/folder/:folderName"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailFolderPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/email-client/message/:uid"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailMessagePage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         {/* Tasks Routes for Company Owner */}
         <Route
           path="modules/tasks"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TasksDashboardPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/tasks/list"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TasksListPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/tasks/kanban"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TasksKanbanPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/tasks/calendar"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TasksCalendarPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/tasks/timeline"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TasksTimelinePage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/tasks/settings"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TasksSettingsPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="modules/tasks/create"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TaskCreatePage />
+            </LazyRoute>
+          }
+        />
+        {/* Time Tracking Routes for Company Owner */}
+        <Route
+          path="modules/time-tracking"
+          element={
+            <LazyRoute>
+              <TimeTrackingDashboardPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/time-tracking/entries"
+          element={
+            <LazyRoute>
+              <TimeTrackingEntriesPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/time-tracking/timesheet/daily"
+          element={
+            <LazyRoute>
+              <TimeTrackingTimesheetDailyPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/time-tracking/timesheet/weekly"
+          element={
+            <LazyRoute>
+              <TimeTrackingTimesheetWeeklyPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/time-tracking/reports"
+          element={
+            <LazyRoute>
+              <TimeTrackingReportsPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/time-tracking/settings"
+          element={
+            <LazyRoute>
+              <TimeTrackingSettingsPage />
+            </LazyRoute>
+          }
+        />
+        {/* Settlements Routes for Company Owner */}
+        <Route
+          path="modules/settlements"
+          element={
+            <LazyRoute>
+              <SettlementsDashboardPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/settlements/list"
+          element={
+            <LazyRoute>
+              <SettlementsListPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/settlements/:id/comments"
+          element={
+            <LazyRoute>
+              <SettlementCommentsPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/settlements/:id/assign"
+          element={
+            <LazyRoute>
+              <SettlementAssignPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/settlements/team"
+          element={
+            <LazyRoute>
+              <SettlementsTeamPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/settlements/settings"
+          element={
+            <LazyRoute>
+              <SettlementsSettingsPage />
+            </LazyRoute>
+          }
+        />
+        {/* Offers Routes for Company Owner */}
+        <Route
+          path="modules/offers"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <OffersDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/list"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <OffersListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <OfferDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/leads"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <LeadsListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/leads/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <LeadDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/templates"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TemplatesListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="modules/offers/templates/:id/editor"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TemplateEditorPage />
             </Suspense>
           }
         />
@@ -626,169 +1047,308 @@ export default function Routes() {
         <Route
           index
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmployeeDashboard />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="ai-agent"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmployeeAIAgentDashboard />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="ai-agent/chat"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <AIAgentChatPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="clients"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <ClientsDashboardPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="clients/list"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <ClientsListPage />
-            </Suspense>
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="clients/create"
+          element={
+            <LazyRoute>
+              <ClientCreatePage />
+            </LazyRoute>
           }
         />
         <Route
           path="clients/:id"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <ClientDetailPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="email-client"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailClientIndex />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="email-client/inbox"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailInboxPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="email-client/compose"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailComposePage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="email-client/drafts"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailDraftsPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="email-client/sent"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailSentPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="email-client/trash"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailTrashPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="email-client/folder/:folderName"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailFolderPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="email-client/message/:uid"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <EmailMessagePage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         {/* Tasks Routes for Employee */}
         <Route
           path="tasks"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TasksDashboardPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="tasks/list"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TasksListPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="tasks/kanban"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TasksKanbanPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="tasks/calendar"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TasksCalendarPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="tasks/timeline"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TasksTimelinePage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="tasks/settings"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TasksSettingsPage />
-            </Suspense>
+            </LazyRoute>
           }
         />
         <Route
           path="tasks/create"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <TaskCreatePage />
+            </LazyRoute>
+          }
+        />
+        {/* Time Tracking Routes for Employee */}
+        <Route
+          path="time-tracking"
+          element={
+            <LazyRoute>
+              <TimeTrackingDashboardPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="time-tracking/entries"
+          element={
+            <LazyRoute>
+              <TimeTrackingEntriesPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="time-tracking/timesheet/daily"
+          element={
+            <LazyRoute>
+              <TimeTrackingTimesheetDailyPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="time-tracking/timesheet/weekly"
+          element={
+            <LazyRoute>
+              <TimeTrackingTimesheetWeeklyPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="time-tracking/reports"
+          element={
+            <LazyRoute>
+              <TimeTrackingReportsPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="time-tracking/settings"
+          element={
+            <LazyRoute>
+              <TimeTrackingSettingsPage />
+            </LazyRoute>
+          }
+        />
+        {/* Settlements Routes for Employee */}
+        <Route
+          path="settlements"
+          element={
+            <LazyRoute>
+              <SettlementsDashboardPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="settlements/list"
+          element={
+            <LazyRoute>
+              <SettlementsListPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="settlements/:id/comments"
+          element={
+            <LazyRoute>
+              <SettlementCommentsPage />
+            </LazyRoute>
+          }
+        />
+        {/* Offers Routes for Employee */}
+        <Route
+          path="offers"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <OffersDashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="offers/list"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <OffersListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="offers/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <OfferDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="offers/leads"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <LeadsListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="offers/leads/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <LeadDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="offers/templates"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TemplatesListPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="offers/templates/:id/editor"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TemplateEditorPage />
             </Suspense>
           }
         />
@@ -806,13 +1366,63 @@ export default function Routes() {
         <Route
           path="email-config"
           element={
-            <Suspense fallback={<PageLoader />}>
+            <LazyRoute>
               <UserEmailConfigPage />
-            </Suspense>
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="account"
+          element={
+            <LazyRoute>
+              <AccountSettingsPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="appearance"
+          element={
+            <LazyRoute>
+              <AppearanceSettingsPage />
+            </LazyRoute>
           }
         />
       </Route>
 
+      {/* Notifications Routes - Accessible to all authenticated users */}
+      <Route
+        path="/notifications/*"
+        element={
+          <ProtectedRoute>
+            <EmployeeLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route
+          index
+          element={
+            <LazyRoute>
+              <NotificationsInboxPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="archive"
+          element={
+            <LazyRoute>
+              <NotificationsArchivePage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="settings"
+          element={
+            <LazyRoute>
+              <NotificationSettingsPage />
+            </LazyRoute>
+          }
+        />
+      </Route>
 
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<NotFound />} />

@@ -1,22 +1,22 @@
 # Build stage
-FROM node:22-alpine AS builder
+FROM oven/bun:1.1-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY package.json bun.lockb* ./
 
-# Install dependencies (with legacy-peer-deps for zod version conflict)
-RUN npm ci --legacy-peer-deps
+# Install dependencies
+RUN bun install --frozen-lockfile
 
 # Copy source code
 COPY . .
 
 # Build the API
-RUN npm run build
+RUN bun run build
 
 # Pre-compile migrations for production (since tsc won't be available at runtime)
-RUN npx tsc apps/api/typeorm.prod.config.ts apps/api/src/migrations/*.ts \
+RUN bunx tsc apps/api/typeorm.prod.config.ts apps/api/src/migrations/*.ts \
     --outDir dist/apps/api \
     --module commonjs \
     --target ES2021 \
@@ -26,22 +26,21 @@ RUN npx tsc apps/api/typeorm.prod.config.ts apps/api/src/migrations/*.ts \
     --skipLibCheck \
     --resolveJsonModule
 
-# Production stage
-FROM node:22-alpine AS production
+# Production stage - use Node.js for runtime stability (Bun crashes with mailparser/imapflow)
+FROM node:20-alpine AS production
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+COPY package.json ./
 
-# Install production dependencies only
-RUN npm ci --omit=dev --legacy-peer-deps
+RUN npm install --omit=dev --legacy-peer-deps
 
 # Copy built application (includes pre-compiled migrations)
 COPY --from=builder /app/dist ./dist
 
-# Expose port
+# Copy module configuration files for ModuleDiscoveryService
+COPY --from=builder /app/libs/modules ./libs/modules
+
 EXPOSE 3000
 
-# Start command
 CMD ["node", "dist/apps/api/main.js"]

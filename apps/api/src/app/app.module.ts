@@ -1,18 +1,81 @@
+
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { TerminusModule } from '@nestjs/terminus';
+import { APP_GUARD } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { TerminusModule } from '@nestjs/terminus';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { SentryModule } from '@sentry/nestjs/setup';
 import { join } from 'path';
+
+import { AuthModule, JwtAuthGuard } from '@accounting/auth';
+import {
+  AIConfiguration,
+  AIContext,
+  AIConversation,
+  AIMessage,
+  ChangeLog,
+  Client,
+  ClientCustomFieldValue,
+  ClientDeleteRequest,
+  ClientFieldDefinition,
+  ClientIcon,
+  ClientIconAssignment,
+  ClientReliefPeriod,
+  ClientSuspension,
+  Company,
+  CompanyModuleAccess,
+  CustomFieldReminder,
+  EmailConfiguration,
+  Lead,
+  Module as ModuleEntity,
+  MonthlySettlement,
+  Notification,
+  NotificationSettings,
+  Offer,
+  OfferActivity,
+  OfferTemplate,
+  SettlementComment,
+  Task,
+  TaskComment,
+  TaskDependency,
+  TaskLabel,
+  TaskLabelAssignment,
+  TimeEntry,
+  TimeSettings,
+  TokenLimit,
+  TokenUsage,
+  User,
+  UserModulePermission,
+} from '@accounting/common';
+import { ChangeLogModule } from '@accounting/infrastructure/change-log';
+import { EmailModule } from '@accounting/infrastructure/email';
+import { StorageModule } from '@accounting/infrastructure/storage';
+import { AIAgentModule } from '@accounting/modules/ai-agent';
+import { ClientsModule } from '@accounting/modules/clients';
+import { EmailClientModule, EmailDraft } from '@accounting/modules/email-client';
+import { NotificationsModule } from '@accounting/modules/notifications';
+import { OffersModule } from '@accounting/modules/offers';
+import { SettlementsModule } from '@accounting/modules/settlements';
+import { TasksModule } from '@accounting/modules/tasks';
+import { TimeTrackingModule } from '@accounting/modules/time-tracking';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HealthController } from './health.controller';
-import {
+import { AdminModule } from '../admin/admin.module';
+import { CompanyModule } from '../company/company.module';
+import { EmailConfigModule } from '../email-config/email-config.module';
+import { ModulesModule } from '../modules/modules.module';
+import { SeedersModule } from '../seeders/seeders.module';
+
+// Shared entities array to avoid duplication between DATABASE_URL and local config
+const ENTITIES = [
   User,
   Company,
-  Module as ModuleEntity,
+  ModuleEntity,
   CompanyModuleAccess,
   UserModulePermission,
   AIConfiguration,
@@ -27,7 +90,11 @@ import {
   ClientCustomFieldValue,
   ClientIcon,
   ClientIconAssignment,
+  ClientSuspension,
+  ClientReliefPeriod,
+  CustomFieldReminder,
   NotificationSettings,
+  Notification,
   ClientDeleteRequest,
   EmailConfiguration,
   EmailDraft,
@@ -36,34 +103,34 @@ import {
   TaskLabelAssignment,
   TaskDependency,
   TaskComment,
-} from '@accounting/common';
-import { AuthModule, JwtAuthGuard } from '@accounting/auth';
-import { AdminModule } from '../admin/admin.module';
-import { CompanyModule } from '../company/company.module';
-import { ModulesModule } from '../modules/modules.module';
-import { AIAgentModule } from '@accounting/modules/ai-agent';
-import { ClientsModule } from '@accounting/modules/clients';
-import { EmailClientModule } from '@accounting/modules/email-client';
-import { TasksModule } from '@accounting/modules/tasks';
-import { SeedersModule } from '../seeders/seeders.module';
-import { EmailConfigModule } from '../email-config/email-config.module';
-import { EmailModule } from '@accounting/infrastructure/email';
-import { StorageModule } from '@accounting/infrastructure/storage';
-import { ChangeLogModule } from '@accounting/infrastructure/change-log';
+  TimeEntry,
+  TimeSettings,
+  Lead,
+  OfferTemplate,
+  Offer,
+  OfferActivity,
+  MonthlySettlement,
+  SettlementComment,
+];
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
     }),
-    ThrottlerModule.forRoot([
-      {
-        name: 'default',
-        ttl: 60000, // 1 minute
-        limit: 100, // 100 requests per minute (global limit for all endpoints)
-      },
-    ]),
+    ThrottlerModule.forRoot(
+      process.env.DISABLE_THROTTLER === 'true'
+        ? []
+        : [
+            {
+              name: 'default',
+              ttl: 60000,
+              limit: 100,
+            },
+          ]
+    ),
     TypeOrmModule.forRootAsync({
       useFactory: () => {
         const isProduction = process.env.NODE_ENV === 'production';
@@ -74,34 +141,7 @@ import { ChangeLogModule } from '@accounting/infrastructure/change-log';
           return {
             type: 'postgres',
             url: databaseUrl,
-            entities: [
-              User,
-              Company,
-              ModuleEntity,
-              CompanyModuleAccess,
-              UserModulePermission,
-              AIConfiguration,
-              AIConversation,
-              AIMessage,
-              AIContext,
-              TokenUsage,
-              TokenLimit,
-              ChangeLog,
-              Client,
-              ClientFieldDefinition,
-              ClientCustomFieldValue,
-              ClientIcon,
-              ClientIconAssignment,
-              NotificationSettings,
-              ClientDeleteRequest,
-              EmailConfiguration,
-              EmailDraft,
-              Task,
-              TaskLabel,
-              TaskLabelAssignment,
-              TaskDependency,
-              TaskComment,
-            ],
+            entities: ENTITIES,
             synchronize: false, // Disabled - use migrations for schema changes
             logging: !isProduction,
             migrations: ['dist/migrations/*.js'],
@@ -118,34 +158,7 @@ import { ChangeLogModule } from '@accounting/infrastructure/change-log';
           username: process.env.DB_USERNAME || 'postgres',
           password: process.env.DB_PASSWORD || 'postgres',
           database: process.env.DB_DATABASE || 'accounting_db',
-          entities: [
-            User,
-            Company,
-            ModuleEntity,
-            CompanyModuleAccess,
-            UserModulePermission,
-            AIConfiguration,
-            AIConversation,
-            AIMessage,
-            AIContext,
-            TokenUsage,
-            TokenLimit,
-            ChangeLog,
-            Client,
-            ClientFieldDefinition,
-            ClientCustomFieldValue,
-            ClientIcon,
-            ClientIconAssignment,
-            NotificationSettings,
-            ClientDeleteRequest,
-            EmailConfiguration,
-            EmailDraft,
-            Task,
-            TaskLabel,
-            TaskLabelAssignment,
-            TaskDependency,
-            TaskComment,
-          ],
+          entities: ENTITIES,
           synchronize: process.env.NODE_ENV !== 'production', // Auto-sync only in development
           logging: !isProduction,
           migrations: ['dist/migrations/*.js'],
@@ -160,6 +173,10 @@ import { ChangeLogModule } from '@accounting/infrastructure/change-log';
     ClientsModule,
     EmailClientModule,
     TasksModule,
+    TimeTrackingModule,
+    OffersModule,
+    SettlementsModule,
+    NotificationsModule,
     ModulesModule,
     SeedersModule,
     EmailModule,

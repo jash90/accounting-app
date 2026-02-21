@@ -1,8 +1,19 @@
 import { useState } from 'react';
+
+import {
+  Eye,
+  File as FileIcon,
+  FileText,
+  FolderOpen,
+  Loader2,
+  Sparkles,
+  Trash2,
+  Upload,
+} from 'lucide-react';
+import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -10,10 +21,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useContextFiles, useUploadContextFile, useDeleteContextFile, useContextFile } from '@/lib/hooks/use-ai-agent';
-import { Upload, Trash2, FileText, File as FileIcon, FolderOpen, Sparkles, Eye, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  useContextFile,
+  useContextFiles,
+  useDeleteContextFile,
+  useUploadContextFile,
+} from '@/lib/hooks/use-ai-agent';
 
 export default function ContextFilesPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -66,15 +89,15 @@ export default function ContextFilesPage() {
   };
 
   const getFileIcon = (mimeType: string) => {
-    if (mimeType === 'application/pdf') return <FileIcon className="h-4 w-4 text-apptax-navy" />;
-    return <FileText className="h-4 w-4 text-apptax-blue" />;
+    if (mimeType === 'application/pdf') return <FileIcon className="text-foreground h-4 w-4" />;
+    return <FileText className="text-primary h-4 w-4" />;
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="flex items-center gap-3 text-apptax-navy">
-          <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow animate-pulse" />
+      <div className="flex h-full items-center justify-center">
+        <div className="text-foreground flex items-center gap-3">
+          <div className="bg-accent ai-glow h-3 w-3 animate-pulse rounded-full" />
           Loading...
         </div>
       </div>
@@ -82,11 +105,11 @@ export default function ContextFilesPage() {
   }
 
   return (
-    <div className="container mx-auto p-8 space-y-8">
+    <div className="container mx-auto space-y-8 p-8">
       <div>
-        <h1 className="text-3xl font-bold text-apptax-navy flex items-center gap-3">
+        <h1 className="text-foreground flex items-center gap-3 text-3xl font-bold">
           Knowledge Base Files
-          <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow" />
+          <div className="bg-accent ai-glow h-3 w-3 rounded-full" />
         </h1>
         <p className="text-muted-foreground mt-1">
           Upload PDF, TXT, or MD files for the AI to use as context
@@ -94,14 +117,14 @@ export default function ContextFilesPage() {
       </div>
 
       {/* Upload Section */}
-      <Card className="border-apptax-soft-teal/30 hover:shadow-apptax-md transition-all duration-300">
+      <Card className="border-accent/30 hover:shadow-md transition-all duration-300">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-apptax-ai-gradient rounded-lg flex items-center justify-center ai-glow">
+            <div className="bg-accent ai-glow flex h-10 w-10 items-center justify-center rounded-lg">
               <Upload className="h-5 w-5 text-white" />
             </div>
             <div>
-              <CardTitle className="text-apptax-navy">Upload New File</CardTitle>
+              <CardTitle className="text-foreground">Upload New File</CardTitle>
               <CardDescription>
                 Files are processed and used to enhance AI responses (Max 10MB, PDF/TXT/MD only)
               </CardDescription>
@@ -109,7 +132,7 @@ export default function ContextFilesPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 items-end">
+          <div className="flex items-end gap-4">
             <div className="flex-1">
               <Input
                 id="file-input"
@@ -117,21 +140,21 @@ export default function ContextFilesPage() {
                 accept=".pdf,.txt,.md"
                 onChange={handleFileSelect}
                 disabled={uploadFile.isPending}
-                className="border-apptax-soft-teal focus:border-apptax-blue"
+                className="border-accent focus:border-primary"
               />
             </div>
             <Button
               onClick={handleUpload}
               disabled={!selectedFile || uploadFile.isPending}
-              className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+              className="bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md transition-all"
             >
-              <Sparkles className="h-4 w-4 mr-2" />
+              <Sparkles className="mr-2 h-4 w-4" />
               {uploadFile.isPending ? 'Uploading...' : 'Upload'}
             </Button>
           </div>
           {selectedFile && (
-            <p className="text-sm text-apptax-navy/70 mt-3 flex items-center gap-2">
-              <FileText className="h-4 w-4 text-apptax-teal" />
+            <p className="text-foreground/70 mt-3 flex items-center gap-2 text-sm">
+              <FileText className="text-accent h-4 w-4" />
               Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
             </p>
           )}
@@ -139,39 +162,37 @@ export default function ContextFilesPage() {
       </Card>
 
       {/* Files List */}
-      <Card className="border-apptax-soft-teal/30">
+      <Card className="border-accent/30">
         <CardHeader>
-          <CardTitle className="text-apptax-navy flex items-center gap-2">
-            <FolderOpen className="h-5 w-5 text-apptax-teal" />
+          <CardTitle className="text-foreground flex items-center gap-2">
+            <FolderOpen className="text-accent h-5 w-5" />
             Uploaded Files
           </CardTitle>
-          <CardDescription>
-            {files?.length || 0} file(s) in knowledge base
-          </CardDescription>
+          <CardDescription>{files?.length || 0} file(s) in knowledge base</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
-              <TableRow className="bg-apptax-navy/5 hover:bg-apptax-navy/5">
-                <TableHead className="text-apptax-navy font-semibold">File</TableHead>
-                <TableHead className="text-apptax-navy font-semibold">Type</TableHead>
-                <TableHead className="text-apptax-navy font-semibold">Size</TableHead>
-                <TableHead className="text-apptax-navy font-semibold">Uploaded By</TableHead>
-                <TableHead className="text-apptax-navy font-semibold">Date</TableHead>
-                <TableHead className="text-right text-apptax-navy font-semibold">Actions</TableHead>
+              <TableRow className="bg-muted hover:bg-muted">
+                <TableHead className="text-foreground font-semibold">File</TableHead>
+                <TableHead className="text-foreground font-semibold">Type</TableHead>
+                <TableHead className="text-foreground font-semibold">Size</TableHead>
+                <TableHead className="text-foreground font-semibold">Uploaded By</TableHead>
+                <TableHead className="text-foreground font-semibold">Date</TableHead>
+                <TableHead className="text-foreground text-right font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {files?.map((file) => (
-                <TableRow key={file.id} className="hover:bg-apptax-soft-teal/30 transition-colors">
-                  <TableCell className="font-medium text-apptax-navy">
+                <TableRow key={file.id} className="hover:bg-accent/10/30 transition-colors">
+                  <TableCell className="text-foreground font-medium">
                     <div className="flex items-center gap-2">
                       {getFileIcon(file.mimeType)}
                       {file.filename}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="px-2 py-1 rounded-md bg-apptax-soft-teal text-apptax-navy text-xs font-medium">
+                    <span className="bg-accent/10 text-foreground rounded-md px-2 py-1 text-xs font-medium">
                       {file.mimeType.split('/')[1]?.toUpperCase() || 'Unknown'}
                     </span>
                   </TableCell>
@@ -186,10 +207,10 @@ export default function ContextFilesPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setPreviewFileId(file.id)}
-                        className="hover:bg-apptax-soft-teal"
+                        className="hover:bg-accent/10"
                         title="Preview content"
                       >
-                        <Eye className="h-4 w-4 text-apptax-blue" />
+                        <Eye className="text-primary h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -199,7 +220,7 @@ export default function ContextFilesPage() {
                         className="hover:bg-destructive/10"
                         title="Delete file"
                       >
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                        <Trash2 className="text-destructive h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
@@ -207,10 +228,10 @@ export default function ContextFilesPage() {
               ))}
               {files?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={6} className="text-muted-foreground py-8 text-center">
                     <div className="flex flex-col items-center gap-2">
-                      <div className="w-12 h-12 rounded-full bg-apptax-soft-teal flex items-center justify-center">
-                        <FolderOpen className="h-6 w-6 text-apptax-teal" />
+                      <div className="bg-accent/10 flex h-12 w-12 items-center justify-center rounded-full">
+                        <FolderOpen className="text-accent h-6 w-6" />
                       </div>
                       <p>No files uploaded yet. Upload your first file to get started!</p>
                     </div>
@@ -224,36 +245,43 @@ export default function ContextFilesPage() {
 
       {/* Preview Modal */}
       <Dialog open={!!previewFileId} onOpenChange={(open) => !open && setPreviewFileId(null)}>
-        <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
+        <DialogContent className="flex max-h-[80vh] max-w-3xl flex-col">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-apptax-navy">
+            <DialogTitle className="text-foreground flex items-center gap-2">
               {previewFile && getFileIcon(previewFile.mimeType)}
               {previewFile?.filename || 'Loading...'}
             </DialogTitle>
             {previewFile && (
               <DialogDescription className="flex flex-wrap gap-4 text-sm">
                 <span>
-                  Type: <span className="font-medium">{previewFile.mimeType.split('/')[1]?.toUpperCase()}</span>
+                  Type:{' '}
+                  <span className="font-medium">
+                    {previewFile.mimeType.split('/')[1]?.toUpperCase()}
+                  </span>
                 </span>
                 <span>
                   Size: <span className="font-medium">{formatFileSize(previewFile.fileSize)}</span>
                 </span>
                 <span>
-                  Uploaded: <span className="font-medium">{new Date(previewFile.createdAt).toLocaleDateString()} by {previewFile.uploadedBy.firstName} {previewFile.uploadedBy.lastName}</span>
+                  Uploaded:{' '}
+                  <span className="font-medium">
+                    {new Date(previewFile.createdAt).toLocaleDateString()} by{' '}
+                    {previewFile.uploadedBy.firstName} {previewFile.uploadedBy.lastName}
+                  </span>
                 </span>
               </DialogDescription>
             )}
           </DialogHeader>
 
-          <div className="flex-1 min-h-0 mt-4">
-            <div className="text-sm font-medium text-apptax-navy mb-2">Extracted Content:</div>
+          <div className="mt-4 min-h-0 flex-1">
+            <div className="text-foreground mb-2 text-sm font-medium">Extracted Content:</div>
             {isLoadingPreview ? (
-              <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-6 w-6 animate-spin text-apptax-teal" />
+              <div className="flex h-64 items-center justify-center">
+                <Loader2 className="text-accent h-6 w-6 animate-spin" />
               </div>
             ) : (
-              <ScrollArea className="h-[400px] w-full rounded-md border border-apptax-soft-teal p-4 bg-apptax-navy/5">
-                <pre className="whitespace-pre-wrap text-sm text-apptax-navy/80 font-mono">
+              <ScrollArea className="border-accent bg-muted h-[400px] w-full rounded-md border p-4">
+                <pre className="text-foreground/80 font-mono text-sm whitespace-pre-wrap">
                   {previewFile?.extractedText || 'No content extracted'}
                 </pre>
               </ScrollArea>

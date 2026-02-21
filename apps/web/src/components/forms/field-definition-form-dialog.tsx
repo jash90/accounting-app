@@ -1,12 +1,13 @@
+import { useEffect, useState } from 'react';
+
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { X } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -17,8 +18,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -26,22 +25,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { X } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import {
   createClientFieldDefinitionSchema,
   updateClientFieldDefinitionSchema,
-  CreateClientFieldDefinitionFormData,
-  UpdateClientFieldDefinitionFormData,
+  type CreateClientFieldDefinitionFormData,
+  type UpdateClientFieldDefinitionFormData,
 } from '@/lib/validation/schemas';
-import { ClientFieldDefinitionResponseDto } from '@/types/dtos';
+import { type ClientFieldDefinitionResponseDto } from '@/types/dtos';
 import { CustomFieldType } from '@/types/enums';
 
 interface FieldDefinitionFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   fieldDefinition?: ClientFieldDefinitionResponseDto;
-  onSubmit: (data: CreateClientFieldDefinitionFormData | UpdateClientFieldDefinitionFormData) => void;
+  onSubmit: (
+    data: CreateClientFieldDefinitionFormData | UpdateClientFieldDefinitionFormData
+  ) => void;
 }
 
 const FIELD_TYPE_LABELS: Record<CustomFieldType, string> = {
@@ -58,10 +58,9 @@ export function FieldDefinitionFormDialog({
   fieldDefinition,
   onSubmit,
 }: FieldDefinitionFormDialogProps) {
+  'use no memo';
   const isEditing = !!fieldDefinition;
-  const schema = isEditing
-    ? updateClientFieldDefinitionSchema
-    : createClientFieldDefinitionSchema;
+  const schema = isEditing ? updateClientFieldDefinitionSchema : createClientFieldDefinitionSchema;
 
   const [enumValue, setEnumValue] = useState('');
 
@@ -129,7 +128,9 @@ export function FieldDefinitionFormDialog({
     );
   };
 
-  const handleSubmit = (data: CreateClientFieldDefinitionFormData | UpdateClientFieldDefinitionFormData) => {
+  const handleSubmit = (
+    data: CreateClientFieldDefinitionFormData | UpdateClientFieldDefinitionFormData
+  ) => {
     // Only include enumValues for ENUM field type
     const submitData = { ...data };
     if (submitData.fieldType !== CustomFieldType.ENUM) {
@@ -144,9 +145,7 @@ export function FieldDefinitionFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? 'Edytuj definicję pola' : 'Dodaj definicję pola'}
-          </DialogTitle>
+          <DialogTitle>{isEditing ? 'Edytuj definicję pola' : 'Dodaj definicję pola'}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -158,11 +157,7 @@ export function FieldDefinitionFormDialog({
                 <FormItem>
                   <FormLabel>Nazwa systemowa *</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="np. custom_field_1"
-                      {...field}
-                      disabled={isEditing}
-                    />
+                    <Input placeholder="np. custom_field_1" {...field} disabled={isEditing} />
                   </FormControl>
                   <FormDescription>
                     Unikalna nazwa pola (bez spacji, tylko litery i podkreślenia)
@@ -192,11 +187,7 @@ export function FieldDefinitionFormDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Typ pola *</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={isEditing}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isEditing}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Wybierz typ..." />
@@ -235,14 +226,14 @@ export function FieldDefinitionFormDialog({
                   </Button>
                 </div>
                 {enumValues.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="mt-2 flex flex-wrap gap-2">
                     {enumValues.map((value) => (
                       <Badge key={value} variant="secondary" className="gap-1">
                         {value}
                         <button
                           type="button"
                           onClick={() => handleRemoveEnumValue(value)}
-                          className="ml-1 hover:text-destructive"
+                          className="hover:text-destructive ml-1"
                           aria-label={`Usuń wartość ${value}`}
                         >
                           <X className="h-3 w-3" />
@@ -261,15 +252,10 @@ export function FieldDefinitionFormDialog({
                 <FormItem className="flex items-center justify-between rounded-lg border p-3">
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">Pole wymagane</FormLabel>
-                    <FormDescription>
-                      Użytkownik będzie musiał wypełnić to pole
-                    </FormDescription>
+                    <FormDescription>Użytkownik będzie musiał wypełnić to pole</FormDescription>
                   </div>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}
@@ -289,26 +275,20 @@ export function FieldDefinitionFormDialog({
                       onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                     />
                   </FormControl>
-                  <FormDescription>
-                    Mniejsza liczba = wyświetlane wcześniej
-                  </FormDescription>
+                  <FormDescription>Mniejsza liczba = wyświetlane wcześniej</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              >
+              <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
                 Anuluj
               </Button>
               <Button
                 type="submit"
                 disabled={form.formState.isSubmitting}
-                className="bg-apptax-blue hover:bg-apptax-blue/90"
+                className="bg-primary hover:bg-primary/90"
               >
                 {isEditing ? 'Zapisz' : 'Dodaj'}
               </Button>

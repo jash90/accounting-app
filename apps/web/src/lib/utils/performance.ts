@@ -12,7 +12,9 @@ export const performanceMonitor = {
         const measure = performance.getEntriesByName(name)[0];
 
         if (measure) {
-          console.log(`${name}: ${measure.duration.toFixed(2)}ms`);
+          if (import.meta.env.DEV) {
+            console.log(`${name}: ${measure.duration.toFixed(2)}ms`);
+          }
 
           // Send to analytics in production
           if (import.meta.env.PROD) {
@@ -20,7 +22,9 @@ export const performanceMonitor = {
           }
         }
       } catch (error) {
-        console.warn(`Performance measurement failed for ${name}:`, error);
+        if (import.meta.env.DEV) {
+          console.warn(`Performance measurement failed for ${name}:`, error);
+        }
       }
     }
   },
@@ -35,4 +39,3 @@ export const performanceMonitor = {
     }
   },
 };
-

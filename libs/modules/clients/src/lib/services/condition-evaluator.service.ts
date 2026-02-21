@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
+
 import {
   AutoAssignCondition,
-  SingleCondition,
+  Client,
   ConditionGroup,
   ConditionOperator,
   isConditionGroup,
+  SingleCondition,
 } from '@accounting/common';
-import { Client } from '@accounting/common';
 
 /**
  * Service for evaluating auto-assign conditions against client data
@@ -34,14 +35,10 @@ export class ConditionEvaluatorService {
    */
   private evaluateGroup(client: Client, group: ConditionGroup): boolean {
     const results = group.conditions.map((cond) =>
-      isConditionGroup(cond)
-        ? this.evaluateGroup(client, cond)
-        : this.evaluateSingle(client, cond)
+      isConditionGroup(cond) ? this.evaluateGroup(client, cond) : this.evaluateSingle(client, cond)
     );
 
-    return group.logicalOperator === 'and'
-      ? results.every(Boolean)
-      : results.some(Boolean);
+    return group.logicalOperator === 'and' ? results.every(Boolean) : results.some(Boolean);
   }
 
   /**
@@ -112,39 +109,39 @@ export class ConditionEvaluatorService {
           .includes(String(conditionValue ?? '').toLowerCase());
 
       case 'greaterThan': {
-        const numField = Number(fieldValue);
-        const numCondition = Number(conditionValue);
-        if (isNaN(numField) || isNaN(numCondition)) {
+        const gtNumField = Number(fieldValue);
+        const gtNumCondition = Number(conditionValue);
+        if (isNaN(gtNumField) || isNaN(gtNumCondition)) {
           return false;
         }
-        return numField > numCondition;
+        return gtNumField > gtNumCondition;
       }
 
       case 'lessThan': {
-        const numField = Number(fieldValue);
-        const numCondition = Number(conditionValue);
-        if (isNaN(numField) || isNaN(numCondition)) {
+        const ltNumField = Number(fieldValue);
+        const ltNumCondition = Number(conditionValue);
+        if (isNaN(ltNumField) || isNaN(ltNumCondition)) {
           return false;
         }
-        return numField < numCondition;
+        return ltNumField < ltNumCondition;
       }
 
       case 'greaterThanOrEqual': {
-        const numField = Number(fieldValue);
-        const numCondition = Number(conditionValue);
-        if (isNaN(numField) || isNaN(numCondition)) {
+        const gteNumField = Number(fieldValue);
+        const gteNumCondition = Number(conditionValue);
+        if (isNaN(gteNumField) || isNaN(gteNumCondition)) {
           return false;
         }
-        return numField >= numCondition;
+        return gteNumField >= gteNumCondition;
       }
 
       case 'lessThanOrEqual': {
-        const numField = Number(fieldValue);
-        const numCondition = Number(conditionValue);
-        if (isNaN(numField) || isNaN(numCondition)) {
+        const lteNumField = Number(fieldValue);
+        const lteNumCondition = Number(conditionValue);
+        if (isNaN(lteNumField) || isNaN(lteNumCondition)) {
           return false;
         }
-        return numField <= numCondition;
+        return lteNumField <= lteNumCondition;
       }
 
       case 'isEmpty':
@@ -169,17 +166,18 @@ export class ConditionEvaluatorService {
           (v) => this.normalizeValue(v) === this.normalizeValue(fieldValue)
         );
 
-      case 'between':
+      case 'between': {
         if (secondValue === undefined || secondValue === null) {
           return false;
         }
-        const numValue = Number(fieldValue);
-        const minValue = Number(conditionValue);
-        const maxValue = Number(secondValue);
-        if (isNaN(numValue) || isNaN(minValue) || isNaN(maxValue)) {
+        const betweenNumValue = Number(fieldValue);
+        const betweenMinValue = Number(conditionValue);
+        const betweenMaxValue = Number(secondValue);
+        if (isNaN(betweenNumValue) || isNaN(betweenMinValue) || isNaN(betweenMaxValue)) {
           return false;
         }
-        return numValue >= minValue && numValue <= maxValue;
+        return betweenNumValue >= betweenMinValue && betweenNumValue <= betweenMaxValue;
+      }
 
       default:
         return false;

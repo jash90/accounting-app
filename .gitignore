@@ -43,3 +43,7 @@ test-results/*.json
 performance.json
 *.telemetry.json
 .vercel
+test-results/
+coverage/
+playwright-report/
+apps/web-e2e/playwright-report/

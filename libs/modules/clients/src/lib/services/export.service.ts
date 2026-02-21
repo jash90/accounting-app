@@ -1,17 +1,16 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
-import {
-  Client,
-  User,
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
-  TenantService,
-} from '@accounting/common';
+
+import { DataSource, EntityManager, Repository } from 'typeorm';
+
+import { Client, EmploymentType, TaxScheme, User, VatStatus, ZusStatus } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
-import { ClientFilters } from './clients.service';
+
+import { ClientFiltersDto } from '../dto/client.dto';
+
+// Type alias for backward compatibility
+type ClientFilters = ClientFiltersDto;
 
 export interface ImportResultDto {
   imported: number;
@@ -47,6 +46,7 @@ export class ClientExportService {
     private readonly clientRepository: Repository<Client>,
     private readonly changeLogService: ChangeLogService,
     private readonly tenantService: TenantService,
+    private readonly dataSource: DataSource
   ) {}
 
   /**
@@ -91,9 +91,10 @@ export class ClientExportService {
     }
 
     if (filters?.search) {
+      const escapedSearch = this.escapeLikePattern(filters.search);
       queryBuilder.andWhere(
-        "(client.name ILIKE :search OR client.nip ILIKE :search OR client.email ILIKE :search)",
-        { search: `%${filters.search}%` },
+        "(client.name ILIKE :search ESCAPE '\\' OR client.nip ILIKE :search ESCAPE '\\' OR client.email ILIKE :search ESCAPE '\\')",
+        { search: `%${escapedSearch}%` }
       );
     }
 
@@ -136,16 +137,16 @@ export class ClientExportService {
       'Dodatkowe informacje',
     ];
 
-    const csvContent = [
-      headers.join(','),
-      exampleRow.map(this.escapeCsvField).join(','),
-    ].join('\n');
+    const csvContent = [headers.join(','), exampleRow.map(this.escapeCsvField).join(',')].join(
+      '\n'
+    );
 
     return Buffer.from(csvContent, 'utf-8');
   }
 
   /**
    * Import clients from CSV content.
+   * Uses a database transaction to ensure atomicity - all rows succeed or none.
    */
   async importFromCsv(content: string, user: User): Promise<ImportResultDto> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
@@ -153,7 +154,9 @@ export class ClientExportService {
     // Parse CSV
     const lines = content.split('\n').filter((line) => line.trim());
     if (lines.length < 2) {
-      throw new BadRequestException('Plik CSV musi zawierać nagłówki i co najmniej jeden wiersz danych');
+      throw new BadRequestException(
+        'Plik CSV musi zawierać nagłówki i co najmniej jeden wiersz danych'
+      );
     }
 
     const headers = this.parseCsvLine(lines[0]);
@@ -164,19 +167,16 @@ export class ClientExportService {
       }
     }
 
-    const result: ImportResultDto = {
-      imported: 0,
-      updated: 0,
-      errors: [],
-    };
+    // Pre-validate all rows FIRST before starting transaction
+    const parsedRows: { rowNumber: number; row: CsvRow }[] = [];
+    const validationErrors: ImportErrorDto[] = [];
 
-    // Process each row
     for (let i = 1; i < lines.length; i++) {
       const rowNumber = i + 1;
       const values = this.parseCsvLine(lines[i]);
 
       if (values.length < headers.length) {
-        result.errors.push({
+        validationErrors.push({
           row: rowNumber,
           field: 'row',
           message: 'Nieprawidłowa liczba kolumn',
@@ -184,74 +184,97 @@ export class ClientExportService {
         continue;
       }
 
-      const row: CsvRow = {} as CsvRow;
+      const row = {} as Record<string, string | undefined>;
       for (let j = 0; j < headers.length; j++) {
         const header = headers[j] as keyof CsvRow;
         row[header] = values[j]?.trim() || undefined;
       }
 
-      // Validate and process row
-      const validationErrors = this.validateRow(row, rowNumber);
-      if (validationErrors.length > 0) {
-        result.errors.push(...validationErrors);
+      // Validate row
+      const rowErrors = this.validateRow(row as unknown as CsvRow, rowNumber);
+      if (rowErrors.length > 0) {
+        validationErrors.push(...rowErrors);
         continue;
       }
 
-      try {
-        // Check if client with same NIP exists
-        let existingClient: Client | null = null;
-        if (row.nip) {
-          existingClient = await this.clientRepository.findOne({
-            where: { companyId, nip: row.nip },
-          });
-        }
-
-        if (existingClient) {
-          // Update existing client
-          const oldValues = this.sanitizeClientForLog(existingClient);
-          Object.assign(existingClient, this.mapRowToClient(row));
-          existingClient.updatedById = user.id;
-          await this.clientRepository.save(existingClient);
-
-          await this.changeLogService.logUpdate(
-            'Client',
-            existingClient.id,
-            oldValues,
-            this.sanitizeClientForLog(existingClient),
-            user,
-          );
-
-          result.updated++;
-        } else {
-          // Create new client
-          const client = this.clientRepository.create({
-            ...this.mapRowToClient(row),
-            companyId,
-            createdById: user.id,
-          });
-
-          const savedClient = await this.clientRepository.save(client);
-
-          await this.changeLogService.logCreate(
-            'Client',
-            savedClient.id,
-            this.sanitizeClientForLog(savedClient),
-            user,
-          );
-
-          result.imported++;
-        }
-      } catch (error) {
-        this.logger.error(`Error importing row ${rowNumber}`, error);
-        result.errors.push({
-          row: rowNumber,
-          field: 'row',
-          message: 'Błąd podczas importu wiersza',
-        });
-      }
+      parsedRows.push({ rowNumber, row: row as unknown as CsvRow });
     }
 
-    return result;
+    // If there are validation errors, return them without starting transaction
+    if (validationErrors.length > 0) {
+      return {
+        imported: 0,
+        updated: 0,
+        errors: validationErrors,
+      };
+    }
+
+    // No validation errors - proceed with transaction
+    return this.dataSource.transaction(async (manager: EntityManager) => {
+      const result: ImportResultDto = {
+        imported: 0,
+        updated: 0,
+        errors: [],
+      };
+
+      const clientRepo = manager.getRepository(Client);
+
+      for (const { rowNumber, row } of parsedRows) {
+        try {
+          // Check if client with same NIP exists
+          let existingClient: Client | null = null;
+          if (row.nip) {
+            existingClient = await clientRepo.findOne({
+              where: { companyId, nip: row.nip },
+            });
+          }
+
+          if (existingClient) {
+            // Update existing client
+            const oldValues = this.sanitizeClientForLog(existingClient);
+            Object.assign(existingClient, this.mapRowToClient(row));
+            existingClient.updatedById = user.id;
+            await clientRepo.save(existingClient);
+
+            await this.changeLogService.logUpdate(
+              'Client',
+              existingClient.id,
+              oldValues,
+              this.sanitizeClientForLog(existingClient),
+              user
+            );
+
+            result.updated++;
+          } else {
+            // Create new client
+            const client = clientRepo.create({
+              ...this.mapRowToClient(row),
+              companyId,
+              createdById: user.id,
+            });
+
+            const savedClient = await clientRepo.save(client);
+
+            await this.changeLogService.logCreate(
+              'Client',
+              savedClient.id,
+              this.sanitizeClientForLog(savedClient),
+              user
+            );
+
+            result.imported++;
+          }
+        } catch (error) {
+          this.logger.error(`Error importing row ${rowNumber}`, error);
+          // Re-throw to trigger transaction rollback
+          throw new BadRequestException(
+            `Błąd podczas importu wiersza ${rowNumber}: ${error instanceof Error ? error.message : 'Nieznany błąd'}`
+          );
+        }
+      }
+
+      return result;
+    });
   }
 
   /**
@@ -268,14 +291,14 @@ export class ClientExportService {
 
     for (let i = 1; i < lines.length && i <= 100; i++) {
       const values = this.parseCsvLine(lines[i]);
-      const row: CsvRow = {} as CsvRow;
+      const row = {} as Record<string, string | undefined>;
 
       for (let j = 0; j < headers.length; j++) {
         const header = headers[j] as keyof CsvRow;
         row[header] = values[j]?.trim() || undefined;
       }
 
-      rows.push(row);
+      rows.push(row as unknown as CsvRow);
     }
 
     return rows;
@@ -310,17 +333,39 @@ export class ClientExportService {
       client.isActive ? 'true' : 'false',
     ]);
 
-    return [
-      headers.join(','),
-      ...rows.map((row) => row.map(this.escapeCsvField).join(',')),
-    ].join('\n');
+    return [headers.join(','), ...rows.map((row) => row.map(this.escapeCsvField).join(','))].join(
+      '\n'
+    );
   }
 
+  /**
+   * Escape special LIKE pattern characters to prevent SQL injection.
+   */
+  private escapeLikePattern(pattern: string): string {
+    return pattern.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+  }
+
+  /**
+   * Escape a CSV field value for safe export.
+   * Protects against CSV injection (formula injection) and handles special characters.
+   */
   private escapeCsvField(field: string): string {
-    if (field.includes(',') || field.includes('"') || field.includes('\n')) {
-      return `"${field.replace(/"/g, '""')}"`;
+    if (!field) return '';
+
+    let value = field;
+
+    // CSV injection protection: prefix values starting with formula characters
+    // This prevents Excel/Sheets from interpreting them as formulas
+    const formulaChars = ['=', '+', '-', '@', '\t', '\r'];
+    if (formulaChars.some((char) => value.startsWith(char))) {
+      value = "'" + value;
     }
-    return field;
+
+    // Handle special characters that require quoting
+    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+      return `"${value.replace(/"/g, '""')}"`;
+    }
+    return value;
   }
 
   private parseCsvLine(line: string): string[] {
@@ -389,7 +434,10 @@ export class ClientExportService {
     }
 
     // Enum validations
-    if (row.employmentType && !Object.values(EmploymentType).includes(row.employmentType as EmploymentType)) {
+    if (
+      row.employmentType &&
+      !Object.values(EmploymentType).includes(row.employmentType as EmploymentType)
+    ) {
       errors.push({
         row: rowNumber,
         field: 'employmentType',

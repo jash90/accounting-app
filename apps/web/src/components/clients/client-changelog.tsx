@@ -1,17 +1,25 @@
-import { useClientChangelog } from '@/lib/hooks/use-clients';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { memo } from 'react';
+
+import { Edit, History, Plus, Trash2 } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { History, Plus, Edit, Trash2 } from 'lucide-react';
+import { useClientChangelog } from '@/lib/hooks/use-clients';
+import { type ChangeLogResponseDto } from '@/types/dtos';
 import { ChangeAction } from '@/types/enums';
-import { ChangeLogResponseDto } from '@/types/dtos';
+
+import { ChangeDetailRow } from './ChangeDetailRow';
 
 interface ClientChangelogProps {
   clientId: string;
 }
 
-const ACTION_CONFIG: Record<ChangeAction, { label: string; icon: React.ReactNode; variant: 'default' | 'secondary' | 'destructive' }> = {
+const ACTION_CONFIG: Record<
+  ChangeAction,
+  { label: string; icon: React.ReactNode; variant: 'default' | 'secondary' | 'destructive' }
+> = {
   [ChangeAction.CREATE]: {
     label: 'Utworzono',
     icon: <Plus className="h-3 w-3" />,
@@ -29,69 +37,30 @@ const ACTION_CONFIG: Record<ChangeAction, { label: string; icon: React.ReactNode
   },
 };
 
-function formatFieldName(key: string): string {
-  const fieldLabels: Record<string, string> = {
-    name: 'Nazwa',
-    nip: 'NIP',
-    email: 'Email',
-    phone: 'Telefon',
-    companyStartDate: 'Data rozpoczęcia firmy',
-    cooperationStartDate: 'Data rozpoczęcia współpracy',
-    suspensionDate: 'Data zawieszenia',
-    companySpecificity: 'Specyfika firmy',
-    additionalInfo: 'Dodatkowe informacje',
-    gtuCode: 'Kod GTU',
-    amlGroup: 'Grupa AML',
-    employmentType: 'Forma zatrudnienia',
-    vatStatus: 'Status VAT',
-    taxScheme: 'Forma opodatkowania',
-    zusStatus: 'Status ZUS',
-    isActive: 'Aktywny',
-  };
-
-  return fieldLabels[key] || key;
-}
-
-function formatValue(value: unknown): string {
-  if (value === null || value === undefined) return '(brak)';
-  if (typeof value === 'boolean') return value ? 'Tak' : 'Nie';
-  if (typeof value === 'string') {
-    // Check if it's a date
-    if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
-      return new Date(value).toLocaleDateString('pl-PL');
-    }
-    return value || '(brak)';
-  }
-  return String(value);
-}
-
 function ChangelogEntry({ entry }: { entry: ChangeLogResponseDto }) {
   const config = ACTION_CONFIG[entry.action];
   const oldValues = entry.oldValues || {};
   const newValues = entry.newValues || {};
 
   // Get all changed keys
-  const changedKeys = new Set([
-    ...Object.keys(oldValues),
-    ...Object.keys(newValues),
-  ]);
+  const changedKeys = new Set([...Object.keys(oldValues), ...Object.keys(newValues)]);
 
   return (
-    <div className="border-l-2 border-apptax-soft-teal pl-4 pb-4 relative">
-      <div className="absolute w-3 h-3 bg-apptax-blue rounded-full -left-[7px] top-0" />
+    <div className="border-accent relative border-l-2 pb-4 pl-4">
+      <div className="bg-primary absolute top-0 -left-[7px] h-3 w-3 rounded-full" />
 
-      <div className="flex items-center gap-2 mb-2">
+      <div className="mb-2 flex items-center gap-2">
         <Badge variant={config.variant} className="gap-1">
           {config.icon}
           {config.label}
         </Badge>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-muted-foreground text-xs">
           {new Date(entry.createdAt).toLocaleString('pl-PL')}
         </span>
       </div>
 
       {entry.user && (
-        <p className="text-sm text-muted-foreground mb-2">
+        <p className="text-muted-foreground mb-2 text-sm">
           przez {entry.user.firstName} {entry.user.lastName}
         </p>
       )}
@@ -103,40 +72,27 @@ function ChangelogEntry({ entry }: { entry: ChangeLogResponseDto }) {
             const newVal = newValues[key];
             if (oldVal === newVal) return null;
 
-            return (
-              <div key={key} className="flex items-start gap-2">
-                <span className="font-medium text-apptax-navy">
-                  {formatFieldName(key)}:
-                </span>
-                <span className="text-muted-foreground line-through">
-                  {formatValue(oldVal)}
-                </span>
-                <span className="text-apptax-blue">→</span>
-                <span className="text-apptax-navy">
-                  {formatValue(newVal)}
-                </span>
-              </div>
-            );
+            return <ChangeDetailRow key={key} fieldKey={key} oldValue={oldVal} newValue={newVal} />;
           })}
         </div>
       )}
 
       {entry.action === ChangeAction.CREATE && (
-        <p className="text-sm text-muted-foreground">
-          Klient został utworzony
-        </p>
+        <p className="text-muted-foreground text-sm">Klient został utworzony</p>
       )}
 
       {entry.action === ChangeAction.DELETE && (
-        <p className="text-sm text-muted-foreground">
-          Klient został usunięty (dezaktywowany)
-        </p>
+        <p className="text-muted-foreground text-sm">Klient został usunięty (dezaktywowany)</p>
       )}
     </div>
   );
 }
 
-export function ClientChangelog({ clientId }: ClientChangelogProps) {
+/**
+ * Client changelog component wrapped in memo() for performance.
+ * Only re-renders when clientId changes.
+ */
+export const ClientChangelog = memo(function ClientChangelog({ clientId }: ClientChangelogProps) {
   const { data: changelog, isPending, error } = useClientChangelog(clientId);
 
   if (isPending) {
@@ -153,7 +109,7 @@ export function ClientChangelog({ clientId }: ClientChangelogProps) {
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex gap-4">
                 <Skeleton className="h-3 w-3 rounded-full" />
-                <div className="space-y-2 flex-1">
+                <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-3 w-48" />
                 </div>
@@ -175,9 +131,7 @@ export function ClientChangelog({ clientId }: ClientChangelogProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-destructive">
-            Nie udało się załadować historii zmian
-          </p>
+          <p className="text-destructive text-sm">Nie udało się załadować historii zmian</p>
         </CardContent>
       </Card>
     );
@@ -201,11 +155,11 @@ export function ClientChangelog({ clientId }: ClientChangelogProps) {
             </div>
           </ScrollArea>
         ) : (
-          <p className="text-sm text-muted-foreground text-center py-8">
+          <p className="text-muted-foreground py-8 text-center text-sm">
             Brak historii zmian dla tego klienta
           </p>
         )}
       </CardContent>
     </Card>
   );
-}
+});

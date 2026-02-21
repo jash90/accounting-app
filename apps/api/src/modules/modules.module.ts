@@ -1,15 +1,19 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
 import {
-  User,
   Company,
-  Module as ModuleEntity,
   CompanyModuleAccess,
+  Module as ModuleEntity,
+  User,
   UserModulePermission,
 } from '@accounting/common';
+import { RBACModule } from '@accounting/rbac';
+
 import { ModulesController } from './modules.controller';
 import { ModulesService } from './modules.service';
-import { RBACModule } from '@accounting/rbac';
+import { CompanyModuleAccessService } from './services/company-module-access.service';
+import { EmployeeModulePermissionsService } from './services/employee-module-permissions.service';
 
 @Module({
   imports: [
@@ -23,7 +27,7 @@ import { RBACModule } from '@accounting/rbac';
     RBACModule,
   ],
   controllers: [ModulesController],
-  providers: [ModulesService],
-  exports: [ModulesService],
+  providers: [ModulesService, CompanyModuleAccessService, EmployeeModulePermissionsService],
+  exports: [ModulesService, CompanyModuleAccessService, EmployeeModulePermissionsService],
 })
 export class ModulesModule {}

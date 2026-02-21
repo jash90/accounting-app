@@ -1,8 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { useToast } from '@/components/ui/use-toast';
+import { type ApiErrorResponse } from '@/types/api';
+import { type CreateEmployeeDto, type UpdateEmployeeDto } from '@/types/dtos';
+
+
 import { employeesApi } from '../api/endpoints/employees';
 import { queryKeys } from '../api/query-client';
-import { CreateEmployeeDto, UpdateEmployeeDto } from '@/types/dtos';
-import { useToast } from '@/components/ui/use-toast';
 
 export function useEmployees() {
   return useQuery({
@@ -32,7 +36,7 @@ export function useCreateEmployee() {
         description: 'Pracownik został utworzony',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się utworzyć pracownika',
@@ -57,7 +61,7 @@ export function useUpdateEmployee() {
         description: 'Pracownik został zaktualizowany',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się zaktualizować pracownika',
@@ -80,7 +84,7 @@ export function useDeleteEmployee() {
         description: 'Pracownik został usunięty',
       });
     },
-    onError: (error: any) => {
+    onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się usunąć pracownika',
@@ -89,4 +93,3 @@ export function useDeleteEmployee() {
     },
   });
 }
-

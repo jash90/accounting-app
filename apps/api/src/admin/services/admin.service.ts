@@ -1,17 +1,21 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
-import * as bcrypt from 'bcrypt';
 import {
-  User,
-  Company,
-  UserRole,
-} from '@accounting/common';
-import { CreateUserDto } from '../dto/create-user.dto';
-import { UpdateUserDto } from '../dto/update-user.dto';
-import { CreateCompanyDto } from '../dto/create-company.dto';
-import { UpdateCompanyDto } from '../dto/update-company.dto';
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+
+import * as bcrypt from 'bcryptjs';
+import { DataSource, Repository } from 'typeorm';
+
+import { Company, User, UserRole } from '@accounting/common';
 import { RBACService } from '@accounting/rbac';
+
+import { CreateCompanyDto } from '../dto/create-company.dto';
+import { CreateUserDto } from '../dto/create-user.dto';
+import { UpdateCompanyDto } from '../dto/update-company.dto';
+import { UpdateUserDto } from '../dto/update-user.dto';
 
 @Injectable()
 export class AdminService {
@@ -21,7 +25,7 @@ export class AdminService {
     @InjectRepository(Company)
     private companyRepository: Repository<Company>,
     private rbacService: RBACService,
-    private dataSource: DataSource,
+    private dataSource: DataSource
   ) {}
 
   private async getSystemCompany(): Promise<Company> {
@@ -260,4 +264,3 @@ export class AdminService {
     return company.employees;
   }
 }
-

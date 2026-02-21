@@ -1,32 +1,32 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
   Body,
+  Controller,
+  Delete,
+  Get,
   Param,
-  UseGuards,
   ParseUUIDPipe,
+  Patch,
+  Post,
+  UseGuards,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiParam,
-} from '@nestjs/swagger';
-import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
+import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
   PermissionGuard,
   RequireModule,
   RequirePermission,
 } from '@accounting/rbac';
-import { User } from '@accounting/common';
-import { TaskLabelsService } from '../services/task-labels.service';
+
 import { CreateTaskLabelDto, UpdateTaskLabelDto } from '../dto/task-label.dto';
-import { TaskLabelResponseDto, SuccessMessageResponseDto, ErrorResponseDto } from '../dto/task-response.dto';
+import {
+  TaskErrorResponseDto,
+  TaskLabelResponseDto,
+  TaskSuccessResponseDto,
+} from '../dto/task-response.dto';
+import { TaskLabelsService } from '../services/task-labels.service';
 
 @ApiTags('Task Labels')
 @ApiBearerAuth()
@@ -48,7 +48,7 @@ export class TaskLabelsController {
   @ApiOperation({ summary: 'Get label by ID' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Label details', type: TaskLabelResponseDto })
-  @ApiResponse({ status: 404, description: 'Label not found', type: ErrorResponseDto })
+  @ApiResponse({ status: 404, description: 'Label not found', type: TaskErrorResponseDto })
   @RequirePermission('tasks', 'read')
   async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.labelsService.findOne(id, user);
@@ -57,8 +57,8 @@ export class TaskLabelsController {
   @Post()
   @ApiOperation({ summary: 'Create a new label' })
   @ApiResponse({ status: 201, description: 'Label created', type: TaskLabelResponseDto })
-  @ApiResponse({ status: 400, description: 'Validation error', type: ErrorResponseDto })
-  @ApiResponse({ status: 409, description: 'Label already exists', type: ErrorResponseDto })
+  @ApiResponse({ status: 400, description: 'Validation error', type: TaskErrorResponseDto })
+  @ApiResponse({ status: 409, description: 'Label already exists', type: TaskErrorResponseDto })
   @RequirePermission('tasks', 'manage')
   async create(@Body() dto: CreateTaskLabelDto, @CurrentUser() user: User) {
     return this.labelsService.create(dto, user);
@@ -68,12 +68,12 @@ export class TaskLabelsController {
   @ApiOperation({ summary: 'Update a label' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Label updated', type: TaskLabelResponseDto })
-  @ApiResponse({ status: 404, description: 'Label not found', type: ErrorResponseDto })
+  @ApiResponse({ status: 404, description: 'Label not found', type: TaskErrorResponseDto })
   @RequirePermission('tasks', 'manage')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateTaskLabelDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.labelsService.update(id, dto, user);
   }
@@ -81,8 +81,8 @@ export class TaskLabelsController {
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a label' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'Label deleted', type: SuccessMessageResponseDto })
-  @ApiResponse({ status: 404, description: 'Label not found', type: ErrorResponseDto })
+  @ApiResponse({ status: 200, description: 'Label deleted', type: TaskSuccessResponseDto })
+  @ApiResponse({ status: 404, description: 'Label not found', type: TaskErrorResponseDto })
   @RequirePermission('tasks', 'manage')
   async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     await this.labelsService.remove(id, user);

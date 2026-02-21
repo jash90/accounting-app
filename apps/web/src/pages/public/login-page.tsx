@@ -1,12 +1,9 @@
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -16,9 +13,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { loginSchema, LoginFormData } from '@/lib/validation/schemas';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { loginSchema, type LoginFormData } from '@/lib/validation/schemas';
 
 export default function LoginPage() {
   const { login, isPending, error } = useAuth();
@@ -37,97 +33,93 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen">
       {/* Left side - Brand Hero */}
-      <div className="hidden lg:flex lg:w-1/2 bg-apptax-dark-gradient relative overflow-hidden">
+      <div className="bg-primary relative hidden overflow-hidden lg:flex lg:w-1/2">
         {/* Animated Background Pattern */}
         <div className="absolute inset-0">
           {/* Primary floating blobs */}
-          <div className="absolute top-[-50%] right-[-20%] w-[600px] h-[600px] bg-apptax-teal/10 rounded-full blur-3xl animate-float" />
-          <div className="absolute bottom-[-30%] left-[-10%] w-[400px] h-[400px] bg-apptax-blue/10 rounded-full blur-3xl animate-float-reverse" />
+          <div className="bg-accent/10 animate-float absolute top-[-50%] right-[-20%] h-[600px] w-[600px] rounded-full blur-3xl" />
+          <div className="bg-primary/10 animate-float-reverse absolute bottom-[-30%] left-[-10%] h-[400px] w-[400px] rounded-full blur-3xl" />
 
           {/* Secondary floating elements */}
-          <div className="absolute top-[20%] left-[10%] w-32 h-32 bg-apptax-teal/5 rounded-full blur-2xl animate-float delay-300" />
-          <div className="absolute bottom-[25%] right-[15%] w-24 h-24 bg-apptax-light-blue/10 rounded-full blur-2xl animate-float-reverse delay-500" />
-          <div className="absolute top-[60%] left-[40%] w-20 h-20 bg-apptax-blue/5 rounded-full blur-xl animate-float delay-200" />
+          <div className="bg-accent/5 animate-float absolute top-[20%] left-[10%] h-32 w-32 rounded-full blur-2xl delay-300" />
+          <div className="bg-primary/10 animate-float-reverse absolute right-[15%] bottom-[25%] h-24 w-24 rounded-full blur-2xl delay-500" />
+          <div className="bg-primary/5 animate-float absolute top-[60%] left-[40%] h-20 w-20 rounded-full blur-xl delay-200" />
 
           {/* Decorative grid lines */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
 
           {/* Shimmer effect overlay */}
-          <div className="absolute inset-0 animate-shimmer opacity-30" />
+          <div className="animate-shimmer absolute inset-0 opacity-30" />
         </div>
 
         {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center p-12 max-w-lg mx-auto">
+        <div className="relative z-10 mx-auto flex max-w-lg flex-col justify-center p-12">
           {/* Logo */}
-          <div className="flex items-center gap-3 mb-12 animate-fade-in-left">
+          <div className="animate-fade-in-left mb-12 flex items-center gap-3">
             <div className="relative">
-              <img
-                src="/apptax-logomark.svg"
-                alt="AppTax"
-                className="h-12 w-12"
-              />
+              <img src="/apptax-logomark.svg" alt="AppTax" className="h-12 w-12" />
               {/* AI indicator glow behind logo */}
-              <div className="absolute inset-0 bg-apptax-teal/30 rounded-lg blur-xl -z-10" />
+              <div className="bg-accent/30 absolute inset-0 -z-10 rounded-lg blur-xl" />
             </div>
             <span className="text-2xl font-bold text-white">
-              App<span className="text-apptax-light-blue">Tax</span>
+              App<span className="text-primary-foreground">Tax</span>
             </span>
           </div>
 
           {/* Hero Text */}
-          <h1 className="text-4xl font-extrabold text-white leading-tight mb-6 animate-fade-in-left delay-100">
+          <h1 className="animate-fade-in-left mb-6 text-4xl leading-tight font-extrabold text-white delay-100">
             Inteligentna Księgowość AI
           </h1>
-          <p className="text-lg text-white/80 mb-8 animate-fade-in-left delay-200">
-            Połącz tradycyjną niezawodność księgowości z innowacyjnymi możliwościami AI.
-            Zmień sposób działania Twojego biura rachunkowego.
+          <p className="animate-fade-in-left mb-8 text-lg text-white/80 delay-200">
+            Połącz tradycyjną niezawodność księgowości z innowacyjnymi możliwościami AI. Zmień
+            sposób działania Twojego biura rachunkowego.
           </p>
 
           {/* Features */}
           <div className="space-y-4">
-            <div className="flex items-center gap-3 animate-fade-in-left delay-300 group">
-              <div className="w-2.5 h-2.5 rounded-full bg-apptax-teal animate-pulse-glow group-hover:scale-125 transition-transform" />
-              <span className="text-white/70 group-hover:text-white/90 transition-colors">Inteligentna automatyzacja</span>
+            <div className="animate-fade-in-left group flex items-center gap-3 delay-300">
+              <div className="bg-accent animate-pulse-glow h-2.5 w-2.5 rounded-full transition-transform group-hover:scale-125" />
+              <span className="text-white/70 transition-colors group-hover:text-white/90">
+                Inteligentna automatyzacja
+              </span>
             </div>
-            <div className="flex items-center gap-3 animate-fade-in-left delay-400 group">
-              <div className="w-2.5 h-2.5 rounded-full bg-apptax-teal animate-pulse-glow group-hover:scale-125 transition-transform" />
-              <span className="text-white/70 group-hover:text-white/90 transition-colors">Zgodność z polskim prawem podatkowym</span>
+            <div className="animate-fade-in-left group flex items-center gap-3 delay-400">
+              <div className="bg-accent animate-pulse-glow h-2.5 w-2.5 rounded-full transition-transform group-hover:scale-125" />
+              <span className="text-white/70 transition-colors group-hover:text-white/90">
+                Zgodność z polskim prawem podatkowym
+              </span>
             </div>
-            <div className="flex items-center gap-3 animate-fade-in-left delay-500 group">
-              <div className="w-2.5 h-2.5 rounded-full bg-apptax-teal animate-pulse-glow group-hover:scale-125 transition-transform" />
-              <span className="text-white/70 group-hover:text-white/90 transition-colors">Bezpieczna platforma wielodostępowa</span>
+            <div className="animate-fade-in-left group flex items-center gap-3 delay-500">
+              <div className="bg-accent animate-pulse-glow h-2.5 w-2.5 rounded-full transition-transform group-hover:scale-125" />
+              <span className="text-white/70 transition-colors group-hover:text-white/90">
+                Bezpieczna platforma wielodostępowa
+              </span>
             </div>
           </div>
 
           {/* Bottom decoration */}
-          <div className="absolute bottom-8 left-12 right-12 animate-fade-in-left delay-700">
+          <div className="animate-fade-in-left absolute right-12 bottom-8 left-12 delay-700">
             <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
           </div>
         </div>
       </div>
 
       {/* Right side - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-apptax-warm-gray">
-        <Card className="w-full max-w-md shadow-apptax-lg border-0 backdrop-blur-sm animate-fade-in-right hover:shadow-[0_8px_40px_rgba(0,0,0,0.12)] transition-shadow duration-300">
+      <div className="bg-muted flex flex-1 items-center justify-center p-8">
+        <Card className="shadow-lg animate-fade-in-right w-full max-w-md border-0 backdrop-blur-sm transition-shadow duration-300 hover:shadow-[0_8px_40px_rgba(0,0,0,0.12)]">
           <CardHeader className="space-y-4 pb-2">
             {/* Mobile Logo */}
-            <div className="lg:hidden flex items-center justify-center gap-2 mb-4">
+            <div className="mb-4 flex items-center justify-center gap-2 lg:hidden">
               <div className="relative">
-                <img
-                  src="/apptax-logomark.svg"
-                  alt="AppTax"
-                  className="h-10 w-10"
-                />
-                <div className="absolute inset-0 bg-apptax-teal/20 rounded-lg blur-lg -z-10" />
+                <img src="/apptax-logomark.svg" alt="AppTax" className="h-10 w-10" />
+                <div className="bg-accent/20 absolute inset-0 -z-10 rounded-lg blur-lg" />
               </div>
-              <span className="text-xl font-bold text-apptax-navy">
-                App<span className="text-apptax-blue">Tax</span>
+              <span className="text-foreground text-xl font-bold">
+                App<span className="text-primary">Tax</span>
               </span>
             </div>
 
-            <CardTitle className="text-2xl font-bold text-apptax-navy">
-              Witaj ponownie
-            </CardTitle>
+            <CardTitle className="text-foreground text-2xl font-bold">Witaj ponownie</CardTitle>
             <CardDescription className="text-muted-foreground">
               Wprowadź dane logowania, aby uzyskać dostęp do konta
             </CardDescription>
@@ -137,11 +129,12 @@ export default function LoginPage() {
               <div
                 role="alert"
                 data-testid="form-error"
-                className="animate-fade-in-up mb-4 rounded-xl bg-destructive/10 border-l-4 border-destructive p-4 text-sm text-destructive"
+                className="animate-fade-in-up bg-destructive/10 border-destructive text-destructive mb-4 rounded-xl border-l-4 p-4 text-sm"
               >
-                {(error as any)?.response?.data?.message ||
-                 (error as any)?.message ||
-                 'Nieprawidłowe dane logowania. Spróbuj ponownie.'}
+                {(error as { response?: { data?: { message?: string } } })?.response?.data
+                  ?.message ||
+                  (error as Error)?.message ||
+                  'Nieprawidłowe dane logowania. Spróbuj ponownie.'}
               </div>
             )}
             <Form {...form}>
@@ -151,15 +144,12 @@ export default function LoginPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem className="animate-fade-in-up delay-100">
-                      <FormLabel className="text-apptax-navy font-medium">Email</FormLabel>
+                      <FormLabel className="text-foreground font-medium">Email</FormLabel>
                       <FormControl>
                         <Input
                           type="email"
                           placeholder="user@example.com"
-                          className="h-12 rounded-xl border-2 border-gray-200 bg-white/80
-                            focus:border-apptax-blue focus:ring-4 focus:ring-apptax-blue/10
-                            hover:border-gray-300 transition-all duration-200
-                            placeholder:text-gray-400"
+                          className="focus:border-primary focus:ring-ring h-12 rounded-xl border-2 border-border bg-background/80 transition-all duration-200 placeholder:text-muted-foreground hover:border-muted-foreground focus:ring-4"
                           {...field}
                         />
                       </FormControl>
@@ -173,15 +163,12 @@ export default function LoginPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem className="animate-fade-in-up delay-200">
-                      <FormLabel className="text-apptax-navy font-medium">Hasło</FormLabel>
+                      <FormLabel className="text-foreground font-medium">Hasło</FormLabel>
                       <FormControl>
                         <Input
                           type="password"
                           placeholder="Wprowadź hasło"
-                          className="h-12 rounded-xl border-2 border-gray-200 bg-white/80
-                            focus:border-apptax-blue focus:ring-4 focus:ring-apptax-blue/10
-                            hover:border-gray-300 transition-all duration-200
-                            placeholder:text-gray-400"
+                          className="focus:border-primary focus:ring-ring h-12 rounded-xl border-2 border-border bg-background/80 transition-all duration-200 placeholder:text-muted-foreground hover:border-muted-foreground focus:ring-4"
                           {...field}
                         />
                       </FormControl>
@@ -192,17 +179,12 @@ export default function LoginPage() {
 
                 <Button
                   type="submit"
-                  className="w-full h-12 bg-apptax-blue hover:bg-apptax-blue/90
-                    text-white font-semibold rounded-xl
-                    shadow-apptax-sm hover:shadow-apptax-md
-                    active:scale-[0.98] transition-all duration-200
-                    disabled:opacity-70 disabled:cursor-not-allowed
-                    animate-fade-in-up delay-300"
+                  className="bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md animate-fade-in-up h-12 w-full rounded-xl font-semibold text-primary-foreground transition-all delay-300 duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
                   disabled={isPending}
                 >
                   {isPending ? (
                     <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                      <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
                         <circle
                           className="opacity-25"
                           cx="12"
@@ -227,10 +209,10 @@ export default function LoginPage() {
             </Form>
 
             {/* Footer */}
-            <div className="mt-8 pt-6 border-t border-gray-100 text-center animate-fade-in-up delay-400">
-              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+            <div className="animate-fade-in-up mt-8 border-t border-border pt-6 text-center delay-400">
+              <p className="text-muted-foreground flex items-center justify-center gap-1.5 text-xs">
                 Zasilane przez AI
-                <span className="inline-block w-2 h-2 rounded-full bg-apptax-teal animate-pulse-glow" />
+                <span className="bg-accent animate-pulse-glow inline-block h-2 w-2 rounded-full" />
               </p>
             </div>
           </CardContent>

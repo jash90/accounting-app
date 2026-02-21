@@ -1,10 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
-} from '@accounting/common';
+
+import { EmploymentType, TaxScheme, VatStatus, ZusStatus } from '@accounting/common';
 
 /**
  * Response DTO for client data
@@ -51,12 +47,6 @@ export class ClientResponseDto {
     example: '2021-06-01',
   })
   cooperationStartDate?: Date;
-
-  @ApiPropertyOptional({
-    description: 'Suspension date (if suspended)',
-    example: null,
-  })
-  suspensionDate?: Date;
 
   @ApiPropertyOptional({
     description: 'Company specificity notes',
@@ -345,7 +335,7 @@ export class CustomFieldValueResponseDto {
 /**
  * Generic success message response
  */
-export class SuccessMessageResponseDto {
+export class ClientSuccessResponseDto {
   @ApiProperty({
     description: 'Success message',
     example: 'Operation completed successfully',
@@ -356,7 +346,7 @@ export class SuccessMessageResponseDto {
 /**
  * Error response DTO
  */
-export class ErrorResponseDto {
+export class ClientErrorResponseDto {
   @ApiProperty({
     description: 'HTTP status code',
     example: 400,

@@ -1,18 +1,16 @@
-import { useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useMemo } from 'react';
+
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useAuthContext } from '@/contexts/auth-context';
-import { UserRole } from '@/types/enums';
-import {
-  TaskStatus,
-  TaskStatusLabels,
-  TaskPriority,
-  TaskPriorityLabels,
-} from '@/types/enums';
-import { TaskResponseDto, CreateTaskDto, UpdateTaskDto } from '@/types/dtos';
-import { useTaskLabels, useTaskAssignees, useTaskClients } from '@/lib/hooks/use-tasks';
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
+import { CalendarIcon, Loader2, Maximize2, X } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Dialog,
   DialogContent,
@@ -21,9 +19,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -32,6 +27,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -39,34 +36,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { useAuthContext } from '@/contexts/auth-context';
+import { useTaskAssignees, useTaskClients, useTaskLabels } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
-import { CalendarIcon, X, Loader2, Maximize2 } from 'lucide-react';
-
-const taskFormSchema = z.object({
-  title: z.string().min(1, 'Tytuł jest wymagany').max(255),
-  description: z.string().optional(),
-  status: z.nativeEnum(TaskStatus),
-  priority: z.nativeEnum(TaskPriority),
-  dueDate: z.date().optional().nullable(),
-  startDate: z.date().optional().nullable(),
-  estimatedMinutes: z.number().min(0).optional().nullable(),
-  storyPoints: z.number().min(1).max(13).optional().nullable(),
-  clientId: z.string().optional().nullable(),
-  assigneeId: z.string().optional().nullable(),
-  parentTaskId: z.string().optional().nullable(),
-  labelIds: z.array(z.string()).optional(),
-});
-
-type TaskFormData = z.infer<typeof taskFormSchema>;
+import { taskFormSchema, type TaskFormData } from '@/lib/validation/schemas';
+import { type CreateTaskDto, type TaskResponseDto, type UpdateTaskDto } from '@/types/dtos';
+import {
+  TaskPriority,
+  TaskPriorityLabels,
+  TaskStatus,
+  TaskStatusLabels,
+  UserRole,
+} from '@/types/enums';
 
 interface TaskFormDialogProps {
   open: boolean;
@@ -87,6 +69,7 @@ export function TaskFormDialog({
   onSubmit,
   isLoading = false,
 }: TaskFormDialogProps) {
+  'use no memo';
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const isEditing = !!task;
@@ -110,31 +93,15 @@ export function TaskFormDialog({
     navigate(getCreatePath());
   };
 
-  const assignees = useMemo(() => assigneesData || [], [assigneesData]);
-  const clients = useMemo(() => clientsData || [], [clientsData]);
-  const labels = useMemo(() => labelsData?.data || [], [labelsData]);
+  const assignees = assigneesData ?? [];
+  const clients = clientsData ?? [];
+  const labels = labelsData?.data ?? [];
 
-  const form = useForm<TaskFormData>({
-    resolver: zodResolver(taskFormSchema),
-    defaultValues: {
-      title: '',
-      description: '',
-      status: TaskStatus.TODO,
-      priority: TaskPriority.MEDIUM,
-      dueDate: null,
-      startDate: null,
-      estimatedMinutes: null,
-      storyPoints: null,
-      clientId: null,
-      assigneeId: null,
-      parentTaskId: parentTaskId || null,
-      labelIds: [],
-    },
-  });
-
-  useEffect(() => {
+  // Compute form values synchronously - avoids useEffect render cycle
+  // react-hook-form's `values` prop syncs external values without extra re-renders
+  const formValues = useMemo((): TaskFormData => {
     if (task) {
-      form.reset({
+      return {
         title: task.title,
         description: task.description || '',
         status: task.status,
@@ -147,24 +114,31 @@ export function TaskFormDialog({
         assigneeId: task.assigneeId || null,
         parentTaskId: task.parentTaskId || parentTaskId || null,
         labelIds: task.labels?.map((la) => la.labelId) || [],
-      });
-    } else {
-      form.reset({
-        title: '',
-        description: '',
-        status: TaskStatus.TODO,
-        priority: TaskPriority.MEDIUM,
-        dueDate: null,
-        startDate: null,
-        estimatedMinutes: null,
-        storyPoints: null,
-        clientId: null,
-        assigneeId: null,
-        parentTaskId: parentTaskId || null,
-        labelIds: [],
-      });
+      };
     }
-  }, [task, parentTaskId, form]);
+    return {
+      title: '',
+      description: '',
+      status: TaskStatus.TODO,
+      priority: TaskPriority.MEDIUM,
+      dueDate: null,
+      startDate: null,
+      estimatedMinutes: null,
+      storyPoints: null,
+      clientId: null,
+      assigneeId: null,
+      parentTaskId: parentTaskId || null,
+      labelIds: [],
+    };
+  }, [task, parentTaskId]);
+
+  const form = useForm<TaskFormData>({
+    resolver: zodResolver(taskFormSchema),
+    values: formValues, // Syncs values without useEffect - reduces render cycles
+    resetOptions: {
+      keepDirtyValues: false, // Reset all values when formValues changes
+    },
+  });
 
   const handleSubmit = async (data: TaskFormData) => {
     const submitData: CreateTaskDto | UpdateTaskDto = {
@@ -188,26 +162,30 @@ export function TaskFormDialog({
 
   const selectedLabelIds = form.watch('labelIds') || [];
 
-  const toggleLabel = (labelId: string) => {
-    const current = form.getValues('labelIds') || [];
-    if (current.includes(labelId)) {
-      form.setValue(
-        'labelIds',
-        current.filter((id) => id !== labelId)
-      );
-    } else {
-      form.setValue('labelIds', [...current, labelId]);
-    }
-  };
+  // Extract stable form methods to use as dependencies instead of entire form object
+  const { getValues, setValue } = form;
+
+  const toggleLabel = useCallback(
+    (labelId: string) => {
+      const current = getValues('labelIds') || [];
+      if (current.includes(labelId)) {
+        setValue(
+          'labelIds',
+          current.filter((id) => id !== labelId)
+        );
+      } else {
+        setValue('labelIds', [...current, labelId]);
+      }
+    },
+    [getValues, setValue]
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <DialogTitle>
-              {isEditing ? 'Edytuj zadanie' : 'Nowe zadanie'}
-            </DialogTitle>
+            <DialogTitle>{isEditing ? 'Edytuj zadanie' : 'Nowe zadanie'}</DialogTitle>
             {!isEditing && (
               <Button
                 type="button"
@@ -222,9 +200,7 @@ export function TaskFormDialog({
             )}
           </div>
           <DialogDescription>
-            {isEditing
-              ? 'Zmień szczegóły zadania'
-              : 'Utwórz nowe zadanie w systemie'}
+            {isEditing ? 'Zmień szczegóły zadania' : 'Utwórz nowe zadanie w systemie'}
           </DialogDescription>
         </DialogHeader>
 
@@ -253,11 +229,7 @@ export function TaskFormDialog({
                 <FormItem>
                   <FormLabel>Opis</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Opisz zadanie..."
-                      className="min-h-[100px]"
-                      {...field}
-                    />
+                    <Textarea placeholder="Opisz zadanie..." className="min-h-[100px]" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -272,10 +244,7 @@ export function TaskFormDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
+                    <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue />
@@ -300,10 +269,7 @@ export function TaskFormDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Priorytet</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
+                    <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue />
@@ -324,7 +290,7 @@ export function TaskFormDialog({
             </div>
 
             {/* Dates */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="startDate"
@@ -348,7 +314,7 @@ export function TaskFormDialog({
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 z-[200]" align="start" sideOffset={4}>
+                      <PopoverContent className="z-[200] w-auto p-0" align="start" sideOffset={4}>
                         <Calendar
                           mode="single"
                           selected={field.value || undefined}
@@ -385,7 +351,7 @@ export function TaskFormDialog({
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 z-[200]" align="start" sideOffset={4}>
+                      <PopoverContent className="z-[200] w-auto p-0" align="start" sideOffset={4}>
                         <Calendar
                           mode="single"
                           selected={field.value || undefined}
@@ -415,9 +381,7 @@ export function TaskFormDialog({
                       {...field}
                       value={field.value ?? ''}
                       onChange={(e) =>
-                        field.onChange(
-                          e.target.value ? parseInt(e.target.value, 10) : null
-                        )
+                        field.onChange(e.target.value ? parseInt(e.target.value, 10) : null)
                       }
                     />
                   </FormControl>
@@ -441,9 +405,7 @@ export function TaskFormDialog({
                         variant={field.value === points ? 'default' : 'outline'}
                         size="default"
                         className="min-w-[44px]"
-                        onClick={() =>
-                          field.onChange(field.value === points ? null : points)
-                        }
+                        onClick={() => field.onChange(field.value === points ? null : points)}
                       >
                         {points}
                       </Button>
@@ -455,7 +417,7 @@ export function TaskFormDialog({
             />
 
             {/* Assignee and Client */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="assigneeId"
@@ -464,9 +426,7 @@ export function TaskFormDialog({
                     <FormLabel>Przypisany do</FormLabel>
                     <Select
                       value={field.value || 'none'}
-                      onValueChange={(value) =>
-                        field.onChange(value === 'none' ? null : value)
-                      }
+                      onValueChange={(value) => field.onChange(value === 'none' ? null : value)}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -495,9 +455,7 @@ export function TaskFormDialog({
                     <FormLabel>Klient</FormLabel>
                     <Select
                       value={field.value || 'none'}
-                      onValueChange={(value) =>
-                        field.onChange(value === 'none' ? null : value)
-                      }
+                      onValueChange={(value) => field.onChange(value === 'none' ? null : value)}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -543,9 +501,7 @@ export function TaskFormDialog({
                   );
                 })}
                 {labels.length === 0 && (
-                  <span className="text-sm text-muted-foreground">
-                    Brak dostępnych etykiet
-                  </span>
+                  <span className="text-muted-foreground text-sm">Brak dostępnych etykiet</span>
                 )}
               </div>
             </FormItem>

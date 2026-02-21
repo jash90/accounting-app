@@ -1,37 +1,39 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
+  BadRequestException,
   Body,
-  Param,
+  Controller,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Patch,
+  Post,
   UseGuards,
-  BadRequestException,
 } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
+  ApiBadRequestResponse,
   ApiBearerAuth,
-  ApiOkResponse,
+  ApiBody,
+  ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
-  ApiBadRequestResponse,
-  ApiUnauthorizedResponse,
-  ApiForbiddenResponse,
-  ApiConflictResponse,
+  ApiOkResponse,
+  ApiOperation,
   ApiParam,
-  ApiBody,
+  ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { CompanyService } from '../services/company.service';
+
+import { CurrentUser, Roles, RolesGuard } from '@accounting/auth';
+import { User, UserResponseDto, UserRole } from '@accounting/common';
+import { OwnerOrAdminGuard } from '@accounting/rbac';
+
 import { CreateEmployeeDto } from '../dto/create-employee.dto';
 import { UpdateEmployeeDto } from '../dto/update-employee.dto';
-import { CurrentUser, Roles, RolesGuard } from '@accounting/auth';
-import { User, UserRole, UserResponseDto } from '@accounting/common';
-import { OwnerOrAdminGuard } from '@accounting/rbac';
+import { CompanyService } from '../services/company.service';
 
 @ApiTags('Company')
 @ApiBearerAuth('JWT-auth')
@@ -39,18 +41,21 @@ import { OwnerOrAdminGuard } from '@accounting/rbac';
 @UseGuards(RolesGuard, OwnerOrAdminGuard)
 @Roles(UserRole.COMPANY_OWNER)
 export class CompanyController {
-  constructor(
-    private readonly companyService: CompanyService,
-  ) {}
+  constructor(private readonly companyService: CompanyService) {}
 
   // Employee Management
   @Get('employees')
   @UseGuards(RolesGuard) // Override class-level guards to allow employees
   @Roles(UserRole.COMPANY_OWNER, UserRole.EMPLOYEE)
-  @ApiOperation({ summary: 'Get all employees of your company', description: 'Retrieve list of all employees in your company' })
+  @ApiOperation({
+    summary: 'Get all employees of your company',
+    description: 'Retrieve list of all employees in your company',
+  })
   @ApiOkResponse({ description: 'List of company employees', type: [UserResponseDto] })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
-  @ApiForbiddenResponse({ description: 'Forbidden - Company owner or employee role required and must belong to a company' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Company owner or employee role required and must belong to a company',
+  })
   getEmployees(@CurrentUser() user: User) {
     if (!user.companyId) {
       throw new BadRequestException('User is not associated with a company');
@@ -59,12 +64,22 @@ export class CompanyController {
   }
 
   @Get('employees/:id')
-  @ApiOperation({ summary: 'Get employee by ID', description: 'Retrieve detailed information about a specific employee in your company' })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid', description: 'Employee user unique identifier' })
+  @ApiOperation({
+    summary: 'Get employee by ID',
+    description: 'Retrieve detailed information about a specific employee in your company',
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'Employee user unique identifier',
+  })
   @ApiOkResponse({ description: 'Employee details', type: UserResponseDto })
   @ApiNotFoundResponse({ description: 'Employee not found or does not belong to your company' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
-  @ApiForbiddenResponse({ description: 'Forbidden - Company owner role required and must belong to a company' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Company owner role required and must belong to a company',
+  })
   getEmployeeById(@CurrentUser() user: User, @Param('id') id: string) {
     if (!user.companyId) {
       throw new BadRequestException('User is not associated with a company');
@@ -74,42 +89,54 @@ export class CompanyController {
 
   @Post('employees')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a new employee', description: 'Create a new employee account and assign them to your company' })
+  @ApiOperation({
+    summary: 'Create a new employee',
+    description: 'Create a new employee account and assign them to your company',
+  })
   @ApiBody({ type: CreateEmployeeDto, description: 'Employee creation data' })
   @ApiCreatedResponse({ description: 'Employee created successfully', type: UserResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiConflictResponse({ description: 'User with this email already exists' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
-  @ApiForbiddenResponse({ description: 'Forbidden - Company owner role required and must belong to a company' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Company owner role required and must belong to a company',
+  })
   createEmployee(@CurrentUser() user: User, @Body() createEmployeeDto: CreateEmployeeDto) {
     if (!user.companyId) {
       throw new BadRequestException('User is not associated with a company');
     }
     // Build creator name safely handling null/undefined values
-    const creatorName = [user.firstName, user.lastName]
-      .filter(Boolean)
-      .join(' ')
-      .trim() || 'Unknown User';
-    return this.companyService.createEmployee(
-      user.companyId,
-      createEmployeeDto,
-      creatorName,
-    );
+    const creatorName =
+      [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || 'Unknown User';
+    return this.companyService.createEmployee(user.companyId, createEmployeeDto, creatorName);
   }
 
   @Patch('employees/:id')
-  @ApiOperation({ summary: 'Update employee', description: 'Update employee information (email, name, active status)' })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid', description: 'Employee user unique identifier' })
-  @ApiBody({ type: UpdateEmployeeDto, description: 'Employee update data (partial update supported)' })
+  @ApiOperation({
+    summary: 'Update employee',
+    description: 'Update employee information (email, name, active status)',
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'Employee user unique identifier',
+  })
+  @ApiBody({
+    type: UpdateEmployeeDto,
+    description: 'Employee update data (partial update supported)',
+  })
   @ApiOkResponse({ description: 'Employee updated successfully', type: UserResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiNotFoundResponse({ description: 'Employee not found or does not belong to your company' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
-  @ApiForbiddenResponse({ description: 'Forbidden - Company owner role required and must belong to a company' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Company owner role required and must belong to a company',
+  })
   updateEmployee(
     @CurrentUser() user: User,
     @Param('id') id: string,
-    @Body() updateEmployeeDto: UpdateEmployeeDto,
+    @Body() updateEmployeeDto: UpdateEmployeeDto
   ) {
     if (!user.companyId) {
       throw new BadRequestException('User is not associated with a company');
@@ -119,12 +146,22 @@ export class CompanyController {
 
   @Delete('employees/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete employee (soft delete)', description: 'Soft delete an employee by setting isActive to false' })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid', description: 'Employee user unique identifier' })
+  @ApiOperation({
+    summary: 'Delete employee (soft delete)',
+    description: 'Soft delete an employee by setting isActive to false',
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'Employee user unique identifier',
+  })
   @ApiNoContentResponse({ description: 'Employee deleted successfully' })
   @ApiNotFoundResponse({ description: 'Employee not found or does not belong to your company' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
-  @ApiForbiddenResponse({ description: 'Forbidden - Company owner role required and must belong to a company' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Company owner role required and must belong to a company',
+  })
   deleteEmployee(@CurrentUser() user: User, @Param('id') id: string) {
     if (!user.companyId) {
       throw new BadRequestException('User is not associated with a company');
@@ -132,4 +169,3 @@ export class CompanyController {
     return this.companyService.deleteEmployee(user.companyId, id);
   }
 }
-

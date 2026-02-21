@@ -1,28 +1,39 @@
 import {
-  UserRole,
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
-  CustomFieldType,
-  AutoAssignCondition,
-  AmlGroup,
-  TaskStatus,
-  TaskPriority,
-  TaskDependencyType,
-} from './enums';
-import {
-  Client,
-  ClientFieldDefinition,
-  ClientIcon,
-  NotificationSettings,
-  ChangeLog,
-  Task,
-  TaskLabel,
-  TaskComment,
-  TaskDependency,
-  AcceptanceCriterion,
+  type AcceptanceCriterion,
+  type ChangeLog,
+  type Client,
+  type ClientFieldDefinition,
+  type ClientIcon,
+  type NotificationSettings,
+  type Task,
+  type TaskComment,
+  type TaskDependency,
+  type TaskLabel,
+  type TimeEntry,
+  type TimeSettings,
 } from './entities';
+// =============================================
+// Offers Module DTOs
+// =============================================
+import {
+  UserRole,
+  type AmlGroup,
+  type AutoAssignCondition,
+  type CustomFieldType,
+  type EmploymentType,
+  type LeadSource,
+  type LeadStatus,
+  type OfferActivityType,
+  type OfferStatus,
+  type TaskDependencyType,
+  type TaskPriority,
+  type TaskStatus,
+  type TaxScheme,
+  type TimeEntryStatus,
+  type TimeRoundingMethod,
+  type VatStatus,
+  type ZusStatus,
+} from './enums';
 
 // Re-export for external consumers
 export { UserRole };
@@ -113,6 +124,7 @@ export interface ModuleDto {
   slug: string;
   description: string;
   isActive: boolean;
+  icon: string | null;
   createdAt: Date;
 }
 
@@ -166,6 +178,17 @@ export interface ManageModulePermissionDto {
   permissions?: string[];
 }
 
+// User Module Permission (returned from getEmployeeModules)
+export interface UserModulePermission {
+  id: string;
+  userId: string;
+  moduleId: string;
+  module: ModuleDto;
+  permissions: string[];
+  grantedById: string;
+  createdAt: Date;
+}
+
 // AI Agent DTOs
 
 // Enums
@@ -192,13 +215,13 @@ export interface AIConfigurationResponseDto {
   provider: AIProvider;
   model: string;
   systemPrompt: string | null;
-  hasApiKey: boolean;  // API key status indicator (actual key is never returned)
+  hasApiKey: boolean; // API key status indicator (actual key is never returned)
   temperature: number;
   maxTokens: number;
-  enableStreaming: boolean;  // Enable real-time token streaming via SSE
+  enableStreaming: boolean; // Enable real-time token streaming via SSE
   // Embedding configuration (for RAG/Knowledge Base)
   embeddingProvider: AIProvider | null;
-  hasEmbeddingApiKey: boolean;  // Separate embedding API key status indicator
+  hasEmbeddingApiKey: boolean; // Separate embedding API key status indicator
   embeddingModel: string | null;
   createdBy: {
     id: string;
@@ -496,7 +519,6 @@ export interface TestConnectionResultDto {
   message: string;
 }
 
-
 // Client DTOs
 export interface CreateClientDto {
   name: string;
@@ -505,11 +527,11 @@ export interface CreateClientDto {
   phone?: string;
   companyStartDate?: Date;
   cooperationStartDate?: Date;
-  suspensionDate?: Date;
   companySpecificity?: string;
   additionalInfo?: string;
   gtuCode?: string;
   gtuCodes?: string[];
+  pkdCode?: string;
   amlGroup?: string;
   amlGroupEnum?: AmlGroup;
   receiveEmailCopy?: boolean;
@@ -521,13 +543,36 @@ export interface CreateClientDto {
 
 export interface UpdateClientDto extends Partial<CreateClientDto> {}
 
+export interface CustomFieldFilter {
+  fieldId: string;
+  operator: string;
+  value: string | string[];
+}
+
 export interface ClientFiltersDto {
   search?: string;
   employmentType?: EmploymentType;
   vatStatus?: VatStatus;
   taxScheme?: TaxScheme;
   zusStatus?: ZusStatus;
+  amlGroupEnum?: AmlGroup;
+  gtuCode?: string;
+  pkdCode?: string;
+  receiveEmailCopy?: boolean;
   isActive?: boolean;
+  cooperationStartDateFrom?: string;
+  cooperationStartDateTo?: string;
+  companyStartDateFrom?: string;
+  companyStartDateTo?: string;
+  customFieldFilters?: CustomFieldFilter[];
+  status?: string;
+  type?: string;
+  assignedUserId?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  includeDeleted?: boolean;
 }
 
 export interface SetCustomFieldValuesDto {
@@ -655,7 +700,7 @@ export interface BulkUpdateStatusDto {
   status: TaskStatus;
 }
 
-export interface TaskResponseDto extends Task {
+export interface TaskResponseDto extends Omit<Task, 'createdBy' | 'assignee' | 'client'> {
   createdBy?: {
     id: string;
     email: string;
@@ -718,7 +763,7 @@ export interface UpdateTaskCommentDto {
   content: string;
 }
 
-export interface TaskCommentResponseDto extends TaskComment {
+export interface TaskCommentResponseDto extends Omit<TaskComment, 'author'> {
   author?: {
     id: string;
     email: string;
@@ -733,7 +778,7 @@ export interface CreateTaskDependencyDto {
   dependencyType: TaskDependencyType;
 }
 
-export interface TaskDependencyResponseDto extends TaskDependency {
+export interface TaskDependencyResponseDto extends Omit<TaskDependency, 'task' | 'dependsOnTask'> {
   task?: {
     id: string;
     title: string;
@@ -746,3 +791,526 @@ export interface TaskDependencyResponseDto extends TaskDependency {
   };
 }
 
+// =============================================
+// Time Tracking DTOs
+// =============================================
+
+// Time Entry DTOs
+export interface CreateTimeEntryDto {
+  description?: string;
+  startTime: Date | string;
+  endTime?: Date | string;
+  durationMinutes?: number;
+  isBillable?: boolean;
+  hourlyRate?: number;
+  currency?: string;
+  tags?: string[];
+  clientId?: string;
+  taskId?: string;
+}
+
+export interface UpdateTimeEntryDto extends Partial<CreateTimeEntryDto> {}
+
+export interface TimeEntryFiltersDto {
+  search?: string;
+  status?: TimeEntryStatus;
+  isBillable?: boolean;
+  clientId?: string;
+  taskId?: string;
+  userId?: string;
+  startDate?: Date | string;
+  endDate?: Date | string;
+  isRunning?: boolean;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'ASC' | 'DESC';
+}
+
+export interface TimeEntryResponseDto extends Omit<
+  TimeEntry,
+  'user' | 'client' | 'task' | 'createdBy' | 'approvedBy'
+> {
+  user?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  client?: {
+    id: string;
+    name: string;
+  };
+  task?: {
+    id: string;
+    title: string;
+  };
+  createdBy?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  approvedBy?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+// Timer DTOs
+export interface StartTimerDto {
+  description?: string;
+  clientId?: string;
+  taskId?: string;
+  isBillable?: boolean;
+  tags?: string[];
+}
+
+export interface StopTimerDto {
+  description?: string;
+  isBillable?: boolean;
+}
+
+export interface UpdateTimerDto {
+  description?: string;
+  clientId?: string;
+  taskId?: string;
+  isBillable?: boolean;
+  tags?: string[];
+}
+
+// Approval DTOs
+export interface SubmitTimeEntryDto {}
+
+export interface ApproveTimeEntryDto {}
+
+export interface RejectTimeEntryDto {
+  rejectionNote: string;
+}
+
+// Time Settings DTOs
+export interface UpdateTimeSettingsDto {
+  roundingMethod?: TimeRoundingMethod;
+  roundingIntervalMinutes?: number;
+  defaultHourlyRate?: number;
+  defaultCurrency?: string;
+  requireApproval?: boolean;
+  allowOverlappingEntries?: boolean;
+  workingHoursPerDay?: number;
+  workingHoursPerWeek?: number;
+  weekStartDay?: number;
+  allowTimerMode?: boolean;
+  allowManualEntry?: boolean;
+  autoStopTimerAfterMinutes?: number;
+  minimumEntryMinutes?: number;
+  maximumEntryMinutes?: number;
+  enableDailyReminder?: boolean;
+  dailyReminderTime?: string;
+  lockEntriesAfterDays?: number;
+}
+
+export interface TimeSettingsResponseDto extends Omit<TimeSettings, 'updatedBy'> {
+  updatedBy?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+// Timesheet DTOs
+export interface TimesheetSummary {
+  totalMinutes: number;
+  billableMinutes: number;
+  nonBillableMinutes: number;
+  totalAmount: number;
+  entriesCount: number;
+}
+
+export interface TimesheetDayDto {
+  date: string;
+  entries: TimeEntryResponseDto[];
+  totalMinutes: number;
+  billableMinutes: number;
+  totalAmount: number;
+}
+
+export interface DailyTimesheetDto {
+  date: string;
+  entries: TimeEntryResponseDto[];
+  summary: TimesheetSummary;
+}
+
+export interface WeeklyTimesheetDto {
+  weekStart: string;
+  weekEnd: string;
+  days: TimesheetDayDto[];
+  summary: TimesheetSummary;
+}
+
+// Report DTOs
+export interface TimeSummaryReportDto {
+  periodStart: string;
+  periodEnd: string;
+  totalMinutes: number;
+  billableMinutes: number;
+  nonBillableMinutes: number;
+  totalAmount: number;
+  entryCount: number;
+  byClient?: {
+    clientId: string;
+    clientName: string;
+    totalMinutes: number;
+    totalAmount: number;
+  }[];
+  byUser?: {
+    userId: string;
+    userName: string;
+    totalMinutes: number;
+    totalAmount: number;
+  }[];
+}
+
+export interface TimeByClientReportDto {
+  clientId: string;
+  clientName: string;
+  totalMinutes: number;
+  billableMinutes: number;
+  totalAmount: number;
+  entryCount: number;
+}
+
+// Lead DTOs
+export interface CreateLeadDto {
+  name: string;
+  nip?: string;
+  regon?: string;
+  street?: string;
+  postalCode?: string;
+  city?: string;
+  country?: string;
+  contactPerson?: string;
+  contactPosition?: string;
+  email?: string;
+  phone?: string;
+  source?: LeadSource;
+  notes?: string;
+  estimatedValue?: number;
+  assignedToId?: string;
+}
+
+export interface UpdateLeadDto extends Partial<CreateLeadDto> {
+  status?: LeadStatus;
+}
+
+export interface LeadFiltersDto {
+  search?: string;
+  status?: LeadStatus;
+  source?: LeadSource;
+  assignedToId?: string;
+  createdFrom?: string;
+  createdTo?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface LeadResponseDto {
+  id: string;
+  name: string;
+  nip?: string;
+  regon?: string;
+  street?: string;
+  postalCode?: string;
+  city?: string;
+  country?: string;
+  contactPerson?: string;
+  contactPosition?: string;
+  email?: string;
+  phone?: string;
+  status: LeadStatus;
+  source?: LeadSource;
+  notes?: string;
+  estimatedValue?: number;
+  assignedToId?: string;
+  assignedTo?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  convertedToClientId?: string;
+  convertedAt?: Date;
+  companyId: string;
+  createdById: string;
+  createdBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ConvertLeadToClientDto {
+  clientName?: string;
+}
+
+export interface LeadStatisticsDto {
+  totalLeads: number;
+  newCount: number;
+  contactedCount: number;
+  qualifiedCount: number;
+  proposalSentCount: number;
+  negotiationCount: number;
+  convertedCount: number;
+  lostCount: number;
+  conversionRate: number;
+}
+
+// Offer Template DTOs
+export interface OfferPlaceholderDto {
+  key: string;
+  label: string;
+  description?: string;
+  defaultValue?: string;
+}
+
+export interface OfferServiceItemDto {
+  name: string;
+  description?: string;
+  unitPrice: number;
+  quantity: number;
+  unit?: string;
+}
+
+export interface OfferServiceItemWithAmountDto extends OfferServiceItemDto {
+  netAmount: number;
+}
+
+export interface CreateOfferTemplateDto {
+  name: string;
+  description?: string;
+  availablePlaceholders?: OfferPlaceholderDto[];
+  defaultServiceItems?: OfferServiceItemDto[];
+  defaultValidityDays?: number;
+  defaultVatRate?: number;
+  isDefault?: boolean;
+}
+
+export interface UpdateOfferTemplateDto extends Partial<CreateOfferTemplateDto> {
+  isActive?: boolean;
+}
+
+export interface OfferTemplateFiltersDto {
+  search?: string;
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export interface OfferTemplateResponseDto {
+  id: string;
+  name: string;
+  description?: string;
+  templateFilePath?: string;
+  templateFileName?: string;
+  availablePlaceholders?: OfferPlaceholderDto[];
+  defaultServiceItems?: OfferServiceItemDto[];
+  defaultValidityDays: number;
+  defaultVatRate: number;
+  isDefault: boolean;
+  isActive: boolean;
+  companyId: string;
+  contentBlocks?: import('./content-blocks').ContentBlock[];
+  documentSourceType?: 'file' | 'blocks';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ContentBlocksResponseDto {
+  contentBlocks?: import('./content-blocks').ContentBlock[];
+  documentSourceType: 'file' | 'blocks';
+  name: string;
+}
+
+export interface UpdateContentBlocksDto {
+  contentBlocks?: import('./content-blocks').ContentBlock[];
+  documentSourceType?: 'file' | 'blocks';
+}
+
+// Offer DTOs
+export interface ServiceTermsDto {
+  items: OfferServiceItemWithAmountDto[];
+  paymentTermDays?: number;
+  paymentMethod?: string;
+  additionalTerms?: string;
+}
+
+export interface RecipientSnapshotDto {
+  name: string;
+  nip?: string;
+  regon?: string;
+  street?: string;
+  postalCode?: string;
+  city?: string;
+  country?: string;
+  contactPerson?: string;
+  contactPosition?: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface CreateOfferDto {
+  title: string;
+  description?: string;
+  clientId?: string;
+  leadId?: string;
+  templateId?: string;
+  vatRate?: number;
+  serviceTerms?: {
+    items: OfferServiceItemDto[];
+    paymentTermDays?: number;
+    paymentMethod?: string;
+    additionalTerms?: string;
+  };
+  customPlaceholders?: Record<string, string>;
+  offerDate?: string;
+  validUntil?: string;
+  validityDays?: number;
+}
+
+export interface UpdateOfferDto extends Partial<CreateOfferDto> {}
+
+export interface UpdateOfferStatusDto {
+  status: OfferStatus;
+  reason?: string;
+}
+
+export interface SendOfferDto {
+  email: string;
+  subject?: string;
+  body?: string;
+  cc?: string[];
+}
+
+export interface DuplicateOfferDto {
+  clientId?: string;
+  leadId?: string;
+  title?: string;
+}
+
+export interface OfferFiltersDto {
+  search?: string;
+  status?: OfferStatus;
+  statuses?: OfferStatus[];
+  clientId?: string;
+  leadId?: string;
+  offerDateFrom?: string;
+  offerDateTo?: string;
+  validUntilFrom?: string;
+  validUntilTo?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  page?: number;
+  limit?: number;
+}
+
+export interface OfferResponseDto {
+  id: string;
+  offerNumber: string;
+  title: string;
+  description?: string;
+  status: OfferStatus;
+  clientId?: string;
+  client?: {
+    id: string;
+    name: string;
+    nip?: string;
+  };
+  leadId?: string;
+  lead?: LeadResponseDto;
+  recipientSnapshot: RecipientSnapshotDto;
+  templateId?: string;
+  template?: {
+    id: string;
+    name: string;
+  };
+  totalNetAmount: number;
+  vatRate: number;
+  totalGrossAmount: number;
+  serviceTerms?: ServiceTermsDto;
+  customPlaceholders?: Record<string, string>;
+  offerDate: Date;
+  validUntil: Date;
+  generatedDocumentPath?: string;
+  generatedDocumentName?: string;
+  sentAt?: Date;
+  sentToEmail?: string;
+  sentById?: string;
+  sentBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  emailSubject?: string;
+  emailBody?: string;
+  companyId: string;
+  createdById: string;
+  createdBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface OfferStatisticsDto {
+  totalOffers: number;
+  draftCount: number;
+  readyCount: number;
+  sentCount: number;
+  acceptedCount: number;
+  rejectedCount: number;
+  expiredCount: number;
+  totalValue: number;
+  acceptedValue: number;
+  conversionRate: number;
+}
+
+// Offer Activity DTOs
+export interface OfferActivityMetadataDto {
+  previousStatus?: OfferStatus;
+  newStatus?: OfferStatus;
+  documentPath?: string;
+  emailRecipient?: string;
+  emailSubject?: string;
+  comment?: string;
+  duplicatedFromOfferId?: string;
+  changes?: Record<string, { old: unknown; new: unknown }>;
+}
+
+export interface OfferActivityResponseDto {
+  id: string;
+  offerId: string;
+  activityType: OfferActivityType;
+  description?: string;
+  metadata?: OfferActivityMetadataDto;
+  performedById: string;
+  performedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  createdAt: Date;
+}
+
+// Standard placeholders response
+export interface StandardPlaceholdersResponseDto {
+  placeholders: Array<{
+    key: string;
+    label: string;
+    description: string;
+  }>;
+}

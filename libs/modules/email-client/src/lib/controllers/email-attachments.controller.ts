@@ -1,29 +1,37 @@
 import {
+  BadRequestException,
   Controller,
-  Post,
   Get,
+  MaxFileSizeValidator,
   Param,
+  ParseFilePipe,
+  Post,
+  Res,
+  UploadedFile,
   UseGuards,
   UseInterceptors,
-  UploadedFile,
-  Res,
-  ParseFilePipe,
-  MaxFileSizeValidator,
-  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
-  ApiTags,
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiResponse,
-  ApiConsumes,
-  ApiBody,
+  ApiTags,
 } from '@nestjs/swagger';
+
 import { Response } from 'express';
-import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
-import { ModuleAccessGuard, PermissionGuard, RequireModule, RequirePermission } from '@accounting/rbac';
+
+import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { User } from '@accounting/common';
+import {
+  ModuleAccessGuard,
+  PermissionGuard,
+  RequireModule,
+  RequirePermission,
+} from '@accounting/rbac';
+
 import { EmailAttachmentService } from '../services/email-attachment.service';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -71,13 +79,11 @@ export class EmailAttachmentsController {
     @CurrentUser() user: User,
     @UploadedFile(
       new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: MAX_FILE_SIZE }),
-        ],
+        validators: [new MaxFileSizeValidator({ maxSize: MAX_FILE_SIZE })],
         fileIsRequired: true,
-      }),
+      })
     )
-    file: Express.Multer.File,
+    file: Express.Multer.File
   ) {
     if (!file) {
       throw new BadRequestException('File is required');
@@ -92,7 +98,7 @@ export class EmailAttachmentsController {
     };
   }
 
-  @Get('download/*')
+  @Get('download/*filePath')
   @ApiOperation({ summary: 'Download email attachment' })
   @ApiResponse({
     status: 200,
@@ -110,13 +116,10 @@ export class EmailAttachmentsController {
   @RequirePermission('email-client', 'read')
   async downloadAttachment(
     @CurrentUser() user: User,
-    @Param('0') filePath: string,
-    @Res() res: Response,
+    @Param('filePath') filePath: string,
+    @Res() res: Response
   ) {
-    const { buffer, filename } = await this.attachmentService.downloadAttachment(
-      user,
-      filePath,
-    );
+    const { buffer, filename } = await this.attachmentService.downloadAttachment(user, filePath);
 
     res.set({
       'Content-Type': 'application/octet-stream',

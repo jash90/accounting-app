@@ -12,9 +12,21 @@ export * from './lib/enums/delete-request-status.enum';
 export * from './lib/enums/task-status.enum';
 export * from './lib/enums/task-priority.enum';
 export * from './lib/enums/task-dependency-type.enum';
+export * from './lib/enums/time-entry-status.enum';
+export * from './lib/enums/time-rounding-method.enum';
+export * from './lib/enums/notification-type.enum';
+export * from './lib/enums/lead-status.enum';
+export * from './lib/enums/lead-source.enum';
+export * from './lib/enums/offer-status.enum';
+export * from './lib/enums/offer-activity-type.enum';
+export * from './lib/enums/settlement-status.enum';
+export * from './lib/enums/relief-type.enum';
 
 // Constants
 export * from './lib/constants';
+
+// Utils
+export * from './lib/utils/database-errors';
 
 // Types
 export * from './lib/types';
@@ -28,7 +40,8 @@ export * from './lib/entities/company.entity';
 export * from './lib/entities/module.entity';
 export * from './lib/entities/company-module-access.entity';
 export * from './lib/entities/user-module-permission.entity';
-export { EmailDraft } from '../../modules/email-client/src/lib/entities/email-draft.entity';
+// NOTE: EmailDraft is NOT exported from common to maintain proper module boundaries.
+// Import directly from '@accounting/modules/email-client' where needed.
 export * from './lib/entities/ai-configuration.entity';
 export * from './lib/entities/ai-conversation.entity';
 export * from './lib/entities/ai-message.entity';
@@ -42,6 +55,9 @@ export * from './lib/entities/client-field-definition.entity';
 export * from './lib/entities/client-custom-field-value.entity';
 export * from './lib/entities/client-icon.entity';
 export * from './lib/entities/client-icon-assignment.entity';
+export * from './lib/entities/client-suspension.entity';
+export * from './lib/entities/client-relief-period.entity';
+export * from './lib/entities/custom-field-reminder.entity';
 export * from './lib/entities/notification-settings.entity';
 export * from './lib/entities/client-delete-request.entity';
 export * from './lib/entities/task.entity';
@@ -49,11 +65,35 @@ export * from './lib/entities/task-label.entity';
 export * from './lib/entities/task-label-assignment.entity';
 export * from './lib/entities/task-dependency.entity';
 export * from './lib/entities/task-comment.entity';
+export * from './lib/entities/time-entry.entity';
+export * from './lib/entities/time-settings.entity';
+export * from './lib/entities/notification.entity';
+export * from './lib/entities/lead.entity';
+export * from './lib/entities/offer-template.entity';
+export * from './lib/entities/offer.entity';
+export * from './lib/entities/offer-activity.entity';
+export type { ActivityMetadata } from './lib/entities/offer-activity.entity';
+export * from './lib/entities/monthly-settlement.entity';
+export * from './lib/entities/settlement-comment.entity';
 export { AIProvider } from './lib/entities/ai-configuration.entity';
 export { AIMessageRole } from './lib/entities/ai-message.entity';
 export * from './lib/dto/responses';
 export * from './lib/dto/requests';
 export * from './lib/dto/pagination.dto';
-export * from './lib/services/encryption.service';
-export * from './lib/services/tenant.service';
-export * from './lib/common.module';
+// NOTE: EncryptionService is NOT exported from the barrel file because it uses
+// Node.js-specific modules (crypto, fs, util.promisify) that don't work in browsers.
+// Import directly from './lib/services/encryption.service' in backend code where needed.
+
+// NOTE: TenantService and CommonModule are NOT exported from the barrel file because
+// they use NestJS decorators and TypeORM which pull in Node.js dependencies at bundle time.
+// Import directly in backend code:
+//   import { TenantService } from '@accounting/common/lib/services/tenant.service';
+//   import { CommonModule } from '@accounting/common/lib/common.module';
+
+// Re-export TenantService type for type-only imports in frontend if needed
+export type { TenantService } from './lib/services/tenant.service';
+
+// Re-export SystemCompanyService type for type-only imports in frontend if needed
+// NOTE: SystemCompanyService is NOT exported as a value to prevent Node.js dependencies in browser bundles.
+// Import directly in backend code from '@accounting/common/backend' or from CommonModule.
+export type { SystemCompanyService } from './lib/services/system-company.service';

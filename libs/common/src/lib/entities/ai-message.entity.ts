@@ -1,11 +1,12 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
   CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
+
 import { AIConversation } from './ai-conversation.entity';
 import { User } from './user.entity';
 
@@ -22,7 +23,7 @@ export class AIMessage {
   id!: string;
 
   // Conversation relationship
-  @Column()
+  @Column({ type: 'uuid' })
   conversationId!: string;
 
   @ManyToOne(() => AIConversation, (conversation) => conversation.messages, {
@@ -52,7 +53,7 @@ export class AIMessage {
   totalTokens!: number;
 
   // User who sent the message (for user messages)
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   userId!: string | null;
 
   @ManyToOne(() => User)

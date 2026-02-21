@@ -1,45 +1,42 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
   Body,
-  Param,
-  Query,
+  Controller,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import {
-  ApiTags,
-  ApiOperation,
+  ApiBadRequestResponse,
   ApiBearerAuth,
-  ApiOkResponse,
+  ApiBody,
+  ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
-  ApiBadRequestResponse,
-  ApiUnauthorizedResponse,
-  ApiForbiddenResponse,
-  ApiConflictResponse,
+  ApiOkResponse,
+  ApiOperation,
   ApiParam,
-  ApiBody,
   ApiQuery,
+  ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { AdminService } from '../services/admin.service';
-import { CreateUserDto } from '../dto/create-user.dto';
-import { UpdateUserDto } from '../dto/update-user.dto';
+import { Throttle } from '@nestjs/throttler';
+
+import { Roles, RolesGuard } from '@accounting/auth';
+import { CompanyResponseDto, UserResponseDto, UserRole } from '@accounting/common';
+
 import { CreateCompanyDto } from '../dto/create-company.dto';
+import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateCompanyDto } from '../dto/update-company.dto';
-import { Roles } from '@accounting/auth';
-import { RolesGuard } from '@accounting/auth';
-import {
-  UserRole,
-  UserResponseDto,
-  CompanyResponseDto,
-} from '@accounting/common';
+import { UpdateUserDto } from '../dto/update-user.dto';
+import { AdminService } from '../services/admin.service';
 
 @ApiTags('Admin')
 @ApiBearerAuth('JWT-auth')
@@ -51,7 +48,10 @@ export class AdminController {
 
   // User Management
   @Get('users')
-  @ApiOperation({ summary: 'Get all users', description: 'Retrieve a complete list of all users in the system' })
+  @ApiOperation({
+    summary: 'Get all users',
+    description: 'Retrieve a complete list of all users in the system',
+  })
   @ApiOkResponse({ description: 'List of all users', type: [UserResponseDto] })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
@@ -60,7 +60,10 @@ export class AdminController {
   }
 
   @Get('users/:id')
-  @ApiOperation({ summary: 'Get user by ID', description: 'Retrieve detailed information about a specific user' })
+  @ApiOperation({
+    summary: 'Get user by ID',
+    description: 'Retrieve detailed information about a specific user',
+  })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid', description: 'User unique identifier' })
   @ApiOkResponse({ description: 'User details', type: UserResponseDto })
   @ApiNotFoundResponse({ description: 'User not found' })
@@ -73,7 +76,10 @@ export class AdminController {
   @Post('users')
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a new user', description: 'Create a new user with specified email, role, and company assignment' })
+  @ApiOperation({
+    summary: 'Create a new user',
+    description: 'Create a new user with specified email, role, and company assignment',
+  })
   @ApiBody({ type: CreateUserDto, description: 'User creation data' })
   @ApiCreatedResponse({ description: 'User created successfully', type: UserResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
@@ -85,7 +91,10 @@ export class AdminController {
   }
 
   @Patch('users/:id')
-  @ApiOperation({ summary: 'Update user', description: 'Update user information (email, role, company assignment, active status)' })
+  @ApiOperation({
+    summary: 'Update user',
+    description: 'Update user information (email, role, company assignment, active status)',
+  })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid', description: 'User unique identifier' })
   @ApiBody({ type: UpdateUserDto, description: 'User update data (partial update supported)' })
   @ApiOkResponse({ description: 'User updated successfully', type: UserResponseDto })
@@ -100,7 +109,10 @@ export class AdminController {
   @Delete('users/:id')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete user (soft delete)', description: 'Soft delete a user by setting isActive to false' })
+  @ApiOperation({
+    summary: 'Delete user (soft delete)',
+    description: 'Soft delete a user by setting isActive to false',
+  })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid', description: 'User unique identifier' })
   @ApiNoContentResponse({ description: 'User deleted successfully' })
   @ApiNotFoundResponse({ description: 'User not found' })
@@ -111,10 +123,21 @@ export class AdminController {
   }
 
   @Patch('users/:id/activate')
-  @ApiOperation({ summary: 'Activate or deactivate user', description: 'Toggle user account active status' })
+  @ApiOperation({
+    summary: 'Activate or deactivate user',
+    description: 'Toggle user account active status',
+  })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid', description: 'User unique identifier' })
-  @ApiQuery({ name: 'isActive', type: 'boolean', description: 'Set to true to activate, false to deactivate', example: true })
-  @ApiOkResponse({ description: 'User activation status updated successfully', type: UserResponseDto })
+  @ApiQuery({
+    name: 'isActive',
+    type: 'boolean',
+    description: 'Set to true to activate, false to deactivate',
+    example: true,
+  })
+  @ApiOkResponse({
+    description: 'User activation status updated successfully',
+    type: UserResponseDto,
+  })
   @ApiNotFoundResponse({ description: 'User not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
@@ -124,7 +147,10 @@ export class AdminController {
 
   // Available Owners (for company creation dropdown)
   @Get('available-owners')
-  @ApiOperation({ summary: 'Get available owners', description: 'Retrieve COMPANY_OWNER users without assigned company (for company creation)' })
+  @ApiOperation({
+    summary: 'Get available owners',
+    description: 'Retrieve COMPANY_OWNER users without assigned company (for company creation)',
+  })
   @ApiOkResponse({ description: 'List of available owners', type: [UserResponseDto] })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
@@ -134,7 +160,10 @@ export class AdminController {
 
   // Company Management
   @Get('companies')
-  @ApiOperation({ summary: 'Get all companies', description: 'Retrieve a complete list of all companies in the system' })
+  @ApiOperation({
+    summary: 'Get all companies',
+    description: 'Retrieve a complete list of all companies in the system',
+  })
   @ApiOkResponse({ description: 'List of all companies', type: [CompanyResponseDto] })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
@@ -143,8 +172,16 @@ export class AdminController {
   }
 
   @Get('companies/:id')
-  @ApiOperation({ summary: 'Get company by ID', description: 'Retrieve detailed information about a specific company' })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid', description: 'Company unique identifier' })
+  @ApiOperation({
+    summary: 'Get company by ID',
+    description: 'Retrieve detailed information about a specific company',
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'Company unique identifier',
+  })
   @ApiOkResponse({ description: 'Company details', type: CompanyResponseDto })
   @ApiNotFoundResponse({ description: 'Company not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
@@ -156,7 +193,10 @@ export class AdminController {
   @Post('companies')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a new company', description: 'Create a new company with specified name and owner' })
+  @ApiOperation({
+    summary: 'Create a new company',
+    description: 'Create a new company with specified name and owner',
+  })
   @ApiBody({ type: CreateCompanyDto, description: 'Company creation data' })
   @ApiCreatedResponse({ description: 'Company created successfully', type: CompanyResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
@@ -167,9 +207,20 @@ export class AdminController {
   }
 
   @Patch('companies/:id')
-  @ApiOperation({ summary: 'Update company', description: 'Update company information (name, owner, active status)' })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid', description: 'Company unique identifier' })
-  @ApiBody({ type: UpdateCompanyDto, description: 'Company update data (partial update supported)' })
+  @ApiOperation({
+    summary: 'Update company',
+    description: 'Update company information (name, owner, active status)',
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'Company unique identifier',
+  })
+  @ApiBody({
+    type: UpdateCompanyDto,
+    description: 'Company update data (partial update supported)',
+  })
   @ApiOkResponse({ description: 'Company updated successfully', type: CompanyResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiNotFoundResponse({ description: 'Company not found' })
@@ -181,8 +232,16 @@ export class AdminController {
 
   @Delete('companies/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete company (soft delete)', description: 'Soft delete a company by setting isActive to false' })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid', description: 'Company unique identifier' })
+  @ApiOperation({
+    summary: 'Delete company (soft delete)',
+    description: 'Soft delete a company by setting isActive to false',
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'Company unique identifier',
+  })
   @ApiNoContentResponse({ description: 'Company deleted successfully' })
   @ApiNotFoundResponse({ description: 'Company not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
@@ -192,8 +251,16 @@ export class AdminController {
   }
 
   @Get('companies/:id/employees')
-  @ApiOperation({ summary: 'Get company employees', description: 'Retrieve all employees belonging to a specific company' })
-  @ApiParam({ name: 'id', type: 'string', format: 'uuid', description: 'Company unique identifier' })
+  @ApiOperation({
+    summary: 'Get company employees',
+    description: 'Retrieve all employees belonging to a specific company',
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'Company unique identifier',
+  })
   @ApiOkResponse({ description: 'List of company employees', type: [UserResponseDto] })
   @ApiNotFoundResponse({ description: 'Company not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
@@ -202,4 +269,3 @@ export class AdminController {
     return this.adminService.getCompanyEmployees(id);
   }
 }
-

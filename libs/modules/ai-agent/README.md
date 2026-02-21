@@ -47,51 +47,51 @@ libs/modules/ai-agent/
 
 The module uses the following entities (defined in `@accounting/common`):
 
-| Entity | Description |
-|--------|-------------|
+| Entity            | Description                                                    |
+| ----------------- | -------------------------------------------------------------- |
 | `AIConfiguration` | AI provider settings (model, system prompt, encrypted API key) |
-| `AIConversation` | Chat conversations with metadata and token totals |
-| `AIMessage` | Individual messages with role, content, and token counts |
-| `AIContext` | Uploaded documents with extracted text and vector embeddings |
-| `TokenUsage` | Daily token usage records per user |
-| `TokenLimit` | Monthly token limits per company or user |
+| `AIConversation`  | Chat conversations with metadata and token totals              |
+| `AIMessage`       | Individual messages with role, content, and token counts       |
+| `AIContext`       | Uploaded documents with extracted text and vector embeddings   |
+| `TokenUsage`      | Daily token usage records per user                             |
+| `TokenLimit`      | Monthly token limits per company or user                       |
 
 ## API Endpoints
 
 ### Configuration (`/modules/ai-agent/config`)
 
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| `GET` | `/config` | read | Get current AI configuration |
-| `POST` | `/config` | ADMIN only | Create AI configuration |
-| `PATCH` | `/config` | ADMIN only | Update AI configuration |
+| Method  | Endpoint  | Permission | Description                  |
+| ------- | --------- | ---------- | ---------------------------- |
+| `GET`   | `/config` | read       | Get current AI configuration |
+| `POST`  | `/config` | ADMIN only | Create AI configuration      |
+| `PATCH` | `/config` | ADMIN only | Update AI configuration      |
 
 ### Conversations (`/modules/ai-agent`)
 
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| `GET` | `/conversations` | read | List user's conversations |
-| `GET` | `/conversations/:id` | read | Get conversation with messages |
-| `POST` | `/conversations` | write | Create new conversation |
-| `POST` | `/conversations/:id/messages` | write | Send message & get AI response |
-| `DELETE` | `/conversations/:id` | delete | Delete conversation |
+| Method   | Endpoint                      | Permission | Description                    |
+| -------- | ----------------------------- | ---------- | ------------------------------ |
+| `GET`    | `/conversations`              | read       | List user's conversations      |
+| `GET`    | `/conversations/:id`          | read       | Get conversation with messages |
+| `POST`   | `/conversations`              | write      | Create new conversation        |
+| `POST`   | `/conversations/:id/messages` | write      | Send message & get AI response |
+| `DELETE` | `/conversations/:id`          | delete     | Delete conversation            |
 
 ### RAG Context (`/modules/ai-agent`)
 
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| `GET` | `/context` | read | List uploaded documents |
-| `POST` | `/context` | write | Upload document for RAG |
-| `DELETE` | `/context/:id` | delete | Delete uploaded document |
+| Method   | Endpoint       | Permission | Description              |
+| -------- | -------------- | ---------- | ------------------------ |
+| `GET`    | `/context`     | read       | List uploaded documents  |
+| `POST`   | `/context`     | write      | Upload document for RAG  |
+| `DELETE` | `/context/:id` | delete     | Delete uploaded document |
 
 ### Token Management (`/modules/ai-agent/tokens`)
 
-| Method | Endpoint | Permission | Description |
-|--------|----------|------------|-------------|
-| `GET` | `/my-usage` | read | Get user's token usage statistics |
-| `GET` | `/my-limit` | read | Get user's token limits |
-| `POST` | `/company/:id/limit` | ADMIN only | Set company-wide token limit |
-| `POST` | `/user/:id/limit` | COMPANY_OWNER | Set user-specific token limit |
+| Method | Endpoint             | Permission    | Description                       |
+| ------ | -------------------- | ------------- | --------------------------------- |
+| `GET`  | `/my-usage`          | read          | Get user's token usage statistics |
+| `GET`  | `/my-limit`          | read          | Get user's token limits           |
+| `POST` | `/company/:id/limit` | ADMIN only    | Set company-wide token limit      |
+| `POST` | `/user/:id/limit`    | COMPANY_OWNER | Set user-specific token limit     |
 
 ## Configuration
 
@@ -100,6 +100,7 @@ The module uses the following entities (defined in `@accounting/common`):
 The module supports two AI providers:
 
 **OpenAI:**
+
 ```typescript
 {
   provider: 'OPENAI',
@@ -112,6 +113,7 @@ The module supports two AI providers:
 ```
 
 **OpenRouter:**
+
 ```typescript
 {
   provider: 'OPENROUTER',
@@ -144,15 +146,16 @@ The module supports two AI providers:
 
 ### Supported File Types
 
-| Type | MIME Type | Description |
-|------|-----------|-------------|
-| PDF | `application/pdf` | PDF documents |
-| TXT | `text/plain` | Plain text files |
-| MD | `text/markdown` | Markdown files |
+| Type | MIME Type         | Description      |
+| ---- | ----------------- | ---------------- |
+| PDF  | `application/pdf` | PDF documents    |
+| TXT  | `text/plain`      | Plain text files |
+| MD   | `text/markdown`   | Markdown files   |
 
 ### Vector Search
 
 Uses pgvector extension for PostgreSQL:
+
 - Cosine similarity for semantic matching
 - Retrieves top 3 most relevant documents
 - Only active documents are searched
@@ -167,6 +170,7 @@ Company Limit (set by ADMIN)
 ```
 
 Both limits are checked before each message:
+
 1. User-specific limit checked first (if exists)
 2. Company-wide limit checked second (if exists)
 3. Request rejected if either limit exceeded
@@ -200,11 +204,11 @@ Both limits are checked before each message:
 
 ### User Roles
 
-| Role | Capabilities |
-|------|-------------|
-| `ADMIN` | Configure AI, set company limits, use System Admin company |
-| `COMPANY_OWNER` | Chat, manage RAG, set user limits, view company usage |
-| `EMPLOYEE` | Chat, view own usage (based on permissions) |
+| Role            | Capabilities                                               |
+| --------------- | ---------------------------------------------------------- |
+| `ADMIN`         | Configure AI, set company limits, use System Admin company |
+| `COMPANY_OWNER` | Chat, manage RAG, set user limits, view company usage      |
+| `EMPLOYEE`      | Chat, view own usage (based on permissions)                |
 
 ## Integration with RBAC
 
@@ -232,14 +236,14 @@ export class AIConversationController {
 
 ## Error Handling
 
-| Error | HTTP Status | Description |
-|-------|-------------|-------------|
-| Token limit exceeded | 400 | Monthly limit reached |
-| AI not configured | 400 | No AI configuration exists |
-| Access denied | 403 | User lacks permission |
-| Conversation not found | 404 | Invalid conversation ID |
-| Invalid file type | 400 | Unsupported upload format |
-| API key invalid | 400 | Provider rejected the key |
+| Error                  | HTTP Status | Description                |
+| ---------------------- | ----------- | -------------------------- |
+| Token limit exceeded   | 400         | Monthly limit reached      |
+| AI not configured      | 400         | No AI configuration exists |
+| Access denied          | 403         | User lacks permission      |
+| Conversation not found | 404         | Invalid conversation ID    |
+| Invalid file type      | 400         | Unsupported upload format  |
+| API key invalid        | 400         | Provider rejected the key  |
 
 ## Usage Example
 

@@ -1,12 +1,11 @@
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+
+import { useForm, type Resolver } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -23,10 +22,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { createUserSchema, updateUserSchema, CreateUserFormData, UpdateUserFormData } from '@/lib/validation/schemas';
-import { UserDto, UserRole } from '@/types/dtos';
 import { useCompanies } from '@/lib/hooks/use-companies';
+import {
+  createUserSchema,
+  updateUserSchema,
+  type CreateUserFormData,
+  type UpdateUserFormData,
+} from '@/lib/validation/schemas';
+import { UserRole, type UserDto } from '@/types/dtos';
 
 interface UserFormDialogProps {
   open: boolean;
@@ -36,21 +39,26 @@ interface UserFormDialogProps {
 }
 
 export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormDialogProps) {
+  'use no memo';
   const isEditing = !!user;
   const schema = isEditing ? updateUserSchema : createUserSchema;
   const { data: companies = [], isLoading: companiesLoading } = useCompanies();
 
-  const form = useForm<CreateUserFormData | UpdateUserFormData>({
-    resolver: zodResolver(schema),
-    defaultValues: user || {
-      email: '',
-      password: '',
-      firstName: '',
-      lastName: '',
-      role: UserRole.EMPLOYEE,
-      companyId: '',
-      companyName: '',
-    },
+  type FormData = CreateUserFormData | UpdateUserFormData;
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(schema) as Resolver<FormData>,
+    defaultValues: user
+      ? { ...user, companyId: user.companyId ?? undefined }
+      : {
+          email: '',
+          password: '',
+          firstName: '',
+          lastName: '',
+          role: UserRole.EMPLOYEE,
+          companyId: '',
+          companyName: '',
+        },
   });
 
   const watchedRole = form.watch('role');
@@ -58,15 +66,19 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
   // Reset form when dialog opens or user changes
   useEffect(() => {
     if (open) {
-      form.reset(user || {
-        email: '',
-        password: '',
-        firstName: '',
-        lastName: '',
-        role: UserRole.EMPLOYEE,
-        companyId: '',
-        companyName: '',
-      });
+      form.reset(
+        user
+          ? { ...user, companyId: user.companyId ?? undefined }
+          : {
+              email: '',
+              password: '',
+              firstName: '',
+              lastName: '',
+              role: UserRole.EMPLOYEE,
+              companyId: '',
+              companyName: '',
+            }
+      );
     }
   }, [open, user, form]);
 
@@ -176,7 +188,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
                     <FormControl>
                       <Input placeholder="Nazwa firmy Sp. z o.o." {...field} />
                     </FormControl>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       Firma zostanie automatycznie utworzona dla tego właściciela.
                     </p>
                     <FormMessage />
@@ -196,7 +208,9 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={companiesLoading ? "Ładowanie firm..." : "Wybierz firmę"} />
+                          <SelectValue
+                            placeholder={companiesLoading ? 'Ładowanie firm...' : 'Wybierz firmę'}
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -232,4 +246,3 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
     </Dialog>
   );
 }
-

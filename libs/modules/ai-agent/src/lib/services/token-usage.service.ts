@@ -1,9 +1,12 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
-import { TokenUsage, User, UserRole, Company } from '@accounting/common';
+
+import { Between, IsNull, Repository } from 'typeorm';
+
+import { Company, TokenUsage, User, UserRole } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
+
 import { TokenUsageStatsDto } from '../dto/token-usage-response.dto';
-import { SystemCompanyService } from './system-company.service';
 
 interface CompanyTokenUsageDto {
   companyId: string;
@@ -34,7 +37,7 @@ export class TokenUsageService {
     private usageRepository: Repository<TokenUsage>,
     @InjectRepository(Company)
     private companyRepository: Repository<Company>,
-    private systemCompanyService: SystemCompanyService,
+    private systemCompanyService: SystemCompanyService
   ) {}
 
   /**
@@ -56,7 +59,7 @@ export class TokenUsageService {
     let usage = await this.usageRepository.findOne({
       where: {
         userId: user.id,
-        companyId,
+        companyId: companyId ?? IsNull(),
         date: today,
       },
     });
@@ -100,7 +103,7 @@ export class TokenUsageService {
     const dailyUsage = await this.usageRepository.find({
       where: {
         userId: user.id,
-        companyId,
+        companyId: companyId ?? IsNull(),
         date: Between(startDate, endDate),
       },
       relations: ['user', 'company'],
@@ -121,7 +124,7 @@ export class TokenUsageService {
         totalOutputTokens: 0,
         conversationCount: 0,
         messageCount: 0,
-      },
+      }
     );
 
     return {
@@ -150,7 +153,10 @@ export class TokenUsageService {
     if (user.role === UserRole.ADMIN) {
       companyId = await this.systemCompanyService.getSystemCompanyId();
     } else {
-      companyId = user.companyId!;
+      if (!user.companyId) {
+        throw new ForbiddenException('User must belong to a company');
+      }
+      companyId = user.companyId;
       // Get company name
       const company = await this.companyRepository.findOne({
         where: { id: companyId },
@@ -170,17 +176,20 @@ export class TokenUsageService {
     });
 
     // Aggregate by user
-    const userAggregation = new Map<string, {
-      userId: string;
-      email: string;
-      firstName: string;
-      lastName: string;
-      totalTokens: number;
-      totalInputTokens: number;
-      totalOutputTokens: number;
-      conversationCount: number;
-      messageCount: number;
-    }>();
+    const userAggregation = new Map<
+      string,
+      {
+        userId: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        totalTokens: number;
+        totalInputTokens: number;
+        totalOutputTokens: number;
+        conversationCount: number;
+        messageCount: number;
+      }
+    >();
 
     let companyTotalTokens = 0;
     let companyTotalInputTokens = 0;
@@ -313,17 +322,20 @@ export class TokenUsageService {
       });
 
       // Aggregate by user
-      const userAggregation = new Map<string, {
-        userId: string;
-        email: string;
-        firstName: string;
-        lastName: string;
-        totalTokens: number;
-        totalInputTokens: number;
-        totalOutputTokens: number;
-        conversationCount: number;
-        messageCount: number;
-      }>();
+      const userAggregation = new Map<
+        string,
+        {
+          userId: string;
+          email: string;
+          firstName: string;
+          lastName: string;
+          totalTokens: number;
+          totalInputTokens: number;
+          totalOutputTokens: number;
+          conversationCount: number;
+          messageCount: number;
+        }
+      >();
 
       let companyTotalTokens = 0;
       let companyTotalInputTokens = 0;

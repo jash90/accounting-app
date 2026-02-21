@@ -1,6 +1,8 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
+
 import { Company } from '../entities/company.entity';
 import { User } from '../entities/user.entity';
 import { UserRole } from '../enums/user-role.enum';
@@ -14,7 +16,7 @@ import { UserRole } from '../enums/user-role.enum';
 export class TenantService {
   constructor(
     @InjectRepository(Company)
-    private readonly companyRepository: Repository<Company>,
+    private readonly companyRepository: Repository<Company>
   ) {}
 
   /**

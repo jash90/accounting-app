@@ -3,18 +3,21 @@
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
     "jsx": "react-jsx",
-    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "target": "ES2024",
+    "target": "ES2022",
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
+    "noImplicitOverride": true,
+    "baseUrl": "../..",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["apps/web/src/*"],
+      "@accounting/common/browser": ["libs/common/src/browser.ts"]
     },
     "types": [
       "node",

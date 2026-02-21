@@ -1,13 +1,14 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
   CreateDateColumn,
-  UpdateDateColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
+
 import { Company } from './company.entity';
 import { User } from './user.entity';
 
@@ -18,7 +19,7 @@ export class TokenLimit {
   id!: string;
 
   // System Admin Company pattern - nullable for ADMIN entries
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   companyId!: string | null;
 
   @ManyToOne(() => Company, (company) => company.tokenLimits, {
@@ -29,7 +30,7 @@ export class TokenLimit {
   company!: Company | null;
 
   // User-specific limit (nullable for company-wide limits)
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   userId!: string | null;
 
   @ManyToOne(() => User)
@@ -44,14 +45,14 @@ export class TokenLimit {
   warningThresholdPercentage!: number;
 
   // Notification settings
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   notifyOnWarning!: boolean;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   notifyOnExceeded!: boolean;
 
   // Audit trail
-  @Column()
+  @Column({ type: 'uuid' })
   setById!: string;
 
   @ManyToOne(() => User)

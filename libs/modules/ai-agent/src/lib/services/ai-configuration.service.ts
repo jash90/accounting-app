@@ -1,27 +1,33 @@
+
 import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  ConflictException,
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
+import * as crypto from 'crypto';
 import { Repository } from 'typeorm';
+
 import { AIConfiguration, User, UserRole } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
+
 import { CreateAIConfigurationDto } from '../dto/create-ai-configuration.dto';
 import { UpdateAIConfigurationDto } from '../dto/update-ai-configuration.dto';
-import { SystemCompanyService } from './system-company.service';
-import * as crypto from 'crypto';
 
 @Injectable()
 export class AIConfigurationService {
+  private readonly logger = new Logger(AIConfigurationService.name);
   private readonly ENCRYPTION_KEY: string;
   private readonly ALGORITHM = 'aes-256-cbc';
 
   constructor(
     @InjectRepository(AIConfiguration)
     private configRepository: Repository<AIConfiguration>,
-    private systemCompanyService: SystemCompanyService,
+    private systemCompanyService: SystemCompanyService
   ) {
     const encryptionKey = process.env.AI_API_KEY_ENCRYPTION_KEY;
     if (!encryptionKey) {
@@ -40,11 +46,7 @@ export class AIConfigurationService {
    */
   private encryptApiKey(apiKey: string): string {
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv(
-      this.ALGORITHM,
-      Buffer.from(this.ENCRYPTION_KEY),
-      iv,
-    );
+    const cipher = crypto.createCipheriv(this.ALGORITHM, Buffer.from(this.ENCRYPTION_KEY), iv);
     let encrypted = cipher.update(apiKey, 'utf8', 'hex');
     encrypted += cipher.final('hex');
     return `${iv.toString('hex')}:${encrypted}`;
@@ -68,15 +70,17 @@ export class AIConfigurationService {
       const decipher = crypto.createDecipheriv(
         this.ALGORITHM,
         Buffer.from(this.ENCRYPTION_KEY),
-        iv,
+        iv
       );
       let decrypted = decipher.update(encrypted, 'hex', 'utf8');
       decrypted += decipher.final('utf8');
       return decrypted;
     } catch (error) {
-      console.error('API key decryption failed:', error instanceof Error ? error.message : error);
+      this.logger.error(
+        `API key decryption failed: ${error instanceof Error ? error.message : String(error)}`
+      );
       throw new BadRequestException(
-        'Failed to decrypt API key. The key may be corrupted. Please reconfigure the API key in settings.',
+        'Failed to decrypt API key. The key may be corrupted. Please reconfigure the API key in settings.'
       );
     }
   }
@@ -86,7 +90,7 @@ export class AIConfigurationService {
    * All users (ADMIN, COMPANY_OWNER, EMPLOYEE) use the same config
    * stored under System Admin company
    */
-  async getConfiguration(user: User): Promise<AIConfiguration | null> {
+  async getConfiguration(_user: User): Promise<AIConfiguration | null> {
     // Global config - all users use the admin's configuration
     const systemCompanyId = await this.systemCompanyService.getSystemCompanyId();
 
@@ -101,10 +105,7 @@ export class AIConfigurationService {
   /**
    * Create configuration (ADMIN only)
    */
-  async create(
-    createDto: CreateAIConfigurationDto,
-    user: User,
-  ): Promise<AIConfiguration> {
+  async create(createDto: CreateAIConfigurationDto, user: User): Promise<AIConfiguration> {
     if (user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Only admins can create AI configuration');
     }
@@ -148,10 +149,7 @@ export class AIConfigurationService {
   /**
    * Update configuration (ADMIN only)
    */
-  async update(
-    updateDto: UpdateAIConfigurationDto,
-    user: User,
-  ): Promise<AIConfiguration> {
+  async update(updateDto: UpdateAIConfigurationDto, user: User): Promise<AIConfiguration> {
     if (user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Only admins can update AI configuration');
     }
@@ -175,7 +173,8 @@ export class AIConfigurationService {
     }
 
     // Update embedding configuration
-    if (updateDto.embeddingProvider !== undefined) config.embeddingProvider = updateDto.embeddingProvider;
+    if (updateDto.embeddingProvider !== undefined)
+      config.embeddingProvider = updateDto.embeddingProvider;
     if (updateDto.embeddingModel !== undefined) config.embeddingModel = updateDto.embeddingModel;
 
     // Encrypt new embedding API key if provided, or clear if empty string
@@ -203,7 +202,14 @@ export class AIConfigurationService {
   async getDecryptedApiKey(user: User): Promise<string> {
     const config = await this.getConfiguration(user);
     if (!config) {
-      throw new NotFoundException('AI configuration not found. Please configure the AI agent first.');
+      throw new NotFoundException(
+        'AI configuration not found. Please configure the AI agent first.'
+      );
+    }
+    if (!config.apiKey) {
+      throw new NotFoundException(
+        'API key not configured. Please add an API key in the AI agent settings.'
+      );
     }
     return this.decryptApiKey(config.apiKey);
   }
@@ -215,7 +221,9 @@ export class AIConfigurationService {
   async getDecryptedEmbeddingApiKey(user: User): Promise<string> {
     const config = await this.getConfiguration(user);
     if (!config) {
-      throw new NotFoundException('AI configuration not found. Please configure the AI agent first.');
+      throw new NotFoundException(
+        'AI configuration not found. Please configure the AI agent first.'
+      );
     }
 
     // If separate embedding API key is configured, use it
@@ -229,7 +237,9 @@ export class AIConfigurationService {
     }
 
     // No API key available
-    throw new BadRequestException('No API key configured. Please configure an API key in AI settings.');
+    throw new BadRequestException(
+      'No API key configured. Please configure an API key in AI settings.'
+    );
   }
 
   /**
@@ -271,7 +281,9 @@ export class AIConfigurationService {
   }> {
     const config = await this.getConfiguration(user);
     if (!config) {
-      throw new NotFoundException('AI configuration not found. Please configure the AI agent first.');
+      throw new NotFoundException(
+        'AI configuration not found. Please configure the AI agent first.'
+      );
     }
 
     // Get embedding API key (separate or fallback to main)
@@ -281,7 +293,9 @@ export class AIConfigurationService {
     } else if (config.apiKey) {
       embeddingApiKey = this.decryptApiKey(config.apiKey);
     } else {
-      throw new BadRequestException('No API key configured. Please configure an API key in AI settings to use embedding features.');
+      throw new BadRequestException(
+        'No API key configured. Please configure an API key in AI settings to use embedding features.'
+      );
     }
 
     // Get embedding model (default to text-embedding-ada-002)

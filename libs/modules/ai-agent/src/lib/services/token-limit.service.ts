@@ -1,17 +1,45 @@
 import {
-  Injectable,
-  ForbiddenException,
   BadRequestException,
-  NotFoundException,
-  Inject,
+  ForbiddenException,
   forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { TokenLimit, User, UserRole } from '@accounting/common';
-import { SetTokenLimitDto } from '../dto/set-token-limit.dto';
+
+import { IsNull, Repository } from 'typeorm';
+
+import { Company, TokenLimit, User, UserRole } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
+
 import { TokenUsageService } from './token-usage.service';
-import { SystemCompanyService } from './system-company.service';
+import { SetTokenLimitDto } from '../dto/set-token-limit.dto';
+
+interface TokenLimitWithUsage {
+  id: string;
+  companyId: string | null;
+  userId: string | null;
+  monthlyLimit: number;
+  warningThresholdPercentage: number;
+  notifyOnWarning: boolean;
+  notifyOnExceeded: boolean;
+  setById: string;
+  createdAt: Date;
+  updatedAt: Date;
+  user?: User | null;
+  company?: Company | null;
+  setBy?: User | null;
+  currentUsage: number;
+  usagePercentage: number;
+  isExceeded: boolean;
+  isWarning: boolean;
+}
+
+interface MyLimitResult {
+  userLimit: TokenLimitWithUsage | null;
+  companyLimit: TokenLimitWithUsage | null;
+}
 
 @Injectable()
 export class TokenLimitService {
@@ -22,7 +50,7 @@ export class TokenLimitService {
     private userRepository: Repository<User>,
     @Inject(forwardRef(() => TokenUsageService))
     private tokenUsageService: TokenUsageService,
-    private systemCompanyService: SystemCompanyService,
+    private systemCompanyService: SystemCompanyService
   ) {}
 
   /**
@@ -38,14 +66,14 @@ export class TokenLimitService {
   async setCompanyLimit(
     companyId: string,
     setDto: SetTokenLimitDto,
-    user: User,
+    user: User
   ): Promise<TokenLimit> {
     if (user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Only admins can set company limits');
     }
 
     let limit = await this.limitRepository.findOne({
-      where: { companyId, userId: null },
+      where: { companyId, userId: IsNull() },
     });
 
     if (limit) {
@@ -72,11 +100,7 @@ export class TokenLimitService {
   /**
    * Set user-specific limit (COMPANY_OWNER only)
    */
-  async setUserLimit(
-    userId: string,
-    setDto: SetTokenLimitDto,
-    user: User,
-  ): Promise<TokenLimit> {
+  async setUserLimit(userId: string, setDto: SetTokenLimitDto, user: User): Promise<TokenLimit> {
     if (user.role !== UserRole.COMPANY_OWNER) {
       throw new ForbiddenException('Only company owners can set user limits');
     }
@@ -134,28 +158,28 @@ export class TokenLimitService {
 
     // Check user-specific limit first
     const userLimit = await this.limitRepository.findOne({
-      where: { companyId, userId: user.id },
+      where: { companyId: companyId ?? IsNull(), userId: user.id },
     });
 
     if (userLimit) {
       const userUsage = await this.tokenUsageService.getUserMonthlyTotal(user);
       if (userUsage >= userLimit.monthlyLimit) {
         throw new BadRequestException(
-          `Monthly token limit exceeded (${userUsage}/${userLimit.monthlyLimit}). Please contact your administrator.`,
+          `Monthly token limit exceeded (${userUsage}/${userLimit.monthlyLimit}). Please contact your administrator.`
         );
       }
     }
 
     // Check company-wide limit
     const companyLimit = await this.limitRepository.findOne({
-      where: { companyId, userId: null },
+      where: { companyId: companyId ?? IsNull(), userId: IsNull() },
     });
 
     if (companyLimit && companyId) {
       const companyUsage = await this.tokenUsageService.getCompanyMonthlyTotal(companyId);
       if (companyUsage >= companyLimit.monthlyLimit) {
         throw new BadRequestException(
-          `Company monthly token limit exceeded (${companyUsage}/${companyLimit.monthlyLimit}). Please contact your administrator.`,
+          `Company monthly token limit exceeded (${companyUsage}/${companyLimit.monthlyLimit}). Please contact your administrator.`
         );
       }
     }
@@ -164,7 +188,7 @@ export class TokenLimitService {
   /**
    * Get user's limit with current usage
    */
-  async getMyLimit(user: User): Promise<any> {
+  async getMyLimit(user: User): Promise<MyLimitResult> {
     let companyId: string | null;
 
     if (user.role === UserRole.ADMIN) {
@@ -174,12 +198,12 @@ export class TokenLimitService {
     }
 
     const userLimit = await this.limitRepository.findOne({
-      where: { companyId, userId: user.id },
+      where: { companyId: companyId ?? IsNull(), userId: user.id },
       relations: ['user', 'company', 'setBy'],
     });
 
     const companyLimit = await this.limitRepository.findOne({
-      where: { companyId, userId: null },
+      where: { companyId: companyId ?? IsNull(), userId: IsNull() },
       relations: ['company', 'setBy'],
     });
 
@@ -195,7 +219,8 @@ export class TokenLimitService {
             currentUsage: userUsage,
             usagePercentage: (userUsage / userLimit.monthlyLimit) * 100,
             isExceeded: userUsage >= userLimit.monthlyLimit,
-            isWarning: userUsage >= (userLimit.monthlyLimit * userLimit.warningThresholdPercentage) / 100,
+            isWarning:
+              userUsage >= (userLimit.monthlyLimit * userLimit.warningThresholdPercentage) / 100,
           }
         : null,
       companyLimit: companyLimit
@@ -204,7 +229,9 @@ export class TokenLimitService {
             currentUsage: companyUsage,
             usagePercentage: (companyUsage / companyLimit.monthlyLimit) * 100,
             isExceeded: companyUsage >= companyLimit.monthlyLimit,
-            isWarning: companyUsage >= (companyLimit.monthlyLimit * companyLimit.warningThresholdPercentage) / 100,
+            isWarning:
+              companyUsage >=
+              (companyLimit.monthlyLimit * companyLimit.warningThresholdPercentage) / 100,
           }
         : null,
     };

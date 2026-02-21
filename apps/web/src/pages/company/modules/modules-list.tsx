@@ -1,12 +1,12 @@
-import { useNavigate } from 'react-router-dom';
-import { useCompanyModules } from '@/lib/hooks/use-permissions';
+import { Package } from 'lucide-react';
+
 import { PageHeader } from '@/components/common/page-header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Package, ArrowRight } from 'lucide-react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { ModuleCard } from '@/components/ui/module-card';
+import { useCompanyModules } from '@/lib/hooks/use-permissions';
+import { getModuleIcon } from '@/lib/utils/module-icons';
 
 export default function CompanyModulesListPage() {
-  const navigate = useNavigate();
   const { data: modules = [], isPending } = useCompanyModules();
 
   return (
@@ -20,84 +20,43 @@ export default function CompanyModulesListPage() {
       {isPending ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse border-apptax-soft-teal/30">
+            <Card key={i} className="border-border animate-pulse">
               <CardHeader>
-                <div className="h-5 bg-apptax-soft-teal/30 rounded w-1/2" />
-                <div className="h-4 bg-apptax-soft-teal/20 rounded w-3/4 mt-2" />
+                <div className="bg-accent/10 h-5 w-1/2 rounded" />
+                <div className="bg-accent/5 mt-2 h-4 w-3/4 rounded" />
               </CardHeader>
               <CardContent>
-                <div className="h-4 bg-apptax-soft-teal/20 rounded w-1/3" />
+                <div className="bg-accent/5 h-4 w-1/3 rounded" />
               </CardContent>
             </Card>
           ))}
         </div>
       ) : modules.length === 0 ? (
-        <Card className="border-dashed border-apptax-soft-teal">
+        <Card className="border-accent border-dashed">
           <CardContent className="py-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-apptax-soft-teal flex items-center justify-center mx-auto mb-4">
-              <Package className="h-8 w-8 text-apptax-teal" />
+            <div className="bg-accent/10 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+              <Package className="text-accent h-8 w-8" />
             </div>
-            <p className="text-apptax-navy font-medium">
-              Brak włączonych modułów dla Twojej firmy.
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-foreground font-medium">Brak włączonych modułów dla Twojej firmy.</p>
+            <p className="text-muted-foreground mt-1 text-sm">
               Skontaktuj się z administratorem, aby włączyć moduły.
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {modules.map((module) => {
-            const isAiModule = module.slug === 'ai-agent';
-            return (
-              <Card
-                key={module.id}
-                className="group cursor-pointer hover:border-apptax-blue hover:shadow-apptax-md transition-all duration-300 hover:-translate-y-1 border-apptax-soft-teal/30"
-                onClick={() => navigate(`/modules/${module.slug}`)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    navigate(`/modules/${module.slug}`);
-                  }
-                }}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        isAiModule ? 'bg-apptax-ai-gradient ai-glow' : 'bg-apptax-gradient'
-                      }`}>
-                        <Package className="h-5 w-5 text-white" />
-                      </div>
-                      <CardTitle className="text-lg flex items-center gap-2 text-apptax-navy">
-                        {module.name}
-                        {isAiModule && (
-                          <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
-                        )}
-                      </CardTitle>
-                    </div>
-                    <Badge variant={module.isActive ? 'success' : 'muted'}>
-                      {module.isActive ? 'Aktywny' : 'Nieaktywny'}
-                    </Badge>
-                  </div>
-                  <CardDescription className="mt-2">{module.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <code className="px-2 py-1 bg-apptax-soft-teal rounded text-xs text-apptax-navy">
-                      {module.slug}
-                    </code>
-                    <span className="text-apptax-blue text-sm flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      Otwórz moduł
-                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {modules.map((module) => (
+            <ModuleCard
+              key={module.id}
+              id={module.id}
+              name={module.name}
+              description={module.description}
+              slug={module.slug}
+              icon={getModuleIcon(module.icon)}
+              isActive={module.isActive}
+              isAiModule={module.slug === 'ai-agent'}
+            />
+          ))}
         </div>
       )}
     </div>
