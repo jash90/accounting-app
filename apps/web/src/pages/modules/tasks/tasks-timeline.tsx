@@ -359,9 +359,9 @@ export default function TasksTimelinePage() {
               <div className="bg-background sticky top-0 z-10 flex border-b">
                 <div className="w-64 min-w-64 border-r p-3 text-sm font-medium">Zadanie</div>
                 <div className="flex flex-1">
-                  {timelineHeaders.map((header, index) => (
+                  {timelineHeaders.map((header) => (
                     <div
-                      key={index}
+                      key={header.date.toISOString()}
                       className={cn(
                         'flex-1 border-r p-2 text-center text-xs',
                         header.isWeekend && 'bg-muted/50'
@@ -403,9 +403,9 @@ export default function TasksTimelinePage() {
                       <div className="relative h-16 flex-1">
                         {/* Grid lines */}
                         <div className="absolute inset-0 flex">
-                          {timelineHeaders.map((header, index) => (
+                          {timelineHeaders.map((header) => (
                             <div
-                              key={index}
+                              key={header.date.toISOString()}
                               className={cn('flex-1 border-r', header.isWeekend && 'bg-muted/30')}
                             />
                           ))}

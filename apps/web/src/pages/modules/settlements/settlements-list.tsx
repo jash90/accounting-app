@@ -109,9 +109,8 @@ export default function SettlementsListPage() {
   const isOwnerOrAdmin = user?.role === UserRole.COMPANY_OWNER || user?.role === UserRole.ADMIN;
 
   // Month/year state with transition for non-blocking UI updates
-  const currentDate = new Date();
-  const [month, setMonth] = useState(currentDate.getMonth() + 1);
-  const [year, setYear] = useState(currentDate.getFullYear());
+  const [month, setMonth] = useState(() => new Date().getMonth() + 1);
+  const [year, setYear] = useState(() => new Date().getFullYear());
   const [isMonthTransition, startMonthTransition] = useTransition();
 
   // Wrap month/year changes in startTransition for non-blocking UI

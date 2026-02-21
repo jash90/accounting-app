@@ -88,8 +88,9 @@ export function ExportImportDialog({
     try {
       const result = await onImport(selectedFile);
       setImportResult(result);
-    } catch {
-      // Error is handled by the hook
+    } catch (error) {
+      // Error is handled by the hook, but log for debugging
+      console.error('Import failed:', error);
     }
   };
 
@@ -186,6 +187,7 @@ export function ExportImportDialog({
                           type="button"
                           className="text-primary underline hover:no-underline"
                           onClick={() => fileInputRef.current?.click()}
+                          aria-label="Wybierz plik CSV z dysku"
                         >
                           wybierz z dysku
                         </button>
@@ -248,8 +250,8 @@ export function ExportImportDialog({
                   <div className="max-h-40 overflow-y-auto rounded border p-2">
                     <p className="mb-2 text-sm font-medium">Szczegóły błędów:</p>
                     <ul className="text-muted-foreground space-y-1 text-sm">
-                      {importResult.errors.map((error, index) => (
-                        <li key={index}>
+                      {importResult.errors.map((error) => (
+                        <li key={`${error.row}-${error.field}`}>
                           Wiersz {error.row}, pole &quot;{error.field}&quot;: {error.message}
                         </li>
                       ))}

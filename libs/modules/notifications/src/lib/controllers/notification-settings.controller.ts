@@ -11,6 +11,12 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@ne
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { NotificationSettings, User } from '@accounting/common';
+import {
+  ModuleAccessGuard,
+  PermissionGuard,
+  RequireModule,
+  RequirePermission,
+} from '@accounting/rbac';
 
 import { VALID_MODULE_SLUGS, ValidModuleSlug } from '../dto/create-notification.dto';
 import {
@@ -34,13 +40,15 @@ function validateModuleSlug(moduleSlug: string): asserts moduleSlug is ValidModu
 @ApiTags('Notification Settings')
 @ApiBearerAuth()
 @Controller('notifications/settings')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
+@RequireModule('notifications')
 export class NotificationSettingsController {
   constructor(private readonly settingsService: NotificationSettingsService) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all notification settings for current user' })
   @ApiResponse({ status: 200, description: 'List of notification settings by module' })
+  @RequirePermission('notifications', 'read')
   async getAllSettings(@CurrentUser() user: User): Promise<NotificationSettings[]> {
     return this.settingsService.getAllSettingsForUser(user);
   }
@@ -54,6 +62,7 @@ export class NotificationSettingsController {
   })
   @ApiResponse({ status: 200, description: 'Notification settings for module' })
   @ApiResponse({ status: 400, description: 'Invalid moduleSlug' })
+  @RequirePermission('notifications', 'read')
   async getModuleSettings(
     @Param('moduleSlug') moduleSlug: string,
     @CurrentUser() user: User
@@ -71,6 +80,7 @@ export class NotificationSettingsController {
   })
   @ApiResponse({ status: 200, description: 'Updated notification settings' })
   @ApiResponse({ status: 400, description: 'Invalid moduleSlug' })
+  @RequirePermission('notifications', 'write')
   async updateModuleSettings(
     @Param('moduleSlug') moduleSlug: string,
     @Body() dto: UpdateModuleNotificationSettingsDto,
@@ -83,6 +93,7 @@ export class NotificationSettingsController {
   @Patch('global')
   @ApiOperation({ summary: 'Update global notification settings (applies to all modules)' })
   @ApiResponse({ status: 200, description: 'Updated global settings' })
+  @RequirePermission('notifications', 'write')
   async updateGlobalSettings(
     @Body() dto: UpdateNotificationSettingsDto,
     @CurrentUser() user: User

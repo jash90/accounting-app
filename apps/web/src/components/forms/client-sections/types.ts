@@ -10,5 +10,5 @@ export interface CustomFieldsCardProps {
   definitions: ClientFieldDefinition[];
   values: Record<string, string>;
   isSubmitted: boolean;
-  renderField: (definition: ClientFieldDefinition) => React.ReactNode;
+  onFieldChange: (fieldId: string, value: string) => void;
 }

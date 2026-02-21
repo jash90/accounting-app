@@ -94,29 +94,25 @@ export class NotificationDispatcherService {
       return;
     }
 
-    for (const recipientId of validRecipientIds) {
-      try {
-        const shouldSendInApp = await this.settingsService.shouldSendInApp(
-          recipientId,
-          payload.companyId,
-          moduleSlug,
-          payload.type
-        );
+    // Batch-load notification settings for all recipients in one query
+    const channelMap = await this.settingsService.batchCheckChannels(
+      validRecipientIds,
+      payload.companyId,
+      moduleSlug,
+      payload.type
+    );
+
+    const results = await Promise.allSettled(
+      validRecipientIds.map(async (recipientId) => {
+        const channels = channelMap.get(recipientId) ?? { inApp: true, email: true };
 
         let notificationId: string | undefined;
 
-        if (shouldSendInApp) {
+        if (channels.inApp) {
           notificationId = await this.createInAppNotification(recipientId, payload, moduleSlug);
         }
 
-        const shouldSendEmail = await this.settingsService.shouldSendEmail(
-          recipientId,
-          payload.companyId,
-          moduleSlug,
-          payload.type
-        );
-
-        if (shouldSendEmail) {
+        if (channels.email) {
           this.eventEmitter.emit('notification.email.send', {
             notificationId,
             recipientId,
@@ -129,12 +125,15 @@ export class NotificationDispatcherService {
             actorId: payload.actorId,
           });
         }
-      } catch (error) {
-        this.logger.error(`Failed to dispatch notification to ${recipientId}`, {
-          error: (error as Error).message,
-          type: payload.type,
-        });
-      }
+      })
+    );
+
+    const failures = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+    for (const failure of failures) {
+      this.logger.error('Failed to dispatch notification to a recipient', {
+        error: (failure.reason as Error).message,
+        type: payload.type,
+      });
     }
   }
 

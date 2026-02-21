@@ -5,7 +5,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { Company, Notification, NotificationSettings, User } from '@accounting/common';
+import { CommonModule } from '@accounting/common/backend';
 import { EmailModule } from '@accounting/email';
+import { RBACModule } from '@accounting/rbac';
 
 import { NotificationSettingsController } from './controllers/notification-settings.controller';
 import { NotificationsController } from './controllers/notifications.controller';
@@ -16,7 +18,6 @@ import { EmailChannelService } from './services/email-channel.service';
 import { NotificationDispatcherService } from './services/notification-dispatcher.service';
 import { NotificationSettingsService } from './services/notification-settings.service';
 import { NotificationService } from './services/notification.service';
-import { SystemCompanyService } from './services/system-company.service';
 
 /**
  * NotificationsModule - Global module for cross-module notification dispatch.
@@ -63,10 +64,12 @@ import { SystemCompanyService } from './services/system-company.service';
       inject: [ConfigService],
     }),
     EmailModule,
+    RBACModule,
+    CommonModule,
   ],
   controllers: [NotificationsController, NotificationSettingsController],
   providers: [
-    SystemCompanyService,
+    // SystemCompanyService is provided by CommonModule
     NotificationService,
     NotificationSettingsService,
     NotificationDispatcherService,

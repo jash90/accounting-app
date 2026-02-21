@@ -5,11 +5,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { User, UserRole } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { RecipientResolver } from '../decorators/notify-on.decorator';
 import { NotificationEventPayload } from '../dto/notification-event-payload.dto';
 import { NotificationDispatcherService } from '../services/notification-dispatcher.service';
-import { SystemCompanyService } from '../services/system-company.service';
 
 @Injectable()
 export class NotificationListener {
@@ -157,10 +157,15 @@ export class NotificationListener {
     }
   }
 
+  private static readonly ALLOWED_ACTOR_FIELDS = new Set(['firstName', 'lastName', 'email', 'id']);
+
   private interpolateTemplate(template: string, result: unknown, actor: User): string {
     let output = template;
 
-    output = output.replace(/\{\{actor\.(\w+)\}\}/g, (_, key) => {
+    output = output.replace(/\{\{actor\.(\w+)\}\}/g, (_, key: string) => {
+      if (!NotificationListener.ALLOWED_ACTOR_FIELDS.has(key)) {
+        return '';
+      }
       return String((actor as unknown as Record<string, unknown>)[key] || '');
     });
 

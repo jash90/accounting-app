@@ -12,12 +12,19 @@ import {
   type TimeEntry,
   type TimeSettings,
 } from './entities';
+// =============================================
+// Offers Module DTOs
+// =============================================
 import {
   UserRole,
   type AmlGroup,
   type AutoAssignCondition,
   type CustomFieldType,
   type EmploymentType,
+  type LeadSource,
+  type LeadStatus,
+  type OfferActivityType,
+  type OfferStatus,
   type TaskDependencyType,
   type TaskPriority,
   type TaskStatus,
@@ -973,4 +980,337 @@ export interface TimeByClientReportDto {
   billableMinutes: number;
   totalAmount: number;
   entryCount: number;
+}
+
+// Lead DTOs
+export interface CreateLeadDto {
+  name: string;
+  nip?: string;
+  regon?: string;
+  street?: string;
+  postalCode?: string;
+  city?: string;
+  country?: string;
+  contactPerson?: string;
+  contactPosition?: string;
+  email?: string;
+  phone?: string;
+  source?: LeadSource;
+  notes?: string;
+  estimatedValue?: number;
+  assignedToId?: string;
+}
+
+export interface UpdateLeadDto extends Partial<CreateLeadDto> {
+  status?: LeadStatus;
+}
+
+export interface LeadFiltersDto {
+  search?: string;
+  status?: LeadStatus;
+  source?: LeadSource;
+  assignedToId?: string;
+  createdFrom?: string;
+  createdTo?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface LeadResponseDto {
+  id: string;
+  name: string;
+  nip?: string;
+  regon?: string;
+  street?: string;
+  postalCode?: string;
+  city?: string;
+  country?: string;
+  contactPerson?: string;
+  contactPosition?: string;
+  email?: string;
+  phone?: string;
+  status: LeadStatus;
+  source?: LeadSource;
+  notes?: string;
+  estimatedValue?: number;
+  assignedToId?: string;
+  assignedTo?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  convertedToClientId?: string;
+  convertedAt?: Date;
+  companyId: string;
+  createdById: string;
+  createdBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ConvertLeadToClientDto {
+  clientName?: string;
+}
+
+export interface LeadStatisticsDto {
+  totalLeads: number;
+  newCount: number;
+  contactedCount: number;
+  qualifiedCount: number;
+  proposalSentCount: number;
+  negotiationCount: number;
+  convertedCount: number;
+  lostCount: number;
+  conversionRate: number;
+}
+
+// Offer Template DTOs
+export interface OfferPlaceholderDto {
+  key: string;
+  label: string;
+  description?: string;
+  defaultValue?: string;
+}
+
+export interface OfferServiceItemDto {
+  name: string;
+  description?: string;
+  unitPrice: number;
+  quantity: number;
+  unit?: string;
+}
+
+export interface OfferServiceItemWithAmountDto extends OfferServiceItemDto {
+  netAmount: number;
+}
+
+export interface CreateOfferTemplateDto {
+  name: string;
+  description?: string;
+  availablePlaceholders?: OfferPlaceholderDto[];
+  defaultServiceItems?: OfferServiceItemDto[];
+  defaultValidityDays?: number;
+  defaultVatRate?: number;
+  isDefault?: boolean;
+}
+
+export interface UpdateOfferTemplateDto extends Partial<CreateOfferTemplateDto> {
+  isActive?: boolean;
+}
+
+export interface OfferTemplateFiltersDto {
+  search?: string;
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export interface OfferTemplateResponseDto {
+  id: string;
+  name: string;
+  description?: string;
+  templateFilePath?: string;
+  templateFileName?: string;
+  availablePlaceholders?: OfferPlaceholderDto[];
+  defaultServiceItems?: OfferServiceItemDto[];
+  defaultValidityDays: number;
+  defaultVatRate: number;
+  isDefault: boolean;
+  isActive: boolean;
+  companyId: string;
+  contentBlocks?: import('./content-blocks').ContentBlock[];
+  documentSourceType?: 'file' | 'blocks';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ContentBlocksResponseDto {
+  contentBlocks?: import('./content-blocks').ContentBlock[];
+  documentSourceType: 'file' | 'blocks';
+  name: string;
+}
+
+export interface UpdateContentBlocksDto {
+  contentBlocks?: import('./content-blocks').ContentBlock[];
+  documentSourceType?: 'file' | 'blocks';
+}
+
+// Offer DTOs
+export interface ServiceTermsDto {
+  items: OfferServiceItemWithAmountDto[];
+  paymentTermDays?: number;
+  paymentMethod?: string;
+  additionalTerms?: string;
+}
+
+export interface RecipientSnapshotDto {
+  name: string;
+  nip?: string;
+  regon?: string;
+  street?: string;
+  postalCode?: string;
+  city?: string;
+  country?: string;
+  contactPerson?: string;
+  contactPosition?: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface CreateOfferDto {
+  title: string;
+  description?: string;
+  clientId?: string;
+  leadId?: string;
+  templateId?: string;
+  vatRate?: number;
+  serviceTerms?: {
+    items: OfferServiceItemDto[];
+    paymentTermDays?: number;
+    paymentMethod?: string;
+    additionalTerms?: string;
+  };
+  customPlaceholders?: Record<string, string>;
+  offerDate?: string;
+  validUntil?: string;
+  validityDays?: number;
+}
+
+export interface UpdateOfferDto extends Partial<CreateOfferDto> {}
+
+export interface UpdateOfferStatusDto {
+  status: OfferStatus;
+  reason?: string;
+}
+
+export interface SendOfferDto {
+  email: string;
+  subject?: string;
+  body?: string;
+  cc?: string[];
+}
+
+export interface DuplicateOfferDto {
+  clientId?: string;
+  leadId?: string;
+  title?: string;
+}
+
+export interface OfferFiltersDto {
+  search?: string;
+  status?: OfferStatus;
+  statuses?: OfferStatus[];
+  clientId?: string;
+  leadId?: string;
+  offerDateFrom?: string;
+  offerDateTo?: string;
+  validUntilFrom?: string;
+  validUntilTo?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  page?: number;
+  limit?: number;
+}
+
+export interface OfferResponseDto {
+  id: string;
+  offerNumber: string;
+  title: string;
+  description?: string;
+  status: OfferStatus;
+  clientId?: string;
+  client?: {
+    id: string;
+    name: string;
+    nip?: string;
+  };
+  leadId?: string;
+  lead?: LeadResponseDto;
+  recipientSnapshot: RecipientSnapshotDto;
+  templateId?: string;
+  template?: {
+    id: string;
+    name: string;
+  };
+  totalNetAmount: number;
+  vatRate: number;
+  totalGrossAmount: number;
+  serviceTerms?: ServiceTermsDto;
+  customPlaceholders?: Record<string, string>;
+  offerDate: Date;
+  validUntil: Date;
+  generatedDocumentPath?: string;
+  generatedDocumentName?: string;
+  sentAt?: Date;
+  sentToEmail?: string;
+  sentById?: string;
+  sentBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  emailSubject?: string;
+  emailBody?: string;
+  companyId: string;
+  createdById: string;
+  createdBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface OfferStatisticsDto {
+  totalOffers: number;
+  draftCount: number;
+  readyCount: number;
+  sentCount: number;
+  acceptedCount: number;
+  rejectedCount: number;
+  expiredCount: number;
+  totalValue: number;
+  acceptedValue: number;
+  conversionRate: number;
+}
+
+// Offer Activity DTOs
+export interface OfferActivityMetadataDto {
+  previousStatus?: OfferStatus;
+  newStatus?: OfferStatus;
+  documentPath?: string;
+  emailRecipient?: string;
+  emailSubject?: string;
+  comment?: string;
+  duplicatedFromOfferId?: string;
+  changes?: Record<string, { old: unknown; new: unknown }>;
+}
+
+export interface OfferActivityResponseDto {
+  id: string;
+  offerId: string;
+  activityType: OfferActivityType;
+  description?: string;
+  metadata?: OfferActivityMetadataDto;
+  performedById: string;
+  performedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  createdAt: Date;
+}
+
+// Standard placeholders response
+export interface StandardPlaceholdersResponseDto {
+  placeholders: Array<{
+    key: string;
+    label: string;
+    description: string;
+  }>;
 }

@@ -278,17 +278,14 @@ export default function TimeTrackingReportsPage() {
                   </h4>
                   <div className="space-y-2">
                     {summaryReport.byClient.map(
-                      (
-                        item: {
-                          clientId: string;
-                          clientName: string;
-                          totalMinutes: number;
-                          totalAmount: number;
-                        },
-                        index: number
-                      ) => (
+                      (item: {
+                        clientId: string;
+                        clientName: string;
+                        totalMinutes: number;
+                        totalAmount: number;
+                      }) => (
                         <div
-                          key={index}
+                          key={item.clientId || `no-client-${item.clientName}`}
                           className="flex items-center justify-between rounded-lg border p-3"
                         >
                           <span>{item.clientName || 'Bez przypisania'}</span>

@@ -28,10 +28,14 @@ import {
   CompanyModuleAccess,
   CustomFieldReminder,
   EmailConfiguration,
+  Lead,
   Module as ModuleEntity,
   MonthlySettlement,
   Notification,
   NotificationSettings,
+  Offer,
+  OfferActivity,
+  OfferTemplate,
   SettlementComment,
   Task,
   TaskComment,
@@ -52,6 +56,7 @@ import { AIAgentModule } from '@accounting/modules/ai-agent';
 import { ClientsModule } from '@accounting/modules/clients';
 import { EmailClientModule, EmailDraft } from '@accounting/modules/email-client';
 import { NotificationsModule } from '@accounting/modules/notifications';
+import { OffersModule } from '@accounting/modules/offers';
 import { SettlementsModule } from '@accounting/modules/settlements';
 import { TasksModule } from '@accounting/modules/tasks';
 import { TimeTrackingModule } from '@accounting/modules/time-tracking';
@@ -99,6 +104,10 @@ const ENTITIES = [
   TaskComment,
   TimeEntry,
   TimeSettings,
+  Lead,
+  OfferTemplate,
+  Offer,
+  OfferActivity,
   MonthlySettlement,
   SettlementComment,
 ];
@@ -163,6 +172,7 @@ const ENTITIES = [
     EmailClientModule,
     TasksModule,
     TimeTrackingModule,
+    OffersModule,
     SettlementsModule,
     NotificationsModule,
     ModulesModule,

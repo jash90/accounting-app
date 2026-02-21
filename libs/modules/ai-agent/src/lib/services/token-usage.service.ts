@@ -4,8 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Between, IsNull, Repository } from 'typeorm';
 
 import { Company, TokenUsage, User, UserRole } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
-import { SystemCompanyService } from './system-company.service';
 import { TokenUsageStatsDto } from '../dto/token-usage-response.dto';
 
 interface CompanyTokenUsageDto {

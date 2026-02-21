@@ -15,11 +15,18 @@ export * from './lib/enums/task-dependency-type.enum';
 export * from './lib/enums/time-entry-status.enum';
 export * from './lib/enums/time-rounding-method.enum';
 export * from './lib/enums/notification-type.enum';
+export * from './lib/enums/lead-status.enum';
+export * from './lib/enums/lead-source.enum';
+export * from './lib/enums/offer-status.enum';
+export * from './lib/enums/offer-activity-type.enum';
 export * from './lib/enums/settlement-status.enum';
 export * from './lib/enums/relief-type.enum';
 
 // Constants
 export * from './lib/constants';
+
+// Utils
+export * from './lib/utils/database-errors';
 
 // Types
 export * from './lib/types';
@@ -61,6 +68,11 @@ export * from './lib/entities/task-comment.entity';
 export * from './lib/entities/time-entry.entity';
 export * from './lib/entities/time-settings.entity';
 export * from './lib/entities/notification.entity';
+export * from './lib/entities/lead.entity';
+export * from './lib/entities/offer-template.entity';
+export * from './lib/entities/offer.entity';
+export * from './lib/entities/offer-activity.entity';
+export type { ActivityMetadata } from './lib/entities/offer-activity.entity';
 export * from './lib/entities/monthly-settlement.entity';
 export * from './lib/entities/settlement-comment.entity';
 export { AIProvider } from './lib/entities/ai-configuration.entity';
@@ -80,3 +92,8 @@ export * from './lib/dto/pagination.dto';
 
 // Re-export TenantService type for type-only imports in frontend if needed
 export type { TenantService } from './lib/services/tenant.service';
+
+// Re-export SystemCompanyService type for type-only imports in frontend if needed
+// NOTE: SystemCompanyService is NOT exported as a value to prevent Node.js dependencies in browser bundles.
+// Import directly in backend code from '@accounting/common/backend' or from CommonModule.
+export type { SystemCompanyService } from './lib/services/system-company.service';

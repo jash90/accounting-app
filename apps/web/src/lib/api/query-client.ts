@@ -183,6 +183,31 @@ export const queryKeys = {
     unreadCount: ['notifications', 'unread-count'] as const,
     settings: ['notifications', 'settings'] as const,
   },
+  offers: {
+    all: ['offers'] as const,
+    list: (filters?: Record<string, unknown>) =>
+      ['offers', 'list', stableFilterKey(filters)] as const,
+    detail: (id: string) => ['offers', id] as const,
+    activities: (offerId: string) => ['offers', offerId, 'activities'] as const,
+    statistics: ['offers', 'statistics'] as const,
+    placeholders: ['offers', 'placeholders'] as const,
+  },
+  leads: {
+    all: ['leads'] as const,
+    list: (filters?: Record<string, unknown>) =>
+      ['leads', 'list', stableFilterKey(filters)] as const,
+    detail: (id: string) => ['leads', id] as const,
+    statistics: ['leads', 'statistics'] as const,
+    lookupAssignees: ['leads', 'lookup', 'assignees'] as const,
+  },
+  offerTemplates: {
+    all: ['offer-templates'] as const,
+    list: (filters?: Record<string, unknown>) =>
+      ['offer-templates', 'list', stableFilterKey(filters)] as const,
+    detail: (id: string) => ['offer-templates', id] as const,
+    default: ['offer-templates', 'default'] as const,
+    contentBlocks: (id: string) => ['offer-templates', id, 'content-blocks'] as const,
+  },
   settlements: {
     all: ['settlements'] as const,
     list: (filters?: unknown) => ['settlements', 'list', stableFilterKey(filters)] as const,

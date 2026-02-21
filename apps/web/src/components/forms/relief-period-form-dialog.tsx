@@ -54,6 +54,8 @@ export type { CreateReliefPeriodFormData, UpdateReliefPeriodFormData };
 // Component
 // ============================================
 
+const EMPTY_RELIEF_TYPES: ReliefType[] = [];
+
 interface ReliefPeriodFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -69,8 +71,9 @@ export function ReliefPeriodFormDialog({
   reliefPeriod,
   onSubmit,
   isLoading = false,
-  existingReliefTypes = [],
+  existingReliefTypes = EMPTY_RELIEF_TYPES,
 }: ReliefPeriodFormDialogProps) {
+  'use no memo';
   const isEditing = !!reliefPeriod;
   const schema = isEditing ? updateReliefPeriodSchema : createReliefPeriodSchema;
 

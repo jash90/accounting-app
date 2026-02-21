@@ -542,6 +542,154 @@ export const updateSuspensionSchema = z.object({
 
 export type UpdateSuspensionFormData = z.infer<typeof updateSuspensionSchema>;
 
+// =============================================
+// Offers Module Schemas
+// =============================================
+
+// Lead Schemas
+export const createLeadSchema = z.object({
+  name: z.string().min(2, 'Nazwa musi mieć minimum 2 znaki').max(255),
+  nip: z
+    .string()
+    .optional()
+    .refine((val) => !val || /^\d{10}$/.test(val), {
+      message: 'NIP musi składać się z 10 cyfr',
+    }),
+  regon: z
+    .string()
+    .optional()
+    .refine((val) => !val || /^(\d{9}|\d{14})$/.test(val), {
+      message: 'REGON musi składać się z 9 lub 14 cyfr',
+    }),
+  street: z.string().max(255).optional(),
+  postalCode: z.string().max(10).optional(),
+  city: z.string().max(100).optional(),
+  country: z.string().max(100).optional(),
+  contactPerson: z.string().max(255).optional(),
+  contactPosition: z.string().max(100).optional(),
+  email: z.string().email('Nieprawidłowy format adresu email').optional().or(z.literal('')),
+  phone: z.string().max(50).optional(),
+  source: z
+    .enum(['WEBSITE', 'REFERRAL', 'PHONE', 'EMAIL', 'SOCIAL_MEDIA', 'ADVERTISEMENT', 'OTHER'])
+    .optional(),
+  notes: z.string().optional(),
+  estimatedValue: z.number().min(0).optional(),
+  assignedToId: z.string().uuid().optional(),
+});
+
+export type CreateLeadFormData = z.infer<typeof createLeadSchema>;
+
+export const updateLeadSchema = createLeadSchema.partial().extend({
+  status: z
+    .enum(['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL_SENT', 'NEGOTIATION', 'CONVERTED', 'LOST'])
+    .optional(),
+});
+
+export type UpdateLeadFormData = z.infer<typeof updateLeadSchema>;
+
+// Offer Service Item Schema
+export const offerServiceItemSchema = z.object({
+  name: z.string().min(1, 'Nazwa usługi jest wymagana').max(255),
+  description: z.string().max(1000).optional(),
+  unitPrice: z.number().min(0, 'Cena jednostkowa musi być nieujemna'),
+  quantity: z.number().min(0.01, 'Ilość musi być większa od 0'),
+  unit: z.string().max(20).optional(),
+});
+
+export type OfferServiceItemFormData = z.infer<typeof offerServiceItemSchema>;
+
+// Offer Template Schemas
+export const createOfferTemplateSchema = z.object({
+  name: z.string().min(2, 'Nazwa musi mieć minimum 2 znaki').max(255),
+  description: z.string().optional(),
+  defaultServiceItems: z.array(offerServiceItemSchema).optional(),
+  defaultValidityDays: z.number().int().min(1).max(365).optional(),
+  defaultVatRate: z.number().min(0).max(100).optional(),
+  isDefault: z.boolean().optional(),
+});
+
+export type CreateOfferTemplateFormData = z.infer<typeof createOfferTemplateSchema>;
+
+export const updateOfferTemplateSchema = createOfferTemplateSchema.partial().extend({
+  isActive: z.boolean().optional(),
+});
+
+export type UpdateOfferTemplateFormData = z.infer<typeof updateOfferTemplateSchema>;
+
+// Service Terms Schema
+export const serviceTermsSchema = z.object({
+  items: z.array(offerServiceItemSchema).min(1, 'Wymagana jest co najmniej jedna pozycja usługi'),
+  paymentTermDays: z.number().int().min(1).max(365).optional(),
+  paymentMethod: z.string().max(100).optional(),
+  additionalTerms: z.string().optional(),
+});
+
+export type ServiceTermsFormData = z.infer<typeof serviceTermsSchema>;
+
+// Offer Schemas
+export const createOfferSchema = z
+  .object({
+    title: z.string().min(2, 'Tytuł musi mieć minimum 2 znaki').max(255),
+    description: z.string().optional(),
+    clientId: z.string().uuid().optional(),
+    leadId: z.string().uuid().optional(),
+    templateId: z.string().uuid().optional(),
+    vatRate: z.number().min(0).max(100).optional(),
+    serviceTerms: serviceTermsSchema.optional(),
+    customPlaceholders: z.record(z.string(), z.string()).optional(),
+    offerDate: z.date().optional(),
+    validUntil: z.date().optional(),
+    validityDays: z.number().int().min(1).max(365).optional(),
+  })
+  .refine((data) => data.clientId || data.leadId, {
+    message: 'Wybierz klienta lub prospekt',
+    path: ['clientId'],
+  });
+
+export type CreateOfferFormData = z.infer<typeof createOfferSchema>;
+
+export const updateOfferSchema = z.object({
+  title: z.string().min(2).max(255).optional(),
+  description: z.string().optional(),
+  clientId: z.string().uuid().optional(),
+  leadId: z.string().uuid().optional(),
+  templateId: z.string().uuid().optional(),
+  vatRate: z.number().min(0).max(100).optional(),
+  serviceTerms: serviceTermsSchema.optional(),
+  customPlaceholders: z.record(z.string(), z.string()).optional(),
+  offerDate: z.date().optional(),
+  validUntil: z.date().optional(),
+  validityDays: z.number().int().min(1).max(365).optional(),
+});
+
+export type UpdateOfferFormData = z.infer<typeof updateOfferSchema>;
+
+// Send Offer Schema
+export const sendOfferSchema = z.object({
+  email: z.string().email('Nieprawidłowy format adresu email'),
+  subject: z.string().max(255).optional(),
+  body: z.string().optional(),
+  cc: z.array(z.string().email('Nieprawidłowy format adresu email w CC')).optional(),
+});
+
+export type SendOfferFormData = z.infer<typeof sendOfferSchema>;
+
+// Duplicate Offer Schema
+export const duplicateOfferSchema = z.object({
+  clientId: z.string().uuid().optional(),
+  leadId: z.string().uuid().optional(),
+  title: z.string().max(255).optional(),
+});
+
+export type DuplicateOfferFormData = z.infer<typeof duplicateOfferSchema>;
+
+// Convert Lead Schema
+export const convertLeadToClientSchema = z.object({
+  clientName: z.string().max(255).optional(),
+});
+
+export type ConvertLeadToClientFormData = z.infer<typeof convertLeadToClientSchema>;
+
 // Client Relief Period Schemas
 export const reliefTypeSchema = z.enum(['ULGA_NA_START', 'MALY_ZUS'], {
   message: 'Typ ulgi jest wymagany',

@@ -17,8 +17,8 @@ import {
   User,
   UserRole,
 } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
-import { SystemCompanyService } from './system-company.service';
 import { CreateNotificationDto } from '../dto/create-notification.dto';
 import { NotificationFiltersDto } from '../dto/notification-filters.dto';
 import { NotificationResponseDto } from '../dto/notification-response.dto';

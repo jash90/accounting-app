@@ -65,6 +65,7 @@ interface NotificationSocketProviderProps {
 }
 
 export function NotificationSocketProvider({ children }: NotificationSocketProviderProps) {
+  'use no memo';
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [lastNotification, setLastNotification] = useState<NotificationResponseDto | null>(null);

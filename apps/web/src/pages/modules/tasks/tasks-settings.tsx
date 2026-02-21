@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useReducer } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -42,6 +42,66 @@ import {
 } from '@/types/dtos';
 import { UserRole } from '@/types/enums';
 
+// -- Reducer for label dialog state --
+interface LabelDialogState {
+  dialogOpen: boolean;
+  editingLabel: TaskLabelResponseDto | null;
+  deletingLabel: TaskLabelResponseDto | null;
+  labelName: string;
+  labelColor: string;
+}
+
+type LabelDialogAction =
+  | { type: 'OPEN_CREATE'; defaultColor: string }
+  | { type: 'OPEN_EDIT'; payload: TaskLabelResponseDto }
+  | { type: 'CLOSE_DIALOG'; defaultColor: string }
+  | { type: 'SET_DELETING'; payload: TaskLabelResponseDto | null }
+  | { type: 'SET_NAME'; payload: string }
+  | { type: 'SET_COLOR'; payload: string };
+
+const labelDialogInitialState: LabelDialogState = {
+  dialogOpen: false,
+  editingLabel: null,
+  deletingLabel: null,
+  labelName: '',
+  labelColor: '',
+};
+
+function labelDialogReducer(state: LabelDialogState, action: LabelDialogAction): LabelDialogState {
+  switch (action.type) {
+    case 'OPEN_CREATE':
+      return {
+        ...state,
+        dialogOpen: true,
+        editingLabel: null,
+        labelName: '',
+        labelColor: action.defaultColor,
+      };
+    case 'OPEN_EDIT':
+      return {
+        ...state,
+        dialogOpen: true,
+        editingLabel: action.payload,
+        labelName: action.payload.name,
+        labelColor: action.payload.color,
+      };
+    case 'CLOSE_DIALOG':
+      return {
+        ...state,
+        dialogOpen: false,
+        labelName: '',
+        labelColor: action.defaultColor,
+        editingLabel: null,
+      };
+    case 'SET_DELETING':
+      return { ...state, deletingLabel: action.payload };
+    case 'SET_NAME':
+      return { ...state, labelName: action.payload };
+    case 'SET_COLOR':
+      return { ...state, labelColor: action.payload };
+  }
+}
+
 const DEFAULT_COLORS = [
   '#ef4444', // red
   '#f97316', // orange
@@ -79,25 +139,24 @@ export default function TasksSettingsPage() {
   const updateLabel = useUpdateTaskLabel();
   const deleteLabel = useDeleteTaskLabel();
 
-  const [labelDialogOpen, setLabelDialogOpen] = useState(false);
-  const [editingLabel, setEditingLabel] = useState<TaskLabelResponseDto | null>(null);
-  const [deletingLabel, setDeletingLabel] = useState<TaskLabelResponseDto | null>(null);
-
-  const [labelName, setLabelName] = useState('');
-  const [labelColor, setLabelColor] = useState(DEFAULT_COLORS[0]);
+  const [labelState, dispatchLabel] = useReducer(labelDialogReducer, {
+    ...labelDialogInitialState,
+    labelColor: DEFAULT_COLORS[0],
+  });
+  const {
+    dialogOpen: labelDialogOpen,
+    editingLabel,
+    deletingLabel,
+    labelName,
+    labelColor,
+  } = labelState;
 
   const handleOpenCreateDialog = () => {
-    setEditingLabel(null);
-    setLabelName('');
-    setLabelColor(DEFAULT_COLORS[0]);
-    setLabelDialogOpen(true);
+    dispatchLabel({ type: 'OPEN_CREATE', defaultColor: DEFAULT_COLORS[0] });
   };
 
   const handleOpenEditDialog = (label: TaskLabelResponseDto) => {
-    setEditingLabel(label);
-    setLabelName(label.name);
-    setLabelColor(label.color);
-    setLabelDialogOpen(true);
+    dispatchLabel({ type: 'OPEN_EDIT', payload: label });
   };
 
   const handleSaveLabel = async () => {
@@ -112,16 +171,13 @@ export default function TasksSettingsPage() {
       await createLabel.mutateAsync({ name: labelName, color: labelColor } as CreateTaskLabelDto);
     }
 
-    setLabelDialogOpen(false);
-    setLabelName('');
-    setLabelColor(DEFAULT_COLORS[0]);
-    setEditingLabel(null);
+    dispatchLabel({ type: 'CLOSE_DIALOG', defaultColor: DEFAULT_COLORS[0] });
   };
 
   const handleDeleteLabel = async () => {
     if (!deletingLabel) return;
     await deleteLabel.mutateAsync(deletingLabel.id);
-    setDeletingLabel(null);
+    dispatchLabel({ type: 'SET_DELETING', payload: null });
   };
 
   return (
@@ -200,7 +256,7 @@ export default function TasksSettingsPage() {
                             variant="ghost"
                             size="icon"
                             className="text-destructive hover:text-destructive"
-                            onClick={() => setDeletingLabel(label)}
+                            onClick={() => dispatchLabel({ type: 'SET_DELETING', payload: label })}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -222,7 +278,12 @@ export default function TasksSettingsPage() {
       </Card>
 
       {/* Label Create/Edit Dialog */}
-      <Dialog open={labelDialogOpen} onOpenChange={setLabelDialogOpen}>
+      <Dialog
+        open={labelDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) dispatchLabel({ type: 'CLOSE_DIALOG', defaultColor: DEFAULT_COLORS[0] });
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingLabel ? 'Edytuj etykietę' : 'Nowa etykieta'}</DialogTitle>
@@ -239,7 +300,7 @@ export default function TasksSettingsPage() {
               <Input
                 id="label-name"
                 value={labelName}
-                onChange={(e) => setLabelName(e.target.value)}
+                onChange={(e) => dispatchLabel({ type: 'SET_NAME', payload: e.target.value })}
                 placeholder="np. Pilne, Bug, Feature..."
               />
             </div>
@@ -257,7 +318,7 @@ export default function TasksSettingsPage() {
                         : 'border-transparent hover:scale-105'
                     }`}
                     style={{ backgroundColor: color }}
-                    onClick={() => setLabelColor(color)}
+                    onClick={() => dispatchLabel({ type: 'SET_COLOR', payload: color })}
                   />
                 ))}
               </div>
@@ -269,7 +330,7 @@ export default function TasksSettingsPage() {
                   id="custom-color"
                   type="color"
                   value={labelColor}
-                  onChange={(e) => setLabelColor(e.target.value)}
+                  onChange={(e) => dispatchLabel({ type: 'SET_COLOR', payload: e.target.value })}
                   className="h-8 w-12 border-0 p-0"
                 />
                 <span className="text-muted-foreground text-sm">{labelColor}</span>
@@ -288,7 +349,12 @@ export default function TasksSettingsPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setLabelDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() =>
+                dispatchLabel({ type: 'CLOSE_DIALOG', defaultColor: DEFAULT_COLORS[0] })
+              }
+            >
               Anuluj
             </Button>
             <Button
@@ -305,7 +371,7 @@ export default function TasksSettingsPage() {
       {deletingLabel && (
         <ConfirmDialog
           open={!!deletingLabel}
-          onOpenChange={(open) => !open && setDeletingLabel(null)}
+          onOpenChange={(open) => !open && dispatchLabel({ type: 'SET_DELETING', payload: null })}
           title="Usuń etykietę"
           description={`Czy na pewno chcesz usunąć etykietę "${deletingLabel.name}"? Ta akcja usunie etykietę ze wszystkich zadań.`}
           variant="destructive"
