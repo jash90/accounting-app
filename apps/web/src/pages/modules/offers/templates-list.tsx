@@ -334,7 +334,7 @@ export default function TemplatesListPage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-apptax-navy text-2xl font-bold">Szablony ofert</h1>
+            <h1 className="text-foreground text-2xl font-bold">Szablony ofert</h1>
             <p className="text-muted-foreground">Zarządzaj szablonami dokumentów ofertowych</p>
           </div>
         </div>
@@ -344,7 +344,7 @@ export default function TemplatesListPage() {
           </Button>
           <Button
             onClick={() => dispatchDialog({ type: 'OPEN_CREATE' })}
-            className="bg-apptax-blue hover:bg-apptax-blue/90"
+            className="bg-primary hover:bg-primary/90"
           >
             <Plus className="mr-2 h-4 w-4" />
             Nowy szablon

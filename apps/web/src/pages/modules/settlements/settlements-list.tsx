@@ -250,7 +250,7 @@ export default function SettlementsListPage() {
               <Button
                 onClick={handleInitializeMonth}
                 disabled={initializeMonth.isPending || isMonthTransition}
-                className="bg-apptax-blue hover:bg-apptax-blue/90"
+                className="bg-primary hover:bg-primary/90"
               >
                 <PlayCircle className="mr-2 h-4 w-4" />
                 {initializeMonth.isPending ? 'Inicjalizacja...' : 'Zainicjalizuj miesiąc'}
@@ -266,7 +266,7 @@ export default function SettlementsListPage() {
         showEmployeeFilter={isOwnerOrAdmin}
       />
 
-      <Card className="border-apptax-soft-teal/30">
+      <Card className="border-border">
         <CardContent className="p-0">
           <SettlementColumnsProvider value={columnsContextValue}>
             <ErrorBoundary

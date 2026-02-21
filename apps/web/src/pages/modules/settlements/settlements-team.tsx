@@ -176,10 +176,10 @@ export default function SettlementsTeamPage() {
       />
 
       {/* Employee Statistics */}
-      <Card className="border-apptax-soft-teal/30">
+      <Card className="border-border">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-apptax-teal" />
+            <TrendingUp className="h-5 w-5 text-accent" />
             <CardTitle className="text-lg">Statystyki pracowników</CardTitle>
           </div>
           <CardDescription>
@@ -212,10 +212,10 @@ export default function SettlementsTeamPage() {
       </Card>
 
       {/* Bulk Assignment Section */}
-      <Card className="border-apptax-soft-teal/30">
+      <Card className="border-border">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5 text-apptax-blue" />
+            <UserPlus className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg">Masowe przypisywanie</CardTitle>
           </div>
           <CardDescription>
@@ -261,7 +261,7 @@ export default function SettlementsTeamPage() {
                   disabled={
                     selectedSettlements.length === 0 || !targetUserId || bulkAssign.isPending
                   }
-                  className="bg-apptax-blue hover:bg-apptax-blue/90"
+                  className="bg-primary hover:bg-primary/90"
                 >
                   <UserPlus className="mr-2 h-4 w-4" />
                   {bulkAssign.isPending
@@ -325,7 +325,7 @@ export default function SettlementsTeamPage() {
                             className="flex flex-1 cursor-pointer items-center justify-between"
                           >
                             <div className="flex flex-col">
-                              <span className="text-apptax-navy font-medium">
+                              <span className="text-foreground font-medium">
                                 {settlement.client?.name ?? 'Nieznany klient'}
                               </span>
                               {settlement.client?.nip && (

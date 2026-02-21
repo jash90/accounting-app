@@ -42,14 +42,14 @@ export default function OffersDashboardPage() {
         description: 'Przeglądaj i zarządzaj wszystkimi ofertami w systemie',
         icon: FileText,
         href: `${basePath}/list`,
-        gradient: 'bg-apptax-gradient',
+        gradient: 'bg-primary',
       },
       {
         title: 'Prospekci',
         description: 'Zarządzaj potencjalnymi klientami i procesem sprzedaży',
         icon: Users,
         href: `${basePath}/leads`,
-        gradient: 'bg-apptax-dark-gradient',
+        gradient: 'bg-primary/80',
       },
       {
         title: 'Szablony',
@@ -67,9 +67,9 @@ export default function OffersDashboardPage() {
   return (
     <div className="container mx-auto space-y-6 p-6">
       <div>
-        <h1 className="text-apptax-navy flex items-center gap-3 text-3xl font-bold">
+        <h1 className="text-foreground flex items-center gap-3 text-3xl font-bold">
           Moduł Oferty
-          <div className="bg-apptax-teal h-3 w-3 rounded-full" />
+          <div className="bg-accent h-3 w-3 rounded-full" />
         </h1>
         <p className="text-muted-foreground mt-1">
           Zarządzanie ofertami handlowymi i procesem sprzedaży
@@ -89,15 +89,15 @@ export default function OffersDashboardPage() {
 
       {/* Offer Statistics */}
       <div className="space-y-3">
-        <h2 className="text-apptax-navy text-lg font-semibold">Statystyki ofert</h2>
+        <h2 className="text-foreground text-lg font-semibold">Statystyki ofert</h2>
         <div className="flex flex-wrap gap-6">
           <StatCard
             label="Wszystkie oferty"
             value={offerStats?.totalOffers ?? 0}
             icon={FileText}
-            iconBg="bg-apptax-gradient"
-            valueColor="text-apptax-navy"
-            borderColor="border-apptax-soft-teal/30"
+            iconBg="bg-primary"
+            valueColor="text-foreground"
+            borderColor="border-border"
             isLoading={offersLoading}
           />
           <StatCard
@@ -132,15 +132,15 @@ export default function OffersDashboardPage() {
 
       {/* Lead Statistics */}
       <div className="space-y-3">
-        <h2 className="text-apptax-navy text-lg font-semibold">Statystyki prospektów</h2>
+        <h2 className="text-foreground text-lg font-semibold">Statystyki prospektów</h2>
         <div className="flex flex-wrap gap-6">
           <StatCard
             label="Wszyscy prospekci"
             value={leadStats?.totalLeads ?? 0}
             icon={Users}
-            iconBg="bg-apptax-dark-gradient"
-            valueColor="text-apptax-navy"
-            borderColor="border-apptax-soft-teal/30"
+            iconBg="bg-primary/80"
+            valueColor="text-foreground"
+            borderColor="border-border"
             isLoading={leadsLoading}
           />
           <StatCard

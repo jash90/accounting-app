@@ -173,7 +173,7 @@ export default function OfferDetailPage() {
           </Button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-apptax-navy text-2xl font-bold">{offer.offerNumber}</h1>
+              <h1 className="text-foreground text-2xl font-bold">{offer.offerNumber}</h1>
               <OfferStatusBadge status={offer.status} />
             </div>
             <p className="text-muted-foreground">{offer.title}</p>
@@ -229,7 +229,7 @@ export default function OfferDetailPage() {
           {offer.status === OfferStatus.READY && (
             <Button
               onClick={() => setIsSendDialogOpen(true)}
-              className="bg-apptax-blue hover:bg-apptax-blue/90"
+              className="bg-primary hover:bg-primary/90"
             >
               <Send className="mr-2 h-4 w-4" />
               Wyślij

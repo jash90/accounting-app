@@ -228,7 +228,7 @@ export function OfferFormDialog({
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               {/* Basic Information */}
               <div className="space-y-4">
-                <h3 className="text-apptax-navy text-sm font-semibold">Dane podstawowe</h3>
+                <h3 className="text-foreground text-sm font-semibold">Dane podstawowe</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -325,7 +325,7 @@ export function OfferFormDialog({
               {selectedTemplate?.availablePlaceholders &&
                 selectedTemplate.availablePlaceholders.length > 0 && (
                   <div className="space-y-4">
-                    <h3 className="text-apptax-navy text-sm font-semibold">Pola szablonu</h3>
+                    <h3 className="text-foreground text-sm font-semibold">Pola szablonu</h3>
                     <div className="grid grid-cols-2 gap-4">
                       {selectedTemplate.availablePlaceholders.map((ph) => (
                         <FormField
@@ -354,7 +354,7 @@ export function OfferFormDialog({
               {/* Service Items */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-apptax-navy text-sm font-semibold">Pozycje usług</h3>
+                  <h3 className="text-foreground text-sm font-semibold">Pozycje usług</h3>
                   <Button
                     type="button"
                     variant="outline"
@@ -483,7 +483,7 @@ export function OfferFormDialog({
 
               {/* Payment Terms */}
               <div className="space-y-4">
-                <h3 className="text-apptax-navy text-sm font-semibold">Warunki płatności</h3>
+                <h3 className="text-foreground text-sm font-semibold">Warunki płatności</h3>
 
                 <div className="grid grid-cols-3 gap-4">
                   <FormField
@@ -571,7 +571,7 @@ export function OfferFormDialog({
 
               {/* Dates */}
               <div className="space-y-4">
-                <h3 className="text-apptax-navy text-sm font-semibold">Daty</h3>
+                <h3 className="text-foreground text-sm font-semibold">Daty</h3>
 
                 <div className="grid grid-cols-3 gap-4">
                   <FormField
@@ -665,7 +665,7 @@ export function OfferFormDialog({
                 <Button
                   type="submit"
                   disabled={form.formState.isSubmitting}
-                  className="bg-apptax-blue hover:bg-apptax-blue/90"
+                  className="bg-primary hover:bg-primary/90"
                 >
                   {isEditing ? 'Zapisz zmiany' : 'Utwórz ofertę'}
                 </Button>

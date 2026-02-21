@@ -123,7 +123,7 @@ export function LeadFormDialog({ open, onOpenChange, lead, onSubmit }: LeadFormD
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               {/* Company Information */}
               <div className="space-y-4">
-                <h3 className="text-apptax-navy text-sm font-semibold">Dane firmy</h3>
+                <h3 className="text-foreground text-sm font-semibold">Dane firmy</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -172,7 +172,7 @@ export function LeadFormDialog({ open, onOpenChange, lead, onSubmit }: LeadFormD
 
               {/* Address */}
               <div className="space-y-4">
-                <h3 className="text-apptax-navy text-sm font-semibold">Adres</h3>
+                <h3 className="text-foreground text-sm font-semibold">Adres</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -235,7 +235,7 @@ export function LeadFormDialog({ open, onOpenChange, lead, onSubmit }: LeadFormD
 
               {/* Contact */}
               <div className="space-y-4">
-                <h3 className="text-apptax-navy text-sm font-semibold">Kontakt</h3>
+                <h3 className="text-foreground text-sm font-semibold">Kontakt</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -298,7 +298,7 @@ export function LeadFormDialog({ open, onOpenChange, lead, onSubmit }: LeadFormD
 
               {/* Lead Details */}
               <div className="space-y-4">
-                <h3 className="text-apptax-navy text-sm font-semibold">Szczegóły prospektu</h3>
+                <h3 className="text-foreground text-sm font-semibold">Szczegóły prospektu</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -431,7 +431,7 @@ export function LeadFormDialog({ open, onOpenChange, lead, onSubmit }: LeadFormD
                 <Button
                   type="submit"
                   disabled={form.formState.isSubmitting}
-                  className="bg-apptax-blue hover:bg-apptax-blue/90"
+                  className="bg-primary hover:bg-primary/90"
                 >
                   {isEditing ? 'Zapisz zmiany' : 'Dodaj prospekt'}
                 </Button>

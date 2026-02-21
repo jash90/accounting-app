@@ -125,7 +125,7 @@ Z poważaniem`,
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               {/* Recipient */}
               <div className="space-y-4">
-                <h3 className="text-apptax-navy text-sm font-semibold">Odbiorca</h3>
+                <h3 className="text-foreground text-sm font-semibold">Odbiorca</h3>
 
                 <FormField
                   control={form.control}
@@ -185,7 +185,7 @@ Z poważaniem`,
 
               {/* Email Content */}
               <div className="space-y-4">
-                <h3 className="text-apptax-navy text-sm font-semibold">Treść wiadomości</h3>
+                <h3 className="text-foreground text-sm font-semibold">Treść wiadomości</h3>
 
                 <FormField
                   control={form.control}
@@ -222,7 +222,7 @@ Z poważaniem`,
 
               {/* Offer Summary */}
               <div className="rounded-lg bg-slate-50 p-4">
-                <h4 className="text-apptax-navy mb-2 text-sm font-semibold">Podsumowanie oferty</h4>
+                <h4 className="text-foreground mb-2 text-sm font-semibold">Podsumowanie oferty</h4>
                 <div className="text-muted-foreground space-y-1 text-sm">
                   <p>
                     <span className="font-medium">Numer:</span> {offer.offerNumber}
@@ -247,7 +247,7 @@ Z poważaniem`,
                 <Button
                   type="submit"
                   disabled={form.formState.isSubmitting || isLoading}
-                  className="bg-apptax-blue hover:bg-apptax-blue/90"
+                  className="bg-primary hover:bg-primary/90"
                 >
                   <Send className="mr-2 h-4 w-4" />
                   Wyślij ofertę

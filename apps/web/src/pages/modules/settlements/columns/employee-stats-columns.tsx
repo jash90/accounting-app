@@ -11,7 +11,7 @@ export const employeeStatsColumns: ColumnDef<EmployeeStatsDto>[] = [
       const stat = row.original;
       return (
         <div className="flex flex-col">
-          <span className="text-apptax-navy font-medium">
+          <span className="text-foreground font-medium">
             {stat.firstName && stat.lastName ? `${stat.firstName} ${stat.lastName}` : stat.email}
           </span>
           {stat.firstName && stat.lastName && (
@@ -65,7 +65,7 @@ export const employeeStatsColumns: ColumnDef<EmployeeStatsDto>[] = [
       return (
         <div className="flex items-center gap-2">
           <div className="h-2 w-16 rounded-full bg-gray-200">
-            <div className="h-2 rounded-full bg-apptax-teal" style={{ width: `${rate}%` }} />
+            <div className="h-2 rounded-full bg-accent" style={{ width: `${rate}%` }} />
           </div>
           <span className="text-sm font-medium">{rate}%</span>
         </div>

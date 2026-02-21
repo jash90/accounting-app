@@ -18,7 +18,7 @@ import {
   useTemplateContentBlocks,
   useUpdateContentBlocks,
 } from '@/lib/hooks/use-template-content-blocks';
-import { type ContentBlockType, type ContentBlock } from '@/types/content-blocks';
+import { type ContentBlock, type ContentBlockType } from '@/types/content-blocks';
 
 export default function TemplateEditorPage() {
   const { id } = useParams<{ id: string }>();
@@ -78,7 +78,7 @@ export default function TemplateEditorPage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-apptax-navy text-2xl font-bold">Edytor treści</h1>
+            <h1 className="text-foreground text-2xl font-bold">Edytor treści</h1>
             <p className="text-muted-foreground">
               {isLoading ? <Skeleton className="h-4 w-48" /> : template?.name || 'Szablon'}
             </p>
@@ -91,7 +91,7 @@ export default function TemplateEditorPage() {
           <Button
             onClick={handleSave}
             disabled={updateMutation.isPending || !blocks}
-            className="bg-apptax-blue hover:bg-apptax-blue/90"
+            className="bg-primary hover:bg-primary/90"
           >
             {updateMutation.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -197,7 +197,7 @@ export default function TemplateEditorPage() {
         <Button
           onClick={handleSave}
           disabled={updateMutation.isPending || !blocks}
-          className="bg-apptax-blue hover:bg-apptax-blue/90"
+          className="bg-primary hover:bg-primary/90"
         >
           {updateMutation.isPending ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
