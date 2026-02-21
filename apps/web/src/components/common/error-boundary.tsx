@@ -1,5 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 
+import * as Sentry from '@sentry/react';
+
 import { Button } from '@/components/ui/button';
 
 interface Props {
@@ -41,7 +43,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
     // Send to error tracking in production
     if (import.meta.env.PROD) {
-      // Sentry.captureException(error, { extra: errorInfo });
+      Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
     }
 
     // Call optional error callback

@@ -1,3 +1,6 @@
+import './instrument';
+
+
 import {
   ClassSerializerInterceptor,
   Logger,

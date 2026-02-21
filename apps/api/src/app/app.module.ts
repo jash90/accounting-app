@@ -7,6 +7,7 @@ import { TerminusModule } from '@nestjs/terminus';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { SentryModule } from '@sentry/nestjs/setup';
 import { join } from 'path';
 
 import { AuthModule, JwtAuthGuard } from '@accounting/auth';
@@ -114,6 +115,7 @@ const ENTITIES = [
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
