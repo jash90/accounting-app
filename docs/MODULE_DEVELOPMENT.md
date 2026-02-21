@@ -6160,14 +6160,14 @@ export default function TasksDashboardPage() {
       description: 'Przeglądaj wszystkie zadania w formie tabeli',
       icon: List,
       href: `${basePath}/list`,
-      gradient: 'bg-apptax-gradient',
+      gradient: 'bg-primary',
     },
     {
       title: 'Tablica Kanban',
       description: 'Zarządzaj zadaniami metodą przeciągnij i upuść',
       icon: LayoutGrid,
       href: `${basePath}/kanban`,
-      gradient: 'bg-apptax-dark-gradient',
+      gradient: 'bg-primary/80',
     },
     {
       title: 'Kalendarz',
@@ -6185,9 +6185,9 @@ export default function TasksDashboardPage() {
     <div className="container mx-auto p-6 space-y-6">
       {/* Header with Polish title */}
       <div>
-        <h1 className="text-3xl font-bold text-apptax-navy flex items-center gap-3">
+        <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
           Moduł Zadania
-          <div className="w-3 h-3 rounded-full bg-apptax-teal" />
+          <div className="w-3 h-3 rounded-full bg-accent" />
         </h1>
         <p className="text-muted-foreground mt-1">
           Zarządzanie zadaniami z wieloma widokami
@@ -6197,16 +6197,16 @@ export default function TasksDashboardPage() {
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         {/* Total tasks */}
-        <Card className="border-apptax-soft-teal/30">
+        <Card className="border-border">
           <CardHeader className="pb-2">
             <CardDescription>Wszystkie zadania</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-apptax-gradient text-white">
+              <div className="p-2 rounded-lg bg-primary text-white">
                 <CheckSquare className="h-5 w-5" />
               </div>
-              <span className="text-3xl font-bold text-apptax-navy">{totalTasks}</span>
+              <span className="text-3xl font-bold text-foreground">{totalTasks}</span>
             </div>
           </CardContent>
         </Card>
@@ -6216,7 +6216,7 @@ export default function TasksDashboardPage() {
       {/* View Cards */}
       <div className="grid gap-6 md:grid-cols-2">
         {views.map((view) => (
-          <Card key={view.title} className="hover:shadow-apptax-md transition-all">
+          <Card key={view.title} className="hover:shadow-md transition-all">
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className={`p-3 rounded-xl ${view.gradient} text-white`}>
@@ -6228,7 +6228,7 @@ export default function TasksDashboardPage() {
             </CardHeader>
             <CardContent>
               <Link to={view.href}>
-                <Button className="w-full bg-apptax-blue hover:bg-apptax-blue/90">
+                <Button className="w-full bg-primary hover:bg-primary/90">
                   Otwórz
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
