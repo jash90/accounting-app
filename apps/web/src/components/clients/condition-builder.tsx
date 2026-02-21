@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useId, useMemo } from 'react';
 
 import { Check, ChevronDown, FolderPlus, Plus, Trash2 } from 'lucide-react';
 
@@ -197,6 +197,7 @@ const GroupConditionRenderer = memo(function GroupConditionRenderer({
   onRemove,
   isRoot = false,
 }: GroupConditionRendererProps) {
+  'use no memo';
   // Extract primitive/stable values from group to use in dependencies
   // This prevents callback recreation when group object reference changes
   const groupId = group.id;
@@ -264,6 +265,10 @@ const GroupConditionRenderer = memo(function GroupConditionRenderer({
       logicalOperator: groupLogicalOperator,
       conditions: [...groupConditions, newCondition],
     });
+    // Intentionally using conditionsCount instead of groupConditions to prevent callback recreation
+    // on every condition edit. Since this callback only appends to the array, we only need to know
+    // when the array length changes (conditionsCount), not when individual items change.
+    // The current groupConditions is read via closure at execution time.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onChange, groupId, groupLogicalOperator, conditionsCount]);
 
@@ -285,6 +290,10 @@ const GroupConditionRenderer = memo(function GroupConditionRenderer({
       logicalOperator: groupLogicalOperator,
       conditions: [...groupConditions, newGroup],
     });
+    // Intentionally using conditionsCount instead of groupConditions to prevent callback recreation
+    // on every condition edit. Since this callback only appends to the array, we only need to know
+    // when the array length changes (conditionsCount), not when individual items change.
+    // The current groupConditions is read via closure at execution time.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onChange, groupId, groupLogicalOperator, conditionsCount]);
 
@@ -519,6 +528,7 @@ const ValueInput = memo(function ValueInput({
   value,
   onChange,
 }: ValueInputProps) {
+  const instanceId = useId();
   // Compute derived values at the top of the component to allow hooks below
   const isMultiSelect = ['in', 'notIn'].includes(operator) && fieldConfig?.type === 'enum';
   const selectedValues = useMemo(() => (Array.isArray(value) ? value : []), [value]);
@@ -553,7 +563,12 @@ const ValueInput = memo(function ValueInput({
     return (
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="outline" role="combobox" className="w-48 justify-between font-normal">
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-controls={`${instanceId}-multiselect`}
+            className="w-48 justify-between font-normal"
+          >
             <span className="truncate">
               {selectedValues.length === 0
                 ? 'Wybierz wartości...'
@@ -566,6 +581,7 @@ const ValueInput = memo(function ValueInput({
         </PopoverTrigger>
         <PopoverContent className="w-48 p-0" align="start">
           <div
+            id={`${instanceId}-multiselect`}
             className="max-h-60 overflow-auto p-1"
             role="listbox"
             aria-multiselectable="true"

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useReducer, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -85,6 +85,88 @@ import {
   type ZusStatus,
 } from '@/types/enums';
 
+// -- Reducer for client dialog states --
+interface ClientDialogState {
+  createOpen: boolean;
+  editingClient: ClientResponseDto | null;
+  deletingClient: ClientResponseDto | null;
+  restoringClient: ClientResponseDto | null;
+  exportImportOpen: boolean;
+  duplicateWarningOpen: boolean;
+  duplicateCheckResult: DuplicateCheckResultDto | null;
+  pendingCreateData: {
+    data: CreateClientDto;
+    customFields?: { values: Record<string, string | null> };
+  } | null;
+}
+
+type ClientDialogAction =
+  | { type: 'OPEN_CREATE' }
+  | { type: 'CLOSE_CREATE' }
+  | { type: 'SET_EDITING'; payload: ClientResponseDto | null }
+  | { type: 'SET_DELETING'; payload: ClientResponseDto | null }
+  | { type: 'SET_RESTORING'; payload: ClientResponseDto | null }
+  | { type: 'OPEN_EXPORT_IMPORT' }
+  | { type: 'CLOSE_EXPORT_IMPORT' }
+  | { type: 'SET_EXPORT_IMPORT'; payload: boolean }
+  | {
+      type: 'OPEN_DUPLICATE_WARNING';
+      payload: {
+        result: DuplicateCheckResultDto;
+        pendingData: ClientDialogState['pendingCreateData'];
+      };
+    }
+  | { type: 'CLOSE_DUPLICATE_WARNING' };
+
+const clientDialogInitialState: ClientDialogState = {
+  createOpen: false,
+  editingClient: null,
+  deletingClient: null,
+  restoringClient: null,
+  exportImportOpen: false,
+  duplicateWarningOpen: false,
+  duplicateCheckResult: null,
+  pendingCreateData: null,
+};
+
+function clientDialogReducer(
+  state: ClientDialogState,
+  action: ClientDialogAction
+): ClientDialogState {
+  switch (action.type) {
+    case 'OPEN_CREATE':
+      return { ...state, createOpen: true };
+    case 'CLOSE_CREATE':
+      return { ...state, createOpen: false };
+    case 'SET_EDITING':
+      return { ...state, editingClient: action.payload };
+    case 'SET_DELETING':
+      return { ...state, deletingClient: action.payload };
+    case 'SET_RESTORING':
+      return { ...state, restoringClient: action.payload };
+    case 'OPEN_EXPORT_IMPORT':
+      return { ...state, exportImportOpen: true };
+    case 'CLOSE_EXPORT_IMPORT':
+      return { ...state, exportImportOpen: false };
+    case 'SET_EXPORT_IMPORT':
+      return { ...state, exportImportOpen: action.payload };
+    case 'OPEN_DUPLICATE_WARNING':
+      return {
+        ...state,
+        duplicateWarningOpen: true,
+        duplicateCheckResult: action.payload.result,
+        pendingCreateData: action.payload.pendingData,
+      };
+    case 'CLOSE_DUPLICATE_WARNING':
+      return {
+        ...state,
+        duplicateWarningOpen: false,
+        duplicateCheckResult: null,
+        pendingCreateData: null,
+      };
+  }
+}
+
 // Lazy-load heavy form dialog (976 lines) - only loaded when add/edit button is clicked
 const ClientFormDialog = lazy(() =>
   import('@/components/forms/client-form-dialog').then((m) => ({
@@ -122,6 +204,7 @@ function DialogLoadingFallback() {
 }
 
 export default function ClientsListPage() {
+  'use no memo';
   const { user } = useAuthContext();
   const navigate = useNavigate();
 
@@ -242,21 +325,19 @@ export default function ClientsListPage() {
   const importClients = useImportClients();
   const downloadTemplate = useDownloadImportTemplate();
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editingClient, setEditingClient] = useState<ClientResponseDto | null>(null);
-  const [deletingClient, setDeletingClient] = useState<ClientResponseDto | null>(null);
-  const [restoringClient, setRestoringClient] = useState<ClientResponseDto | null>(null);
+  const [dialogState, dispatchDialog] = useReducer(clientDialogReducer, clientDialogInitialState);
+  const {
+    createOpen,
+    editingClient,
+    deletingClient,
+    restoringClient,
+    exportImportOpen,
+    duplicateWarningOpen,
+    duplicateCheckResult,
+    pendingCreateData,
+  } = dialogState;
   const [selectedClients, setSelectedClients] = useState<ClientResponseDto[]>([]);
   const [showStatistics, setShowStatistics] = useState(false);
-  const [exportImportOpen, setExportImportOpen] = useState(false);
-  const [duplicateWarningOpen, setDuplicateWarningOpen] = useState(false);
-  const [duplicateCheckResult, setDuplicateCheckResult] = useState<DuplicateCheckResultDto | null>(
-    null
-  );
-  const [pendingCreateData, setPendingCreateData] = useState<{
-    data: CreateClientDto;
-    customFields?: { values: Record<string, string | null> };
-  } | null>(null);
 
   const handleFiltersChange = useCallback((newFilters: ClientFiltersDto) => {
     setFilters(newFilters);
@@ -343,7 +424,7 @@ export default function ClientsListPage() {
           data: customFields,
         });
       }
-      setCreateOpen(false);
+      dispatchDialog({ type: 'CLOSE_CREATE' });
     },
     [createClient, setCustomFields]
   );
@@ -358,9 +439,10 @@ export default function ClientsListPage() {
         });
 
         if (result.hasDuplicates) {
-          setDuplicateCheckResult(result);
-          setPendingCreateData({ data, customFields });
-          setDuplicateWarningOpen(true);
+          dispatchDialog({
+            type: 'OPEN_DUPLICATE_WARNING',
+            payload: { result, pendingData: { data, customFields } },
+          });
           return;
         }
       }
@@ -376,18 +458,14 @@ export default function ClientsListPage() {
 
     try {
       await createClientAndClose(pendingCreateData.data, pendingCreateData.customFields);
-      setDuplicateWarningOpen(false);
-      setDuplicateCheckResult(null);
-      setPendingCreateData(null);
+      dispatchDialog({ type: 'CLOSE_DUPLICATE_WARNING' });
     } catch {
       // Error handled by mutation
     }
   }, [pendingCreateData, createClientAndClose]);
 
   const handleCancelDuplicate = useCallback(() => {
-    setDuplicateWarningOpen(false);
-    setDuplicateCheckResult(null);
-    setPendingCreateData(null);
+    dispatchDialog({ type: 'CLOSE_DUPLICATE_WARNING' });
   }, []);
 
   const handleClientClick = useCallback(
@@ -464,7 +542,7 @@ export default function ClientsListPage() {
         }
 
         await Promise.all(operations);
-        setEditingClient(null);
+        dispatchDialog({ type: 'SET_EDITING', payload: null });
       } catch {
         // Error is handled by mutation's onError callback
         // Dialog stays open so user can retry
@@ -474,33 +552,33 @@ export default function ClientsListPage() {
   );
 
   const handleEditDialogOpenChange = useCallback(
-    (open: boolean) => !open && setEditingClient(null),
+    (open: boolean) => !open && dispatchDialog({ type: 'SET_EDITING', payload: null }),
     []
   );
 
   const handleDeleteDialogOpenChange = useCallback(
-    (open: boolean) => !open && setDeletingClient(null),
+    (open: boolean) => !open && dispatchDialog({ type: 'SET_DELETING', payload: null }),
     []
   );
 
   const handleRestoreDialogOpenChange = useCallback(
-    (open: boolean) => !open && setRestoringClient(null),
+    (open: boolean) => !open && dispatchDialog({ type: 'SET_RESTORING', payload: null }),
     []
   );
 
   const handleDeleteConfirm = useCallback(() => {
     if (!deletingClient) return;
     deleteClient.mutate(deletingClient.id, {
-      onSuccess: () => setDeletingClient(null),
-      onSettled: () => setDeletingClient(null),
+      onSuccess: () => dispatchDialog({ type: 'SET_DELETING', payload: null }),
+      onSettled: () => dispatchDialog({ type: 'SET_DELETING', payload: null }),
     });
   }, [deletingClient, deleteClient]);
 
   const handleRestoreConfirm = useCallback(() => {
     if (!restoringClient) return;
     restoreClient.mutate(restoringClient.id, {
-      onSuccess: () => setRestoringClient(null),
-      onSettled: () => setRestoringClient(null),
+      onSuccess: () => dispatchDialog({ type: 'SET_RESTORING', payload: null }),
+      onSettled: () => dispatchDialog({ type: 'SET_RESTORING', payload: null }),
     });
   }, [restoringClient, restoreClient]);
 
@@ -750,7 +828,7 @@ export default function ClientsListPage() {
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
-                    setEditingClient(client);
+                    dispatchDialog({ type: 'SET_EDITING', payload: client });
                   }}
                 >
                   <Edit className="mr-2 h-4 w-4" />
@@ -769,7 +847,7 @@ export default function ClientsListPage() {
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
-                    setDeletingClient(client);
+                    dispatchDialog({ type: 'SET_DELETING', payload: client });
                   }}
                   className="text-destructive focus:text-destructive"
                 >
@@ -782,7 +860,7 @@ export default function ClientsListPage() {
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
-                    setRestoringClient(client);
+                    dispatchDialog({ type: 'SET_RESTORING', payload: client });
                   }}
                 >
                   <RotateCcw className="mr-2 h-4 w-4" />
@@ -830,13 +908,17 @@ export default function ClientsListPage() {
               <BarChart3 className="mr-2 h-4 w-4" />
               {showStatistics ? 'Ukryj statystyki' : 'Statystyki'}
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setExportImportOpen(true)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => dispatchDialog({ type: 'OPEN_EXPORT_IMPORT' })}
+            >
               <Download className="mr-2 h-4 w-4" />
               Export / Import
             </Button>
             {hasWritePermission && (
               <Button
-                onClick={() => setCreateOpen(true)}
+                onClick={() => dispatchDialog({ type: 'OPEN_CREATE' })}
                 onMouseEnter={preloadClientFormDialog}
                 className="bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md transition-all"
               >
@@ -907,9 +989,21 @@ export default function ClientsListPage() {
               isLoading={isPending}
               selectedClients={selectedClients}
               onSelectionChange={setSelectedClients}
-              onEditClient={hasWritePermission ? setEditingClient : undefined}
-              onDeleteClient={hasDeletePermission ? setDeletingClient : undefined}
-              onRestoreClient={hasWritePermission ? setRestoringClient : undefined}
+              onEditClient={
+                hasWritePermission
+                  ? (client) => dispatchDialog({ type: 'SET_EDITING', payload: client })
+                  : undefined
+              }
+              onDeleteClient={
+                hasDeletePermission
+                  ? (client) => dispatchDialog({ type: 'SET_DELETING', payload: client })
+                  : undefined
+              }
+              onRestoreClient={
+                hasWritePermission
+                  ? (client) => dispatchDialog({ type: 'SET_RESTORING', payload: client })
+                  : undefined
+              }
               permissions={{ write: hasWritePermission, delete: hasDeletePermission }}
               fieldDefinitions={fieldDefinitions}
               visibleColumns={visibleColumns}
@@ -924,7 +1018,9 @@ export default function ClientsListPage() {
             <Suspense fallback={<DialogLoadingFallback />}>
               <ClientFormDialog
                 open={createOpen}
-                onOpenChange={setCreateOpen}
+                onOpenChange={(open) =>
+                  dispatchDialog({ type: open ? 'OPEN_CREATE' : 'CLOSE_CREATE' })
+                }
                 onSubmit={handleCreateSubmit}
               />
             </Suspense>
@@ -969,7 +1065,7 @@ export default function ClientsListPage() {
 
       <ExportImportDialog
         open={exportImportOpen}
-        onOpenChange={setExportImportOpen}
+        onOpenChange={(open) => dispatchDialog({ type: 'SET_EXPORT_IMPORT', payload: open })}
         onExport={handleExport}
         onImport={handleImport}
         onDownloadTemplate={handleDownloadTemplate}
@@ -980,7 +1076,9 @@ export default function ClientsListPage() {
       {duplicateCheckResult && (
         <DuplicateWarningDialog
           open={duplicateWarningOpen}
-          onOpenChange={setDuplicateWarningOpen}
+          onOpenChange={(open) => {
+            if (!open) dispatchDialog({ type: 'CLOSE_DUPLICATE_WARNING' });
+          }}
           byNip={duplicateCheckResult.byNip}
           byEmail={duplicateCheckResult.byEmail}
           onProceed={handleProceedWithDuplicate}

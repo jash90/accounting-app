@@ -78,6 +78,7 @@ function SyncStatusIcon({ status }: { status: SyncStatus }) {
 }
 
 export default function EmailDrafts() {
+  'use no memo';
   const { data: drafts, isLoading } = useDrafts();
   const sendDraft = useSendDraft();
   const syncDrafts = useSyncDrafts();

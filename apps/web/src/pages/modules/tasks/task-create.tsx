@@ -71,6 +71,7 @@ type TaskFormData = z.infer<typeof taskFormSchema>;
 const storyPointOptions = [1, 2, 3, 5, 8, 13];
 
 export default function TaskCreatePage() {
+  'use no memo';
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuthContext();

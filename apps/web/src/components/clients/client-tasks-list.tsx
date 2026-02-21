@@ -1,4 +1,4 @@
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -30,10 +30,11 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthContext } from '@/contexts/auth-context';
+import { PAGINATION, TaskPriorityLabels, TaskStatusLabels } from '@/lib/constants';
 import { useTaskAssignees, useTasks } from '@/lib/hooks/use-tasks';
 import { cn } from '@/lib/utils/cn';
 import { type TaskFiltersDto } from '@/types/dtos';
-import { TaskPriority, TaskStatus as TaskStatusEnum, UserRole } from '@/types/enums';
+import { TaskStatus as TaskStatusEnum, UserRole, type TaskPriority } from '@/types/enums';
 
 import { QuickAddTaskDialog } from './quick-add-task-dialog';
 
@@ -41,25 +42,6 @@ interface ClientTasksListProps {
   clientId: string;
   clientName: string;
 }
-
-const PAGE_SIZE = 10;
-
-const TaskStatusLabels: Record<TaskStatusEnum, string> = {
-  [TaskStatusEnum.BACKLOG]: 'Backlog',
-  [TaskStatusEnum.TODO]: 'Do zrobienia',
-  [TaskStatusEnum.IN_PROGRESS]: 'W trakcie',
-  [TaskStatusEnum.IN_REVIEW]: 'Do przeglądu',
-  [TaskStatusEnum.DONE]: 'Zakończone',
-  [TaskStatusEnum.CANCELLED]: 'Anulowane',
-};
-
-const TaskPriorityLabels: Record<TaskPriority, string> = {
-  [TaskPriority.NONE]: 'Brak',
-  [TaskPriority.LOW]: 'Niski',
-  [TaskPriority.MEDIUM]: 'Średni',
-  [TaskPriority.HIGH]: 'Wysoki',
-  [TaskPriority.URGENT]: 'Pilny',
-};
 
 export const ClientTasksList = memo(function ClientTasksList({
   clientId,
@@ -72,7 +54,7 @@ export const ClientTasksList = memo(function ClientTasksList({
   const [filters, setFilters] = useState<TaskFiltersDto>({
     clientId,
     page: 1,
-    limit: PAGE_SIZE,
+    limit: PAGINATION.COMPACT_PAGE_SIZE,
   });
 
   const { data: tasksData, isPending, error } = useTasks(filters);
@@ -111,14 +93,33 @@ export const ClientTasksList = memo(function ClientTasksList({
     setFilters({
       clientId,
       page: 1,
-      limit: PAGE_SIZE,
+      limit: PAGINATION.COMPACT_PAGE_SIZE,
     });
   }, [clientId]);
 
-  const hasActiveFilters = filters.status || filters.priority || filters.assigneeId;
+  // Memoize to avoid recalculating on every render
+  const hasActiveFilters = useMemo(
+    () => Boolean(filters.status || filters.priority || filters.assigneeId),
+    [filters.status, filters.priority, filters.assigneeId]
+  );
 
-  const totalPages = tasksData ? Math.ceil(tasksData.meta.total / PAGE_SIZE) : 0;
+  const totalPages = tasksData ? Math.ceil(tasksData.meta.total / PAGINATION.COMPACT_PAGE_SIZE) : 0;
   const currentPage = filters.page || 1;
+
+  // Memoize overdue task IDs to avoid recalculating on every render
+  // This is O(n) once per tasks change instead of O(n) on every render
+  const overdueTaskIds = useMemo(() => {
+    const tasks = tasksData?.data ?? [];
+    const now = new Date();
+    return new Set(
+      tasks
+        .filter(
+          (task) =>
+            task.dueDate && new Date(task.dueDate) < now && task.status !== TaskStatusEnum.DONE
+        )
+        .map((task) => task.id)
+    );
+  }, [tasksData?.data]);
 
   if (isPending) {
     return (
@@ -304,10 +305,8 @@ export const ClientTasksList = memo(function ClientTasksList({
           ) : (
             <div className="space-y-2">
               {tasks.map((task) => {
-                const isOverdue =
-                  task.dueDate &&
-                  new Date(task.dueDate) < new Date() &&
-                  task.status !== TaskStatusEnum.DONE;
+                // Use memoized set for O(1) lookup instead of recalculating
+                const isOverdue = overdueTaskIds.has(task.id);
 
                 return (
                   <div

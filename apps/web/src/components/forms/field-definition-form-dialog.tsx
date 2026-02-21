@@ -58,6 +58,7 @@ export function FieldDefinitionFormDialog({
   fieldDefinition,
   onSubmit,
 }: FieldDefinitionFormDialogProps) {
+  'use no memo';
   const isEditing = !!fieldDefinition;
   const schema = isEditing ? updateClientFieldDefinitionSchema : createClientFieldDefinitionSchema;
 

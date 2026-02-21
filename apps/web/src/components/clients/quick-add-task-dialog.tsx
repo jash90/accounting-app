@@ -51,6 +51,7 @@ export function QuickAddTaskDialog({
   clientId,
   clientName,
 }: QuickAddTaskDialogProps) {
+  'use no memo';
   const queryClient = useQueryClient();
   const createTask = useCreateTask();
   const { data: assignees } = useTaskAssignees();

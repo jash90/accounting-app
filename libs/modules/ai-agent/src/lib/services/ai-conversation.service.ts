@@ -22,13 +22,13 @@ import {
   User,
   UserRole,
 } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { AIConfigurationService } from './ai-configuration.service';
 import { AIProviderError, ChatStreamChunk } from './ai-provider.interface';
 import { OpenAIProviderService } from './openai-provider.service';
 import { OpenRouterProviderService } from './openrouter-provider.service';
 import { RAGService } from './rag.service';
-import { SystemCompanyService } from './system-company.service';
 import { TokenLimitService } from './token-limit.service';
 import { TokenUsageService } from './token-usage.service';
 import { CreateConversationDto } from '../dto/create-conversation.dto';

@@ -11,6 +11,7 @@ import {
   TokenUsage,
   User,
 } from '@accounting/common';
+import { CommonModule } from '@accounting/common/backend';
 import { RBACModule } from '@accounting/rbac';
 
 import { AIConfigurationController } from './controllers/ai-configuration.controller';
@@ -23,7 +24,6 @@ import { OpenAIProviderService } from './services/openai-provider.service';
 import { OpenRouterModelsService } from './services/openrouter-models.service';
 import { OpenRouterProviderService } from './services/openrouter-provider.service';
 import { RAGService } from './services/rag.service';
-import { SystemCompanyService } from './services/system-company.service';
 import { TokenLimitService } from './services/token-limit.service';
 import { TokenUsageService } from './services/token-usage.service';
 
@@ -42,10 +42,12 @@ import { TokenUsageService } from './services/token-usage.service';
     ]),
     // Import RBAC module for guards and decorators
     RBACModule,
+    // Import CommonModule for SystemCompanyService
+    CommonModule,
   ],
   controllers: [AIConfigurationController, AIConversationController, TokenUsageController],
   providers: [
-    SystemCompanyService,
+    // SystemCompanyService is provided by CommonModule
     AIConfigurationService,
     AIConversationService,
     TokenUsageService,

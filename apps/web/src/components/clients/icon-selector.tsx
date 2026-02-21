@@ -139,6 +139,38 @@ interface IconSelectorProps {
 
 const MAX_FILE_SIZE = 1024 * 1024; // 1MB
 
+// Extracted preview component for proper React reconciliation
+function IconSelectorPreview({
+  value,
+  filePreviewUrl,
+}: {
+  value: { iconType: IconType; iconValue?: string; color?: string };
+  filePreviewUrl: string | null;
+}) {
+  switch (value.iconType) {
+    case IconType.LUCIDE: {
+      const IconComponent: LucideIconComponent | undefined = value.iconValue
+        ? ICON_REGISTRY[value.iconValue]
+        : undefined;
+      return IconComponent ? (
+        <IconComponent size={32} style={value.color ? { color: value.color } : undefined} />
+      ) : (
+        <Circle size={32} className="text-muted-foreground" />
+      );
+    }
+    case IconType.EMOJI:
+      return <span className="text-3xl">{value.iconValue || '⭐'}</span>;
+    case IconType.CUSTOM:
+      return filePreviewUrl ? (
+        <img src={filePreviewUrl} alt="Podgląd ikony" className="h-8 w-8 object-contain" />
+      ) : (
+        <Image size={32} className="text-muted-foreground" />
+      );
+    default:
+      return <Circle size={32} className="text-muted-foreground" />;
+  }
+}
+
 export function IconSelector({ value, onChange, className }: IconSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [customEmoji, setCustomEmoji] = useState('');
@@ -232,31 +264,6 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
     [searchTerm]
   );
 
-  const renderIconPreview = () => {
-    switch (value.iconType) {
-      case IconType.LUCIDE: {
-        const IconComponent: LucideIconComponent | undefined = value.iconValue
-          ? ICON_REGISTRY[value.iconValue]
-          : undefined;
-        return IconComponent ? (
-          <IconComponent size={32} style={value.color ? { color: value.color } : undefined} />
-        ) : (
-          <Circle size={32} className="text-muted-foreground" />
-        );
-      }
-      case IconType.EMOJI:
-        return <span className="text-3xl">{value.iconValue || '⭐'}</span>;
-      case IconType.CUSTOM:
-        return filePreviewUrl ? (
-          <img src={filePreviewUrl} alt="Podgląd ikony" className="h-8 w-8 object-contain" />
-        ) : (
-          <Image size={32} className="text-muted-foreground" />
-        );
-      default:
-        return <Circle size={32} className="text-muted-foreground" />;
-    }
-  };
-
   return (
     <div className={cn('space-y-4', className)}>
       {/* Preview */}
@@ -269,7 +276,7 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
               : undefined
           }
         >
-          {renderIconPreview()}
+          <IconSelectorPreview value={value} filePreviewUrl={filePreviewUrl} />
         </div>
         <div className="flex-1">
           <p className="text-sm font-medium">Podgląd ikony</p>

@@ -12,13 +12,9 @@ import {
 
 import { Server, Socket } from 'socket.io';
 
-import { NotificationCreatedEvent } from '../services/notification-dispatcher.service';
+import { JwtPayload } from '@accounting/auth';
 
-interface JwtPayload {
-  sub: string;
-  email: string;
-  companyId: string;
-}
+import { NotificationCreatedEvent } from '../services/notification-dispatcher.service';
 
 /**
  * CORS configuration for WebSocket gateway.
@@ -143,6 +139,18 @@ export class NotificationGateway
   handleNotificationCreated(event: NotificationCreatedEvent): void {
     const { notification, recipientId } = event;
 
+    // Security: Verify notification belongs to the intended recipient
+    // The event is emitted by NotificationDispatcherService which validates
+    // recipient ownership before emitting. This double-check ensures defense in depth.
+    if (notification.recipientId !== recipientId) {
+      this.logger.warn('Notification recipient mismatch - potential security issue', {
+        notificationId: notification.id,
+        notificationRecipientId: notification.recipientId,
+        eventRecipientId: recipientId,
+      });
+      return;
+    }
+
     this.server.to(`user:${recipientId}`).emit('notification:new', notification);
 
     this.logger.debug(`Sent notification to user ${recipientId}`, {
@@ -163,7 +171,21 @@ export class NotificationGateway
     this.server.to(`user:${userId}`).emit('notification:archived', { id: notificationId });
   }
 
+  /**
+   * Broadcasts an event to all connected users in a company.
+   *
+   * SECURITY NOTE: This method should only be called from internal services
+   * (e.g., NotificationDispatcherService) that have already validated the caller's
+   * authorization to broadcast to the specified company. Direct client access
+   * to this method is not exposed via WebSocket message handlers.
+   *
+   * @param companyId - The company ID to broadcast to
+   * @param event - The event name to emit
+   * @param data - The data payload to send
+   * @internal Used by internal notification services only
+   */
   broadcastToCompany(companyId: string, event: string, data: unknown): void {
+    this.logger.debug(`Broadcasting to company ${companyId}`, { event });
     this.server.to(`company:${companyId}`).emit(event, data);
   }
 

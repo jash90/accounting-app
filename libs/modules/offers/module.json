@@ -1,0 +1,20 @@
+{
+  "$schema": "../../../schemas/module.schema.json",
+  "slug": "offers",
+  "name": "Oferty",
+  "description": "Zarządzanie ofertami, leadami i szablonami dokumentów z generowaniem DOCX i wysyłką email",
+  "version": "1.0.0",
+  "isActive": true,
+  "permissions": ["read", "write", "delete", "manage"],
+  "defaultPermissions": ["read", "write"],
+  "icon": "file-text",
+  "category": "sales",
+  "config": {
+    "enableLeads": true,
+    "enableTemplates": true,
+    "enableDocxGeneration": true,
+    "enableEmailSending": true,
+    "defaultValidityDays": 30,
+    "defaultVatRate": 23
+  }
+}

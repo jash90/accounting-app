@@ -25,11 +25,47 @@ interface EmailNotificationPayload {
   actorId?: string;
 }
 
+const ALLOWED_URL_SCHEMES = ['http:', 'https:', 'mailto:'];
+
+function escapeHtml(value: unknown): string {
+  const str = String(value ?? '');
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function sanitizeUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (!ALLOWED_URL_SCHEMES.includes(parsed.protocol)) {
+      return '#';
+    }
+    return url;
+  } catch {
+    return '#';
+  }
+}
+
 @Injectable()
 export class EmailChannelService {
   private readonly logger = new Logger(EmailChannelService.name);
-  private readonly templatesDir =
-    process.env['NOTIFICATION_TEMPLATES_DIR'] || path.resolve(__dirname, '..', 'templates');
+  private readonly templatesDir: string;
+
+  private static resolveTemplatesDir(): string {
+    const envDir = process.env['NOTIFICATION_TEMPLATES_DIR'];
+    if (!envDir) {
+      return path.resolve(__dirname, '..', 'templates');
+    }
+    const resolved = path.resolve(envDir);
+    const expected = path.resolve(__dirname, '..');
+    if (!resolved.startsWith(expected)) {
+      return path.resolve(__dirname, '..', 'templates');
+    }
+    return resolved;
+  }
 
   constructor(
     @InjectRepository(User)
@@ -37,7 +73,9 @@ export class EmailChannelService {
     private readonly emailConfigService: EmailConfigurationService,
     private readonly emailSenderService: EmailSenderService,
     private readonly notificationService: NotificationService
-  ) {}
+  ) {
+    this.templatesDir = EmailChannelService.resolveTemplatesDir();
+  }
 
   @OnEvent('notification.email.send')
   async handleEmailNotification(payload: EmailNotificationPayload): Promise<void> {
@@ -122,7 +160,7 @@ export class EmailChannelService {
 
     try {
       const templateContent = await fs.readFile(templatePath, 'utf-8');
-      const template = handlebars.compile(templateContent);
+      const template = handlebars.compile(templateContent, { strict: true });
       return template(context);
     } catch (error) {
       this.logger.error('Failed to compile template', {
@@ -134,6 +172,17 @@ export class EmailChannelService {
   }
 
   private getDefaultTemplate(context: Record<string, unknown>): string {
+    const title = escapeHtml(context.title || 'Powiadomienie');
+    const recipientName = escapeHtml(context.recipientName);
+    const message = context.message ? `<p>${escapeHtml(context.message)}</p>` : '';
+    const actorName = context.actorName
+      ? `<p>Akcja wykonana przez: ${escapeHtml(context.actorName)}</p>`
+      : '';
+    const actionUrlHtml = context.actionUrl
+      ? `<p><a href="${sanitizeUrl(String(context.actionUrl))}" class="button">Zobacz szczegóły</a></p>`
+      : '';
+    const timestamp = escapeHtml(context.timestamp);
+
     return `
       <!DOCTYPE html>
       <html>
@@ -151,17 +200,17 @@ export class EmailChannelService {
       <body>
         <div class="container">
           <div class="header">
-            <h1>${context.title || 'Powiadomienie'}</h1>
+            <h1>${title}</h1>
           </div>
           <div class="content">
-            <p>Witaj ${context.recipientName || ''},</p>
-            ${context.message ? `<p>${context.message}</p>` : ''}
-            ${context.actorName ? `<p>Akcja wykonana przez: ${context.actorName}</p>` : ''}
-            ${context.actionUrl ? `<p><a href="${context.actionUrl}" class="button">Zobacz szczegóły</a></p>` : ''}
+            <p>Witaj ${recipientName},</p>
+            ${message}
+            ${actorName}
+            ${actionUrlHtml}
           </div>
           <div class="footer">
             <p>Ta wiadomość została wysłana automatycznie z systemu AppTax.</p>
-            <p>${context.timestamp || ''}</p>
+            <p>${timestamp}</p>
           </div>
         </div>
       </body>

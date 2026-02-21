@@ -87,6 +87,34 @@ const INITIAL_RELIEF_STATE: ReliefState = {
 // Empty array constant to prevent re-renders from default prop recreation
 const EMPTY_EXISTING_RELIEFS: { reliefType: ReliefType; startDate: string; endDate: string }[] = [];
 
+// Extracted component for rendering individual custom fields - avoids inline render function
+function CustomFieldItem({
+  definition,
+  value,
+  hasError,
+  onChange,
+}: {
+  definition: ClientFieldDefinition;
+  value: string;
+  hasError: boolean;
+  onChange: (fieldId: string, value: string) => void;
+}) {
+  const handleChange = useCallback(
+    (newValue: string) => onChange(definition.id, newValue),
+    [definition.id, onChange]
+  );
+
+  return (
+    <CustomFieldRenderer
+      definition={definition}
+      value={value}
+      onChange={handleChange}
+      aria-describedby={hasError ? `custom-field-${definition.id}-error` : undefined}
+      aria-invalid={hasError}
+    />
+  );
+}
+
 interface ClientFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -106,6 +134,7 @@ export function ClientFormDialog({
   onSubmit,
   existingReliefs = EMPTY_EXISTING_RELIEFS,
 }: ClientFormDialogProps) {
+  'use no memo';
   const navigate = useNavigate();
   const { toast } = useToast();
   const createPath = useModuleCreatePath('clients');
@@ -451,21 +480,6 @@ export function ClientFormDialog({
       cleanedData as CreateClientFormData | UpdateClientFormData,
       hasCustomFieldValues ? customFieldsData : undefined,
       hasReliefs ? reliefsData : undefined
-    );
-  };
-
-  const renderCustomField = (definition: ClientFieldDefinition) => {
-    const value = customFieldValues[definition.id] || '';
-    const hasError = definition.isRequired && !value && form.formState.isSubmitted;
-
-    return (
-      <CustomFieldRenderer
-        definition={definition}
-        value={value}
-        onChange={(newValue) => handleCustomFieldChange(definition.id, newValue)}
-        aria-describedby={hasError ? `custom-field-${definition.id}-error` : undefined}
-        aria-invalid={hasError}
-      />
     );
   };
 
@@ -1056,7 +1070,16 @@ export function ClientFormDialog({
                           {definition.label}
                           {definition.isRequired && ' *'}
                         </label>
-                        {renderCustomField(definition)}
+                        <CustomFieldItem
+                          definition={definition}
+                          value={customFieldValues[definition.id] || ''}
+                          hasError={
+                            definition.isRequired &&
+                            !customFieldValues[definition.id] &&
+                            form.formState.isSubmitted
+                          }
+                          onChange={handleCustomFieldChange}
+                        />
                         {definition.isRequired &&
                           !customFieldValues[definition.id] &&
                           form.formState.isSubmitted && (

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import { useLocation, useSearchParams } from 'react-router-dom';
 
@@ -80,6 +80,41 @@ interface EmailComposeFormProps {
   onNavigateToDraft: (draftId: string, options?: { replace?: boolean }) => void;
 }
 
+// -- Reducer for email form fields --
+interface EmailFormState {
+  to: string;
+  cc: string;
+  bcc: string;
+  subject: string;
+  content: string;
+  showCcBcc: boolean;
+}
+
+type EmailFormAction =
+  | { type: 'SET_TO'; payload: string }
+  | { type: 'SET_CC'; payload: string }
+  | { type: 'SET_BCC'; payload: string }
+  | { type: 'SET_SUBJECT'; payload: string }
+  | { type: 'SET_CONTENT'; payload: string }
+  | { type: 'SET_SHOW_CC_BCC'; payload: boolean };
+
+function emailFormReducer(state: EmailFormState, action: EmailFormAction): EmailFormState {
+  switch (action.type) {
+    case 'SET_TO':
+      return { ...state, to: action.payload };
+    case 'SET_CC':
+      return { ...state, cc: action.payload };
+    case 'SET_BCC':
+      return { ...state, bcc: action.payload };
+    case 'SET_SUBJECT':
+      return { ...state, subject: action.payload };
+    case 'SET_CONTENT':
+      return { ...state, content: action.payload };
+    case 'SET_SHOW_CC_BCC':
+      return { ...state, showCcBcc: action.payload };
+  }
+}
+
 function EmailComposeForm({
   initialData,
   draftId,
@@ -89,6 +124,7 @@ function EmailComposeForm({
   onNavigateToInbox,
   onNavigateToDraft,
 }: EmailComposeFormProps) {
+  'use no memo';
   const { toast } = useToast();
 
   // Destructure aiStream properties for explicit dependencies
@@ -108,12 +144,15 @@ function EmailComposeForm({
   const uploadAttachment = useUploadAttachment();
 
   // Form state - initialized from props (no useEffect needed due to key prop in parent)
-  const [to, setTo] = useState(initialData.to);
-  const [cc, setCc] = useState(initialData.cc);
-  const [bcc, setBcc] = useState('');
-  const [subject, setSubject] = useState(initialData.subject);
-  const [content, setContent] = useState(initialData.content);
-  const [showCcBcc, setShowCcBcc] = useState(initialData.showCcBcc);
+  const [formState, dispatchForm] = useReducer(emailFormReducer, {
+    to: initialData.to,
+    cc: initialData.cc,
+    bcc: '',
+    subject: initialData.subject,
+    content: initialData.content,
+    showCcBcc: initialData.showCcBcc,
+  });
+  const { to, cc, bcc, subject, content, showCcBcc } = formState;
   const [attachments, setAttachments] = useState<
     Array<{ path: string; filename: string; size: number }>
   >([]);
@@ -150,7 +189,7 @@ function EmailComposeForm({
   const handleGenerateAiReply = useCallback(
     (messageUid: number) => {
       // Clear content first to show skeleton
-      setContent('');
+      dispatchForm({ type: 'SET_CONTENT', payload: '' });
       // Start streaming - text will appear progressively in textarea
       startStream({ messageUid });
     },
@@ -369,12 +408,15 @@ function EmailComposeForm({
               id="to"
               placeholder="adresat@example.com"
               value={to}
-              onChange={(e) => setTo(e.target.value)}
+              onChange={(e) => dispatchForm({ type: 'SET_TO', payload: e.target.value })}
             />
             <p className="text-muted-foreground mt-1 text-xs">Oddziel wiele adresów przecinkami</p>
           </div>
 
-          <Collapsible open={showCcBcc} onOpenChange={setShowCcBcc}>
+          <Collapsible
+            open={showCcBcc}
+            onOpenChange={(open) => dispatchForm({ type: 'SET_SHOW_CC_BCC', payload: open })}
+          >
             <CollapsibleTrigger asChild>
               <Button variant="ghost" size="sm" className="text-muted-foreground">
                 {showCcBcc ? (
@@ -392,7 +434,7 @@ function EmailComposeForm({
                   id="cc"
                   placeholder="dw@example.com"
                   value={cc}
-                  onChange={(e) => setCc(e.target.value)}
+                  onChange={(e) => dispatchForm({ type: 'SET_CC', payload: e.target.value })}
                 />
               </div>
               <div>
@@ -401,7 +443,7 @@ function EmailComposeForm({
                   id="bcc"
                   placeholder="udw@example.com"
                   value={bcc}
-                  onChange={(e) => setBcc(e.target.value)}
+                  onChange={(e) => dispatchForm({ type: 'SET_BCC', payload: e.target.value })}
                 />
               </div>
             </CollapsibleContent>
@@ -413,7 +455,7 @@ function EmailComposeForm({
               id="subject"
               placeholder="Temat wiadomości"
               value={subject}
-              onChange={(e) => setSubject(e.target.value)}
+              onChange={(e) => dispatchForm({ type: 'SET_SUBJECT', payload: e.target.value })}
             />
           </div>
 
@@ -441,7 +483,7 @@ function EmailComposeForm({
                 id="content"
                 placeholder="Wpisz treść wiadomości..."
                 value={displayContent}
-                onChange={(e) => setContent(e.target.value)}
+                onChange={(e) => dispatchForm({ type: 'SET_CONTENT', payload: e.target.value })}
                 rows={15}
                 className={`font-mono ${aiStreamIsStreaming || locationState?.aiGenerate ? 'border-purple-300 focus:border-purple-500' : ''}`}
                 disabled={aiStreamIsStreaming || (locationState?.aiGenerate && !displayContent)}
@@ -506,7 +548,7 @@ function EmailComposeForm({
               <div className="space-y-2">
                 {attachments.map((attachment, index) => (
                   <div
-                    key={index}
+                    key={attachment.path}
                     className="bg-muted/50 flex items-center justify-between rounded-lg p-3"
                   >
                     <div className="flex items-center gap-3">

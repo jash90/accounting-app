@@ -3,6 +3,8 @@ import {
   CustomFieldType,
   EmploymentType,
   IconType,
+  TaskPriority,
+  TaskStatus,
   TaxScheme,
   VatStatus,
   ZusStatus,
@@ -209,3 +211,22 @@ export const LogicalOperatorLabels = {
   and: 'ORAZ',
   or: 'LUB',
 } as const;
+
+// Task Status Labels
+export const TaskStatusLabels: Record<TaskStatus, string> = {
+  [TaskStatus.BACKLOG]: 'Backlog',
+  [TaskStatus.TODO]: 'Do zrobienia',
+  [TaskStatus.IN_PROGRESS]: 'W trakcie',
+  [TaskStatus.IN_REVIEW]: 'Do przeglądu',
+  [TaskStatus.DONE]: 'Zakończone',
+  [TaskStatus.CANCELLED]: 'Anulowane',
+};
+
+// Task Priority Labels
+export const TaskPriorityLabels: Record<TaskPriority, string> = {
+  [TaskPriority.NONE]: 'Brak',
+  [TaskPriority.LOW]: 'Niski',
+  [TaskPriority.MEDIUM]: 'Średni',
+  [TaskPriority.HIGH]: 'Wysoki',
+  [TaskPriority.URGENT]: 'Pilny',
+};

@@ -35,7 +35,7 @@ export function AttachmentList({
     <div className="space-y-2">
       {attachments.map((attachment, index) => (
         <AttachmentItem
-          key={`${attachment.path}-${index}`}
+          key={attachment.path}
           attachment={attachment}
           mode={mode}
           index={index}

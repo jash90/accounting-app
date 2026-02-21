@@ -577,93 +577,142 @@ export class TimeEntriesService {
       await this.validateTaskOwnership(dto.taskId, companyId);
     }
 
-    const runningEntry = await this.entryRepository.findOne({
-      where: {
-        userId: user.id,
-        companyId,
-        isRunning: true,
-        isActive: true,
-      },
+    // Use transaction with pessimistic locking to prevent race conditions
+    // (e.g., user updating timer from multiple tabs simultaneously)
+    const savedEntry = await this.dataSource.transaction(async (manager) => {
+      const runningEntry = await manager
+        .createQueryBuilder(TimeEntry, 'entry')
+        .setLock('pessimistic_write')
+        .where('entry.userId = :userId', { userId: user.id })
+        .andWhere('entry.companyId = :companyId', { companyId })
+        .andWhere('entry.isRunning = :isRunning', { isRunning: true })
+        .andWhere('entry.isActive = :isActive', { isActive: true })
+        .getOne();
+
+      if (!runningEntry) {
+        throw new TimerNotRunningException();
+      }
+
+      Object.assign(runningEntry, dto);
+      return manager.save(runningEntry);
     });
 
-    if (!runningEntry) {
-      throw new TimerNotRunningException();
-    }
-
-    Object.assign(runningEntry, dto);
-    await this.entryRepository.save(runningEntry);
-
-    return this.findOne(runningEntry.id, user);
+    return this.findOne(savedEntry.id, user);
   }
 
   // ==================== Approval Workflow ====================
 
   async submitEntry(id: string, user: User): Promise<TimeEntry> {
-    const entry = await this.findOne(id, user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
-    if (entry.userId !== user.id) {
-      throw new TimeEntryNotFoundException();
-    }
+    // Use transaction with pessimistic locking to prevent race conditions
+    // (e.g., user submitting the same entry from multiple tabs)
+    const savedEntry = await this.dataSource.transaction(async (manager) => {
+      const entry = await manager
+        .createQueryBuilder(TimeEntry, 'entry')
+        .setLock('pessimistic_write')
+        .where('entry.id = :id', { id })
+        .andWhere('entry.companyId = :companyId', { companyId })
+        .andWhere('entry.userId = :userId', { userId: user.id })
+        .andWhere('entry.isActive = :isActive', { isActive: true })
+        .getOne();
 
-    if (entry.status !== TimeEntryStatus.DRAFT) {
-      throw new TimeEntryInvalidStatusException(entry.status, TimeEntryStatus.SUBMITTED);
-    }
+      if (!entry) {
+        throw new TimeEntryNotFoundException();
+      }
 
-    entry.status = TimeEntryStatus.SUBMITTED;
-    entry.submittedAt = new Date();
+      if (entry.status !== TimeEntryStatus.DRAFT) {
+        throw new TimeEntryInvalidStatusException(entry.status, TimeEntryStatus.SUBMITTED);
+      }
 
-    await this.entryRepository.save(entry);
+      entry.status = TimeEntryStatus.SUBMITTED;
+      entry.submittedAt = new Date();
+
+      return manager.save(entry);
+    });
 
     this.logger.log(`Time entry ${id} submitted for approval`);
 
-    return this.findOne(id, user);
+    return this.findOne(savedEntry.id, user);
   }
 
   async approveEntry(id: string, user: User): Promise<TimeEntry> {
     // Defense-in-depth: validate authorization at service level
     this.ensureCanManageEntries(user);
 
-    const entry = await this.findOne(id, user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
-    if (entry.status !== TimeEntryStatus.SUBMITTED) {
-      throw new TimeEntryInvalidStatusException(entry.status, TimeEntryStatus.APPROVED);
-    }
+    // Use transaction with pessimistic locking to prevent race conditions
+    // (e.g., concurrent approve/reject calls for the same entry)
+    const savedEntry = await this.dataSource.transaction(async (manager) => {
+      const entry = await manager
+        .createQueryBuilder(TimeEntry, 'entry')
+        .setLock('pessimistic_write')
+        .where('entry.id = :id', { id })
+        .andWhere('entry.companyId = :companyId', { companyId })
+        .andWhere('entry.isActive = :isActive', { isActive: true })
+        .getOne();
 
-    entry.status = TimeEntryStatus.APPROVED;
-    entry.approvedById = user.id;
-    entry.approvedAt = new Date();
-    // Auto-lock entry on approval to prevent further modifications
-    entry.isLocked = true;
-    entry.lockedAt = new Date();
-    entry.lockedById = user.id;
+      if (!entry) {
+        throw new TimeEntryNotFoundException();
+      }
 
-    await this.entryRepository.save(entry);
+      if (entry.status !== TimeEntryStatus.SUBMITTED) {
+        throw new TimeEntryInvalidStatusException(entry.status, TimeEntryStatus.APPROVED);
+      }
+
+      entry.status = TimeEntryStatus.APPROVED;
+      entry.approvedById = user.id;
+      entry.approvedAt = new Date();
+      // Auto-lock entry on approval to prevent further modifications
+      entry.isLocked = true;
+      entry.lockedAt = new Date();
+      entry.lockedById = user.id;
+
+      return manager.save(entry);
+    });
 
     this.logger.log(`Time entry ${id} approved and locked by ${user.id}`);
 
-    return this.findOne(id, user);
+    return this.findOne(savedEntry.id, user);
   }
 
   async rejectEntry(id: string, rejectionNote: string, user: User): Promise<TimeEntry> {
     // Defense-in-depth: validate authorization at service level
     this.ensureCanManageEntries(user);
 
-    const entry = await this.findOne(id, user);
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
-    if (entry.status !== TimeEntryStatus.SUBMITTED) {
-      throw new TimeEntryInvalidStatusException(entry.status, TimeEntryStatus.REJECTED);
-    }
+    // Use transaction with pessimistic locking to prevent race conditions
+    // (e.g., concurrent approve/reject calls for the same entry)
+    const savedEntry = await this.dataSource.transaction(async (manager) => {
+      const entry = await manager
+        .createQueryBuilder(TimeEntry, 'entry')
+        .setLock('pessimistic_write')
+        .where('entry.id = :id', { id })
+        .andWhere('entry.companyId = :companyId', { companyId })
+        .andWhere('entry.isActive = :isActive', { isActive: true })
+        .getOne();
 
-    entry.status = TimeEntryStatus.REJECTED;
-    entry.rejectionNote = rejectionNote;
-    entry.approvedById = user.id;
-    entry.approvedAt = new Date();
+      if (!entry) {
+        throw new TimeEntryNotFoundException();
+      }
 
-    await this.entryRepository.save(entry);
+      if (entry.status !== TimeEntryStatus.SUBMITTED) {
+        throw new TimeEntryInvalidStatusException(entry.status, TimeEntryStatus.REJECTED);
+      }
+
+      entry.status = TimeEntryStatus.REJECTED;
+      entry.rejectionNote = rejectionNote;
+      entry.approvedById = user.id;
+      entry.approvedAt = new Date();
+
+      return manager.save(entry);
+    });
 
     this.logger.log(`Time entry ${id} rejected by ${user.id}`);
 
-    return this.findOne(id, user);
+    return this.findOne(savedEntry.id, user);
   }
 
   async bulkApprove(

@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { SettlementStatus, SettlementStatusLabels } from '@/lib/api/endpoints/settlements';
 import { cn } from '@/lib/utils/cn';
 
+
 interface StatusBadgeProps {
   status: SettlementStatus;
   className?: string;

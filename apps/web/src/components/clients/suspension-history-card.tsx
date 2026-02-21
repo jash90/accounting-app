@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 
 import { format, startOfToday } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -40,8 +40,8 @@ interface SuspensionHistoryCardProps {
 
 interface SuspensionEntryProps {
   suspension: SuspensionResponseDto;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit: (suspension: SuspensionResponseDto) => void;
+  onDelete: (suspensionId: string) => void;
   canWrite: boolean;
   canDelete: boolean;
   isDeleting: boolean;
@@ -55,6 +55,8 @@ const SuspensionEntry = memo(function SuspensionEntry({
   canDelete,
   isDeleting,
 }: SuspensionEntryProps) {
+  const handleEdit = useCallback(() => onEdit(suspension), [onEdit, suspension]);
+  const handleDelete = useCallback(() => onDelete(suspension.id), [onDelete, suspension.id]);
   const startDate = new Date(suspension.startDate);
   const today = startOfToday();
 
@@ -106,7 +108,7 @@ const SuspensionEntry = memo(function SuspensionEntry({
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={onEdit}
+                  onClick={handleEdit}
                   aria-label="Edytuj zawieszenie"
                 >
                   <Edit className="h-4 w-4" />
@@ -122,7 +124,7 @@ const SuspensionEntry = memo(function SuspensionEntry({
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-destructive hover:text-destructive"
-                  onClick={onDelete}
+                  onClick={handleDelete}
                   disabled={isDeleting}
                   aria-label="Usuń zawieszenie"
                 >
@@ -182,10 +184,14 @@ export function SuspensionHistoryCard({ clientId }: SuspensionHistoryCardProps) 
     setIsFormOpen(true);
   };
 
-  const handleOpenEdit = (suspension: SuspensionResponseDto) => {
+  const handleOpenEdit = useCallback((suspension: SuspensionResponseDto) => {
     setEditingSuspension(suspension);
     setIsFormOpen(true);
-  };
+  }, []);
+
+  const handleRequestDelete = useCallback((suspensionId: string) => {
+    setDeletingId(suspensionId);
+  }, []);
 
   const handleSubmit = (data: CreateSuspensionFormData | UpdateSuspensionFormData) => {
     if (editingSuspension) {
@@ -312,8 +318,8 @@ export function SuspensionHistoryCard({ clientId }: SuspensionHistoryCardProps) 
                     <SuspensionEntry
                       key={suspension.id}
                       suspension={suspension}
-                      onEdit={() => handleOpenEdit(suspension)}
-                      onDelete={() => setDeletingId(suspension.id)}
+                      onEdit={handleOpenEdit}
+                      onDelete={handleRequestDelete}
                       canWrite={canWrite}
                       canDelete={canDelete}
                       isDeleting={deleteSuspension.isPending && deletingId === suspension.id}

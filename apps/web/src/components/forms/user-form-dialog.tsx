@@ -39,6 +39,7 @@ interface UserFormDialogProps {
 }
 
 export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormDialogProps) {
+  'use no memo';
   const isEditing = !!user;
   const schema = isEditing ? updateUserSchema : createUserSchema;
   const { data: companies = [], isLoading: companiesLoading } = useCompanies();

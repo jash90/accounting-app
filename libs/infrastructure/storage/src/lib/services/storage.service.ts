@@ -20,6 +20,35 @@ export class StorageService {
     return this.provider.upload(file, path);
   }
 
+  /**
+   * Upload a buffer as a file to storage
+   * Creates a mock Multer file object from the buffer
+   */
+  async uploadBuffer(
+    buffer: Buffer,
+    fileName: string,
+    path: string,
+    mimeType: string = 'application/octet-stream'
+  ): Promise<StorageResult> {
+    this.logger.log(`Uploading buffer as file: ${fileName} to ${path}`);
+
+    // Create a mock Multer file object
+    const mockFile: Express.Multer.File = {
+      fieldname: 'file',
+      originalname: fileName,
+      encoding: '7bit',
+      mimetype: mimeType,
+      size: buffer.length,
+      buffer,
+      destination: '',
+      filename: fileName,
+      path: '',
+      stream: undefined as unknown as Express.Multer.File['stream'],
+    };
+
+    return this.provider.upload(mockFile, path);
+  }
+
   async deleteFile(path: string): Promise<boolean> {
     this.logger.log(`Deleting file: ${path}`);
     return this.provider.delete(path);
