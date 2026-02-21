@@ -1,4 +1,6 @@
 /* eslint-disable no-console */
+import * as Sentry from '@sentry/react';
+
 /**
  * Centralized Logger Service
  *
@@ -56,11 +58,11 @@ class Logger {
     console.error(`[${this.context}] ${message}`, error ?? '', ctx ?? '');
 
     // Production: integrate with error tracking service
-    // if (import.meta.env.PROD) {
-    //   Sentry.captureException(error, {
-    //     extra: { ...ctx, context: this.context, message },
-    //   });
-    // }
+    if (import.meta.env.PROD) {
+      Sentry.captureException(error instanceof Error ? error : new Error(message), {
+        extra: { ...ctx, context: this.context, message },
+      });
+    }
   }
 }
 

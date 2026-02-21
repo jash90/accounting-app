@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 
+import { SentryExceptionCaptured } from '@sentry/nestjs';
 import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -109,6 +110,7 @@ function sanitizeContext(
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
+  @SentryExceptionCaptured()
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();

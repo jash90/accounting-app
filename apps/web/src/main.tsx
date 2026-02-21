@@ -1,6 +1,10 @@
+import './instrument';
+
 import { StrictMode } from 'react';
 
+import * as Sentry from '@sentry/react';
 import * as ReactDOM from 'react-dom/client';
+
 
 import App from './app/app';
 
@@ -15,7 +19,13 @@ async function enableMocking() {
 }
 
 function renderApp() {
-  const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
+  const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement, {
+    onUncaughtError: Sentry.reactErrorHandler((error, errorInfo) => {
+      console.warn('Uncaught error', error, errorInfo.componentStack);
+    }),
+    onCaughtError: Sentry.reactErrorHandler(),
+    onRecoverableError: Sentry.reactErrorHandler(),
+  });
 
   root.render(
     <StrictMode>
