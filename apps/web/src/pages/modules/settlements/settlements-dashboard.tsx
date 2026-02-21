@@ -43,7 +43,7 @@ export default function SettlementsDashboardPage() {
       description: 'Przeglądaj i zarządzaj rozliczeniami klientów',
       icon: List,
       href: `${basePath}/list`,
-      gradient: 'bg-apptax-gradient',
+      gradient: 'bg-primary',
       roles: [UserRole.ADMIN, UserRole.COMPANY_OWNER, UserRole.EMPLOYEE],
     },
     {
@@ -51,7 +51,7 @@ export default function SettlementsDashboardPage() {
       description: 'Przypisywanie klientów, statystyki pracowników',
       icon: Users,
       href: `${basePath}/team`,
-      gradient: 'bg-apptax-dark-gradient',
+      gradient: 'bg-primary/80',
       roles: [UserRole.ADMIN, UserRole.COMPANY_OWNER],
     },
     {
@@ -72,9 +72,9 @@ export default function SettlementsDashboardPage() {
   return (
     <div className="container mx-auto space-y-6 p-6">
       <div>
-        <h1 className="text-apptax-navy flex items-center gap-3 text-3xl font-bold">
+        <h1 className="text-foreground flex items-center gap-3 text-3xl font-bold">
           Moduł Rozliczenia
-          <div className="bg-apptax-teal h-3 w-3 rounded-full" />
+          <div className="bg-accent h-3 w-3 rounded-full" />
         </h1>
         <p className="text-muted-foreground mt-1">
           Zarządzanie miesięcznymi rozliczeniami klientów -{' '}
@@ -88,9 +88,9 @@ export default function SettlementsDashboardPage() {
           label="Wszystkie rozliczenia"
           value={stats?.total ?? 0}
           icon={Calculator}
-          iconBg="bg-apptax-gradient"
-          valueColor="text-apptax-navy"
-          borderColor="border-apptax-soft-teal/30"
+          iconBg="bg-primary"
+          valueColor="text-foreground"
+          borderColor="border-border"
           isLoading={isPending}
         />
 
@@ -128,9 +128,9 @@ export default function SettlementsDashboardPage() {
           label="Realizacja"
           value={completionRate}
           icon={CheckCircle}
-          iconBg="bg-apptax-teal"
-          valueColor="text-apptax-teal"
-          borderColor="border-apptax-soft-teal/30"
+          iconBg="bg-accent"
+          valueColor="text-accent"
+          borderColor="border-border"
           isLoading={isPending}
         />
 

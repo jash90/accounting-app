@@ -130,7 +130,7 @@ function LeadContactInfoCard({ lead }: { lead: LeadResponseDto }) {
             <Mail className="text-muted-foreground h-4 w-4" />
             <div>
               <div className="text-muted-foreground text-sm">Email</div>
-              <a href={`mailto:${lead.email}`} className="text-apptax-blue hover:underline">
+              <a href={`mailto:${lead.email}`} className="text-primary hover:underline">
                 {lead.email}
               </a>
             </div>
@@ -141,7 +141,7 @@ function LeadContactInfoCard({ lead }: { lead: LeadResponseDto }) {
             <Phone className="text-muted-foreground h-4 w-4" />
             <div>
               <div className="text-muted-foreground text-sm">Telefon</div>
-              <a href={`tel:${lead.phone}`} className="text-apptax-blue hover:underline">
+              <a href={`tel:${lead.phone}`} className="text-primary hover:underline">
                 {lead.phone}
               </a>
             </div>
@@ -331,7 +331,7 @@ export default function LeadDetailPage() {
           </Button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-apptax-navy text-2xl font-bold">{lead.name}</h1>
+              <h1 className="text-foreground text-2xl font-bold">{lead.name}</h1>
               <LeadStatusBadge status={lead.status} />
             </div>
             {lead.nip && <p className="text-muted-foreground">NIP: {lead.nip}</p>}
@@ -366,7 +366,7 @@ export default function LeadDetailPage() {
               </Button>
               <Button
                 onClick={() => setIsConvertDialogOpen(true)}
-                className="bg-apptax-blue hover:bg-apptax-blue/90"
+                className="bg-primary hover:bg-primary/90"
               >
                 <UserCheck className="mr-2 h-4 w-4" />
                 Przekonwertuj
@@ -428,7 +428,7 @@ export default function LeadDetailPage() {
             <AlertDialogAction
               onClick={handleConvert}
               disabled={convertMutation.isPending}
-              className="bg-apptax-blue hover:bg-apptax-blue/90"
+              className="bg-primary hover:bg-primary/90"
             >
               <UserCheck className="mr-2 h-4 w-4" />
               {convertMutation.isPending ? 'Konwertowanie...' : 'Przekonwertuj'}

@@ -35,7 +35,7 @@ export function createSettlementsListColumns(): ColumnDef<SettlementResponseDto>
         const client = row.original.client;
         return (
           <div className="flex flex-col">
-            <span className="text-apptax-navy font-medium">{client?.name || '-'}</span>
+            <span className="text-foreground font-medium">{client?.name || '-'}</span>
             {client?.email ? (
               <span className="text-muted-foreground text-xs">{client.email}</span>
             ) : null}
@@ -47,7 +47,7 @@ export function createSettlementsListColumns(): ColumnDef<SettlementResponseDto>
       accessorKey: 'client.nip',
       header: 'NIP',
       cell: ({ row }) => (
-        <span className="text-apptax-navy/80 font-mono text-sm">
+        <span className="text-foreground/80 font-mono text-sm">
           {row.original.client?.nip || '-'}
         </span>
       ),
@@ -72,7 +72,7 @@ export function createSettlementsListColumns(): ColumnDef<SettlementResponseDto>
       accessorKey: 'invoiceCount',
       header: 'Faktury',
       cell: ({ row }) => (
-        <span className="text-apptax-navy font-medium">{row.original.invoiceCount}</span>
+        <span className="text-foreground font-medium">{row.original.invoiceCount}</span>
       ),
     },
     {

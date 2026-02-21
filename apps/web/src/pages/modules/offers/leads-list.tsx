@@ -148,7 +148,7 @@ export default function LeadsListPage() {
         cell: ({ row }) => (
           <Link
             to={`${basePath}/leads/${row.original.id}`}
-            className="text-apptax-blue hover:underline"
+            className="text-primary hover:underline"
           >
             {row.original.name}
           </Link>
@@ -288,7 +288,7 @@ export default function LeadsListPage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-apptax-navy text-2xl font-bold">Prospekty</h1>
+            <h1 className="text-foreground text-2xl font-bold">Prospekty</h1>
             <p className="text-muted-foreground">Zarządzaj potencjalnymi klientami</p>
           </div>
         </div>
@@ -298,7 +298,7 @@ export default function LeadsListPage() {
           </Button>
           <Button
             onClick={() => dispatchDialog({ type: 'OPEN_CREATE' })}
-            className="bg-apptax-blue hover:bg-apptax-blue/90"
+            className="bg-primary hover:bg-primary/90"
           >
             <Plus className="mr-2 h-4 w-4" />
             Dodaj prospekt
@@ -465,7 +465,7 @@ export default function LeadsListPage() {
             <AlertDialogCancel>Anuluj</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConvertLead}
-              className="bg-apptax-blue hover:bg-apptax-blue/90"
+              className="bg-primary hover:bg-primary/90"
             >
               Przekonwertuj
             </AlertDialogAction>

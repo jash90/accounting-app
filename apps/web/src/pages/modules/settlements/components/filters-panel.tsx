@@ -176,7 +176,7 @@ export const FiltersPanel = memo(function FiltersPanel({
   }, [filters.unassigned, filters.assigneeId]);
 
   return (
-    <Card className="border-apptax-soft-teal/30">
+    <Card className="border-border">
       <CardContent className="p-4">
         <div className="flex flex-wrap items-end gap-4">
           {/* Search */}

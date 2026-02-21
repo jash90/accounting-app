@@ -176,14 +176,14 @@ export default function SettlementCommentsPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Settlement Info Card */}
-        <Card className="border-apptax-soft-teal/30">
+        <Card className="border-border">
           <CardHeader>
             <CardTitle className="text-lg">Informacje o rozliczeniu</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <p className="text-muted-foreground text-sm">Klient</p>
-              <p className="text-apptax-navy font-medium">{settlement.client?.name ?? '-'}</p>
+              <p className="text-foreground font-medium">{settlement.client?.name ?? '-'}</p>
               {settlement.client?.nip && (
                 <p className="text-muted-foreground text-xs">NIP: {settlement.client.nip}</p>
               )}
@@ -191,7 +191,7 @@ export default function SettlementCommentsPage() {
 
             <div>
               <p className="text-muted-foreground text-sm">Okres</p>
-              <p className="text-apptax-navy font-medium">{monthYearLabel}</p>
+              <p className="text-foreground font-medium">{monthYearLabel}</p>
             </div>
 
             <div>
@@ -201,7 +201,7 @@ export default function SettlementCommentsPage() {
 
             <div>
               <p className="text-muted-foreground text-sm">Przypisany do</p>
-              <p className="text-apptax-navy font-medium">
+              <p className="text-foreground font-medium">
                 {settlement.assignedUser
                   ? getUserDisplayName(settlement.assignedUser)
                   : 'Nieprzypisany'}
@@ -210,7 +210,7 @@ export default function SettlementCommentsPage() {
 
             <div>
               <p className="text-muted-foreground text-sm">Liczba faktur</p>
-              <p className="text-apptax-navy font-medium">{settlement.invoiceCount}</p>
+              <p className="text-foreground font-medium">{settlement.invoiceCount}</p>
             </div>
           </CardContent>
         </Card>
@@ -218,7 +218,7 @@ export default function SettlementCommentsPage() {
         {/* Comments Section */}
         <div className="space-y-4 lg:col-span-2">
           {/* Add Comment Form */}
-          <Card className="border-apptax-soft-teal/30">
+          <Card className="border-border">
             <CardHeader>
               <CardTitle className="text-lg">Dodaj komentarz</CardTitle>
             </CardHeader>
@@ -236,7 +236,7 @@ export default function SettlementCommentsPage() {
                   <Button
                     type="submit"
                     disabled={!content.trim() || addComment.isPending}
-                    className="bg-apptax-blue hover:bg-apptax-blue/90"
+                    className="bg-primary hover:bg-primary/90"
                   >
                     <Send className="mr-2 h-4 w-4" />
                     {addComment.isPending ? 'Wysyłanie...' : 'Wyślij'}
@@ -247,7 +247,7 @@ export default function SettlementCommentsPage() {
           </Card>
 
           {/* Comments List */}
-          <Card className="border-apptax-soft-teal/30">
+          <Card className="border-border">
             <CardHeader>
               <CardTitle className="text-lg">Historia komentarzy</CardTitle>
               <CardDescription>
@@ -280,7 +280,7 @@ export default function SettlementCommentsPage() {
                   {comments.map((comment) => (
                     <div key={comment.id} className="flex gap-3">
                       <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-apptax-soft-teal text-apptax-navy">
+                        <AvatarFallback className="bg-accent text-foreground">
                           {getInitials(
                             comment.user?.firstName,
                             comment.user?.lastName,
@@ -291,7 +291,7 @@ export default function SettlementCommentsPage() {
 
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-apptax-navy font-medium text-sm">
+                          <span className="text-foreground font-medium text-sm">
                             {getUserDisplayName(comment.user)}
                           </span>
                           <span className="text-muted-foreground text-xs">

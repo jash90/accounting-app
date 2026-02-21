@@ -120,7 +120,7 @@ export function OfferTemplateFormDialog({
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               {/* Basic Information */}
               <div className="space-y-4">
-                <h3 className="text-apptax-navy text-sm font-semibold">Dane podstawowe</h3>
+                <h3 className="text-foreground text-sm font-semibold">Dane podstawowe</h3>
 
                 <FormField
                   control={form.control}
@@ -200,7 +200,7 @@ export function OfferTemplateFormDialog({
 
               {/* Default Settings */}
               <div className="space-y-4">
-                <h3 className="text-apptax-navy text-sm font-semibold">Ustawienia domyślne</h3>
+                <h3 className="text-foreground text-sm font-semibold">Ustawienia domyślne</h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -248,7 +248,7 @@ export function OfferTemplateFormDialog({
               {/* Default Service Items */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-apptax-navy text-sm font-semibold">Domyślne pozycje usług</h3>
+                  <h3 className="text-foreground text-sm font-semibold">Domyślne pozycje usług</h3>
                   <Button
                     type="button"
                     variant="outline"
@@ -366,7 +366,7 @@ export function OfferTemplateFormDialog({
                 <Button
                   type="submit"
                   disabled={form.formState.isSubmitting}
-                  className="bg-apptax-blue hover:bg-apptax-blue/90"
+                  className="bg-primary hover:bg-primary/90"
                 >
                   {isEditing ? 'Zapisz zmiany' : 'Utwórz szablon'}
                 </Button>

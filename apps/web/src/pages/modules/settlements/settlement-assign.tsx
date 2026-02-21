@@ -24,7 +24,7 @@ import { StatusBadge } from './components/status-badge';
 // Skeleton components for Suspense fallbacks
 function SettlementInfoSkeleton() {
   return (
-    <Card className="border-apptax-soft-teal/30">
+    <Card className="border-border">
       <CardHeader>
         <Skeleton className="h-6 w-48" />
       </CardHeader>
@@ -42,7 +42,7 @@ function SettlementInfoSkeleton() {
 
 function UserSelectionSkeleton() {
   return (
-    <Card className="border-apptax-soft-teal/30">
+    <Card className="border-border">
       <CardHeader>
         <Skeleton className="h-6 w-40" />
         <Skeleton className="mt-2 h-4 w-64" />
@@ -73,7 +73,7 @@ function SettlementInfoCard({ settlementId }: SettlementInfoCardProps) {
 
   if (!settlement) {
     return (
-      <Card className="border-apptax-soft-teal/30">
+      <Card className="border-border">
         <CardContent className="py-10 text-center">
           <p className="text-destructive">Nie znaleziono rozliczenia</p>
         </CardContent>
@@ -84,14 +84,14 @@ function SettlementInfoCard({ settlementId }: SettlementInfoCardProps) {
   const monthYearLabel = `${settlement.month.toString().padStart(2, '0')}/${settlement.year}`;
 
   return (
-    <Card className="border-apptax-soft-teal/30">
+    <Card className="border-border">
       <CardHeader>
         <CardTitle className="text-lg">Informacje o rozliczeniu</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
           <p className="text-muted-foreground text-sm">Klient</p>
-          <p className="text-apptax-navy font-medium">{settlement.client?.name ?? '-'}</p>
+          <p className="text-foreground font-medium">{settlement.client?.name ?? '-'}</p>
           {settlement.client?.nip && (
             <p className="text-muted-foreground text-xs">NIP: {settlement.client.nip}</p>
           )}
@@ -99,7 +99,7 @@ function SettlementInfoCard({ settlementId }: SettlementInfoCardProps) {
 
         <div>
           <p className="text-muted-foreground text-sm">Okres</p>
-          <p className="text-apptax-navy font-medium">{monthYearLabel}</p>
+          <p className="text-foreground font-medium">{monthYearLabel}</p>
         </div>
 
         <div>
@@ -123,7 +123,7 @@ function SettlementInfoCard({ settlementId }: SettlementInfoCardProps) {
 
         <div>
           <p className="text-muted-foreground text-sm">Liczba faktur</p>
-          <p className="text-apptax-navy font-medium">{settlement.invoiceCount}</p>
+          <p className="text-foreground font-medium">{settlement.invoiceCount}</p>
         </div>
       </CardContent>
     </Card>
@@ -172,7 +172,7 @@ function UserSelectionCard({ settlementId, initialUserId, basePath }: UserSelect
   }
 
   return (
-    <Card className="border-apptax-soft-teal/30">
+    <Card className="border-border">
       <CardHeader>
         <CardTitle className="text-lg">Wybierz pracownika</CardTitle>
         <CardDescription>
@@ -201,9 +201,9 @@ function UserSelectionCard({ settlementId, initialUserId, basePath }: UserSelect
                 htmlFor={employee.id}
                 className="flex flex-1 cursor-pointer items-center gap-2"
               >
-                <User className="h-4 w-4 text-apptax-navy" />
+                <User className="h-4 w-4 text-foreground" />
                 <div className="flex flex-col">
-                  <span className="text-apptax-navy font-medium">{getEmployeeName(employee)}</span>
+                  <span className="text-foreground font-medium">{getEmployeeName(employee)}</span>
                   {employee.firstName && employee.lastName && (
                     <span className="text-muted-foreground text-xs">{employee.email}</span>
                   )}
@@ -225,14 +225,14 @@ function UserSelectionCard({ settlementId, initialUserId, basePath }: UserSelect
           <Button
             variant="outline"
             onClick={() => navigate(`${basePath}/list`)}
-            className="border-apptax-soft-teal hover:bg-apptax-soft-teal/50"
+            className="border-accent hover:bg-accent/50"
           >
             Anuluj
           </Button>
           <Button
             onClick={handleSave}
             disabled={!hasChanges || assignSettlement.isPending}
-            className="bg-apptax-blue hover:bg-apptax-blue/90"
+            className="bg-primary hover:bg-primary/90"
           >
             {assignSettlement.isPending ? 'Zapisywanie...' : 'Zapisz'}
           </Button>

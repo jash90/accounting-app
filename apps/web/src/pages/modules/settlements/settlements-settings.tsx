@@ -27,20 +27,20 @@ export default function SettlementsSettingsPage() {
       />
 
       {/* Placeholder Card */}
-      <Card className="border-apptax-soft-teal/30">
+      <Card className="border-border">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Cog className="h-5 w-5 text-apptax-teal" />
+            <Cog className="h-5 w-5 text-accent" />
             <CardTitle className="text-lg">Ustawienia w przygotowaniu</CardTitle>
           </div>
           <CardDescription>Funkcje konfiguracyjne są obecnie w fazie rozwoju</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="py-8 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-apptax-soft-teal">
-              <Settings className="h-8 w-8 text-apptax-teal" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent">
+              <Settings className="h-8 w-8 text-accent" />
             </div>
-            <p className="text-apptax-navy font-medium">Ustawienia modułu będą dostępne wkrótce</p>
+            <p className="text-foreground font-medium">Ustawienia modułu będą dostępne wkrótce</p>
             <p className="text-muted-foreground mt-2 max-w-md mx-auto text-sm">
               W przyszłych aktualizacjach będzie można skonfigurować powiadomienia, automatyczne
               przypisywanie rozliczeń oraz domyślne wartości.
@@ -51,7 +51,7 @@ export default function SettlementsSettingsPage() {
 
       {/* Future Features Preview */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card className="border-apptax-soft-teal/30 border-dashed opacity-60">
+        <Card className="border-border border-dashed opacity-60">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Bell className="h-5 w-5 text-muted-foreground" />
@@ -65,7 +65,7 @@ export default function SettlementsSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-apptax-soft-teal/30 border-dashed opacity-60">
+        <Card className="border-border border-dashed opacity-60">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Cog className="h-5 w-5 text-muted-foreground" />
@@ -79,7 +79,7 @@ export default function SettlementsSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-apptax-soft-teal/30 border-dashed opacity-60">
+        <Card className="border-border border-dashed opacity-60">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-muted-foreground" />
