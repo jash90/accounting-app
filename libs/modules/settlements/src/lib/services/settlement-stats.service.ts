@@ -11,6 +11,8 @@ import { EmployeeStatsDto, EmployeeStatsListDto, MyStatsDto, SettlementStatsDto 
 interface StatusCounts {
   pending: number;
   inProgress: number;
+  missingInvoiceVerification: number;
+  missingInvoice: number;
   completed: number;
 }
 
@@ -36,6 +38,14 @@ export class SettlementStatsService {
       .select('COUNT(*)', 'total')
       .addSelect(`COUNT(CASE WHEN settlement.status = :pending THEN 1 END)`, 'pending')
       .addSelect(`COUNT(CASE WHEN settlement.status = :inProgress THEN 1 END)`, 'inProgress')
+      .addSelect(
+        `COUNT(CASE WHEN settlement.status = :missingInvoiceVerification THEN 1 END)`,
+        'missingInvoiceVerification'
+      )
+      .addSelect(
+        `COUNT(CASE WHEN settlement.status = :missingInvoice THEN 1 END)`,
+        'missingInvoice'
+      )
       .addSelect(`COUNT(CASE WHEN settlement.status = :completed THEN 1 END)`, 'completed')
       .addSelect(`COUNT(CASE WHEN settlement.userId IS NULL THEN 1 END)`, 'unassigned')
       .addSelect(
@@ -48,6 +58,8 @@ export class SettlementStatsService {
       .setParameters({
         pending: SettlementStatus.PENDING,
         inProgress: SettlementStatus.IN_PROGRESS,
+        missingInvoiceVerification: SettlementStatus.MISSING_INVOICE_VERIFICATION,
+        missingInvoice: SettlementStatus.MISSING_INVOICE,
         completed: SettlementStatus.COMPLETED,
       });
 
@@ -60,6 +72,8 @@ export class SettlementStatsService {
       total: string;
       pending: string;
       inProgress: string;
+      missingInvoiceVerification: string;
+      missingInvoice: string;
       completed: string;
       unassigned: string;
       requiresAttention: string;
@@ -73,6 +87,8 @@ export class SettlementStatsService {
       total,
       pending: parseInt(stats?.pending ?? '0', 10),
       inProgress: parseInt(stats?.inProgress ?? '0', 10),
+      missingInvoiceVerification: parseInt(stats?.missingInvoiceVerification ?? '0', 10),
+      missingInvoice: parseInt(stats?.missingInvoice ?? '0', 10),
       completed,
       unassigned: parseInt(stats?.unassigned ?? '0', 10),
       requiresAttention: parseInt(stats?.requiresAttention ?? '0', 10),
@@ -96,6 +112,14 @@ export class SettlementStatsService {
       .addSelect('COUNT(*)', 'total')
       .addSelect(`COUNT(CASE WHEN settlement.status = :pending THEN 1 END)`, 'pending')
       .addSelect(`COUNT(CASE WHEN settlement.status = :inProgress THEN 1 END)`, 'inProgress')
+      .addSelect(
+        `COUNT(CASE WHEN settlement.status = :missingInvoiceVerification THEN 1 END)`,
+        'missingInvoiceVerification'
+      )
+      .addSelect(
+        `COUNT(CASE WHEN settlement.status = :missingInvoice THEN 1 END)`,
+        'missingInvoice'
+      )
       .addSelect(`COUNT(CASE WHEN settlement.status = :completed THEN 1 END)`, 'completed')
       .where('settlement.companyId = :companyId', { companyId })
       .andWhere('settlement.month = :month', { month })
@@ -105,6 +129,8 @@ export class SettlementStatsService {
       .setParameters({
         pending: SettlementStatus.PENDING,
         inProgress: SettlementStatus.IN_PROGRESS,
+        missingInvoiceVerification: SettlementStatus.MISSING_INVOICE_VERIFICATION,
+        missingInvoice: SettlementStatus.MISSING_INVOICE,
         completed: SettlementStatus.COMPLETED,
       })
       .getRawMany<{
@@ -112,6 +138,8 @@ export class SettlementStatsService {
         total: string;
         pending: string;
         inProgress: string;
+        missingInvoiceVerification: string;
+        missingInvoice: string;
         completed: string;
       }>();
 
@@ -122,6 +150,8 @@ export class SettlementStatsService {
         total: parseInt(row.total, 10),
         pending: parseInt(row.pending, 10),
         inProgress: parseInt(row.inProgress, 10),
+        missingInvoiceVerification: parseInt(row.missingInvoiceVerification, 10),
+        missingInvoice: parseInt(row.missingInvoice, 10),
         completed: parseInt(row.completed, 10),
       });
     }
@@ -132,6 +162,8 @@ export class SettlementStatsService {
         total: 0,
         pending: 0,
         inProgress: 0,
+        missingInvoiceVerification: 0,
+        missingInvoice: 0,
         completed: 0,
       };
       const completionRate =
@@ -145,6 +177,8 @@ export class SettlementStatsService {
         total: stats.total,
         pending: stats.pending,
         inProgress: stats.inProgress,
+        missingInvoiceVerification: stats.missingInvoiceVerification,
+        missingInvoice: stats.missingInvoice,
         completed: stats.completed,
         completionRate,
       };
@@ -165,6 +199,14 @@ export class SettlementStatsService {
       .select('COUNT(*)', 'total')
       .addSelect(`COUNT(CASE WHEN settlement.status = :pending THEN 1 END)`, 'pending')
       .addSelect(`COUNT(CASE WHEN settlement.status = :inProgress THEN 1 END)`, 'inProgress')
+      .addSelect(
+        `COUNT(CASE WHEN settlement.status = :missingInvoiceVerification THEN 1 END)`,
+        'missingInvoiceVerification'
+      )
+      .addSelect(
+        `COUNT(CASE WHEN settlement.status = :missingInvoice THEN 1 END)`,
+        'missingInvoice'
+      )
       .addSelect(`COUNT(CASE WHEN settlement.status = :completed THEN 1 END)`, 'completed')
       .where('settlement.companyId = :companyId', { companyId })
       .andWhere('settlement.month = :month', { month })
@@ -173,12 +215,16 @@ export class SettlementStatsService {
       .setParameters({
         pending: SettlementStatus.PENDING,
         inProgress: SettlementStatus.IN_PROGRESS,
+        missingInvoiceVerification: SettlementStatus.MISSING_INVOICE_VERIFICATION,
+        missingInvoice: SettlementStatus.MISSING_INVOICE,
         completed: SettlementStatus.COMPLETED,
       })
       .getRawOne<{
         total: string;
         pending: string;
         inProgress: string;
+        missingInvoiceVerification: string;
+        missingInvoice: string;
         completed: string;
       }>();
 
@@ -190,6 +236,8 @@ export class SettlementStatsService {
       total,
       pending: parseInt(stats?.pending ?? '0', 10),
       inProgress: parseInt(stats?.inProgress ?? '0', 10),
+      missingInvoiceVerification: parseInt(stats?.missingInvoiceVerification ?? '0', 10),
+      missingInvoice: parseInt(stats?.missingInvoice ?? '0', 10),
       completed,
       completionRate,
     };

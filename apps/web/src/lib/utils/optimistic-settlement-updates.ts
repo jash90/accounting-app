@@ -139,12 +139,14 @@ export async function invalidateSettlementQueries(
   settlementId: string,
   settlement: SettlementResponseDto | null | undefined
 ): Promise<void> {
-  queryClient.invalidateQueries({ queryKey: queryKeys.settlements.detail(settlementId) });
-  queryClient.invalidateQueries({ predicate: isSettlementListQuery });
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.settlements.detail(settlementId) }),
+    queryClient.invalidateQueries({ predicate: isSettlementListQuery }),
+  ]);
 
   // Narrow stats invalidation: only invalidate stats for the affected month/year
   if (settlement?.month && settlement?.year) {
-    queryClient.invalidateQueries({
+    await queryClient.invalidateQueries({
       predicate: createStatsInvalidationPredicate(settlement.month, settlement.year),
     });
   }

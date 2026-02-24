@@ -5,3 +5,5 @@ export * from './initialize-month.dto';
 export * from './create-comment.dto';
 export * from './settlement-response.dto';
 export * from './settlement-stats.dto';
+export * from './settlement-settings.dto';
+export * from './settlement-extended-stats.dto';

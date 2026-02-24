@@ -6,6 +6,7 @@ export interface SettlementColumnsContextValue {
   hasWritePermission: boolean;
   hasManagePermission: boolean;
   onStatusChange: (settlementId: string, newStatus: SettlementStatus) => void;
+  onSendEmail: (settlementId: string) => void;
   onNavigateToComments: (settlementId: string) => void;
   onNavigateToAssign: (settlementId: string) => void;
   isStatusUpdatePending: boolean;
@@ -33,6 +34,7 @@ export function SettlementColumnsProvider({ children, value }: SettlementColumns
 /**
  * Hook to access the full settlement columns context.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSettlementColumnsContext(): SettlementColumnsContextValue {
   const context = use(SettlementColumnsContext);
   if (context === undefined) {

@@ -19,7 +19,9 @@ import {
   type GetSettlementsQueryDto,
   type InitializeMonthDto,
   type SettlementResponseDto,
+  type SettlementSettingsDto,
   type UpdateSettlementDto,
+  type UpdateSettlementSettingsDto,
   type UpdateSettlementStatusDto,
 } from '../api/endpoints/settlements';
 import { queryKeys } from '../api/query-client';
@@ -496,6 +498,105 @@ export function useAddSettlementComment() {
       toast({
         title: 'Błąd',
         description: getErrorMessage(error, 'Nie udało się dodać komentarza'),
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+// ============================================
+// Export Hooks
+// ============================================
+
+export function useExportSettlements() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (filters?: GetSettlementsQueryDto) => settlementsApi.exportCsv(filters),
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      try {
+        link.href = url;
+        link.download = `rozliczenia-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast({ title: 'Sukces', description: 'Plik CSV został pobrany' });
+      } finally {
+        window.URL.revokeObjectURL(url);
+      }
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: 'Błąd',
+        description: getErrorMessage(error, 'Nie udało się wyeksportować rozliczeń'),
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+// ============================================
+// Missing Invoice Email Hook
+// ============================================
+
+export function useSendMissingInvoiceEmail() {
+  return useMutation({
+    mutationFn: (id: string) => settlementsApi.sendMissingInvoiceEmail(id),
+  });
+}
+
+// ============================================
+// Extended Stats Hooks
+// ============================================
+
+export function useSettlementCompletionStats(filters?: { startDate?: string; endDate?: string }) {
+  return useQuery({
+    queryKey: ['settlements', 'stats', 'extended', 'completion', filters],
+    queryFn: () => settlementsApi.getExtendedCompletionStats(filters),
+  });
+}
+
+export function useSettlementEmployeeRanking(filters?: { startDate?: string; endDate?: string }) {
+  return useQuery({
+    queryKey: ['settlements', 'stats', 'extended', 'employee-ranking', filters],
+    queryFn: () => settlementsApi.getExtendedEmployeeRanking(filters),
+  });
+}
+
+export function useBlockedClientsStats(filters?: { startDate?: string; endDate?: string }) {
+  return useQuery({
+    queryKey: ['settlements', 'stats', 'extended', 'blocked-clients', filters],
+    queryFn: () => settlementsApi.getBlockedClientsStats(filters),
+  });
+}
+
+// ============================================
+// Settings Hooks
+// ============================================
+
+export function useSettlementSettings() {
+  return useQuery({
+    queryKey: queryKeys.settlements.settings,
+    queryFn: () => settlementsApi.getSettings(),
+  });
+}
+
+export function useUpdateSettlementSettings() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (dto: UpdateSettlementSettingsDto) => settlementsApi.updateSettings(dto),
+    onSuccess: (data: SettlementSettingsDto) => {
+      queryClient.setQueryData(queryKeys.settlements.settings, data);
+      toast({ title: 'Sukces', description: 'Ustawienia zostały zapisane' });
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: 'Błąd',
+        description: getErrorMessage(error, 'Nie udało się zapisać ustawień'),
         variant: 'destructive',
       });
     },

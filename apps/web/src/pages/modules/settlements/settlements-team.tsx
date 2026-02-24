@@ -51,8 +51,8 @@ const SKELETON_INDICES = [0, 1, 2] as const;
 function TableSkeleton() {
   return (
     <div className="space-y-3 p-4">
-      {SKELETON_INDICES.map((i) => (
-        <div key={i} className="bg-accent/10 h-12 w-full animate-pulse rounded-lg" />
+      {SKELETON_INDICES.map((n) => (
+        <div key={n} className="bg-accent/10 h-12 w-full animate-pulse rounded-lg" />
       ))}
     </div>
   );
@@ -189,8 +189,8 @@ export default function SettlementsTeamPage() {
         <CardContent>
           {statsPending ? (
             <div className="space-y-2">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-12 w-full" />
+              {[1, 2, 3].map((num) => (
+                <Skeleton key={num} className="h-12 w-full" />
               ))}
             </div>
           ) : employeeStats.length === 0 ? (
@@ -225,8 +225,8 @@ export default function SettlementsTeamPage() {
         <CardContent>
           {unassignedPending ? (
             <div className="space-y-2">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-12 w-full" />
+              {[1, 2, 3].map((num) => (
+                <Skeleton key={num} className="h-12 w-full" />
               ))}
             </div>
           ) : unassignedSettlements.length === 0 ? (

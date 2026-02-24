@@ -9,12 +9,16 @@ import apiClient from '../client';
 export enum SettlementStatus {
   PENDING = 'PENDING',
   IN_PROGRESS = 'IN_PROGRESS',
+  MISSING_INVOICE_VERIFICATION = 'MISSING_INVOICE_VERIFICATION',
+  MISSING_INVOICE = 'MISSING_INVOICE',
   COMPLETED = 'COMPLETED',
 }
 
 export const SettlementStatusLabels: Record<SettlementStatus, string> = {
   [SettlementStatus.PENDING]: 'Oczekujące',
   [SettlementStatus.IN_PROGRESS]: 'W trakcie',
+  [SettlementStatus.MISSING_INVOICE_VERIFICATION]: 'Brakująca weryfikacja faktury',
+  [SettlementStatus.MISSING_INVOICE]: 'Brakująca faktura',
   [SettlementStatus.COMPLETED]: 'Zakończone',
 };
 
@@ -161,6 +165,8 @@ export interface SettlementStatsDto {
   total: number;
   pending: number;
   inProgress: number;
+  missingInvoiceVerification: number;
+  missingInvoice: number;
   completed: number;
   unassigned: number;
   requiresAttention: number;
@@ -175,6 +181,8 @@ export interface EmployeeStatsDto {
   total: number;
   pending: number;
   inProgress: number;
+  missingInvoiceVerification: number;
+  missingInvoice: number;
   completed: number;
   completionRate: number;
 }
@@ -187,8 +195,85 @@ export interface MyStatsDto {
   total: number;
   pending: number;
   inProgress: number;
+  missingInvoiceVerification: number;
+  missingInvoice: number;
   completed: number;
   completionRate: number;
+}
+
+// ============================================
+// Extended Stats Types
+// ============================================
+
+export interface SettlementDurationItemDto {
+  id: string;
+  clientName: string;
+  month: number;
+  year: number;
+  durationDays: number;
+  completedAt?: string;
+}
+
+export interface SettlementCompletionDurationStatsDto {
+  longest: SettlementDurationItemDto[];
+  shortest: SettlementDurationItemDto[];
+  averageDurationDays: number;
+}
+
+export interface SettlementEmployeeRankingItemDto {
+  userId: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  completedCount: number;
+}
+
+export interface SettlementEmployeeRankingDto {
+  rankings: SettlementEmployeeRankingItemDto[];
+}
+
+export interface BlockedClientItemDto {
+  clientId: string;
+  clientName: string;
+  blockCount: number;
+}
+
+export interface BlockedClientsStatsDto {
+  clients: BlockedClientItemDto[];
+}
+
+// ============================================
+// Settlement Settings Types
+// ============================================
+
+export interface AutoAssignRuleDto {
+  clientId: string;
+  userId: string;
+  isDefault?: boolean;
+}
+
+export interface SettlementSettingsDto {
+  id: string;
+  companyId: string;
+  defaultPriority: number;
+  defaultDeadlineDay?: number | null;
+  autoAssignEnabled: boolean;
+  autoAssignRules?: AutoAssignRuleDto[] | null;
+  notifyOnStatusChange: boolean;
+  notifyOnDeadlineApproaching: boolean;
+  deadlineWarningDays: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateSettlementSettingsDto {
+  defaultPriority?: number;
+  defaultDeadlineDay?: number | null;
+  autoAssignEnabled?: boolean;
+  autoAssignRules?: AutoAssignRuleDto[] | null;
+  notifyOnStatusChange?: boolean;
+  notifyOnDeadlineApproaching?: boolean;
+  deadlineWarningDays?: number;
 }
 
 // ============================================
@@ -297,6 +382,68 @@ export const settlementsApi = {
 
   getAllAssignableUsers: async (): Promise<UserSummaryDto[]> => {
     const { data } = await apiClient.get<UserSummaryDto[]>(`${BASE_URL}/assignable-users`);
+    return data;
+  },
+
+  // CSV export
+  exportCsv: async (filters?: GetSettlementsQueryDto): Promise<Blob> => {
+    const { data } = await apiClient.get<Blob>(`${BASE_URL}/export`, {
+      params: filters,
+      responseType: 'blob',
+    });
+    return data;
+  },
+
+  // Missing invoice email
+  sendMissingInvoiceEmail: async (id: string): Promise<{ message: string }> => {
+    const { data } = await apiClient.post<{ message: string }>(
+      `${BASE_URL}/${id}/send-missing-invoice-email`
+    );
+    return data;
+  },
+
+  // Settings
+  getSettings: async (): Promise<SettlementSettingsDto> => {
+    const { data } = await apiClient.get<SettlementSettingsDto>(`${BASE_URL}/settings`);
+    return data;
+  },
+
+  updateSettings: async (dto: UpdateSettlementSettingsDto): Promise<SettlementSettingsDto> => {
+    const { data } = await apiClient.patch<SettlementSettingsDto>(`${BASE_URL}/settings`, dto);
+    return data;
+  },
+
+  // Extended Stats
+  getExtendedCompletionStats: async (params?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<SettlementCompletionDurationStatsDto> => {
+    const { data } = await apiClient.get<SettlementCompletionDurationStatsDto>(
+      `${BASE_URL}/stats/extended/completion-duration`,
+      { params }
+    );
+    return data;
+  },
+
+  getExtendedEmployeeRanking: async (params?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<SettlementEmployeeRankingDto> => {
+    const { data } = await apiClient.get<SettlementEmployeeRankingDto>(
+      `${BASE_URL}/stats/extended/employee-ranking`,
+      { params }
+    );
+    return data;
+  },
+
+  getBlockedClientsStats: async (params?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<BlockedClientsStatsDto> => {
+    const { data } = await apiClient.get<BlockedClientsStatsDto>(
+      `${BASE_URL}/stats/extended/blocked-clients`,
+      { params }
+    );
     return data;
   },
 };

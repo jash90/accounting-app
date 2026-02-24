@@ -10,6 +10,12 @@ export class SettlementStatsDto {
   @ApiProperty({ description: 'Settlements with IN_PROGRESS status' })
   inProgress!: number;
 
+  @ApiProperty({ description: 'Settlements with MISSING_INVOICE_VERIFICATION status' })
+  missingInvoiceVerification!: number;
+
+  @ApiProperty({ description: 'Settlements with MISSING_INVOICE status' })
+  missingInvoice!: number;
+
   @ApiProperty({ description: 'Settlements with COMPLETED status' })
   completed!: number;
 
@@ -45,6 +51,12 @@ export class EmployeeStatsDto {
   @ApiProperty({ description: 'In progress settlements' })
   inProgress!: number;
 
+  @ApiProperty({ description: 'Settlements with missing invoice verification' })
+  missingInvoiceVerification!: number;
+
+  @ApiProperty({ description: 'Settlements with missing invoice' })
+  missingInvoice!: number;
+
   @ApiProperty({ description: 'Completed settlements' })
   completed!: number;
 
@@ -66,6 +78,12 @@ export class MyStatsDto {
 
   @ApiProperty({ description: 'My in progress settlements' })
   inProgress!: number;
+
+  @ApiProperty({ description: 'My settlements with missing invoice verification' })
+  missingInvoiceVerification!: number;
+
+  @ApiProperty({ description: 'My settlements with missing invoice' })
+  missingInvoice!: number;
 
   @ApiProperty({ description: 'My completed settlements' })
   completed!: number;

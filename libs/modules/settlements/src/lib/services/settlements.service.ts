@@ -1,4 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { In, Repository } from 'typeorm';
@@ -13,6 +18,7 @@ import {
   type SettlementStatusHistoryEntry,
 } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
+import { EmailConfigurationService, EmailSenderService } from '@accounting/email';
 
 import { SETTLEMENT_MESSAGES } from '../constants/settlement-messages';
 import {
@@ -40,7 +46,9 @@ export class SettlementsService {
     private readonly clientRepository: Repository<Client>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly tenantService: TenantService
+    private readonly tenantService: TenantService,
+    private readonly emailSenderService: EmailSenderService,
+    private readonly emailConfigService: EmailConfigurationService
   ) {}
 
   /**
@@ -423,6 +431,64 @@ export class SettlementsService {
         lastName: 'ASC',
       },
     });
+  }
+
+  async sendMissingInvoiceEmail(id: string, user: User): Promise<{ message: string }> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const settlement = await this.settlementRepository.findOne({
+      where: { id, companyId },
+      relations: ['client'],
+    });
+    if (!settlement) throw new NotFoundException('Settlement not found');
+
+    const client = settlement.client;
+    if (!client?.email) {
+      this.logger.warn(`Client ${client?.id} has no email, cannot send missing invoice email`);
+      return { message: 'Klient nie ma adresu email' };
+    }
+
+    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(companyId);
+    if (!emailConfig) {
+      this.logger.warn(`No email configuration for company ${companyId}`);
+      return { message: 'Brak konfiguracji email dla firmy' };
+    }
+
+    const monthNames = [
+      'styczeń',
+      'luty',
+      'marzec',
+      'kwiecień',
+      'maj',
+      'czerwiec',
+      'lipiec',
+      'sierpień',
+      'wrzesień',
+      'październik',
+      'listopad',
+      'grudzień',
+    ];
+    const monthName = monthNames[settlement.month - 1] ?? settlement.month;
+
+    try {
+      await this.emailSenderService.sendEmailAndSave(emailConfig.smtp, emailConfig.imap, {
+        to: client.email,
+        subject: `Prośba o dosłanie faktury za ${monthName} ${settlement.year}`,
+        html: `
+          <p>Szanowni Państwo,</p>
+          <p>Prosimy o dosłanie brakujących faktur za <strong>${monthName} ${settlement.year}</strong>.</p>
+          <p>Dokumenty są niezbędne do prawidłowego rozliczenia okresu rozliczeniowego.</p>
+          <p>W razie pytań prosimy o kontakt.</p>
+          <p>Z poważaniem</p>
+        `,
+      });
+
+      this.logger.log(`Missing invoice email sent for settlement ${id} to ${client.email}`);
+      return { message: 'Email z prośbą o fakturę został wysłany' };
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Failed to send missing invoice email: ${err.message}`, err.stack);
+      throw new InternalServerErrorException('Nie udało się wysłać emaila');
+    }
   }
 
   /**

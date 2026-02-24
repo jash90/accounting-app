@@ -29,7 +29,7 @@ export const StatusCell = memo(function StatusCell({
   settlementId,
   currentStatus,
 }: StatusCellProps) {
-  const { hasWritePermission, onStatusChange, isStatusUpdatePending } =
+  const { hasWritePermission, onStatusChange, onSendEmail, isStatusUpdatePending } =
     useSettlementColumnsContext();
 
   // Memoize the callback to prevent StatusDropdown re-renders
@@ -40,11 +40,16 @@ export const StatusCell = memo(function StatusCell({
     [onStatusChange, settlementId]
   );
 
+  const handleSendEmail = useCallback(() => {
+    onSendEmail(settlementId);
+  }, [onSendEmail, settlementId]);
+
   if (hasWritePermission) {
     return (
       <StatusDropdown
         currentStatus={currentStatus}
         onStatusChange={handleStatusChange}
+        onSendEmail={handleSendEmail}
         isLoading={isStatusUpdatePending}
       />
     );
