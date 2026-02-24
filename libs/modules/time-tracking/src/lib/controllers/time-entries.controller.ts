@@ -10,12 +10,14 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
-import { User } from '@accounting/common';
+import { NotificationType, User } from '@accounting/common';
+import { NotificationInterceptor, NotifyOn } from '@accounting/modules/notifications';
 import {
   ModuleAccessGuard,
   PermissionGuard,
@@ -24,11 +26,9 @@ import {
 } from '@accounting/rbac';
 
 import {
-  ApproveTimeEntryDto,
   CreateTimeEntryDto,
   LockTimeEntryDto,
   RejectTimeEntryDto,
-  SubmitTimeEntryDto,
   TimeEntryFiltersDto,
   UnlockTimeEntryDto,
   UpdateTimeEntryDto,
@@ -40,6 +40,7 @@ import { TimeEntriesService } from '../services/time-entries.service';
 @ApiBearerAuth()
 @Controller('modules/time-tracking/entries')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
+@UseInterceptors(NotificationInterceptor)
 @RequireModule('time-tracking')
 export class TimeEntriesController {
   constructor(private readonly entriesService: TimeEntriesService) {}
@@ -93,6 +94,13 @@ export class TimeEntriesController {
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 409, description: 'Time entry overlaps with existing entry' })
   @RequirePermission('time-tracking', 'write')
+  @NotifyOn({
+    type: NotificationType.TIME_ENTRY_CREATED,
+    titleTemplate: '{{actor.firstName}} dodał(a) wpis czasu',
+    messageTemplate: 'Nowy wpis czasu został dodany',
+    actionUrlTemplate: '/modules/time-tracking/entries',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async create(@Body() dto: CreateTimeEntryDto, @CurrentUser() user: User) {
     return this.entriesService.create(dto, user);
   }
@@ -149,6 +157,12 @@ export class TimeEntriesController {
   @ApiResponse({ status: 404, description: 'Time entry not found' })
   @ApiResponse({ status: 403, description: 'Time entry is locked' })
   @RequirePermission('time-tracking', 'write')
+  @NotifyOn({
+    type: NotificationType.TIME_ENTRY_UPDATED,
+    titleTemplate: '{{actor.firstName}} zaktualizował(a) wpis czasu',
+    actionUrlTemplate: '/modules/time-tracking/entries',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateTimeEntryDto,
@@ -179,6 +193,11 @@ export class TimeEntriesController {
   @ApiResponse({ status: 200, description: 'Time entry deleted' })
   @ApiResponse({ status: 404, description: 'Time entry not found' })
   @RequirePermission('time-tracking', 'delete')
+  @NotifyOn({
+    type: NotificationType.TIME_ENTRY_DELETED,
+    titleTemplate: '{{actor.firstName}} usunął/usunęła wpis czasu',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     await this.entriesService.remove(id, user);
     return { message: 'Wpis czasu został usunięty' };
@@ -195,12 +214,7 @@ export class TimeEntriesController {
   @ApiResponse({ status: 200, description: 'Time entry submitted' })
   @ApiResponse({ status: 400, description: 'Invalid status transition' })
   @RequirePermission('time-tracking', 'write')
-  async submit(
-    @Param('id', ParseUUIDPipe) id: string,
-
-    @Body() dto: SubmitTimeEntryDto,
-    @CurrentUser() user: User
-  ) {
+  async submit(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.entriesService.submitEntry(id, user);
   }
 
@@ -213,12 +227,17 @@ export class TimeEntriesController {
   @ApiResponse({ status: 200, description: 'Time entry approved' })
   @ApiResponse({ status: 400, description: 'Invalid status transition' })
   @RequirePermission('time-tracking', 'manage')
-  async approve(
-    @Param('id', ParseUUIDPipe) id: string,
-
-    @Body() dto: ApproveTimeEntryDto,
-    @CurrentUser() user: User
-  ) {
+  @NotifyOn({
+    type: NotificationType.TIME_ENTRY_APPROVED,
+    titleTemplate: '{{actor.firstName}} zatwierdził(a) wpis czasu',
+    messageTemplate: 'Twój wpis czasu został zatwierdzony',
+    actionUrlTemplate: '/modules/time-tracking/entries',
+    recipientResolver: (result: unknown) => {
+      const entry = result as { userId?: string };
+      return entry.userId ? [entry.userId] : [];
+    },
+  })
+  async approve(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.entriesService.approveEntry(id, user);
   }
 
@@ -231,6 +250,16 @@ export class TimeEntriesController {
   @ApiResponse({ status: 200, description: 'Time entry rejected' })
   @ApiResponse({ status: 400, description: 'Invalid status transition' })
   @RequirePermission('time-tracking', 'manage')
+  @NotifyOn({
+    type: NotificationType.TIME_ENTRY_REJECTED,
+    titleTemplate: '{{actor.firstName}} odrzucił(a) wpis czasu',
+    messageTemplate: 'Twój wpis czasu został odrzucony',
+    actionUrlTemplate: '/modules/time-tracking/entries',
+    recipientResolver: (result: unknown) => {
+      const entry = result as { userId?: string };
+      return entry.userId ? [entry.userId] : [];
+    },
+  })
   async reject(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: RejectTimeEntryDto,

@@ -157,8 +157,8 @@ export const TimeEntriesList = memo(function TimeEntriesList({
         )}
         <CardContent>
           <div className="space-y-3">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Skeleton key={i} className="h-16" />
+            {[1, 2, 3, 4, 5].map((num) => (
+              <Skeleton key={num} className="h-16" />
             ))}
           </div>
         </CardContent>
