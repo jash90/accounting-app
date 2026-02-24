@@ -12,6 +12,7 @@ import {
 } from '@tanstack/react-table';
 import {
   ArrowLeft,
+  Download,
   Eye,
   MoreHorizontal,
   Pencil,
@@ -63,6 +64,7 @@ import {
   useConvertLeadToClient,
   useCreateLead,
   useDeleteLead,
+  useExportLeads,
   useLeads,
   useUpdateLead,
 } from '@/lib/hooks/use-offers';
@@ -139,6 +141,7 @@ export default function LeadsListPage() {
   const updateMutation = useUpdateLead();
   const deleteMutation = useDeleteLead();
   const convertMutation = useConvertLeadToClient();
+  const exportMutation = useExportLeads();
 
   const columns: ColumnDef<LeadResponseDto>[] = useMemo(
     () => [
@@ -295,6 +298,14 @@ export default function LeadsListPage() {
         <div className="flex gap-2">
           <Button variant="outline" size="icon" onClick={() => refetch()} aria-label="Odśwież">
             <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => exportMutation.mutate(filters)}
+            disabled={exportMutation.isPending}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            {exportMutation.isPending ? 'Eksport...' : 'Eksportuj CSV'}
           </Button>
           <Button
             onClick={() => dispatchDialog({ type: 'OPEN_CREATE' })}

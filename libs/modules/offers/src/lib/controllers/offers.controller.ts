@@ -10,6 +10,7 @@ import {
   Query,
   Res,
   UseGuards,
+  UseInterceptors,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -25,7 +26,8 @@ import {
 import { Response } from 'express';
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
-import { User } from '@accounting/common';
+import { NotificationType, User } from '@accounting/common';
+import { NotificationInterceptor, NotifyOn } from '@accounting/modules/notifications';
 import {
   ModuleAccessGuard,
   PermissionGuard,
@@ -49,6 +51,7 @@ import {
   UpdateOfferDto,
   UpdateOfferStatusDto,
 } from '../dto/offer.dto';
+import { OfferExportService } from '../services/offer-export.service';
 import { OffersService } from '../services/offers.service';
 
 @ApiTags('Offers')
@@ -63,9 +66,44 @@ import { OffersService } from '../services/offers.service';
 )
 @Controller('modules/offers')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
+@UseInterceptors(NotificationInterceptor)
 @RequireModule('offers')
 export class OffersController {
-  constructor(private readonly offersService: OffersService) {}
+  constructor(
+    private readonly offersService: OffersService,
+    private readonly offerExportService: OfferExportService
+  ) {}
+
+  @Get('export')
+  @ApiOperation({
+    summary: 'Export offers to CSV',
+    description: 'Exports all offers matching the current filters to a CSV file.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'CSV file download',
+    content: {
+      'text/csv': {
+        schema: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @RequirePermission('offers', 'read')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  async exportToCsv(
+    @Query() filters: OfferFiltersDto,
+    @CurrentUser() user: User,
+    @Res() res: Response
+  ) {
+    const csvBuffer = await this.offerExportService.exportOffersToCsv(filters, user);
+    const filename = `offers-export-${new Date().toISOString().split('T')[0]}.csv`;
+
+    res.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
+    res.send(csvBuffer);
+  }
 
   @Get()
   @ApiOperation({
@@ -135,6 +173,13 @@ export class OffersController {
     type: OfferErrorResponseDto,
   })
   @RequirePermission('offers', 'write')
+  @NotifyOn({
+    type: NotificationType.OFFER_CREATED,
+    titleTemplate: '{{actor.firstName}} utworzył(a) ofertę "{{title}}"',
+    messageTemplate: 'Nowa oferta została utworzona',
+    actionUrlTemplate: '/modules/offers/list?offerId={{id}}',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async create(@Body() dto: CreateOfferDto, @CurrentUser() user: User) {
     return this.offersService.create(dto, user);
   }
@@ -162,6 +207,12 @@ export class OffersController {
     type: OfferErrorResponseDto,
   })
   @RequirePermission('offers', 'write')
+  @NotifyOn({
+    type: NotificationType.OFFER_UPDATED,
+    titleTemplate: '{{actor.firstName}} zaktualizował(a) ofertę "{{title}}"',
+    actionUrlTemplate: '/modules/offers/list?offerId={{id}}',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateOfferDto,
@@ -192,6 +243,12 @@ export class OffersController {
     type: OfferErrorResponseDto,
   })
   @RequirePermission('offers', 'write')
+  @NotifyOn({
+    type: NotificationType.OFFER_STATUS_CHANGED,
+    titleTemplate: '{{actor.firstName}} zmienił(a) status oferty "{{title}}"',
+    actionUrlTemplate: '/modules/offers/list?offerId={{id}}',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateOfferStatusDto,
@@ -217,6 +274,11 @@ export class OffersController {
     type: OfferErrorResponseDto,
   })
   @RequirePermission('offers', 'delete')
+  @NotifyOn({
+    type: NotificationType.OFFER_DELETED,
+    titleTemplate: '{{actor.firstName}} usunął/usunęła ofertę',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     await this.offersService.remove(id, user);
     return { message: 'Oferta usunięta pomyślnie' };
@@ -244,6 +306,12 @@ export class OffersController {
     type: OfferErrorResponseDto,
   })
   @RequirePermission('offers', 'write')
+  @NotifyOn({
+    type: NotificationType.OFFER_DOCUMENT_GENERATED,
+    titleTemplate: '{{actor.firstName}} wygenerował(a) dokument oferty "{{title}}"',
+    actionUrlTemplate: '/modules/offers/list?offerId={{id}}',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async generateDocument(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.offersService.generateDocument(id, user);
   }
@@ -305,6 +373,12 @@ export class OffersController {
     type: OfferErrorResponseDto,
   })
   @RequirePermission('offers', 'write')
+  @NotifyOn({
+    type: NotificationType.OFFER_SENT,
+    titleTemplate: '{{actor.firstName}} wysłał(a) ofertę "{{title}}"',
+    actionUrlTemplate: '/modules/offers/list?offerId={{id}}',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async sendOffer(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: SendOfferDto,
@@ -330,6 +404,12 @@ export class OffersController {
     type: OfferErrorResponseDto,
   })
   @RequirePermission('offers', 'write')
+  @NotifyOn({
+    type: NotificationType.OFFER_DUPLICATED,
+    titleTemplate: '{{actor.firstName}} zduplikował(a) ofertę',
+    actionUrlTemplate: '/modules/offers/list?offerId={{id}}',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async duplicate(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: DuplicateOfferDto,

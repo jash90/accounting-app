@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
 import {
   ContentBlockType,
@@ -17,7 +17,7 @@ import {
 import { DocumentGenerationFailedException } from '../exceptions/offer.exception';
 
 @Injectable()
-export class DocxBlockRendererService {
+export class DocxBlockRendererService implements OnModuleInit {
   private readonly logger = new Logger(DocxBlockRendererService.name);
 
   private pizzip: typeof import('pizzip') | null = null;

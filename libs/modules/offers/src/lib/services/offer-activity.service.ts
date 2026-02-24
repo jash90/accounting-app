@@ -19,7 +19,7 @@ export class OfferActivityService {
     private readonly activityRepository: Repository<OfferActivity>
   ) {}
 
-  async logActivity(
+  logActivity(
     offer: Offer,
     activityType: OfferActivityType,
     user: User,
@@ -38,7 +38,7 @@ export class OfferActivityService {
     return this.activityRepository.save(activity);
   }
 
-  async logCreated(offer: Offer, user: User): Promise<OfferActivity> {
+  logCreated(offer: Offer, user: User): Promise<OfferActivity> {
     return this.logActivity(
       offer,
       OfferActivityType.CREATED,
@@ -47,7 +47,7 @@ export class OfferActivityService {
     );
   }
 
-  async logUpdated(
+  logUpdated(
     offer: Offer,
     user: User,
     changes: Record<string, { old: unknown; new: unknown }>
@@ -61,7 +61,7 @@ export class OfferActivityService {
     );
   }
 
-  async logStatusChanged(
+  logStatusChanged(
     offer: Offer,
     user: User,
     previousStatus: OfferStatus,
@@ -76,11 +76,7 @@ export class OfferActivityService {
     );
   }
 
-  async logDocumentGenerated(
-    offer: Offer,
-    user: User,
-    documentPath: string
-  ): Promise<OfferActivity> {
+  logDocumentGenerated(offer: Offer, user: User, documentPath: string): Promise<OfferActivity> {
     return this.logActivity(
       offer,
       OfferActivityType.DOCUMENT_GENERATED,
@@ -90,7 +86,7 @@ export class OfferActivityService {
     );
   }
 
-  async logEmailSent(
+  logEmailSent(
     offer: Offer,
     user: User,
     emailRecipient: string,
@@ -105,21 +101,21 @@ export class OfferActivityService {
     );
   }
 
-  async logViewed(offer: Offer, user: User): Promise<OfferActivity> {
+  logViewed(offer: Offer, user: User): Promise<OfferActivity> {
     return this.logActivity(offer, OfferActivityType.VIEWED, user, `Oferta została wyświetlona`);
   }
 
-  async logDuplicated(offer: Offer, user: User, sourceOfferId: string): Promise<OfferActivity> {
+  logDuplicated(offer: Offer, user: User, sourceOfferId: string): Promise<OfferActivity> {
     return this.logActivity(offer, OfferActivityType.DUPLICATED, user, `Zduplikowano ofertę`, {
       duplicatedFromOfferId: sourceOfferId,
     });
   }
 
-  async logComment(offer: Offer, user: User, comment: string): Promise<OfferActivity> {
+  logComment(offer: Offer, user: User, comment: string): Promise<OfferActivity> {
     return this.logActivity(offer, OfferActivityType.COMMENT_ADDED, user, comment, { comment });
   }
 
-  async getOfferActivities(offerId: string, companyId: string): Promise<OfferActivity[]> {
+  getOfferActivities(offerId: string, companyId: string): Promise<OfferActivity[]> {
     return this.activityRepository.find({
       where: { offerId, companyId },
       relations: ['performedBy'],

@@ -110,6 +110,15 @@ export const offersApi = {
     );
     return data;
   },
+
+  // CSV export
+  exportCsv: async (filters?: OfferFiltersDto): Promise<Blob> => {
+    const { data } = await apiClient.get<Blob>(`${BASE_URL}/export`, {
+      params: filters,
+      responseType: 'blob',
+    });
+    return data;
+  },
 };
 
 // ============================================
@@ -170,6 +179,15 @@ export const leadsApi = {
 
   getAssignees: async (): Promise<LeadAssigneeDto[]> => {
     const { data } = await apiClient.get<LeadAssigneeDto[]>(`${LEADS_URL}/lookup/assignees`);
+    return data;
+  },
+
+  // CSV export
+  exportCsv: async (filters?: LeadFiltersDto): Promise<Blob> => {
+    const { data } = await apiClient.get<Blob>(`${LEADS_URL}/export`, {
+      params: filters,
+      responseType: 'blob',
+    });
     return data;
   },
 };

@@ -24,7 +24,7 @@ export class OfferNumberingService {
    *   When provided, the locking query runs inside the caller's transaction
    *   instead of creating a new one.
    */
-  async generateOfferNumber(
+  generateOfferNumber(
     companyId: string,
     entityManager?: import('typeorm').EntityManager
   ): Promise<string> {

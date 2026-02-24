@@ -436,7 +436,7 @@ Kwota brutto: ${this.formatCurrency(Number(offer.totalGrossAmount))}
    *
    * @throws DocumentGenerationFailedException if docx libraries are not available
    */
-  async generateSimpleDocument(offer: Offer): Promise<Buffer> {
+  generateSimpleDocument(offer: Offer): Buffer {
     if (!this.docxtemplater || !this.pizzip) {
       this.logger.warn('DOCX libraries not available, falling back to plain text');
       // If DOCX generation isn't available, throw an error to let caller handle it

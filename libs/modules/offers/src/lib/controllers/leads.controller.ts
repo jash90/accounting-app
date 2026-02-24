@@ -8,7 +8,9 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
+  UseInterceptors,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -21,8 +23,11 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { Response } from 'express';
+
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
-import { User } from '@accounting/common';
+import { NotificationType, User } from '@accounting/common';
+import { NotificationInterceptor, NotifyOn } from '@accounting/modules/notifications';
 import {
   ModuleAccessGuard,
   PermissionGuard,
@@ -44,6 +49,7 @@ import {
   PaginatedLeadsResponseDto,
 } from '../dto/offer-response.dto';
 import { LeadsService } from '../services/leads.service';
+import { OfferExportService } from '../services/offer-export.service';
 
 @ApiTags('Offers - Leads')
 @ApiBearerAuth()
@@ -56,9 +62,44 @@ import { LeadsService } from '../services/leads.service';
 )
 @Controller('modules/offers/leads')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
+@UseInterceptors(NotificationInterceptor)
 @RequireModule('offers')
 export class LeadsController {
-  constructor(private readonly leadsService: LeadsService) {}
+  constructor(
+    private readonly leadsService: LeadsService,
+    private readonly offerExportService: OfferExportService
+  ) {}
+
+  @Get('export')
+  @ApiOperation({
+    summary: 'Export leads to CSV',
+    description: 'Exports all leads matching the current filters to a CSV file.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'CSV file download',
+    content: {
+      'text/csv': {
+        schema: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @RequirePermission('offers', 'read')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  async exportToCsv(
+    @Query() filters: LeadFiltersDto,
+    @CurrentUser() user: User,
+    @Res() res: Response
+  ) {
+    const csvBuffer = await this.offerExportService.exportLeadsToCsv(filters, user);
+    const filename = `leads-export-${new Date().toISOString().split('T')[0]}.csv`;
+
+    res.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
+    res.send(csvBuffer);
+  }
 
   @Get()
   @ApiOperation({
@@ -128,6 +169,13 @@ export class LeadsController {
     type: OfferErrorResponseDto,
   })
   @RequirePermission('offers', 'write')
+  @NotifyOn({
+    type: NotificationType.LEAD_CREATED,
+    titleTemplate: '{{actor.firstName}} utworzył(a) lead "{{companyName}}"',
+    messageTemplate: 'Nowy lead został utworzony',
+    actionUrlTemplate: '/modules/offers/leads?leadId={{id}}',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async create(@Body() dto: CreateLeadDto, @CurrentUser() user: User) {
     return this.leadsService.create(dto, user);
   }
@@ -154,6 +202,12 @@ export class LeadsController {
     type: OfferErrorResponseDto,
   })
   @RequirePermission('offers', 'write')
+  @NotifyOn({
+    type: NotificationType.LEAD_UPDATED,
+    titleTemplate: '{{actor.firstName}} zaktualizował(a) lead "{{companyName}}"',
+    actionUrlTemplate: '/modules/offers/leads?leadId={{id}}',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateLeadDto,
@@ -179,6 +233,11 @@ export class LeadsController {
     type: OfferErrorResponseDto,
   })
   @RequirePermission('offers', 'delete')
+  @NotifyOn({
+    type: NotificationType.LEAD_DELETED,
+    titleTemplate: '{{actor.firstName}} usunął/usunęła lead',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     await this.leadsService.remove(id, user);
     return { message: 'Lead usunięty pomyślnie' };
@@ -205,6 +264,12 @@ export class LeadsController {
     type: OfferErrorResponseDto,
   })
   @RequirePermission('offers', 'write')
+  @NotifyOn({
+    type: NotificationType.LEAD_CONVERTED,
+    titleTemplate: '{{actor.firstName}} przekonwertował(a) lead na klienta',
+    actionUrlTemplate: '/modules/offers/leads?leadId={{id}}',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async convertToClient(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ConvertLeadToClientDto,

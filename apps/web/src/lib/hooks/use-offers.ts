@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui/use-toast';
 import {
   type CreateOfferDto,
   type DuplicateOfferDto,
+  type LeadFiltersDto,
   type OfferFiltersDto,
   type OfferResponseDto,
   type SendOfferDto,
@@ -370,6 +371,68 @@ export function useDuplicateOffer() {
       toast({
         title: 'Błąd',
         description: getApiErrorMessage(error, 'Nie udało się zduplikować oferty'),
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+// ============================================
+// Export Hooks
+// ============================================
+
+export function useExportOffers() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (filters?: OfferFiltersDto) => offersApi.exportCsv(filters),
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      try {
+        link.href = url;
+        link.download = `oferty-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast({ title: 'Sukces', description: 'Plik CSV został pobrany' });
+      } finally {
+        window.URL.revokeObjectURL(url);
+      }
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: 'Błąd',
+        description: getApiErrorMessage(error, 'Nie udało się wyeksportować ofert'),
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useExportLeads() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (filters?: LeadFiltersDto) => leadsApi.exportCsv(filters),
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      try {
+        link.href = url;
+        link.download = `prospekty-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast({ title: 'Sukces', description: 'Plik CSV został pobrany' });
+      } finally {
+        window.URL.revokeObjectURL(url);
+      }
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: 'Błąd',
+        description: getApiErrorMessage(error, 'Nie udało się wyeksportować prospektów'),
         variant: 'destructive',
       });
     },

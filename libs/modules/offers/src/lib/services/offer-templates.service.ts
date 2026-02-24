@@ -67,7 +67,7 @@ export class OfferTemplatesService {
     private readonly dataSource: DataSource
   ) {}
 
-  private async getCompanyId(user: User): Promise<string> {
+  private getCompanyId(user: User): Promise<string> {
     return this.systemCompanyService.getCompanyIdForUser(user);
   }
 

@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  Download,
   Eye,
   FileDown,
   FileText,
@@ -71,6 +72,7 @@ import {
   useDeleteOffer,
   useDownloadOfferDocument,
   useDuplicateOffer,
+  useExportOffers,
   useGenerateOfferDocument,
   useOffers,
   useSendOffer,
@@ -151,6 +153,7 @@ export default function OffersListPage() {
   const downloadDocMutation = useDownloadOfferDocument();
   const sendMutation = useSendOffer();
   const duplicateMutation = useDuplicateOffer();
+  const exportMutation = useExportOffers();
 
   const handleGenerateDocument = useCallback(
     async (offer: OfferResponseDto) => {
@@ -380,6 +383,14 @@ export default function OffersListPage() {
         <div className="flex gap-2">
           <Button variant="outline" size="icon" onClick={() => refetch()} aria-label="Odśwież">
             <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => exportMutation.mutate(filters)}
+            disabled={exportMutation.isPending}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            {exportMutation.isPending ? 'Eksport...' : 'Eksportuj CSV'}
           </Button>
           <Button
             onClick={() => dispatchDialog({ type: 'OPEN_CREATE' })}

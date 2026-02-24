@@ -26,6 +26,7 @@ import { DocxGenerationService } from './services/docx-generation.service';
 import { LeadsService } from './services/leads.service';
 import { OfferActivityService } from './services/offer-activity.service';
 import { OfferEmailService } from './services/offer-email.service';
+import { OfferExportService } from './services/offer-export.service';
 import { OfferNumberingService } from './services/offer-numbering.service';
 import { OfferTemplatesService } from './services/offer-templates.service';
 import { OffersService } from './services/offers.service';
@@ -42,8 +43,8 @@ import { OffersService } from './services/offers.service';
       User,
       EmailConfiguration,
     ]),
-    // EventEmitterModule is registered globally in app.module, but we import for type safety
-    EventEmitterModule.forRoot(),
+    // EventEmitterModule is registered globally in NotificationsModule; import without forRoot() to avoid duplicate registration
+    EventEmitterModule,
     CommonModule,
     RBACModule,
     StorageModule,
@@ -57,6 +58,7 @@ import { OffersService } from './services/offers.service';
   ],
   providers: [
     // SystemCompanyService is provided by CommonModule
+    OfferExportService,
     LeadsService,
     OfferTemplatesService,
     OffersService,
