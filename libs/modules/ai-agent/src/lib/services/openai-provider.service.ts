@@ -94,7 +94,7 @@ export class OpenAIProviderService extends AIProviderService {
   /**
    * Wrap a promise with a timeout.
    */
-  private async withTimeout<T>(promise: Promise<T>, operationName: string): Promise<T> {
+  private withTimeout<T>(promise: Promise<T>, operationName: string): Promise<T> {
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
         reject(new Error(`${operationName} timed out after ${this.TIMEOUT_MS}ms`));
@@ -226,7 +226,7 @@ export class OpenAIProviderService extends AIProviderService {
     );
   }
 
-  async chat(
+  chat(
     messages: ChatMessage[],
     model: string,
     temperature: number,
@@ -394,7 +394,7 @@ export class OpenAIProviderService extends AIProviderService {
     });
   }
 
-  async generateEmbedding(
+  generateEmbedding(
     text: string,
     apiKey: string,
     model: string = 'text-embedding-ada-002'

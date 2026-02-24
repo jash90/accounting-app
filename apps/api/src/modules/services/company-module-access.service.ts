@@ -22,11 +22,11 @@ import {
 export class CompanyModuleAccessService {
   constructor(
     @InjectRepository(ModuleEntity)
-    private moduleRepository: Repository<ModuleEntity>,
+    private readonly moduleRepository: Repository<ModuleEntity>,
     @InjectRepository(CompanyModuleAccess)
-    private companyModuleAccessRepository: Repository<CompanyModuleAccess>,
+    private readonly companyModuleAccessRepository: Repository<CompanyModuleAccess>,
     @InjectRepository(Company)
-    private companyRepository: Repository<Company>
+    private readonly companyRepository: Repository<Company>
   ) {}
 
   /**

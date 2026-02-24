@@ -16,7 +16,7 @@ export class EmailService implements OnModuleInit {
   private readonly config: EmailConfig;
   private readonly templatesDir: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(private readonly configService: ConfigService) {
     this.config = {
       enabled: this.configService.get<string>('SMTP_ENABLED', 'false') === 'true',
       host: this.configService.get<string>('SMTP_HOST', 'smtp.example.com'),
@@ -156,7 +156,7 @@ export class EmailService implements OnModuleInit {
     }
   }
 
-  async sendClientCreatedNotification(
+  sendClientCreatedNotification(
     recipients: string[],
     clientData: { name: string; nip?: string; companyName: string; createdByName: string }
   ): Promise<boolean> {
@@ -174,7 +174,7 @@ export class EmailService implements OnModuleInit {
     });
   }
 
-  async sendClientUpdatedNotification(
+  sendClientUpdatedNotification(
     recipients: string[],
     clientData: {
       name: string;
@@ -197,7 +197,7 @@ export class EmailService implements OnModuleInit {
     });
   }
 
-  async sendClientDeletedNotification(
+  sendClientDeletedNotification(
     recipients: string[],
     clientData: { name: string; nip?: string; companyName: string; deletedByName: string }
   ): Promise<boolean> {
@@ -215,7 +215,7 @@ export class EmailService implements OnModuleInit {
     });
   }
 
-  async sendUserCreatedNotification(
+  sendUserCreatedNotification(
     recipients: string[],
     userData: {
       name: string;

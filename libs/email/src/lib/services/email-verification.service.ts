@@ -62,7 +62,7 @@ export class EmailVerificationService {
   /**
    * Verify SMTP connection with authentication
    */
-  async verifySmtp(
+  verifySmtp(
     config: DiscoveredConfig,
     credentials: { email: string; password: string }
   ): Promise<{ success: boolean; error?: string }> {
@@ -126,7 +126,7 @@ export class EmailVerificationService {
   /**
    * Verify IMAP connection with authentication using ImapFlow
    */
-  async verifyImap(
+  verifyImap(
     config: DiscoveredConfig,
     credentials: { email: string; password: string }
   ): Promise<{ success: boolean; error?: string }> {

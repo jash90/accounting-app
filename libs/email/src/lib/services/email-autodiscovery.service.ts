@@ -381,7 +381,7 @@ export class EmailAutodiscoveryService {
    * @param credentials - Email and password for authentication
    * @returns Verification result for both SMTP and IMAP
    */
-  async verifyConfig(
+  verifyConfig(
     config: DiscoveredConfig,
     credentials: { email: string; password: string }
   ): Promise<VerificationResult> {

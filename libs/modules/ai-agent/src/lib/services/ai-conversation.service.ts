@@ -41,16 +41,16 @@ export class AIConversationService {
 
   constructor(
     @InjectRepository(AIConversation)
-    private conversationRepository: Repository<AIConversation>,
+    private readonly conversationRepository: Repository<AIConversation>,
     @InjectRepository(AIMessage)
-    private messageRepository: Repository<AIMessage>,
-    private configService: AIConfigurationService,
-    private openaiProvider: OpenAIProviderService,
-    private openrouterProvider: OpenRouterProviderService,
-    private ragService: RAGService,
-    private tokenLimitService: TokenLimitService,
-    private tokenUsageService: TokenUsageService,
-    private systemCompanyService: SystemCompanyService
+    private readonly messageRepository: Repository<AIMessage>,
+    private readonly configService: AIConfigurationService,
+    private readonly openaiProvider: OpenAIProviderService,
+    private readonly openrouterProvider: OpenRouterProviderService,
+    private readonly ragService: RAGService,
+    private readonly tokenLimitService: TokenLimitService,
+    private readonly tokenUsageService: TokenUsageService,
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   async findAll(
@@ -343,8 +343,11 @@ export class AIConversationService {
   ): Observable<ChatStreamChunk> {
     const subject = new Subject<ChatStreamChunk>();
 
-    // Execute async setup and streaming in the background
-    this.executeStreamingMessage(conversationId, sendDto, user, subject);
+    // Execute async setup and streaming in the background (intentional fire-and-forget)
+    void this.executeStreamingMessage(conversationId, sendDto, user, subject).catch((err) => {
+      this.logger.error('Unhandled streaming error', err);
+      subject.error(err);
+    });
 
     return subject.asObservable();
   }

@@ -1,12 +1,12 @@
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import * as fs from 'fs/promises';
 import * as pdfParse from 'pdf-parse';
 import { Repository } from 'typeorm';
 
-import { AIContext, User } from '@accounting/common';
+import { AIContext, Company, User, UserRole } from '@accounting/common';
 import { SystemCompanyService } from '@accounting/common/backend';
 
 import { OpenAIProviderService } from './openai-provider.service';
@@ -17,10 +17,91 @@ export class RAGService {
 
   constructor(
     @InjectRepository(AIContext)
-    private contextRepository: Repository<AIContext>,
-    private openaiProvider: OpenAIProviderService,
-    private systemCompanyService: SystemCompanyService
+    private readonly contextRepository: Repository<AIContext>,
+    @InjectRepository(Company)
+    private readonly companyRepository: Repository<Company>,
+    private readonly openaiProvider: OpenAIProviderService,
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
+
+  /**
+   * Resolve the effective companyId for a user (system company for ADMINs).
+   * Returns null for ADMIN with no system company (graceful fallback).
+   */
+  async resolveCompanyIdForUser(user: User): Promise<string | null> {
+    if (user.role === UserRole.ADMIN) {
+      const systemCompany = await this.companyRepository.findOne({
+        where: { isSystemCompany: true },
+      });
+      return systemCompany?.id ?? null;
+    }
+    return user.companyId;
+  }
+
+  /**
+   * Resolve the effective companyId for a user (system company for ADMINs)
+   */
+  private async resolveCompanyId(user: User): Promise<string> {
+    if (user.role === UserRole.ADMIN) {
+      const systemCompany = await this.companyRepository.findOne({
+        where: { isSystemCompany: true },
+      });
+      if (!systemCompany) {
+        throw new Error('System Admin company not found');
+      }
+      return systemCompany.id;
+    }
+    if (!user.companyId) {
+      throw new Error('User does not have a company assigned');
+    }
+    return user.companyId;
+  }
+
+  /**
+   * Find all context files for a user's company
+   */
+  async findAllContexts(user: User): Promise<AIContext[]> {
+    const companyId = await this.resolveCompanyId(user);
+    return this.contextRepository.find({
+      where: { companyId },
+      relations: ['uploadedBy', 'company'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  /**
+   * Find a single context file by ID (scoped to user's company)
+   */
+  async findContext(id: string, user: User): Promise<AIContext> {
+    const companyId = await this.resolveCompanyId(user);
+    const context = await this.contextRepository.findOne({
+      where: { id, companyId },
+      relations: ['uploadedBy', 'company'],
+    });
+    if (!context) {
+      throw new NotFoundException('Context file not found');
+    }
+    return context;
+  }
+
+  /**
+   * Remove a context file (deletes physical file + DB record)
+   */
+  async removeContext(id: string, user: User): Promise<void> {
+    const companyId = await this.resolveCompanyId(user);
+    const context = await this.contextRepository.findOne({
+      where: { id, companyId },
+    });
+    if (!context) {
+      throw new NotFoundException('Context file not found');
+    }
+    try {
+      await fs.unlink(context.filePath);
+    } catch {
+      // File already deleted or doesn't exist
+    }
+    await this.contextRepository.remove(context);
+  }
 
   /**
    * Extract text from uploaded file based on mime type
@@ -376,7 +457,7 @@ export class RAGService {
 
     const keywordParams: Record<string, string> = {};
     keywords.forEach((kw, i) => {
-      keywordParams[`keyword${i}`] = `%${kw}%`;
+      keywordParams[`keyword${i}`] = `%${this.escapeLikePattern(kw)}%`;
     });
 
     queryBuilder
@@ -396,6 +477,10 @@ export class RAGService {
     }
 
     return results;
+  }
+
+  private escapeLikePattern(value: string): string {
+    return value.replace(/[%_\\]/g, '\\$&');
   }
 
   /**

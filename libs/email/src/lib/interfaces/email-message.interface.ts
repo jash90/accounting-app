@@ -221,4 +221,25 @@ export interface FetchEmailsOptions {
    * Search criteria (e.g., ['UNSEEN', ['SINCE', '2024-01-01']])
    */
   searchCriteria?: any[];
+
+  /**
+   * Cursor for pagination (UID boundary)
+   */
+  cursor?: number;
+
+  /**
+   * Direction for cursor-based pagination
+   */
+  direction?: 'before' | 'after';
+}
+
+/**
+ * Result of paginated email fetch
+ */
+export interface PaginatedEmailsResult {
+  messages: ReceivedEmail[];
+  total: number;
+  unseen: number;
+  nextCursor: number | null;
+  prevCursor: number | null;
 }

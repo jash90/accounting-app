@@ -7,7 +7,7 @@ import { OWNER_OR_ADMIN_KEY } from '../decorators/owner-or-admin.decorator';
 
 @Injectable()
 export class OwnerOrAdminGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
     const isOwnerOrAdminRequired = this.reflector.getAllAndOverride<boolean>(OWNER_OR_ADMIN_KEY, [

@@ -25,16 +25,16 @@ import { GrantModuleAccessDto } from '../dto';
 export class EmployeeModulePermissionsService {
   constructor(
     @InjectRepository(ModuleEntity)
-    private moduleRepository: Repository<ModuleEntity>,
+    private readonly moduleRepository: Repository<ModuleEntity>,
     @InjectRepository(CompanyModuleAccess)
-    private companyModuleAccessRepository: Repository<CompanyModuleAccess>,
+    private readonly companyModuleAccessRepository: Repository<CompanyModuleAccess>,
     @InjectRepository(UserModulePermission)
-    private userModulePermissionRepository: Repository<UserModulePermission>,
+    private readonly userModulePermissionRepository: Repository<UserModulePermission>,
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private readonly userRepository: Repository<User>,
     @InjectRepository(Company)
-    private companyRepository: Repository<Company>,
-    private rbacService: RBACService
+    private readonly companyRepository: Repository<Company>,
+    private readonly rbacService: RBACService
   ) {}
 
   /**
@@ -78,7 +78,7 @@ export class EmployeeModulePermissionsService {
   /**
    * Grant module access to an employee
    */
-  async grantModuleToEmployee(
+  grantModuleToEmployee(
     companyId: string,
     employeeId: string,
     moduleSlug: string,
@@ -144,7 +144,7 @@ export class EmployeeModulePermissionsService {
   /**
    * Revoke module access from an employee
    */
-  async revokeModuleFromEmployee(companyId: string, employeeId: string, moduleSlug: string) {
+  revokeModuleFromEmployee(companyId: string, employeeId: string, moduleSlug: string) {
     return this.userModulePermissionRepository.manager.transaction(
       async (manager: EntityManager) => {
         const employee = await this.userRepository.findOne({

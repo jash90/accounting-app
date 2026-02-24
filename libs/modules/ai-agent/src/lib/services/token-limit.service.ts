@@ -1,8 +1,6 @@
 import {
   BadRequestException,
   ForbiddenException,
-  forwardRef,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -45,18 +43,17 @@ interface MyLimitResult {
 export class TokenLimitService {
   constructor(
     @InjectRepository(TokenLimit)
-    private limitRepository: Repository<TokenLimit>,
+    private readonly limitRepository: Repository<TokenLimit>,
     @InjectRepository(User)
-    private userRepository: Repository<User>,
-    @Inject(forwardRef(() => TokenUsageService))
-    private tokenUsageService: TokenUsageService,
-    private systemCompanyService: SystemCompanyService
+    private readonly userRepository: Repository<User>,
+    private readonly tokenUsageService: TokenUsageService,
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   /**
    * Find user by ID
    */
-  async findUserById(userId: string): Promise<User | null> {
+  findUserById(userId: string): Promise<User | null> {
     return this.userRepository.findOne({ where: { id: userId } });
   }
 
@@ -183,6 +180,65 @@ export class TokenLimitService {
         );
       }
     }
+  }
+
+  /**
+   * Set company limit and return enriched response with current usage stats
+   */
+  async setCompanyLimitWithUsage(
+    companyId: string,
+    setDto: SetTokenLimitDto,
+    user: User
+  ): Promise<
+    TokenLimit & {
+      currentUsage: number;
+      usagePercentage: number;
+      isExceeded: boolean;
+      isWarning: boolean;
+    }
+  > {
+    const limit = await this.setCompanyLimit(companyId, setDto, user);
+    const currentUsage = await this.tokenUsageService.getCompanyMonthlyTotal(companyId);
+    const usagePercentage = (currentUsage / limit.monthlyLimit) * 100;
+    return {
+      ...limit,
+      currentUsage,
+      usagePercentage,
+      isExceeded: currentUsage >= limit.monthlyLimit,
+      isWarning: currentUsage >= (limit.monthlyLimit * limit.warningThresholdPercentage) / 100,
+    };
+  }
+
+  /**
+   * Set user limit and return enriched response with current usage stats
+   */
+  async setUserLimitWithUsage(
+    userId: string,
+    setDto: SetTokenLimitDto,
+    user: User
+  ): Promise<
+    | (TokenLimit & {
+        currentUsage: number;
+        usagePercentage: number;
+        isExceeded: boolean;
+        isWarning: boolean;
+      })
+    | TokenLimit
+  > {
+    const limit = await this.setUserLimit(userId, setDto, user);
+    const userEntity = await this.findUserById(userId);
+    if (userEntity) {
+      const currentUsage = await this.tokenUsageService.getUserMonthlyTotal(userEntity);
+      const usagePercentage = (currentUsage / limit.monthlyLimit) * 100;
+      return {
+        ...limit,
+        currentUsage,
+        usagePercentage,
+        isExceeded: currentUsage >= limit.monthlyLimit,
+        isWarning: currentUsage >= (limit.monthlyLimit * limit.warningThresholdPercentage) / 100,
+      };
+    }
+    return limit;
   }
 
   /**

@@ -4,7 +4,11 @@ import { FetchMessageObject, ImapFlow } from 'imapflow';
 import { ParsedMail, simpleParser } from 'mailparser';
 
 import { ImapConfig } from '../interfaces/email-config.interface';
-import { FetchEmailsOptions, ReceivedEmail } from '../interfaces/email-message.interface';
+import {
+  FetchEmailsOptions,
+  PaginatedEmailsResult,
+  ReceivedEmail,
+} from '../interfaces/email-message.interface';
 import { convertParsedMailToReceivedEmail } from '../utils/email-message.parser';
 import {
   buildSearchCriteria,
@@ -12,7 +16,11 @@ import {
   extractMailboxNames,
   sendClientIdentification,
 } from '../utils/imap-connection.factory';
-import { findDraftsMailboxFromList, findSentMailboxFromList } from '../utils/imap-folder-discovery';
+import {
+  findDraftsMailboxFromList,
+  findSentMailboxFromList,
+  findTrashMailboxFromList,
+} from '../utils/imap-folder-discovery';
 
 /**
  * Service for reading emails via IMAP using ImapFlow
@@ -68,7 +76,12 @@ export class EmailReaderService {
 
         // Build search criteria
         const searchCriteria = buildSearchCriteria(options);
+        this.logger.log(`[IMAP] Mailbox lock acquired for "${mailbox}"`);
+        this.logger.log(`[IMAP] Executing search with criteria: ${JSON.stringify(searchCriteria)}`);
         const results = await client.search(searchCriteria, { uid: true });
+        this.logger.log(
+          `[IMAP] Search returned ${Array.isArray(results) ? results.length : results} results`
+        );
 
         if (!results || results.length === 0) {
           this.logger.log('No emails found matching criteria');
@@ -454,5 +467,333 @@ export class EmailReaderService {
 
     // Append new version
     return this.appendToDrafts(imapConfig, rawMessage);
+  }
+  /**
+   * Fetch emails with cursor-based pagination
+   */
+  async fetchEmailsPaginated(
+    imapConfig: ImapConfig,
+    options: FetchEmailsOptions & { limit?: number }
+  ): Promise<PaginatedEmailsResult> {
+    const client = createImapFlowClient(imapConfig);
+    const messages: ReceivedEmail[] = [];
+
+    try {
+      await client.connect();
+      await sendClientIdentification(client, this.logger);
+
+      const mailbox = options.mailbox || 'INBOX';
+      const lock = await client.getMailboxLock(mailbox);
+
+      try {
+        const mailboxInfo = client.mailbox;
+        const total = mailboxInfo && typeof mailboxInfo !== 'boolean' ? mailboxInfo.exists : 0;
+
+        // Get unseen count
+        const unseenUidsResult = await client.search({ seen: false }, { uid: true });
+        const unseenUids = Array.isArray(unseenUidsResult) ? unseenUidsResult : [];
+        const unseen = unseenUids.length;
+
+        // Get all UIDs
+        const allUidsResult = await client.search({ all: true }, { uid: true });
+        const allUids = Array.isArray(allUidsResult) ? allUidsResult : [];
+        if (allUids.length === 0) {
+          return { messages: [], total, unseen, nextCursor: null, prevCursor: null };
+        }
+
+        const limit = options.limit || 50;
+        const cursor = options.cursor;
+        const direction = options.direction || 'before';
+
+        let uidsToFetch: number[];
+        let nextCursor: number | null = null;
+        let prevCursor: number | null = null;
+
+        if (cursor) {
+          const cursorIndex = allUids.indexOf(cursor);
+          if (direction === 'before') {
+            // Get emails before the cursor (older)
+            const endIndex = cursorIndex < 0 ? allUids.length : cursorIndex;
+            const startIndex = Math.max(0, endIndex - limit);
+            uidsToFetch = allUids.slice(startIndex, endIndex);
+            nextCursor = endIndex < allUids.length ? allUids[endIndex] : null;
+            prevCursor = startIndex > 0 ? allUids[startIndex] : null;
+          } else {
+            // Get emails after the cursor (newer)
+            const startIndex = cursorIndex < 0 ? 0 : cursorIndex + 1;
+            const endIndex = Math.min(allUids.length, startIndex + limit);
+            uidsToFetch = allUids.slice(startIndex, endIndex);
+            nextCursor = endIndex < allUids.length ? allUids[endIndex] : null;
+            prevCursor = startIndex > 0 ? allUids[startIndex - 1] : null;
+          }
+        } else {
+          // No cursor: get the most recent emails
+          const startIndex = Math.max(0, allUids.length - limit);
+          uidsToFetch = allUids.slice(startIndex);
+          nextCursor = null;
+          prevCursor = startIndex > 0 ? allUids[startIndex] : null;
+        }
+
+        if (uidsToFetch.length === 0) {
+          return { messages: [], total, unseen, nextCursor, prevCursor };
+        }
+
+        for await (const message of client.fetch(uidsToFetch, {
+          uid: true,
+          flags: true,
+          envelope: true,
+          source: true,
+        })) {
+          try {
+            const email = await this.processMessage(message, client, options.markAsSeen);
+            if (email) messages.push(email);
+          } catch (parseError) {
+            this.logger.error(
+              `Error processing message UID ${message.uid}: ${(parseError as Error).message}`
+            );
+          }
+        }
+
+        return { messages, total, unseen, nextCursor, prevCursor };
+      } finally {
+        lock.release();
+      }
+    } catch (error) {
+      this.logger.error(`IMAP paginated fetch error: ${(error as Error).message}`);
+      throw error;
+    } finally {
+      await client.logout().catch((err) => {
+        this.logger.debug(`Logout error (non-critical): ${err.message}`);
+      });
+    }
+  }
+
+  /**
+   * Search emails in a mailbox
+   */
+  async searchEmails(
+    imapConfig: ImapConfig,
+    options: {
+      query: string;
+      mailbox?: string;
+      field?: 'all' | 'subject' | 'from' | 'body';
+      limit?: number;
+      cursor?: number;
+      direction?: 'before' | 'after';
+    }
+  ): Promise<PaginatedEmailsResult> {
+    const client = createImapFlowClient(imapConfig);
+    const messages: ReceivedEmail[] = [];
+
+    try {
+      await client.connect();
+      await sendClientIdentification(client, this.logger);
+
+      const mailbox = options.mailbox || 'INBOX';
+      const lock = await client.getMailboxLock(mailbox);
+
+      try {
+        const { query, field = 'all', limit = 50 } = options;
+
+        // Build search criteria based on field
+        let searchCriteria: object;
+        if (field === 'subject') {
+          searchCriteria = { subject: query };
+        } else if (field === 'from') {
+          searchCriteria = { from: query };
+        } else if (field === 'body') {
+          searchCriteria = { body: query };
+        } else {
+          // all: search subject, from, body
+          searchCriteria = { or: [{ subject: query }, { from: query }, { body: query }] };
+        }
+
+        const matchingUids = await client.search(searchCriteria, { uid: true });
+        if (!matchingUids || matchingUids.length === 0) {
+          return { messages: [], total: 0, unseen: 0, nextCursor: null, prevCursor: null };
+        }
+
+        // Apply cursor/pagination
+        const cursor = options.cursor;
+        const direction = options.direction || 'before';
+        let uidsToFetch: number[];
+        let nextCursor: number | null = null;
+        let prevCursor: number | null = null;
+
+        if (cursor) {
+          const cursorIndex = matchingUids.indexOf(cursor);
+          if (direction === 'before') {
+            const endIndex = cursorIndex < 0 ? matchingUids.length : cursorIndex;
+            const startIndex = Math.max(0, endIndex - limit);
+            uidsToFetch = matchingUids.slice(startIndex, endIndex);
+            nextCursor = endIndex < matchingUids.length ? matchingUids[endIndex] : null;
+            prevCursor = startIndex > 0 ? matchingUids[startIndex] : null;
+          } else {
+            const startIndex = cursorIndex < 0 ? 0 : cursorIndex + 1;
+            const endIndex = Math.min(matchingUids.length, startIndex + limit);
+            uidsToFetch = matchingUids.slice(startIndex, endIndex);
+            nextCursor = endIndex < matchingUids.length ? matchingUids[endIndex] : null;
+            prevCursor = startIndex > 0 ? matchingUids[startIndex - 1] : null;
+          }
+        } else {
+          const startIndex = Math.max(0, matchingUids.length - limit);
+          uidsToFetch = matchingUids.slice(startIndex);
+          nextCursor = null;
+          prevCursor = startIndex > 0 ? matchingUids[startIndex] : null;
+        }
+
+        for await (const message of client.fetch(uidsToFetch, {
+          uid: true,
+          flags: true,
+          envelope: true,
+          source: true,
+        })) {
+          try {
+            const email = await this.processMessage(message, client);
+            if (email) messages.push(email);
+          } catch (parseError) {
+            this.logger.error(
+              `Error processing message UID ${message.uid}: ${(parseError as Error).message}`
+            );
+          }
+        }
+
+        return {
+          messages,
+          total: matchingUids.length,
+          unseen: messages.filter((m) => !m.flags.includes('\\Seen')).length,
+          nextCursor,
+          prevCursor,
+        };
+      } finally {
+        lock.release();
+      }
+    } catch (error) {
+      this.logger.error(`IMAP search error: ${(error as Error).message}`);
+      throw error;
+    } finally {
+      await client.logout().catch((err) => {
+        this.logger.debug(`Logout error (non-critical): ${err.message}`);
+      });
+    }
+  }
+
+  /**
+   * Move messages between mailboxes
+   */
+  async moveMessages(
+    imapConfig: ImapConfig,
+    uids: number[],
+    sourceMailbox: string,
+    destinationMailbox: string
+  ): Promise<void> {
+    const client = createImapFlowClient(imapConfig);
+
+    try {
+      await client.connect();
+      await sendClientIdentification(client, this.logger);
+
+      const lock = await client.getMailboxLock(sourceMailbox);
+      try {
+        await client.messageMove(uids, destinationMailbox, { uid: true });
+        this.logger.log(
+          `Moved ${uids.length} messages from ${sourceMailbox} to ${destinationMailbox}`
+        );
+      } finally {
+        lock.release();
+      }
+    } catch (error) {
+      this.logger.error(`IMAP move error: ${(error as Error).message}`);
+      throw error;
+    } finally {
+      await client.logout().catch(() => {});
+    }
+  }
+
+  /**
+   * Update flags for messages
+   */
+  async updateFlags(
+    imapConfig: ImapConfig,
+    uid: number,
+    options: { add?: string[]; remove?: string[]; mailbox?: string }
+  ): Promise<string[]> {
+    const client = createImapFlowClient(imapConfig);
+
+    try {
+      await client.connect();
+      await sendClientIdentification(client, this.logger);
+
+      const mailbox = options.mailbox || 'INBOX';
+      const lock = await client.getMailboxLock(mailbox);
+
+      try {
+        if (options.add && options.add.length > 0) {
+          await client.messageFlagsAdd({ uid }, options.add);
+        }
+        if (options.remove && options.remove.length > 0) {
+          await client.messageFlagsRemove({ uid }, options.remove);
+        }
+
+        // Fetch updated flags
+        const resultFlags: string[] = [];
+        for await (const message of client.fetch({ uid }, { uid: true, flags: true })) {
+          resultFlags.push(...(message.flags ? Array.from(message.flags) : []));
+        }
+        return resultFlags;
+      } finally {
+        lock.release();
+      }
+    } catch (error) {
+      this.logger.error(`IMAP updateFlags error: ${(error as Error).message}`);
+      throw error;
+    } finally {
+      await client.logout().catch(() => {});
+    }
+  }
+
+  /**
+   * Find Trash mailbox
+   */
+  async findTrashMailbox(imapConfig: ImapConfig): Promise<string | null> {
+    try {
+      const boxes = await this.listMailboxes(imapConfig);
+      return findTrashMailboxFromList(boxes, this.logger);
+    } catch (error) {
+      this.logger.error(`Error finding Trash mailbox: ${(error as Error).message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Fetch a single email attachment by filename and UID
+   */
+  async fetchEmailAttachment(
+    imapConfig: ImapConfig,
+    uid: number,
+    filename: string,
+    mailbox?: string
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string } | null> {
+    const emails = await this.fetchEmails(imapConfig, {
+      mailbox: mailbox || 'INBOX',
+      searchCriteria: [['UID', uid]],
+      limit: 1,
+    });
+
+    if (!emails || emails.length === 0) return null;
+    const email = emails[0];
+    if (!email.attachments) return null;
+
+    const attachment = email.attachments.find(
+      (a) => a.filename === filename || a.filename?.includes(filename)
+    );
+
+    if (!attachment) return null;
+
+    return {
+      buffer: attachment.content,
+      contentType: attachment.contentType,
+      filename: attachment.filename,
+    };
   }
 }

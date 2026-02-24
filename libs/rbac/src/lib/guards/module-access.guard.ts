@@ -17,10 +17,10 @@ export class ModuleAccessGuard implements CanActivate {
   private readonly logger = new Logger(ModuleAccessGuard.name);
 
   constructor(
-    private rbacService: RBACService,
-    private reflector: Reflector,
+    private readonly rbacService: RBACService,
+    private readonly reflector: Reflector,
     @Optional()
-    private moduleDiscoveryService?: ModuleDiscoveryService
+    private readonly moduleDiscoveryService?: ModuleDiscoveryService
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {

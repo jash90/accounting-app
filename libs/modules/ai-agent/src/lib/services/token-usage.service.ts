@@ -34,10 +34,10 @@ interface CompanyTokenUsageDto {
 export class TokenUsageService {
   constructor(
     @InjectRepository(TokenUsage)
-    private usageRepository: Repository<TokenUsage>,
+    private readonly usageRepository: Repository<TokenUsage>,
     @InjectRepository(Company)
-    private companyRepository: Repository<Company>,
-    private systemCompanyService: SystemCompanyService
+    private readonly companyRepository: Repository<Company>,
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   /**

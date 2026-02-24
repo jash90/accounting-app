@@ -1,4 +1,5 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 import axios from 'axios';
 import { Observable } from 'rxjs';
@@ -22,8 +23,15 @@ export class OpenRouterProviderService extends AIProviderService {
   private readonly MAX_RETRIES = 3;
   private readonly TIMEOUT_MS = 180000; // 3 minutes - generous timeout for complex AI responses
   private readonly BASE_RETRY_DELAY_MS = 1000; // 1 second base delay
-  private readonly httpReferer = process.env.OPENROUTER_REFERER || 'http://localhost:3000';
-  private readonly xTitle = process.env.OPENROUTER_X_TITLE || 'Accounting App';
+  private readonly httpReferer: string;
+  private readonly xTitle: string;
+
+  constructor(private readonly configService: ConfigService) {
+    super();
+    this.httpReferer =
+      this.configService.get<string>('OPENROUTER_REFERER') || 'http://localhost:3000';
+    this.xTitle = this.configService.get<string>('OPENROUTER_X_TITLE') || 'Accounting App';
+  }
 
   /**
    * Model prefixes that don't support system role (developer instructions).
@@ -268,7 +276,7 @@ export class OpenRouterProviderService extends AIProviderService {
     return nonSystemMessages;
   }
 
-  async chat(
+  chat(
     messages: ChatMessage[],
     model: string,
     temperature: number,
@@ -560,11 +568,7 @@ export class OpenRouterProviderService extends AIProviderService {
     });
   }
 
-  async generateEmbedding(
-    _text: string,
-    _apiKey: string,
-    _model?: string
-  ): Promise<EmbeddingResponse> {
+  generateEmbedding(_text: string, _apiKey: string, _model?: string): Promise<EmbeddingResponse> {
     // OpenRouter doesn't natively support embeddings
     throw new AIProviderError(
       'OpenRouter does not support embeddings. Please use OpenAI provider for RAG features.',

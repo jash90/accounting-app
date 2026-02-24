@@ -27,17 +27,17 @@ import { EmployeeModulePermissionsService } from './services/employee-module-per
 export class ModulesService {
   constructor(
     @InjectRepository(ModuleEntity)
-    private moduleRepository: Repository<ModuleEntity>,
-    private rbacService: RBACService,
-    private companyModuleAccessService: CompanyModuleAccessService,
-    private employeePermissionsService: EmployeeModulePermissionsService,
+    private readonly moduleRepository: Repository<ModuleEntity>,
+    private readonly rbacService: RBACService,
+    private readonly companyModuleAccessService: CompanyModuleAccessService,
+    private readonly employeePermissionsService: EmployeeModulePermissionsService,
     @Optional()
-    private moduleDiscoveryService?: ModuleDiscoveryService
+    private readonly moduleDiscoveryService?: ModuleDiscoveryService
   ) {}
 
   // ==================== Module CRUD Operations ====================
 
-  async findAll() {
+  findAll() {
     return this.moduleRepository.find({
       order: { createdAt: 'DESC' },
     });
@@ -49,7 +49,7 @@ export class ModulesService {
    * - COMPANY_OWNER: returns modules available to their company
    * - EMPLOYEE: returns modules they have explicit permissions for
    */
-  async getModulesForUser(user: User) {
+  getModulesForUser(user: User) {
     if (user.role === UserRole.ADMIN) {
       return this.findAll();
     }
@@ -132,7 +132,7 @@ export class ModulesService {
 
   // ==================== Module Access Validation ====================
 
-  async getAvailableModules(userId: string) {
+  getAvailableModules(userId: string) {
     // RBACService handles role-based filtering
     // - EMPLOYEE: returns only modules they have explicit permissions for
     // - COMPANY_OWNER: returns all modules for their company
@@ -150,22 +150,22 @@ export class ModulesService {
     return module;
   }
 
-  async canUserAccess(userId: string, moduleSlug: string): Promise<boolean> {
+  canUserAccess(userId: string, moduleSlug: string): Promise<boolean> {
     return this.rbacService.canAccessModule(userId, moduleSlug);
   }
 
   // ==================== Company Module Access Management ====================
   // Delegated to CompanyModuleAccessService
 
-  async getCompanyModules(companyId: string) {
+  getCompanyModules(companyId: string) {
     return this.companyModuleAccessService.getCompanyModules(companyId);
   }
 
-  async grantModuleToCompany(companyId: string, moduleId: string) {
+  grantModuleToCompany(companyId: string, moduleId: string) {
     return this.companyModuleAccessService.grantModuleToCompany(companyId, moduleId);
   }
 
-  async revokeModuleFromCompany(companyId: string, moduleId: string) {
+  revokeModuleFromCompany(companyId: string, moduleId: string) {
     return this.companyModuleAccessService.revokeModuleFromCompany(companyId, moduleId);
   }
 
@@ -174,18 +174,18 @@ export class ModulesService {
    * This method can be called manually to fix existing data inconsistencies
    * Returns the number of orphaned permissions that were removed
    */
-  async cleanupOrphanedPermissions() {
+  cleanupOrphanedPermissions() {
     return this.companyModuleAccessService.cleanupOrphanedPermissions();
   }
 
   // ==================== Employee Module Permissions ====================
   // Delegated to EmployeeModulePermissionsService
 
-  async getEmployeeModules(companyId: string, employeeId: string) {
+  getEmployeeModules(companyId: string, employeeId: string) {
     return this.employeePermissionsService.getEmployeeModules(companyId, employeeId);
   }
 
-  async grantModuleToEmployee(
+  grantModuleToEmployee(
     companyId: string,
     employeeId: string,
     moduleSlug: string,
@@ -199,7 +199,7 @@ export class ModulesService {
     );
   }
 
-  async updateEmployeeModulePermissions(
+  updateEmployeeModulePermissions(
     companyId: string,
     employeeId: string,
     moduleSlug: string,
@@ -213,7 +213,7 @@ export class ModulesService {
     );
   }
 
-  async revokeModuleFromEmployee(companyId: string, employeeId: string, moduleSlug: string) {
+  revokeModuleFromEmployee(companyId: string, employeeId: string, moduleSlug: string) {
     return this.employeePermissionsService.revokeModuleFromEmployee(
       companyId,
       employeeId,
@@ -351,7 +351,7 @@ export class ModulesService {
    * Reload modules from file system
    * Triggers re-discovery and database sync
    */
-  async reloadModules(): Promise<DiscoveredModule[]> {
+  reloadModules(): Promise<DiscoveredModule[]> {
     if (!this.moduleDiscoveryService) {
       throw new BadRequestException('Module discovery service is not available');
     }
@@ -361,14 +361,14 @@ export class ModulesService {
   /**
    * Get available permissions for a module
    */
-  async getModulePermissions(moduleSlug: string): Promise<string[]> {
+  getModulePermissions(moduleSlug: string): Promise<string[]> {
     return this.rbacService.getModulePermissions(moduleSlug);
   }
 
   /**
    * Get default permissions for a module
    */
-  async getDefaultModulePermissions(moduleSlug: string): Promise<string[]> {
+  getDefaultModulePermissions(moduleSlug: string): Promise<string[]> {
     return this.rbacService.getDefaultModulePermissions(moduleSlug);
   }
 }
