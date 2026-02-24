@@ -10,6 +10,8 @@ import {
   Post,
   Query,
   UseGuards,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -32,6 +34,7 @@ import { Throttle } from '@nestjs/throttler';
 import { Roles, RolesGuard } from '@accounting/auth';
 import { CompanyResponseDto, UserResponseDto, UserRole } from '@accounting/common';
 
+import { UpdateCompanyProfileDto } from '../../company/dto/update-company-profile.dto';
 import { CreateCompanyDto } from '../dto/create-company.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateCompanyDto } from '../dto/update-company.dto';
@@ -248,6 +251,41 @@ export class AdminController {
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
   deleteCompany(@Param('id') id: string) {
     return this.adminService.deleteCompany(id);
+  }
+
+  @Get('companies/:id/profile')
+  @ApiOperation({
+    summary: 'Get company profile',
+    description: 'Retrieve the profile of a specific company',
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'Company unique identifier',
+  })
+  @ApiOkResponse({ description: 'Company profile' })
+  @ApiNotFoundResponse({ description: 'Company not found' })
+  getCompanyProfile(@Param('id') id: string) {
+    return this.adminService.getCompanyProfileById(id);
+  }
+
+  @Patch('companies/:id/profile')
+  @ApiOperation({
+    summary: 'Update company profile',
+    description: 'Update the profile of a specific company',
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'Company unique identifier',
+  })
+  @ApiOkResponse({ description: 'Updated company profile' })
+  @ApiNotFoundResponse({ description: 'Company not found' })
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  updateCompanyProfile(@Param('id') id: string, @Body() dto: UpdateCompanyProfileDto) {
+    return this.adminService.updateCompanyProfileById(id, dto);
   }
 
   @Get('companies/:id/employees')

@@ -12,6 +12,7 @@ import { DataSource, Repository } from 'typeorm';
 import { Company, User, UserRole } from '@accounting/common';
 import { RBACService } from '@accounting/rbac';
 
+import { UpdateCompanyProfileDto } from '../../company/dto/update-company-profile.dto';
 import { CreateCompanyDto } from '../dto/create-company.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateCompanyDto } from '../dto/update-company.dto';
@@ -21,11 +22,11 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 export class AdminService {
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private readonly userRepository: Repository<User>,
     @InjectRepository(Company)
-    private companyRepository: Repository<Company>,
-    private rbacService: RBACService,
-    private dataSource: DataSource
+    private readonly companyRepository: Repository<Company>,
+    private readonly rbacService: RBACService,
+    private readonly dataSource: DataSource
   ) {}
 
   private async getSystemCompany(): Promise<Company> {
@@ -41,7 +42,7 @@ export class AdminService {
   }
 
   // User Management
-  async findAllUsers() {
+  findAllUsers() {
     return this.userRepository.find({
       relations: ['company'],
       order: { createdAt: 'DESC' },
@@ -161,7 +162,7 @@ export class AdminService {
   }
 
   // Get available owners (COMPANY_OWNER without assigned company)
-  async findAvailableOwners() {
+  findAvailableOwners() {
     return this.userRepository.find({
       where: {
         role: UserRole.COMPANY_OWNER,
@@ -173,7 +174,7 @@ export class AdminService {
   }
 
   // Company Management
-  async findAllCompanies() {
+  findAllCompanies() {
     return this.companyRepository.find({
       where: { isSystemCompany: false }, // Hide System Admin company from list
       relations: ['owner', 'employees'],
@@ -262,5 +263,21 @@ export class AdminService {
   async getCompanyEmployees(companyId: string) {
     const company = await this.findCompanyById(companyId);
     return company.employees;
+  }
+
+  async getCompanyProfileById(companyId: string): Promise<Company> {
+    const company = await this.companyRepository.findOne({ where: { id: companyId } });
+    if (!company) throw new NotFoundException('Company not found');
+    return company;
+  }
+
+  async updateCompanyProfileById(
+    companyId: string,
+    dto: UpdateCompanyProfileDto
+  ): Promise<Company> {
+    const company = await this.companyRepository.findOne({ where: { id: companyId } });
+    if (!company) throw new NotFoundException('Company not found');
+    Object.assign(company, dto);
+    return this.companyRepository.save(company);
   }
 }
