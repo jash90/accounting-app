@@ -118,6 +118,16 @@ export class ClientTaskStatisticsDto {
   totalStoryPoints!: number;
 }
 
+export class GlobalTaskStatisticsDto {
+  @ApiProperty({ description: 'Task counts grouped by status' })
+  byStatus!: Record<TaskStatus, number>;
+
+  @ApiProperty() total!: number;
+  @ApiProperty() overdue!: number;
+  @ApiProperty() dueSoon!: number;
+  @ApiProperty() unassigned!: number;
+}
+
 export class TaskSuccessResponseDto {
   @ApiProperty() message!: string;
 }

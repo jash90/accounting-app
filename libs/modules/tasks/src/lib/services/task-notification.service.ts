@@ -422,7 +422,7 @@ export class TaskNotificationService {
    * Users with [notificationType] = true → receive notifications
    * Users with [notificationType] = false → DO NOT receive notifications
    */
-  private async getNotificationRecipients(
+  private getNotificationRecipients(
     companyId: string,
     notificationType:
       | 'receiveOnCreate'

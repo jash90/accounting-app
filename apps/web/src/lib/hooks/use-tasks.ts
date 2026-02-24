@@ -1,5 +1,3 @@
-import { useMemo } from 'react';
-
 import { useMutation, useQuery, useQueryClient, type Query } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
@@ -23,9 +21,15 @@ import {
   taskDependenciesApi,
   taskLabelsApi,
   tasksApi,
+  taskTemplatesApi,
+  type CreateTaskTemplateDto,
   type TaskLabelQueryDto,
+  type TaskTemplateFiltersDto,
+  type UpdateTaskTemplateDto,
 } from '../api/endpoints/tasks';
 import { queryKeys } from '../api/query-client';
+
+export type { GlobalTaskStatisticsDto, TaskTemplateResponseDto } from '../api/endpoints/tasks';
 
 // ============================================
 // Helper Functions
@@ -144,6 +148,28 @@ export function useClientTaskStatistics(clientId: string) {
     queryFn: () => tasksApi.getClientStatistics(clientId),
     enabled: !!clientId,
     ...TASK_DETAIL_CACHE,
+  });
+}
+
+export function useGlobalTaskStatistics() {
+  return useQuery({
+    queryKey: queryKeys.tasks.globalStatistics,
+    queryFn: () => tasksApi.getGlobalStatistics(),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useTaskCompletionStats(filters?: { startDate?: string; endDate?: string }) {
+  return useQuery({
+    queryKey: ['tasks', 'stats', 'completion-duration', filters],
+    queryFn: () => tasksApi.getCompletionDurationStats(filters),
+  });
+}
+
+export function useEmployeeTaskRanking(filters?: { startDate?: string; endDate?: string }) {
+  return useQuery({
+    queryKey: ['tasks', 'stats', 'employee-ranking', filters],
+    queryFn: () => tasksApi.getEmployeeTaskRanking(filters),
   });
 }
 
@@ -293,37 +319,17 @@ export function useBulkUpdateStatus() {
 // Task Label Hooks
 // ============================================
 
-/**
- * Stabilize filter object for consistent query key serialization.
- * Returns undefined for empty/undefined queries to ensure deduplication.
- */
-function stableTaskLabelFilterKey(query?: TaskLabelQueryDto): TaskLabelQueryDto | undefined {
-  if (!query) return undefined;
-  // Only include defined properties to ensure stable serialization
-  const stable: Partial<TaskLabelQueryDto> = {};
-  if (query.search !== undefined) stable.search = query.search;
-  if (query.isActive !== undefined) stable.isActive = query.isActive;
-  return Object.keys(stable).length > 0 ? (stable as TaskLabelQueryDto) : undefined;
-}
-
 export function useTaskLabels(query?: TaskLabelQueryDto) {
-  // Memoize the stable query key based on primitive values to prevent
-  // unnecessary query refetches when the parent component re-renders
-  // with a new object reference containing the same values.
-  // ESLint exhaustive-deps rule disabled intentionally:
-  // We depend on primitive values (search, isActive) rather than the query object reference.
-  // This is necessary because parent components may pass inline objects that create new
-  // references on every render, even when the actual values haven't changed.
-  // By depending on primitive values, we only recalculate when actual filter values change.
-  const stableQuery = useMemo(
-    () => stableTaskLabelFilterKey(query),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [query?.search, query?.isActive]
-  );
+  let stableQuery: TaskLabelQueryDto | undefined;
+  if (query) {
+    const stable: Partial<TaskLabelQueryDto> = {};
+    if (query.search !== undefined) stable.search = query.search;
+    if (query.isActive !== undefined) stable.isActive = query.isActive;
+    stableQuery = Object.keys(stable).length > 0 ? (stable as TaskLabelQueryDto) : undefined;
+  }
 
   return useQuery({
     queryKey: queryKeys.taskLabels.list(stableQuery),
-    // Use stableQuery in queryFn to ensure consistency with queryKey
     queryFn: () => taskLabelsApi.getAll(stableQuery),
     ...TASK_LOOKUP_CACHE,
   });
@@ -639,6 +645,142 @@ export function useDeleteTaskDependency() {
       toast({
         title: 'Błąd',
         description: error.response?.data?.message || 'Nie udało się usunąć zależności',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+// ============================================
+// Export Hooks
+// ============================================
+
+export function useExportTasks() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (filters?: TaskFiltersDto) => tasksApi.exportCsv(filters),
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      try {
+        link.href = url;
+        link.download = `zadania-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast({ title: 'Sukces', description: 'Plik CSV został pobrany' });
+      } finally {
+        window.URL.revokeObjectURL(url);
+      }
+    },
+    onError: (error: ApiErrorResponse) => {
+      toast({
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się wyeksportować zadań',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+// ============================================
+// Task Template Hooks
+// ============================================
+
+export function useTaskTemplates(filters?: TaskTemplateFiltersDto) {
+  return useQuery({
+    queryKey: queryKeys.taskTemplates.list(filters),
+    queryFn: () => taskTemplatesApi.getAll(filters),
+    ...TASK_LOOKUP_CACHE,
+  });
+}
+
+export function useTaskTemplate(id: string) {
+  return useQuery({
+    queryKey: queryKeys.taskTemplates.detail(id),
+    queryFn: () => taskTemplatesApi.getById(id),
+    enabled: !!id,
+    ...TASK_LOOKUP_CACHE,
+  });
+}
+
+export function useCreateTaskTemplate() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (dto: CreateTaskTemplateDto) => taskTemplatesApi.create(dto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.taskTemplates.all });
+      toast({ title: 'Sukces', description: 'Szablon zadania został utworzony' });
+    },
+    onError: (error: ApiErrorResponse) => {
+      toast({
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się utworzyć szablonu',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useUpdateTaskTemplate() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateTaskTemplateDto }) =>
+      taskTemplatesApi.update(id, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.taskTemplates.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.taskTemplates.detail(variables.id) });
+      toast({ title: 'Sukces', description: 'Szablon zadania został zaktualizowany' });
+    },
+    onError: (error: ApiErrorResponse) => {
+      toast({
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się zaktualizować szablonu',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useDeleteTaskTemplate() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (id: string) => taskTemplatesApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.taskTemplates.all });
+      toast({ title: 'Sukces', description: 'Szablon zadania został usunięty' });
+    },
+    onError: (error: ApiErrorResponse) => {
+      toast({
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się usunąć szablonu',
+        variant: 'destructive',
+      });
+    },
+  });
+}
+
+export function useCreateTaskFromTemplate() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (templateId: string) => taskTemplatesApi.createTaskFromTemplate(templateId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ predicate: isTaskViewQuery });
+      toast({ title: 'Sukces', description: 'Zadanie zostało utworzone z szablonu' });
+    },
+    onError: (error: ApiErrorResponse) => {
+      toast({
+        title: 'Błąd',
+        description: error.response?.data?.message || 'Nie udało się utworzyć zadania z szablonu',
         variant: 'destructive',
       });
     },

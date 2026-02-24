@@ -1,3 +1,4 @@
+export * from './task-export.service';
 export * from './tasks.service';
 export * from './task-labels.service';
 export * from './task-comments.service';

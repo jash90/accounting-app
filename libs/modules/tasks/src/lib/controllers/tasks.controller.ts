@@ -8,8 +8,11 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
   UseInterceptors,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -21,6 +24,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { Response } from 'express';
+
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { NotificationType, User } from '@accounting/common';
 import { NotificationInterceptor, NotifyOn } from '@accounting/modules/notifications';
@@ -31,8 +36,10 @@ import {
   RequirePermission,
 } from '@accounting/rbac';
 
+import { StatsPeriodFilterDto } from '../dto/task-extended-stats.dto';
 import {
   ClientTaskStatisticsDto,
+  GlobalTaskStatisticsDto,
   KanbanBoardResponseDto,
   PaginatedTasksResponseDto,
   TaskErrorResponseDto,
@@ -46,6 +53,8 @@ import {
   TaskFiltersDto,
   UpdateTaskDto,
 } from '../dto/task.dto';
+import { TaskExportService } from '../services/task-export.service';
+import { TaskExtendedStatsService } from '../services/task-extended-stats.service';
 import { TasksService } from '../services/tasks.service';
 
 @ApiTags('Tasks')
@@ -55,6 +64,7 @@ import { TasksService } from '../services/tasks.service';
   PaginatedTasksResponseDto,
   KanbanBoardResponseDto,
   ClientTaskStatisticsDto,
+  GlobalTaskStatisticsDto,
   TaskSuccessResponseDto,
   TaskErrorResponseDto
 )
@@ -63,7 +73,41 @@ import { TasksService } from '../services/tasks.service';
 @UseInterceptors(NotificationInterceptor)
 @RequireModule('tasks')
 export class TasksController {
-  constructor(private readonly tasksService: TasksService) {}
+  constructor(
+    private readonly tasksService: TasksService,
+    private readonly taskExportService: TaskExportService,
+    private readonly taskExtendedStatsService: TaskExtendedStatsService
+  ) {}
+
+  @Get('export')
+  @ApiOperation({
+    summary: 'Export tasks to CSV',
+    description: 'Exports all tasks matching the current filters to a CSV file.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'CSV file download',
+    content: {
+      'text/csv': {
+        schema: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @RequirePermission('tasks', 'read')
+  async exportToCsv(
+    @Query() filters: TaskFiltersDto,
+    @CurrentUser() user: User,
+    @Res() res: Response
+  ) {
+    const csvBuffer = await this.taskExportService.exportToCsv(filters, user);
+    const filename = `tasks-export-${new Date().toISOString().split('T')[0]}.csv`;
+
+    res.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
+    res.send(csvBuffer);
+  }
 
   @Get()
   @ApiOperation({
@@ -120,6 +164,21 @@ export class TasksController {
     return this.tasksService.getCalendarTasks(user, startDate, endDate);
   }
 
+  @Get('statistics')
+  @ApiOperation({
+    summary: 'Get global task statistics',
+    description: 'Retrieves aggregated task statistics for the entire company.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Global task statistics',
+    type: GlobalTaskStatisticsDto,
+  })
+  @RequirePermission('tasks', 'read')
+  async getGlobalStatistics(@CurrentUser() user: User) {
+    return this.tasksService.getGlobalStatistics(user);
+  }
+
   @Get('statistics/client/:clientId')
   @ApiOperation({
     summary: 'Get task statistics for a client',
@@ -138,6 +197,28 @@ export class TasksController {
     @CurrentUser() user: User
   ) {
     return this.tasksService.getClientTaskStatistics(clientId, user);
+  }
+
+  @Get('statistics/extended/completion-duration')
+  @ApiOperation({ summary: 'Get task completion duration statistics (admin/owner only)' })
+  @RequirePermission('tasks', 'manage')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  async getCompletionDurationStats(
+    @CurrentUser() user: User,
+    @Query() filters: StatsPeriodFilterDto
+  ) {
+    return this.taskExtendedStatsService.getCompletionDurationStats(user, filters);
+  }
+
+  @Get('statistics/extended/employee-ranking')
+  @ApiOperation({ summary: 'Get employee task completion ranking (admin/owner only)' })
+  @RequirePermission('tasks', 'manage')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  async getEmployeeCompletionRanking(
+    @CurrentUser() user: User,
+    @Query() filters: StatsPeriodFilterDto
+  ) {
+    return this.taskExtendedStatsService.getEmployeeCompletionRanking(user, filters);
   }
 
   @Get(':id')
