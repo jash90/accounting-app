@@ -4,18 +4,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { Company, EmailConfiguration } from '@accounting/common';
+import { EncryptionService } from '@accounting/common/backend';
 import { CreateEmailConfigDto, UpdateEmailConfigDto } from '@accounting/email';
-
-import { EncryptionService } from './encryption.service';
 
 @Injectable()
 export class EmailConfigService {
   constructor(
     @InjectRepository(EmailConfiguration)
-    private emailConfigRepository: Repository<EmailConfiguration>,
+    private readonly emailConfigRepository: Repository<EmailConfiguration>,
     @InjectRepository(Company)
-    private companyRepository: Repository<Company>,
-    private encryptionService: EncryptionService
+    private readonly companyRepository: Repository<Company>,
+    private readonly encryptionService: EncryptionService
   ) {}
 
   /**

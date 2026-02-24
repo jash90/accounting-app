@@ -7,6 +7,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import * as crypto from 'crypto';
@@ -22,38 +23,44 @@ import { UpdateAIConfigurationDto } from '../dto/update-ai-configuration.dto';
 export class AIConfigurationService {
   private readonly logger = new Logger(AIConfigurationService.name);
   private readonly ENCRYPTION_KEY: string;
-  private readonly ALGORITHM = 'aes-256-cbc';
+  private readonly ALGORITHM_GCM = 'aes-256-gcm';
+  private readonly ALGORITHM_CBC = 'aes-256-cbc';
 
   constructor(
     @InjectRepository(AIConfiguration)
-    private configRepository: Repository<AIConfiguration>,
-    private systemCompanyService: SystemCompanyService
+    private readonly configRepository: Repository<AIConfiguration>,
+    private readonly systemCompanyService: SystemCompanyService,
+    private readonly configService: ConfigService
   ) {
-    const encryptionKey = process.env.AI_API_KEY_ENCRYPTION_KEY;
+    const encryptionKey = this.configService.get<string>('AI_API_KEY_ENCRYPTION_KEY');
     if (!encryptionKey) {
       throw new Error('AI_API_KEY_ENCRYPTION_KEY environment variable is required but not set');
     }
     if (Buffer.byteLength(encryptionKey, 'utf8') !== 32) {
       throw new Error(
-        `AI_API_KEY_ENCRYPTION_KEY must be exactly 32 bytes for AES-256-CBC. Current length: ${Buffer.byteLength(encryptionKey, 'utf8')} bytes`
+        `AI_API_KEY_ENCRYPTION_KEY must be exactly 32 bytes for AES-256. Current length: ${Buffer.byteLength(encryptionKey, 'utf8')} bytes`
       );
     }
     this.ENCRYPTION_KEY = encryptionKey;
   }
 
   /**
-   * Encrypt API key
+   * Encrypt API key using AES-256-GCM (authenticated encryption).
+   * Format: iv:authTag:encryptedData (3 parts, hex-encoded)
    */
   private encryptApiKey(apiKey: string): string {
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv(this.ALGORITHM, Buffer.from(this.ENCRYPTION_KEY), iv);
+    const iv = crypto.randomBytes(12); // GCM recommends 12-byte IV
+    const cipher = crypto.createCipheriv(this.ALGORITHM_GCM, Buffer.from(this.ENCRYPTION_KEY), iv);
     let encrypted = cipher.update(apiKey, 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    return `${iv.toString('hex')}:${encrypted}`;
+    const authTag = (cipher as crypto.CipherGCM).getAuthTag();
+    return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
   }
 
   /**
-   * Decrypt API key
+   * Decrypt API key with format auto-detection.
+   * 3 parts (iv:authTag:data) = GCM (new format)
+   * 2 parts (iv:data) = legacy CBC fallback
    */
   private decryptApiKey(encryptedKey: string): string {
     try {
@@ -61,20 +68,40 @@ export class AIConfigurationService {
         throw new Error('Invalid encrypted key format');
       }
 
-      const [ivHex, encrypted] = encryptedKey.split(':');
-      if (!ivHex || !encrypted) {
-        throw new Error('Invalid encrypted key format: missing IV or encrypted data');
-      }
+      const parts = encryptedKey.split(':');
+      const keyBuf = Buffer.from(this.ENCRYPTION_KEY);
 
-      const iv = Buffer.from(ivHex, 'hex');
-      const decipher = crypto.createDecipheriv(
-        this.ALGORITHM,
-        Buffer.from(this.ENCRYPTION_KEY),
-        iv
-      );
-      let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-      decrypted += decipher.final('utf8');
-      return decrypted;
+      if (parts.length === 3) {
+        // New GCM format: iv:authTag:encryptedData
+        const [ivHex, authTagHex, encrypted] = parts;
+        if (!ivHex || !authTagHex || !encrypted) {
+          throw new Error('Invalid GCM encrypted key format');
+        }
+        const iv = Buffer.from(ivHex, 'hex');
+        const authTag = Buffer.from(authTagHex, 'hex');
+        const decipher = crypto.createDecipheriv(
+          this.ALGORITHM_GCM,
+          keyBuf,
+          iv
+        ) as crypto.DecipherGCM;
+        decipher.setAuthTag(authTag);
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return decrypted;
+      } else if (parts.length === 2) {
+        // Legacy CBC format: iv:encryptedData
+        const [ivHex, encrypted] = parts;
+        if (!ivHex || !encrypted) {
+          throw new Error('Invalid CBC encrypted key format');
+        }
+        const iv = Buffer.from(ivHex, 'hex');
+        const decipher = crypto.createDecipheriv(this.ALGORITHM_CBC, keyBuf, iv);
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return decrypted;
+      } else {
+        throw new Error('Invalid encrypted key format: unexpected number of parts');
+      }
     } catch (error) {
       this.logger.error(
         `API key decryption failed: ${error instanceof Error ? error.message : String(error)}`

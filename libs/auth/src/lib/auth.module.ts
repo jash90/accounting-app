@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtModule, JwtModuleOptions, JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -24,38 +24,7 @@ function getRequiredSecret(configService: ConfigService, key: string): string {
 }
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([User, Company]),
-    PassportModule,
-    // Access Token JwtModule - shorter expiration, used for API access
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService): JwtModuleOptions => {
-        const expiresIn = configService.get<string>('JWT_EXPIRES_IN') || '15m';
-        return {
-          secret: getRequiredSecret(configService, 'JWT_SECRET'),
-          signOptions: {
-            expiresIn: expiresIn as any,
-          },
-        };
-      },
-      inject: [ConfigService],
-    }),
-    // Refresh Token JwtModule - longer expiration, separate secret
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService): JwtModuleOptions => {
-        const expiresIn = configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
-        return {
-          secret: getRequiredSecret(configService, 'JWT_REFRESH_SECRET'),
-          signOptions: {
-            expiresIn: expiresIn as any,
-          },
-        };
-      },
-      inject: [ConfigService],
-    }),
-  ],
+  imports: [TypeOrmModule.forFeature([User, Company]), PassportModule],
   controllers: [AuthController],
   providers: [
     AuthService,
