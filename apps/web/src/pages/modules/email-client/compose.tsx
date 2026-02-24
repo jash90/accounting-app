@@ -16,11 +16,11 @@ import {
   X,
 } from 'lucide-react';
 
+import { EmailEditor } from '@/components/email/email-editor';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import {
   useCreateDraft,
@@ -279,7 +279,8 @@ function EmailComposeForm({
       await sendEmail.mutateAsync({
         to: to.split(',').map((e) => e.trim()),
         subject,
-        text: content,
+        html: content,
+        text: content.replace(/<[^>]*>/g, ''),
         ...(cc && { cc: cc.split(',').map((e) => e.trim()) }),
         ...(bcc && { bcc: bcc.split(',').map((e) => e.trim()) }),
         ...(attachments.length > 0 && { attachments: attachments.map((a) => a.path) }),
@@ -461,7 +462,7 @@ function EmailComposeForm({
 
           <div>
             <div className="mb-1.5 flex items-center gap-2">
-              <Label htmlFor="content">Wiadomość</Label>
+              <Label>Wiadomość</Label>
               {(aiStreamIsStreaming || (locationState?.aiGenerate && !content)) && (
                 <span className="flex animate-pulse items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-800">
                   <Sparkles className="h-3 w-3" />
@@ -479,13 +480,10 @@ function EmailComposeForm({
                   <div className="bg-muted h-4 w-4/5 animate-pulse rounded" />
                 </div>
               )}
-              <Textarea
-                id="content"
+              <EmailEditor
+                content={displayContent}
+                onChange={(html) => dispatchForm({ type: 'SET_CONTENT', payload: html })}
                 placeholder="Wpisz treść wiadomości..."
-                value={displayContent}
-                onChange={(e) => dispatchForm({ type: 'SET_CONTENT', payload: e.target.value })}
-                rows={15}
-                className={`font-mono ${aiStreamIsStreaming || locationState?.aiGenerate ? 'border-purple-300 focus:border-purple-500' : ''}`}
                 disabled={aiStreamIsStreaming || (locationState?.aiGenerate && !displayContent)}
               />
             </div>

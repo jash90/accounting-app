@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useMutation, useQuery, useQueryClient, type Query } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type Query,
+} from '@tanstack/react-query';
 
 import apiClient from '../api/client';
 import { tokenStorage } from '../auth/token-storage';
@@ -95,7 +101,9 @@ export function useInbox(limit = 50, unseenOnly = false) {
       });
       return data;
     },
-    refetchInterval: 30000, // Auto-refresh every 30s
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 }
 
@@ -682,6 +690,194 @@ export function useDeleteAllDrafts() {
       queryClient.invalidateQueries({ predicate: isEmailDraftListQuery });
       queryClient.invalidateQueries({ queryKey: ['email-draft-conflicts'] });
       queryClient.invalidateQueries({ queryKey: ['ai-drafts'] });
+    },
+  });
+}
+
+/**
+ * Infinite scroll inbox using cursor-based pagination
+ */
+export function useInfiniteInbox(limit = 50) {
+  return useInfiniteQuery({
+    queryKey: ['email-inbox-infinite', limit],
+    queryFn: async ({ pageParam }) => {
+      const params: Record<string, unknown> = { limit };
+      if (pageParam) {
+        params.cursor = pageParam;
+        params.direction = 'before';
+      }
+      const { data } = await apiClient.get<{
+        messages: Email[];
+        total: number;
+        unseen: number;
+        nextCursor: number | null;
+        prevCursor: number | null;
+      }>('/api/modules/email-client/messages/inbox', { params });
+      return data;
+    },
+    initialPageParam: null as number | null,
+    getNextPageParam: (lastPage) => lastPage.prevCursor,
+  });
+}
+
+/**
+ * Infinite scroll folder using cursor-based pagination
+ */
+export function useInfiniteFolder(folderName: string | undefined, limit = 50) {
+  return useInfiniteQuery({
+    queryKey: ['email-folder-infinite', folderName, limit],
+    queryFn: async ({ pageParam }) => {
+      const params: Record<string, unknown> = { limit };
+      if (pageParam) {
+        params.cursor = pageParam;
+        params.direction = 'before';
+      }
+      const { data } = await apiClient.get<{
+        messages: Email[];
+        total: number;
+        unseen: number;
+        nextCursor: number | null;
+        prevCursor: number | null;
+      }>(`/api/modules/email-client/messages/folder/${folderName}`, { params });
+      return data;
+    },
+    initialPageParam: null as number | null,
+    getNextPageParam: (lastPage) => lastPage.prevCursor,
+    enabled: !!folderName,
+  });
+}
+
+/**
+ * Update email flags (star, etc.)
+ */
+export function useUpdateFlags() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      uid,
+      add,
+      remove,
+      mailbox,
+    }: {
+      uid: number;
+      add?: string[];
+      remove?: string[];
+      mailbox?: string;
+    }) => {
+      const { data } = await apiClient.patch<{ uid: number; flags: string[] }>(
+        `/api/modules/email-client/messages/${uid}/flags`,
+        { add, remove, mailbox }
+      );
+      return data;
+    },
+    onSuccess: (data) => {
+      // Optimistic update: update flag in all caches
+      queryClient.setQueriesData<Email[]>({ predicate: isEmailInboxQuery }, (old) =>
+        old?.map((email) => (email.uid === data.uid ? { ...email, flags: data.flags } : email))
+      );
+      queryClient.setQueriesData<Email[]>({ predicate: isEmailFolderQuery }, (old) =>
+        old?.map((email) => (email.uid === data.uid ? { ...email, flags: data.flags } : email))
+      );
+      queryClient.setQueryData<Email>(['email', data.uid], (old) =>
+        old ? { ...old, flags: data.flags } : old
+      );
+    },
+  });
+}
+
+/**
+ * Move messages between folders
+ */
+export function useMoveMessages() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      uids,
+      sourceMailbox,
+      destinationMailbox,
+    }: {
+      uids: number[];
+      sourceMailbox: string;
+      destinationMailbox: string;
+    }) => {
+      const { data } = await apiClient.post('/api/modules/email-client/messages/move', {
+        uids,
+        sourceMailbox,
+        destinationMailbox,
+      });
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      variables.uids.forEach((uid) => {
+        queryClient.removeQueries({ queryKey: ['email', uid] });
+      });
+      queryClient.invalidateQueries({ predicate: isEmailInboxQuery });
+      queryClient.invalidateQueries({ predicate: isEmailFolderQuery });
+    },
+  });
+}
+
+/**
+ * Search emails
+ */
+export function useSearchEmails(
+  query: string,
+  mailbox = 'INBOX',
+  field: 'all' | 'subject' | 'from' | 'body' = 'all'
+) {
+  return useQuery({
+    queryKey: ['email-search', query, mailbox, field],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{
+        messages: Email[];
+        total: number;
+        unseen: number;
+        nextCursor: number | null;
+        prevCursor: number | null;
+      }>('/api/modules/email-client/messages/search', {
+        params: { q: query, mailbox, field },
+      });
+      return data;
+    },
+    enabled: query.length >= 2,
+  });
+}
+
+/**
+ * Download IMAP attachment
+ */
+export function useDownloadAttachment() {
+  return useMutation({
+    mutationFn: async ({
+      uid,
+      filename,
+      mailbox,
+    }: {
+      uid: number;
+      filename: string;
+      mailbox?: string;
+    }) => {
+      const { data } = await apiClient.get(
+        `/api/modules/email-client/messages/${uid}/attachments/${encodeURIComponent(filename)}`,
+        {
+          params: mailbox ? { mailbox } : undefined,
+          responseType: 'blob',
+        }
+      );
+
+      // Trigger browser download
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      return { success: true };
     },
   });
 }

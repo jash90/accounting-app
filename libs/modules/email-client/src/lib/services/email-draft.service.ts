@@ -1,7 +1,5 @@
 import {
   ForbiddenException,
-  forwardRef,
-  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -32,7 +30,6 @@ export class EmailDraftService {
   constructor(
     @InjectRepository(EmailDraft)
     private readonly draftRepository: Repository<EmailDraft>,
-    @Inject(forwardRef(() => EmailDraftSyncService))
     private readonly draftSyncService: EmailDraftSyncService,
     private readonly emailConfigService: EmailConfigurationService
   ) {}
@@ -75,7 +72,7 @@ export class EmailDraftService {
   /**
    * Get all drafts for user's company
    */
-  async findAll(user: User): Promise<EmailDraft[]> {
+  findAll(user: User): Promise<EmailDraft[]> {
     if (!user.companyId) {
       throw new ForbiddenException('User must belong to a company');
     }
@@ -169,7 +166,7 @@ export class EmailDraftService {
   /**
    * Get drafts created by current user
    */
-  async findMyDrafts(user: User): Promise<EmailDraft[]> {
+  findMyDrafts(user: User): Promise<EmailDraft[]> {
     if (!user.companyId) {
       throw new ForbiddenException('User must belong to a company');
     }
@@ -186,7 +183,7 @@ export class EmailDraftService {
   /**
    * Get AI-generated drafts only
    */
-  async findAiDrafts(user: User): Promise<EmailDraft[]> {
+  findAiDrafts(user: User): Promise<EmailDraft[]> {
     if (!user.companyId) {
       throw new ForbiddenException('User must belong to a company');
     }
@@ -203,21 +200,21 @@ export class EmailDraftService {
   /**
    * Sync all drafts with IMAP server
    */
-  async syncWithImap(user: User): Promise<SyncResult> {
+  syncWithImap(user: User): Promise<SyncResult> {
     return this.draftSyncService.syncDrafts(user);
   }
 
   /**
    * Get drafts with sync conflicts
    */
-  async findConflicts(user: User): Promise<EmailDraft[]> {
+  findConflicts(user: User): Promise<EmailDraft[]> {
     return this.draftSyncService.findConflicts(user);
   }
 
   /**
    * Resolve a sync conflict
    */
-  async resolveConflict(
+  resolveConflict(
     user: User,
     draftId: string,
     resolution: 'keep_local' | 'keep_imap'
