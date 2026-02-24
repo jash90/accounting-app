@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import {
@@ -15,6 +14,8 @@ import {
   Company,
   CustomFieldReminder,
   NotificationSettings,
+  Task,
+  TimeEntry,
   User,
 } from '@accounting/common';
 import { CommonModule } from '@accounting/common/backend';
@@ -63,8 +64,9 @@ import { SuspensionService } from './services/suspension.service';
       User,
       ChangeLog,
       ClientDeleteRequest,
+      Task,
+      TimeEntry,
     ]),
-    ScheduleModule.forRoot(),
     CommonModule,
     RBACModule,
     StorageModule,

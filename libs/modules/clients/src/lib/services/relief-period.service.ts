@@ -260,7 +260,7 @@ export class ReliefPeriodService {
    * Get active relief periods for a client by type.
    * Validates both isActive flag AND actual date range.
    */
-  async getActiveReliefByType(
+  getActiveReliefByType(
     clientId: string,
     companyId: string,
     reliefType: ReliefType
@@ -283,7 +283,7 @@ export class ReliefPeriodService {
   /**
    * Get employees for a company (for notifications).
    */
-  async getCompanyEmployees(companyId: string): Promise<User[]> {
+  getCompanyEmployees(companyId: string): Promise<User[]> {
     return this.userRepository.find({
       where: {
         companyId,
@@ -296,7 +296,7 @@ export class ReliefPeriodService {
   /**
    * Get company owner(s) for notifications.
    */
-  async getCompanyOwners(companyId: string): Promise<User[]> {
+  getCompanyOwners(companyId: string): Promise<User[]> {
     return this.userRepository.find({
       where: {
         companyId,
@@ -309,7 +309,7 @@ export class ReliefPeriodService {
   /**
    * Get relief periods that need 7-day end reminder.
    */
-  async getReliefsFor7DayEndReminder(): Promise<ClientReliefPeriod[]> {
+  getReliefsFor7DayEndReminder(): Promise<ClientReliefPeriod[]> {
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + 7);
     targetDate.setHours(0, 0, 0, 0);
@@ -330,7 +330,7 @@ export class ReliefPeriodService {
   /**
    * Get relief periods that need 1-day end reminder.
    */
-  async getReliefsFor1DayEndReminder(): Promise<ClientReliefPeriod[]> {
+  getReliefsFor1DayEndReminder(): Promise<ClientReliefPeriod[]> {
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + 1);
     targetDate.setHours(0, 0, 0, 0);

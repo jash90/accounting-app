@@ -94,3 +94,23 @@ export class ClientStatisticsWithRecentDto extends ClientStatisticsDto {
   @ApiProperty({ type: [RecentActivityDto], description: 'Recent activity on clients' })
   recentActivity!: RecentActivityDto[];
 }
+
+export class ClientTaskTimeStatsDto {
+  @ApiProperty({ description: 'Client ID' })
+  clientId!: string;
+
+  @ApiProperty({ description: 'Client name' })
+  clientName!: string;
+
+  @ApiProperty({ description: 'Total number of tasks for this client' })
+  totalTasks!: number;
+
+  @ApiProperty({ description: 'Number of completed tasks for this client' })
+  completedTasks!: number;
+
+  @ApiProperty({ description: 'Total time spent in minutes' })
+  totalMinutes!: number;
+
+  @ApiProperty({ description: 'Total time spent in hours (rounded to 1 decimal)' })
+  totalHours!: number;
+}

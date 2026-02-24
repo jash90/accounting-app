@@ -106,8 +106,8 @@ export const ClientChangelog = memo(function ClientChangelog({ clientId }: Clien
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex gap-4">
+            {[1, 2, 3].map((num) => (
+              <div key={num} className="flex gap-4">
                 <Skeleton className="h-3 w-3 rounded-full" />
                 <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-24" />

@@ -86,7 +86,7 @@ export class CustomFieldReminderService {
   /**
    * Get reminders that need 7-day end notification.
    */
-  async getRemindersFor7DayEndReminder(): Promise<CustomFieldReminder[]> {
+  getRemindersFor7DayEndReminder(): Promise<CustomFieldReminder[]> {
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + 7);
     targetDate.setHours(0, 0, 0, 0);
@@ -106,7 +106,7 @@ export class CustomFieldReminderService {
   /**
    * Get reminders that need 1-day end notification.
    */
-  async getRemindersFor1DayEndReminder(): Promise<CustomFieldReminder[]> {
+  getRemindersFor1DayEndReminder(): Promise<CustomFieldReminder[]> {
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + 1);
     targetDate.setHours(0, 0, 0, 0);
@@ -259,7 +259,7 @@ export class CustomFieldReminderService {
   /**
    * Get employees for a company.
    */
-  private async getCompanyEmployees(companyId: string): Promise<User[]> {
+  private getCompanyEmployees(companyId: string): Promise<User[]> {
     return this.userRepository.find({
       where: {
         companyId,
@@ -272,7 +272,7 @@ export class CustomFieldReminderService {
   /**
    * Get company owner(s).
    */
-  private async getCompanyOwners(companyId: string): Promise<User[]> {
+  private getCompanyOwners(companyId: string): Promise<User[]> {
     return this.userRepository.find({
       where: {
         companyId,

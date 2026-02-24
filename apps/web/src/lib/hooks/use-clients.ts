@@ -1,5 +1,3 @@
-import { useMemo } from 'react';
-
 import { useMutation, useQuery, useQueryClient, type Query } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
@@ -27,6 +25,7 @@ import {
   type BulkEditClientsDto,
   type BulkRestoreClientsDto,
   type CheckDuplicatesDto,
+  type ClientTaskTimeStatsDto,
   type FieldDefinitionQueryDto,
   type IconQueryDto,
 } from '../api/endpoints/clients';
@@ -73,47 +72,20 @@ const isClientListQuery = (query: Query): boolean => {
 // ============================================
 
 export function useClients(filters?: ClientFiltersDto) {
-  // Stabilize filters object to prevent query key instability
-  // We reconstruct the object from individual properties to ensure referential stability
-  // when the actual filter values haven't changed
-  const stableFilters = useMemo(
-    (): ClientFiltersDto | undefined => {
-      if (!filters) return undefined;
-      // Reconstruct object from primitive values to ensure stable reference
-      const result: ClientFiltersDto = {};
-      if (filters.search !== undefined) result.search = filters.search;
-      if (filters.status !== undefined) result.status = filters.status;
-      if (filters.type !== undefined) result.type = filters.type;
-      if (filters.assignedUserId !== undefined) result.assignedUserId = filters.assignedUserId;
-      if (filters.page !== undefined) result.page = filters.page;
-      if (filters.limit !== undefined) result.limit = filters.limit;
-      if (filters.sortBy !== undefined) result.sortBy = filters.sortBy;
-      if (filters.sortOrder !== undefined) result.sortOrder = filters.sortOrder;
-      if (filters.includeDeleted !== undefined) result.includeDeleted = filters.includeDeleted;
-      return Object.keys(result).length > 0 ? result : undefined;
-    },
-    // ESLint exhaustive-deps rule disabled intentionally:
-    // This pattern uses primitive values extracted from the filters object rather than
-    // the object reference itself. This is necessary because:
-    // 1. Parent components often pass inline objects: useClients({ search: 'foo', page: 1 })
-    // 2. Inline objects create new references on every render, even when values are identical
-    // 3. Using `filters` directly would cause unnecessary query refetches on every parent re-render
-    // 4. By depending on primitive values (strings, numbers, booleans), we only recalculate
-    //    when actual filter values change, not when the object reference changes
-    // This is a deliberate optimization pattern for React Query stability.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      filters?.search,
-      filters?.status,
-      filters?.type,
-      filters?.assignedUserId,
-      filters?.page,
-      filters?.limit,
-      filters?.sortBy,
-      filters?.sortOrder,
-      filters?.includeDeleted,
-    ]
-  );
+  let stableFilters: ClientFiltersDto | undefined;
+  if (filters) {
+    const result: ClientFiltersDto = {};
+    if (filters.search !== undefined) result.search = filters.search;
+    if (filters.status !== undefined) result.status = filters.status;
+    if (filters.type !== undefined) result.type = filters.type;
+    if (filters.assignedUserId !== undefined) result.assignedUserId = filters.assignedUserId;
+    if (filters.page !== undefined) result.page = filters.page;
+    if (filters.limit !== undefined) result.limit = filters.limit;
+    if (filters.sortBy !== undefined) result.sortBy = filters.sortBy;
+    if (filters.sortOrder !== undefined) result.sortOrder = filters.sortOrder;
+    if (filters.includeDeleted !== undefined) result.includeDeleted = filters.includeDeleted;
+    stableFilters = Object.keys(result).length > 0 ? result : undefined;
+  }
 
   return useQuery({
     queryKey: queryKeys.clients.list(stableFilters),
@@ -340,6 +312,14 @@ export function useClientStatistics() {
   return useQuery({
     queryKey: queryKeys.clients.statistics,
     queryFn: () => clientsApi.getStatistics(),
+    ...CLIENT_LOOKUP_CACHE,
+  });
+}
+
+export function useClientTaskTimeStats() {
+  return useQuery<ClientTaskTimeStatsDto[]>({
+    queryKey: ['clients', 'statistics', 'task-time'],
+    queryFn: () => clientsApi.getClientTaskTimeStats(),
     ...CLIENT_LOOKUP_CACHE,
   });
 }

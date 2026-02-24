@@ -174,8 +174,8 @@ function FieldDefinitionsCard({
       <CardContent>
         {isLoading ? (
           <div className="space-y-2">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-12 w-full" />
+            {[1, 2, 3].map((num) => (
+              <Skeleton key={num} className="h-12 w-full" />
             ))}
           </div>
         ) : fieldDefinitions.length === 0 ? (
@@ -287,8 +287,8 @@ function IconsCard({
       <CardContent>
         {isLoading ? (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-24 w-full" />
+            {[1, 2, 3, 4].map((num) => (
+              <Skeleton key={num} className="h-24 w-full" />
             ))}
           </div>
         ) : icons.length === 0 ? (
