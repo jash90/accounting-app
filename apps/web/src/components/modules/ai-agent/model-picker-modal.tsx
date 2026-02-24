@@ -109,6 +109,7 @@ const ModelPickerModalContent = memo(function ModelPickerModalContent({
   selectedModelId,
   onSelect,
 }: ModelPickerModalContentProps) {
+  'use no memo';
   // State initializes fresh on each mount (when dialog opens)
   const [searchQuery, setSearchQuery] = useState('');
   const [costFilter, setCostFilter] = useState<CostFilter>('all');

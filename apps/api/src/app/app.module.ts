@@ -2,6 +2,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { TerminusModule } from '@nestjs/terminus';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -28,7 +29,10 @@ import {
   Company,
   CompanyModuleAccess,
   CustomFieldReminder,
+  DocumentTemplate,
+  EmailAutoReplyTemplate,
   EmailConfiguration,
+  GeneratedDocument,
   Lead,
   Module as ModuleEntity,
   MonthlySettlement,
@@ -38,6 +42,7 @@ import {
   OfferActivity,
   OfferTemplate,
   SettlementComment,
+  SettlementSettings,
   Task,
   TaskComment,
   TaskDependency,
@@ -55,6 +60,7 @@ import { EmailModule } from '@accounting/infrastructure/email';
 import { StorageModule } from '@accounting/infrastructure/storage';
 import { AIAgentModule } from '@accounting/modules/ai-agent';
 import { ClientsModule } from '@accounting/modules/clients';
+import { DocumentsModule } from '@accounting/modules/documents';
 import { EmailClientModule, EmailDraft } from '@accounting/modules/email-client';
 import { NotificationsModule } from '@accounting/modules/notifications';
 import { OffersModule } from '@accounting/modules/offers';
@@ -98,6 +104,7 @@ const ENTITIES = [
   ClientDeleteRequest,
   EmailConfiguration,
   EmailDraft,
+  EmailAutoReplyTemplate,
   Task,
   TaskLabel,
   TaskLabelAssignment,
@@ -111,17 +118,21 @@ const ENTITIES = [
   OfferActivity,
   MonthlySettlement,
   SettlementComment,
+  SettlementSettings,
+  DocumentTemplate,
+  GeneratedDocument,
 ];
 
 @Module({
   imports: [
     SentryModule.forRoot(),
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
     }),
     ThrottlerModule.forRoot(
-      process.env.DISABLE_THROTTLER === 'true'
+      process.env.DISABLE_THROTTLER === 'true' && process.env.NODE_ENV !== 'production'
         ? []
         : [
             {
@@ -146,7 +157,9 @@ const ENTITIES = [
             logging: !isProduction,
             migrations: ['dist/migrations/*.js'],
             migrationsRun: false, // Migrations run via buildCommand in Railway
-            ssl: isProduction ? { rejectUnauthorized: false } : false,
+            ssl: isProduction
+              ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true' }
+              : false,
           };
         }
 
@@ -159,7 +172,7 @@ const ENTITIES = [
           password: process.env.DB_PASSWORD || 'postgres',
           database: process.env.DB_DATABASE || 'accounting_db',
           entities: ENTITIES,
-          synchronize: process.env.NODE_ENV !== 'production', // Auto-sync only in development
+          synchronize: false, // Disabled - always use migrations
           logging: !isProduction,
           migrations: ['dist/migrations/*.js'],
           migrationsRun: false, // Migrations run manually or via buildCommand
@@ -171,6 +184,7 @@ const ENTITIES = [
     CompanyModule,
     AIAgentModule,
     ClientsModule,
+    DocumentsModule,
     EmailClientModule,
     TasksModule,
     TimeTrackingModule,

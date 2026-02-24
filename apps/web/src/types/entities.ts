@@ -289,6 +289,7 @@ export interface TimeEntry {
   client?: Client;
   taskId?: string;
   task?: Task;
+  settlementId?: string;
   approvedById?: string;
   approvedBy?: User;
   approvedAt?: Date;

@@ -20,7 +20,7 @@ export function ClientDataBlockEditor({ block, onChange }: Props) {
   const addField = () => {
     onChange({
       ...block,
-      fields: [...block.fields, { label: '', placeholder: '' }],
+      fields: [...block.fields, { id: crypto.randomUUID(), label: '', placeholder: '' }],
     });
   };
 
@@ -45,7 +45,7 @@ export function ClientDataBlockEditor({ block, onChange }: Props) {
 
       <div className="space-y-2">
         {block.fields.map((field, index) => (
-          <div key={`field-${index}`} className="flex items-center gap-2">
+          <div key={field.id} className="flex items-center gap-2">
             <Input
               value={field.label}
               onChange={(e) => updateField(index, 'label', e.target.value)}

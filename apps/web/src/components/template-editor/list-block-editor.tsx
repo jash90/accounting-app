@@ -23,12 +23,15 @@ export function ListBlockEditor({ block, onChange }: Props) {
 
   const updateItem = (index: number, text: string) => {
     const items = [...block.items];
-    items[index] = { content: [{ text }] };
+    items[index] = { ...items[index], content: [{ text }] };
     onChange({ ...block, items });
   };
 
   const addItem = () => {
-    onChange({ ...block, items: [...block.items, { content: [{ text: '' }] }] });
+    onChange({
+      ...block,
+      items: [...block.items, { id: crypto.randomUUID(), content: [{ text: '' }] }],
+    });
   };
 
   const removeItem = (index: number) => {
@@ -50,7 +53,7 @@ export function ListBlockEditor({ block, onChange }: Props) {
       </Select>
       <div className="space-y-1">
         {block.items.map((item, index) => (
-          <div key={`list-item-${index}`} className="flex items-center gap-2">
+          <div key={item.id} className="flex items-center gap-2">
             <span className="text-muted-foreground w-6 text-sm text-right">
               {block.style === 'numbered' ? `${index + 1}.` : '\u2022'}
             </span>

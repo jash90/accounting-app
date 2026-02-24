@@ -7,10 +7,12 @@ import { Form } from '@/components/ui/form';
 
 import { DateFormField, SelectFormField } from './shared-form-fields';
 
+const EMPTY_DEFAULTS: Record<string, unknown> = {};
+
 // Test wrapper component for form fields
 function FormWrapper({
   children,
-  defaultValues = {},
+  defaultValues = EMPTY_DEFAULTS,
 }: {
   children: (form: ReturnType<typeof useForm>) => React.ReactNode;
   defaultValues?: Record<string, unknown>;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { useForm } from 'react-hook-form';
 
@@ -85,9 +85,8 @@ export function FieldDefinitionFormDialog({
         },
   });
 
-  // Reset form when dialog opens or fieldDefinition changes
-  useEffect(() => {
-    if (open) {
+  const handleOpenChange = (newOpen: boolean) => {
+    if (newOpen) {
       form.reset(
         fieldDefinition
           ? {
@@ -109,7 +108,8 @@ export function FieldDefinitionFormDialog({
       );
       setEnumValue('');
     }
-  }, [open, fieldDefinition, form]);
+    onOpenChange(newOpen);
+  };
 
   const fieldType = form.watch('fieldType');
   const enumValues = form.watch('enumValues') || [];
@@ -142,7 +142,7 @@ export function FieldDefinitionFormDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edytuj definicję pola' : 'Dodaj definicję pola'}</DialogTitle>

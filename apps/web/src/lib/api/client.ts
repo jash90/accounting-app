@@ -49,7 +49,7 @@ class TokenRefreshManager {
    * Refreshes the token, ensuring only one refresh happens at a time.
    * Concurrent calls will share the same refresh promise.
    */
-  async refresh(): Promise<string> {
+  refresh(): Promise<string> {
     // If a refresh is already in progress, return the existing promise
     if (this.refreshPromise) {
       return this.refreshPromise;
@@ -115,6 +115,18 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
     };
+
+    if (error.response?.status === 403) {
+      const data = error.response?.data;
+      const msg =
+        typeof data === 'object' && data !== null && 'message' in data
+          ? String((data as { message: string }).message)
+          : '';
+      if (msg.includes('Access denied to module')) {
+        window.location.href = '/module-access-denied';
+        return new Promise(() => {});
+      }
+    }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Don't intercept 401 from login/register endpoints - let them show errors naturally

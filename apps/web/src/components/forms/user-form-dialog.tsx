@@ -1,5 +1,3 @@
-import { useEffect } from 'react';
-
 import { useForm, type Resolver } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -63,9 +61,8 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
 
   const watchedRole = form.watch('role');
 
-  // Reset form when dialog opens or user changes
-  useEffect(() => {
-    if (open) {
+  const handleOpenChange = (newOpen: boolean) => {
+    if (newOpen) {
       form.reset(
         user
           ? { ...user, companyId: user.companyId ?? undefined }
@@ -80,7 +77,8 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
             }
       );
     }
-  }, [open, user, form]);
+    onOpenChange(newOpen);
+  };
 
   const handleSubmit = (data: CreateUserFormData | UpdateUserFormData) => {
     onSubmit(data);
@@ -88,7 +86,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSubmit }: UserFormD
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edytuj użytkownika' : 'Utwórz użytkownika'}</DialogTitle>

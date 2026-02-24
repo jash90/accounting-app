@@ -17,7 +17,10 @@ import {
   Company,
   CompanyModuleAccess,
   CustomFieldReminder,
+  DocumentTemplate,
+  EmailAutoReplyTemplate,
   EmailConfiguration,
+  GeneratedDocument,
   Lead,
   Module,
   MonthlySettlement,
@@ -27,6 +30,7 @@ import {
   OfferActivity,
   OfferTemplate,
   SettlementComment,
+  SettlementSettings,
   Task,
   TaskComment,
   TaskDependency,
@@ -48,7 +52,9 @@ const dataSourceOptions = databaseUrl
   ? {
       type: 'postgres' as const,
       url: databaseUrl,
-      ssl: isProduction ? { rejectUnauthorized: false } : false,
+      ssl: isProduction
+        ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true' }
+        : false,
     }
   : {
       type: 'postgres' as const,
@@ -99,6 +105,10 @@ export default new DataSource({
     OfferActivity,
     MonthlySettlement,
     SettlementComment,
+    SettlementSettings,
+    DocumentTemplate,
+    GeneratedDocument,
+    EmailAutoReplyTemplate,
   ],
   migrations: ['apps/api/src/migrations/*{.ts,.js}'],
   synchronize: false,
