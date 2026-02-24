@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect } from 'react';
+import { memo, useCallback } from 'react';
 
 import { useForm } from 'react-hook-form';
 
@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { useSettlements } from '@/lib/hooks/use-settlements';
 import { useTaskClients } from '@/lib/hooks/use-tasks';
 import { useCreateTimeEntry, useUpdateTimeEntry } from '@/lib/hooks/use-time-tracking';
 import { type CreateTimeEntryDto, type TimeEntryResponseDto } from '@/types/dtos';
@@ -53,6 +54,7 @@ const timeEntryFormSchema = z
       .optional()
       .or(z.literal('')),
     clientId: z.string().optional(),
+    settlementId: z.string().optional(),
     isBillable: z.boolean(),
     hourlyRate: z
       .string()
@@ -84,8 +86,14 @@ export const TimeEntryFormDialog = memo(function TimeEntryFormDialog({
   const createEntry = useCreateTimeEntry();
   const updateEntry = useUpdateTimeEntry();
   const { data: clientsData } = useTaskClients();
+  const { data: settlementsData } = useSettlements({
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
+    limit: 100,
+  });
 
   const clients = clientsData || [];
+  const settlements = settlementsData?.data ?? [];
 
   const form = useForm<FormData>({
     resolver: zodResolver(timeEntryFormSchema),
@@ -95,48 +103,56 @@ export const TimeEntryFormDialog = memo(function TimeEntryFormDialog({
       startTime: format(new Date(), 'HH:mm'),
       endTime: '',
       clientId: '',
+      settlementId: '',
       isBillable: true,
       hourlyRate: '',
       tags: '',
     },
   });
 
-  // Extract reset to satisfy exhaustive-deps (reset is stable from react-hook-form)
   const { reset } = form;
 
-  useEffect(() => {
-    if (entry) {
-      // Handle both Date objects and ISO strings for timezone-safe parsing
-      const startDate =
-        entry.startTime instanceof Date ? entry.startTime : parseISO(entry.startTime as string);
-      const endDate = entry.endTime
-        ? entry.endTime instanceof Date
-          ? entry.endTime
-          : parseISO(entry.endTime as string)
-        : null;
-      reset({
-        description: entry.description || '',
-        date: format(startDate, 'yyyy-MM-dd'),
-        startTime: format(startDate, 'HH:mm'),
-        endTime: endDate ? format(endDate, 'HH:mm') : '',
-        clientId: entry.clientId || '',
-        isBillable: entry.isBillable,
-        hourlyRate: entry.hourlyRate?.toString() || '',
-        tags: entry.tags?.join(', ') || '',
-      });
-    } else {
-      reset({
-        description: '',
-        date: format(new Date(), 'yyyy-MM-dd'),
-        startTime: format(new Date(), 'HH:mm'),
-        endTime: '',
-        clientId: '',
-        isBillable: true,
-        hourlyRate: '',
-        tags: '',
-      });
-    }
-  }, [entry, open, reset]);
+  const handleOpenChange = useCallback(
+    (newOpen: boolean) => {
+      if (newOpen) {
+        if (entry) {
+          // Handle both Date objects and ISO strings for timezone-safe parsing
+          const startDate =
+            entry.startTime instanceof Date ? entry.startTime : parseISO(entry.startTime as string);
+          const endDate = entry.endTime
+            ? entry.endTime instanceof Date
+              ? entry.endTime
+              : parseISO(entry.endTime as string)
+            : null;
+          reset({
+            description: entry.description || '',
+            date: format(startDate, 'yyyy-MM-dd'),
+            startTime: format(startDate, 'HH:mm'),
+            endTime: endDate ? format(endDate, 'HH:mm') : '',
+            clientId: entry.clientId || '',
+            settlementId: entry.settlementId || '',
+            isBillable: entry.isBillable,
+            hourlyRate: entry.hourlyRate?.toString() || '',
+            tags: entry.tags?.join(', ') || '',
+          });
+        } else {
+          reset({
+            description: '',
+            date: format(new Date(), 'yyyy-MM-dd'),
+            startTime: format(new Date(), 'HH:mm'),
+            endTime: '',
+            clientId: '',
+            settlementId: '',
+            isBillable: true,
+            hourlyRate: '',
+            tags: '',
+          });
+        }
+      }
+      onOpenChange(newOpen);
+    },
+    [entry, reset, onOpenChange]
+  );
 
   const onSubmit = useCallback(
     (data: FormData) => {
@@ -151,6 +167,8 @@ export const TimeEntryFormDialog = memo(function TimeEntryFormDialog({
         startTime: startDateTime.toISOString(),
         endTime: endDateTime?.toISOString(),
         clientId: data.clientId && data.clientId !== '__none__' ? data.clientId : undefined,
+        settlementId:
+          data.settlementId && data.settlementId !== '__none__' ? data.settlementId : undefined,
         isBillable: data.isBillable,
         hourlyRate: data.hourlyRate ? parseFloat(data.hourlyRate) : undefined,
         tags: data.tags
@@ -194,7 +212,7 @@ export const TimeEntryFormDialog = memo(function TimeEntryFormDialog({
   const isLoading = createEntry.isPending || updateEntry.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{entry ? 'Edytuj wpis czasu' : 'Nowy wpis czasu'}</DialogTitle>
@@ -284,6 +302,33 @@ export const TimeEntryFormDialog = memo(function TimeEntryFormDialog({
                       {clients.map((client) => (
                         <SelectItem key={client.id} value={client.id}>
                           {client.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="settlementId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Rozliczenie</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || '__none__'}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Wybierz rozliczenie" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="__none__">Brak rozliczenia</SelectItem>
+                      {settlements.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.client?.name ? `${s.client.name} — ` : ''}
+                          {s.month}/{s.year}
                         </SelectItem>
                       ))}
                     </SelectContent>

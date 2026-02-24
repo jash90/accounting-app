@@ -11,6 +11,7 @@ import {
 
 import { Client } from './client.entity';
 import { Company } from './company.entity';
+import { MonthlySettlement } from './monthly-settlement.entity';
 import { Task } from './task.entity';
 import { User } from './user.entity';
 import { TimeEntryStatus } from '../enums/time-entry-status.enum';
@@ -26,6 +27,7 @@ import { TimeEntryStatus } from '../enums/time-entry-status.enum';
 @Index(['companyId', 'userId', 'startTime'])
 @Index(['userId', 'startTime', 'endTime']) // For overlap detection
 @Index(['userId', 'companyId', 'isRunning', 'isActive']) // For timer lookups
+@Index(['companyId', 'settlementId'])
 export class TimeEntry {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -108,6 +110,14 @@ export class TimeEntry {
   @ManyToOne(() => Task, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'taskId' })
   task?: Task;
+
+  // Optional: Linked settlement
+  @Column({ type: 'uuid', nullable: true })
+  settlementId?: string;
+
+  @ManyToOne(() => MonthlySettlement, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'settlementId' })
+  settlement?: MonthlySettlement;
 
   // Approval workflow
   @Column({ type: 'uuid', nullable: true })

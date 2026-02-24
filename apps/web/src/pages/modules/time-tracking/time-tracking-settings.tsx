@@ -1,5 +1,3 @@
-import { useEffect } from 'react';
-
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 
@@ -48,6 +46,7 @@ interface FormData {
 }
 
 export default function TimeTrackingSettingsPage() {
+  'use no memo';
   const { user } = useAuthContext();
   const navigate = useNavigate();
 
@@ -69,29 +68,23 @@ export default function TimeTrackingSettingsPage() {
       maximumEntryDurationMinutes: 1440,
       workdayHours: 8,
     },
+    values: settings
+      ? {
+          roundingMethod: settings.roundingMethod,
+          roundingIntervalMinutes: settings.roundingIntervalMinutes,
+          defaultHourlyRate: settings.defaultHourlyRate?.toString() || '',
+          defaultCurrency: settings.defaultCurrency || 'PLN',
+          requireApproval: settings.requireApproval,
+          allowOverlappingEntries: settings.allowOverlappingEntries,
+          autoStopTimerAtMidnight: settings.autoStopTimerAfterMinutes > 0,
+          reminderEnabled: settings.enableDailyReminder,
+          reminderTime: settings.dailyReminderTime || '17:00',
+          minimumEntryDurationMinutes: settings.minimumEntryMinutes || 1,
+          maximumEntryDurationMinutes: settings.maximumEntryMinutes || 1440,
+          workdayHours: settings.workingHoursPerDay || 8,
+        }
+      : undefined,
   });
-
-  // Destructure reset for stable reference in useEffect deps
-  const { reset } = form;
-
-  useEffect(() => {
-    if (settings) {
-      reset({
-        roundingMethod: settings.roundingMethod,
-        roundingIntervalMinutes: settings.roundingIntervalMinutes,
-        defaultHourlyRate: settings.defaultHourlyRate?.toString() || '',
-        defaultCurrency: settings.defaultCurrency || 'PLN',
-        requireApproval: settings.requireApproval,
-        allowOverlappingEntries: settings.allowOverlappingEntries,
-        autoStopTimerAtMidnight: settings.autoStopTimerAfterMinutes > 0,
-        reminderEnabled: settings.enableDailyReminder,
-        reminderTime: settings.dailyReminderTime || '17:00',
-        minimumEntryDurationMinutes: settings.minimumEntryMinutes || 1,
-        maximumEntryDurationMinutes: settings.maximumEntryMinutes || 1440,
-        workdayHours: settings.workingHoursPerDay || 8,
-      });
-    }
-  }, [settings, reset]);
 
   const getBasePath = () => {
     switch (user?.role) {

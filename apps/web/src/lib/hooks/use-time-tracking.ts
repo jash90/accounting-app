@@ -465,6 +465,30 @@ export function useTimeByClientReport(params: {
   });
 }
 
+export function useTopTasksByTime(preset: '30d' | '90d' | '365d' = '30d') {
+  return useQuery({
+    queryKey: ['time-tracking', 'extended', 'top-tasks', preset],
+    queryFn: () => timeReportsApi.getTopTasksByTime({ preset }),
+    ...REPORT_CACHE,
+  });
+}
+
+export function useTopSettlementsByTime(preset: '30d' | '90d' | '365d' = '30d') {
+  return useQuery({
+    queryKey: ['time-tracking', 'extended', 'top-settlements', preset],
+    queryFn: () => timeReportsApi.getTopSettlementsByTime({ preset }),
+    ...REPORT_CACHE,
+  });
+}
+
+export function useEmployeeTimeBreakdown(preset: '30d' | '90d' | '365d' = '30d') {
+  return useQuery({
+    queryKey: ['time-tracking', 'extended', 'employee-breakdown', preset],
+    queryFn: () => timeReportsApi.getEmployeeBreakdown({ preset }),
+    ...REPORT_CACHE,
+  });
+}
+
 export function useExportTimeReport() {
   const { toast } = useToast();
 
@@ -472,7 +496,7 @@ export function useExportTimeReport() {
     mutationFn: (params: {
       startDate: string;
       endDate: string;
-      format: 'csv' | 'excel';
+      format: 'csv' | 'excel' | 'pdf';
       clientId?: string;
     }) => timeReportsApi.export(params),
     onSuccess: (blob, variables) => {
@@ -482,7 +506,9 @@ export function useExportTimeReport() {
 
       try {
         a.href = url;
-        a.download = `time-report-${variables.startDate}-${variables.endDate}.${variables.format === 'excel' ? 'xlsx' : 'csv'}`;
+        const ext =
+          variables.format === 'excel' ? 'xlsx' : variables.format === 'pdf' ? 'pdf' : 'csv';
+        a.download = `time-report-${variables.startDate}-${variables.endDate}.${ext}`;
         document.body.appendChild(a);
         a.click();
 

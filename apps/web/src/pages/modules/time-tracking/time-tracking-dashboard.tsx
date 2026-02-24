@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   AlertTriangle,
@@ -15,14 +15,29 @@ import {
 } from 'lucide-react';
 
 import { ErrorBoundary } from '@/components/common/error-boundary';
+import { TimeTrackedChart } from '@/components/dashboard/charts/time-tracked-chart';
 import { TimerWidget } from '@/components/time-tracking/timer-widget';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
-import { useActiveTimer, useTimeEntries } from '@/lib/hooks/use-time-tracking';
+import {
+  useActiveTimer,
+  useEmployeeTimeBreakdown,
+  useTimeEntries,
+  useTimeSummaryReport,
+  useTopSettlementsByTime,
+  useTopTasksByTime,
+} from '@/lib/hooks/use-time-tracking';
 import { UserRole } from '@/types/enums';
+
+function getMonthDateRange() {
+  const now = new Date();
+  const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+  return { startDate, endDate };
+}
 
 // Hoisted outside component - static JSX that doesn't depend on component state
 // Prevents recreation on every render
@@ -55,6 +70,15 @@ export default function TimeTrackingDashboardPage() {
   const { user } = useAuthContext();
   const { data: entriesData, isPending: entriesLoading } = useTimeEntries({ limit: 100 });
   const { data: activeTimer } = useActiveTimer();
+  const { startDate, endDate } = useMemo(() => getMonthDateRange(), []);
+  const { data: monthSummary } = useTimeSummaryReport({ startDate, endDate });
+
+  const [extendedPreset, setExtendedPreset] = useState<'30d' | '90d' | '365d'>('30d');
+  const { data: topTasks, isPending: topTasksLoading } = useTopTasksByTime(extendedPreset);
+  const { data: topSettlements, isPending: topSettlementsLoading } =
+    useTopSettlementsByTime(extendedPreset);
+  const { data: employeeBreakdown, isPending: employeeBreakdownLoading } =
+    useEmployeeTimeBreakdown(extendedPreset);
 
   // Calculate statistics - memoized to prevent recalculation on every render
   const { totalEntries, runningEntries, billableMinutes, totalAmount } = useMemo(() => {
@@ -135,6 +159,7 @@ export default function TimeTrackingDashboardPage() {
 
   // Settings option (only for admins and company owners)
   const showSettings = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER;
+  const isOwnerOrAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER;
 
   return (
     <div className="container mx-auto space-y-6 p-6">
@@ -202,6 +227,23 @@ export default function TimeTrackingDashboardPage() {
         Statystyki bazują na ostatnich 100 wpisach
       </p>
 
+      {/* Monthly Summary Chart */}
+      {monthSummary && (
+        <Card className="border-border">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Czas w bieżącym miesiącu</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TimeTrackedChart
+              totalMinutes={monthSummary.totalMinutes}
+              billableMinutes={monthSummary.billableMinutes}
+              nonBillableMinutes={monthSummary.nonBillableMinutes}
+              totalAmount={monthSummary.totalAmount}
+            />
+          </CardContent>
+        </Card>
+      )}
+
       {/* View Cards */}
       <div className="flex flex-wrap gap-6">
         {views.map((view) => (
@@ -228,6 +270,173 @@ export default function TimeTrackingDashboardPage() {
           buttonText="Otwórz ustawienia"
           buttonVariant="outline"
         />
+      )}
+
+      {/* Extended Statistics Section — only for admins and company owners */}
+      {isOwnerOrAdmin && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-foreground text-xl font-semibold">Rozszerzone statystyki</h2>
+            <div className="flex gap-2">
+              {(['30d', '90d', '365d'] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setExtendedPreset(p)}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    extendedPreset === p
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  }`}
+                >
+                  {p === '30d' ? '30 dni' : p === '90d' ? '90 dni' : 'Rok'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {/* Top Tasks by Time */}
+            <Card className="border-border">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Top zadania (czas)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {topTasksLoading ? (
+                  <p className="text-muted-foreground text-sm">Ładowanie...</p>
+                ) : !topTasks || topTasks.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">Brak danych</p>
+                ) : (
+                  <div className="space-y-2">
+                    {topTasks
+                      .slice(0, 10)
+                      .map(
+                        (item: {
+                          taskId: string;
+                          taskTitle: string;
+                          totalMinutes: number;
+                          totalHours: number;
+                        }) => (
+                          <div
+                            key={item.taskId}
+                            className="flex items-center justify-between text-sm"
+                          >
+                            <span
+                              className="text-foreground max-w-[65%] truncate"
+                              title={item.taskTitle}
+                            >
+                              {item.taskTitle}
+                            </span>
+                            <span className="text-muted-foreground ml-2 shrink-0">
+                              {item.totalHours}h
+                            </span>
+                          </div>
+                        )
+                      )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Top Settlements by Time */}
+            <Card className="border-border">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Top rozliczenia (czas)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {topSettlementsLoading ? (
+                  <p className="text-muted-foreground text-sm">Ładowanie...</p>
+                ) : !topSettlements || topSettlements.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">Brak danych</p>
+                ) : (
+                  <div className="space-y-2">
+                    {topSettlements
+                      .slice(0, 10)
+                      .map(
+                        (item: {
+                          settlementId: string;
+                          month: number;
+                          year: number;
+                          clientName?: string;
+                          totalMinutes: number;
+                          totalHours: number;
+                        }) => (
+                          <div
+                            key={item.settlementId}
+                            className="flex items-center justify-between text-sm"
+                          >
+                            <span className="text-foreground max-w-[65%] truncate">
+                              {item.clientName
+                                ? `${item.clientName} (${item.month}/${item.year})`
+                                : `${item.month}/${item.year}`}
+                            </span>
+                            <span className="text-muted-foreground ml-2 shrink-0">
+                              {item.totalHours}h
+                            </span>
+                          </div>
+                        )
+                      )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Employee Time Breakdown */}
+            <Card className="border-border md:col-span-2 xl:col-span-1">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Czas pracownikow</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {employeeBreakdownLoading ? (
+                  <p className="text-muted-foreground text-sm">Ładowanie...</p>
+                ) : !employeeBreakdown || employeeBreakdown.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">Brak danych</p>
+                ) : (
+                  <div className="space-y-3">
+                    {employeeBreakdown
+                      .slice(0, 8)
+                      .map(
+                        (item: {
+                          userId: string;
+                          email: string;
+                          firstName?: string;
+                          lastName?: string;
+                          taskMinutes: number;
+                          settlementMinutes: number;
+                          totalMinutes: number;
+                        }) => {
+                          const name =
+                            item.firstName || item.lastName
+                              ? `${item.firstName ?? ''} ${item.lastName ?? ''}`.trim()
+                              : item.email;
+                          const taskHours = Math.round(item.taskMinutes / 6) / 10;
+                          const settlementHours = Math.round(item.settlementMinutes / 6) / 10;
+                          return (
+                            <div key={item.userId} className="space-y-1">
+                              <div className="flex items-center justify-between text-sm">
+                                <span
+                                  className="text-foreground max-w-[60%] truncate font-medium"
+                                  title={item.email}
+                                >
+                                  {name}
+                                </span>
+                                <span className="text-muted-foreground ml-2 shrink-0 text-xs">
+                                  {Math.round(item.totalMinutes / 6) / 10}h łącznie
+                                </span>
+                              </div>
+                              <div className="text-muted-foreground flex gap-3 text-xs">
+                                <span>Zadania: {taskHours}h</span>
+                                <span>Rozlicz.: {settlementHours}h</span>
+                              </div>
+                            </div>
+                          );
+                        }
+                      )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       )}
     </div>
   );

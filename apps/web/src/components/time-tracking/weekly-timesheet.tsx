@@ -89,8 +89,8 @@ export function WeeklyTimesheet({ className, onDayClick }: WeeklyTimesheetProps)
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-7 gap-2">
-            {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-              <Skeleton key={i} className="h-32" />
+            {[1, 2, 3, 4, 5, 6, 7].map((num) => (
+              <Skeleton key={num} className="h-32" />
             ))}
           </div>
         </CardContent>

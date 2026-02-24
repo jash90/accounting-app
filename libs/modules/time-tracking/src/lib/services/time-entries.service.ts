@@ -124,6 +124,11 @@ export class TimeEntriesService {
     if (filters?.taskId) {
       queryBuilder.andWhere('entry.taskId = :taskId', { taskId: filters.taskId });
     }
+    if (filters?.settlementId) {
+      queryBuilder.andWhere('entry.settlementId = :settlementId', {
+        settlementId: filters.settlementId,
+      });
+    }
 
     // Billable filter
     if (filters?.isBillable !== undefined) {
@@ -998,6 +1003,7 @@ export class TimeEntriesService {
       userId: entry.userId,
       clientId: entry.clientId,
       taskId: entry.taskId,
+      settlementId: entry.settlementId,
       isActive: entry.isActive,
       isLocked: entry.isLocked,
       lockedAt: entry.lockedAt,

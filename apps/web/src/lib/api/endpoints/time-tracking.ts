@@ -197,7 +197,7 @@ export const timeReportsApi = {
   export: async (params: {
     startDate: string;
     endDate: string;
-    format: 'csv' | 'excel';
+    format: 'csv' | 'excel' | 'pdf';
     clientId?: string;
   }): Promise<Blob> => {
     const { data } = await apiClient.get<Blob>(`${BASE_URL}/reports/export`, {
@@ -206,4 +206,26 @@ export const timeReportsApi = {
     });
     return data;
   },
+
+  getTopTasksByTime: (params?: {
+    preset?: '30d' | '90d' | '365d';
+    startDate?: string;
+    endDate?: string;
+  }) => apiClient.get(`${BASE_URL}/reports/extended/top-tasks`, { params }).then((r) => r.data),
+
+  getTopSettlementsByTime: (params?: {
+    preset?: '30d' | '90d' | '365d';
+    startDate?: string;
+    endDate?: string;
+  }) =>
+    apiClient.get(`${BASE_URL}/reports/extended/top-settlements`, { params }).then((r) => r.data),
+
+  getEmployeeBreakdown: (params?: {
+    preset?: '30d' | '90d' | '365d';
+    startDate?: string;
+    endDate?: string;
+  }) =>
+    apiClient
+      .get(`${BASE_URL}/reports/extended/employee-breakdown`, { params })
+      .then((r) => r.data),
 };

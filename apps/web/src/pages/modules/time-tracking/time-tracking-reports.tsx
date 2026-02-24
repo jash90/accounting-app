@@ -328,8 +328,8 @@ export default function TimeTrackingReportsPage() {
         <CardContent>
           {clientLoading ? (
             <div className="space-y-2">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-16" />
+              {[1, 2, 3].map((num) => (
+                <Skeleton key={num} className="h-16" />
               ))}
             </div>
           ) : clientReport && clientReport.length > 0 ? (

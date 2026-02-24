@@ -88,6 +88,11 @@ export class CreateTimeEntryDto {
   @IsOptional()
   @IsUUID()
   taskId?: string;
+
+  @ApiPropertyOptional({ description: 'Settlement ID' })
+  @IsOptional()
+  @IsUUID()
+  settlementId?: string;
 }
 
 export class UpdateTimeEntryDto extends PartialType(CreateTimeEntryDto) {}
@@ -130,6 +135,11 @@ export class TimeEntryFiltersDto {
   @IsOptional()
   @IsUUID()
   taskId?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by settlement ID' })
+  @IsOptional()
+  @IsUUID()
+  settlementId?: string;
 
   @ApiPropertyOptional({ description: 'Filter by billable status' })
   @IsOptional()

@@ -285,11 +285,7 @@ export class TimesheetService {
     };
   }
 
-  async getClientReport(
-    clientId: string,
-    dto: ReportFiltersDto,
-    user: User
-  ): Promise<ReportSummary> {
+  getClientReport(clientId: string, dto: ReportFiltersDto, user: User): Promise<ReportSummary> {
     return this.getReportSummary({ ...dto, clientId }, user);
   }
 
