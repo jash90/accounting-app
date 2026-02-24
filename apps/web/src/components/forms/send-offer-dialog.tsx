@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 
 import { useFieldArray, useForm } from 'react-hook-form';
 
@@ -72,12 +72,13 @@ Z poważaniem`;
     name: 'cc' as never,
   });
 
-  useEffect(() => {
-    if (open) {
-      form.reset({
-        email: offer.recipientSnapshot?.email || offer.lead?.email || '',
-        subject: `Oferta ${offer.offerNumber} - ${offer.title}`,
-        body: `Szanowni Państwo,
+  const handleOpenChange = useCallback(
+    (newOpen: boolean) => {
+      if (newOpen) {
+        form.reset({
+          email: offer.recipientSnapshot?.email || offer.lead?.email || '',
+          subject: `Oferta ${offer.offerNumber} - ${offer.title}`,
+          body: `Szanowni Państwo,
 
 W załączeniu przesyłamy ofertę nr ${offer.offerNumber} - ${offer.title}.
 
@@ -87,19 +88,14 @@ Ważność oferty: do ${new Date(offer.validUntil).toLocaleDateString('pl-PL')}
 W razie pytań prosimy o kontakt.
 
 Z poważaniem`,
-        cc: [],
-      });
-    }
-  }, [open, offer, form]);
-
-  const handleOpenChange = useCallback(
-    (newOpen: boolean) => {
-      if (!newOpen) {
+          cc: [],
+        });
+      } else {
         form.reset();
       }
       onOpenChange(newOpen);
     },
-    [form, onOpenChange]
+    [form, onOpenChange, offer]
   );
 
   const handleSubmit = (data: SendOfferFormData) => {

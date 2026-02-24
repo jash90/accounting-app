@@ -59,7 +59,7 @@ export function createBlock(type: ContentBlockType, order: number): ContentBlock
         ...base,
         type: ContentBlockType.LIST,
         style: 'numbered',
-        items: [{ content: [{ text: '' }] }],
+        items: [{ id: generateId(), content: [{ text: '' }] }],
       } as ListBlock;
 
     case ContentBlockType.SEPARATOR:
@@ -89,7 +89,7 @@ export function createBlock(type: ContentBlockType, order: number): ContentBlock
       return {
         ...base,
         type: ContentBlockType.CLIENT_DATA,
-        fields: [{ label: '', placeholder: '' }],
+        fields: [{ id: generateId(), label: '', placeholder: '' }],
       } as ClientDataBlock;
   }
 }

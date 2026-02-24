@@ -19,8 +19,8 @@ export default function CompanyModulesListPage() {
 
       {isPending ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="border-border animate-pulse">
+          {[1, 2, 3].map((num) => (
+            <Card key={num} className="border-border animate-pulse">
               <CardHeader>
                 <div className="bg-accent/10 h-5 w-1/2 rounded" />
                 <div className="bg-accent/5 mt-2 h-4 w-3/4 rounded" />

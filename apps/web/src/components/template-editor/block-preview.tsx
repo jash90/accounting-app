@@ -39,15 +39,19 @@ function renderTextSegment(text: string, key: number) {
   );
 }
 
-function renderTextRuns(runs: TextRun[]) {
-  return runs.map((run, i) => {
-    const runKey = `run-${i}-${run.text.slice(0, 20)}`;
-    let el = renderTextSegment(run.text, i);
-    if (run.bold) el = <strong key={`bold-${runKey}`}>{el}</strong>;
-    if (run.italic) el = <em key={`italic-${runKey}`}>{el}</em>;
-    if (run.underline) el = <u key={`underline-${runKey}`}>{el}</u>;
-    return el;
-  });
+function TextRuns({ runs }: { runs: TextRun[] }) {
+  return (
+    <>
+      {runs.map((run, i) => {
+        const runKey = `run-${i}-${run.text.slice(0, 20)}`;
+        let el = renderTextSegment(run.text, i);
+        if (run.bold) el = <strong key={`bold-${runKey}`}>{el}</strong>;
+        if (run.italic) el = <em key={`italic-${runKey}`}>{el}</em>;
+        if (run.underline) el = <u key={`underline-${runKey}`}>{el}</u>;
+        return el;
+      })}
+    </>
+  );
 }
 
 function alignClass(alignment?: string) {
@@ -68,14 +72,14 @@ function alignClass(alignment?: string) {
 function ParagraphPreview({ block }: { block: ParagraphBlock }) {
   return (
     <p className={`mb-3 leading-relaxed ${alignClass(block.alignment)}`}>
-      {renderTextRuns(block.content)}
+      <TextRuns runs={block.content} />
     </p>
   );
 }
 
 function HeadingPreview({ block }: { block: HeadingBlock }) {
   const cls = `${alignClass(block.alignment)} font-bold mb-3`;
-  const content = renderTextRuns(block.content);
+  const content = <TextRuns runs={block.content} />;
 
   switch (block.level) {
     case 1:
@@ -97,7 +101,7 @@ function TablePreview({ block }: { block: TableBlock }) {
           <tr className="bg-gray-100">
             {block.headers.cells.map((cell, ci) => (
               <th key={ci} className="border border-gray-400 px-3 py-2 text-left font-semibold">
-                {renderTextRuns(cell.content)}
+                <TextRuns runs={cell.content} />
               </th>
             ))}
           </tr>
@@ -108,7 +112,7 @@ function TablePreview({ block }: { block: TableBlock }) {
           <tr key={ri}>
             {row.cells.map((cell, ci) => (
               <td key={ci} className="border border-gray-400 px-3 py-2">
-                {renderTextRuns(cell.content)}
+                <TextRuns runs={cell.content} />
               </td>
             ))}
           </tr>
@@ -127,9 +131,9 @@ function ListPreview({ block }: { block: ListBlock }) {
 
   return (
     <Tag className={listCls}>
-      {block.items.map((item, i) => (
-        <li key={`li-${i}-${item.content[0]?.text.slice(0, 20) ?? ''}`}>
-          {renderTextRuns(item.content)}
+      {block.items.map((item) => (
+        <li key={item.id}>
+          <TextRuns runs={item.content} />
         </li>
       ))}
     </Tag>
@@ -165,7 +169,9 @@ function AttachmentPreview({ block }: { block: AttachmentSectionBlock }) {
       <p className="mb-1 font-bold">
         Załącznik nr {block.sectionNumber}: {block.title}
       </p>
-      <div className="leading-relaxed">{renderTextRuns(block.content)}</div>
+      <div className="leading-relaxed">
+        <TextRuns runs={block.content} />
+      </div>
     </div>
   );
 }

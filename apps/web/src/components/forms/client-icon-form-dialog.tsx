@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { useForm, type Resolver } from 'react-hook-form';
 
@@ -67,9 +67,8 @@ export function ClientIconFormDialog({
         },
   });
 
-  // Reset form when dialog opens/closes or icon changes
-  useEffect(() => {
-    if (open) {
+  const handleOpenChange = (newOpen: boolean) => {
+    if (newOpen) {
       form.reset(
         icon
           ? {
@@ -85,10 +84,10 @@ export function ClientIconFormDialog({
               iconValue: '',
             }
       );
-      // Reset autoAssignCondition state
       setAutoAssignCondition(icon?.autoAssignCondition || undefined);
     }
-  }, [open, icon, form]);
+    onOpenChange(newOpen);
+  };
 
   const handleSubmit = (data: FormData) => {
     // Clean up empty color values
@@ -113,7 +112,7 @@ export function ClientIconFormDialog({
   const color = form.watch('color');
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edytuj ikonę' : 'Dodaj ikonę'}</DialogTitle>

@@ -1,3 +1,4 @@
+import type { ContentBlock } from './content-blocks';
 import {
   type AcceptanceCriterion,
   type ChangeLog,
@@ -807,6 +808,7 @@ export interface CreateTimeEntryDto {
   tags?: string[];
   clientId?: string;
   taskId?: string;
+  settlementId?: string;
 }
 
 export interface UpdateTimeEntryDto extends Partial<CreateTimeEntryDto> {}
@@ -1122,20 +1124,20 @@ export interface OfferTemplateResponseDto {
   isDefault: boolean;
   isActive: boolean;
   companyId: string;
-  contentBlocks?: import('./content-blocks').ContentBlock[];
+  contentBlocks?: ContentBlock[];
   documentSourceType?: 'file' | 'blocks';
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface ContentBlocksResponseDto {
-  contentBlocks?: import('./content-blocks').ContentBlock[];
+  contentBlocks?: ContentBlock[];
   documentSourceType: 'file' | 'blocks';
   name: string;
 }
 
 export interface UpdateContentBlocksDto {
-  contentBlocks?: import('./content-blocks').ContentBlock[];
+  contentBlocks?: ContentBlock[];
   documentSourceType?: 'file' | 'blocks';
 }
 

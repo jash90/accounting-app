@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import { useForm, type Resolver } from 'react-hook-form';
 
@@ -37,25 +37,18 @@ export function NotificationSettingsForm({
   const form = useForm<NotificationSettingsFormData>({
     resolver: zodResolver(notificationSettingsSchema) as Resolver<NotificationSettingsFormData>,
     defaultValues: {
-      receiveOnCreate: settings?.receiveOnCreate ?? false,
-      receiveOnUpdate: settings?.receiveOnUpdate ?? false,
-      receiveOnDelete: settings?.receiveOnDelete ?? false,
+      receiveOnCreate: false,
+      receiveOnUpdate: false,
+      receiveOnDelete: false,
     },
+    values: settings
+      ? {
+          receiveOnCreate: settings.receiveOnCreate,
+          receiveOnUpdate: settings.receiveOnUpdate,
+          receiveOnDelete: settings.receiveOnDelete,
+        }
+      : undefined,
   });
-
-  // Destructure reset for stable reference in useEffect deps
-  const { reset } = form;
-
-  // Update form when settings change
-  useEffect(() => {
-    if (settings) {
-      reset({
-        receiveOnCreate: settings.receiveOnCreate,
-        receiveOnUpdate: settings.receiveOnUpdate,
-        receiveOnDelete: settings.receiveOnDelete,
-      });
-    }
-  }, [settings, reset]);
 
   const handleSubmit = (data: NotificationSettingsFormData) => {
     onSubmit(data);

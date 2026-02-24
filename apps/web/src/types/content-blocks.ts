@@ -59,6 +59,7 @@ export interface TableBlock extends BaseContentBlock {
 }
 
 export interface ListItem {
+  id: string;
   content: TextRun[];
 }
 
@@ -88,6 +89,7 @@ export interface AttachmentSectionBlock extends BaseContentBlock {
 }
 
 export interface ClientDataField {
+  id: string;
   label: string;
   placeholder: string;
 }

@@ -145,12 +145,18 @@ export const queryKeys = {
     lookupAssignees: ['tasks', 'lookup', 'assignees'] as const,
     lookupClients: ['tasks', 'lookup', 'clients'] as const,
     clientStatistics: (clientId: string) => ['tasks', 'client-statistics', clientId] as const,
+    globalStatistics: ['tasks', 'global-statistics'] as const,
   },
   taskLabels: {
     all: ['task-labels'] as const,
     list: (filters?: unknown) => ['task-labels', 'list', stableFilterKey(filters)] as const,
     detail: (id: string) => ['task-labels', id] as const,
     byTask: (taskId: string) => ['task-labels', 'by-task', taskId] as const,
+  },
+  taskTemplates: {
+    all: ['task-templates'] as const,
+    list: (filters?: unknown) => ['task-templates', 'list', stableFilterKey(filters)] as const,
+    detail: (id: string) => ['task-templates', id] as const,
   },
   timeTracking: {
     entries: {
@@ -224,6 +230,20 @@ export const queryKeys = {
       bySettlement: (settlementId: string) =>
         ['settlements', 'assignable-users', settlementId] as const,
       all: ['settlements', 'assignable-users', 'all'] as const,
+    },
+    settings: ['settlements', 'settings'] as const,
+  },
+  email: {
+    inbox: (filters?: unknown) => ['email-inbox', stableFilterKey(filters)] as const,
+    folder: (name: string, filters?: unknown) =>
+      ['email-folder', name, stableFilterKey(filters)] as const,
+    detail: (uid: number) => ['email', uid] as const,
+    search: (q: string, mailbox: string, field?: string) =>
+      ['email-search', q, mailbox, field] as const,
+    folders: ['email-folders'] as const,
+    drafts: {
+      all: ['email-drafts'] as const,
+      detail: (id: string) => ['email-draft', id] as const,
     },
   },
 };

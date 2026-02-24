@@ -1,8 +1,14 @@
 import { lazy, memo, Suspense } from 'react';
 
-import { Navigate, Route, Routes as RouterRoutes, useLocation } from 'react-router-dom';
+import {
+  Navigate,
+  Route,
+  Routes as RouterRoutes,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw, ShieldAlert } from 'lucide-react';
 
 import { ErrorBoundary } from '@/components/common/error-boundary';
 import AdminLayout from '@/components/layouts/admin-layout';
@@ -22,6 +28,7 @@ const CompaniesListPage = lazy(() => import('@/pages/admin/companies/companies-l
 const CompanyModulesPage = lazy(() => import('@/pages/admin/companies/company-modules'));
 const ModulesListPage = lazy(() => import('@/pages/admin/modules/modules-list'));
 const CompanyDashboard = lazy(() => import('@/pages/company/dashboard'));
+const CompanyProfilePage = lazy(() => import('@/pages/company/company-profile'));
 const EmployeesListPage = lazy(() => import('@/pages/company/employees/employees-list'));
 const EmployeePermissionsPage = lazy(
   () => import('@/pages/company/employees/employee-permissions')
@@ -62,6 +69,9 @@ const EmailMessagePage = lazy(() => import('@/pages/modules/email-client/message
 const EmailSentPage = lazy(() => import('@/pages/modules/email-client/sent'));
 const EmailTrashPage = lazy(() => import('@/pages/modules/email-client/trash'));
 const EmailFolderPage = lazy(() => import('@/pages/modules/email-client/folder'));
+const EmailAutoReplyTemplatesPage = lazy(
+  () => import('@/pages/modules/email-client/auto-reply-templates')
+);
 
 // Tasks Pages
 const TasksDashboardPage = lazy(() => import('@/pages/modules/tasks/tasks-dashboard'));
@@ -71,6 +81,7 @@ const TasksCalendarPage = lazy(() => import('@/pages/modules/tasks/tasks-calenda
 const TasksTimelinePage = lazy(() => import('@/pages/modules/tasks/tasks-timeline'));
 const TasksSettingsPage = lazy(() => import('@/pages/modules/tasks/tasks-settings'));
 const TaskCreatePage = lazy(() => import('@/pages/modules/tasks/task-create'));
+const TaskTemplatesListPage = lazy(() => import('@/pages/modules/tasks/task-templates-list'));
 
 // Time Tracking Pages
 const TimeTrackingDashboardPage = lazy(
@@ -114,6 +125,11 @@ const SettlementsTeamPage = lazy(() => import('@/pages/modules/settlements/settl
 const SettlementsSettingsPage = lazy(
   () => import('@/pages/modules/settlements/settlements-settings')
 );
+
+// Documents Pages
+const DocumentsDashboardPage = lazy(() => import('@/pages/modules/documents/documents-dashboard'));
+const DocumentsTemplatesListPage = lazy(() => import('@/pages/modules/documents/templates-list'));
+const GeneratedDocumentsListPage = lazy(() => import('@/pages/modules/documents/generated-list'));
 
 // Notifications Pages
 const NotificationsInboxPage = lazy(() => import('@/pages/notifications/notifications-inbox'));
@@ -183,6 +199,34 @@ function Unauthorized() {
   );
 }
 
+function ModuleAccessDenied() {
+  const navigate = useNavigate();
+  const { user } = useAuthContext();
+
+  const dashboardPath =
+    user?.role === UserRole.ADMIN
+      ? '/admin'
+      : user?.role === UserRole.COMPANY_OWNER
+        ? '/company'
+        : '/modules';
+
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <div className="mx-auto max-w-md text-center">
+        <ShieldAlert className="text-destructive mx-auto h-16 w-16" />
+        <h1 className="mt-6 text-2xl font-bold">Brak dostępu do modułu</h1>
+        <p className="text-muted-foreground mt-2">
+          Twoja firma nie ma dostępu do tego modułu. Skontaktuj się z administratorem systemu, aby
+          go aktywować.
+        </p>
+        <Button className="mt-6" onClick={() => navigate(dashboardPath)}>
+          Wróć do dashboardu
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // Protected Route Component - memoized to prevent unnecessary re-renders
 // when auth context updates (e.g., token refresh) but auth state hasn't changed
 const ProtectedRoute = memo(function ProtectedRoute({
@@ -209,6 +253,10 @@ const ProtectedRoute = memo(function ProtectedRoute({
   return <>{children}</>;
 });
 
+const ADMIN_ROLES = [UserRole.ADMIN];
+const OWNER_ROLES = [UserRole.COMPANY_OWNER];
+const EMPLOYEE_OWNER_ROLES = [UserRole.EMPLOYEE, UserRole.COMPANY_OWNER];
+
 export default function Routes() {
   return (
     <RouterRoutes>
@@ -221,11 +269,12 @@ export default function Routes() {
         }
       />
       <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="/module-access-denied" element={<ModuleAccessDenied />} />
 
       <Route
         path="/admin/*"
         element={
-          <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+          <ProtectedRoute allowedRoles={ADMIN_ROLES}>
             <AdminLayout />
           </ProtectedRoute>
         }
@@ -423,6 +472,14 @@ export default function Routes() {
             </LazyRoute>
           }
         />
+        <Route
+          path="modules/email-client/auto-reply-templates"
+          element={
+            <LazyRoute>
+              <EmailAutoReplyTemplatesPage />
+            </LazyRoute>
+          }
+        />
         {/* Tasks Routes for Admin */}
         <Route
           path="modules/tasks"
@@ -477,6 +534,14 @@ export default function Routes() {
           element={
             <LazyRoute>
               <TaskCreatePage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/tasks/templates"
+          element={
+            <LazyRoute>
+              <TaskTemplatesListPage />
             </LazyRoute>
           }
         />
@@ -578,6 +643,31 @@ export default function Routes() {
             </LazyRoute>
           }
         />
+        {/* Documents Routes for Admin */}
+        <Route
+          path="modules/documents"
+          element={
+            <LazyRoute>
+              <DocumentsDashboardPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/documents/templates"
+          element={
+            <LazyRoute>
+              <DocumentsTemplatesListPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/documents/generated"
+          element={
+            <LazyRoute>
+              <GeneratedDocumentsListPage />
+            </LazyRoute>
+          }
+        />
         {/* Offers Routes for Admin */}
         <Route
           path="modules/offers"
@@ -640,7 +730,7 @@ export default function Routes() {
       <Route
         path="/company/*"
         element={
-          <ProtectedRoute allowedRoles={[UserRole.COMPANY_OWNER]}>
+          <ProtectedRoute allowedRoles={OWNER_ROLES}>
             <CompanyLayout />
           </ProtectedRoute>
         }
@@ -674,6 +764,14 @@ export default function Routes() {
           element={
             <LazyRoute>
               <CompanyModulesListPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="profile"
+          element={
+            <LazyRoute>
+              <CompanyProfilePage />
             </LazyRoute>
           }
         />
@@ -822,6 +920,14 @@ export default function Routes() {
             </LazyRoute>
           }
         />
+        <Route
+          path="modules/email-client/auto-reply-templates"
+          element={
+            <LazyRoute>
+              <EmailAutoReplyTemplatesPage />
+            </LazyRoute>
+          }
+        />
         {/* Tasks Routes for Company Owner */}
         <Route
           path="modules/tasks"
@@ -876,6 +982,14 @@ export default function Routes() {
           element={
             <LazyRoute>
               <TaskCreatePage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/tasks/templates"
+          element={
+            <LazyRoute>
+              <TaskTemplatesListPage />
             </LazyRoute>
           }
         />
@@ -977,6 +1091,31 @@ export default function Routes() {
             </LazyRoute>
           }
         />
+        {/* Documents Routes for Company Owner */}
+        <Route
+          path="modules/documents"
+          element={
+            <LazyRoute>
+              <DocumentsDashboardPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/documents/templates"
+          element={
+            <LazyRoute>
+              <DocumentsTemplatesListPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="modules/documents/generated"
+          element={
+            <LazyRoute>
+              <GeneratedDocumentsListPage />
+            </LazyRoute>
+          }
+        />
         {/* Offers Routes for Company Owner */}
         <Route
           path="modules/offers"
@@ -1039,7 +1178,7 @@ export default function Routes() {
       <Route
         path="/modules/*"
         element={
-          <ProtectedRoute allowedRoles={[UserRole.EMPLOYEE, UserRole.COMPANY_OWNER]}>
+          <ProtectedRoute allowedRoles={EMPLOYEE_OWNER_ROLES}>
             <EmployeeLayout />
           </ProtectedRoute>
         }
@@ -1164,6 +1303,14 @@ export default function Routes() {
             </LazyRoute>
           }
         />
+        <Route
+          path="email-client/auto-reply-templates"
+          element={
+            <LazyRoute>
+              <EmailAutoReplyTemplatesPage />
+            </LazyRoute>
+          }
+        />
         {/* Tasks Routes for Employee */}
         <Route
           path="tasks"
@@ -1218,6 +1365,14 @@ export default function Routes() {
           element={
             <LazyRoute>
               <TaskCreatePage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="tasks/templates"
+          element={
+            <LazyRoute>
+              <TaskTemplatesListPage />
             </LazyRoute>
           }
         />
@@ -1292,6 +1447,31 @@ export default function Routes() {
           element={
             <LazyRoute>
               <SettlementCommentsPage />
+            </LazyRoute>
+          }
+        />
+        {/* Documents Routes for Employee */}
+        <Route
+          path="documents"
+          element={
+            <LazyRoute>
+              <DocumentsDashboardPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="documents/templates"
+          element={
+            <LazyRoute>
+              <DocumentsTemplatesListPage />
+            </LazyRoute>
+          }
+        />
+        <Route
+          path="documents/generated"
+          element={
+            <LazyRoute>
+              <GeneratedDocumentsListPage />
             </LazyRoute>
           }
         />
