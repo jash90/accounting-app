@@ -25,11 +25,11 @@ export class NotificationSettingsService {
    * Get the effective companyId for a user.
    * ADMIN users use System Admin Company, others use their assigned companyId.
    */
-  private async getEffectiveCompanyId(user: User): Promise<string | null> {
+  private getEffectiveCompanyId(user: User): Promise<string | null> {
     if (user.role === UserRole.ADMIN) {
       return this.systemCompanyService.getSystemCompanyId();
     }
-    return user.companyId;
+    return Promise.resolve(user.companyId);
   }
 
   async getSettingsForModule(user: User, moduleSlug: string): Promise<NotificationSettings> {
@@ -310,6 +310,9 @@ export class NotificationSettingsService {
       case NotificationType.CLIENT_SUSPENSION_CREATED:
       case NotificationType.CLIENT_RELIEF_CREATED:
       case NotificationType.TIME_ENTRY_CREATED:
+      case NotificationType.OFFER_CREATED:
+      case NotificationType.LEAD_CREATED:
+      case NotificationType.SETTLEMENT_MONTH_INITIALIZED:
         return settings.receiveOnCreate;
       default:
         break;
@@ -324,6 +327,25 @@ export class NotificationSettingsService {
       case NotificationType.CLIENT_SUSPENSION_UPDATED:
       case NotificationType.CLIENT_RELIEF_UPDATED:
       case NotificationType.TIME_ENTRY_UPDATED:
+      case NotificationType.TIME_ENTRY_APPROVED:
+      case NotificationType.TIME_ENTRY_REJECTED:
+      case NotificationType.TIME_ENTRY_SUBMITTED:
+      case NotificationType.OFFER_UPDATED:
+      case NotificationType.OFFER_STATUS_CHANGED:
+      case NotificationType.OFFER_SENT:
+      case NotificationType.OFFER_ACCEPTED:
+      case NotificationType.OFFER_REJECTED:
+      case NotificationType.OFFER_EXPIRED:
+      case NotificationType.OFFER_DUPLICATED:
+      case NotificationType.LEAD_UPDATED:
+      case NotificationType.LEAD_CONVERTED:
+      case NotificationType.SETTLEMENT_STATUS_CHANGED:
+      case NotificationType.SETTLEMENT_UPDATED:
+      case NotificationType.SETTLEMENT_ASSIGNED:
+      case NotificationType.SETTLEMENT_UNASSIGNED:
+      case NotificationType.SETTLEMENT_BULK_ASSIGNED:
+      case NotificationType.SETTLEMENT_COMMENT_ADDED:
+      case NotificationType.SETTLEMENT_COMPLETED:
         return settings.receiveOnUpdate;
       default:
         break;
@@ -338,6 +360,8 @@ export class NotificationSettingsService {
       case NotificationType.CLIENT_SUSPENSION_DELETED:
       case NotificationType.CLIENT_RELIEF_DELETED:
       case NotificationType.TIME_ENTRY_DELETED:
+      case NotificationType.OFFER_DELETED:
+      case NotificationType.LEAD_DELETED:
         return settings.receiveOnDelete;
       default:
         break;

@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OnEvent } from '@nestjs/event-emitter';
 import { JwtService } from '@nestjs/jwt';
@@ -22,6 +22,7 @@ import { NotificationCreatedEvent } from '../services/notification-dispatcher.se
  * which is already loaded by NestJS ConfigModule before gateway initialization.
  * The ConfigService is still used in constructor for logging/debugging purposes.
  */
+@Injectable()
 @WebSocketGateway({
   namespace: '/notifications',
   cors: {

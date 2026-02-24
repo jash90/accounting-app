@@ -24,6 +24,8 @@ export const VALID_MODULE_SLUGS = [
   'tasks',
   'clients',
   'time-tracking',
+  'offers',
+  'settlements',
   'email-client',
   'ai-agent',
   'company',
