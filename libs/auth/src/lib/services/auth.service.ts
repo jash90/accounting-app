@@ -23,13 +23,13 @@ import { RegisterDto } from '../dto/register.dto';
 export class AuthService {
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private readonly userRepository: Repository<User>,
     @InjectRepository(Company)
-    private companyRepository: Repository<Company>,
+    private readonly companyRepository: Repository<Company>,
     @Inject(ACCESS_JWT_SERVICE)
-    private accessJwtService: JwtService,
+    private readonly accessJwtService: JwtService,
     @Inject(REFRESH_JWT_SERVICE)
-    private refreshJwtService: JwtService
+    private readonly refreshJwtService: JwtService
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {

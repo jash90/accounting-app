@@ -4,8 +4,9 @@ import { ImapFlow } from 'imapflow';
 import { simpleParser, type Source } from 'mailparser';
 import * as nodemailer from 'nodemailer';
 
+import { EncryptionService } from '@accounting/common/backend';
+
 import { EmailConfigService } from './email-config.service';
-import { EncryptionService } from './encryption.service';
 
 // TLS validation - configurable via env, defaults to true
 const REJECT_UNAUTHORIZED = process.env['EMAIL_REJECT_UNAUTHORIZED'] !== 'false';
@@ -106,8 +107,8 @@ interface ImapCheckConfig {
 @Injectable()
 export class SmtpImapService {
   constructor(
-    private emailConfigService: EmailConfigService,
-    private encryptionService: EncryptionService
+    private readonly emailConfigService: EmailConfigService,
+    private readonly encryptionService: EncryptionService
   ) {}
 
   /**
@@ -204,7 +205,12 @@ export class SmtpImapService {
 
     // Check for authentication errors in message
     const message = error.message.toLowerCase();
-    if (message.includes('auth') || message.includes('535') || message.includes('authentication')) {
+    if (
+      message.includes('auth') ||
+      message.includes('535') ||
+      message.includes('authentication') ||
+      message.includes('command failed')
+    ) {
       return EMAIL_ERROR_MAP['EAUTH'];
     }
 
@@ -251,7 +257,7 @@ export class SmtpImapService {
    * Test IMAP connection using ImapFlow
    * Connects and opens inbox in readonly mode to validate credentials
    */
-  async testImapConnection(dto: TestImapDto): Promise<TestConnectionResult> {
+  testImapConnection(dto: TestImapDto): Promise<TestConnectionResult> {
     const client = new ImapFlow({
       host: dto.imapHost,
       port: dto.imapPort,

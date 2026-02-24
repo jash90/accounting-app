@@ -54,6 +54,9 @@ async function bootstrap() {
 
   // Security
   app.use(helmet());
+  // CSRF mitigation: This API uses Bearer tokens (Authorization header), which cannot be
+  // set by cross-origin forms. This provides strong CSRF protection without CSRF tokens.
+  // See: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
   app.enableCors({
     origin: (
       origin: string | undefined,
@@ -109,39 +112,41 @@ async function bootstrap() {
   // Global serializer interceptor to respect @Exclude() decorators
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
-  // Swagger configuration
-  const config = new DocumentBuilder()
-    .setTitle('RBAC System API')
-    .setDescription('Multi-tenant RBAC system with modular architecture')
-    .setVersion('1.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'JWT',
-        description: 'Enter JWT token',
-        in: 'header',
-      },
-      'JWT-auth'
-    )
-    .addTag('Auth', 'Authentication endpoints')
-    .addTag('Admin', 'Admin management endpoints')
-    .addTag('Company', 'Company owner endpoints')
-    .addTag('Modules', 'Module management and access control endpoints')
-    .addTag('ai-agent', 'AI Agent module endpoints - Chat, RAG, Token Management')
-    .addTag('Clients', 'Client management endpoints')
-    .addTag('Client Field Definitions', 'Custom field definitions for clients')
-    .addTag('Client Icons', 'Client icon management endpoints')
-    .addTag('Client Notification Settings', 'Client notification settings endpoints')
-    .build();
+  // Swagger UI — only available in non-production environments
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('RBAC System API')
+      .setDescription('Multi-tenant RBAC system with modular architecture')
+      .setVersion('1.0')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          name: 'JWT',
+          description: 'Enter JWT token',
+          in: 'header',
+        },
+        'JWT-auth'
+      )
+      .addTag('Auth', 'Authentication endpoints')
+      .addTag('Admin', 'Admin management endpoints')
+      .addTag('Company', 'Company owner endpoints')
+      .addTag('Modules', 'Module management and access control endpoints')
+      .addTag('ai-agent', 'AI Agent module endpoints - Chat, RAG, Token Management')
+      .addTag('Clients', 'Client management endpoints')
+      .addTag('Client Field Definitions', 'Custom field definitions for clients')
+      .addTag('Client Icons', 'Client icon management endpoints')
+      .addTag('Client Notification Settings', 'Client notification settings endpoints')
+      .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true,
-    },
-  });
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('docs', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+      },
+    });
+  }
 
   // Auto-seed admin user if not exists (for Railway deployment)
   if (process.env.NODE_ENV === 'production') {
