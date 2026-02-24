@@ -1,3 +1,4 @@
+export * from './offer-export.service';
 export * from './docx-generation.service';
 export * from './leads.service';
 export * from './offer-activity.service';

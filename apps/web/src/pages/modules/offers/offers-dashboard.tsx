@@ -12,7 +12,10 @@ import {
   XCircle,
 } from 'lucide-react';
 
+import { LeadFunnelChart } from '@/components/dashboard/charts/lead-funnel-chart';
+import { OfferPipelineChart } from '@/components/dashboard/charts/offer-pipeline-chart';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
@@ -172,6 +175,47 @@ export default function OffersDashboardPage() {
           />
         </div>
       </div>
+
+      {/* Charts */}
+      {(offerStats || leadStats) && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {offerStats && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Pipeline ofert</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <OfferPipelineChart
+                  draftCount={offerStats.draftCount}
+                  readyCount={offerStats.readyCount}
+                  sentCount={offerStats.sentCount}
+                  acceptedCount={offerStats.acceptedCount}
+                  rejectedCount={offerStats.rejectedCount}
+                  expiredCount={offerStats.expiredCount}
+                />
+              </CardContent>
+            </Card>
+          )}
+          {leadStats && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Lejek prospektów</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <LeadFunnelChart
+                  newCount={leadStats.newCount}
+                  contactedCount={leadStats.contactedCount}
+                  qualifiedCount={leadStats.qualifiedCount}
+                  proposalSentCount={leadStats.proposalSentCount}
+                  negotiationCount={leadStats.negotiationCount}
+                  convertedCount={leadStats.convertedCount}
+                  lostCount={leadStats.lostCount}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* Navigation Cards */}
       <div className="flex flex-wrap gap-6">
