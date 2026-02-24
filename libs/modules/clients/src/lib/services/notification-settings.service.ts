@@ -89,7 +89,7 @@ export class NotificationSettingsService {
     return this.settingsRepository.save(settings);
   }
 
-  async enableAllNotifications(user: User): Promise<NotificationSettings> {
+  enableAllNotifications(user: User): Promise<NotificationSettings> {
     return this.updateSettings(user, {
       receiveOnCreate: true,
       receiveOnUpdate: true,
@@ -97,7 +97,7 @@ export class NotificationSettingsService {
     });
   }
 
-  async disableAllNotifications(user: User): Promise<NotificationSettings> {
+  disableAllNotifications(user: User): Promise<NotificationSettings> {
     return this.updateSettings(user, {
       receiveOnCreate: false,
       receiveOnUpdate: false,
@@ -107,7 +107,7 @@ export class NotificationSettingsService {
 
   // Admin methods for managing other users' settings
 
-  async getAllSettingsForModule(companyId: string): Promise<NotificationSettings[]> {
+  getAllSettingsForModule(companyId: string): Promise<NotificationSettings[]> {
     return this.settingsRepository
       .createQueryBuilder('settings')
       .innerJoin('settings.user', 'user')

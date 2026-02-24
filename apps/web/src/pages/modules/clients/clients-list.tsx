@@ -934,8 +934,8 @@ export default function ClientsListPage() {
         <Suspense
           fallback={
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {Array.from({ length: 4 }, (_, i) => (
-                <Card key={i}>
+              {[0, 1, 2, 3].map((n) => (
+                <Card key={n}>
                   <CardContent className="p-6">
                     <div className="h-8 w-16 animate-pulse rounded bg-gray-200" />
                   </CardContent>

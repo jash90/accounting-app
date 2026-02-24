@@ -1,22 +1,21 @@
 import { Building2, Settings, UserCheck, Users, UserX } from 'lucide-react';
 
+import { ClientsTypeChart } from '@/components/dashboard/charts/clients-type-chart';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
-import { useClients } from '@/lib/hooks/use-clients';
+import { type ClientTaskTimeStatsDto } from '@/lib/api/endpoints/clients';
+import { useClientStatistics, useClientTaskTimeStats } from '@/lib/hooks/use-clients';
 import { UserRole } from '@/types/enums';
 
 export default function ClientsDashboardPage() {
   const { user } = useAuthContext();
-  const { data, isPending } = useClients();
+  const { data, isPending } = useClientStatistics();
 
-  // Extract clients array from paginated response
-  const clients = data?.data ?? [];
-
-  // Calculate statistics
-  const totalClients = clients.length;
-  const activeClients = clients.filter((c) => c.isActive).length;
-  const inactiveClients = clients.filter((c) => !c.isActive).length;
+  const totalClients = data?.total ?? 0;
+  const activeClients = data?.active ?? 0;
+  const inactiveClients = data?.inactive ?? 0;
 
   // Determine the base path based on user role
   const getBasePath = () => {
@@ -100,6 +99,21 @@ export default function ClientsDashboardPage() {
         />
       </div>
 
+      {/* Employment Type Chart */}
+      {!isPending && data && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Typy zatrudnienia</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ClientsTypeChart
+              byEmploymentType={data.byEmploymentType as Record<string, number>}
+              total={totalClients}
+            />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Feature Cards */}
       <div className="flex flex-wrap gap-6">
         {availableFeatures.map((feature) => (
@@ -113,6 +127,44 @@ export default function ClientsDashboardPage() {
           />
         ))}
       </div>
+
+      {/* Client Task and Time Statistics - admin/owner only */}
+      {(user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER) && (
+        <ClientTaskTimeStatsSection />
+      )}
     </div>
+  );
+}
+
+function ClientTaskTimeStatsSection() {
+  const { data, isLoading } = useClientTaskTimeStats();
+
+  if (isLoading) return null;
+  if (!data?.length) return null;
+
+  return (
+    <Card className="mt-6">
+      <CardHeader>
+        <CardTitle>Statystyki zadań i czasu per klient</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {data.slice(0, 15).map((client: ClientTaskTimeStatsDto) => (
+            <div
+              key={client.clientId}
+              className="flex items-center justify-between py-1 border-b last:border-0"
+            >
+              <span className="text-sm font-medium">{client.clientName}</span>
+              <div className="flex gap-4 text-sm text-muted-foreground">
+                <span>
+                  Zadania: {client.completedTasks}/{client.totalTasks}
+                </span>
+                <span>Czas: {client.totalHours}h</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

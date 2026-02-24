@@ -1,4 +1,4 @@
-import { memo, useCallback, useId, useMemo } from 'react';
+import { memo, useCallback, useId, useMemo, useState } from 'react';
 
 import { Check, ChevronDown, FolderPlus, Plus, Trash2 } from 'lucide-react';
 
@@ -204,10 +204,6 @@ const GroupConditionRenderer = memo(function GroupConditionRenderer({
   const groupLogicalOperator = group.logicalOperator;
   const groupConditions = group.conditions;
 
-  // Memoize conditions length for dependency - this is a primitive that only changes
-  // when the actual number of conditions changes, not when conditions are edited
-  const conditionsCount = groupConditions.length;
-
   const handleLogicalOperatorChange = useCallback(
     (operator: LogicalOperator) => {
       onChange({
@@ -251,8 +247,6 @@ const GroupConditionRenderer = memo(function GroupConditionRenderer({
     [onChange, onRemove, isRoot, groupId, groupLogicalOperator, groupConditions]
   );
 
-  // These callbacks only need to depend on conditionsCount since they just append
-  // The actual conditions array is spread at execution time
   const handleAddCondition = useCallback(() => {
     const newCondition: SingleCondition = {
       id: generateConditionId(),
@@ -265,12 +259,7 @@ const GroupConditionRenderer = memo(function GroupConditionRenderer({
       logicalOperator: groupLogicalOperator,
       conditions: [...groupConditions, newCondition],
     });
-    // Intentionally using conditionsCount instead of groupConditions to prevent callback recreation
-    // on every condition edit. Since this callback only appends to the array, we only need to know
-    // when the array length changes (conditionsCount), not when individual items change.
-    // The current groupConditions is read via closure at execution time.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onChange, groupId, groupLogicalOperator, conditionsCount]);
+  }, [onChange, groupId, groupLogicalOperator, groupConditions]);
 
   const handleAddNestedGroup = useCallback(() => {
     const newGroup: ConditionGroup = {
@@ -290,12 +279,7 @@ const GroupConditionRenderer = memo(function GroupConditionRenderer({
       logicalOperator: groupLogicalOperator,
       conditions: [...groupConditions, newGroup],
     });
-    // Intentionally using conditionsCount instead of groupConditions to prevent callback recreation
-    // on every condition edit. Since this callback only appends to the array, we only need to know
-    // when the array length changes (conditionsCount), not when individual items change.
-    // The current groupConditions is read via closure at execution time.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onChange, groupId, groupLogicalOperator, conditionsCount]);
+  }, [onChange, groupId, groupLogicalOperator, groupConditions]);
 
   return (
     <Card className={cn(isRoot ? 'border-primary' : 'border-muted')}>
@@ -556,16 +540,20 @@ const ValueInput = memo(function ValueInput({
     [selectedValues, selectedValuesSet, onChange]
   );
 
+  // Track popover open state for aria-expanded on the combobox button
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
   // Multi-select for 'in' and 'notIn' operators - use proper multi-select with checkboxes
   if (isMultiSelect) {
     const options = ENUM_OPTIONS_MAP[effectiveEnumKey] || [];
 
     return (
-      <Popover>
+      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             role="combobox"
+            aria-expanded={popoverOpen}
             aria-controls={`${instanceId}-multiselect`}
             className="w-48 justify-between font-normal"
           >

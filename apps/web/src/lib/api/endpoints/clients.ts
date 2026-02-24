@@ -106,6 +106,19 @@ export interface ClientStatisticsDto {
 }
 
 // ============================================
+// Task and Time Statistics Types
+// ============================================
+
+export interface ClientTaskTimeStatsDto {
+  clientId: string;
+  clientName: string;
+  totalTasks: number;
+  completedTasks: number;
+  totalMinutes: number;
+  totalHours: number;
+}
+
+// ============================================
 // Import Types
 // ============================================
 
@@ -252,6 +265,13 @@ export const clientsApi = {
   // Statistics
   getStatistics: async (): Promise<ClientStatisticsDto> => {
     const { data } = await apiClient.get<ClientStatisticsDto>(`${BASE_URL}/statistics`);
+    return data;
+  },
+
+  getClientTaskTimeStats: async (): Promise<ClientTaskTimeStatsDto[]> => {
+    const { data } = await apiClient.get<ClientTaskTimeStatsDto[]>(
+      `${BASE_URL}/statistics/task-time`
+    );
     return data;
   },
 

@@ -71,7 +71,11 @@ import {
   SetCustomFieldValuesDto,
   UpdateClientDto,
 } from '../dto/client.dto';
-import { ClientStatisticsDto, ClientStatisticsWithRecentDto } from '../dto/statistics.dto';
+import {
+  ClientStatisticsDto,
+  ClientStatisticsWithRecentDto,
+  ClientTaskTimeStatsDto,
+} from '../dto/statistics.dto';
 import { ClientChangelogService } from '../services/client-changelog.service';
 import { ClientsService } from '../services/clients.service';
 import { CustomFieldsService } from '../services/custom-fields.service';
@@ -309,6 +313,27 @@ export class ClientsController {
   @RequirePermission('clients', 'read')
   async getStatistics(@CurrentUser() user: User) {
     return this.statisticsService.getStatisticsWithRecent(user);
+  }
+
+  /**
+   * Get client task and time statistics (admin/owner only).
+   */
+  @Get('statistics/task-time')
+  @ApiOperation({ summary: 'Get client task and time statistics (admin/owner only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Per-client task and time statistics',
+    type: [ClientTaskTimeStatsDto],
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+    type: ClientErrorResponseDto,
+  })
+  @RequirePermission('clients', 'read')
+  @UseGuards(OwnerOrAdminGuard)
+  async getClientTaskTimeStats(@CurrentUser() user: User) {
+    return this.statisticsService.getClientTaskAndTimeStats(user);
   }
 
   /**
@@ -572,11 +597,6 @@ export class ClientsController {
     status: 200,
     description: 'Client details including all fields and metadata',
     type: ClientResponseDto,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing JWT token',
-    type: ClientErrorResponseDto,
   })
   @ApiResponse({
     status: 401,

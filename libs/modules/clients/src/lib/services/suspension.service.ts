@@ -278,10 +278,7 @@ export class SuspensionService {
    * Get current active suspension for a client.
    * A suspension is active if today is between startDate and endDate (or endDate is null).
    */
-  async getCurrentSuspension(
-    clientId: string,
-    companyId: string
-  ): Promise<ClientSuspension | null> {
+  getCurrentSuspension(clientId: string, companyId: string): Promise<ClientSuspension | null> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -316,7 +313,7 @@ export class SuspensionService {
   /**
    * Get employees for a company (for notifications).
    */
-  async getCompanyEmployees(companyId: string): Promise<User[]> {
+  getCompanyEmployees(companyId: string): Promise<User[]> {
     return this.userRepository.find({
       where: {
         companyId,
@@ -329,7 +326,7 @@ export class SuspensionService {
   /**
    * Get company owner(s) for notifications.
    */
-  async getCompanyOwners(companyId: string): Promise<User[]> {
+  getCompanyOwners(companyId: string): Promise<User[]> {
     return this.userRepository.find({
       where: {
         companyId,
@@ -343,7 +340,7 @@ export class SuspensionService {
    * Get suspensions that need 7-day start reminder.
    * Groups results by companyId to ensure proper tenant isolation when processing notifications.
    */
-  async getSuspensionsFor7DayStartReminder(): Promise<ClientSuspension[]> {
+  getSuspensionsFor7DayStartReminder(): Promise<ClientSuspension[]> {
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + 7);
     targetDate.setHours(0, 0, 0, 0);
@@ -367,7 +364,7 @@ export class SuspensionService {
    * Get suspensions that need 1-day start reminder.
    * Groups results by companyId to ensure proper tenant isolation when processing notifications.
    */
-  async getSuspensionsFor1DayStartReminder(): Promise<ClientSuspension[]> {
+  getSuspensionsFor1DayStartReminder(): Promise<ClientSuspension[]> {
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + 1);
     targetDate.setHours(0, 0, 0, 0);
@@ -391,7 +388,7 @@ export class SuspensionService {
    * Get suspensions that need 7-day end reminder.
    * Groups results by companyId to ensure proper tenant isolation when processing notifications.
    */
-  async getSuspensionsFor7DayEndReminder(): Promise<ClientSuspension[]> {
+  getSuspensionsFor7DayEndReminder(): Promise<ClientSuspension[]> {
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + 7);
     targetDate.setHours(0, 0, 0, 0);
@@ -415,7 +412,7 @@ export class SuspensionService {
    * Get suspensions that need 1-day end reminder.
    * Groups results by companyId to ensure proper tenant isolation when processing notifications.
    */
-  async getSuspensionsFor1DayEndReminder(): Promise<ClientSuspension[]> {
+  getSuspensionsFor1DayEndReminder(): Promise<ClientSuspension[]> {
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + 1);
     targetDate.setHours(0, 0, 0, 0);
@@ -439,7 +436,7 @@ export class SuspensionService {
    * Get suspensions where resumption is today or past and notification not sent.
    * Groups results by companyId to ensure proper tenant isolation when processing notifications.
    */
-  async getSuspensionsForResumptionNotification(): Promise<ClientSuspension[]> {
+  getSuspensionsForResumptionNotification(): Promise<ClientSuspension[]> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 

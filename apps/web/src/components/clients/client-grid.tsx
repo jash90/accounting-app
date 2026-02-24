@@ -97,8 +97,8 @@ export const ClientGrid = memo(function ClientGrid({
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {Array.from({ length: SKELETON_COUNT }, (_, i) => (
-          <Skeleton key={i} className="bg-accent/10 h-48 w-full rounded-lg" />
+        {Array.from({ length: SKELETON_COUNT }, (_, idx) => (
+          <Skeleton key={`sk-${idx}`} className="bg-accent/10 h-48 w-full rounded-lg" />
         ))}
       </div>
     );

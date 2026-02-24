@@ -1,5 +1,6 @@
 
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import * as fs from 'fs/promises';
@@ -45,7 +46,8 @@ export class ClientChangelogService {
     private readonly clientRepository: Repository<Client>,
     private readonly changeLogService: ChangeLogService,
     private readonly emailConfigService: EmailConfigurationService,
-    private readonly emailSenderService: EmailSenderService
+    private readonly emailSenderService: EmailSenderService,
+    private readonly configService: ConfigService
   ) {}
 
   // Use process.cwd() for reliable path resolution in webpack bundles
@@ -106,7 +108,7 @@ export class ClientChangelogService {
 
   async notifyClientCreated(client: Client, performedBy: User): Promise<void> {
     // Debug logging for notification trigger
-    if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+    if (this.configService.get<string>('ENABLE_EMAIL_DEBUG') === 'true') {
       this.logger.debug('Client created notification triggered', {
         clientId: client.id,
         clientEmail: client.email ? `***@${client.email.split('@')[1]}` : null,
@@ -121,7 +123,7 @@ export class ClientChangelogService {
     });
 
     // Debug logging for company retrieval
-    if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+    if (this.configService.get<string>('ENABLE_EMAIL_DEBUG') === 'true') {
       this.logger.debug('Company retrieved for email notification', {
         companyId: client.companyId,
         companyName: company?.name,
@@ -146,7 +148,7 @@ export class ClientChangelogService {
     }
 
     // Debug logging for email config retrieval
-    if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+    if (this.configService.get<string>('ENABLE_EMAIL_DEBUG') === 'true') {
       this.logger.debug('Email configuration retrieved', {
         companyId: client.companyId,
         smtpHost: emailConfig.smtp.host,
@@ -510,7 +512,7 @@ export class ClientChangelogService {
 
     const users = await queryBuilder.getMany();
 
-    if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+    if (this.configService.get<string>('ENABLE_EMAIL_DEBUG') === 'true') {
       this.logger.debug('Notification recipients resolved with default-enabled logic', {
         companyId,
         notificationType,
@@ -647,7 +649,7 @@ export class ClientChangelogService {
     const recipients = await this.getNotificationRecipients(client.companyId, 'receiveOnCreate');
 
     // Debug logging for recipient resolution
-    if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+    if (this.configService.get<string>('ENABLE_EMAIL_DEBUG') === 'true') {
       this.logger.debug('Notification recipients resolved', {
         clientId: client.id,
         recipientCount: recipients.length,
@@ -697,10 +699,7 @@ export class ClientChangelogService {
   /**
    * Compile client welcome template with all data
    */
-  private async compileClientWelcomeTemplate(
-    client: Client,
-    company: Company | null
-  ): Promise<string> {
+  private compileClientWelcomeTemplate(client: Client, company: Company | null): Promise<string> {
     const context = {
       companyName: company?.name || 'Biuro rachunkowe',
       clientName: client.name,
@@ -735,7 +734,7 @@ export class ClientChangelogService {
     const templatePath = path.join(this.templatesDir, `${templateName}.hbs`);
 
     // Debug logging for template compilation start
-    if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+    if (this.configService.get<string>('ENABLE_EMAIL_DEBUG') === 'true') {
       this.logger.debug('Template compilation starting', {
         templateName,
         templatePath,
@@ -749,7 +748,7 @@ export class ClientChangelogService {
       const html = template(context);
 
       // Debug logging for successful compilation
-      if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+      if (this.configService.get<string>('ENABLE_EMAIL_DEBUG') === 'true') {
         this.logger.debug('Template compiled successfully', {
           templateName,
           htmlLength: html.length,

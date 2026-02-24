@@ -131,8 +131,8 @@ export const ReliefPeriodsCard = memo(function ReliefPeriodsCard({
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[1, 2].map((i) => (
-              <div key={i} className="flex gap-4">
+            {[1, 2].map((num) => (
+              <div key={num} className="flex gap-4">
                 <Skeleton className="h-3 w-3 rounded-full" />
                 <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-24" />
