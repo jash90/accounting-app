@@ -32,6 +32,10 @@ import { User, UserResponseDto, UserRole } from '@accounting/common';
 import { OwnerOrAdminGuard } from '@accounting/rbac';
 
 import { CreateEmployeeDto } from '../dto/create-employee.dto';
+import {
+  CompanyProfileResponseDto,
+  UpdateCompanyProfileDto,
+} from '../dto/update-company-profile.dto';
 import { UpdateEmployeeDto } from '../dto/update-employee.dto';
 import { CompanyService } from '../services/company.service';
 
@@ -42,6 +46,24 @@ import { CompanyService } from '../services/company.service';
 @Roles(UserRole.COMPANY_OWNER)
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
+
+  @Get('profile')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.COMPANY_OWNER)
+  @ApiOperation({ summary: 'Get company profile' })
+  @ApiOkResponse({ type: CompanyProfileResponseDto })
+  async getProfile(@CurrentUser() user: User) {
+    return this.companyService.getProfile(user);
+  }
+
+  @Patch('profile')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.COMPANY_OWNER)
+  @ApiOperation({ summary: 'Update company profile' })
+  @ApiOkResponse({ type: CompanyProfileResponseDto })
+  async updateProfile(@CurrentUser() user: User, @Body() dto: UpdateCompanyProfileDto) {
+    return this.companyService.updateProfile(user, dto);
+  }
 
   // Employee Management
   @Get('employees')

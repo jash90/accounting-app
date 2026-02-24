@@ -111,8 +111,8 @@ export default function EmployeePermissionsPage() {
       <div className="space-y-6">
         <div className="bg-accent/10 h-8 w-1/3 animate-pulse rounded" />
         <div className="space-y-4">
-          {[1, 2].map((i) => (
-            <Card key={i} className="border-border animate-pulse">
+          {[1, 2].map((num) => (
+            <Card key={num} className="border-border animate-pulse">
               <CardHeader>
                 <div className="bg-accent/10 h-5 w-1/2 rounded" />
               </CardHeader>

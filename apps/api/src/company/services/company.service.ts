@@ -10,6 +10,7 @@ import { EmailConfigurationService, EmailSenderService } from '@accounting/email
 import { EmailService } from '@accounting/infrastructure/email';
 
 import { CreateEmployeeDto } from '../dto/create-employee.dto';
+import { UpdateCompanyProfileDto } from '../dto/update-company-profile.dto';
 import { UpdateEmployeeDto } from '../dto/update-employee.dto';
 
 @Injectable()
@@ -19,13 +20,13 @@ export class CompanyService {
 
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private readonly userRepository: Repository<User>,
     @InjectRepository(Company)
-    private companyRepository: Repository<Company>,
-    private emailService: EmailService,
-    private emailSenderService: EmailSenderService,
-    private emailConfigService: EmailConfigurationService,
-    private configService: ConfigService
+    private readonly companyRepository: Repository<Company>,
+    private readonly emailService: EmailService,
+    private readonly emailSenderService: EmailSenderService,
+    private readonly emailConfigService: EmailConfigurationService,
+    private readonly configService: ConfigService
   ) {
     // Use FRONTEND_URL env var, fallback to CORS_ORIGINS first value, or localhost
     this.frontendUrl =
@@ -35,7 +36,7 @@ export class CompanyService {
   }
 
   // Employee Management
-  async getEmployees(companyId: string) {
+  getEmployees(companyId: string) {
     return this.userRepository.find({
       where: { companyId, role: UserRole.EMPLOYEE },
       order: { createdAt: 'DESC' },
@@ -203,5 +204,22 @@ export class CompanyService {
     }
 
     return company;
+  }
+
+  async getProfile(user: User): Promise<Company> {
+    const companyId = user.companyId;
+    if (!companyId) throw new NotFoundException('Company not found');
+    const company = await this.companyRepository.findOne({ where: { id: companyId } });
+    if (!company) throw new NotFoundException('Company not found');
+    return company;
+  }
+
+  async updateProfile(user: User, dto: UpdateCompanyProfileDto): Promise<Company> {
+    const companyId = user.companyId;
+    if (!companyId) throw new NotFoundException('Company not found');
+    const company = await this.companyRepository.findOne({ where: { id: companyId } });
+    if (!company) throw new NotFoundException('Company not found');
+    Object.assign(company, dto);
+    return this.companyRepository.save(company);
   }
 }
