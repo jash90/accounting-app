@@ -29,8 +29,8 @@ function SettlementInfoSkeleton() {
         <Skeleton className="h-6 w-48" />
       </CardHeader>
       <CardContent className="space-y-4">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i}>
+        {[1, 2, 3, 4, 5].map((num) => (
+          <div key={num}>
             <Skeleton className="mb-1 h-4 w-16" />
             <Skeleton className="h-5 w-32" />
           </div>
@@ -48,8 +48,8 @@ function UserSelectionSkeleton() {
         <Skeleton className="mt-2 h-4 w-64" />
       </CardHeader>
       <CardContent className="space-y-3">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="flex items-center space-x-3 rounded-lg border p-3">
+        {[1, 2, 3, 4].map((num) => (
+          <div key={num} className="flex items-center space-x-3 rounded-lg border p-3">
             <Skeleton className="h-4 w-4 rounded-full" />
             <Skeleton className="h-5 w-32" />
           </div>

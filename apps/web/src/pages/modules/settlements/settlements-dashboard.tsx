@@ -1,11 +1,90 @@
-import { AlertTriangle, Calculator, CheckCircle, Clock, List, Settings, Users } from 'lucide-react';
+import {
+  AlertTriangle,
+  Calculator,
+  CheckCircle,
+  Clock,
+  FileQuestion,
+  FileX,
+  List,
+  Settings,
+  Users,
+} from 'lucide-react';
 
+import { SettlementsStatusChart } from '@/components/dashboard/charts/settlements-status-chart';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
-import { useMyStats, useSettlementStats } from '@/lib/hooks/use-settlements';
+import {
+  useBlockedClientsStats,
+  useMyStats,
+  useSettlementEmployeeRanking,
+  useSettlementStats,
+} from '@/lib/hooks/use-settlements';
 import { UserRole } from '@/types/enums';
+
+function ExtendedSettlementStats() {
+  const employeeRankingQuery = useSettlementEmployeeRanking();
+  const blockedClientsQuery = useBlockedClientsStats();
+
+  return (
+    <div className="grid gap-6 md:grid-cols-2">
+      {/* Employee Ranking */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Ranking pracowników (ukończone rozliczenia)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {employeeRankingQuery.isPending ? (
+            <p className="text-muted-foreground text-sm">Ładowanie...</p>
+          ) : !employeeRankingQuery.data?.rankings?.length ? (
+            <p className="text-muted-foreground text-sm">Brak danych</p>
+          ) : (
+            <div className="space-y-2">
+              {employeeRankingQuery.data.rankings.slice(0, 10).map((item, index) => (
+                <div key={item.userId} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground w-5 text-right">{index + 1}.</span>
+                    <span>
+                      {item.firstName || item.lastName
+                        ? `${item.firstName ?? ''} ${item.lastName ?? ''}`.trim()
+                        : item.email}
+                    </span>
+                  </div>
+                  <span className="font-semibold text-green-600">{item.completedCount}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Blocked Clients */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Klienci z blokadami rozliczeń</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {blockedClientsQuery.isPending ? (
+            <p className="text-muted-foreground text-sm">Ładowanie...</p>
+          ) : !blockedClientsQuery.data?.clients?.length ? (
+            <p className="text-muted-foreground text-sm">Brak klientów z blokadami</p>
+          ) : (
+            <div className="space-y-2">
+              {blockedClientsQuery.data.clients.slice(0, 10).map((item) => (
+                <div key={item.clientId} className="flex items-center justify-between text-sm">
+                  <span>{item.clientName}</span>
+                  <span className="font-semibold text-red-600">{item.blockCount}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function SettlementsDashboardPage() {
   const { user } = useAuthContext();
@@ -115,6 +194,26 @@ export default function SettlementsDashboardPage() {
         />
 
         <StatCard
+          label="Brakująca weryfikacja faktury"
+          value={stats?.missingInvoiceVerification ?? 0}
+          icon={FileQuestion}
+          iconBg="bg-orange-500"
+          valueColor="text-orange-600"
+          borderColor="border-orange-200"
+          isLoading={isPending}
+        />
+
+        <StatCard
+          label="Brakująca faktura"
+          value={stats?.missingInvoice ?? 0}
+          icon={FileX}
+          iconBg="bg-red-500"
+          valueColor="text-red-600"
+          borderColor="border-red-200"
+          isLoading={isPending}
+        />
+
+        <StatCard
           label="Zakończone"
           value={stats?.completed ?? 0}
           icon={CheckCircle}
@@ -159,6 +258,24 @@ export default function SettlementsDashboardPage() {
         )}
       </div>
 
+      {/* Status Chart */}
+      {isOwnerOrAdmin && !overviewPending && overviewStats && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Status rozliczeń</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SettlementsStatusChart
+              pending={overviewStats.pending ?? 0}
+              inProgress={overviewStats.inProgress ?? 0}
+              missingInvoiceVerification={overviewStats.missingInvoiceVerification ?? 0}
+              missingInvoice={overviewStats.missingInvoice ?? 0}
+              completed={overviewStats.completed ?? 0}
+            />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Feature Cards */}
       <div className="flex flex-wrap gap-6">
         {availableFeatures.map((feature) => (
@@ -172,6 +289,14 @@ export default function SettlementsDashboardPage() {
           />
         ))}
       </div>
+
+      {/* Extended Stats - only for admin/owner */}
+      {isOwnerOrAdmin && (
+        <div className="space-y-4">
+          <h2 className="text-foreground text-xl font-semibold">Rozszerzone statystyki</h2>
+          <ExtendedSettlementStats />
+        </div>
+      )}
     </div>
   );
 }

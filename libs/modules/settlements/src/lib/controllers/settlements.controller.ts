@@ -7,7 +7,9 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
+  UseInterceptors,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -20,8 +22,11 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { Response } from 'express';
+
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
-import { User } from '@accounting/common';
+import { NotificationType, User } from '@accounting/common';
+import { NotificationInterceptor, NotifyOn } from '@accounting/modules/notifications';
 import {
   ModuleAccessGuard,
   PermissionGuard,
@@ -31,6 +36,7 @@ import {
 
 import {
   AssignSettlementDto,
+  BlockedClientsStatsDto,
   BulkAssignDto,
   BulkAssignResultDto,
   CreateCommentDto,
@@ -41,12 +47,20 @@ import {
   MonthYearQueryDto,
   MyStatsDto,
   SettlementCommentResponseDto,
+  SettlementCompletionDurationStatsDto,
+  SettlementEmployeeRankingDto,
   SettlementResponseDto,
+  SettlementSettingsResponseDto,
   SettlementStatsDto,
+  SettlementStatsPeriodFilterDto,
   UpdateSettlementDto,
+  UpdateSettlementSettingsDto,
   UpdateSettlementStatusDto,
 } from '../dto';
 import { SettlementCommentsService } from '../services/settlement-comments.service';
+import { SettlementExportService } from '../services/settlement-export.service';
+import { SettlementExtendedStatsService } from '../services/settlement-extended-stats.service';
+import { SettlementSettingsService } from '../services/settlement-settings.service';
 import { SettlementStatsService } from '../services/settlement-stats.service';
 import { SettlementsService } from '../services/settlements.service';
 
@@ -63,13 +77,48 @@ import { SettlementsService } from '../services/settlements.service';
 )
 @Controller('modules/settlements')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
+@UseInterceptors(NotificationInterceptor)
 @RequireModule('settlements')
 export class SettlementsController {
   constructor(
     private readonly settlementsService: SettlementsService,
     private readonly statsService: SettlementStatsService,
-    private readonly commentsService: SettlementCommentsService
+    private readonly commentsService: SettlementCommentsService,
+    private readonly exportService: SettlementExportService,
+    private readonly settingsService: SettlementSettingsService,
+    private readonly extendedStatsService: SettlementExtendedStatsService
   ) {}
+
+  @Get('export')
+  @ApiOperation({
+    summary: 'Export settlements to CSV',
+    description: 'Exports all settlements matching the current filters to a CSV file.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'CSV file download',
+    content: {
+      'text/csv': {
+        schema: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @RequirePermission('settlements', 'read')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  async exportToCsv(
+    @Query() filters: GetSettlementsQueryDto,
+    @CurrentUser() user: User,
+    @Res() res: Response
+  ) {
+    const csvBuffer = await this.exportService.exportToCsv(filters, user);
+    const filename = `settlements-export-${new Date().toISOString().split('T')[0]}.csv`;
+
+    res.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
+    res.send(csvBuffer);
+  }
 
   @Get()
   @ApiOperation({
@@ -149,6 +198,54 @@ export class SettlementsController {
     return this.statsService.getMyStats(query.month, query.year, user);
   }
 
+  @Get('stats/extended/completion-duration')
+  @ApiOperation({ summary: 'Get settlement completion duration statistics' })
+  @ApiResponse({
+    status: 200,
+    description: 'Completion duration statistics',
+    type: SettlementCompletionDurationStatsDto,
+  })
+  @RequirePermission('settlements', 'manage')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async getSettlementCompletionDurationStats(
+    @CurrentUser() user: User,
+    @Query() filters: SettlementStatsPeriodFilterDto
+  ): Promise<SettlementCompletionDurationStatsDto> {
+    return this.extendedStatsService.getCompletionDurationStats(user, filters);
+  }
+
+  @Get('stats/extended/employee-ranking')
+  @ApiOperation({ summary: 'Get employee settlement completion ranking' })
+  @ApiResponse({
+    status: 200,
+    description: 'Employee ranking by completed settlements',
+    type: SettlementEmployeeRankingDto,
+  })
+  @RequirePermission('settlements', 'manage')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async getSettlementEmployeeRanking(
+    @CurrentUser() user: User,
+    @Query() filters: SettlementStatsPeriodFilterDto
+  ): Promise<SettlementEmployeeRankingDto> {
+    return this.extendedStatsService.getEmployeeCompletionRanking(user, filters);
+  }
+
+  @Get('stats/extended/blocked-clients')
+  @ApiOperation({ summary: 'Get clients with frequent blocking' })
+  @ApiResponse({
+    status: 200,
+    description: 'Blocked clients statistics',
+    type: BlockedClientsStatsDto,
+  })
+  @RequirePermission('settlements', 'manage')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async getBlockedClientsStats(
+    @CurrentUser() user: User,
+    @Query() filters: SettlementStatsPeriodFilterDto
+  ): Promise<BlockedClientsStatsDto> {
+    return this.extendedStatsService.getBlockedClientsStats(user, filters);
+  }
+
   @Get('assignable-users')
   @ApiOperation({
     summary: 'Get all assignable users for settlements module',
@@ -162,6 +259,40 @@ export class SettlementsController {
   @RequirePermission('settlements', 'manage')
   async getAllAssignableUsers(@CurrentUser() user: User) {
     return this.settlementsService.getAllAssignableUsers(user);
+  }
+
+  @Get('settings')
+  @ApiOperation({
+    summary: 'Get settlement module settings',
+    description:
+      'Returns the settlement module settings for the current company. Creates defaults if not set.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Settlement settings',
+    type: SettlementSettingsResponseDto,
+  })
+  @RequirePermission('settlements', 'manage')
+  async getSettings(@CurrentUser() user: User): Promise<SettlementSettingsResponseDto> {
+    return this.settingsService.getSettings(user);
+  }
+
+  @Patch('settings')
+  @ApiOperation({
+    summary: 'Update settlement module settings',
+    description: 'Updates the settlement module settings for the current company.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Updated settlement settings',
+    type: SettlementSettingsResponseDto,
+  })
+  @RequirePermission('settlements', 'manage')
+  async updateSettings(
+    @Body() dto: UpdateSettlementSettingsDto,
+    @CurrentUser() user: User
+  ): Promise<SettlementSettingsResponseDto> {
+    return this.settingsService.updateSettings(dto, user);
   }
 
   @Get(':id')
@@ -228,6 +359,12 @@ export class SettlementsController {
     type: InitializeMonthResultDto,
   })
   @RequirePermission('settlements', 'manage')
+  @NotifyOn({
+    type: NotificationType.SETTLEMENT_MONTH_INITIALIZED,
+    titleTemplate: '{{actor.firstName}} zainicjalizował(a) miesiąc rozliczeń',
+    messageTemplate: 'Nowe rozliczenia zostały zainicjalizowane',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async initializeMonth(
     @Body() dto: InitializeMonthDto,
     @CurrentUser() user: User
@@ -252,6 +389,12 @@ export class SettlementsController {
     type: SettlementResponseDto,
   })
   @RequirePermission('settlements', 'write')
+  @NotifyOn({
+    type: NotificationType.SETTLEMENT_STATUS_CHANGED,
+    titleTemplate: '{{actor.firstName}} zmienił(a) status rozliczenia',
+    actionUrlTemplate: '/modules/settlements?settlementId={{id}}',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateSettlementStatusDto,
@@ -277,6 +420,12 @@ export class SettlementsController {
     type: SettlementResponseDto,
   })
   @RequirePermission('settlements', 'write')
+  @NotifyOn({
+    type: NotificationType.SETTLEMENT_UPDATED,
+    titleTemplate: '{{actor.firstName}} zaktualizował(a) rozliczenie',
+    actionUrlTemplate: '/modules/settlements?settlementId={{id}}',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateSettlementDto,
@@ -304,6 +453,12 @@ export class SettlementsController {
     type: SettlementResponseDto,
   })
   @RequirePermission('settlements', 'manage')
+  @NotifyOn({
+    type: NotificationType.SETTLEMENT_ASSIGNED,
+    titleTemplate: '{{actor.firstName}} przypisał(a) rozliczenie',
+    actionUrlTemplate: '/modules/settlements?settlementId={{id}}',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async assignToEmployee(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AssignSettlementDto,
@@ -325,6 +480,11 @@ export class SettlementsController {
     type: BulkAssignResultDto,
   })
   @RequirePermission('settlements', 'manage')
+  @NotifyOn({
+    type: NotificationType.SETTLEMENT_BULK_ASSIGNED,
+    titleTemplate: '{{actor.firstName}} masowo przypisał(a) rozliczenia',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async bulkAssign(
     @Body() dto: BulkAssignDto,
     @CurrentUser() user: User
@@ -353,6 +513,14 @@ export class SettlementsController {
     return this.commentsService.getComments(id, user);
   }
 
+  @Post(':id/send-missing-invoice-email')
+  @ApiOperation({ summary: 'Send missing invoice email to client' })
+  @ApiResponse({ status: 200, description: 'Email sent' })
+  @RequirePermission('settlements', 'write')
+  async sendMissingInvoiceEmail(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return this.settlementsService.sendMissingInvoiceEmail(id, user);
+  }
+
   @Post(':id/comments')
   @ApiOperation({
     summary: 'Add a comment to a settlement',
@@ -370,6 +538,12 @@ export class SettlementsController {
     type: SettlementCommentResponseDto,
   })
   @RequirePermission('settlements', 'write')
+  @NotifyOn({
+    type: NotificationType.SETTLEMENT_COMMENT_ADDED,
+    titleTemplate: '{{actor.firstName}} dodał(a) komentarz do rozliczenia',
+    actionUrlTemplate: '/modules/settlements?settlementId={{id}}',
+    recipientResolver: 'companyUsersExceptActor',
+  })
   async addComment(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CreateCommentDto,

@@ -257,8 +257,8 @@ export default function SettlementCommentsPage() {
             <CardContent>
               {commentsPending ? (
                 <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex gap-3">
+                  {[1, 2, 3].map((num) => (
+                    <div key={num} className="flex gap-3">
                       <Skeleton className="h-10 w-10 rounded-full" />
                       <div className="flex-1 space-y-2">
                         <Skeleton className="h-4 w-32" />

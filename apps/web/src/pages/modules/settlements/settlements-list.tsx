@@ -3,7 +3,14 @@ import { lazy, Suspense, useCallback, useMemo, useState, useTransition } from 'r
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { type ColumnDef } from '@tanstack/react-table';
-import { AlertTriangle, ArrowLeft, Calculator, PlayCircle, RefreshCcw } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Calculator,
+  Download,
+  PlayCircle,
+  RefreshCcw,
+} from 'lucide-react';
 
 import { ErrorBoundary } from '@/components/common/error-boundary';
 import { PageHeader } from '@/components/common/page-header';
@@ -20,7 +27,9 @@ import {
 import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import {
+  useExportSettlements,
   useInitializeMonth,
+  useSendMissingInvoiceEmail,
   useSettlements,
   useUpdateSettlementStatus,
 } from '@/lib/hooks/use-settlements';
@@ -55,8 +64,8 @@ function TableSkeleton() {
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-8 w-32" />
       </div>
-      {SKELETON_INDICES.map((i) => (
-        <div key={i} className="flex items-center gap-4 py-3">
+      {SKELETON_INDICES.map((n) => (
+        <div key={n} className="flex items-center gap-4 py-3">
           <Skeleton className="h-6 w-24" />
           <Skeleton className="h-6 w-40" />
           <Skeleton className="h-6 w-28" />
@@ -150,6 +159,8 @@ export default function SettlementsListPage() {
   // Mutations
   const updateStatus = useUpdateSettlementStatus();
   const initializeMonth = useInitializeMonth();
+  const exportSettlements = useExportSettlements();
+  const sendMissingInvoiceEmail = useSendMissingInvoiceEmail();
 
   // Handlers
   const handleStatusChange = useCallback(
@@ -194,6 +205,27 @@ export default function SettlementsListPage() {
   );
 
   // Navigation handlers for columns
+  const handleSendMissingInvoiceEmail = useCallback(
+    (settlementId: string) => {
+      sendMissingInvoiceEmail.mutate(settlementId, {
+        onSuccess: () => {
+          toast({
+            title: 'Email wysłany',
+            description: 'Email z prośbą o fakturę został wysłany do klienta',
+          });
+        },
+        onError: () => {
+          toast({
+            title: 'Błąd',
+            description: 'Nie udało się wysłać emaila',
+            variant: 'destructive',
+          });
+        },
+      });
+    },
+    [sendMissingInvoiceEmail, toast]
+  );
+
   const handleNavigateToComments = useCallback(
     (settlementId: string) => navigate(`${basePath}/${settlementId}/comments`),
     [basePath, navigate]
@@ -211,6 +243,7 @@ export default function SettlementsListPage() {
       hasWritePermission,
       hasManagePermission,
       onStatusChange: handleStatusChange,
+      onSendEmail: handleSendMissingInvoiceEmail,
       onNavigateToComments: handleNavigateToComments,
       onNavigateToAssign: handleNavigateToAssign,
       isStatusUpdatePending: updateStatus.isPending,
@@ -219,6 +252,7 @@ export default function SettlementsListPage() {
       hasWritePermission,
       hasManagePermission,
       handleStatusChange,
+      handleSendMissingInvoiceEmail,
       handleNavigateToComments,
       handleNavigateToAssign,
       updateStatus.isPending,
@@ -246,6 +280,14 @@ export default function SettlementsListPage() {
               onMonthChange={handleMonthChange}
               onYearChange={handleYearChange}
             />
+            <Button
+              variant="outline"
+              onClick={() => exportSettlements.mutate(query)}
+              disabled={exportSettlements.isPending}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              {exportSettlements.isPending ? 'Eksport...' : 'Eksportuj CSV'}
+            </Button>
             {hasManagePermission ? (
               <Button
                 onClick={handleInitializeMonth}
