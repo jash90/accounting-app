@@ -80,10 +80,10 @@ export class ChangeLogService {
 
   constructor(
     @InjectRepository(ChangeLog)
-    private changeLogRepository: Repository<ChangeLog>
+    private readonly changeLogRepository: Repository<ChangeLog>
   ) {}
 
-  async logCreate(
+  logCreate(
     entityType: string,
     entityId: string,
     data: Record<string, unknown>,
@@ -98,7 +98,7 @@ export class ChangeLogService {
     return this.createLog(entityType, entityId, ChangeAction.CREATE, changes, user);
   }
 
-  async logUpdate(
+  logUpdate(
     entityType: string,
     entityId: string,
     oldData: Record<string, unknown>,
@@ -109,13 +109,13 @@ export class ChangeLogService {
 
     if (changes.length === 0) {
       this.logger.debug(`No changes detected for ${entityType}:${entityId}`);
-      return null;
+      return Promise.resolve(null);
     }
 
     return this.createLog(entityType, entityId, ChangeAction.UPDATE, changes, user);
   }
 
-  async logDelete(
+  logDelete(
     entityType: string,
     entityId: string,
     data: Record<string, unknown>,
@@ -404,7 +404,7 @@ export class ChangeLogService {
       query.andWhere('user.companyId = :companyId', { companyId });
     }
 
-    return query.getMany();
+    return await query.getMany();
   }
 
   // Format change for display

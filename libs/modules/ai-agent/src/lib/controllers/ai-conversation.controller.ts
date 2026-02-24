@@ -8,7 +8,6 @@ import {
   HttpCode,
   HttpStatus,
   MessageEvent,
-  NotFoundException,
   Param,
   Post,
   Query,
@@ -34,17 +33,14 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { InjectRepository } from '@nestjs/typeorm';
 
-import * as fs from 'fs/promises';
 import { diskStorage } from 'multer';
 import * as path from 'path';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Repository } from 'typeorm';
 
 import { CurrentUser } from '@accounting/auth';
-import { AIContext, Company, User, UserRole } from '@accounting/common';
+import { User } from '@accounting/common';
 import {
   ModuleAccessGuard,
   PermissionGuard,
@@ -70,11 +66,7 @@ export class AIConversationController {
   constructor(
     private readonly conversationService: AIConversationService,
     private readonly ragService: RAGService,
-    private readonly configService: AIConfigurationService,
-    @InjectRepository(AIContext)
-    private contextRepository: Repository<AIContext>,
-    @InjectRepository(Company)
-    private companyRepository: Repository<Company>
+    private readonly configService: AIConfigurationService
   ) {}
 
   @Get('conversations')
@@ -366,22 +358,10 @@ export class AIConversationController {
       throw new BadRequestException('No file uploaded');
     }
 
-    let companyId: string | null;
-
-    if (user.role === UserRole.ADMIN) {
-      const systemCompany = await this.companyRepository.findOne({
-        where: { isSystemCompany: true },
-      });
-      if (!systemCompany) {
-        throw new Error('System Admin company not found');
-      }
-      companyId = systemCompany.id;
-    } else {
-      companyId = user.companyId;
-    }
-
     // Get embedding configuration (separate API key, model, and provider if configured)
     const embeddingConfig = await this.configService.getEmbeddingConfig(user);
+
+    const companyId = await this.ragService.resolveCompanyIdForUser(user);
 
     const context = await this.ragService.processFile(
       file.path,
@@ -394,10 +374,7 @@ export class AIConversationController {
       embeddingConfig.model
     );
 
-    return this.contextRepository.findOne({
-      where: { id: context.id },
-      relations: ['uploadedBy', 'company'],
-    });
+    return this.ragService.findContext(context.id, user);
   }
 
   @Get('context')
@@ -418,29 +395,7 @@ export class AIConversationController {
     description: 'Invalid or missing JWT token',
   })
   async getAllContext(@CurrentUser() user: User) {
-    let companyId: string;
-
-    if (user.role === UserRole.ADMIN) {
-      const systemCompany = await this.companyRepository.findOne({
-        where: { isSystemCompany: true },
-      });
-      if (!systemCompany) {
-        throw new Error('System Admin company not found');
-      }
-      companyId = systemCompany.id;
-    } else {
-      // Non-admin users must have a companyId
-      if (!user.companyId) {
-        throw new Error('User does not have a company assigned');
-      }
-      companyId = user.companyId;
-    }
-
-    return this.contextRepository.find({
-      where: { companyId },
-      relations: ['uploadedBy', 'company'],
-      order: { createdAt: 'DESC' },
-    });
+    return this.ragService.findAllContexts(user);
   }
 
   @Get('context/:id')
@@ -469,32 +424,7 @@ export class AIConversationController {
     description: 'Invalid or missing JWT token',
   })
   async getContextFile(@Param('id') id: string, @CurrentUser() user: User) {
-    let companyId: string;
-
-    if (user.role === UserRole.ADMIN) {
-      const systemCompany = await this.companyRepository.findOne({
-        where: { isSystemCompany: true },
-      });
-      if (!systemCompany) {
-        throw new Error('System Admin company not found');
-      }
-      companyId = systemCompany.id;
-    } else {
-      if (!user.companyId) {
-        throw new Error('User does not have a company assigned');
-      }
-      companyId = user.companyId;
-    }
-
-    const context = await this.contextRepository.findOne({
-      where: { id, companyId },
-      relations: ['uploadedBy', 'company'],
-    });
-
-    if (!context) {
-      throw new NotFoundException('Context file not found');
-    }
-
+    const context = await this.ragService.findContext(id, user);
     return {
       id: context.id,
       companyId: context.companyId,
@@ -547,38 +477,6 @@ export class AIConversationController {
     description: 'Invalid or missing JWT token',
   })
   async removeContext(@Param('id') id: string, @CurrentUser() user: User) {
-    let companyId: string;
-
-    if (user.role === UserRole.ADMIN) {
-      const systemCompany = await this.companyRepository.findOne({
-        where: { isSystemCompany: true },
-      });
-      if (!systemCompany) {
-        throw new Error('System Admin company not found');
-      }
-      companyId = systemCompany.id;
-    } else {
-      if (!user.companyId) {
-        throw new Error('User does not have a company assigned');
-      }
-      companyId = user.companyId;
-    }
-
-    const context = await this.contextRepository.findOne({
-      where: { id, companyId },
-    });
-
-    if (!context) {
-      throw new NotFoundException('Context file not found');
-    }
-
-    // Delete physical file
-    try {
-      await fs.unlink(context.filePath);
-    } catch {
-      // File already deleted or doesn't exist
-    }
-
-    await this.contextRepository.remove(context);
+    await this.ragService.removeContext(id, user);
   }
 }

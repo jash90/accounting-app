@@ -15,8 +15,8 @@ export class PermissionGuard implements CanActivate {
   private readonly logger = new Logger(PermissionGuard.name);
 
   constructor(
-    private rbacService: RBACService,
-    private reflector: Reflector
+    private readonly rbacService: RBACService,
+    private readonly reflector: Reflector
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {

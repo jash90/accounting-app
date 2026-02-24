@@ -76,7 +76,7 @@ export const createImapConnection = createImapFlowClient;
  * @param client - ImapFlow client instance (after connect)
  * @param logger - Optional logger instance
  */
-export async function sendClientIdentification(client: ImapFlow, logger?: Logger): Promise<void> {
+export function sendClientIdentification(client: ImapFlow, logger?: Logger): void {
   try {
     // ImapFlow handles ID command automatically during connect
     // We can access server info after connection

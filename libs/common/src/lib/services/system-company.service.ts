@@ -23,7 +23,7 @@ export class SystemCompanyService implements OnModuleInit {
 
   constructor(
     @InjectRepository(Company)
-    private companyRepository: Repository<Company>
+    private readonly companyRepository: Repository<Company>
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -85,11 +85,11 @@ export class SystemCompanyService implements OnModuleInit {
    * Get the company ID for a user, resolving to system company for ADMIN users.
    * This is the preferred method to get companyId for multi-tenant queries.
    */
-  async getCompanyIdForUser(user: User): Promise<string> {
+  getCompanyIdForUser(user: User): Promise<string> {
     if (user.role === UserRole.ADMIN) {
       return this.getSystemCompanyId();
     }
-    return user.companyId!;
+    return Promise.resolve(user.companyId!);
   }
 
   /**

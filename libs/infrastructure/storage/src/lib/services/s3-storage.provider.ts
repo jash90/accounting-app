@@ -22,7 +22,7 @@ export class S3StorageProvider implements StorageProvider {
   private readonly bucket: string;
   private readonly region: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(private readonly configService: ConfigService) {
     this.bucket = this.configService.get<string>('S3_BUCKET', 'accounting-uploads');
     this.region = this.configService.get<string>('S3_REGION', 'us-east-1');
 
@@ -104,8 +104,8 @@ export class S3StorageProvider implements StorageProvider {
     }
   }
 
-  async getUrl(key: string): Promise<string> {
-    return `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
+  getUrl(key: string): Promise<string> {
+    return Promise.resolve(`https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`);
   }
 
   async getSignedUrl(key: string, expiresIn = 3600): Promise<string> {

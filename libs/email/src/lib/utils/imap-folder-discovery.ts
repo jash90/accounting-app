@@ -119,3 +119,52 @@ export function findDraftsMailboxFromList(
   logger?.warn(`Drafts mailbox not found in available folders. Attempting to create 'Drafts'...`);
   return { mailbox: null, needsCreation: true };
 }
+
+/**
+ * Common Trash folder names across different email providers
+ */
+export const TRASH_FOLDER_NAMES = [
+  'Trash',
+  '[Gmail]/Trash',
+  '[Gmail]/Kosz',
+  'Deleted Items',
+  'Deleted Messages',
+  'INBOX.Trash',
+  'Kosz',
+  'Papierkorb',
+  'Corbeille',
+];
+
+/**
+ * Find Trash mailbox name from list of available mailboxes
+ *
+ * @param boxes - List of available mailbox names
+ * @param logger - Optional logger for debugging
+ * @returns Found mailbox name or null
+ */
+export function findTrashMailboxFromList(boxes: string[], logger?: Logger): string | null {
+  // Check against known Trash folder names (case-insensitive)
+  for (const trashName of TRASH_FOLDER_NAMES) {
+    const found = boxes.find((box) => box.toLowerCase() === trashName.toLowerCase());
+    if (found) {
+      logger?.log(`Found Trash mailbox: ${found}`);
+      return found;
+    }
+  }
+
+  // Partial match fallback
+  const partial = boxes.find(
+    (box) =>
+      box.toLowerCase().includes('trash') ||
+      box.toLowerCase().includes('deleted') ||
+      box.toLowerCase().includes('kosz') ||
+      box.toLowerCase().includes('papierkorb')
+  );
+  if (partial) {
+    logger?.log(`Found Trash mailbox by partial match: ${partial}`);
+    return partial;
+  }
+
+  logger?.warn('Trash mailbox not found in available folders');
+  return null;
+}

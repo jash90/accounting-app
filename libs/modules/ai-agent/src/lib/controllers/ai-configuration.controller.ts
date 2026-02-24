@@ -29,7 +29,7 @@ import { CreateAIConfigurationDto } from '../dto/create-ai-configuration.dto';
 import { OpenAIModelDto } from '../dto/openai-model.dto';
 import { UpdateAIConfigurationDto } from '../dto/update-ai-configuration.dto';
 import { AIConfigurationService } from '../services/ai-configuration.service';
-import { OpenAIModel, OpenAIModelsService } from '../services/openai-models.service';
+import { OpenAIModelsService } from '../services/openai-models.service';
 import { OpenRouterModel, OpenRouterModelsService } from '../services/openrouter-models.service';
 
 @ApiTags('ai-agent')
@@ -234,7 +234,7 @@ export class AIConfigurationController {
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing JWT token',
   })
-  async getOpenAIModels(@CurrentUser() user: User): Promise<OpenAIModel[]> {
+  async getOpenAIModels(@CurrentUser() user: User): Promise<OpenAIModelDto[]> {
     // Try to get API key from configuration, if available
     let apiKey: string | undefined;
     try {
@@ -266,7 +266,7 @@ export class AIConfigurationController {
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing JWT token',
   })
-  async getOpenAIEmbeddingModels(@CurrentUser() user: User): Promise<OpenAIModel[]> {
+  async getOpenAIEmbeddingModels(@CurrentUser() user: User): Promise<OpenAIModelDto[]> {
     // Try to get API key from configuration, if available
     let apiKey: string | undefined;
     try {

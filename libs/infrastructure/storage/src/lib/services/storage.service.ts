@@ -15,7 +15,7 @@ export class StorageService {
     private readonly provider: StorageProvider
   ) {}
 
-  async uploadFile(file: Express.Multer.File, path: string): Promise<StorageResult> {
+  uploadFile(file: Express.Multer.File, path: string): Promise<StorageResult> {
     this.logger.log(`Uploading file: ${file.originalname} to ${path}`);
     return this.provider.upload(file, path);
   }
@@ -24,7 +24,7 @@ export class StorageService {
    * Upload a buffer as a file to storage
    * Creates a mock Multer file object from the buffer
    */
-  async uploadBuffer(
+  uploadBuffer(
     buffer: Buffer,
     fileName: string,
     path: string,
@@ -49,34 +49,34 @@ export class StorageService {
     return this.provider.upload(mockFile, path);
   }
 
-  async deleteFile(path: string): Promise<boolean> {
+  deleteFile(path: string): Promise<boolean> {
     this.logger.log(`Deleting file: ${path}`);
     return this.provider.delete(path);
   }
 
-  async getFileUrl(path: string): Promise<string> {
+  getFileUrl(path: string): Promise<string> {
     return this.provider.getUrl(path);
   }
 
-  async getSignedUrl(path: string, expiresIn?: number): Promise<string> {
+  getSignedUrl(path: string, expiresIn?: number): Promise<string> {
     return this.provider.getSignedUrl(path, expiresIn);
   }
 
-  async fileExists(path: string): Promise<boolean> {
+  fileExists(path: string): Promise<boolean> {
     return this.provider.exists(path);
   }
 
-  async downloadFile(path: string): Promise<Buffer> {
+  downloadFile(path: string): Promise<Buffer> {
     this.logger.log(`Downloading file: ${path}`);
     return this.provider.download(path);
   }
 
   // Convenience methods for specific directories
-  async uploadIcon(file: Express.Multer.File, companyId: string): Promise<StorageResult> {
+  uploadIcon(file: Express.Multer.File, companyId: string): Promise<StorageResult> {
     return this.uploadFile(file, `icons/${companyId}`);
   }
 
-  async uploadClientDocument(
+  uploadClientDocument(
     file: Express.Multer.File,
     companyId: string,
     clientId: string

@@ -37,17 +37,17 @@ export class RBACService {
 
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private readonly userRepository: Repository<User>,
     @InjectRepository(Company)
-    private companyRepository: Repository<Company>,
+    private readonly companyRepository: Repository<Company>,
     @InjectRepository(Module)
-    private moduleRepository: Repository<Module>,
+    private readonly moduleRepository: Repository<Module>,
     @InjectRepository(CompanyModuleAccess)
-    private companyModuleAccessRepository: Repository<CompanyModuleAccess>,
+    private readonly companyModuleAccessRepository: Repository<CompanyModuleAccess>,
     @InjectRepository(UserModulePermission)
-    private userModulePermissionRepository: Repository<UserModulePermission>,
+    private readonly userModulePermissionRepository: Repository<UserModulePermission>,
     @Optional()
-    private moduleDiscoveryService?: ModuleDiscoveryService
+    private readonly moduleDiscoveryService?: ModuleDiscoveryService
   ) {}
 
   async canAccessModule(userId: string, moduleSlug: string): Promise<boolean> {

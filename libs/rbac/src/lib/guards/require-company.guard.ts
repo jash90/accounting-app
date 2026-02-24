@@ -17,7 +17,7 @@ import { REQUIRE_COMPANY_KEY } from '../decorators/require-company.decorator';
  */
 @Injectable()
 export class RequireCompanyGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
     const requireCompany = this.reflector.getAllAndOverride<boolean>(REQUIRE_COMPANY_KEY, [

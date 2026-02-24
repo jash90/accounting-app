@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
@@ -50,9 +51,13 @@ export class EmailSenderService {
   private transporters: Map<string, CachedTransporter> = new Map();
   private readonly transporterTtlMs: number;
 
-  constructor(private readonly emailReaderService: EmailReaderService) {
+  constructor(
+    private readonly emailReaderService: EmailReaderService,
+    private readonly configService: ConfigService
+  ) {
     this.transporterTtlMs =
-      parseInt(process.env.EMAIL_TRANSPORTER_TTL_MS || '', 10) || DEFAULT_TRANSPORTER_TTL_MS;
+      parseInt(this.configService.get<string>('EMAIL_TRANSPORTER_TTL_MS') || '', 10) ||
+      DEFAULT_TRANSPORTER_TTL_MS;
   }
 
   /**
@@ -61,7 +66,7 @@ export class EmailSenderService {
    */
   async sendEmail(smtpConfig: SmtpConfig, message: EmailMessage): Promise<void> {
     // Debug logging for email sending initiation
-    if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+    if (this.configService.get<string>('ENABLE_EMAIL_DEBUG') === 'true') {
       this.logger.debug('Email sending initiated', {
         to: this.maskEmail(Array.isArray(message.to) ? message.to[0] : message.to),
         subject: message.subject,
@@ -96,7 +101,7 @@ export class EmailSenderService {
     } catch (error) {
       const err = error as Error;
       this.logger.error(`Failed to send email: ${err.message}`, err.stack);
-      throw error;
+      throw new Error('Failed to send email');
     }
   }
 
@@ -109,7 +114,7 @@ export class EmailSenderService {
     messages: EmailMessage[]
   ): Promise<{ succeeded: number; failed: number; errors: string[] }> {
     // Debug logging for batch processing
-    if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+    if (this.configService.get<string>('ENABLE_EMAIL_DEBUG') === 'true') {
       this.logger.debug('Batch email processing started', {
         totalCount: messages.length,
         smtpHost: smtpConfig.host,
@@ -126,7 +131,7 @@ export class EmailSenderService {
       .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
       .map((r) => (r.reason as Error).message);
 
-    if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+    if (this.configService.get<string>('ENABLE_EMAIL_DEBUG') === 'true') {
       this.logger.debug('Batch email processing completed', {
         totalCount: messages.length,
         succeeded,
@@ -171,7 +176,7 @@ export class EmailSenderService {
     const cached = this.transporters.get(configKey);
     if (cached && now - cached.createdAt < this.transporterTtlMs) {
       // Debug logging for cache hit
-      if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+      if (this.configService.get<string>('ENABLE_EMAIL_DEBUG') === 'true') {
         this.logger.debug('Reusing cached SMTP transporter', {
           host: smtpConfig.host,
           port: smtpConfig.port,
@@ -183,7 +188,7 @@ export class EmailSenderService {
     }
 
     // Debug logging for new transporter creation
-    if (process.env.ENABLE_EMAIL_DEBUG === 'true') {
+    if (this.configService.get<string>('ENABLE_EMAIL_DEBUG') === 'true') {
       this.logger.debug('Creating new SMTP transporter', {
         host: smtpConfig.host,
         port: smtpConfig.port,
