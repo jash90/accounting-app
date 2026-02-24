@@ -16,6 +16,17 @@ import { User } from './user.entity';
 import { TaskPriority } from '../enums/task-priority.enum';
 import { TaskStatus } from '../enums/task-status.enum';
 
+export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly';
+
+export interface RecurrencePattern {
+  frequency: RecurrenceFrequency;
+  interval: number; // every N days/weeks/months
+  daysOfWeek?: number[]; // 0=Sun, 1=Mon, ... 6=Sat (for weekly)
+  dayOfMonth?: number; // 1-31 (for monthly)
+  endDate?: string; // ISO date string
+  maxOccurrences?: number;
+}
+
 @Entity('tasks')
 @Index(['companyId'])
 @Index(['companyId', 'status'])
@@ -116,6 +127,27 @@ export class Task {
 
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
+
+  // Template / Recurrence support
+  @Column({ type: 'boolean', default: false })
+  isTemplate!: boolean;
+
+  @Column({ type: 'jsonb', nullable: true })
+  recurrencePattern?: RecurrencePattern | null;
+
+  @Column({ type: 'date', nullable: true })
+  recurrenceEndDate?: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lastRecurrenceDate?: Date | null;
+
+  // Template reference (tasks created from a template link back to it)
+  @Column({ type: 'uuid', nullable: true })
+  templateId?: string | null;
+
+  @ManyToOne(() => Task, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'templateId' })
+  template?: Task | null;
 
   @CreateDateColumn()
   createdAt!: Date;

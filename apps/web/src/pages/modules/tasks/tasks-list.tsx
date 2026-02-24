@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   Calendar,
   CheckSquare,
+  Download,
   Edit,
   GanttChartSquare,
   LayoutGrid,
@@ -43,6 +44,7 @@ import {
   useBulkUpdateStatus,
   useCreateTask,
   useDeleteTask,
+  useExportTasks,
   useTasks,
   useUpdateTask,
 } from '@/lib/hooks/use-tasks';
@@ -89,6 +91,7 @@ export default function TasksListPage() {
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const bulkUpdateStatus = useBulkUpdateStatus();
+  const exportTasks = useExportTasks();
   const [isBulkPending, startBulkTransition] = useTransition();
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -343,12 +346,22 @@ export default function TasksListPage() {
           </div>
         }
         action={
-          hasWritePermission ? (
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nowe zadanie
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => exportTasks.mutate(filters)}
+              disabled={exportTasks.isPending}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              {exportTasks.isPending ? 'Eksport...' : 'Eksportuj CSV'}
             </Button>
-          ) : undefined
+            {hasWritePermission && (
+              <Button onClick={() => setCreateOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Nowe zadanie
+              </Button>
+            )}
+          </div>
         }
       />
 

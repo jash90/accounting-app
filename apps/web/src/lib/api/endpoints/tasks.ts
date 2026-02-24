@@ -45,6 +45,15 @@ export interface ClientTaskStatisticsDto {
   totalStoryPoints: number;
 }
 
+// Global task statistics
+export interface GlobalTaskStatisticsDto {
+  byStatus: Record<string, number>;
+  total: number;
+  overdue: number;
+  dueSoon: number;
+  unassigned: number;
+}
+
 // Tasks API
 export const tasksApi = {
   getAll: async (filters?: TaskFiltersDto): Promise<PaginatedResponse<TaskResponseDto>> => {
@@ -141,6 +150,135 @@ export const tasksApi = {
   getClientStatistics: async (clientId: string): Promise<ClientTaskStatisticsDto> => {
     const { data } = await apiClient.get<ClientTaskStatisticsDto>(
       `${BASE_URL}/statistics/client/${clientId}`
+    );
+    return data;
+  },
+
+  // Global statistics
+  getGlobalStatistics: async (): Promise<GlobalTaskStatisticsDto> => {
+    const { data } = await apiClient.get<GlobalTaskStatisticsDto>(`${BASE_URL}/statistics`);
+    return data;
+  },
+
+  // CSV export
+  exportCsv: async (filters?: TaskFiltersDto): Promise<Blob> => {
+    const { data } = await apiClient.get<Blob>(`${BASE_URL}/export`, {
+      params: filters,
+      responseType: 'blob',
+    });
+    return data;
+  },
+
+  // Extended statistics
+  getCompletionDurationStats: (params?: { startDate?: string; endDate?: string }) =>
+    apiClient
+      .get(`${BASE_URL}/statistics/extended/completion-duration`, { params })
+      .then((r) => r.data),
+
+  getEmployeeTaskRanking: (params?: { startDate?: string; endDate?: string }) =>
+    apiClient
+      .get(`${BASE_URL}/statistics/extended/employee-ranking`, { params })
+      .then((r) => r.data),
+};
+
+// ============================================
+// Task Templates API
+// ============================================
+
+export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly';
+
+export interface RecurrencePatternDto {
+  frequency: RecurrenceFrequency;
+  interval: number;
+  daysOfWeek?: number[];
+  dayOfMonth?: number;
+  endDate?: string;
+  maxOccurrences?: number;
+}
+
+export interface TaskTemplateResponseDto {
+  id: string;
+  title: string;
+  description?: string;
+  priority?: string;
+  assigneeId?: string;
+  assignee?: { id: string; firstName?: string; lastName?: string; email: string };
+  clientId?: string;
+  client?: { id: string; name: string };
+  estimatedMinutes?: number;
+  recurrencePattern?: RecurrencePatternDto | null;
+  recurrenceEndDate?: string | null;
+  lastRecurrenceDate?: string | null;
+  companyId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTaskTemplateDto {
+  title: string;
+  description?: string;
+  priority?: string;
+  assigneeId?: string;
+  clientId?: string;
+  estimatedMinutes?: number;
+  recurrencePattern?: RecurrencePatternDto;
+  recurrenceEndDate?: string;
+}
+
+export interface UpdateTaskTemplateDto {
+  title?: string;
+  description?: string;
+  priority?: string;
+  assigneeId?: string;
+  clientId?: string;
+  estimatedMinutes?: number;
+  recurrencePattern?: RecurrencePatternDto | null;
+  recurrenceEndDate?: string | null;
+}
+
+export interface TaskTemplateFiltersDto {
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+const TEMPLATES_URL = `${BASE_URL}/templates`;
+
+export const taskTemplatesApi = {
+  getAll: async (
+    filters?: TaskTemplateFiltersDto
+  ): Promise<PaginatedResponse<TaskTemplateResponseDto>> => {
+    const { data } = await apiClient.get<PaginatedResponse<TaskTemplateResponseDto>>(
+      TEMPLATES_URL,
+      {
+        params: filters,
+      }
+    );
+    return data;
+  },
+
+  getById: async (id: string): Promise<TaskTemplateResponseDto> => {
+    const { data } = await apiClient.get<TaskTemplateResponseDto>(`${TEMPLATES_URL}/${id}`);
+    return data;
+  },
+
+  create: async (dto: CreateTaskTemplateDto): Promise<TaskTemplateResponseDto> => {
+    const { data } = await apiClient.post<TaskTemplateResponseDto>(TEMPLATES_URL, dto);
+    return data;
+  },
+
+  update: async (id: string, dto: UpdateTaskTemplateDto): Promise<TaskTemplateResponseDto> => {
+    const { data } = await apiClient.patch<TaskTemplateResponseDto>(`${TEMPLATES_URL}/${id}`, dto);
+    return data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`${TEMPLATES_URL}/${id}`);
+  },
+
+  createTaskFromTemplate: async (templateId: string): Promise<TaskTemplateResponseDto> => {
+    const { data } = await apiClient.post<TaskTemplateResponseDto>(
+      `${TEMPLATES_URL}/${templateId}/create-task`
     );
     return data;
   },

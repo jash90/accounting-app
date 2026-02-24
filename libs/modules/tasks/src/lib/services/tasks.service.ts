@@ -17,6 +17,7 @@ import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import {
   ClientTaskStatisticsDto,
+  GlobalTaskStatisticsDto,
   KanbanBoardResponseDto,
   KanbanColumnDto,
 } from '../dto/task-response.dto';
@@ -342,6 +343,82 @@ export class TasksService {
     };
   }
 
+  async getGlobalStatistics(user: User): Promise<GlobalTaskStatisticsDto> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+
+    // Get counts grouped by status
+    const statusCounts = await this.taskRepository
+      .createQueryBuilder('task')
+      .select('task.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .where('task.companyId = :companyId', { companyId })
+      .andWhere('task.isActive = :isActive', { isActive: true })
+      .groupBy('task.status')
+      .getRawMany();
+
+    // Build byStatus record with all statuses initialized to 0
+    const byStatus: Record<TaskStatus, number> = {
+      [TaskStatus.BACKLOG]: 0,
+      [TaskStatus.TODO]: 0,
+      [TaskStatus.IN_PROGRESS]: 0,
+      [TaskStatus.IN_REVIEW]: 0,
+      [TaskStatus.DONE]: 0,
+      [TaskStatus.CANCELLED]: 0,
+    };
+
+    let total = 0;
+    for (const row of statusCounts) {
+      const count = parseInt(row.count, 10);
+      byStatus[row.status as TaskStatus] = count;
+      total += count;
+    }
+
+    // Overdue count (dueDate < NOW() AND status NOT IN done/cancelled)
+    const overdueResult = await this.taskRepository
+      .createQueryBuilder('task')
+      .select('COUNT(*)', 'count')
+      .where('task.companyId = :companyId', { companyId })
+      .andWhere('task.isActive = :isActive', { isActive: true })
+      .andWhere('task.dueDate < NOW()')
+      .andWhere('task.status NOT IN (:...excludedStatuses)', {
+        excludedStatuses: [TaskStatus.DONE, TaskStatus.CANCELLED],
+      })
+      .getRawOne();
+
+    // Due soon count (dueDate BETWEEN NOW() AND NOW() + 7 days)
+    const dueSoonResult = await this.taskRepository
+      .createQueryBuilder('task')
+      .select('COUNT(*)', 'count')
+      .where('task.companyId = :companyId', { companyId })
+      .andWhere('task.isActive = :isActive', { isActive: true })
+      .andWhere('task.dueDate >= NOW()')
+      .andWhere("task.dueDate <= NOW() + INTERVAL '7 days'")
+      .andWhere('task.status NOT IN (:...excludedStatuses)', {
+        excludedStatuses: [TaskStatus.DONE, TaskStatus.CANCELLED],
+      })
+      .getRawOne();
+
+    // Unassigned count (active, not done/cancelled, no assignee)
+    const unassignedResult = await this.taskRepository
+      .createQueryBuilder('task')
+      .select('COUNT(*)', 'count')
+      .where('task.companyId = :companyId', { companyId })
+      .andWhere('task.isActive = :isActive', { isActive: true })
+      .andWhere('task.assigneeId IS NULL')
+      .andWhere('task.status NOT IN (:...excludedStatuses)', {
+        excludedStatuses: [TaskStatus.DONE, TaskStatus.CANCELLED],
+      })
+      .getRawOne();
+
+    return {
+      byStatus,
+      total,
+      overdue: parseInt(overdueResult?.count || '0', 10),
+      dueSoon: parseInt(dueSoonResult?.count || '0', 10),
+      unassigned: parseInt(unassignedResult?.count || '0', 10),
+    };
+  }
+
   async create(dto: CreateTaskDto, user: User): Promise<Task & { labels?: TaskLabel[] }> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
@@ -509,6 +586,21 @@ export class TasksService {
             error: (error as Error).message,
           });
         });
+    }
+
+    // If status transitioned to DONE, send completion notification
+    if (
+      dto.status === TaskStatus.DONE &&
+      oldValues['status'] !== TaskStatus.DONE &&
+      savedTask.clientId
+    ) {
+      const taskWithRelations = await this.findOne(savedTask.id, user);
+      this.taskNotificationService.notifyTaskCompleted(taskWithRelations, user).catch((error) => {
+        this.logger.error('Failed to send task completed notification', {
+          taskId: savedTask.id,
+          error: (error as Error).message,
+        });
+      });
     }
 
     return this.findOne(id, user);

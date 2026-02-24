@@ -6,34 +6,99 @@ import {
   Clock,
   GanttChartSquare,
   LayoutGrid,
+  LayoutTemplate,
   List,
   Settings,
 } from 'lucide-react';
 
+import { TasksStatusChart } from '@/components/dashboard/charts/tasks-status-chart';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
-import { useTasks } from '@/lib/hooks/use-tasks';
-import { TaskStatus, UserRole } from '@/types/enums';
+import {
+  useEmployeeTaskRanking,
+  useGlobalTaskStatistics,
+  useTaskCompletionStats,
+} from '@/lib/hooks/use-tasks';
+import { UserRole } from '@/types/enums';
+
+function ExtendedTaskStats() {
+  const { data: rankingData } = useEmployeeTaskRanking();
+  const { data: durationData } = useTaskCompletionStats();
+
+  return (
+    <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <Card>
+        <CardHeader>
+          <CardTitle>Ranking pracowników - ukończone zadania</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {rankingData?.rankings?.length === 0 && (
+            <p className="text-muted-foreground text-sm">Brak danych</p>
+          )}
+          <div className="space-y-2">
+            {rankingData?.rankings
+              ?.slice(0, 10)
+              .map(
+                (
+                  r: {
+                    userId: string;
+                    firstName?: string;
+                    lastName?: string;
+                    email: string;
+                    completedCount: number;
+                  },
+                  i: number
+                ) => (
+                  <div key={r.userId} className="flex items-center justify-between">
+                    <span className="text-sm">
+                      {i + 1}. {r.firstName} {r.lastName || r.email}
+                    </span>
+                    <span className="font-medium">{r.completedCount}</span>
+                  </div>
+                )
+              )}
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Najdłuższe zadania (godz.)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {durationData?.longest?.length === 0 && (
+            <p className="text-muted-foreground text-sm">Brak danych</p>
+          )}
+          <div className="space-y-2">
+            {durationData?.longest
+              ?.slice(0, 5)
+              .map((t: { id: string; title: string; durationHours: number }) => (
+                <div key={t.id} className="flex items-center justify-between">
+                  <span className="max-w-[200px] truncate text-sm">{t.title}</span>
+                  <span className="font-medium">{t.durationHours}h</span>
+                </div>
+              ))}
+          </div>
+          {durationData && (
+            <p className="text-muted-foreground mt-2 text-xs">
+              Średnia: {durationData.averageDurationHours}h
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function TasksDashboardPage() {
   const { user } = useAuthContext();
-  const { data, isPending } = useTasks();
+  const { data, isPending } = useGlobalTaskStatistics();
 
-  // Extract tasks array from paginated response
-  const tasks = data?.data ?? [];
-
-  // Calculate statistics
-  const totalTasks = tasks.length;
-  const inProgressTasks = tasks.filter((t) => t.status === TaskStatus.IN_PROGRESS).length;
-  const overdueTasks = tasks.filter(
-    (t) =>
-      t.dueDate &&
-      new Date(t.dueDate) < new Date() &&
-      t.status !== TaskStatus.DONE &&
-      t.status !== TaskStatus.CANCELLED
-  ).length;
-  const completedTasks = tasks.filter((t) => t.status === TaskStatus.DONE).length;
+  const totalTasks = data?.total ?? 0;
+  const inProgressTasks = data?.byStatus?.['IN_PROGRESS'] ?? 0;
+  const overdueTasks = data?.overdue ?? 0;
+  const completedTasks = data?.byStatus?.['DONE'] ?? 0;
 
   // Determine the base path based on user role
   const getBasePath = () => {
@@ -137,6 +202,18 @@ export default function TasksDashboardPage() {
         />
       </div>
 
+      {/* Status Chart */}
+      {!isPending && data && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Status zadań</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TasksStatusChart byStatus={data.byStatus} total={data.total} />
+          </CardContent>
+        </Card>
+      )}
+
       {/* View Cards */}
       <div className="flex flex-wrap gap-6">
         {views.map((view) => (
@@ -152,6 +229,19 @@ export default function TasksDashboardPage() {
         ))}
       </div>
 
+      {/* Templates Card */}
+      {showSettings && (
+        <NavigationCard
+          title="Szablony zadań"
+          description="Twórz szablony wielokrotnego użytku i konfiguruj zadania cykliczne"
+          icon={LayoutTemplate}
+          href={`${basePath}/templates`}
+          gradient="bg-gradient-to-br from-teal-500 to-cyan-600"
+          buttonText="Zarządzaj szablonami"
+          buttonVariant="outline"
+        />
+      )}
+
       {/* Settings Card */}
       {showSettings && (
         <NavigationCard
@@ -163,6 +253,11 @@ export default function TasksDashboardPage() {
           buttonText="Otwórz ustawienia"
           buttonVariant="outline"
         />
+      )}
+
+      {/* Extended statistics - admin/owner only */}
+      {(user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER) && (
+        <ExtendedTaskStats />
       )}
     </div>
   );

@@ -19,12 +19,19 @@ import { RBACModule } from '@accounting/rbac';
 import { TaskCommentsController } from './controllers/task-comments.controller';
 import { TaskDependenciesController } from './controllers/task-dependencies.controller';
 import { TaskLabelsController } from './controllers/task-labels.controller';
+import { TaskTemplatesController } from './controllers/task-templates.controller';
 import { TasksLookupController } from './controllers/tasks-lookup.controller';
 import { TasksController } from './controllers/tasks.controller';
 import { TaskCommentsService } from './services/task-comments.service';
+import { TaskDeadlineNotificationsService } from './services/task-deadline-notifications.service';
 import { TaskDependenciesService } from './services/task-dependencies.service';
+import { TaskExportService } from './services/task-export.service';
+import { TaskExtendedStatsService } from './services/task-extended-stats.service';
 import { TaskLabelsService } from './services/task-labels.service';
 import { TaskNotificationService } from './services/task-notification.service';
+import { TaskRecurrenceService } from './services/task-recurrence.service';
+import { TaskTemplateService } from './services/task-template.service';
+import { TasksLookupService } from './services/tasks-lookup.service';
 import { TasksService } from './services/tasks.service';
 
 @Module({
@@ -46,6 +53,7 @@ import { TasksService } from './services/tasks.service';
   ],
   controllers: [
     // More specific routes must be registered before generic /:id routes
+    TaskTemplatesController,
     TasksLookupController,
     TaskLabelsController,
     TaskCommentsController,
@@ -54,11 +62,23 @@ import { TasksService } from './services/tasks.service';
   ],
   providers: [
     TasksService,
+    TasksLookupService,
+    TaskExportService,
+    TaskExtendedStatsService,
     TaskLabelsService,
     TaskCommentsService,
     TaskDependenciesService,
     TaskNotificationService,
+    TaskTemplateService,
+    TaskRecurrenceService,
+    TaskDeadlineNotificationsService,
   ],
-  exports: [TasksService, TaskLabelsService, TaskCommentsService, TaskDependenciesService],
+  exports: [
+    TasksService,
+    TaskLabelsService,
+    TaskCommentsService,
+    TaskDependenciesService,
+    TaskTemplateService,
+  ],
 })
 export class TasksModule {}

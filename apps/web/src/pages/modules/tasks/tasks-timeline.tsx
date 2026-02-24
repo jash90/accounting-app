@@ -349,8 +349,8 @@ export default function TasksTimelinePage() {
           {isPending ? (
             <div className="space-y-4 p-4">
               <Skeleton className="h-8 w-full" />
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="h-12 w-full" />
+              {[1, 2, 3, 4, 5].map((num) => (
+                <Skeleton key={num} className="h-12 w-full" />
               ))}
             </div>
           ) : (
