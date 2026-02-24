@@ -1,0 +1,9 @@
+{
+  "exclude": ["**/migrations/**", "apps/web-e2e/**", "tools/**", "apps/web/my-app/**"],
+  "ignore": {
+    "files": [
+      "libs/auth/src/lib/auth.module.ts",
+      "libs/modules/time-tracking/src/lib/services/time-tracking-pdf.service.ts"
+    ]
+  }
+}

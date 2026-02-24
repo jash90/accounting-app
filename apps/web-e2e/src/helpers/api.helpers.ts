@@ -190,6 +190,144 @@ export class APIHelper {
   }
 
   /**
+   * Create document template via API
+   */
+  async createDocumentTemplate(data: {
+    name: string;
+    description?: string;
+    templateContent?: string;
+    placeholders?: string[];
+    category?: string;
+    isActive?: boolean;
+  }): Promise<any> {
+    if (!this.apiContext) await this.init();
+    const response = await this.apiContext!.post('/api/modules/documents/templates', {
+      headers: this.getAuthHeaders(),
+      data: { category: 'other', isActive: true, ...data },
+    });
+    return await response.json();
+  }
+
+  /**
+   * Delete document template via API
+   */
+  async deleteDocumentTemplate(id: string): Promise<void> {
+    if (!this.apiContext) await this.init();
+    await this.apiContext!.delete(`/api/modules/documents/templates/${id}`, {
+      headers: this.getAuthHeaders(),
+    });
+  }
+
+  /**
+   * Create task template via API
+   */
+  async createTaskTemplate(data: {
+    title: string;
+    description?: string;
+    priority?: string;
+    recurrencePattern?: object;
+  }): Promise<any> {
+    if (!this.apiContext) await this.init();
+    const response = await this.apiContext!.post('/api/modules/tasks/templates', {
+      headers: this.getAuthHeaders(),
+      data,
+    });
+    return await response.json();
+  }
+
+  /**
+   * Delete task template via API
+   */
+  async deleteTaskTemplate(id: string): Promise<void> {
+    if (!this.apiContext) await this.init();
+    await this.apiContext!.delete(`/api/modules/tasks/templates/${id}`, {
+      headers: this.getAuthHeaders(),
+    });
+  }
+
+  /**
+   * Create email auto-reply template via API
+   */
+  async createAutoReplyTemplate(data: {
+    name: string;
+    triggerKeywords: string[];
+    bodyTemplate: string;
+    isActive?: boolean;
+    category?: string;
+    tone?: string;
+    keywordMatchMode?: string;
+  }): Promise<any> {
+    if (!this.apiContext) await this.init();
+    const response = await this.apiContext!.post('/api/modules/email-client/auto-reply-templates', {
+      headers: this.getAuthHeaders(),
+      data: {
+        isActive: true,
+        tone: 'formal',
+        keywordMatchMode: 'any',
+        matchSubjectOnly: false,
+        ...data,
+      },
+    });
+    return await response.json();
+  }
+
+  /**
+   * Delete email auto-reply template via API
+   */
+  async deleteAutoReplyTemplate(id: string): Promise<void> {
+    if (!this.apiContext) await this.init();
+    await this.apiContext!.delete(`/api/modules/email-client/auto-reply-templates/${id}`, {
+      headers: this.getAuthHeaders(),
+    });
+  }
+
+  /**
+   * Get company profile via API
+   */
+  async getCompanyProfile(): Promise<any> {
+    if (!this.apiContext) await this.init();
+    const response = await this.apiContext!.get('/api/company/profile', {
+      headers: this.getAuthHeaders(),
+    });
+    return await response.json();
+  }
+
+  /**
+   * Update company profile via API
+   */
+  async updateCompanyProfile(data: Record<string, string | undefined>): Promise<any> {
+    if (!this.apiContext) await this.init();
+    const response = await this.apiContext!.patch('/api/company/profile', {
+      headers: this.getAuthHeaders(),
+      data,
+    });
+    return await response.json();
+  }
+
+  /**
+   * Get settlement settings via API
+   */
+  async getSettlementSettings(): Promise<any> {
+    if (!this.apiContext) await this.init();
+    const response = await this.apiContext!.get('/api/modules/settlements/settings', {
+      headers: this.getAuthHeaders(),
+    });
+    return await response.json();
+  }
+
+  /**
+   * Update settlement settings via API
+   */
+  async updateSettlementSettings(data: Record<string, unknown>): Promise<any> {
+    if (!this.apiContext) await this.init();
+    const response = await this.apiContext!.patch('/api/modules/settlements/settings', {
+      headers: this.getAuthHeaders(),
+      data,
+    });
+    return await response.json();
+  }
+
+  /**
    * Dispose API context
    */
   async dispose(): Promise<void> {

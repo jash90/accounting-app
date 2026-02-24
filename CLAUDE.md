@@ -37,7 +37,8 @@ bun run migration:revert    # Revert last migration
 bun run lint             # Lint backend
 bun run lint:web         # Lint frontend
 bun run lint:all         # Lint all projects
-bun run lint:fix         # Fix lint issues across all projects
+bun run lint:fix         # Fix lint issues across all projects (auto-fixes ~60% of warnings)
+npx nx run web:lint --fix  # Fix web only; then manually fix remaining no-explicit-any, no-console, react-refresh
 bun run format           # Format all files with Prettier
 bun run format:check     # Check formatting without changes
 ```
@@ -319,6 +320,9 @@ S3_REGION=us-east-1
 4. **Forgetting migrations** - Always generate after entity changes
 5. **ADMIN data access** - ADMIN uses System Admin Company, not `user.companyId`
 6. **Non-null assertions** - Use `!` in entities for TypeORM columns
+7. **Broken eslint-disable comments** - Use `/* eslint-disable rule */` (dash), NOT `/* eslint_disable rule */` (underscore). The underscore form is silently ignored by ESLint.
+8. **Inline `import()` in types** - `import('./x').Type` in type positions is forbidden by `@typescript-eslint/consistent-type-imports`. Use `import type { Type } from './x'` at the top of the file.
+9. **Context files with hooks** - Exporting a hook alongside a component triggers `react-refresh/only-export-components`. Add `// eslint-disable-next-line react-refresh/only-export-components` before the hook export.
 
 ## Documentation References
 
