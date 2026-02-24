@@ -64,6 +64,68 @@ export const TestDataFactory = {
     name: TestDataGenerator.generateCompanyName(),
     description: `Test company created at ${new Date().toISOString()}`,
   }),
+
+  /**
+   * Create document template data
+   */
+  createDocumentTemplateData: (
+    overrides?: Partial<{
+      name: string;
+      description: string;
+      templateContent: string;
+      placeholders: string[];
+      category: string;
+      isActive: boolean;
+    }>
+  ) => ({
+    name: `Test Document Template ${Date.now()}`,
+    description: 'Test template description',
+    templateContent: 'Hello {{client_name}}, this is a test template.',
+    placeholders: ['client_name'],
+    category: 'other',
+    isActive: true,
+    ...overrides,
+  }),
+
+  /**
+   * Create task template data
+   */
+  createTaskTemplateData: (
+    overrides?: Partial<{
+      title: string;
+      description: string;
+      priority: string;
+      recurrencePattern: object;
+    }>
+  ) => ({
+    title: `Test Task Template ${Date.now()}`,
+    description: 'Test task template description',
+    priority: 'MEDIUM',
+    ...overrides,
+  }),
+
+  /**
+   * Create auto-reply template data
+   */
+  createAutoReplyTemplateData: (
+    overrides?: Partial<{
+      name: string;
+      triggerKeywords: string[];
+      bodyTemplate: string;
+      isActive: boolean;
+      category: string;
+      tone: string;
+    }>
+  ) => ({
+    name: `Test Auto Reply ${Date.now()}`,
+    triggerKeywords: ['test', 'example'],
+    bodyTemplate: 'Thank you for your message. We will respond shortly.',
+    isActive: true,
+    tone: 'formal',
+    keywordMatchMode: 'any',
+    matchSubjectOnly: false,
+    ...overrides,
+  }),
 };
 
 /**

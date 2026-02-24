@@ -3,6 +3,8 @@
 .nx/workspace-data
 node_modules
 .env
+.DS_Store
+screenshots/
 dist
 .serena
 .nx
