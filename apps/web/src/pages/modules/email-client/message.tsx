@@ -3,18 +3,34 @@ import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import DOMPurify from 'dompurify';
-import { ArrowLeft, CheckCheck, Mail, Paperclip, Reply, Sparkles, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  CheckCheck,
+  Mail,
+  Paperclip,
+  Reply,
+  Sparkles,
+  Star,
+  Trash2,
+} from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
-import { useDeleteEmails, useEmail, useMarkAsRead } from '@/lib/hooks/use-email-client';
+import {
+  useDeleteEmails,
+  useDownloadAttachment,
+  useEmail,
+  useMarkAsRead,
+  useUpdateFlags,
+} from '@/lib/hooks/use-email-client';
 import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 
 import { EmailDetailSkeleton } from './components/email-detail-skeleton';
 
 export default function EmailMessage() {
+  'use no memo';
   const { uid } = useParams<{ uid: string }>();
   const emailNav = useEmailClientNavigation();
   const { toast } = useToast();
@@ -65,6 +81,41 @@ export default function EmailMessage() {
       aiGenerate: true,
       messageUid: emailUid,
     });
+  };
+
+  const updateFlags = useUpdateFlags();
+  const downloadAttachment = useDownloadAttachment();
+
+  const isStarred = email?.flags.includes('\\Flagged') ?? false;
+
+  const handleToggleStar = async () => {
+    if (!emailUid) return;
+    try {
+      await updateFlags.mutateAsync({
+        uid: emailUid,
+        add: isStarred ? undefined : ['\\Flagged'],
+        remove: isStarred ? ['\\Flagged'] : undefined,
+      });
+    } catch {
+      toast({
+        title: 'Błąd',
+        description: 'Nie udało się zaktualizować flagi',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDownloadAttachment = async (filename: string) => {
+    if (!emailUid || !filename) return;
+    try {
+      await downloadAttachment.mutateAsync({ uid: emailUid, filename });
+    } catch {
+      toast({
+        title: 'Błąd',
+        description: 'Nie udało się pobrać załącznika',
+        variant: 'destructive',
+      });
+    }
   };
 
   if (isLoading) {
@@ -132,6 +183,17 @@ export default function EmailMessage() {
           <Button
             variant="outline"
             size="sm"
+            onClick={handleToggleStar}
+            disabled={updateFlags.isPending}
+          >
+            <Star
+              className={`mr-2 h-4 w-4 ${isStarred ? 'fill-yellow-400 text-yellow-400' : ''}`}
+            />
+            {isStarred ? 'Usuń gwiazdkę' : 'Dodaj gwiazdkę'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleDelete}
             disabled={deleteEmails.isPending}
             className="text-destructive hover:text-destructive"
@@ -191,6 +253,9 @@ export default function EmailMessage() {
                       key={attachment.filename || `attachment-${index}`}
                       variant="outline"
                       className="hover:bg-muted cursor-pointer"
+                      onClick={() =>
+                        attachment.filename && handleDownloadAttachment(attachment.filename)
+                      }
                     >
                       {attachment.filename || `Załącznik ${index + 1}`}
                       {attachment.size && (

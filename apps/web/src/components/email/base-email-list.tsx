@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 
 import { Link } from 'react-router-dom';
 
@@ -7,18 +7,35 @@ import {
   CheckCheck,
   ChevronLeft,
   ChevronRight,
+  FolderOpen,
   Loader2,
   Mail,
   MailOpen,
   RefreshCw,
+  Search,
   Settings,
+  Star,
   Trash2,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { useDeleteEmails, useMarkAsRead } from '@/lib/hooks/use-email-client';
+import {
+  useDeleteEmails,
+  useFolders,
+  useMarkAsRead,
+  useMoveMessages,
+  useSearchEmails,
+  useUpdateFlags,
+} from '@/lib/hooks/use-email-client';
 import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 
 import { EmailListSkeleton } from '../../pages/modules/email-client/components/email-inbox-skeleton';
@@ -32,6 +49,7 @@ interface EmailAddress {
 interface Email {
   uid: number;
   from: EmailAddress[];
+  to?: EmailAddress[];
   subject: string;
   text?: string;
   date: string | Date;
@@ -39,27 +57,18 @@ interface Email {
 }
 
 interface BaseEmailListProps {
-  /** Title displayed in the header */
   title: string;
-  /** Email data from the hook */
   emails: Email[] | undefined;
-  /** Loading state */
   isLoading: boolean;
-  /** Refetching state */
   isRefetching: boolean;
-  /** Refetch function */
   refetch: () => void;
-  /** Empty state message when no emails */
   emptyMessage: string;
-  /** Error from the query */
   error?: Error | null;
+  currentMailbox?: string;
+  showMoveAction?: boolean;
 }
 
-/**
- * Extract error message from various error types (Axios, standard Error, etc.)
- */
 function getErrorMessage(error: Error): string {
-  // Check for Axios error structure
   const axiosError = error as Error & {
     response?: { data?: { message?: string } };
   };
@@ -69,9 +78,6 @@ function getErrorMessage(error: Error): string {
   return error.message || 'Nieznany błąd';
 }
 
-/**
- * Check if error is related to missing email configuration
- */
 function isEmailConfigError(errorMessage: string): boolean {
   return (
     errorMessage.includes('konfiguracji email') ||
@@ -81,10 +87,6 @@ function isEmailConfigError(errorMessage: string): boolean {
   );
 }
 
-/**
- * Non-closable modal for email configuration error
- * Uses fixed positioning relative to viewport, offset to not cover the main sidebar
- */
 function EmailConfigModal({ isOpen }: { isOpen: boolean }) {
   if (!isOpen) return null;
 
@@ -113,9 +115,6 @@ function EmailConfigModal({ isOpen }: { isOpen: boolean }) {
   );
 }
 
-/**
- * Error state component for general errors (not config errors)
- */
 function EmailErrorState({ error, refetch }: { error: Error; refetch: () => void }) {
   const errorMessage = getErrorMessage(error);
 
@@ -132,10 +131,6 @@ function EmailErrorState({ error, refetch }: { error: Error; refetch: () => void
   );
 }
 
-/**
- * Shared email list component used by both Inbox and Folder pages
- * Handles email display, selection, bulk actions, and pagination
- */
 export function BaseEmailList({
   title,
   emails,
@@ -144,9 +139,15 @@ export function BaseEmailList({
   refetch,
   emptyMessage,
   error,
+  currentMailbox = 'INBOX',
+  showMoveAction = true,
 }: BaseEmailListProps) {
+  'use no memo';
   const markAsRead = useMarkAsRead();
   const deleteEmails = useDeleteEmails();
+  const updateFlags = useUpdateFlags();
+  const moveMessages = useMoveMessages();
+  const { data: folders } = useFolders();
   const { toast } = useToast();
   const emailNav = useEmailClientNavigation();
 
@@ -157,15 +158,41 @@ export function BaseEmailList({
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
+  // Search state
+  const [searchInput, setSearchInput] = useState('');
+  const deferredSearch = useDeferredValue(searchInput);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(deferredSearch), 300);
+    return () => clearTimeout(timer);
+  }, [deferredSearch]);
+
+  const { data: searchResults, isLoading: isSearching } = useSearchEmails(
+    debouncedQuery,
+    currentMailbox
+  );
+
+  const isSearchActive = debouncedQuery.length >= 2;
+
   // Check if error is a config error
   const errorMessage = error ? getErrorMessage(error) : '';
   const isConfigError = error ? isEmailConfigError(errorMessage) : false;
 
+  // Use search results or regular emails
+  const displayEmails = useMemo(() => {
+    if (isSearchActive && searchResults) {
+      return searchResults.messages;
+    }
+    return emails || [];
+  }, [isSearchActive, searchResults, emails]);
+
   // Sort emails by date (newest first) and paginate
   const sortedEmails = useMemo(() => {
-    if (!emails) return [];
-    return [...emails].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [emails]);
+    return [...displayEmails].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+  }, [displayEmails]);
 
   const totalPages = Math.ceil(sortedEmails.length / pageSize);
   const paginatedEmails = useMemo(() => {
@@ -207,10 +234,29 @@ export function BaseEmailList({
     setSelectedUids(newSelected);
   };
 
+  // Star toggle
+  const handleToggleStar = async (uid: number, isStarred: boolean, event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    try {
+      await updateFlags.mutateAsync({
+        uid,
+        add: isStarred ? undefined : ['\\Flagged'],
+        remove: isStarred ? ['\\Flagged'] : undefined,
+        mailbox: currentMailbox,
+      });
+    } catch {
+      toast({
+        title: 'Błąd',
+        description: 'Nie udało się zaktualizować flagi',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Bulk actions
   const handleMarkAsRead = async () => {
     if (selectedUids.size === 0) return;
-
     try {
       await markAsRead.mutateAsync(Array.from(selectedUids));
       toast({
@@ -229,13 +275,9 @@ export function BaseEmailList({
 
   const handleDelete = async () => {
     if (selectedUids.size === 0) return;
-
     try {
       await deleteEmails.mutateAsync(Array.from(selectedUids));
-      toast({
-        title: 'Sukces',
-        description: `Usunięto ${selectedUids.size} wiadomości`,
-      });
+      toast({ title: 'Sukces', description: `Usunięto ${selectedUids.size} wiadomości` });
       setSelectedUids(new Set());
     } catch {
       toast({
@@ -246,31 +288,74 @@ export function BaseEmailList({
     }
   };
 
-  const clearSelection = () => {
-    setSelectedUids(new Set());
+  const handleMoveSelected = async (destinationMailbox: string) => {
+    if (selectedUids.size === 0) return;
+    try {
+      await moveMessages.mutateAsync({
+        uids: Array.from(selectedUids),
+        sourceMailbox: currentMailbox,
+        destinationMailbox,
+      });
+      toast({
+        title: 'Sukces',
+        description: `Przeniesiono ${selectedUids.size} wiadomości do ${destinationMailbox}`,
+      });
+      setSelectedUids(new Set());
+    } catch {
+      toast({
+        title: 'Błąd',
+        description: 'Nie udało się przenieść wiadomości',
+        variant: 'destructive',
+      });
+    }
   };
+
+  const clearSelection = () => setSelectedUids(new Set());
 
   const handleRefresh = () => {
     setCurrentPage(1);
     refetch();
   };
 
-  const isProcessing = markAsRead.isPending || deleteEmails.isPending;
+  const isProcessing = markAsRead.isPending || deleteEmails.isPending || moveMessages.isPending;
+
+  // Available folders for move (excluding current)
+  const availableFolders = useMemo(
+    () => (folders || []).filter((f) => f !== currentMailbox),
+    [folders, currentMailbox]
+  );
 
   return (
     <div className="flex h-full">
       <EmailSidebar />
 
       <div className="relative flex min-w-0 flex-1 flex-col">
-        {/* Non-closable modal for config error - positioned within content area */}
         <EmailConfigModal isOpen={isConfigError} />
+
         {/* Header */}
         <div className="flex items-center justify-between border-b p-4">
           <div>
             <h1 className="text-2xl font-bold">{title}</h1>
-            <p className="text-muted-foreground text-sm">{emails?.length || 0} wiadomości</p>
+            <p className="text-muted-foreground text-sm">
+              {isSearchActive
+                ? `${searchResults?.total || 0} wyników`
+                : `${emails?.length || 0} wiadomości`}
+            </p>
           </div>
           <div className="flex gap-2">
+            {/* Search bar */}
+            <div className="relative">
+              <Search className="text-muted-foreground absolute left-2.5 top-2.5 h-4 w-4" />
+              <Input
+                placeholder="Szukaj..."
+                value={searchInput}
+                onChange={(e) => {
+                  setSearchInput(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-48 pl-8 text-sm"
+              />
+            </div>
             <Button
               onClick={handleRefresh}
               disabled={isRefetching}
@@ -317,6 +402,23 @@ export function BaseEmailList({
                   Oznacz jako przeczytane
                 </Button>
               )}
+              {showMoveAction && availableFolders.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" disabled={isProcessing}>
+                      <FolderOpen className="mr-2 h-4 w-4" />
+                      Przenieś do...
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {availableFolders.map((folder) => (
+                      <DropdownMenuItem key={folder} onClick={() => handleMoveSelected(folder)}>
+                        {folder}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -348,20 +450,21 @@ export function BaseEmailList({
 
         {/* Email List */}
         <div className="flex-1 overflow-auto">
-          {isLoading ? (
+          {isLoading || (isSearchActive && isSearching) ? (
             <EmailListSkeleton />
           ) : error && !isConfigError ? (
             <EmailErrorState error={error} refetch={refetch} />
           ) : sortedEmails.length === 0 && !isConfigError ? (
             <div className="text-muted-foreground p-8 text-center">
               <MailOpen className="mx-auto mb-4 h-12 w-12 opacity-50" />
-              <p>{emptyMessage}</p>
+              <p>{isSearchActive ? 'Brak wyników wyszukiwania' : emptyMessage}</p>
             </div>
           ) : (
             <div className="divide-y">
               {paginatedEmails.map((email) => {
                 const isSelected = selectedUids.has(email.uid);
                 const isUnread = !email.flags.includes('\\Seen');
+                const isStarred = email.flags.includes('\\Flagged');
 
                 return (
                   <div
@@ -389,6 +492,22 @@ export function BaseEmailList({
                         aria-label={`Select email from ${email.from[0]?.name || email.from[0]?.address}`}
                       />
                     </div>
+
+                    {/* Star */}
+                    <button
+                      type="button"
+                      className="pt-1 focus:outline-none"
+                      onClick={(e) => handleToggleStar(email.uid, isStarred, e)}
+                      aria-label={isStarred ? 'Usuń gwiazdkę' : 'Dodaj gwiazdkę'}
+                    >
+                      <Star
+                        className={`h-4 w-4 transition-colors ${
+                          isStarred
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : 'text-muted-foreground hover:text-yellow-400'
+                        }`}
+                      />
+                    </button>
 
                     {/* Email Content (clickable link) */}
                     <Link

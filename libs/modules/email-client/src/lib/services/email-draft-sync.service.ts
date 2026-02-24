@@ -201,7 +201,7 @@ export class EmailDraftSyncService {
   /**
    * Compose MIME message from draft
    */
-  private async composeDraftMime(draft: EmailDraft, fromEmail: string): Promise<Buffer> {
+  private composeDraftMime(draft: EmailDraft, fromEmail: string): Promise<Buffer> {
     const mail = new MailComposer({
       from: fromEmail,
       to: draft.to.join(', '),
@@ -329,9 +329,9 @@ export class EmailDraftSyncService {
   /**
    * Get drafts with sync conflicts
    */
-  async findConflicts(user: User): Promise<EmailDraft[]> {
+  findConflicts(user: User): Promise<EmailDraft[]> {
     if (!user.companyId) {
-      return [];
+      return Promise.resolve([]);
     }
 
     return this.draftRepository.find({
