@@ -47,11 +47,11 @@ export class NotificationService {
    * Get the effective companyId for a user.
    * ADMIN users use System Admin Company, others use their assigned companyId.
    */
-  private async getEffectiveCompanyId(user: User): Promise<string | null> {
+  private getEffectiveCompanyId(user: User): Promise<string | null> {
     if (user.role === UserRole.ADMIN) {
       return this.systemCompanyService.getSystemCompanyId();
     }
-    return user.companyId;
+    return Promise.resolve(user.companyId);
   }
 
   async create(dto: CreateNotificationDto): Promise<Notification> {
@@ -138,7 +138,7 @@ export class NotificationService {
     };
   }
 
-  async findArchived(user: User, filters: NotificationFiltersDto): Promise<PaginatedNotifications> {
+  findArchived(user: User, filters: NotificationFiltersDto): Promise<PaginatedNotifications> {
     return this.findAll(user, { ...filters, isArchived: true });
   }
 

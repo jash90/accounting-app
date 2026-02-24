@@ -65,6 +65,41 @@ export enum NotificationType {
   TIME_ENTRY_SUBMITTED = 'time.entry.submitted',
 
   // ========================================
+  // OFFERS MODULE
+  // ========================================
+  OFFER_CREATED = 'offer.created',
+  OFFER_UPDATED = 'offer.updated',
+  OFFER_DELETED = 'offer.deleted',
+  OFFER_STATUS_CHANGED = 'offer.status.changed',
+  OFFER_SENT = 'offer.sent',
+  OFFER_DOCUMENT_GENERATED = 'offer.document.generated',
+  OFFER_ACCEPTED = 'offer.accepted',
+  OFFER_REJECTED = 'offer.rejected',
+  OFFER_EXPIRED = 'offer.expired',
+  OFFER_DUPLICATED = 'offer.duplicated',
+
+  // ========================================
+  // LEADS MODULE
+  // ========================================
+  LEAD_CREATED = 'lead.created',
+  LEAD_UPDATED = 'lead.updated',
+  LEAD_DELETED = 'lead.deleted',
+  LEAD_CONVERTED = 'lead.converted',
+
+  // ========================================
+  // SETTLEMENTS MODULE
+  // ========================================
+  SETTLEMENT_STATUS_CHANGED = 'settlement.status.changed',
+  SETTLEMENT_ASSIGNED = 'settlement.assigned',
+  SETTLEMENT_UNASSIGNED = 'settlement.unassigned',
+  SETTLEMENT_COMPLETED = 'settlement.completed',
+  SETTLEMENT_UPDATED = 'settlement.updated',
+  SETTLEMENT_MONTH_INITIALIZED = 'settlement.month.initialized',
+  SETTLEMENT_BULK_ASSIGNED = 'settlement.bulk.assigned',
+  SETTLEMENT_COMMENT_ADDED = 'settlement.comment.added',
+  SETTLEMENT_DEADLINE_APPROACHING = 'settlement.deadline.approaching',
+
+  // ========================================
   // EMAIL CLIENT MODULE
   // ========================================
   EMAIL_RECEIVED = 'email.received',
@@ -151,6 +186,35 @@ export const NotificationTypeLabels: Record<NotificationType, string> = {
   [NotificationType.TIME_ENTRY_REJECTED]: 'Odrzucono wpis czasu',
   [NotificationType.TIME_ENTRY_SUBMITTED]: 'Przesłano wpis czasu do zatwierdzenia',
 
+  // Offers
+  [NotificationType.OFFER_CREATED]: 'Utworzono ofertę',
+  [NotificationType.OFFER_UPDATED]: 'Zaktualizowano ofertę',
+  [NotificationType.OFFER_DELETED]: 'Usunięto ofertę',
+  [NotificationType.OFFER_STATUS_CHANGED]: 'Zmieniono status oferty',
+  [NotificationType.OFFER_SENT]: 'Wysłano ofertę',
+  [NotificationType.OFFER_DOCUMENT_GENERATED]: 'Wygenerowano dokument oferty',
+  [NotificationType.OFFER_ACCEPTED]: 'Oferta zaakceptowana',
+  [NotificationType.OFFER_REJECTED]: 'Oferta odrzucona',
+  [NotificationType.OFFER_EXPIRED]: 'Oferta wygasła',
+  [NotificationType.OFFER_DUPLICATED]: 'Zduplikowano ofertę',
+
+  // Leads
+  [NotificationType.LEAD_CREATED]: 'Utworzono lead',
+  [NotificationType.LEAD_UPDATED]: 'Zaktualizowano lead',
+  [NotificationType.LEAD_DELETED]: 'Usunięto lead',
+  [NotificationType.LEAD_CONVERTED]: 'Lead przekonwertowany na klienta',
+
+  // Settlements
+  [NotificationType.SETTLEMENT_STATUS_CHANGED]: 'Zmieniono status rozliczenia',
+  [NotificationType.SETTLEMENT_ASSIGNED]: 'Przypisano rozliczenie',
+  [NotificationType.SETTLEMENT_UNASSIGNED]: 'Usunięto przypisanie rozliczenia',
+  [NotificationType.SETTLEMENT_COMPLETED]: 'Ukończono rozliczenie',
+  [NotificationType.SETTLEMENT_UPDATED]: 'Zaktualizowano rozliczenie',
+  [NotificationType.SETTLEMENT_MONTH_INITIALIZED]: 'Zainicjalizowano miesiąc rozliczeń',
+  [NotificationType.SETTLEMENT_BULK_ASSIGNED]: 'Masowe przypisanie rozliczeń',
+  [NotificationType.SETTLEMENT_COMMENT_ADDED]: 'Dodano komentarz do rozliczenia',
+  [NotificationType.SETTLEMENT_DEADLINE_APPROACHING]: 'Zbliża się termin rozliczenia',
+
   // Email
   [NotificationType.EMAIL_RECEIVED]: 'Otrzymano nową wiadomość',
   [NotificationType.EMAIL_SEND_FAILED]: 'Nie udało się wysłać wiadomości',
@@ -184,6 +248,9 @@ export function getModuleFromNotificationType(type: NotificationType): string {
     task: 'tasks',
     client: 'clients',
     time: 'time-tracking',
+    offer: 'offers',
+    lead: 'offers',
+    settlement: 'settlements',
     email: 'email-client',
     ai: 'ai-agent',
     user: 'company',
