@@ -1,7 +1,7 @@
 
-import { Module } from '@nestjs/common';
+import { Module, ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { TerminusModule } from '@nestjs/terminus';
@@ -75,6 +75,7 @@ import { AdminModule } from '../admin/admin.module';
 import { CompanyModule } from '../company/company.module';
 import { EmailConfigModule } from '../email-config/email-config.module';
 import { ModulesModule } from '../modules/modules.module';
+import { DemoDataSeedersModule } from '../seeders/demo-data-seeders.module';
 import { SeedersModule } from '../seeders/seeders.module';
 
 // Shared entities array to avoid duplication between DATABASE_URL and local config
@@ -193,6 +194,7 @@ const ENTITIES = [
     NotificationsModule,
     ModulesModule,
     SeedersModule,
+    DemoDataSeedersModule,
     EmailModule,
     StorageModule.forRoot(),
     ChangeLogModule,
@@ -210,6 +212,14 @@ const ENTITIES = [
   controllers: [AppController, HealthController],
   providers: [
     AppService,
+    {
+      provide: APP_PIPE,
+      useValue: new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
