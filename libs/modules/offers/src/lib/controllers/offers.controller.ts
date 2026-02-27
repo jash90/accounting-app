@@ -26,7 +26,8 @@ import {
 import { Response } from 'express';
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
-import { NotificationType, User } from '@accounting/common';
+import { ApiCsvResponse, NotificationType, User } from '@accounting/common';
+import { sendCsvResponse } from '@accounting/common/backend';
 import { NotificationInterceptor, NotifyOn } from '@accounting/modules/notifications';
 import {
   ModuleAccessGuard,
@@ -74,20 +75,13 @@ export class OffersController {
     private readonly offerExportService: OfferExportService
   ) {}
 
+  // eslint-disable-next-line @darraghor/nestjs-typed/api-method-should-specify-api-response
   @Get('export')
   @ApiOperation({
     summary: 'Export offers to CSV',
     description: 'Exports all offers matching the current filters to a CSV file.',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'CSV file download',
-    content: {
-      'text/csv': {
-        schema: { type: 'string', format: 'binary' },
-      },
-    },
-  })
+  @ApiCsvResponse()
   @RequirePermission('offers', 'read')
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async exportToCsv(
@@ -96,13 +90,7 @@ export class OffersController {
     @Res() res: Response
   ) {
     const csvBuffer = await this.offerExportService.exportOffersToCsv(filters, user);
-    const filename = `offers-export-${new Date().toISOString().split('T')[0]}.csv`;
-
-    res.set({
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="${filename}"`,
-    });
-    res.send(csvBuffer);
+    sendCsvResponse(res, csvBuffer, 'offers-export');
   }
 
   @Get()

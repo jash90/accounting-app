@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { MonthlySettlement, SettlementStatus, User, UserRole } from '@accounting/common';
+import { isOwnerOrAdmin, MonthlySettlement, SettlementStatus, User } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 
 import { EmployeeStatsDto, EmployeeStatsListDto, MyStatsDto, SettlementStatsDto } from '../dto';
@@ -25,10 +25,6 @@ export class SettlementStatsService {
     private readonly userRepository: Repository<User>,
     private readonly tenantService: TenantService
   ) {}
-
-  private canViewAllClients(user: User): boolean {
-    return [UserRole.COMPANY_OWNER, UserRole.ADMIN].includes(user.role);
-  }
 
   async getOverviewStats(month: number, year: number, user: User): Promise<SettlementStatsDto> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
@@ -64,7 +60,7 @@ export class SettlementStatsService {
       });
 
     // For employees, only count their settlements
-    if (!this.canViewAllClients(user)) {
+    if (!isOwnerOrAdmin(user)) {
       qb.andWhere('settlement.userId = :userId', { userId: user.id });
     }
 

@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { TimeEntry, User, UserRole } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { resolvePresetDateRange, TenantService } from '@accounting/common/backend';
 
 export interface TopTaskByTimeDto {
   taskId: string;
@@ -47,24 +47,12 @@ export class TimeTrackingExtendedStatsService {
     private readonly tenantService: TenantService
   ) {}
 
-  private getDateRange(filter: ExtendedTimeStatsFilterDto): { start: Date; end: Date } {
-    const end = new Date();
-    let start = new Date();
-    if (filter.preset === '30d') start.setDate(start.getDate() - 30);
-    else if (filter.preset === '90d') start.setDate(start.getDate() - 90);
-    else if (filter.preset === '365d') start.setDate(start.getDate() - 365);
-    else if (filter.startDate) start = new Date(filter.startDate);
-    else start.setDate(start.getDate() - 30); // default 30 days
-    if (filter.endDate) return { start, end: new Date(filter.endDate) };
-    return { start, end };
-  }
-
   async getTopTasksByTime(
     user: User,
     filter: ExtendedTimeStatsFilterDto = {}
   ): Promise<TopTaskByTimeDto[]> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
-    const { start, end } = this.getDateRange(filter);
+    const { start, end } = resolvePresetDateRange(filter);
     const isEmployee = user.role === UserRole.EMPLOYEE;
 
     const qb = this.timeEntryRepository
@@ -81,7 +69,7 @@ export class TimeTrackingExtendedStatsService {
       .groupBy('te.taskId')
       .addGroupBy('task.id')
       .addGroupBy('task.title')
-      .orderBy('totalMinutes', 'DESC')
+      .orderBy('"totalMinutes"', 'DESC')
       .limit(20);
 
     if (isEmployee) {
@@ -103,7 +91,7 @@ export class TimeTrackingExtendedStatsService {
     filter: ExtendedTimeStatsFilterDto = {}
   ): Promise<TopSettlementByTimeDto[]> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
-    const { start, end } = this.getDateRange(filter);
+    const { start, end } = resolvePresetDateRange(filter);
     const isEmployee = user.role === UserRole.EMPLOYEE;
 
     const qb = this.timeEntryRepository
@@ -126,7 +114,7 @@ export class TimeTrackingExtendedStatsService {
       .addGroupBy('settlement.year')
       .addGroupBy('client.id')
       .addGroupBy('client.name')
-      .orderBy('totalMinutes', 'DESC')
+      .orderBy('"totalMinutes"', 'DESC')
       .limit(20);
 
     if (isEmployee) {
@@ -156,7 +144,7 @@ export class TimeTrackingExtendedStatsService {
     filter: ExtendedTimeStatsFilterDto = {}
   ): Promise<EmployeeTimeBreakdownItemDto[]> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
-    const { start, end } = this.getDateRange(filter);
+    const { start, end } = resolvePresetDateRange(filter);
     const isEmployee = user.role === UserRole.EMPLOYEE;
 
     const qb = this.timeEntryRepository
@@ -184,7 +172,7 @@ export class TimeTrackingExtendedStatsService {
       .addGroupBy('user.email')
       .addGroupBy('user.firstName')
       .addGroupBy('user.lastName')
-      .orderBy('totalMinutes', 'DESC');
+      .orderBy('"totalMinutes"', 'DESC');
 
     if (isEmployee) {
       qb.andWhere('te.userId = :userId', { userId: user.id });

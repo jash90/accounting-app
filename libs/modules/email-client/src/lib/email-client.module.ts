@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { createJwtModuleConfig } from '@accounting/auth';
 import { EmailAutoReplyTemplate, User } from '@accounting/common';
 import { CommonModule } from '@accounting/common/backend';
 import { EmailModule } from '@accounting/email';
@@ -33,20 +33,7 @@ import { EmailIdleService } from './services/email-idle.service';
     StorageModule,
     RBACModule,
     AIAgentModule,
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
-        const expiresIn = configService.get<string>('JWT_EXPIRES_IN') || '1d';
-        return {
-          secret: configService.get<string>('JWT_SECRET'),
-          signOptions: {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            expiresIn: expiresIn as any,
-          },
-        };
-      },
-      inject: [ConfigService],
-    }),
+    JwtModule.registerAsync(createJwtModuleConfig()),
   ],
   controllers: [
     EmailMessagesController,

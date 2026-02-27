@@ -19,10 +19,12 @@ import {
   AIMessage,
   AIMessageRole,
   AIProvider,
+  PaginatedResponseDto,
+  PaginationQueryDto,
   User,
   UserRole,
 } from '@accounting/common';
-import { SystemCompanyService } from '@accounting/common/backend';
+import { calculatePagination, SystemCompanyService } from '@accounting/common/backend';
 
 import { AIConfigurationService } from './ai-configuration.service';
 import { AIProviderError, ChatStreamChunk } from './ai-provider.interface';
@@ -32,7 +34,6 @@ import { RAGService } from './rag.service';
 import { TokenLimitService } from './token-limit.service';
 import { TokenUsageService } from './token-usage.service';
 import { CreateConversationDto } from '../dto/create-conversation.dto';
-import { PaginatedResponseDto, PaginationQueryDto } from '../dto/pagination.dto';
 import { SendMessageDto } from '../dto/send-message.dto';
 
 @Injectable()
@@ -57,20 +58,12 @@ export class AIConversationService {
     user: User,
     pagination?: PaginationQueryDto
   ): Promise<PaginatedResponseDto<AIConversation> | AIConversation[]> {
-    const page = pagination?.page || 1;
-    const limit = pagination?.limit || 20;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = calculatePagination(pagination);
 
-    let companyId: string;
-
-    if (user.role === UserRole.ADMIN) {
-      companyId = await this.systemCompanyService.getSystemCompanyId();
-    } else {
-      if (!user.companyId) {
-        return pagination ? new PaginatedResponseDto([], 0, page, limit) : [];
-      }
-      companyId = user.companyId;
+    if (user.role !== UserRole.ADMIN && !user.companyId) {
+      return pagination ? new PaginatedResponseDto([], 0, page, limit) : [];
     }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // If no pagination requested, return array for backward compatibility
     // Filter by user.id so each user sees only their own conversations
@@ -132,16 +125,10 @@ export class AIConversationService {
   }
 
   async create(createDto: CreateConversationDto, user: User): Promise<AIConversation> {
-    let targetCompanyId: string;
-
-    if (user.role === UserRole.ADMIN) {
-      targetCompanyId = await this.systemCompanyService.getSystemCompanyId();
-    } else {
-      if (!user.companyId) {
-        throw new ForbiddenException('User not associated with company');
-      }
-      targetCompanyId = user.companyId;
+    if (user.role !== UserRole.ADMIN && !user.companyId) {
+      throw new ForbiddenException('User not associated with company');
     }
+    const targetCompanyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const conversation = this.conversationRepository.create({
       title: createDto.title || 'New Conversation',
@@ -168,7 +155,7 @@ export class AIConversationService {
     this.logger.debug(`Conversation found: ${conversation.id}`);
 
     // Check token limits
-    await this.tokenLimitService.checkLimit(user);
+    await this.tokenLimitService.enforceTokenLimit(user);
     this.logger.debug('Token limit check passed');
 
     // Get AI configuration
@@ -209,7 +196,7 @@ export class AIConversationService {
       const hasDocuments = await this.ragService.hasActiveDocuments(conversation.companyId);
       if (hasDocuments) {
         try {
-          similarContexts = await this.ragService.findSimilarContext(
+          similarContexts = await this.ragService.searchContextByKeywords(
             sendDto.content,
             conversation.companyId,
             3
@@ -368,7 +355,7 @@ export class AIConversationService {
       this.logger.debug(`Conversation found: ${conversation.id}`);
 
       // Check token limits
-      await this.tokenLimitService.checkLimit(user);
+      await this.tokenLimitService.enforceTokenLimit(user);
       this.logger.debug('Token limit check passed');
 
       // Get AI configuration
@@ -408,7 +395,7 @@ export class AIConversationService {
         const hasDocuments = await this.ragService.hasActiveDocuments(conversation.companyId);
         if (hasDocuments) {
           try {
-            similarContexts = await this.ragService.findSimilarContext(
+            similarContexts = await this.ragService.searchContextByKeywords(
               sendDto.content,
               conversation.companyId,
               3

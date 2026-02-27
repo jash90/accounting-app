@@ -5,14 +5,14 @@ import { Brackets, DataSource, Repository } from 'typeorm';
 
 import {
   Client,
-  createPaginatedResponse,
+  escapeLikePattern,
   isForeignKeyViolation,
   Lead,
   LeadStatus,
+  PaginatedResponseDto,
   User,
-  type PaginatedResponseDto,
 } from '@accounting/common';
-import { SystemCompanyService } from '@accounting/common/backend';
+import { calculatePagination, SystemCompanyService } from '@accounting/common/backend';
 
 import {
   ConvertLeadToClientDto,
@@ -38,26 +38,10 @@ export class LeadsService {
     private readonly dataSource: DataSource
   ) {}
 
-  private getCompanyId(user: User): Promise<string> {
-    return this.systemCompanyService.getCompanyIdForUser(user);
-  }
-
-  private escapeLikePattern(pattern: string): string {
-    return pattern.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-  }
-
   async findAll(user: User, filters: LeadFiltersDto): Promise<PaginatedResponseDto<Lead>> {
-    const companyId = await this.getCompanyId(user);
-    const {
-      page = 1,
-      limit = 20,
-      search,
-      status,
-      source,
-      assignedToId,
-      createdFrom,
-      createdTo,
-    } = filters;
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
+    const { page, limit, skip } = calculatePagination(filters);
+    const { search, status, source, assignedToId, createdFrom, createdTo } = filters;
 
     const query = this.leadRepository
       .createQueryBuilder('lead')
@@ -66,7 +50,7 @@ export class LeadsService {
       .where('lead.companyId = :companyId', { companyId });
 
     if (search) {
-      const escapedSearch = `%${this.escapeLikePattern(search)}%`;
+      const escapedSearch = `%${escapeLikePattern(search)}%`;
       query.andWhere(
         new Brackets((qb) => {
           qb.where('lead.name ILIKE :search', { search: escapedSearch })
@@ -99,16 +83,13 @@ export class LeadsService {
 
     query.orderBy('lead.createdAt', 'DESC');
 
-    const [data, total] = await query
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getManyAndCount();
+    const [data, total] = await query.skip(skip).take(limit).getManyAndCount();
 
-    return createPaginatedResponse(data, total, page, limit);
+    return new PaginatedResponseDto(data, total, page, limit);
   }
 
   async findOne(id: string, user: User): Promise<Lead> {
-    const companyId = await this.getCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const lead = await this.leadRepository.findOne({
       where: { id, companyId },
@@ -123,7 +104,7 @@ export class LeadsService {
   }
 
   async create(dto: CreateLeadDto, user: User): Promise<Lead> {
-    const companyId = await this.getCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const lead = this.leadRepository.create({
       ...dto,
@@ -226,7 +207,7 @@ export class LeadsService {
       throw new LeadAlreadyConvertedException(id);
     }
 
-    const companyId = await this.getCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Use transaction to ensure atomicity of client creation and lead update
     return this.dataSource.transaction(async (manager) => {
@@ -259,7 +240,7 @@ export class LeadsService {
   }
 
   async getStatistics(user: User): Promise<LeadStatisticsDto> {
-    const companyId = await this.getCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const stats = await this.leadRepository
       .createQueryBuilder('lead')

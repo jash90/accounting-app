@@ -27,7 +27,8 @@ import {
 import { Response } from 'express';
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
-import { NotificationType, User } from '@accounting/common';
+import { ApiCsvResponse, NotificationType, User } from '@accounting/common';
+import { sendCsvResponse } from '@accounting/common/backend';
 import { NotificationInterceptor, NotifyOn } from '@accounting/modules/notifications';
 import {
   ModuleAccessGuard,
@@ -79,20 +80,13 @@ export class TasksController {
     private readonly taskExtendedStatsService: TaskExtendedStatsService
   ) {}
 
+  // eslint-disable-next-line @darraghor/nestjs-typed/api-method-should-specify-api-response
   @Get('export')
   @ApiOperation({
     summary: 'Export tasks to CSV',
     description: 'Exports all tasks matching the current filters to a CSV file.',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'CSV file download',
-    content: {
-      'text/csv': {
-        schema: { type: 'string', format: 'binary' },
-      },
-    },
-  })
+  @ApiCsvResponse()
   @RequirePermission('tasks', 'read')
   async exportToCsv(
     @Query() filters: TaskFiltersDto,
@@ -100,13 +94,7 @@ export class TasksController {
     @Res() res: Response
   ) {
     const csvBuffer = await this.taskExportService.exportToCsv(filters, user);
-    const filename = `tasks-export-${new Date().toISOString().split('T')[0]}.csv`;
-
-    res.set({
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="${filename}"`,
-    });
-    res.send(csvBuffer);
+    sendCsvResponse(res, csvBuffer, 'tasks-export');
   }
 
   @Get()
@@ -199,6 +187,7 @@ export class TasksController {
     return this.tasksService.getClientTaskStatistics(clientId, user);
   }
 
+  // eslint-disable-next-line @darraghor/nestjs-typed/api-method-should-specify-api-response
   @Get('statistics/extended/completion-duration')
   @ApiOperation({ summary: 'Get task completion duration statistics (admin/owner only)' })
   @RequirePermission('tasks', 'manage')
@@ -210,6 +199,7 @@ export class TasksController {
     return this.taskExtendedStatsService.getCompletionDurationStats(user, filters);
   }
 
+  // eslint-disable-next-line @darraghor/nestjs-typed/api-method-should-specify-api-response
   @Get('statistics/extended/employee-ranking')
   @ApiOperation({ summary: 'Get employee task completion ranking (admin/owner only)' })
   @RequirePermission('tasks', 'manage')
@@ -311,7 +301,7 @@ export class TasksController {
     recipientResolver: 'companyUsersExceptActor',
   })
   async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
-    await this.tasksService.remove(id, user);
+    await this.tasksService.softDeleteTask(id, user);
     return { message: 'Zadanie zostało usunięte' };
   }
 }

@@ -9,8 +9,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { Company, EmailConfiguration } from '@accounting/common';
-import { EncryptionService } from '@accounting/common/backend';
+import { EmailConfiguration } from '@accounting/common';
+import { EncryptionService, SystemCompanyService } from '@accounting/common/backend';
 
 import { EmailReaderService } from './email-reader.service';
 import { EmailSenderService } from './email-sender.service';
@@ -35,11 +35,10 @@ export class EmailConfigurationService {
   constructor(
     @InjectRepository(EmailConfiguration)
     private readonly emailConfigRepo: Repository<EmailConfiguration>,
-    @InjectRepository(Company)
-    private readonly companyRepo: Repository<Company>,
     private readonly encryptionService: EncryptionService,
     private readonly emailSenderService: EmailSenderService,
-    private readonly emailReaderService: EmailReaderService
+    private readonly emailReaderService: EmailReaderService,
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   /**
@@ -532,22 +531,6 @@ export class EmailConfigurationService {
   // ========== SYSTEM ADMIN EMAIL CONFIGURATION ==========
 
   /**
-   * Get the System Admin company (isSystemCompany: true)
-   * Used for shared admin email configuration
-   */
-  private async getSystemAdminCompany(): Promise<Company> {
-    const systemCompany = await this.companyRepo.findOne({
-      where: { isSystemCompany: true },
-    });
-
-    if (!systemCompany) {
-      throw new NotFoundException('System Admin company not found. Please run migrations.');
-    }
-
-    return systemCompany;
-  }
-
-  /**
    * Get decrypted System Admin email configuration
    * This configuration is shared across all admin users
    *
@@ -557,7 +540,7 @@ export class EmailConfigurationService {
     smtp: SmtpConfig;
     imap: ImapConfig;
   } | null> {
-    const systemCompany = await this.getSystemAdminCompany();
+    const systemCompany = await this.systemCompanyService.getSystemCompany();
 
     const config = await this.emailConfigRepo.findOne({
       where: { companyId: systemCompany.id },

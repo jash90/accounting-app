@@ -268,7 +268,7 @@ export class FieldDefinitionsController {
   @OwnerOrAdmin()
   @RequirePermission('clients', 'delete')
   async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
-    await this.customFieldsService.removeDefinition(id, user);
+    await this.customFieldsService.softDeleteDefinition(id, user);
     return { message: 'Field definition deleted successfully' };
   }
 }

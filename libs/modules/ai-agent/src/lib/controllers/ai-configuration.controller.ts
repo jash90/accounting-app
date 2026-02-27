@@ -170,7 +170,7 @@ export class AIConfigurationController {
     description: 'Invalid or missing JWT token',
   })
   async resetApiKey(@CurrentUser() user: User) {
-    const config = await this.configService.resetApiKey(user);
+    const config = await this.configService.clearApiKey(user);
 
     return {
       ...config,

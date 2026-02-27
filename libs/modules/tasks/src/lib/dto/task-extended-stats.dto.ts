@@ -1,18 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { IsDateString, IsOptional } from 'class-validator';
+import { EmployeeRankingDto, EmployeeRankingItemDto, PeriodFilterDto } from '@accounting/common';
 
-export class StatsPeriodFilterDto {
-  @ApiPropertyOptional({ description: 'Start date (ISO 8601)' })
-  @IsOptional()
-  @IsDateString()
-  startDate?: string;
-
-  @ApiPropertyOptional({ description: 'End date (ISO 8601)' })
-  @IsOptional()
-  @IsDateString()
-  endDate?: string;
-}
+// Re-export shared types under module-specific names for backward compatibility
+export { PeriodFilterDto as StatsPeriodFilterDto };
+export { EmployeeRankingItemDto as EmployeeTaskRankingItemDto };
+export { EmployeeRankingDto as EmployeeTaskRankingDto };
 
 export class TaskDurationItemDto {
   @ApiProperty() id!: string;
@@ -26,16 +19,4 @@ export class TaskCompletionDurationStatsDto {
   @ApiProperty({ type: [TaskDurationItemDto] }) longest!: TaskDurationItemDto[];
   @ApiProperty({ type: [TaskDurationItemDto] }) shortest!: TaskDurationItemDto[];
   @ApiProperty() averageDurationHours!: number;
-}
-
-export class EmployeeTaskRankingItemDto {
-  @ApiProperty() userId!: string;
-  @ApiProperty() email!: string;
-  @ApiPropertyOptional() firstName?: string;
-  @ApiPropertyOptional() lastName?: string;
-  @ApiProperty() completedCount!: number;
-}
-
-export class EmployeeTaskRankingDto {
-  @ApiProperty({ type: [EmployeeTaskRankingItemDto] }) rankings!: EmployeeTaskRankingItemDto[];
 }

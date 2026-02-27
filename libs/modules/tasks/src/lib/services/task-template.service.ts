@@ -3,8 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { ILike, IsNull, Repository } from 'typeorm';
 
-import { PaginatedResponseDto, Task, TaskStatus, User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import {
+  escapeLikePattern,
+  PaginatedResponseDto,
+  Task,
+  TaskStatus,
+  User,
+} from '@accounting/common';
+import { calculatePagination, TenantService } from '@accounting/common/backend';
 
 import {
   CreateTaskTemplateDto,
@@ -22,9 +28,7 @@ export class TaskTemplateService {
 
   async findAll(user: User, filters?: TaskTemplateFiltersDto): Promise<PaginatedResponseDto<Task>> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
-    const page = filters?.page ?? 1;
-    const limit = filters?.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = calculatePagination(filters);
 
     const where: Record<string, unknown> = {
       companyId,
@@ -34,7 +38,7 @@ export class TaskTemplateService {
     };
 
     if (filters?.search) {
-      where['title'] = ILike(`%${this.escapeLikePattern(filters.search)}%`);
+      where['title'] = ILike(`%${escapeLikePattern(filters.search)}%`);
     }
 
     const [templates, total] = await this.taskRepository.findAndCount({
@@ -101,14 +105,10 @@ export class TaskTemplateService {
     return this.taskRepository.save(template);
   }
 
-  async delete(id: string, user: User): Promise<void> {
+  async softDeleteTaskTemplate(id: string, user: User): Promise<void> {
     const template = await this.findOne(id, user);
     template.isActive = false;
     await this.taskRepository.save(template);
-  }
-
-  private escapeLikePattern(value: string): string {
-    return value.replace(/[%_\\]/g, '\\$&');
   }
 
   /**

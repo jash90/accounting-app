@@ -3,8 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { MonthlySettlement, SettlementStatus, User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import {
+  calcRankedDurationStats,
+  mapRawToRankings,
+  MonthlySettlement,
+  SettlementStatus,
+  User,
+} from '@accounting/common';
+import { applyDateRangeFilter, TenantService } from '@accounting/common/backend';
 
 import {
   BlockedClientsStatsDto,
@@ -34,38 +40,28 @@ export class SettlementExtendedStatsService {
       .andWhere('s.status = :status', { status: SettlementStatus.COMPLETED })
       .andWhere('s.settledAt IS NOT NULL');
 
-    if (filters?.startDate) {
-      qb.andWhere('s.settledAt >= :startDate', { startDate: filters.startDate });
-    }
-    if (filters?.endDate) {
-      qb.andWhere('s.settledAt <= :endDate', { endDate: filters.endDate });
-    }
+    applyDateRangeFilter(qb, 's', 'settledAt', filters);
 
     const settlements = await qb.getMany();
 
-    const withDuration = settlements
-      .map((s) => {
-        const durationMs = (s.settledAt?.getTime() ?? Date.now()) - s.createdAt.getTime();
-        const durationDays = Math.round(durationMs / (1000 * 60 * 60 * 24));
-        return {
-          id: s.id,
-          clientName: s.client?.name ?? 'Unknown',
-          month: s.month,
-          year: s.year,
-          durationDays,
-          completedAt: s.settledAt?.toISOString(),
-        };
-      })
-      .sort((a, b) => b.durationDays - a.durationDays);
+    const withDuration = settlements.map((s) => ({
+      id: s.id,
+      clientName: s.client?.name ?? 'Unknown',
+      month: s.month,
+      year: s.year,
+      durationDays: Math.round(
+        ((s.settledAt?.getTime() ?? Date.now()) - s.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+      ),
+      completedAt: s.settledAt?.toISOString(),
+    }));
 
-    const longest = withDuration.slice(0, 10);
-    const shortest = [...withDuration].sort((a, b) => a.durationDays - b.durationDays).slice(0, 10);
-    const averageDurationDays =
-      withDuration.length > 0
-        ? Math.round(withDuration.reduce((sum, s) => sum + s.durationDays, 0) / withDuration.length)
-        : 0;
+    const { longest, shortest, averageDuration } = calcRankedDurationStats(
+      withDuration,
+      (s) => s.durationDays,
+      1
+    );
 
-    return { longest, shortest, averageDurationDays };
+    return { longest, shortest, averageDurationDays: averageDuration };
   }
 
   async getEmployeeCompletionRanking(
@@ -90,14 +86,9 @@ export class SettlementExtendedStatsService {
       .addGroupBy('user.email')
       .addGroupBy('user.firstName')
       .addGroupBy('user.lastName')
-      .orderBy('completedCount', 'DESC');
+      .orderBy('COUNT(*)', 'DESC');
 
-    if (filters?.startDate) {
-      qb.andWhere('s.settledAt >= :startDate', { startDate: filters.startDate });
-    }
-    if (filters?.endDate) {
-      qb.andWhere('s.settledAt <= :endDate', { endDate: filters.endDate });
-    }
+    applyDateRangeFilter(qb, 's', 'settledAt', filters);
 
     const raw = await qb.getRawMany<{
       userId: string;
@@ -107,15 +98,7 @@ export class SettlementExtendedStatsService {
       completedCount: string;
     }>();
 
-    return {
-      rankings: raw.map((r) => ({
-        userId: r.userId,
-        email: r.email,
-        firstName: r.firstName,
-        lastName: r.lastName,
-        completedCount: parseInt(r.completedCount, 10),
-      })),
-    };
+    return { rankings: mapRawToRankings(raw) };
   }
 
   async getBlockedClientsStats(
@@ -141,14 +124,9 @@ export class SettlementExtendedStatsService {
       .groupBy('s.clientId')
       .addGroupBy('client.id')
       .addGroupBy('client.name')
-      .orderBy('blockCount', 'DESC');
+      .orderBy('COUNT(*)', 'DESC');
 
-    if (filters?.startDate) {
-      qb.andWhere('s.createdAt >= :startDate', { startDate: filters.startDate });
-    }
-    if (filters?.endDate) {
-      qb.andWhere('s.createdAt <= :endDate', { endDate: filters.endDate });
-    }
+    applyDateRangeFilter(qb, 's', 'createdAt', filters);
 
     const raw = await qb.getRawMany<{
       clientId: string;

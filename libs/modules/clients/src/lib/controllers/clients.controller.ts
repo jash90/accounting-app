@@ -34,7 +34,8 @@ import {
 import { Request, Response } from 'express';
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
-import { NotificationType, PaginationQueryDto, User } from '@accounting/common';
+import { ApiCsvResponse, NotificationType, PaginationQueryDto, User } from '@accounting/common';
+import { sendCsvResponse } from '@accounting/common/backend';
 import { NotificationInterceptor, NotifyOn } from '@accounting/modules/notifications';
 import {
   ModuleAccessGuard,
@@ -463,15 +464,7 @@ export class ClientsController {
       'Exports all clients matching the current filters to a CSV file. ' +
       'The CSV file can be used as a backup or for importing into other systems.',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'CSV file download',
-    content: {
-      'text/csv': {
-        schema: { type: 'string', format: 'binary' },
-      },
-    },
-  })
+  @ApiCsvResponse()
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
@@ -484,13 +477,7 @@ export class ClientsController {
     @Res() res: Response
   ) {
     const csvBuffer = await this.exportService.exportToCsv(filters, user);
-    const filename = `clients-export-${new Date().toISOString().split('T')[0]}.csv`;
-
-    res.set({
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="${filename}"`,
-    });
-    res.send(csvBuffer);
+    sendCsvResponse(res, csvBuffer, 'clients-export');
   }
 
   /**
@@ -514,7 +501,7 @@ export class ClientsController {
   })
   @RequirePermission('clients', 'read')
   async getImportTemplate(@Res() res: Response) {
-    const template = this.exportService.getTemplate();
+    const template = this.exportService.generateCsvImportTemplate();
 
     res.set({
       'Content-Type': 'text/csv; charset=utf-8',
@@ -755,7 +742,7 @@ export class ClientsController {
     recipientResolver: 'companyUsersExceptActor',
   })
   async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
-    await this.clientsService.remove(id, user);
+    await this.clientsService.softDeleteClient(id, user);
     return { message: 'Client deleted successfully' };
   }
 

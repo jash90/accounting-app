@@ -7,6 +7,7 @@ import { DataSource, In, Repository } from 'typeorm';
 
 import {
   Client,
+  escapeLikePattern,
   isValidPkdCode,
   PaginatedResponseDto,
   PKD_CLASSES,
@@ -14,7 +15,7 @@ import {
   User,
   type PkdCodeOption,
 } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { calculatePagination, sanitizeForLog, TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import { CLIENT_VALIDATION_MESSAGES } from '../constants';
@@ -97,18 +98,9 @@ export class ClientsService {
     return sections;
   }
 
-  /**
-   * Escape special characters in LIKE/ILIKE patterns to prevent SQL injection
-   */
-  private escapeLikePattern(pattern: string): string {
-    return pattern.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-  }
-
   async findAll(user: User, filters?: ClientFiltersDto): Promise<PaginatedResponseDto<Client>> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
-    const page = filters?.page ?? 1;
-    const limit = filters?.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = calculatePagination(filters);
 
     const queryBuilder = this.clientRepository
       .createQueryBuilder('client')
@@ -119,7 +111,7 @@ export class ClientsService {
       .where('client.companyId = :companyId', { companyId });
 
     if (filters?.search) {
-      const escapedSearch = this.escapeLikePattern(filters.search);
+      const escapedSearch = escapeLikePattern(filters.search);
       queryBuilder.andWhere(
         "(client.name ILIKE :search ESCAPE '\\' OR client.nip ILIKE :search ESCAPE '\\' OR client.email ILIKE :search ESCAPE '\\')",
         { search: `%${escapedSearch}%` }
@@ -337,7 +329,7 @@ export class ClientsService {
     return savedClient;
   }
 
-  async remove(id: string, user: User): Promise<void> {
+  async softDeleteClient(id: string, user: User): Promise<void> {
     const client = await this.findOne(id, user);
     const oldValues = this.sanitizeClientForLog(client);
 
@@ -691,7 +683,7 @@ export class ClientsService {
 
         case 'contains':
           queryBuilder.andWhere(`${alias}.value ILIKE :value_${index}`, {
-            [`value_${index}`]: `%${this.escapeLikePattern(String(value))}%`,
+            [`value_${index}`]: `%${escapeLikePattern(String(value))}%`,
           });
           break;
 
@@ -736,7 +728,7 @@ export class ClientsService {
             anyValues.reduce(
               (acc, v, i) => ({
                 ...acc,
-                [`anyValue_${index}_${i}`]: `%${this.escapeLikePattern(String(v))}%`,
+                [`anyValue_${index}_${i}`]: `%${escapeLikePattern(String(v))}%`,
               }),
               {}
             )
@@ -751,28 +743,28 @@ export class ClientsService {
   }
 
   private sanitizeClientForLog(client: Client): Record<string, unknown> {
-    return {
-      name: client.name,
-      nip: client.nip,
-      email: client.email,
-      phone: client.phone,
-      companyStartDate: client.companyStartDate,
-      cooperationStartDate: client.cooperationStartDate,
-      companySpecificity: client.companySpecificity,
-      additionalInfo: client.additionalInfo,
+    return sanitizeForLog(client, [
+      'name',
+      'nip',
+      'email',
+      'phone',
+      'companyStartDate',
+      'cooperationStartDate',
+      'companySpecificity',
+      'additionalInfo',
       // Legacy fields (kept for backward compatibility)
-      gtuCode: client.gtuCode,
-      amlGroup: client.amlGroup,
+      'gtuCode',
+      'amlGroup',
       // New fields
-      gtuCodes: client.gtuCodes,
-      pkdCode: client.pkdCode,
-      amlGroupEnum: client.amlGroupEnum,
-      receiveEmailCopy: client.receiveEmailCopy,
-      employmentType: client.employmentType,
-      vatStatus: client.vatStatus,
-      taxScheme: client.taxScheme,
-      zusStatus: client.zusStatus,
-      isActive: client.isActive,
-    };
+      'gtuCodes',
+      'pkdCode',
+      'amlGroupEnum',
+      'receiveEmailCopy',
+      'employmentType',
+      'vatStatus',
+      'taxScheme',
+      'zusStatus',
+      'isActive',
+    ]);
   }
 }

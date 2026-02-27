@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { Lead, Offer, User } from '@accounting/common';
+import { generateCsvBuffer, Lead, Offer, User } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 
 import { LeadFiltersDto } from '../dto/lead.dto';
@@ -38,8 +38,7 @@ export class OfferExportService {
     queryBuilder.orderBy('offer.createdAt', 'DESC');
 
     const offers = await queryBuilder.getMany();
-    const csvContent = this.generateOffersCsv(offers);
-    return Buffer.from(csvContent, 'utf-8');
+    return this.generateOffersCsv(offers);
   }
 
   async exportLeadsToCsv(filters: LeadFiltersDto, user: User): Promise<Buffer> {
@@ -67,11 +66,10 @@ export class OfferExportService {
     queryBuilder.orderBy('lead.createdAt', 'DESC');
 
     const leads = await queryBuilder.getMany();
-    const csvContent = this.generateLeadsCsv(leads);
-    return Buffer.from(csvContent, 'utf-8');
+    return this.generateLeadsCsv(leads);
   }
 
-  private generateOffersCsv(offers: Offer[]): string {
+  private generateOffersCsv(offers: Offer[]): Buffer {
     const headers = [
       'Numer',
       'Tytuł',
@@ -96,12 +94,10 @@ export class OfferExportService {
       new Date(offer.createdAt).toISOString().split('T')[0],
     ]);
 
-    return [headers.join(','), ...rows.map((row) => row.map(this.escapeCsvField).join(','))].join(
-      '\n'
-    );
+    return generateCsvBuffer(headers, rows);
   }
 
-  private generateLeadsCsv(leads: Lead[]): string {
+  private generateLeadsCsv(leads: Lead[]): Buffer {
     const headers = [
       'Firma',
       'Osoba kontaktowa',
@@ -126,21 +122,6 @@ export class OfferExportService {
       new Date(lead.createdAt).toISOString().split('T')[0],
     ]);
 
-    return [headers.join(','), ...rows.map((row) => row.map(this.escapeCsvField).join(','))].join(
-      '\n'
-    );
-  }
-
-  private escapeCsvField(field: string): string {
-    if (!field) return '';
-    let value = field;
-    const formulaChars = ['=', '+', '-', '@', '\t', '\r'];
-    if (formulaChars.some((char) => value.startsWith(char))) {
-      value = "'" + value;
-    }
-    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-      return `"${value.replace(/"/g, '""')}"`;
-    }
-    return value;
+    return generateCsvBuffer(headers, rows);
   }
 }

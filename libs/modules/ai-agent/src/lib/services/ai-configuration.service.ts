@@ -270,10 +270,10 @@ export class AIConfigurationService {
   }
 
   /**
-   * Reset (clear) API key (ADMIN only)
+   * Clear API key (ADMIN only)
    * This clears the API key, requiring reconfiguration before AI can be used
    */
-  async resetApiKey(user: User): Promise<AIConfiguration> {
+  async clearApiKey(user: User): Promise<AIConfiguration> {
     if (user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Only admins can reset API key');
     }

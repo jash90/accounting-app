@@ -5,15 +5,16 @@ import { DataSource, EntityManager, In, Repository } from 'typeorm';
 
 import {
   Client,
+  escapeLikePattern,
+  isOwnerOrAdmin,
   PaginatedResponseDto,
   Task,
   TimeEntry,
   TimeEntryStatus,
   TimeRoundingMethod,
   User,
-  UserRole,
 } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { calculatePagination, sanitizeForLog, TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import { CreateTimeEntryDto, TimeEntryFiltersDto, UpdateTimeEntryDto } from '../dto/time-entry.dto';
@@ -52,24 +53,13 @@ export class TimeEntriesService {
     private readonly dataSource: DataSource
   ) {}
 
-  private escapeLikePattern(pattern: string): string {
-    return pattern.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-  }
-
-  /**
-   * Check if user can view all entries (owner/admin) or only their own
-   */
-  private canViewAllEntries(user: User): boolean {
-    return user.role === UserRole.ADMIN || user.role === UserRole.COMPANY_OWNER;
-  }
-
   /**
    * Ensures user has permission to manage (approve/reject) time entries.
    * Defense-in-depth: validates authorization at service level in addition to guards.
    * @throws ForbiddenException if user is not ADMIN or COMPANY_OWNER
    */
   private ensureCanManageEntries(user: User): void {
-    if (user.role !== UserRole.ADMIN && user.role !== UserRole.COMPANY_OWNER) {
+    if (!isOwnerOrAdmin(user)) {
       throw new ForbiddenException('Nie masz uprawnień do zarządzania wpisami czasu');
     }
   }
@@ -79,9 +69,7 @@ export class TimeEntriesService {
     filters?: TimeEntryFiltersDto
   ): Promise<PaginatedResponseDto<TimeEntry>> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
-    const page = filters?.page ?? 1;
-    const limit = filters?.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = calculatePagination(filters);
 
     const queryBuilder = this.entryRepository
       .createQueryBuilder('entry')
@@ -91,7 +79,7 @@ export class TimeEntriesService {
       .where('entry.companyId = :companyId', { companyId });
 
     // User filter - non-managers can only see their own entries
-    if (!this.canViewAllEntries(user)) {
+    if (!isOwnerOrAdmin(user)) {
       queryBuilder.andWhere('entry.userId = :userId', { userId: user.id });
     } else if (filters?.userId) {
       queryBuilder.andWhere('entry.userId = :userId', { userId: filters.userId });
@@ -99,7 +87,7 @@ export class TimeEntriesService {
 
     // Search filter
     if (filters?.search) {
-      const escapedSearch = this.escapeLikePattern(filters.search);
+      const escapedSearch = escapeLikePattern(filters.search);
       queryBuilder.andWhere("entry.description ILIKE :search ESCAPE '\\'", {
         search: `%${escapedSearch}%`,
       });
@@ -173,7 +161,7 @@ export class TimeEntriesService {
     }
 
     // Non-managers can only see their own entries
-    if (!this.canViewAllEntries(user) && entry.userId !== user.id) {
+    if (!isOwnerOrAdmin(user) && entry.userId !== user.id) {
       throw new TimeEntryNotFoundException();
     }
 
@@ -236,7 +224,13 @@ export class TimeEntriesService {
     const savedEntry = await this.dataSource.transaction(async (manager) => {
       // Check for overlapping entries with lock if not allowed
       if (!settings.allowOverlappingEntries) {
-        await this.checkOverlapWithLock(manager, user.id, companyId, startTime, endTime || null);
+        await this.enforceNoTimeOverlapWithLock(
+          manager,
+          user.id,
+          companyId,
+          startTime,
+          endTime || null
+        );
       }
 
       const entry = manager.create(TimeEntry, {
@@ -259,7 +253,7 @@ export class TimeEntriesService {
     await this.changeLogService.logCreate(
       'TimeEntry',
       savedEntry.id,
-      this.sanitizeForLog(savedEntry),
+      this.sanitizeTimeEntryForLog(savedEntry),
       user
     );
 
@@ -280,14 +274,14 @@ export class TimeEntriesService {
     }
 
     // Check if entry is locked
-    await this.checkEntryLocked(entry, user);
+    await this.enforceEntryNotLocked(entry, user);
 
     // Non-managers can only edit their own entries
-    if (!this.canViewAllEntries(user) && entry.userId !== user.id) {
+    if (!isOwnerOrAdmin(user) && entry.userId !== user.id) {
       throw new TimeEntryNotFoundException();
     }
 
-    const oldValues = this.sanitizeForLog(entry);
+    const oldValues = this.sanitizeTimeEntryForLog(entry);
 
     // Check if times are being changed
     const timesChanged = dto.startTime !== undefined || dto.endTime !== undefined;
@@ -324,7 +318,7 @@ export class TimeEntriesService {
 
       // Check for overlapping entries with lock if times are being changed
       if (needsOverlapCheck) {
-        await this.checkOverlapWithLock(
+        await this.enforceNoTimeOverlapWithLock(
           manager,
           lockedEntry.userId,
           companyId,
@@ -374,7 +368,7 @@ export class TimeEntriesService {
       'TimeEntry',
       savedEntry.id,
       oldValues,
-      this.sanitizeForLog(savedEntry),
+      this.sanitizeTimeEntryForLog(savedEntry),
       user
     );
 
@@ -385,14 +379,14 @@ export class TimeEntriesService {
     const entry = await this.findOne(id, user);
 
     // Check if entry is locked
-    await this.checkEntryLocked(entry, user);
+    await this.enforceEntryNotLocked(entry, user);
 
     // Non-managers can only delete their own entries
-    if (!this.canViewAllEntries(user) && entry.userId !== user.id) {
+    if (!isOwnerOrAdmin(user) && entry.userId !== user.id) {
       throw new TimeEntryNotFoundException();
     }
 
-    const oldValues = this.sanitizeForLog(entry);
+    const oldValues = this.sanitizeTimeEntryForLog(entry);
 
     // Soft delete
     entry.isActive = false;
@@ -805,7 +799,7 @@ export class TimeEntriesService {
     const entry = await this.findOne(id, user);
 
     // Only managers can lock entries
-    if (!this.canViewAllEntries(user)) {
+    if (!isOwnerOrAdmin(user)) {
       throw new TimeEntryUnlockNotAuthorizedException();
     }
 
@@ -814,7 +808,7 @@ export class TimeEntriesService {
       return entry;
     }
 
-    const oldValues = this.sanitizeForLog(entry);
+    const oldValues = this.sanitizeTimeEntryForLog(entry);
 
     entry.isLocked = true;
     entry.lockedAt = new Date();
@@ -826,7 +820,7 @@ export class TimeEntriesService {
       'TimeEntry',
       savedEntry.id,
       oldValues,
-      this.sanitizeForLog(savedEntry),
+      this.sanitizeTimeEntryForLog(savedEntry),
       user
     );
 
@@ -837,7 +831,7 @@ export class TimeEntriesService {
 
   async unlockEntry(id: string, user: User, reason?: string): Promise<TimeEntry> {
     // Only ADMIN/COMPANY_OWNER can unlock
-    if (!this.canViewAllEntries(user)) {
+    if (!isOwnerOrAdmin(user)) {
       throw new TimeEntryUnlockNotAuthorizedException();
     }
 
@@ -848,7 +842,7 @@ export class TimeEntriesService {
       return entry;
     }
 
-    const oldValues = this.sanitizeForLog(entry);
+    const oldValues = this.sanitizeTimeEntryForLog(entry);
 
     entry.isLocked = false;
     entry.lockedAt = null as unknown as undefined;
@@ -860,7 +854,7 @@ export class TimeEntriesService {
       'TimeEntry',
       savedEntry.id,
       oldValues,
-      this.sanitizeForLog(savedEntry),
+      this.sanitizeTimeEntryForLog(savedEntry),
       user
     );
 
@@ -897,7 +891,7 @@ export class TimeEntriesService {
     }
   }
 
-  private async checkOverlap(
+  private async enforceNoTimeOverlap(
     userId: string,
     companyId: string,
     startTime: Date,
@@ -940,7 +934,7 @@ export class TimeEntriesService {
    * Uses pessimistic_read lock to prevent other transactions from modifying
    * the entries being checked until the current transaction completes.
    */
-  private async checkOverlapWithLock(
+  private async enforceNoTimeOverlapWithLock(
     manager: EntityManager,
     userId: string,
     companyId: string,
@@ -972,7 +966,7 @@ export class TimeEntriesService {
     }
   }
 
-  private async checkEntryLocked(entry: TimeEntry, user: User): Promise<void> {
+  private async enforceEntryNotLocked(entry: TimeEntry, user: User): Promise<void> {
     // Check 1: Explicit lock flag (takes precedence)
     if (entry.isLocked) {
       throw new TimeEntryLockedException();
@@ -990,24 +984,24 @@ export class TimeEntriesService {
     }
   }
 
-  private sanitizeForLog(entry: TimeEntry): Record<string, unknown> {
-    return {
-      description: entry.description,
-      startTime: entry.startTime,
-      endTime: entry.endTime,
-      durationMinutes: entry.durationMinutes,
-      isBillable: entry.isBillable,
-      hourlyRate: entry.hourlyRate,
-      totalAmount: entry.totalAmount,
-      status: entry.status,
-      userId: entry.userId,
-      clientId: entry.clientId,
-      taskId: entry.taskId,
-      settlementId: entry.settlementId,
-      isActive: entry.isActive,
-      isLocked: entry.isLocked,
-      lockedAt: entry.lockedAt,
-      lockedById: entry.lockedById,
-    };
+  private sanitizeTimeEntryForLog(entry: TimeEntry): Record<string, unknown> {
+    return sanitizeForLog(entry, [
+      'description',
+      'startTime',
+      'endTime',
+      'durationMinutes',
+      'isBillable',
+      'hourlyRate',
+      'totalAmount',
+      'status',
+      'userId',
+      'clientId',
+      'taskId',
+      'settlementId',
+      'isActive',
+      'isLocked',
+      'lockedAt',
+      'lockedById',
+    ]);
   }
 }

@@ -6,13 +6,11 @@ import { Repository } from 'typeorm';
 import { EmailConfiguration, Offer, User } from '@accounting/common';
 import { EncryptionService } from '@accounting/common/backend';
 import { EmailSenderService, SmtpConfig } from '@accounting/email';
-import { StorageService } from '@accounting/infrastructure/storage';
 
 import { SendOfferDto } from '../dto/offer.dto';
 import {
   EmailConfigurationMissingException,
   EmailSendFailedException,
-  OfferDocumentNotGeneratedException,
 } from '../exceptions/offer.exception';
 
 @Injectable()
@@ -23,7 +21,6 @@ export class OfferEmailService {
     @InjectRepository(EmailConfiguration)
     private readonly emailConfigRepository: Repository<EmailConfiguration>,
     private readonly emailSenderService: EmailSenderService,
-    private readonly storageService: StorageService,
     private readonly encryptionService: EncryptionService
   ) {}
 
@@ -77,8 +74,6 @@ Przesyłamy ofertę ${offer.offerNumber} dotyczącą "${offer.title}".
 
 Oferta jest ważna do ${formattedDate}.
 
-W załączniku znajduje się dokument z pełną treścią oferty.
-
 W razie pytań pozostajemy do dyspozycji.
 
 Z poważaniem,
@@ -93,22 +88,13 @@ Zespół księgowości`;
     dto: SendOfferDto,
     user: User
   ): Promise<{ success: boolean; sentAt: Date }> {
-    // Check if document is generated
-    if (!offer.generatedDocumentPath) {
-      throw new OfferDocumentNotGeneratedException(offer.id);
-    }
-
     try {
       // Get SMTP configuration
       const { smtpConfig, fromEmail } = await this.getSmtpConfig(offer.companyId);
 
-      // Download the document
-      const documentBuffer = await this.storageService.downloadFile(offer.generatedDocumentPath);
-
       // Prepare email content
       const subject = dto.subject || this.buildDefaultSubject(offer);
       const body = dto.body || this.buildDefaultBody(offer);
-      const fileName = offer.generatedDocumentName || `Oferta_${offer.offerNumber}.docx`;
 
       // Send email using EmailSenderService
       await this.emailSenderService.sendEmail(smtpConfig, {
@@ -117,12 +103,6 @@ Zespół księgowości`;
         subject,
         html: body.replace(/\n/g, '<br>'),
         text: body,
-        attachments: [
-          {
-            filename: fileName,
-            content: documentBuffer,
-          },
-        ],
         from: fromEmail,
       });
 
@@ -144,16 +124,9 @@ Zespół księgowości`;
   }
 
   /**
-   * Validates that an email can be sent for an offer
+   * Returns eligibility status for sending an email for an offer
    */
-  async validateCanSend(offer: Offer): Promise<{ canSend: boolean; reason?: string }> {
-    if (!offer.generatedDocumentPath) {
-      return {
-        canSend: false,
-        reason: 'Dokument oferty nie został jeszcze wygenerowany',
-      };
-    }
-
+  async getSendEligibility(offer: Offer): Promise<{ canSend: boolean; reason?: string }> {
     try {
       await this.getSmtpConfig(offer.companyId);
     } catch {

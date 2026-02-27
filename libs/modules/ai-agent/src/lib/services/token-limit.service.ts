@@ -144,14 +144,8 @@ export class TokenLimitService {
   /**
    * Check if user can send message (not exceeded limit)
    */
-  async checkLimit(user: User): Promise<void> {
-    let companyId: string | null;
-
-    if (user.role === UserRole.ADMIN) {
-      companyId = await this.systemCompanyService.getSystemCompanyId();
-    } else {
-      companyId = user.companyId;
-    }
+  async enforceTokenLimit(user: User): Promise<void> {
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Check user-specific limit first
     const userLimit = await this.limitRepository.findOne({
@@ -245,13 +239,7 @@ export class TokenLimitService {
    * Get user's limit with current usage
    */
   async getMyLimit(user: User): Promise<MyLimitResult> {
-    let companyId: string | null;
-
-    if (user.role === UserRole.ADMIN) {
-      companyId = await this.systemCompanyService.getSystemCompanyId();
-    } else {
-      companyId = user.companyId;
-    }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const userLimit = await this.limitRepository.findOne({
       where: { companyId: companyId ?? IsNull(), userId: user.id },

@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Between, DataSource, Repository } from 'typeorm';
 
-import { TimeEntry, User, UserRole } from '@accounting/common';
+import { isOwnerOrAdmin, TimeEntry, User } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 
 import { TIME_TRACKING_ERROR_MESSAGES, TIME_TRACKING_LABELS } from '../constants';
@@ -78,10 +78,6 @@ export class TimesheetService {
     private readonly dataSource: DataSource
   ) {}
 
-  private canViewAllEntries(user: User): boolean {
-    return user.role === UserRole.ADMIN || user.role === UserRole.COMPANY_OWNER;
-  }
-
   /**
    * Validates that a user belongs to the specified company.
    * Throws NotFoundException if user doesn't exist or doesn't belong to company.
@@ -102,7 +98,7 @@ export class TimesheetService {
 
     // Determine which user's data to fetch
     let targetUserId = user.id;
-    if (dto.userId && this.canViewAllEntries(user)) {
+    if (dto.userId && isOwnerOrAdmin(user)) {
       // Validate that the requested user belongs to this company (IDOR protection)
       await this.validateUserBelongsToCompany(dto.userId, companyId);
       targetUserId = dto.userId;
@@ -139,7 +135,7 @@ export class TimesheetService {
 
     // Determine which user's data to fetch
     let targetUserId = user.id;
-    if (dto.userId && this.canViewAllEntries(user)) {
+    if (dto.userId && isOwnerOrAdmin(user)) {
       // Validate that the requested user belongs to this company (IDOR protection)
       await this.validateUserBelongsToCompany(dto.userId, companyId);
       targetUserId = dto.userId;
@@ -211,7 +207,7 @@ export class TimesheetService {
       .andWhere('entry.isActive = true');
 
     // Apply filters
-    if (!this.canViewAllEntries(user)) {
+    if (!isOwnerOrAdmin(user)) {
       baseQueryBuilder.andWhere('entry.userId = :userId', { userId: user.id });
     } else if (dto.userId) {
       // Validate that the requested user belongs to this company (IDOR protection)

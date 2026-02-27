@@ -188,7 +188,7 @@ export class CompanyService {
     return this.userRepository.save(employee);
   }
 
-  async deleteEmployee(companyId: string, employeeId: string) {
+  async softDeleteEmployee(companyId: string, employeeId: string) {
     const employee = await this.getEmployeeById(companyId, employeeId);
     employee.isActive = false;
     return this.userRepository.save(employee);

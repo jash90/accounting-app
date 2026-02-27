@@ -10,6 +10,7 @@ import * as bcrypt from 'bcryptjs';
 import { DataSource, Repository } from 'typeorm';
 
 import { Company, User, UserRole } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 import { RBACService } from '@accounting/rbac';
 
 import { UpdateCompanyProfileDto } from '../../company/dto/update-company-profile.dto';
@@ -26,20 +27,9 @@ export class AdminService {
     @InjectRepository(Company)
     private readonly companyRepository: Repository<Company>,
     private readonly rbacService: RBACService,
-    private readonly dataSource: DataSource
+    private readonly dataSource: DataSource,
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
-
-  private async getSystemCompany(): Promise<Company> {
-    const systemCompany = await this.companyRepository.findOne({
-      where: { isSystemCompany: true },
-    });
-
-    if (!systemCompany) {
-      throw new Error('System Admin company not found. Please run migrations.');
-    }
-
-    return systemCompany;
-  }
 
   // User Management
   findAllUsers() {
@@ -73,7 +63,7 @@ export class AdminService {
 
     // Auto-assign ADMIN users to System Admin company
     if (createUserDto.role === UserRole.ADMIN) {
-      const systemCompany = await this.getSystemCompany();
+      const systemCompany = await this.systemCompanyService.getSystemCompany();
       createUserDto.companyId = systemCompany.id;
     }
 
@@ -141,7 +131,7 @@ export class AdminService {
 
     // Auto-assign to System Admin company when promoting to ADMIN role
     if (updateUserDto.role === UserRole.ADMIN) {
-      const systemCompany = await this.getSystemCompany();
+      const systemCompany = await this.systemCompanyService.getSystemCompany();
       updateUserDto.companyId = systemCompany.id;
     }
 
@@ -149,13 +139,13 @@ export class AdminService {
     return this.userRepository.save(user);
   }
 
-  async deleteUser(id: string) {
+  async softDeleteUser(id: string) {
     const user = await this.findUserById(id);
     user.isActive = false;
     return this.userRepository.save(user);
   }
 
-  async activateUser(id: string, isActive: boolean) {
+  async setUserActiveStatus(id: string, isActive: boolean) {
     const user = await this.findUserById(id);
     user.isActive = isActive;
     return this.userRepository.save(user);
@@ -248,7 +238,7 @@ export class AdminService {
     return this.companyRepository.save(company);
   }
 
-  async deleteCompany(id: string) {
+  async softDeleteCompany(id: string) {
     const company = await this.findCompanyById(id);
 
     // Prevent deletion of System Admin company

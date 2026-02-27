@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { In, Repository } from 'typeorm';
 
-import { NotificationSettings, NotificationType, User, UserRole } from '@accounting/common';
+import { NotificationSettings, NotificationType, User } from '@accounting/common';
 import { SystemCompanyService } from '@accounting/common/backend';
 
 import {
@@ -21,19 +21,8 @@ export class NotificationSettingsService {
     private readonly systemCompanyService: SystemCompanyService
   ) {}
 
-  /**
-   * Get the effective companyId for a user.
-   * ADMIN users use System Admin Company, others use their assigned companyId.
-   */
-  private getEffectiveCompanyId(user: User): Promise<string | null> {
-    if (user.role === UserRole.ADMIN) {
-      return this.systemCompanyService.getSystemCompanyId();
-    }
-    return Promise.resolve(user.companyId);
-  }
-
   async getSettingsForModule(user: User, moduleSlug: string): Promise<NotificationSettings> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     if (!companyId) {
       throw new InternalServerErrorException('User must belong to a company');
     }
@@ -54,7 +43,7 @@ export class NotificationSettingsService {
   }
 
   async getAllSettingsForUser(user: User): Promise<NotificationSettings[]> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     if (!companyId) {
       throw new InternalServerErrorException('User must belong to a company');
     }
@@ -86,7 +75,7 @@ export class NotificationSettingsService {
    * @returns Number of settings records updated
    */
   async updateAllSettingsForUser(user: User, dto: UpdateNotificationSettingsDto): Promise<number> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     if (!companyId) {
       throw new InternalServerErrorException('User must belong to a company');
     }

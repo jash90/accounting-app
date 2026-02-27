@@ -19,6 +19,3 @@ export * from './token-limit-response.dto';
 
 // Models DTOs
 export * from './openai-model.dto';
-
-// Common DTOs
-export * from './pagination.dto';

@@ -25,7 +25,8 @@ import {
 import { Response } from 'express';
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
-import { NotificationType, User } from '@accounting/common';
+import { ApiCsvResponse, NotificationType, User } from '@accounting/common';
+import { sendCsvResponse } from '@accounting/common/backend';
 import { NotificationInterceptor, NotifyOn } from '@accounting/modules/notifications';
 import {
   ModuleAccessGuard,
@@ -89,20 +90,13 @@ export class SettlementsController {
     private readonly extendedStatsService: SettlementExtendedStatsService
   ) {}
 
+  // eslint-disable-next-line @darraghor/nestjs-typed/api-method-should-specify-api-response
   @Get('export')
   @ApiOperation({
     summary: 'Export settlements to CSV',
     description: 'Exports all settlements matching the current filters to a CSV file.',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'CSV file download',
-    content: {
-      'text/csv': {
-        schema: { type: 'string', format: 'binary' },
-      },
-    },
-  })
+  @ApiCsvResponse()
   @RequirePermission('settlements', 'read')
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async exportToCsv(
@@ -111,13 +105,7 @@ export class SettlementsController {
     @Res() res: Response
   ) {
     const csvBuffer = await this.exportService.exportToCsv(filters, user);
-    const filename = `settlements-export-${new Date().toISOString().split('T')[0]}.csv`;
-
-    res.set({
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="${filename}"`,
-    });
-    res.send(csvBuffer);
+    sendCsvResponse(res, csvBuffer, 'settlements-export');
   }
 
   @Get()
@@ -369,7 +357,7 @@ export class SettlementsController {
     @Body() dto: InitializeMonthDto,
     @CurrentUser() user: User
   ): Promise<InitializeMonthResultDto> {
-    return this.settlementsService.initializeMonth(dto, user);
+    return this.settlementsService.createMonthlySettlements(dto, user);
   }
 
   @Patch(':id/status')
