@@ -1,5 +1,7 @@
 # Prompt dla Claude Code: Backend w Nx Monorepo z NestJS i RBAC
 
+# Prompt dla Claude Code: Backend w Nx Monorepo z NestJS i RBAC
+
 ## Cel projektu
 
 Stwórz kompletny backend w architekturze Nx monorepo wykorzystujący NestJS z zaawansowanym systemem autoryzacji opartym na rolach (RBAC) i modułach.
