@@ -1,5 +1,5 @@
 import { BaseEmailList } from '@/components/email/base-email-list';
-import { useFolder, useFolders } from '@/lib/hooks/use-email-client';
+import { useEmailFolder, useEmailFolders } from '@/lib/hooks/use-email-client';
 
 // Helper to find the Sent folder name from available folders
 function findSentFolder(folders: string[] | undefined): string {
@@ -27,9 +27,9 @@ function findSentFolder(folders: string[] | undefined): string {
 }
 
 export default function EmailSent() {
-  const { data: folders } = useFolders();
+  const { data: folders } = useEmailFolders();
   const sentFolder = findSentFolder(folders);
-  const { data: emails, isLoading, refetch, isRefetching, error } = useFolder(sentFolder);
+  const { data: emails, isLoading, refetch, isRefetching, error } = useEmailFolder(sentFolder);
 
   return (
     <BaseEmailList

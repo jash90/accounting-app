@@ -28,12 +28,12 @@ import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import {
   useExportSettlements,
-  useInitializeMonth,
+  useInitializeSettlementMonth,
   useSendMissingInvoiceEmail,
   useSettlements,
   useUpdateSettlementStatus,
 } from '@/lib/hooks/use-settlements';
-import { UserRole } from '@/types/enums';
+import { isOwnerOrAdmin } from '@/lib/utils/user';
 
 import { createSettlementsListColumns } from './columns/settlements-list-columns';
 import { FiltersPanel, type SettlementFilters } from './components/filters-panel';
@@ -115,7 +115,7 @@ export default function SettlementsListPage() {
   const { hasWritePermission, hasManagePermission } = useModulePermissions('settlements');
 
   // Check if user is owner or admin
-  const isOwnerOrAdmin = user?.role === UserRole.COMPANY_OWNER || user?.role === UserRole.ADMIN;
+  const isOwner = isOwnerOrAdmin(user);
 
   // Month/year state with transition for non-blocking UI updates
   const [month, setMonth] = useState(() => new Date().getMonth() + 1);
@@ -158,7 +158,7 @@ export default function SettlementsListPage() {
 
   // Mutations
   const updateStatus = useUpdateSettlementStatus();
-  const initializeMonth = useInitializeMonth();
+  const initializeMonth = useInitializeSettlementMonth();
   const exportSettlements = useExportSettlements();
   const sendMissingInvoiceEmail = useSendMissingInvoiceEmail();
 
@@ -190,15 +190,10 @@ export default function SettlementsListPage() {
   // Use transition for filter changes to keep UI responsive during re-renders
   const [, startFilterTransition] = useTransition();
 
-  // Support both direct value and functional update patterns for FiltersPanel
   const handleFiltersChange = useCallback(
     (newFilters: SettlementFilters | ((prev: SettlementFilters) => SettlementFilters)) => {
       startFilterTransition(() => {
-        if (typeof newFilters === 'function') {
-          setFilters(newFilters);
-        } else {
-          setFilters(newFilters);
-        }
+        setFilters(newFilters);
       });
     },
     []
@@ -302,11 +297,7 @@ export default function SettlementsListPage() {
         }
       />
 
-      <FiltersPanel
-        filters={filters}
-        onChange={handleFiltersChange}
-        showEmployeeFilter={isOwnerOrAdmin}
-      />
+      <FiltersPanel filters={filters} onChange={handleFiltersChange} showEmployeeFilter={isOwner} />
 
       <Card className="border-border">
         <CardContent className="p-0">

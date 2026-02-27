@@ -3,7 +3,7 @@ import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import {
   ArrowLeft,
   Calendar as CalendarIcon,
@@ -36,6 +36,78 @@ import {
 } from '@/types/dtos';
 import { TaskPriority, UserRole } from '@/types/enums';
 
+
+const priorityColorMap: Record<string, string> = {
+  URGENT: 'border-l-red-500',
+  HIGH: 'border-l-orange-500',
+  MEDIUM: 'border-l-yellow-500',
+  LOW: 'border-l-blue-500',
+};
+
+function getPriorityColor(priority: TaskPriority): string {
+  return priorityColorMap[priority] ?? 'border-l-gray-300';
+}
+
+interface TaskDayListProps {
+  selectedDate: Date | null;
+  selectedDateTasks: CalendarTaskDto[];
+  onTaskClick: (taskId: string) => void;
+}
+
+function TaskDayList({ selectedDate, selectedDateTasks, onTaskClick }: TaskDayListProps) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg font-medium">
+          {selectedDate ? format(selectedDate, 'd MMMM yyyy', { locale: pl }) : 'Wybierz dzień'}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {!selectedDate ? (
+          <p className="text-muted-foreground text-sm">
+            Kliknij na dzień w kalendarzu, aby zobaczyć zadania
+          </p>
+        ) : selectedDateTasks.length === 0 ? (
+          <p className="text-muted-foreground text-sm">Brak zadań na ten dzień</p>
+        ) : (
+          <div className="space-y-3">
+            {selectedDateTasks.map((task) => (
+              <div
+                key={task.id}
+                role="button"
+                tabIndex={0}
+                className={cn(
+                  'hover:bg-muted/50 cursor-pointer rounded-lg border border-l-4 p-3 transition-colors',
+                  getPriorityColor(task.priority)
+                )}
+                onClick={() => onTaskClick(task.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onTaskClick(task.id);
+                  }
+                }}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="line-clamp-2 text-sm font-medium">{task.title}</span>
+                </div>
+                <div className="mt-2 flex items-center gap-2">
+                  <TaskStatusBadge status={task.status} size="sm" />
+                  <TaskPriorityBadge priority={task.priority} size="sm" />
+                </div>
+                {task.assignee && (
+                  <div className="text-muted-foreground mt-2 text-xs">
+                    {task.assignee.firstName} {task.assignee.lastName}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 // Lazy-load heavy form dialog to reduce initial bundle size - direct import for tree-shaking
 const TaskFormDialog = lazy(() =>
@@ -153,21 +225,6 @@ export default function TasksCalendarPage() {
         {otherCount > 0 && <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />}
       </div>
     );
-  };
-
-  const getPriorityColor = (priority: TaskPriority) => {
-    switch (priority) {
-      case TaskPriority.URGENT:
-        return 'border-l-red-500';
-      case TaskPriority.HIGH:
-        return 'border-l-orange-500';
-      case TaskPriority.MEDIUM:
-        return 'border-l-yellow-500';
-      case TaskPriority.LOW:
-        return 'border-l-blue-500';
-      default:
-        return 'border-l-gray-300';
-    }
   };
 
   return (
@@ -288,56 +345,11 @@ export default function TasksCalendarPage() {
         </Card>
 
         {/* Selected date tasks */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-medium">
-              {selectedDate ? format(selectedDate, 'd MMMM yyyy', { locale: pl }) : 'Wybierz dzień'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {!selectedDate ? (
-              <p className="text-muted-foreground text-sm">
-                Kliknij na dzień w kalendarzu, aby zobaczyć zadania
-              </p>
-            ) : selectedDateTasks.length === 0 ? (
-              <p className="text-muted-foreground text-sm">Brak zadań na ten dzień</p>
-            ) : (
-              <div className="space-y-3">
-                {selectedDateTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    role="button"
-                    tabIndex={0}
-                    className={cn(
-                      'hover:bg-muted/50 cursor-pointer rounded-lg border border-l-4 p-3 transition-colors',
-                      getPriorityColor(task.priority)
-                    )}
-                    onClick={() => navigate(`${basePath}/list?taskId=${task.id}`)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        navigate(`${basePath}/list?taskId=${task.id}`);
-                      }
-                    }}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="line-clamp-2 text-sm font-medium">{task.title}</span>
-                    </div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <TaskStatusBadge status={task.status} size="sm" />
-                      <TaskPriorityBadge priority={task.priority} size="sm" />
-                    </div>
-                    {task.assignee && (
-                      <div className="text-muted-foreground mt-2 text-xs">
-                        {task.assignee.firstName} {task.assignee.lastName}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <TaskDayList
+          selectedDate={selectedDate}
+          selectedDateTasks={selectedDateTasks}
+          onTaskClick={(taskId) => navigate(`${basePath}/list?taskId=${taskId}`)}
+        />
       </div>
 
       {/* Legend */}

@@ -19,6 +19,8 @@ import { getInitials, getUserDisplayName } from '@/lib/utils/user';
 
 import { StatusBadge } from './components/status-badge';
 
+const loadDateFns = () => Promise.all([import('date-fns'), import('date-fns/locale')] as const);
+
 // Lazy date formatter - only loads date-fns when actually needed
 // This reduces initial bundle by ~13KB for users who don't view comments
 let formatDateCached: ((date: Date) => string) | null = null;
@@ -66,7 +68,7 @@ export default function SettlementCommentsPage() {
   // The state update triggers a re-render to use the cached formatter
   useEffect(() => {
     if (comments && comments.length > 0 && !dateFormatterLoaded) {
-      Promise.all([import('date-fns'), import('date-fns/locale')]).then(([{ format }, { pl }]) => {
+      loadDateFns().then(([{ format }, { pl }]) => {
         formatDateCached = (d: Date) => format(d, 'dd.MM.yyyy HH:mm', { locale: pl });
         dateFormatterLoaded = true;
         setDateFnsLoaded(true);

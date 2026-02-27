@@ -1,55 +1,51 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 
 import { documentsApi } from '@/lib/api/endpoints/documents';
+import { queryKeys } from '@/lib/api/query-client';
 
-export function useDocumentTemplates() {
-  return useQuery({
-    queryKey: ['documents', 'templates'],
-    queryFn: documentsApi.getTemplates,
-  });
-}
+import { createMutationHook } from './create-mutation-hook';
+import { createQueryHook } from './create-query-hook';
 
-export function useCreateDocumentTemplate() {
-  const queryClient = useQueryClient();
+export const useDocumentTemplates = createQueryHook({
+  queryKey: () => queryKeys.documents.templates,
+  queryFn: documentsApi.getTemplates,
+});
+
+export const useCreateDocumentTemplate = createMutationHook({
+  mutationFn: documentsApi.createTemplate,
+  invalidateKeys: [queryKeys.documents.templates],
+});
+
+export const useUpdateDocumentTemplate = createMutationHook<
+  unknown,
+  { id: string; data: Parameters<typeof documentsApi.updateTemplate>[1] }
+>({
+  mutationFn: ({ id, data }) => documentsApi.updateTemplate(id, data),
+  invalidateKeys: [queryKeys.documents.templates],
+});
+
+export const useDeleteDocumentTemplate = createMutationHook({
+  mutationFn: documentsApi.deleteTemplate,
+  invalidateKeys: [queryKeys.documents.templates],
+});
+
+export const useGeneratedDocuments = createQueryHook({
+  queryKey: () => queryKeys.documents.generated,
+  queryFn: documentsApi.getGeneratedDocuments,
+});
+
+export const useGenerateDocument = createMutationHook({
+  mutationFn: documentsApi.generateDocument,
+  invalidateKeys: [queryKeys.documents.generated],
+});
+
+export const useDeleteGeneratedDocument = createMutationHook({
+  mutationFn: documentsApi.deleteGeneratedDocument,
+  invalidateKeys: [queryKeys.documents.generated],
+});
+
+export function useDownloadDocumentPdf() {
   return useMutation({
-    mutationFn: documentsApi.createTemplate,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['documents', 'templates'] }),
-  });
-}
-
-export function useUpdateDocumentTemplate() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: Parameters<typeof documentsApi.updateTemplate>[1];
-    }) => documentsApi.updateTemplate(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['documents', 'templates'] }),
-  });
-}
-
-export function useDeleteDocumentTemplate() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: documentsApi.deleteTemplate,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['documents', 'templates'] }),
-  });
-}
-
-export function useGeneratedDocuments() {
-  return useQuery({
-    queryKey: ['documents', 'generated'],
-    queryFn: documentsApi.getGeneratedDocuments,
-  });
-}
-
-export function useGenerateDocument() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: documentsApi.generateDocument,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['documents', 'generated'] }),
+    mutationFn: documentsApi.downloadPdf,
   });
 }

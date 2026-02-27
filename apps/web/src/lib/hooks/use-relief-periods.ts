@@ -1,8 +1,8 @@
+import { type ApiErrorResponse } from '@/types/api';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { addMonths, format } from 'date-fns';
 
 import { useToast } from '@/components/ui/use-toast';
-import { type ApiErrorResponse } from '@/types/api';
 
 import {
   reliefPeriodsApi,
@@ -14,6 +14,7 @@ import {
   type UpdateReliefPeriodDto,
 } from '../api/endpoints/relief-periods';
 import { queryKeys } from '../api/query-client';
+import { getApiErrorMessage } from '../utils/query-filters';
 
 // Re-export types for convenience
 export { ReliefType, ReliefTypeDurationMonths, ReliefTypeLabels };
@@ -114,7 +115,7 @@ export function useCreateReliefPeriod() {
       }
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się utworzyć ulgi',
+        description: getApiErrorMessage(error, 'Nie udało się utworzyć ulgi'),
         variant: 'destructive',
       });
     },
@@ -194,7 +195,7 @@ export function useUpdateReliefPeriod() {
       }
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować ulgi',
+        description: getApiErrorMessage(error, 'Nie udało się zaktualizować ulgi'),
         variant: 'destructive',
       });
     },
@@ -259,7 +260,7 @@ export function useDeleteReliefPeriod() {
       }
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć ulgi',
+        description: getApiErrorMessage(error, 'Nie udało się usunąć ulgi'),
         variant: 'destructive',
       });
     },

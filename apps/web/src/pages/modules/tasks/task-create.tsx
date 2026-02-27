@@ -5,7 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import { ArrowLeft, CalendarIcon, CheckSquare, Loader2, Plus, X } from 'lucide-react';
 import { z } from 'zod';
 

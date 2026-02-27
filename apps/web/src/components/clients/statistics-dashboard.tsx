@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react';
 
 import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import { Activity, Clock, TrendingUp, UserCheck, Users, UserX } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';

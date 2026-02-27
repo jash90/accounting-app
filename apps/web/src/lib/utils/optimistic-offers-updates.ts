@@ -1,8 +1,10 @@
-import { type Query, type QueryClient } from '@tanstack/react-query';
+import { type QueryClient } from '@tanstack/react-query';
+
 
 import { type PaginatedResponse } from '@/types/api';
 import { type OfferResponseDto } from '@/types/dtos';
 
+import { createListPredicate } from './query-predicates';
 import { queryKeys } from '../api/query-client';
 
 /**
@@ -32,30 +34,14 @@ const optimisticUpdateTimestamps = new Map<string, number>();
  */
 const OPTIMISTIC_UPDATE_DEBOUNCE_MS = 100;
 
-/**
- * Predicate to identify offer list queries for invalidation.
- * Prevents unnecessary refetches of individual detail queries.
- */
-export const isOfferListQuery = (query: Query): boolean => {
-  const key = query.queryKey;
-  return Array.isArray(key) && key[0] === 'offers' && key[1] === 'list';
-};
+/** Predicate to identify offer list queries for invalidation. */
+export const isOfferListQuery = createListPredicate('offers');
 
-/**
- * Predicate to identify lead list queries for invalidation.
- */
-export const isLeadListQuery = (query: Query): boolean => {
-  const key = query.queryKey;
-  return Array.isArray(key) && key[0] === 'leads' && key[1] === 'list';
-};
+/** Predicate to identify lead list queries for invalidation. */
+export const isLeadListQuery = createListPredicate('leads');
 
-/**
- * Predicate to identify offer template list queries for invalidation.
- */
-export const isOfferTemplateListQuery = (query: Query): boolean => {
-  const key = query.queryKey;
-  return Array.isArray(key) && key[0] === 'offer-templates' && key[1] === 'list';
-};
+/** Predicate to identify offer template list queries for invalidation. */
+export const isOfferTemplateListQuery = createListPredicate('offer-templates');
 
 /**
  * Context returned from onMutate for optimistic updates.

@@ -1,7 +1,8 @@
 import { useParams } from 'react-router-dom';
 
 import { BaseEmailList } from '@/components/email/base-email-list';
-import { useFolder } from '@/lib/hooks/use-email-client';
+
+import { useEmailFolder } from '@/lib/hooks/use-email-client';
 
 /**
  * Get display name for folder title
@@ -16,7 +17,13 @@ export default function EmailFolder() {
   const { folderName } = useParams<{ folderName: string }>();
   const decodedFolderName = folderName ? decodeURIComponent(folderName) : '';
 
-  const { data: emails, isLoading, refetch, isRefetching, error } = useFolder(decodedFolderName);
+  const {
+    data: emails,
+    isLoading,
+    refetch,
+    isRefetching,
+    error,
+  } = useEmailFolder(decodedFolderName);
 
   return (
     <BaseEmailList

@@ -13,11 +13,11 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import {
-  useAssignableUsers,
   useAssignSettlement,
   useSettlement,
+  useSettlementAssignableUsers,
 } from '@/lib/hooks/use-settlements';
-import { getEmployeeName } from '@/lib/utils/user';
+import { getUserName } from '@/lib/utils/user';
 
 import { StatusBadge } from './components/status-badge';
 
@@ -113,7 +113,7 @@ function SettlementInfoCard({ settlementId }: SettlementInfoCardProps) {
             <div className="flex items-center gap-2">
               <Badge variant="secondary">
                 <User className="mr-1 h-3 w-3" />
-                {getEmployeeName(settlement.assignedUser)}
+                {getUserName(settlement.assignedUser)}
               </Badge>
             </div>
           ) : (
@@ -140,13 +140,14 @@ interface UserSelectionCardProps {
 
 function UserSelectionCard({ settlementId, initialUserId, basePath }: UserSelectionCardProps) {
   const navigate = useNavigate();
-  const { data: assignableUsers, isPending: usersPending } = useAssignableUsers(settlementId);
+  const { data: assignableUsers, isPending: usersPending } =
+    useSettlementAssignableUsers(settlementId);
   const employees = assignableUsers ?? [];
   const assignSettlement = useAssignSettlement();
 
   // Form state - selectedUserId is the user's explicit selection
   // When key changes (due to initialUserId change), React remounts component with fresh state
-  const [selectedUserId, setSelectedUserId] = useState<string>(initialUserId);
+  const [selectedUserId, setSelectedUserId] = useState<string>(() => initialUserId);
 
   const handleSave = () => {
     const userId = selectedUserId === 'unassigned' ? null : selectedUserId;
@@ -203,7 +204,7 @@ function UserSelectionCard({ settlementId, initialUserId, basePath }: UserSelect
               >
                 <User className="h-4 w-4 text-foreground" />
                 <div className="flex flex-col">
-                  <span className="text-foreground font-medium">{getEmployeeName(employee)}</span>
+                  <span className="text-foreground font-medium">{getUserName(employee)}</span>
                   {employee.firstName && employee.lastName && (
                     <span className="text-muted-foreground text-xs">{employee.email}</span>
                   )}

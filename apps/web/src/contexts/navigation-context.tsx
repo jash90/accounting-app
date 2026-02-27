@@ -30,6 +30,18 @@ interface StoredSidebarState {
   isOpen: boolean;
 }
 
+function tryParseIsOpen(value: string): boolean | null {
+  try {
+    const parsed = JSON.parse(value) as StoredSidebarState;
+    if (parsed.version === STORAGE_VERSION && typeof parsed.isOpen === 'boolean') {
+      return parsed.isOpen;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function getInitialState(): boolean {
   // SSR safety check
   if (typeof window === 'undefined') {
@@ -94,14 +106,8 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     if (!handleStorageChangeRef.current) {
       handleStorageChangeRef.current = (e: StorageEvent) => {
         if (e.key === STORAGE_KEY && e.newValue !== null) {
-          try {
-            const parsed = JSON.parse(e.newValue) as StoredSidebarState;
-            if (parsed.version === STORAGE_VERSION && typeof parsed.isOpen === 'boolean') {
-              setIsOpen(parsed.isOpen);
-            }
-          } catch {
-            // Ignore parse errors
-          }
+          const isOpen = tryParseIsOpen(e.newValue);
+          if (isOpen !== null) setIsOpen(isOpen);
         }
       };
     }

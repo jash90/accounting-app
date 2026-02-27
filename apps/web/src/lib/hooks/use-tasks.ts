@@ -16,6 +16,9 @@ import {
 } from '@/types/dtos';
 
 
+import { createExportHook } from './create-export-hook';
+import { createMutationHook } from './create-mutation-hook';
+import { CACHE_TIERS } from '../api/cache-config';
 import {
   taskCommentsApi,
   taskDependenciesApi,
@@ -28,6 +31,7 @@ import {
   type UpdateTaskTemplateDto,
 } from '../api/endpoints/tasks';
 import { queryKeys } from '../api/query-client';
+import { getApiErrorMessage } from '../utils/query-filters';
 
 export type { GlobalTaskStatisticsDto, TaskTemplateResponseDto } from '../api/endpoints/tasks';
 
@@ -48,27 +52,10 @@ const isTaskViewQuery = (query: Query): boolean => {
   );
 };
 
-// ============================================
-// Cache Time Constants
-// ============================================
-
-/** Cache times for task list and kanban views - data changes frequently */
-const TASK_LIST_CACHE = {
-  staleTime: 30 * 1000, // 30 seconds
-  gcTime: 5 * 60 * 1000, // 5 minutes
-};
-
-/** Cache times for task detail views - slightly longer */
-const TASK_DETAIL_CACHE = {
-  staleTime: 60 * 1000, // 1 minute
-  gcTime: 10 * 60 * 1000, // 10 minutes
-};
-
-/** Cache times for lookup data - changes infrequently */
-const TASK_LOOKUP_CACHE = {
-  staleTime: 5 * 60 * 1000, // 5 minutes
-  gcTime: 10 * 60 * 1000, // 10 minutes
-};
+// Use shared cache tiers (frequent=30s/5m, standard=1m/10m, stable=5m/10m)
+const TASK_LIST_CACHE = CACHE_TIERS.frequent;
+const TASK_DETAIL_CACHE = CACHE_TIERS.standard;
+const TASK_LOOKUP_CACHE = CACHE_TIERS.stable;
 
 // ============================================
 // Task Hooks
@@ -161,122 +148,58 @@ export function useGlobalTaskStatistics() {
 
 export function useTaskCompletionStats(filters?: { startDate?: string; endDate?: string }) {
   return useQuery({
-    queryKey: ['tasks', 'stats', 'completion-duration', filters],
+    queryKey: queryKeys.tasks.extendedStats.completionDuration(filters),
     queryFn: () => tasksApi.getCompletionDurationStats(filters),
   });
 }
 
 export function useEmployeeTaskRanking(filters?: { startDate?: string; endDate?: string }) {
   return useQuery({
-    queryKey: ['tasks', 'stats', 'employee-ranking', filters],
+    queryKey: queryKeys.tasks.extendedStats.employeeRanking(filters),
     queryFn: () => tasksApi.getEmployeeTaskRanking(filters),
   });
 }
 
-export function useCreateTask() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useCreateTask = createMutationHook<{ clientId?: string }, CreateTaskDto>({
+  mutationFn: (taskData) => tasksApi.create(taskData),
+  invalidatePredicate: isTaskViewQuery,
+  onSuccess: (newTask, _variables, qc) => {
+    if (newTask.clientId) {
+      qc.invalidateQueries({ queryKey: queryKeys.tasks.clientStatistics(newTask.clientId) });
+    }
+  },
+  successMessage: 'Zadanie zostało utworzone',
+  errorMessage: 'Nie udało się utworzyć zadania',
+});
 
-  return useMutation({
-    mutationFn: (taskData: CreateTaskDto) => tasksApi.create(taskData),
-    onSuccess: (newTask) => {
-      // Invalidate all task view queries (list, kanban, calendar) in one predicate call
-      queryClient.invalidateQueries({ predicate: isTaskViewQuery });
-      // Invalidate statistics if client was assigned
-      if (newTask.clientId) {
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.tasks.clientStatistics(newTask.clientId),
-        });
-      }
-      toast({
-        title: 'Sukces',
-        description: 'Zadanie zostało utworzone',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się utworzyć zadania',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateTask = createMutationHook<void, { id: string; data: UpdateTaskDto }>({
+  mutationFn: ({ id, data }) => tasksApi.update(id, data),
+  invalidatePredicate: isTaskViewQuery,
+  onSuccess: (_, variables, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.id) });
+    qc.invalidateQueries({ queryKey: queryKeys.tasks.subtasks(variables.id) });
+  },
+  successMessage: 'Zadanie zostało zaktualizowane',
+  errorMessage: 'Nie udało się zaktualizować zadania',
+});
 
-export function useUpdateTask() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useDeleteTask = createMutationHook<void, string>({
+  mutationFn: (id) => tasksApi.delete(id),
+  invalidatePredicate: isTaskViewQuery,
+  onSuccess: (_, deletedId, qc) => {
+    qc.removeQueries({ queryKey: queryKeys.tasks.detail(deletedId) });
+  },
+  successMessage: 'Zadanie zostało usunięte',
+  errorMessage: 'Nie udało się usunąć zadania',
+});
 
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateTaskDto }) => tasksApi.update(id, data),
-    onSuccess: (_updatedTask, variables) => {
-      // Invalidate the specific task detail and subtasks
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.subtasks(variables.id) });
-      // Invalidate all task view queries (list, kanban, calendar) in one predicate call
-      queryClient.invalidateQueries({ predicate: isTaskViewQuery });
-      toast({
-        title: 'Sukces',
-        description: 'Zadanie zostało zaktualizowane',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować zadania',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useReorderTasks = createMutationHook<void, ReorderTasksDto>({
+  mutationFn: (reorderData) => tasksApi.reorderTasks(reorderData),
+  invalidatePredicate: isTaskViewQuery,
+  errorMessage: 'Nie udało się zmienić kolejności zadań',
+});
 
-export function useDeleteTask() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => tasksApi.delete(id),
-    onSuccess: (_, deletedId) => {
-      // Remove from cache
-      queryClient.removeQueries({ queryKey: queryKeys.tasks.detail(deletedId) });
-      // Invalidate all task view queries (list, kanban, calendar) in one predicate call
-      queryClient.invalidateQueries({ predicate: isTaskViewQuery });
-      toast({
-        title: 'Sukces',
-        description: 'Zadanie zostało usunięte',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć zadania',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useReorderTasks() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (reorderData: ReorderTasksDto) => tasksApi.reorderTasks(reorderData),
-    onSuccess: () => {
-      // Invalidate all task view queries (list, kanban, calendar) in one predicate call
-      queryClient.invalidateQueries({ predicate: isTaskViewQuery });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zmienić kolejności zadań',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useBulkUpdateStatus() {
+export function useBulkUpdateTaskStatus() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -308,7 +231,7 @@ export function useBulkUpdateStatus() {
     onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować statusu zadań',
+        description: getApiErrorMessage(error, 'Nie udało się zaktualizować statusu zadań'),
         variant: 'destructive',
       });
     },
@@ -344,128 +267,54 @@ export function useTaskLabel(id: string) {
   });
 }
 
-export function useCreateTaskLabel() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useCreateTaskLabel = createMutationHook<void, CreateTaskLabelDto>({
+  mutationFn: (labelData) => taskLabelsApi.create(labelData),
+  invalidateKeys: [queryKeys.taskLabels.all],
+  successMessage: 'Etykieta została utworzona',
+  errorMessage: 'Nie udało się utworzyć etykiety',
+});
 
-  return useMutation({
-    mutationFn: (labelData: CreateTaskLabelDto) => taskLabelsApi.create(labelData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.taskLabels.all });
-      toast({
-        title: 'Sukces',
-        description: 'Etykieta została utworzona',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się utworzyć etykiety',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateTaskLabel = createMutationHook<
+  void,
+  { id: string; data: UpdateTaskLabelDto }
+>({
+  mutationFn: ({ id, data }) => taskLabelsApi.update(id, data),
+  invalidateKeys: [queryKeys.taskLabels.all],
+  onSuccess: (_, variables, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.taskLabels.detail(variables.id) });
+  },
+  successMessage: 'Etykieta została zaktualizowana',
+  errorMessage: 'Nie udało się zaktualizować etykiety',
+});
 
-export function useUpdateTaskLabel() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useDeleteTaskLabel = createMutationHook<void, string>({
+  mutationFn: (id) => taskLabelsApi.delete(id),
+  invalidateKeys: [queryKeys.taskLabels.all],
+  successMessage: 'Etykieta została usunięta',
+  errorMessage: 'Nie udało się usunąć etykiety',
+});
 
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateTaskLabelDto }) =>
-      taskLabelsApi.update(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.taskLabels.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.taskLabels.detail(variables.id) });
-      toast({
-        title: 'Sukces',
-        description: 'Etykieta została zaktualizowana',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować etykiety',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useAssignTaskLabel = createMutationHook<void, { taskId: string; labelId: string }>({
+  mutationFn: ({ taskId, labelId }) => taskLabelsApi.assignToTask(taskId, { labelId }),
+  invalidatePredicate: isTaskViewQuery,
+  onSuccess: (_, variables, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
+  },
+  successMessage: 'Etykieta została przypisana',
+  errorMessage: 'Nie udało się przypisać etykiety',
+});
 
-export function useDeleteTaskLabel() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => taskLabelsApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.taskLabels.all });
-      toast({
-        title: 'Sukces',
-        description: 'Etykieta została usunięta',
-      });
+export const useUnassignTaskLabel = createMutationHook<void, { taskId: string; labelId: string }>(
+  {
+    mutationFn: ({ taskId, labelId }) => taskLabelsApi.unassignFromTask(taskId, labelId),
+    invalidatePredicate: isTaskViewQuery,
+    onSuccess: (_, variables, qc) => {
+      qc.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
     },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć etykiety',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useAssignTaskLabel() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ taskId, labelId }: { taskId: string; labelId: string }) =>
-      taskLabelsApi.assignToTask(taskId, { labelId }),
-    onSuccess: (_, variables) => {
-      // Invalidate the specific task detail and all task view queries
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
-      queryClient.invalidateQueries({ predicate: isTaskViewQuery });
-      toast({
-        title: 'Sukces',
-        description: 'Etykieta została przypisana',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się przypisać etykiety',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useUnassignTaskLabel() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ taskId, labelId }: { taskId: string; labelId: string }) =>
-      taskLabelsApi.unassignFromTask(taskId, labelId),
-    onSuccess: (_, variables) => {
-      // Invalidate the specific task detail and all task view queries
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
-      queryClient.invalidateQueries({ predicate: isTaskViewQuery });
-      toast({
-        title: 'Sukces',
-        description: 'Etykieta została usunięta z zadania',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć etykiety z zadania',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+    successMessage: 'Etykieta została usunięta z zadania',
+    errorMessage: 'Nie udało się usunąć etykiety z zadania',
+  }
+);
 
 // ============================================
 // Task Comment Hooks
@@ -480,84 +329,41 @@ export function useTaskComments(taskId: string) {
   });
 }
 
-export function useCreateTaskComment() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useCreateTaskComment = createMutationHook<
+  void,
+  { taskId: string; data: CreateTaskCommentDto }
+>({
+  mutationFn: ({ taskId, data }) => taskCommentsApi.create(taskId, data),
+  onSuccess: (_, variables, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.tasks.comments(variables.taskId) });
+  },
+  successMessage: 'Komentarz został dodany',
+  errorMessage: 'Nie udało się dodać komentarza',
+});
 
-  return useMutation({
-    mutationFn: ({ taskId, data }: { taskId: string; data: CreateTaskCommentDto }) =>
-      taskCommentsApi.create(taskId, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.comments(variables.taskId) });
-      toast({
-        title: 'Sukces',
-        description: 'Komentarz został dodany',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się dodać komentarza',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateTaskComment = createMutationHook<
+  void,
+  { commentId: string; taskId: string; data: UpdateTaskCommentDto }
+>({
+  mutationFn: ({ commentId, data }) => taskCommentsApi.update(commentId, data),
+  onSuccess: (_, variables, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.tasks.comments(variables.taskId) });
+  },
+  successMessage: 'Komentarz został zaktualizowany',
+  errorMessage: 'Nie udało się zaktualizować komentarza',
+});
 
-export function useUpdateTaskComment() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({
-      commentId,
-      taskId: _taskId,
-      data,
-    }: {
-      commentId: string;
-      taskId: string;
-      data: UpdateTaskCommentDto;
-    }) => taskCommentsApi.update(commentId, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.comments(variables.taskId) });
-      toast({
-        title: 'Sukces',
-        description: 'Komentarz został zaktualizowany',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować komentarza',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useDeleteTaskComment() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ commentId, taskId: _taskId }: { commentId: string; taskId: string }) =>
-      taskCommentsApi.delete(commentId),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.comments(variables.taskId) });
-      toast({
-        title: 'Sukces',
-        description: 'Komentarz został usunięty',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć komentarza',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useDeleteTaskComment = createMutationHook<
+  void,
+  { commentId: string; taskId: string }
+>({
+  mutationFn: ({ commentId }) => taskCommentsApi.delete(commentId),
+  onSuccess: (_, variables, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.tasks.comments(variables.taskId) });
+  },
+  successMessage: 'Komentarz został usunięty',
+  errorMessage: 'Nie udało się usunąć komentarza',
+});
 
 // ============================================
 // Task Dependency Hooks
@@ -574,7 +380,7 @@ export function useTaskDependencies(taskId: string) {
 
 export function useTaskBlockedBy(taskId: string) {
   return useQuery({
-    queryKey: [...queryKeys.tasks.dependencies(taskId), 'blocked-by'],
+    queryKey: queryKeys.tasks.blockedBy(taskId),
     queryFn: () => taskDependenciesApi.getBlockedBy(taskId),
     enabled: !!taskId,
     ...TASK_DETAIL_CACHE,
@@ -583,106 +389,56 @@ export function useTaskBlockedBy(taskId: string) {
 
 export function useTaskBlocking(taskId: string) {
   return useQuery({
-    queryKey: [...queryKeys.tasks.dependencies(taskId), 'blocking'],
+    queryKey: queryKeys.tasks.blocking(taskId),
     queryFn: () => taskDependenciesApi.getBlocking(taskId),
     enabled: !!taskId,
     ...TASK_DETAIL_CACHE,
   });
 }
 
-export function useCreateTaskDependency() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useCreateTaskDependency = createMutationHook<
+  void,
+  { taskId: string; data: CreateTaskDependencyDto }
+>({
+  mutationFn: ({ taskId, data }) => taskDependenciesApi.create(taskId, data),
+  onSuccess: (_, variables, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.tasks.dependencies(variables.taskId) });
+    qc.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
+    if (variables.data.dependsOnTaskId) {
+      qc.invalidateQueries({
+        queryKey: queryKeys.tasks.dependencies(variables.data.dependsOnTaskId),
+      });
+      qc.invalidateQueries({
+        queryKey: queryKeys.tasks.detail(variables.data.dependsOnTaskId),
+      });
+    }
+  },
+  successMessage: 'Zależność została dodana',
+  errorMessage: 'Nie udało się dodać zależności',
+});
 
-  return useMutation({
-    mutationFn: ({ taskId, data }: { taskId: string; data: CreateTaskDependencyDto }) =>
-      taskDependenciesApi.create(taskId, data),
-    onSuccess: (_, variables) => {
-      // Invalidate dependencies and detail for affected tasks
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.dependencies(variables.taskId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
-      // Also invalidate the dependent task
-      if (variables.data.dependsOnTaskId) {
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.tasks.dependencies(variables.data.dependsOnTaskId),
-        });
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.tasks.detail(variables.data.dependsOnTaskId),
-        });
-      }
-      toast({
-        title: 'Sukces',
-        description: 'Zależność została dodana',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się dodać zależności',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useDeleteTaskDependency() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ dependencyId, taskId: _taskId }: { dependencyId: string; taskId: string }) =>
-      taskDependenciesApi.delete(dependencyId),
-    onSuccess: (_, variables) => {
-      // Invalidate dependencies for the task
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.dependencies(variables.taskId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
-      toast({
-        title: 'Sukces',
-        description: 'Zależność została usunięta',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć zależności',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useDeleteTaskDependency = createMutationHook<
+  void,
+  { dependencyId: string; taskId: string }
+>({
+  mutationFn: ({ dependencyId }) => taskDependenciesApi.delete(dependencyId),
+  onSuccess: (_, variables, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.tasks.dependencies(variables.taskId) });
+    qc.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
+  },
+  successMessage: 'Zależność została usunięta',
+  errorMessage: 'Nie udało się usunąć zależności',
+});
 
 // ============================================
 // Export Hooks
 // ============================================
 
-export function useExportTasks() {
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (filters?: TaskFiltersDto) => tasksApi.exportCsv(filters),
-    onSuccess: (blob) => {
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      try {
-        link.href = url;
-        link.download = `zadania-${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast({ title: 'Sukces', description: 'Plik CSV został pobrany' });
-      } finally {
-        window.URL.revokeObjectURL(url);
-      }
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się wyeksportować zadań',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useExportTasks = createExportHook<TaskFiltersDto>(
+  (filters) => tasksApi.exportCsv(filters),
+  'zadania',
+  'Nie udało się wyeksportować zadań'
+);
 
 // ============================================
 // Task Template Hooks
@@ -705,84 +461,36 @@ export function useTaskTemplate(id: string) {
   });
 }
 
-export function useCreateTaskTemplate() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useCreateTaskTemplate = createMutationHook<void, CreateTaskTemplateDto>({
+  mutationFn: (dto) => taskTemplatesApi.create(dto),
+  invalidateKeys: [queryKeys.taskTemplates.all],
+  successMessage: 'Szablon zadania został utworzony',
+  errorMessage: 'Nie udało się utworzyć szablonu',
+});
 
-  return useMutation({
-    mutationFn: (dto: CreateTaskTemplateDto) => taskTemplatesApi.create(dto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.taskTemplates.all });
-      toast({ title: 'Sukces', description: 'Szablon zadania został utworzony' });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się utworzyć szablonu',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateTaskTemplate = createMutationHook<
+  void,
+  { id: string; data: UpdateTaskTemplateDto }
+>({
+  mutationFn: ({ id, data }) => taskTemplatesApi.update(id, data),
+  invalidateKeys: [queryKeys.taskTemplates.all],
+  onSuccess: (_, variables, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.taskTemplates.detail(variables.id) });
+  },
+  successMessage: 'Szablon zadania został zaktualizowany',
+  errorMessage: 'Nie udało się zaktualizować szablonu',
+});
 
-export function useUpdateTaskTemplate() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useDeleteTaskTemplate = createMutationHook<void, string>({
+  mutationFn: (id) => taskTemplatesApi.delete(id),
+  invalidateKeys: [queryKeys.taskTemplates.all],
+  successMessage: 'Szablon zadania został usunięty',
+  errorMessage: 'Nie udało się usunąć szablonu',
+});
 
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateTaskTemplateDto }) =>
-      taskTemplatesApi.update(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.taskTemplates.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.taskTemplates.detail(variables.id) });
-      toast({ title: 'Sukces', description: 'Szablon zadania został zaktualizowany' });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować szablonu',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useDeleteTaskTemplate() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => taskTemplatesApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.taskTemplates.all });
-      toast({ title: 'Sukces', description: 'Szablon zadania został usunięty' });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć szablonu',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useCreateTaskFromTemplate() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (templateId: string) => taskTemplatesApi.createTaskFromTemplate(templateId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ predicate: isTaskViewQuery });
-      toast({ title: 'Sukces', description: 'Zadanie zostało utworzone z szablonu' });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się utworzyć zadania z szablonu',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useCreateTaskFromTemplate = createMutationHook<void, string>({
+  mutationFn: (templateId) => taskTemplatesApi.createTaskFromTemplate(templateId),
+  invalidatePredicate: isTaskViewQuery,
+  successMessage: 'Zadanie zostało utworzone z szablonu',
+  errorMessage: 'Nie udało się utworzyć zadania z szablonu',
+});

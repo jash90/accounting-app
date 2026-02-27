@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 
+import { cn } from '@/lib/utils/cn';
 import {
   AlertTriangle,
   Archive,
@@ -14,10 +15,9 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-import { Skeleton } from '@/components/ui/skeleton';
-import { useFolders } from '@/lib/hooks/use-email-client';
+import { useEmailFolders } from '@/lib/hooks/use-email-client';
 import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
-import { cn } from '@/lib/utils/cn';
+import { Skeleton } from '@/components/ui/skeleton';
 
 /**
  * Skeleton component for folder list loading state
@@ -93,7 +93,7 @@ function sortFolders(folders: string[]): string[] {
 export function EmailSidebar() {
   const location = useLocation();
   const emailNav = useEmailClientNavigation();
-  const { data: folders, isPending, isFetching, isError } = useFolders();
+  const { data: folders, isPending, isFetching, isError } = useEmailFolders();
 
   const isActive = (folderName: string) => {
     const encodedFolder = encodeURIComponent(folderName);

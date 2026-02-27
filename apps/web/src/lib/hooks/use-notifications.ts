@@ -9,54 +9,20 @@ import type {
 } from '@/types/notifications';
 
 
+import { createMutationHook } from './create-mutation-hook';
+import { CACHE_TIERS } from '../api/cache-config';
 import { notificationsApi, notificationSettingsApi } from '../api/endpoints/notifications';
 import { queryKeys } from '../api/query-client';
+import { buildQueryFilters, getApiErrorMessage } from '../utils/query-filters';
 
-// ============================================
-// Cache Time Constants
-// ============================================
-
-/** Cache times for notification list views */
-const NOTIFICATION_LIST_CACHE = {
-  staleTime: 30 * 1000, // 30 seconds - notifications should refresh often
-  gcTime: 5 * 60 * 1000, // 5 minutes
-};
-
-/** Cache times for notification detail views */
-const NOTIFICATION_DETAIL_CACHE = {
-  staleTime: 60 * 1000, // 1 minute
-  gcTime: 10 * 60 * 1000, // 10 minutes
-};
-
-/** Cache times for notification settings - changes infrequently */
-const NOTIFICATION_SETTINGS_CACHE = {
-  staleTime: 5 * 60 * 1000, // 5 minutes
-  gcTime: 10 * 60 * 1000, // 10 minutes
-};
-
-/**
- * Converts NotificationFiltersDto to a query-key safe Record.
- * This provides type safety while ensuring the filter values are
- * properly serializable for query key comparison.
- */
-function toQueryKeyFilters(filters?: NotificationFiltersDto): Record<string, unknown> | undefined {
-  if (!filters) return undefined;
-
-  // Only include defined values to keep query keys consistent
-  const result: Record<string, unknown> = {};
-  if (filters.page !== undefined) result.page = filters.page;
-  if (filters.limit !== undefined) result.limit = filters.limit;
-  if (filters.type !== undefined) result.type = filters.type;
-  if (filters.moduleSlug !== undefined) result.moduleSlug = filters.moduleSlug;
-  if (filters.isRead !== undefined) result.isRead = filters.isRead;
-  if (filters.isArchived !== undefined) result.isArchived = filters.isArchived;
-
-  return Object.keys(result).length > 0 ? result : undefined;
-}
+// Use shared cache tiers (frequent=30s/5m, standard=1m/10m, stable=5m/10m)
+const NOTIFICATION_LIST_CACHE = CACHE_TIERS.frequent;
+const NOTIFICATION_DETAIL_CACHE = CACHE_TIERS.standard;
+const NOTIFICATION_SETTINGS_CACHE = CACHE_TIERS.stable;
 
 export function useNotifications(filters?: NotificationFiltersDto) {
   return useQuery({
-    queryKey: queryKeys.notifications.list(toQueryKeyFilters(filters)),
+    queryKey: queryKeys.notifications.list(buildQueryFilters(filters)),
     queryFn: () => notificationsApi.getAll(filters),
     ...NOTIFICATION_LIST_CACHE,
   });
@@ -64,7 +30,7 @@ export function useNotifications(filters?: NotificationFiltersDto) {
 
 export function useArchivedNotifications(filters?: NotificationFiltersDto) {
   return useQuery({
-    queryKey: queryKeys.notifications.archived(toQueryKeyFilters(filters)),
+    queryKey: queryKeys.notifications.archived(buildQueryFilters(filters)),
     queryFn: () => notificationsApi.getArchived(filters),
     ...NOTIFICATION_LIST_CACHE,
   });
@@ -89,133 +55,76 @@ export function useUnreadNotificationCount() {
   });
 }
 
-export function useMarkNotificationAsRead() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+/** Internal factory: creates an optimistic read/unread toggle mutation. */
+function createReadToggle(targetRead: boolean) {
+  return function useToggle() {
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
 
-  return useMutation({
-    mutationFn: (id: string) => notificationsApi.markAsRead(id),
-    onMutate: async (id) => {
-      // Cancel any outgoing refetches in parallel
-      await Promise.all([
-        queryClient.cancelQueries({ queryKey: queryKeys.notifications.all, exact: false }),
-        queryClient.cancelQueries({ queryKey: queryKeys.notifications.unreadCount }),
-      ]);
+    return useMutation({
+      mutationFn: (id: string) =>
+        targetRead ? notificationsApi.markAsRead(id) : notificationsApi.markAsUnread(id),
+      onMutate: async (id) => {
+        await Promise.all([
+          queryClient.cancelQueries({ queryKey: queryKeys.notifications.all, exact: false }),
+          queryClient.cancelQueries({ queryKey: queryKeys.notifications.unreadCount }),
+        ]);
 
-      // Snapshot current state for rollback
-      const previousLists = queryClient.getQueriesData({ queryKey: queryKeys.notifications.all });
-      const previousUnreadCount = queryClient.getQueryData(queryKeys.notifications.unreadCount);
+        const previousLists = queryClient.getQueriesData({ queryKey: queryKeys.notifications.all });
+        const previousUnreadCount = queryClient.getQueryData(queryKeys.notifications.unreadCount);
 
-      // Optimistically update notification lists
-      queryClient.setQueriesData(
-        { queryKey: queryKeys.notifications.all },
-        (old: { data: NotificationResponseDto[] } | undefined) => {
-          if (!old?.data) return old;
-          return {
-            ...old,
-            data: old.data.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
-          };
+        queryClient.setQueriesData(
+          { queryKey: queryKeys.notifications.all },
+          (old: { data: NotificationResponseDto[] } | undefined) => {
+            if (!old?.data) return old;
+            return {
+              ...old,
+              data: old.data.map((n) => (n.id === id ? { ...n, isRead: targetRead } : n)),
+            };
+          }
+        );
+
+        queryClient.setQueryData(
+          queryKeys.notifications.unreadCount,
+          (old: { count: number } | undefined) => {
+            if (!old) return old;
+            return { count: targetRead ? Math.max(0, old.count - 1) : old.count + 1 };
+          }
+        );
+
+        return { previousLists, previousUnreadCount };
+      },
+      onError: (error: ApiErrorResponse, _id, context) => {
+        if (context?.previousLists) {
+          context.previousLists.forEach(([queryKey, data]) => {
+            queryClient.setQueryData(queryKey, data);
+          });
         }
-      );
-
-      // Optimistically decrement unread count
-      queryClient.setQueryData(
-        queryKeys.notifications.unreadCount,
-        (old: { count: number } | undefined) => {
-          if (!old) return old;
-          return { count: Math.max(0, old.count - 1) };
+        if (context?.previousUnreadCount !== undefined) {
+          queryClient.setQueryData(queryKeys.notifications.unreadCount, context.previousUnreadCount);
         }
-      );
-
-      return { previousLists, previousUnreadCount };
-    },
-    onError: (error: ApiErrorResponse, _id, context) => {
-      // Rollback on error
-      if (context?.previousLists) {
-        context.previousLists.forEach(([queryKey, data]) => {
-          queryClient.setQueryData(queryKey, data);
+        toast({
+          title: 'Błąd',
+          description: getApiErrorMessage(
+            error,
+            targetRead
+              ? 'Nie udało się oznaczyć jako przeczytane'
+              : 'Nie udało się oznaczyć jako nieprzeczytane'
+          ),
+          variant: 'destructive',
         });
-      }
-      if (context?.previousUnreadCount !== undefined) {
-        queryClient.setQueryData(queryKeys.notifications.unreadCount, context.previousUnreadCount);
-      }
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się oznaczyć jako przeczytane',
-        variant: 'destructive',
-      });
-    },
-    onSettled: (_data, _error, id) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.detail(id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all, exact: false });
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount });
-    },
-  });
+      },
+      onSettled: (_data, _error, id) => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.notifications.detail(id) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all, exact: false });
+        queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount });
+      },
+    });
+  };
 }
 
-export function useMarkNotificationAsUnread() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => notificationsApi.markAsUnread(id),
-    onMutate: async (id) => {
-      // Cancel any outgoing refetches in parallel
-      await Promise.all([
-        queryClient.cancelQueries({ queryKey: queryKeys.notifications.all, exact: false }),
-        queryClient.cancelQueries({ queryKey: queryKeys.notifications.unreadCount }),
-      ]);
-
-      // Snapshot current state for rollback
-      const previousLists = queryClient.getQueriesData({ queryKey: queryKeys.notifications.all });
-      const previousUnreadCount = queryClient.getQueryData(queryKeys.notifications.unreadCount);
-
-      // Optimistically update notification lists
-      queryClient.setQueriesData(
-        { queryKey: queryKeys.notifications.all },
-        (old: { data: NotificationResponseDto[] } | undefined) => {
-          if (!old?.data) return old;
-          return {
-            ...old,
-            data: old.data.map((n) => (n.id === id ? { ...n, isRead: false } : n)),
-          };
-        }
-      );
-
-      // Optimistically increment unread count
-      queryClient.setQueryData(
-        queryKeys.notifications.unreadCount,
-        (old: { count: number } | undefined) => {
-          if (!old) return old;
-          return { count: old.count + 1 };
-        }
-      );
-
-      return { previousLists, previousUnreadCount };
-    },
-    onError: (error: ApiErrorResponse, _id, context) => {
-      // Rollback on error
-      if (context?.previousLists) {
-        context.previousLists.forEach(([queryKey, data]) => {
-          queryClient.setQueryData(queryKey, data);
-        });
-      }
-      if (context?.previousUnreadCount !== undefined) {
-        queryClient.setQueryData(queryKeys.notifications.unreadCount, context.previousUnreadCount);
-      }
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się oznaczyć jako nieprzeczytane',
-        variant: 'destructive',
-      });
-    },
-    onSettled: (_data, _error, id) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.detail(id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all, exact: false });
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount });
-    },
-  });
-}
+export const useMarkNotificationAsRead = createReadToggle(true);
+export const useMarkNotificationAsUnread = createReadToggle(false);
 
 export function useMarkAllNotificationsAsRead() {
   const queryClient = useQueryClient();
@@ -233,8 +142,7 @@ export function useMarkAllNotificationsAsRead() {
     onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
-        description:
-          error.response?.data?.message || 'Nie udało się oznaczyć wszystkich jako przeczytane',
+        description: getApiErrorMessage(error, 'Nie udało się oznaczyć wszystkich jako przeczytane'),
         variant: 'destructive',
       });
     },
@@ -305,7 +213,7 @@ export function useArchiveNotification() {
       }
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zarchiwizować powiadomienia',
+        description: getApiErrorMessage(error, 'Nie udało się zarchiwizować powiadomienia'),
         variant: 'destructive',
       });
     },
@@ -323,30 +231,16 @@ export function useArchiveNotification() {
   });
 }
 
-export function useRestoreNotification() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => notificationsApi.restore(id),
-    onSuccess: (_data, id) => {
-      queryClient.removeQueries({ queryKey: queryKeys.notifications.detail(id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all, exact: false });
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount });
-      toast({
-        title: 'Sukces',
-        description: 'Powiadomienie zostało przywrócone',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się przywrócić powiadomienia',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useRestoreNotification = createMutationHook<void, string>({
+  mutationFn: (id) => notificationsApi.restore(id),
+  invalidateKeys: [queryKeys.notifications.unreadCount],
+  onSuccess: (_, id, qc) => {
+    qc.removeQueries({ queryKey: queryKeys.notifications.detail(id) });
+    qc.invalidateQueries({ queryKey: queryKeys.notifications.all, exact: false });
+  },
+  successMessage: 'Powiadomienie zostało przywrócone',
+  errorMessage: 'Nie udało się przywrócić powiadomienia',
+});
 
 export function useArchiveMultipleNotifications() {
   const queryClient = useQueryClient();
@@ -364,36 +258,22 @@ export function useArchiveMultipleNotifications() {
     onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zarchiwizować powiadomień',
+        description: getApiErrorMessage(error, 'Nie udało się zarchiwizować powiadomień'),
         variant: 'destructive',
       });
     },
   });
 }
 
-export function useDeleteNotification() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => notificationsApi.delete(id),
-    onSuccess: (_data, id) => {
-      queryClient.removeQueries({ queryKey: queryKeys.notifications.detail(id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all, exact: false });
-      toast({
-        title: 'Sukces',
-        description: 'Powiadomienie zostało usunięte',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć powiadomienia',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useDeleteNotification = createMutationHook<void, string>({
+  mutationFn: (id) => notificationsApi.delete(id),
+  onSuccess: (_, id, qc) => {
+    qc.removeQueries({ queryKey: queryKeys.notifications.detail(id) });
+    qc.invalidateQueries({ queryKey: queryKeys.notifications.all, exact: false });
+  },
+  successMessage: 'Powiadomienie zostało usunięte',
+  errorMessage: 'Nie udało się usunąć powiadomienia',
+});
 
 export function useNotificationSettings() {
   return useQuery({
@@ -412,57 +292,23 @@ export function useNotificationSettingsByModule(moduleSlug: string) {
   });
 }
 
-export function useUpdateModuleNotificationSettings() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useUpdateModuleNotificationSettings = createMutationHook<
+  void,
+  { moduleSlug: string; settings: UpdateNotificationSettingsDto }
+>({
+  mutationFn: ({ moduleSlug, settings }) =>
+    notificationSettingsApi.updateModule(moduleSlug, settings),
+  invalidateKeys: [queryKeys.notifications.settings],
+  successMessage: 'Ustawienia powiadomień zostały zaktualizowane',
+  errorMessage: 'Nie udało się zaktualizować ustawień powiadomień',
+});
 
-  return useMutation({
-    mutationFn: ({
-      moduleSlug,
-      settings,
-    }: {
-      moduleSlug: string;
-      settings: UpdateNotificationSettingsDto;
-    }) => notificationSettingsApi.updateModule(moduleSlug, settings),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.settings });
-      toast({
-        title: 'Sukces',
-        description: 'Ustawienia powiadomień zostały zaktualizowane',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description:
-          error.response?.data?.message || 'Nie udało się zaktualizować ustawień powiadomień',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useUpdateGlobalNotificationSettings() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (settings: UpdateNotificationSettingsDto) =>
-      notificationSettingsApi.updateGlobal(settings),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.settings });
-      toast({
-        title: 'Sukces',
-        description: 'Globalne ustawienia powiadomień zostały zaktualizowane',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description:
-          error.response?.data?.message || 'Nie udało się zaktualizować ustawień powiadomień',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateGlobalNotificationSettings = createMutationHook<
+  void,
+  UpdateNotificationSettingsDto
+>({
+  mutationFn: (settings) => notificationSettingsApi.updateGlobal(settings),
+  invalidateKeys: [queryKeys.notifications.settings],
+  successMessage: 'Globalne ustawienia powiadomień zostały zaktualizowane',
+  errorMessage: 'Nie udało się zaktualizować ustawień powiadomień',
+});

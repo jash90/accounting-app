@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { type ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import {
   ArrowLeft,
   Calendar,
@@ -26,6 +26,14 @@ import { TaskFilters } from '@/components/tasks/task-filters';
 import { TaskLabelList } from '@/components/tasks/task-label-badge';
 import { TaskPriorityBadge } from '@/components/tasks/task-priority-badge';
 import { TaskStatusBadge } from '@/components/tasks/task-status-badge';
+import {
+  useBulkUpdateTaskStatus,
+  useCreateTask,
+  useDeleteTask,
+  useExportTasks,
+  useTasks,
+  useUpdateTask,
+} from '@/lib/hooks/use-tasks';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -39,15 +47,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthContext } from '@/contexts/auth-context';
+import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import {
-  useBulkUpdateStatus,
-  useCreateTask,
-  useDeleteTask,
-  useExportTasks,
-  useTasks,
-  useUpdateTask,
-} from '@/lib/hooks/use-tasks';
 import { mapTaskLabels } from '@/lib/utils/task-label-mapper';
 import {
   type CreateTaskDto,
@@ -63,114 +64,129 @@ const TaskFormDialog = lazy(() =>
     default: m.TaskFormDialog,
   }))
 );
-export default function TasksListPage() {
-  const { user } = useAuthContext();
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
 
-  const { hasWritePermission, hasDeletePermission } = useModulePermissions('tasks');
+const DialogFallback = () => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <Card>
+      <CardContent className="space-y-4 p-6">
+        <Skeleton className="h-6 w-48" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-20 w-full" />
+      </CardContent>
+    </Card>
+  </div>
+);
 
-  // Memoize basePath to prevent recalculation on every render
-  const basePath = useMemo(() => {
-    switch (user?.role) {
-      case UserRole.ADMIN:
-        return '/admin/modules/tasks';
-      case UserRole.COMPANY_OWNER:
-        return '/company/modules/tasks';
-      default:
-        return '/modules/tasks';
-    }
-  }, [user?.role]);
+interface TasksListDialogsProps {
+  createOpen: boolean;
+  closeCreate: () => void;
+  handleCreateSubmit: (data: CreateTaskDto | UpdateTaskDto) => Promise<void>;
+  isCreatePending: boolean;
+  activeEditingTask: TaskResponseDto | null;
+  closeEditing: () => void;
+  taskIdFromUrl: string | null;
+  setSearchParams: (params: Record<string, string>, options?: { replace?: boolean }) => void;
+  handleUpdateSubmit: (data: UpdateTaskDto) => Promise<void>;
+  isUpdatePending: boolean;
+  hasWritePermission: boolean;
+  hasDeletePermission: boolean;
+  deletingTask: TaskResponseDto | null | undefined;
+  closeDeleting: () => void;
+  deleteTask: {
+    mutate: (id: string, opts: { onSuccess: () => void; onSettled: () => void }) => void;
+    isPending: boolean;
+  };
+}
 
-  const [filters, setFilters] = useState<TaskFiltersDto>({});
-  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
-  const { data: tasksResponse, isPending } = useTasks(filters);
-  const tasks = useMemo(() => tasksResponse?.data ?? [], [tasksResponse?.data]);
+function TasksListDialogs({
+  createOpen,
+  closeCreate,
+  handleCreateSubmit,
+  isCreatePending,
+  activeEditingTask,
+  closeEditing,
+  taskIdFromUrl,
+  setSearchParams,
+  handleUpdateSubmit,
+  isUpdatePending,
+  hasWritePermission,
+  hasDeletePermission,
+  deletingTask,
+  closeDeleting,
+  deleteTask,
+}: TasksListDialogsProps) {
+  return (
+    <>
+      {hasWritePermission && (
+        <>
+          {createOpen && (
+            <Suspense fallback={<DialogFallback />}>
+              <TaskFormDialog
+                open={createOpen}
+                onOpenChange={(open) => !open && closeCreate()}
+                onSubmit={handleCreateSubmit}
+                isLoading={isCreatePending}
+              />
+            </Suspense>
+          )}
 
-  const createTask = useCreateTask();
-  const updateTask = useUpdateTask();
-  const deleteTask = useDeleteTask();
-  const bulkUpdateStatus = useBulkUpdateStatus();
-  const exportTasks = useExportTasks();
-  const [isBulkPending, startBulkTransition] = useTransition();
+          {activeEditingTask && (
+            <Suspense fallback={<DialogFallback />}>
+              <TaskFormDialog
+                open={!!activeEditingTask}
+                onOpenChange={(open) => {
+                  if (!open) {
+                    closeEditing();
+                    if (taskIdFromUrl) {
+                      setSearchParams({}, { replace: true });
+                    }
+                  }
+                }}
+                task={activeEditingTask}
+                onSubmit={handleUpdateSubmit}
+                isLoading={isUpdatePending}
+              />
+            </Suspense>
+          )}
+        </>
+      )}
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<TaskResponseDto | null>(null);
-  const [deletingTask, setDeletingTask] = useState<TaskResponseDto | null>(null);
-
-  // Handle taskId from URL (from calendar/timeline navigation)
-  // Derive the task to edit from URL param
-  const taskIdFromUrl = searchParams.get('taskId');
-  const taskFromUrl = useMemo(() => {
-    if (!taskIdFromUrl || tasks.length === 0) return null;
-    return tasks.find((t) => t.id === taskIdFromUrl) || null;
-  }, [taskIdFromUrl, tasks]);
-
-  // The active editing task is either from local state or derived from URL
-  const activeEditingTask = editingTask || taskFromUrl;
-
-  const handleFiltersChange = useCallback((newFilters: TaskFiltersDto) => {
-    setFilters(newFilters);
-  }, []);
-
-  const handleRowSelection = useCallback((taskId: string, selected: boolean) => {
-    setSelectedTasks((prev) => (selected ? [...prev, taskId] : prev.filter((id) => id !== taskId)));
-  }, []);
-
-  const handleSelectAll = useCallback(
-    (selected: boolean) => {
-      if (selected) {
-        setSelectedTasks(tasks.map((t) => t.id));
-      } else {
-        setSelectedTasks([]);
-      }
-    },
-    [tasks]
+      {hasDeletePermission && deletingTask && (
+        <ConfirmDialog
+          open={!!deletingTask}
+          onOpenChange={(open) => !open && closeDeleting()}
+          title="Usuń zadanie"
+          description={`Czy na pewno chcesz usunąć zadanie "${deletingTask.title}"?`}
+          variant="destructive"
+          onConfirm={() => {
+            deleteTask.mutate(deletingTask.id, {
+              onSuccess: () => closeDeleting(),
+              onSettled: () => closeDeleting(),
+            });
+          }}
+          isLoading={deleteTask.isPending}
+        />
+      )}
+    </>
   );
+}
 
-  // Memoized submit handlers to avoid recreating on each render
-  const handleCreateSubmit = useCallback(
-    async (data: CreateTaskDto | UpdateTaskDto) => {
-      await createTask.mutateAsync(data as CreateTaskDto);
-    },
-    [createTask]
-  );
-
-  const handleUpdateSubmit = useCallback(
-    async (data: UpdateTaskDto) => {
-      if (!activeEditingTask) return;
-      await updateTask.mutateAsync({
-        id: activeEditingTask.id,
-        data,
-      });
-      setEditingTask(null);
-      if (taskIdFromUrl) {
-        setSearchParams({}, { replace: true });
-      }
-    },
-    [updateTask, activeEditingTask, taskIdFromUrl, setSearchParams]
-  );
-
-  const handleBulkStatusChange = useCallback(
-    (status: TaskStatus) => {
-      if (selectedTasks.length === 0) return;
-      startBulkTransition(() => {
-        bulkUpdateStatus.mutate(
-          { taskIds: selectedTasks, status },
-          { onSuccess: () => setSelectedTasks([]) }
-        );
-      });
-    },
-    [selectedTasks, bulkUpdateStatus]
-  );
-
+function useTasksColumns(
+  hasWritePermission: boolean,
+  hasDeletePermission: boolean,
+  handleRowSelection: (taskId: string, selected: boolean) => void,
+  handleSelectAll: (selected: boolean) => void,
+  startEditing: (task: TaskResponseDto) => void,
+  startDeleting: (task: TaskResponseDto) => void
+): ColumnDef<TaskResponseDto>[] {
   const getInitials = (firstName?: string, lastName?: string) => {
     const first = firstName?.charAt(0) || '';
     const last = lastName?.charAt(0) || '';
     return (first + last).toUpperCase() || '?';
   };
 
-  const columns: ColumnDef<TaskResponseDto>[] = useMemo(
+  return useMemo(
     () => [
       {
         id: 'select',
@@ -285,7 +301,7 @@ export default function TasksListPage() {
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation();
-                      setEditingTask(task);
+                      startEditing(task);
                     }}
                   >
                     <Edit className="mr-2 h-4 w-4" />
@@ -299,7 +315,7 @@ export default function TasksListPage() {
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation();
-                      setDeletingTask(task);
+                      startDeleting(task);
                     }}
                     className="text-destructive focus:text-destructive"
                   >
@@ -313,7 +329,133 @@ export default function TasksListPage() {
         },
       },
     ],
-    [hasWritePermission, hasDeletePermission, handleRowSelection, handleSelectAll]
+    [
+      hasWritePermission,
+      hasDeletePermission,
+      handleRowSelection,
+      handleSelectAll,
+      startEditing,
+      startDeleting,
+    ]
+  );
+}
+
+export default function TasksListPage() {
+  const { user } = useAuthContext();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const { hasWritePermission, hasDeletePermission } = useModulePermissions('tasks');
+
+  // Memoize basePath to prevent recalculation on every render
+  const basePath = useMemo(() => {
+    switch (user?.role) {
+      case UserRole.ADMIN:
+        return '/admin/modules/tasks';
+      case UserRole.COMPANY_OWNER:
+        return '/company/modules/tasks';
+      default:
+        return '/modules/tasks';
+    }
+  }, [user?.role]);
+
+  const [filters, setFilters] = useState<TaskFiltersDto>({});
+  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+  const { data: tasksResponse, isPending } = useTasks(filters);
+  const tasks = useMemo(() => tasksResponse?.data ?? [], [tasksResponse?.data]);
+
+  const createTask = useCreateTask();
+  const updateTask = useUpdateTask();
+  const deleteTask = useDeleteTask();
+  const bulkUpdateStatus = useBulkUpdateTaskStatus();
+  const exportTasks = useExportTasks();
+  const [isBulkPending, startBulkTransition] = useTransition();
+
+  const {
+    createOpen,
+    editing: editingTask,
+    deleting: deletingTask,
+    openCreate,
+    closeCreate,
+    startEditing,
+    closeEditing,
+    startDeleting,
+    closeDeleting,
+  } = useCrudDialogs<TaskResponseDto>();
+
+  // Handle taskId from URL (from calendar/timeline navigation)
+  // Derive the task to edit from URL param
+  const taskIdFromUrl = searchParams.get('taskId');
+  const taskFromUrl = useMemo(() => {
+    if (!taskIdFromUrl || tasks.length === 0) return null;
+    return tasks.find((t) => t.id === taskIdFromUrl) || null;
+  }, [taskIdFromUrl, tasks]);
+
+  // The active editing task is either from local state or derived from URL
+  const activeEditingTask = editingTask || taskFromUrl;
+
+  const handleFiltersChange = useCallback((newFilters: TaskFiltersDto) => {
+    setFilters(newFilters);
+  }, []);
+
+  const handleRowSelection = useCallback((taskId: string, selected: boolean) => {
+    setSelectedTasks((prev) => (selected ? [...prev, taskId] : prev.filter((id) => id !== taskId)));
+  }, []);
+
+  const handleSelectAll = useCallback(
+    (selected: boolean) => {
+      if (selected) {
+        setSelectedTasks(tasks.map((t) => t.id));
+      } else {
+        setSelectedTasks([]);
+      }
+    },
+    [tasks]
+  );
+
+  // Memoized submit handlers to avoid recreating on each render
+  const handleCreateSubmit = useCallback(
+    async (data: CreateTaskDto | UpdateTaskDto) => {
+      await createTask.mutateAsync(data as CreateTaskDto);
+    },
+    [createTask]
+  );
+
+  const handleUpdateSubmit = useCallback(
+    async (data: UpdateTaskDto) => {
+      if (!activeEditingTask) return;
+      await updateTask.mutateAsync({
+        id: activeEditingTask.id,
+        data,
+      });
+      closeEditing();
+      if (taskIdFromUrl) {
+        setSearchParams({}, { replace: true });
+      }
+    },
+    [updateTask, activeEditingTask, taskIdFromUrl, setSearchParams, closeEditing]
+  );
+
+  const handleBulkStatusChange = useCallback(
+    (status: TaskStatus) => {
+      if (selectedTasks.length === 0) return;
+      startBulkTransition(() => {
+        bulkUpdateStatus.mutate(
+          { taskIds: selectedTasks, status },
+          { onSuccess: () => setSelectedTasks([]) }
+        );
+      });
+    },
+    [selectedTasks, bulkUpdateStatus]
+  );
+
+  const columns = useTasksColumns(
+    hasWritePermission,
+    hasDeletePermission,
+    handleRowSelection,
+    handleSelectAll,
+    startEditing,
+    startDeleting
   );
 
   return (
@@ -356,7 +498,7 @@ export default function TasksListPage() {
               {exportTasks.isPending ? 'Eksport...' : 'Eksportuj CSV'}
             </Button>
             {hasWritePermission && (
-              <Button onClick={() => setCreateOpen(true)}>
+              <Button onClick={openCreate}>
                 <Plus className="mr-2 h-4 w-4" />
                 Nowe zadanie
               </Button>
@@ -398,88 +540,28 @@ export default function TasksListPage() {
             columns={columns}
             data={tasks}
             isLoading={isPending}
-            onRowClick={(task) => setEditingTask(task)}
+            onRowClick={startEditing}
           />
         </CardContent>
       </Card>
 
-      {hasWritePermission && (
-        <>
-          {createOpen && (
-            <Suspense
-              fallback={
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                  <Card>
-                    <CardContent className="space-y-4 p-6">
-                      <Skeleton className="h-6 w-48" />
-                      <Skeleton className="h-10 w-full" />
-                      <Skeleton className="h-10 w-full" />
-                      <Skeleton className="h-20 w-full" />
-                    </CardContent>
-                  </Card>
-                </div>
-              }
-            >
-              <TaskFormDialog
-                open={createOpen}
-                onOpenChange={setCreateOpen}
-                onSubmit={handleCreateSubmit}
-                isLoading={createTask.isPending}
-              />
-            </Suspense>
-          )}
-
-          {activeEditingTask && (
-            <Suspense
-              fallback={
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                  <Card>
-                    <CardContent className="space-y-4 p-6">
-                      <Skeleton className="h-6 w-48" />
-                      <Skeleton className="h-10 w-full" />
-                      <Skeleton className="h-10 w-full" />
-                      <Skeleton className="h-20 w-full" />
-                    </CardContent>
-                  </Card>
-                </div>
-              }
-            >
-              <TaskFormDialog
-                open={!!activeEditingTask}
-                onOpenChange={(open) => {
-                  if (!open) {
-                    setEditingTask(null);
-                    // Clear URL param if present
-                    if (taskIdFromUrl) {
-                      setSearchParams({}, { replace: true });
-                    }
-                  }
-                }}
-                task={activeEditingTask}
-                onSubmit={handleUpdateSubmit}
-                isLoading={updateTask.isPending}
-              />
-            </Suspense>
-          )}
-        </>
-      )}
-
-      {hasDeletePermission && deletingTask && (
-        <ConfirmDialog
-          open={!!deletingTask}
-          onOpenChange={(open) => !open && setDeletingTask(null)}
-          title="Usuń zadanie"
-          description={`Czy na pewno chcesz usunąć zadanie "${deletingTask.title}"?`}
-          variant="destructive"
-          onConfirm={() => {
-            deleteTask.mutate(deletingTask.id, {
-              onSuccess: () => setDeletingTask(null),
-              onSettled: () => setDeletingTask(null),
-            });
-          }}
-          isLoading={deleteTask.isPending}
-        />
-      )}
+      <TasksListDialogs
+        createOpen={createOpen}
+        closeCreate={closeCreate}
+        handleCreateSubmit={handleCreateSubmit}
+        isCreatePending={createTask.isPending}
+        activeEditingTask={activeEditingTask}
+        closeEditing={closeEditing}
+        taskIdFromUrl={taskIdFromUrl}
+        setSearchParams={setSearchParams}
+        handleUpdateSubmit={handleUpdateSubmit}
+        isUpdatePending={updateTask.isPending}
+        hasWritePermission={hasWritePermission}
+        hasDeletePermission={hasDeletePermission}
+        deletingTask={deletingTask}
+        closeDeleting={closeDeleting}
+        deleteTask={deleteTask}
+      />
     </div>
   );
 }

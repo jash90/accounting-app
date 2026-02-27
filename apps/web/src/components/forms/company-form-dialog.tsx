@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useAvailableOwners } from '@/lib/hooks/use-users';
+import { useAvailableCompanyOwners } from '@/lib/hooks/use-users';
 import {
   createCompanySchema,
   updateCompanySchema,
@@ -44,7 +44,7 @@ export function CompanyFormDialog({
 }: CompanyFormDialogProps) {
   const isEditing = !!company;
   const schema = isEditing ? updateCompanySchema : createCompanySchema;
-  const { data: availableOwners, isLoading: ownersLoading } = useAvailableOwners();
+  const { data: availableOwners, isLoading: ownersLoading } = useAvailableCompanyOwners();
 
   const form = useForm<CreateCompanyFormData | UpdateCompanyFormData>({
     resolver: zodResolver(schema),

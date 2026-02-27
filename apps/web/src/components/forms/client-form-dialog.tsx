@@ -35,7 +35,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { ReliefType, ReliefTypeDurationMonths } from '@/lib/api/endpoints/relief-periods';
 import { AmlGroupLabels, GTU_CODES } from '@/lib/constants/polish-labels';
-import { useFieldDefinitions } from '@/lib/hooks/use-clients';
+import { useClientFieldDefinitions } from '@/lib/hooks/use-clients';
 import { useModuleCreatePath } from '@/lib/hooks/use-module-base-path';
 import { usePkdCode, usePkdSearch } from '@/lib/hooks/use-pkd-search';
 import {
@@ -147,7 +147,7 @@ export function ClientFormDialog({
   };
 
   // Fetch field definitions
-  const { data: fieldDefinitionsResponse } = useFieldDefinitions();
+  const { data: fieldDefinitionsResponse } = useClientFieldDefinitions();
   const fieldDefinitions = fieldDefinitionsResponse?.data ?? [];
   const activeFieldDefinitions = fieldDefinitions.filter((fd) => fd.isActive);
 

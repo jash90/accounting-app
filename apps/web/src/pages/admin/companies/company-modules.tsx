@@ -1,20 +1,20 @@
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { PageHeader } from '@/components/common/page-header';
 import { ArrowLeft, Building2, Package } from 'lucide-react';
 
-import { PageHeader } from '@/components/common/page-header';
+import {
+  useCompany,
+  useCompanyAssignedModules,
+  useGrantModuleToCompany,
+  useRevokeModuleFromCompany,
+} from '@/lib/hooks/use-companies';
+import { useModules } from '@/lib/hooks/use-modules';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
-import {
-  useCompany,
-  useCompanyModules,
-  useGrantModuleToCompany,
-  useRevokeModuleFromCompany,
-} from '@/lib/hooks/use-companies';
-import { useModules } from '@/lib/hooks/use-modules';
 
 export default function CompanyModulesPage() {
   const { id } = useParams<{ id: string }>();
@@ -22,9 +22,8 @@ export default function CompanyModulesPage() {
 
   const { data: company, isPending: companyLoading } = useCompany(id || '');
   const { data: allModules = [], isPending: modulesLoading } = useModules();
-  const { data: companyModuleAccesses = [], isPending: accessesLoading } = useCompanyModules(
-    id || ''
-  );
+  const { data: companyModuleAccesses = [], isPending: accessesLoading } =
+    useCompanyAssignedModules(id || '');
 
   const grantModule = useGrantModuleToCompany();
   const revokeModule = useRevokeModuleFromCompany();

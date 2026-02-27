@@ -1,4 +1,3 @@
-import { type PaginatedResponse } from '@/types/api';
 import {
   type ContentBlocksResponseDto,
   type ConvertLeadToClientDto,
@@ -25,6 +24,7 @@ import {
 } from '@/types/dtos';
 
 import apiClient from '../client';
+import { createBlobExport, createCrudApi } from '../crud-factory';
 
 const BASE_URL = '/api/modules/offers';
 
@@ -33,31 +33,7 @@ const BASE_URL = '/api/modules/offers';
 // ============================================
 
 export const offersApi = {
-  getAll: async (filters?: OfferFiltersDto): Promise<PaginatedResponse<OfferResponseDto>> => {
-    const { data } = await apiClient.get<PaginatedResponse<OfferResponseDto>>(BASE_URL, {
-      params: filters,
-    });
-    return data;
-  },
-
-  getById: async (id: string): Promise<OfferResponseDto> => {
-    const { data } = await apiClient.get<OfferResponseDto>(`${BASE_URL}/${id}`);
-    return data;
-  },
-
-  create: async (offerData: CreateOfferDto): Promise<OfferResponseDto> => {
-    const { data } = await apiClient.post<OfferResponseDto>(BASE_URL, offerData);
-    return data;
-  },
-
-  update: async (id: string, offerData: UpdateOfferDto): Promise<OfferResponseDto> => {
-    const { data } = await apiClient.patch<OfferResponseDto>(`${BASE_URL}/${id}`, offerData);
-    return data;
-  },
-
-  delete: async (id: string): Promise<void> => {
-    await apiClient.delete(`${BASE_URL}/${id}`);
-  },
+  ...createCrudApi<OfferResponseDto, CreateOfferDto, UpdateOfferDto, OfferFiltersDto>(BASE_URL),
 
   updateStatus: async (id: string, statusData: UpdateOfferStatusDto): Promise<OfferResponseDto> => {
     const { data } = await apiClient.patch<OfferResponseDto>(
@@ -112,13 +88,7 @@ export const offersApi = {
   },
 
   // CSV export
-  exportCsv: async (filters?: OfferFiltersDto): Promise<Blob> => {
-    const { data } = await apiClient.get<Blob>(`${BASE_URL}/export`, {
-      params: filters,
-      responseType: 'blob',
-    });
-    return data;
-  },
+  exportCsv: createBlobExport<OfferFiltersDto>(`${BASE_URL}/export`),
 };
 
 // ============================================
@@ -135,31 +105,7 @@ export interface LeadAssigneeDto {
 }
 
 export const leadsApi = {
-  getAll: async (filters?: LeadFiltersDto): Promise<PaginatedResponse<LeadResponseDto>> => {
-    const { data } = await apiClient.get<PaginatedResponse<LeadResponseDto>>(LEADS_URL, {
-      params: filters,
-    });
-    return data;
-  },
-
-  getById: async (id: string): Promise<LeadResponseDto> => {
-    const { data } = await apiClient.get<LeadResponseDto>(`${LEADS_URL}/${id}`);
-    return data;
-  },
-
-  create: async (leadData: CreateLeadDto): Promise<LeadResponseDto> => {
-    const { data } = await apiClient.post<LeadResponseDto>(LEADS_URL, leadData);
-    return data;
-  },
-
-  update: async (id: string, leadData: UpdateLeadDto): Promise<LeadResponseDto> => {
-    const { data } = await apiClient.patch<LeadResponseDto>(`${LEADS_URL}/${id}`, leadData);
-    return data;
-  },
-
-  delete: async (id: string): Promise<void> => {
-    await apiClient.delete(`${LEADS_URL}/${id}`);
-  },
+  ...createCrudApi<LeadResponseDto, CreateLeadDto, UpdateLeadDto, LeadFiltersDto>(LEADS_URL),
 
   convertToClient: async (
     id: string,
@@ -183,13 +129,7 @@ export const leadsApi = {
   },
 
   // CSV export
-  exportCsv: async (filters?: LeadFiltersDto): Promise<Blob> => {
-    const { data } = await apiClient.get<Blob>(`${LEADS_URL}/export`, {
-      params: filters,
-      responseType: 'blob',
-    });
-    return data;
-  },
+  exportCsv: createBlobExport<LeadFiltersDto>(`${LEADS_URL}/export`),
 };
 
 // ============================================
@@ -199,20 +139,12 @@ export const leadsApi = {
 const TEMPLATES_URL = `${BASE_URL}/templates`;
 
 export const offerTemplatesApi = {
-  getAll: async (
-    filters?: OfferTemplateFiltersDto
-  ): Promise<PaginatedResponse<OfferTemplateResponseDto>> => {
-    const { data } = await apiClient.get<PaginatedResponse<OfferTemplateResponseDto>>(
-      TEMPLATES_URL,
-      { params: filters }
-    );
-    return data;
-  },
-
-  getById: async (id: string): Promise<OfferTemplateResponseDto> => {
-    const { data } = await apiClient.get<OfferTemplateResponseDto>(`${TEMPLATES_URL}/${id}`);
-    return data;
-  },
+  ...createCrudApi<
+    OfferTemplateResponseDto,
+    CreateOfferTemplateDto,
+    UpdateOfferTemplateDto,
+    OfferTemplateFiltersDto
+  >(TEMPLATES_URL),
 
   getDefault: async (): Promise<OfferTemplateResponseDto | null> => {
     try {
@@ -226,26 +158,6 @@ export const offerTemplatesApi = {
       if (status === 404) return null;
       throw error;
     }
-  },
-
-  create: async (templateData: CreateOfferTemplateDto): Promise<OfferTemplateResponseDto> => {
-    const { data } = await apiClient.post<OfferTemplateResponseDto>(TEMPLATES_URL, templateData);
-    return data;
-  },
-
-  update: async (
-    id: string,
-    templateData: UpdateOfferTemplateDto
-  ): Promise<OfferTemplateResponseDto> => {
-    const { data } = await apiClient.patch<OfferTemplateResponseDto>(
-      `${TEMPLATES_URL}/${id}`,
-      templateData
-    );
-    return data;
-  },
-
-  delete: async (id: string): Promise<void> => {
-    await apiClient.delete(`${TEMPLATES_URL}/${id}`);
   },
 
   uploadTemplate: async (id: string, file: File): Promise<OfferTemplateResponseDto> => {

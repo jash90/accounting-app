@@ -26,8 +26,13 @@ const STANDARD_PLACEHOLDERS = [
   { key: 'kwota_vat', label: 'Kwota VAT' },
 ];
 
-export function PlaceholderPicker() {
+interface PlaceholderPickerProps {
+  placeholders?: Array<{ key: string; label: string }>;
+}
+
+export function PlaceholderPicker({ placeholders }: PlaceholderPickerProps = {}) {
   const { toast } = useToast();
+  const items = placeholders ?? STANDARD_PLACEHOLDERS;
 
   const copyToClipboard = (key: string) => {
     const placeholder = `{{${key}}}`;
@@ -49,7 +54,7 @@ export function PlaceholderPicker() {
       <PopoverContent className="w-72 max-h-80 overflow-y-auto" align="start">
         <div className="space-y-1">
           <p className="text-sm font-medium mb-2">Kliknij, aby skopiować placeholder</p>
-          {STANDARD_PLACEHOLDERS.map((p) => (
+          {items.map((p) => (
             <button
               key={p.key}
               onClick={() => copyToClipboard(p.key)}

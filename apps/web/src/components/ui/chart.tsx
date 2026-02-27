@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint_disable @typescript-eslint/no-explicit-any */
 import * as React from 'react';
 
-import * as RechartsPrimitive from 'recharts';
-
 import { cn } from '@/lib/utils/cn';
+import * as RechartsPrimitive from 'recharts';
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: '', dark: '.dark' } as const;

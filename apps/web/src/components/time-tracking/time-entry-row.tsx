@@ -1,7 +1,11 @@
 import { memo, useCallback, useEffect, useState } from 'react';
 
+import { cn } from '@/lib/utils/cn';
+import { formatDuration } from '@/lib/utils/time';
+import { type TimeEntryResponseDto } from '@/types/dtos';
+import { TimeEntryStatus } from '@/types/enums';
 import { format, formatDistanceToNow } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import {
   Calendar,
   CheckCircle,
@@ -22,10 +26,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils/cn';
-import { formatDuration } from '@/lib/utils/time';
-import { type TimeEntryResponseDto } from '@/types/dtos';
-import { TimeEntryStatus } from '@/types/enums';
 
 import { TimeEntryStatusBadge } from './time-entry-status-badge';
 

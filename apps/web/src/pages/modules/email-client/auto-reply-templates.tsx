@@ -1,8 +1,5 @@
-import { useState } from 'react';
-
 import { useForm } from 'react-hook-form';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -34,23 +31,16 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import apiClient from '@/lib/api/client';
-
-interface AutoReplyTemplate {
-  id: string;
-  name: string;
-  description?: string | null;
-  category?: string | null;
-  isActive: boolean;
-  triggerKeywords: string[];
-  keywordMatchMode: string;
-  matchSubjectOnly: boolean;
-  bodyTemplate: string;
-  tone: string;
-  customInstructions?: string | null;
-  matchCount: number;
-  lastMatchedAt?: string | null;
-}
+import {
+  type AutoReplyTemplate,
+  useAutoReplyTemplates,
+  useCreateAutoReplyTemplate,
+  useDeleteAutoReplyTemplate,
+  useToggleAutoReplyTemplate,
+  useUpdateAutoReplyTemplate,
+} from '@/lib/hooks/use-auto-reply-templates';
+import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
+import { formatDate } from '@/lib/utils/format-date';
 
 interface TemplateFormData {
   name: string;
@@ -66,52 +56,6 @@ interface TemplateFormData {
 }
 
 const TEMPLATE_CATEGORIES = ['CEIDG', 'VAT', 'ZUS', 'PIT', 'Ogólne'];
-
-function useAutoReplyTemplates() {
-  return useQuery({
-    queryKey: ['email', 'auto-reply-templates'],
-    queryFn: () =>
-      apiClient
-        .get<AutoReplyTemplate[]>('/modules/email-client/auto-reply-templates')
-        .then((r) => r.data),
-  });
-}
-
-function useCreateAutoReplyTemplate() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: object) =>
-      apiClient.post('/modules/email-client/auto-reply-templates', data).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['email', 'auto-reply-templates'] }),
-  });
-}
-
-function useUpdateAutoReplyTemplate() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: object }) =>
-      apiClient.patch(`/modules/email-client/auto-reply-templates/${id}`, data).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['email', 'auto-reply-templates'] }),
-  });
-}
-
-function useDeleteAutoReplyTemplate() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) =>
-      apiClient.delete(`/modules/email-client/auto-reply-templates/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['email', 'auto-reply-templates'] }),
-  });
-}
-
-function useToggleAutoReplyTemplate() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
-      apiClient.patch(`/modules/email-client/auto-reply-templates/${id}`, { isActive }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['email', 'auto-reply-templates'] }),
-  });
-}
 
 function TemplateFormDialog({
   open,
@@ -383,8 +327,15 @@ export default function AutoReplyTemplatesPage() {
   const { data: templates, isLoading } = useAutoReplyTemplates();
   const deleteTemplate = useDeleteAutoReplyTemplate();
   const toggleTemplate = useToggleAutoReplyTemplate();
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<AutoReplyTemplate | null>(null);
+  const {
+    createOpen,
+    editing: editingTemplate,
+    openCreate: handleCreate,
+    closeCreate,
+    startEditing,
+    closeEditing,
+  } = useCrudDialogs<AutoReplyTemplate>();
+  const formOpen = createOpen || !!editingTemplate;
 
   const handleDelete = async (id: string) => {
     try {
@@ -396,27 +347,24 @@ export default function AutoReplyTemplatesPage() {
   };
 
   const handleToggle = async (id: string, currentState: boolean) => {
+    const label = currentState ? 'dezaktywowany' : 'aktywowany';
     try {
       await toggleTemplate.mutateAsync({ id, isActive: !currentState });
-      toast.success(`Szablon ${currentState ? 'dezaktywowany' : 'aktywowany'}`);
+      toast.success(`Szablon ${label}`);
     } catch {
       toast.error('Błąd podczas zmiany stanu szablonu');
     }
   };
 
   const handleEdit = (template: AutoReplyTemplate) => {
-    setEditingTemplate(template);
-    setFormOpen(true);
-  };
-
-  const handleCreate = () => {
-    setEditingTemplate(null);
-    setFormOpen(true);
+    startEditing(template);
   };
 
   const handleFormClose = (open: boolean) => {
-    setFormOpen(open);
-    if (!open) setEditingTemplate(null);
+    if (!open) {
+      closeCreate();
+      closeEditing();
+    }
   };
 
   if (isLoading) return <div className="p-6">Ładowanie...</div>;
@@ -494,7 +442,7 @@ export default function AutoReplyTemplatesPage() {
                 <span>Dopasowania: {template.matchCount}</span>
                 {template.lastMatchedAt && (
                   <span>
-                    Ostatnie: {new Date(template.lastMatchedAt).toLocaleDateString('pl-PL')}
+                    Ostatnie: {formatDate(template.lastMatchedAt)}
                   </span>
                 )}
               </div>

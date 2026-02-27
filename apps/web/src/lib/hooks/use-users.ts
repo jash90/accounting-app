@@ -1,17 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type AxiosError } from 'axios';
+import { useQuery } from '@tanstack/react-query';
 
-import { useToast } from '@/components/ui/use-toast';
 import { type CreateUserDto, type UpdateUserDto } from '@/types/dtos';
 
+import { createMutationHook } from './create-mutation-hook';
 import { usersApi } from '../api/endpoints/users';
 import { queryKeys } from '../api/query-client';
-
-interface ApiErrorResponse {
-  message?: string;
-  error?: string;
-  statusCode?: number;
-}
 
 export function useUsers() {
   return useQuery({
@@ -28,83 +21,37 @@ export function useUser(id: string) {
   });
 }
 
-export function useCreateUser() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useCreateUser = createMutationHook<void, CreateUserDto>({
+  mutationFn: (data) => usersApi.create(data),
+  invalidateKeys: [queryKeys.users.all],
+  onSuccess: (_, __, queryClient) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.companies.availableOwners });
+    queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
+  },
+  successMessage: 'Użytkownik został utworzony',
+  errorMessage: 'Nie udało się utworzyć użytkownika',
+});
 
-  return useMutation({
-    mutationFn: (userData: CreateUserDto) => usersApi.create(userData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
-      // Invalidate available owners in case a new COMPANY_OWNER was created
-      queryClient.invalidateQueries({ queryKey: ['available-owners'] });
-      // Invalidate companies in case a company was created with COMPANY_OWNER
-      queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
-      toast({
-        title: 'Sukces',
-        description: 'Użytkownik został utworzony',
-      });
-    },
-    onError: (error: AxiosError<ApiErrorResponse>) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się utworzyć użytkownika',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateUser = createMutationHook<void, { id: string; data: UpdateUserDto }>({
+  mutationFn: ({ id, data }) => usersApi.update(id, data),
+  invalidateKeys: [queryKeys.users.all],
+  onSuccess: (_, variables, queryClient) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(variables.id) });
+  },
+  successMessage: 'Użytkownik został zaktualizowany',
+  errorMessage: 'Nie udało się zaktualizować użytkownika',
+});
 
-export function useUpdateUser() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useDeleteUser = createMutationHook<void, string>({
+  mutationFn: (id) => usersApi.delete(id),
+  invalidateKeys: [queryKeys.users.all],
+  successMessage: 'Użytkownik został usunięty',
+  errorMessage: 'Nie udało się usunąć użytkownika',
+});
 
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateUserDto }) => usersApi.update(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(variables.id) });
-      toast({
-        title: 'Sukces',
-        description: 'Użytkownik został zaktualizowany',
-      });
-    },
-    onError: (error: AxiosError<ApiErrorResponse>) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować użytkownika',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useDeleteUser() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => usersApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
-      toast({
-        title: 'Sukces',
-        description: 'Użytkownik został usunięty',
-      });
-    },
-    onError: (error: AxiosError<ApiErrorResponse>) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć użytkownika',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useAvailableOwners() {
+export function useAvailableCompanyOwners() {
   return useQuery({
-    queryKey: ['available-owners'],
+    queryKey: queryKeys.companies.availableOwners,
     queryFn: usersApi.getAvailableOwners,
   });
 }

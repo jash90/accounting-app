@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient, type Query } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
 import { type ApiErrorResponse } from '@/types/api';
@@ -14,6 +14,7 @@ import {
 } from '@/types/dtos';
 
 
+import { createMutationHook } from './create-mutation-hook';
 import {
   timeEntriesApi,
   timerApi,
@@ -22,33 +23,15 @@ import {
   timesheetApi,
 } from '../api/endpoints/time-tracking';
 import { queryKeys } from '../api/query-client';
+import { downloadBlob } from '../utils/download';
+import { getApiErrorMessage } from '../utils/query-filters';
+import { createListPredicate } from '../utils/query-predicates';
 
 // ============================================
 // Helper Functions
 // ============================================
 
-/**
- * Predicate to match time entry list queries for selective cache invalidation.
- *
- * Used with `queryClient.invalidateQueries({ predicate })` to selectively invalidate
- * only list queries while preserving cached detail and timer queries.
- *
- * @param query - TanStack Query's Query object containing queryKey
- * @returns true if the query matches the time entry list pattern
- *
- * @example
- * // Matches: ['time-entries', 'list'] or ['time-entries', 'list', { filters }]
- * // Does NOT match: ['time-entries', 'abc-123'] (detail query)
- * // Does NOT match: ['time-tracking', 'timer', 'active'] (timer query)
- *
- * queryClient.invalidateQueries({ predicate: isTimeEntryListQuery });
- *
- * @see isEmailInboxQuery in use-email-client.ts for similar pattern
- */
-const isTimeEntryListQuery = (query: Query): boolean => {
-  const key = query.queryKey;
-  return Array.isArray(key) && key[0] === 'time-entries' && key[1] === 'list';
-};
+const isTimeEntryListQuery = createListPredicate('time-entries');
 
 // Named constants for timer intervals and timeouts
 // Sync timer state with server periodically to keep elapsed time accurate on multiple devices/tabs
@@ -109,169 +92,77 @@ export function useTimeEntry(id: string) {
   });
 }
 
-export function useCreateTimeEntry() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useCreateTimeEntry = createMutationHook<unknown, CreateTimeEntryDto>({
+  mutationFn: (entryData) => timeEntriesApi.create(entryData),
+  invalidatePredicate: isTimeEntryListQuery,
+  successMessage: 'Wpis czasu został utworzony',
+  errorMessage: 'Nie udało się utworzyć wpisu czasu',
+});
 
-  return useMutation({
-    mutationFn: (entryData: CreateTimeEntryDto) => timeEntriesApi.create(entryData),
-    onSuccess: () => {
-      // Only invalidate list queries, not detail/timer queries
-      queryClient.invalidateQueries({ predicate: isTimeEntryListQuery });
-      toast({
-        title: 'Sukces',
-        description: 'Wpis czasu został utworzony',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się utworzyć wpisu czasu',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateTimeEntry = createMutationHook<
+  unknown,
+  { id: string; data: UpdateTimeEntryDto }
+>({
+  mutationFn: ({ id, data }) => timeEntriesApi.update(id, data),
+  invalidatePredicate: isTimeEntryListQuery,
+  onSuccess: (_, vars, qc) => {
+    // Invalidate the specific detail query
+    qc.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.detail(vars.id) });
+  },
+  successMessage: 'Wpis czasu został zaktualizowany',
+  errorMessage: 'Nie udało się zaktualizować wpisu czasu',
+});
 
-export function useUpdateTimeEntry() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateTimeEntryDto }) =>
-      timeEntriesApi.update(id, data),
-    onSuccess: (_, variables) => {
-      // Invalidate the specific detail query
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.timeTracking.entries.detail(variables.id),
-      });
-      // Only invalidate list queries, not all time-entries queries
-      queryClient.invalidateQueries({ predicate: isTimeEntryListQuery });
-      toast({
-        title: 'Sukces',
-        description: 'Wpis czasu został zaktualizowany',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować wpisu czasu',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useDeleteTimeEntry() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => timeEntriesApi.delete(id),
-    onSuccess: (_, deletedId) => {
-      // Remove the specific detail query from cache
-      queryClient.removeQueries({ queryKey: queryKeys.timeTracking.entries.detail(deletedId) });
-      // Only invalidate list queries
-      queryClient.invalidateQueries({ predicate: isTimeEntryListQuery });
-      toast({
-        title: 'Sukces',
-        description: 'Wpis czasu został usunięty',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć wpisu czasu',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useDeleteTimeEntry = createMutationHook<unknown, string>({
+  mutationFn: (id) => timeEntriesApi.delete(id),
+  invalidatePredicate: isTimeEntryListQuery,
+  onSuccess: (_, deletedId, qc) => {
+    // Remove the specific detail query from cache
+    qc.removeQueries({ queryKey: queryKeys.timeTracking.entries.detail(deletedId) });
+  },
+  successMessage: 'Wpis czasu został usunięty',
+  errorMessage: 'Nie udało się usunąć wpisu czasu',
+});
 
 // ============================================
 // Approval Workflow Hooks
 // ============================================
 
-export function useSubmitTimeEntry() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useSubmitTimeEntry = createMutationHook<unknown, string>({
+  mutationFn: (id) => timeEntriesApi.submit(id),
+  invalidatePredicate: isTimeEntryListQuery,
+  onSuccess: (_, id, qc) => {
+    // Invalidate the specific detail query
+    qc.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.detail(id) });
+  },
+  successMessage: 'Wpis czasu został wysłany do zatwierdzenia',
+  errorMessage: 'Nie udało się wysłać wpisu do zatwierdzenia',
+});
 
-  return useMutation({
-    mutationFn: (id: string) => timeEntriesApi.submit(id),
-    onSuccess: (_, id) => {
-      // Invalidate the specific detail query
-      queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.detail(id) });
-      // Only invalidate list queries
-      queryClient.invalidateQueries({ predicate: isTimeEntryListQuery });
-      toast({
-        title: 'Sukces',
-        description: 'Wpis czasu został wysłany do zatwierdzenia',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się wysłać wpisu do zatwierdzenia',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useApproveTimeEntry = createMutationHook<unknown, string>({
+  mutationFn: (id) => timeEntriesApi.approve(id),
+  invalidatePredicate: isTimeEntryListQuery,
+  onSuccess: (_, id, qc) => {
+    // Invalidate the specific detail query
+    qc.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.detail(id) });
+  },
+  successMessage: 'Wpis czasu został zatwierdzony',
+  errorMessage: 'Nie udało się zatwierdzić wpisu czasu',
+});
 
-export function useApproveTimeEntry() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => timeEntriesApi.approve(id),
-    onSuccess: (_, id) => {
-      // Invalidate the specific detail query
-      queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.detail(id) });
-      // Only invalidate list queries
-      queryClient.invalidateQueries({ predicate: isTimeEntryListQuery });
-      toast({
-        title: 'Sukces',
-        description: 'Wpis czasu został zatwierdzony',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zatwierdzić wpisu czasu',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useRejectTimeEntry() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: RejectTimeEntryDto }) =>
-      timeEntriesApi.reject(id, data),
-    onSuccess: (_, variables) => {
-      // Invalidate the specific detail query
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.timeTracking.entries.detail(variables.id),
-      });
-      // Only invalidate list queries
-      queryClient.invalidateQueries({ predicate: isTimeEntryListQuery });
-      toast({
-        title: 'Sukces',
-        description: 'Wpis czasu został odrzucony',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się odrzucić wpisu czasu',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useRejectTimeEntry = createMutationHook<
+  unknown,
+  { id: string; data: RejectTimeEntryDto }
+>({
+  mutationFn: ({ id, data }) => timeEntriesApi.reject(id, data),
+  invalidatePredicate: isTimeEntryListQuery,
+  onSuccess: (_, vars, qc) => {
+    // Invalidate the specific detail query
+    qc.invalidateQueries({ queryKey: queryKeys.timeTracking.entries.detail(vars.id) });
+  },
+  successMessage: 'Wpis czasu został odrzucony',
+  errorMessage: 'Nie udało się odrzucić wpisu czasu',
+});
 
 // ============================================
 // Timer Hooks
@@ -286,55 +177,21 @@ export function useActiveTimer() {
   });
 }
 
-export function useStartTimer() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useStartTimer = createMutationHook<unknown, StartTimerDto>({
+  mutationFn: (dto) => timerApi.start(dto),
+  invalidateKeys: [queryKeys.timeTracking.timer.active],
+  invalidatePredicate: isTimeEntryListQuery,
+  successMessage: 'Timer został uruchomiony',
+  errorMessage: 'Nie udało się uruchomić timera',
+});
 
-  return useMutation({
-    mutationFn: (dto: StartTimerDto) => timerApi.start(dto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.timer.active });
-      // Only invalidate list queries
-      queryClient.invalidateQueries({ predicate: isTimeEntryListQuery });
-      toast({
-        title: 'Sukces',
-        description: 'Timer został uruchomiony',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się uruchomić timera',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useStopTimer() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (dto?: StopTimerDto) => timerApi.stop(dto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.timer.active });
-      // Only invalidate list queries (new entry was created)
-      queryClient.invalidateQueries({ predicate: isTimeEntryListQuery });
-      toast({
-        title: 'Sukces',
-        description: 'Timer został zatrzymany, wpis czasu zapisany',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zatrzymać timera',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useStopTimer = createMutationHook<unknown, StopTimerDto | undefined>({
+  mutationFn: (dto) => timerApi.stop(dto),
+  invalidateKeys: [queryKeys.timeTracking.timer.active],
+  invalidatePredicate: isTimeEntryListQuery,
+  successMessage: 'Timer został zatrzymany, wpis czasu zapisany',
+  errorMessage: 'Nie udało się zatrzymać timera',
+});
 
 export function useUpdateTimer() {
   const queryClient = useQueryClient();
@@ -355,28 +212,12 @@ export function useUpdateTimer() {
   });
 }
 
-export function useDiscardTimer() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: () => timerApi.discard(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.timer.active });
-      toast({
-        title: 'Sukces',
-        description: 'Timer został odrzucony',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się odrzucić timera',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useDiscardTimer = createMutationHook<unknown, void>({
+  mutationFn: () => timerApi.discard(),
+  invalidateKeys: [queryKeys.timeTracking.timer.active],
+  successMessage: 'Timer został odrzucony',
+  errorMessage: 'Nie udało się odrzucić timera',
+});
 
 // ============================================
 // Time Settings Hooks
@@ -390,28 +231,12 @@ export function useTimeSettings() {
   });
 }
 
-export function useUpdateTimeSettings() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (settingsData: UpdateTimeSettingsDto) => timeSettingsApi.update(settingsData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.timeTracking.settings });
-      toast({
-        title: 'Sukces',
-        description: 'Ustawienia zostały zaktualizowane',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować ustawień',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateTimeSettings = createMutationHook<unknown, UpdateTimeSettingsDto>({
+  mutationFn: (settingsData) => timeSettingsApi.update(settingsData),
+  invalidateKeys: [queryKeys.timeTracking.settings],
+  successMessage: 'Ustawienia zostały zaktualizowane',
+  errorMessage: 'Nie udało się zaktualizować ustawień',
+});
 
 // ============================================
 // Timesheet Hooks
@@ -467,7 +292,7 @@ export function useTimeByClientReport(params: {
 
 export function useTopTasksByTime(preset: '30d' | '90d' | '365d' = '30d') {
   return useQuery({
-    queryKey: ['time-tracking', 'extended', 'top-tasks', preset],
+    queryKey: queryKeys.timeTracking.extendedStats.topTasks(preset),
     queryFn: () => timeReportsApi.getTopTasksByTime({ preset }),
     ...REPORT_CACHE,
   });
@@ -475,7 +300,7 @@ export function useTopTasksByTime(preset: '30d' | '90d' | '365d' = '30d') {
 
 export function useTopSettlementsByTime(preset: '30d' | '90d' | '365d' = '30d') {
   return useQuery({
-    queryKey: ['time-tracking', 'extended', 'top-settlements', preset],
+    queryKey: queryKeys.timeTracking.extendedStats.topSettlements(preset),
     queryFn: () => timeReportsApi.getTopSettlementsByTime({ preset }),
     ...REPORT_CACHE,
   });
@@ -483,7 +308,7 @@ export function useTopSettlementsByTime(preset: '30d' | '90d' | '365d' = '30d') 
 
 export function useEmployeeTimeBreakdown(preset: '30d' | '90d' | '365d' = '30d') {
   return useQuery({
-    queryKey: ['time-tracking', 'extended', 'employee-breakdown', preset],
+    queryKey: queryKeys.timeTracking.extendedStats.employeeBreakdown(preset),
     queryFn: () => timeReportsApi.getEmployeeBreakdown({ preset }),
     ...REPORT_CACHE,
   });
@@ -500,34 +325,19 @@ export function useExportTimeReport() {
       clientId?: string;
     }) => timeReportsApi.export(params),
     onSuccess: (blob, variables) => {
-      // Create download link with proper cleanup to prevent memory leaks
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const ext =
+        variables.format === 'excel' ? 'xlsx' : variables.format === 'pdf' ? 'pdf' : 'csv';
+      downloadBlob(blob, `time-report-${variables.startDate}-${variables.endDate}.${ext}`);
 
-      try {
-        a.href = url;
-        const ext =
-          variables.format === 'excel' ? 'xlsx' : variables.format === 'pdf' ? 'pdf' : 'csv';
-        a.download = `time-report-${variables.startDate}-${variables.endDate}.${ext}`;
-        document.body.appendChild(a);
-        a.click();
-
-        toast({
-          title: 'Sukces',
-          description: 'Raport został wyeksportowany',
-        });
-      } finally {
-        // Always clean up the blob URL and DOM element to prevent memory leaks
-        window.URL.revokeObjectURL(url);
-        if (a.parentNode) {
-          document.body.removeChild(a);
-        }
-      }
+      toast({
+        title: 'Sukces',
+        description: 'Raport został wyeksportowany',
+      });
     },
     onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się wyeksportować raportu',
+        description: getApiErrorMessage(error, 'Nie udało się wyeksportować raportu'),
         variant: 'destructive',
       });
     },

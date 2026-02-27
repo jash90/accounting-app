@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import { ArrowLeft, Copy, Edit, LayoutTemplate, Plus, RefreshCw, Trash2 } from 'lucide-react';
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
@@ -41,6 +41,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useAuthContext } from '@/contexts/auth-context';
 import { type CreateTaskTemplateDto, type RecurrencePatternDto } from '@/lib/api/endpoints/tasks';
+import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import {
   useCreateTaskFromTemplate,
@@ -53,6 +54,15 @@ import {
   type TaskTemplateResponseDto,
 } from '@/lib/hooks/use-tasks';
 import { UserRole } from '@/types/enums';
+
+function formatAssigneeName(assignee: {
+  firstName?: string | null;
+  lastName?: string | null;
+  email: string;
+}): string {
+  const fullName = `${assignee.firstName ?? ''} ${assignee.lastName ?? ''}`.trim();
+  return fullName || assignee.email;
+}
 
 const DAYS_OF_WEEK = [
   { value: 0, label: 'Nd' },
@@ -194,29 +204,36 @@ export default function TaskTemplatesListPage() {
   const deleteTemplate = useDeleteTaskTemplate();
   const createFromTemplate = useCreateTaskFromTemplate();
 
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<TaskTemplateResponseDto | null>(null);
-  const [deletingTemplate, setDeletingTemplate] = useState<TaskTemplateResponseDto | null>(null);
+  const {
+    createOpen,
+    editing: editingTemplate,
+    deleting: deletingTemplate,
+    openCreate: openCreateDialog,
+    closeCreate,
+    startEditing,
+    closeEditing,
+    startDeleting,
+    closeDeleting,
+  } = useCrudDialogs<TaskTemplateResponseDto>();
+  const dialogOpen = createOpen || !!editingTemplate;
   const [form, setForm] = useState<TemplateFormState>(emptyForm);
 
   const setField = <K extends keyof TemplateFormState>(key: K, value: TemplateFormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const openCreate = () => {
-    setEditingTemplate(null);
     setForm(emptyForm);
-    setDialogOpen(true);
+    openCreateDialog();
   };
 
   const openEdit = (template: TaskTemplateResponseDto) => {
-    setEditingTemplate(template);
     setForm(templateToForm(template));
-    setDialogOpen(true);
+    startEditing(template);
   };
 
   const closeDialog = () => {
-    setDialogOpen(false);
-    setEditingTemplate(null);
+    closeCreate();
+    closeEditing();
     setForm(emptyForm);
   };
 
@@ -234,7 +251,7 @@ export default function TaskTemplatesListPage() {
   const handleDelete = async () => {
     if (!deletingTemplate) return;
     await deleteTemplate.mutateAsync(deletingTemplate.id);
-    setDeletingTemplate(null);
+    closeDeleting();
   };
 
   const toggleDayOfWeek = (day: number) => {
@@ -278,8 +295,8 @@ export default function TaskTemplatesListPage() {
         <CardContent>
           {isPending ? (
             <div className="space-y-2">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-12 w-full" />
+              {[1, 2, 3].map((n) => (
+                <Skeleton key={n} className="h-12 w-full" />
               ))}
             </div>
           ) : templates.length > 0 ? (
@@ -305,10 +322,7 @@ export default function TaskTemplatesListPage() {
                       />
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {template.assignee
-                        ? `${template.assignee.firstName ?? ''} ${template.assignee.lastName ?? ''}`.trim() ||
-                          template.assignee.email
-                        : '—'}
+                      {template.assignee ? formatAssigneeName(template.assignee) : '—'}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {template.client?.name ?? '—'}
@@ -344,7 +358,7 @@ export default function TaskTemplatesListPage() {
                             variant="ghost"
                             size="icon"
                             className="text-destructive hover:text-destructive"
-                            onClick={() => setDeletingTemplate(template)}
+                            onClick={() => startDeleting(template)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -604,7 +618,7 @@ export default function TaskTemplatesListPage() {
       {deletingTemplate && (
         <ConfirmDialog
           open={!!deletingTemplate}
-          onOpenChange={(open) => !open && setDeletingTemplate(null)}
+          onOpenChange={(open) => !open && closeDeleting()}
           title="Usuń szablon"
           description={`Czy na pewno chcesz usunąć szablon "${deletingTemplate.title}"? Cykliczne zadania nie będą już tworzone.`}
           variant="destructive"

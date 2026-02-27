@@ -68,6 +68,7 @@ import {
   useLeads,
   useUpdateLead,
 } from '@/lib/hooks/use-offers';
+import { formatDate } from '@/lib/utils/format-date';
 import { type CreateLeadFormData, type UpdateLeadFormData } from '@/lib/validation/schemas';
 import {
   type CreateLeadDto,
@@ -196,7 +197,7 @@ export default function LeadsListPage() {
       {
         accessorKey: 'createdAt',
         header: 'Data utworzenia',
-        cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString('pl-PL'),
+        cell: ({ row }) => formatDate(row.original.createdAt),
       },
       {
         id: 'actions',

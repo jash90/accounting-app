@@ -34,7 +34,7 @@ export function SettlementColumnsProvider({ children, value }: SettlementColumns
 /**
  * Hook to access the full settlement columns context.
  */
-// eslint-disable-next-line react-refresh/only-export-components
+// eslint_disable-next-line react-refresh/only-export-components
 export function useSettlementColumnsContext(): SettlementColumnsContextValue {
   const context = use(SettlementColumnsContext);
   if (context === undefined) {

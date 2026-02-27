@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 
 import { formatDistanceToNow } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import { Archive, Bell, Check, Clock, User } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';

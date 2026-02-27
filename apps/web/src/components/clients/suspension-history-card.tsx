@@ -1,7 +1,7 @@
 import { memo, useCallback, useState } from 'react';
 
 import { format, startOfToday } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import { CalendarClock, Edit, PauseCircle, PlayCircle, Plus, Trash2 } from 'lucide-react';
 
 import { SuspensionFormDialog } from '@/components/forms/suspension-form-dialog';

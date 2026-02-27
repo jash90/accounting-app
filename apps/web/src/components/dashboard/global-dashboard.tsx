@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
 import { useGlobalDashboard } from '@/lib/hooks/use-global-dashboard';
-import { useCompanyModules } from '@/lib/hooks/use-permissions';
+import { useCompanyPermissionModules } from '@/lib/hooks/use-permissions';
 
 import { DashboardActivitySection } from './dashboard-activity-section';
 import { DashboardChartsSection } from './dashboard-charts-section';
@@ -13,7 +13,7 @@ interface GlobalDashboardProps {
 }
 
 export function GlobalDashboard({ title, subtitle }: GlobalDashboardProps) {
-  const { data: modules } = useCompanyModules();
+  const { data: modules } = useCompanyPermissionModules();
   const enabledSlugs = useMemo(() => modules?.map((m) => m.slug) ?? [], [modules]);
   const dashboardData = useGlobalDashboard(enabledSlugs);
 

@@ -1,7 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { cn } from '@/lib/utils/cn';
+import { formatDurationSeconds } from '@/lib/utils/time';
 import { Clock, Play, Square, Trash2 } from 'lucide-react';
 
+import { useTaskClients } from '@/lib/hooks/use-tasks';
+import {
+  useActiveTimer,
+  useDiscardTimer,
+  useStartTimer,
+  useStopTimer,
+  useUpdateTimer,
+} from '@/lib/hooks/use-time-tracking';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,16 +24,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { useTaskClients } from '@/lib/hooks/use-tasks';
-import {
-  useActiveTimer,
-  useDiscardTimer,
-  useStartTimer,
-  useStopTimer,
-  useUpdateTimer,
-} from '@/lib/hooks/use-time-tracking';
-import { cn } from '@/lib/utils/cn';
-import { formatDurationSeconds } from '@/lib/utils/time';
 
 interface Client {
   id: string;
@@ -37,6 +37,98 @@ interface ActiveTimer {
   isBillable: boolean;
   isRunning: boolean;
   startTime?: string | Date;
+}
+
+interface TimerFullViewControlsProps {
+  formattedTime: string;
+  isRunning: boolean | undefined;
+  description: string;
+  onDescriptionChange: (v: string) => void;
+  onDescriptionBlur: () => void;
+  onStop: () => void;
+  onDiscard: () => void;
+  onStart: () => void;
+  isStopPending: boolean;
+  isDiscardPending: boolean;
+  isStartPending: boolean;
+}
+
+function TimerFullViewControls({
+  formattedTime,
+  isRunning,
+  description,
+  onDescriptionChange,
+  onDescriptionBlur,
+  onStop,
+  onDiscard,
+  onStart,
+  isStopPending,
+  isDiscardPending,
+  isStartPending,
+}: TimerFullViewControlsProps) {
+  return (
+    <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
+        <div
+          className={cn(
+            'min-w-[140px] font-mono text-3xl font-semibold tabular-nums',
+            isRunning && 'text-green-600 dark:text-green-400'
+          )}
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {formattedTime}
+        </div>
+        {isRunning && (
+          <span
+            className="rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-700 dark:bg-green-900 dark:text-green-300"
+            aria-label="Timer aktywny"
+          >
+            Aktywny
+          </span>
+        )}
+      </div>
+      <Input
+        placeholder="Nad czym pracujesz?"
+        value={description}
+        onChange={(e) => onDescriptionChange(e.target.value)}
+        onBlur={onDescriptionBlur}
+        className="flex-1"
+        disabled={isStartPending || isStopPending}
+      />
+      {isRunning ? (
+        <div className="flex gap-2">
+          <Button
+            variant="destructive"
+            onClick={onStop}
+            disabled={isStopPending}
+            aria-label="Zatrzymaj timer"
+          >
+            <Square className="mr-2 h-4 w-4" aria-hidden="true" />
+            Stop
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={onDiscard}
+            disabled={isDiscardPending}
+            aria-label="Odrzuć timer"
+          >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        </div>
+      ) : (
+        <Button
+          onClick={onStart}
+          disabled={isStartPending}
+          className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
+          aria-label="Rozpocznij timer"
+        >
+          <Play className="mr-2 h-4 w-4" aria-hidden="true" />
+          Start
+        </Button>
+      )}
+    </div>
+  );
 }
 
 interface TimerFormProps {
@@ -64,9 +156,9 @@ function TimerForm({
   const discardTimer = useDiscardTimer();
 
   // Form state - initialized from props (no useEffect needed due to key prop in parent)
-  const [description, setDescription] = useState(initialDescription);
-  const [clientId, setClientId] = useState(initialClientId);
-  const [isBillable, setIsBillable] = useState(initialIsBillable);
+  const [description, setDescription] = useState(() => initialDescription);
+  const [clientId, setClientId] = useState(() => initialClientId);
+  const [isBillable, setIsBillable] = useState(() => initialIsBillable);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   // Ref to track component mount state to prevent memory leaks
@@ -279,67 +371,19 @@ function TimerForm({
   return (
     <Card className={cn('w-full', className)}>
       <CardContent className="space-y-4 p-4">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div
-              className={cn(
-                'min-w-[140px] font-mono text-3xl font-semibold tabular-nums',
-                isRunning && 'text-green-600 dark:text-green-400'
-              )}
-              aria-live="polite"
-              aria-atomic="true"
-            >
-              {formattedTime}
-            </div>
-            {isRunning && (
-              <span
-                className="rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-700 dark:bg-green-900 dark:text-green-300"
-                aria-label="Timer aktywny"
-              >
-                Aktywny
-              </span>
-            )}
-          </div>
-          <Input
-            placeholder="Nad czym pracujesz?"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onBlur={handleDescriptionBlur}
-            className="flex-1"
-            disabled={startTimer.isPending || stopTimer.isPending}
-          />
-          {isRunning ? (
-            <div className="flex gap-2">
-              <Button
-                variant="destructive"
-                onClick={handleStop}
-                disabled={stopTimer.isPending}
-                aria-label="Zatrzymaj timer"
-              >
-                <Square className="mr-2 h-4 w-4" aria-hidden="true" />
-                Stop
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={handleDiscard}
-                disabled={discardTimer.isPending}
-                aria-label="Odrzuć timer"
-              >
-                <Trash2 className="h-4 w-4" aria-hidden="true" />
-              </Button>
-            </div>
-          ) : (
-            <Button
-              onClick={handleStart}
-              disabled={startTimer.isPending}
-              className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
-              aria-label="Rozpocznij timer"
-            >
-              <Play className="mr-2 h-4 w-4" aria-hidden="true" />
-              Start
-            </Button>
-          )}
-        </div>
+        <TimerFullViewControls
+          formattedTime={formattedTime}
+          isRunning={isRunning}
+          description={description}
+          onDescriptionChange={setDescription}
+          onDescriptionBlur={handleDescriptionBlur}
+          onStop={handleStop}
+          onDiscard={handleDiscard}
+          onStart={handleStart}
+          isStopPending={stopTimer.isPending}
+          isDiscardPending={discardTimer.isPending}
+          isStartPending={startTimer.isPending}
+        />
 
         <div className="flex flex-wrap items-center gap-4">
           <div className="min-w-[200px] flex-1">

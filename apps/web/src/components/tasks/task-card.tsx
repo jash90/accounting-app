@@ -4,7 +4,7 @@ import { memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import { Calendar, GripVertical, Link2, MessageSquare } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';

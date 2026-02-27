@@ -12,81 +12,65 @@ import {
 } from 'lucide-react';
 
 import { TasksStatusChart } from '@/components/dashboard/charts/tasks-status-chart';
+import { RankedListCard } from '@/components/dashboard/ranked-list-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
+import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import {
   useEmployeeTaskRanking,
   useGlobalTaskStatistics,
   useTaskCompletionStats,
 } from '@/lib/hooks/use-tasks';
-import { UserRole } from '@/types/enums';
+import { isOwnerOrAdmin } from '@/lib/utils/user';
 
 function ExtendedTaskStats() {
-  const { data: rankingData } = useEmployeeTaskRanking();
-  const { data: durationData } = useTaskCompletionStats();
+  const { data: rankingData, isPending: rankingPending } = useEmployeeTaskRanking();
+  const { data: durationData, isPending: durationPending } = useTaskCompletionStats();
 
   return (
     <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle>Ranking pracowników - ukończone zadania</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {rankingData?.rankings?.length === 0 && (
-            <p className="text-muted-foreground text-sm">Brak danych</p>
-          )}
-          <div className="space-y-2">
-            {rankingData?.rankings
-              ?.slice(0, 10)
-              .map(
-                (
-                  r: {
-                    userId: string;
-                    firstName?: string;
-                    lastName?: string;
-                    email: string;
-                    completedCount: number;
-                  },
-                  i: number
-                ) => (
-                  <div key={r.userId} className="flex items-center justify-between">
-                    <span className="text-sm">
-                      {i + 1}. {r.firstName} {r.lastName || r.email}
-                    </span>
-                    <span className="font-medium">{r.completedCount}</span>
-                  </div>
-                )
-              )}
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Najdłuższe zadania (godz.)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {durationData?.longest?.length === 0 && (
-            <p className="text-muted-foreground text-sm">Brak danych</p>
-          )}
-          <div className="space-y-2">
-            {durationData?.longest
-              ?.slice(0, 5)
-              .map((t: { id: string; title: string; durationHours: number }) => (
-                <div key={t.id} className="flex items-center justify-between">
-                  <span className="max-w-[200px] truncate text-sm">{t.title}</span>
-                  <span className="font-medium">{t.durationHours}h</span>
-                </div>
-              ))}
-          </div>
-          {durationData && (
+      <RankedListCard
+        title="Ranking pracowników - ukończone zadania"
+        isPending={rankingPending}
+        items={rankingData?.rankings?.map(
+          (
+            r: {
+              userId: string;
+              firstName?: string;
+              lastName?: string;
+              email: string;
+              completedCount: number;
+            },
+            i: number
+          ) => ({
+            key: r.userId,
+            label: `${i + 1}. ${r.firstName ?? ''} ${r.lastName ?? r.email}`.trim(),
+            value: r.completedCount,
+          })
+        )}
+        limit={10}
+      />
+      <RankedListCard
+        title="Najdłuższe zadania (godz.)"
+        isPending={durationPending}
+        items={durationData?.longest?.map(
+          (t: { id: string; title: string; durationHours: number }) => ({
+            key: t.id,
+            label: t.title,
+            value: `${t.durationHours}h`,
+          })
+        )}
+        limit={5}
+        footer={
+          durationData?.averageDurationHours != null ? (
             <p className="text-muted-foreground mt-2 text-xs">
               Średnia: {durationData.averageDurationHours}h
             </p>
-          )}
-        </CardContent>
-      </Card>
+          ) : null
+        }
+      />
     </div>
   );
 }
@@ -94,25 +78,12 @@ function ExtendedTaskStats() {
 export default function TasksDashboardPage() {
   const { user } = useAuthContext();
   const { data, isPending } = useGlobalTaskStatistics();
+  const basePath = useModuleBasePath('tasks');
 
   const totalTasks = data?.total ?? 0;
-  const inProgressTasks = data?.byStatus?.['IN_PROGRESS'] ?? 0;
+  const inProgressTasks = data?.byStatus?.['in_progress'] ?? 0;
   const overdueTasks = data?.overdue ?? 0;
-  const completedTasks = data?.byStatus?.['DONE'] ?? 0;
-
-  // Determine the base path based on user role
-  const getBasePath = () => {
-    switch (user?.role) {
-      case UserRole.ADMIN:
-        return '/admin/modules/tasks';
-      case UserRole.COMPANY_OWNER:
-        return '/company/modules/tasks';
-      default:
-        return '/modules/tasks';
-    }
-  };
-
-  const basePath = getBasePath();
+  const completedTasks = data?.byStatus?.['done'] ?? 0;
 
   // View options
   const views = [
@@ -147,7 +118,7 @@ export default function TasksDashboardPage() {
   ];
 
   // Settings option (only for admins and company owners)
-  const showSettings = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER;
+  const showSettings = isOwnerOrAdmin(user);
 
   return (
     <div className="container mx-auto space-y-6 p-6">
@@ -256,9 +227,7 @@ export default function TasksDashboardPage() {
       )}
 
       {/* Extended statistics - admin/owner only */}
-      {(user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER) && (
-        <ExtendedTaskStats />
-      )}
+      {showSettings && <ExtendedTaskStats />}
     </div>
   );
 }

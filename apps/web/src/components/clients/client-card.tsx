@@ -3,7 +3,7 @@ import { memo, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import {
   Building2,
   Edit,

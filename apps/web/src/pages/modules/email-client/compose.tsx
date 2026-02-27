@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-
 import { useLocation, useSearchParams } from 'react-router-dom';
 
+import { EmailEditor } from '@/components/email/email-editor';
 import {
   ArrowLeft,
   ChevronDown,
@@ -16,21 +16,20 @@ import {
   X,
 } from 'lucide-react';
 
-import { EmailEditor } from '@/components/email/email-editor';
+import {
+  useCreateEmailDraft,
+  useEmailDraft,
+  useGenerateEmailAiDraftStream,
+  useSendEmail,
+  useUpdateEmailDraft,
+  useUploadEmailAttachment,
+} from '@/lib/hooks/use-email-client';
+import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import {
-  useCreateDraft,
-  useDraft,
-  useGenerateAiDraftStream,
-  useSendEmail,
-  useUpdateDraft,
-  useUploadAttachment,
-} from '@/lib/hooks/use-email-client';
-import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 
 interface LocationState {
   replyTo?: {
@@ -139,9 +138,9 @@ function EmailComposeForm({
 
   // Hooks
   const sendEmail = useSendEmail();
-  const createDraft = useCreateDraft();
-  const updateDraft = useUpdateDraft();
-  const uploadAttachment = useUploadAttachment();
+  const createDraft = useCreateEmailDraft();
+  const updateDraft = useUpdateEmailDraft();
+  const uploadAttachment = useUploadEmailAttachment();
 
   // Form state - initialized from props (no useEffect needed due to key prop in parent)
   const [formState, dispatchForm] = useReducer(emailFormReducer, {
@@ -177,13 +176,12 @@ function EmailComposeForm({
 
   // Show error if streaming fails
   useEffect(() => {
-    if (aiStreamError) {
-      toast({
-        title: 'Błąd',
-        description: aiStreamError,
-        variant: 'destructive',
-      });
-    }
+    if (!aiStreamError) return;
+    toast({
+      title: 'Błąd',
+      description: aiStreamError,
+      variant: 'destructive',
+    });
   }, [aiStreamError, toast]);
 
   const handleGenerateAiReply = useCallback(
@@ -275,16 +273,17 @@ function EmailComposeForm({
       return;
     }
 
+    const emailPayload = {
+      to: to.split(',').map((e) => e.trim()),
+      subject,
+      html: content,
+      text: content.replace(/<[^>]*>/g, ''),
+      ...(cc && { cc: cc.split(',').map((e) => e.trim()) }),
+      ...(bcc && { bcc: bcc.split(',').map((e) => e.trim()) }),
+      ...(attachments.length > 0 && { attachments: attachments.map((a) => a.path) }),
+    };
     try {
-      await sendEmail.mutateAsync({
-        to: to.split(',').map((e) => e.trim()),
-        subject,
-        html: content,
-        text: content.replace(/<[^>]*>/g, ''),
-        ...(cc && { cc: cc.split(',').map((e) => e.trim()) }),
-        ...(bcc && { bcc: bcc.split(',').map((e) => e.trim()) }),
-        ...(attachments.length > 0 && { attachments: attachments.map((a) => a.path) }),
-      });
+      await sendEmail.mutateAsync(emailPayload);
 
       toast({ title: 'Sukces', description: 'Wiadomość została wysłana' });
       onNavigateToInbox();
@@ -307,15 +306,19 @@ function EmailComposeForm({
       return;
     }
 
+    const toList = to.split(',').map((e) => e.trim());
+    const ccList = cc ? cc.split(',').map((e) => e.trim()) : undefined;
+    const bccList = bcc ? bcc.split(',').map((e) => e.trim()) : undefined;
+
     try {
       if (draftId) {
         // Update existing draft
         await updateDraft.mutateAsync({
           draftId,
           data: {
-            to: to.split(',').map((e) => e.trim()),
-            cc: cc ? cc.split(',').map((e) => e.trim()) : undefined,
-            bcc: bcc ? bcc.split(',').map((e) => e.trim()) : undefined,
+            to: toList,
+            cc: ccList,
+            bcc: bccList,
             subject,
             textContent: content,
           },
@@ -587,8 +590,8 @@ export default function EmailCompose() {
   const locationState = location.state as LocationState | null;
 
   // Fetch existing draft
-  const aiStream = useGenerateAiDraftStream();
-  const { data: existingDraft, isLoading: isDraftLoading } = useDraft(draftId || undefined);
+  const aiStream = useGenerateEmailAiDraftStream();
+  const { data: existingDraft, isLoading: isDraftLoading } = useEmailDraft(draftId || undefined);
 
   // Compute initial form data from draft or location state
   const initialFormData = useMemo(() => {

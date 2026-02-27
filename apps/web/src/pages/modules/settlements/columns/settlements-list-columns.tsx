@@ -1,6 +1,6 @@
 import { type ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import { AlertTriangle } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';

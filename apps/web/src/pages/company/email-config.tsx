@@ -1,15 +1,10 @@
 import { useState } from 'react';
 
-import { AlertCircle, Building2, Edit, Lock, Plus, Server, Trash2 } from 'lucide-react';
-
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { PageHeader } from '@/components/common/page-header';
-import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/components/ui/use-toast';
+import { formatDate } from '@/lib/utils/format-date';
+import { AlertCircle, Building2, Edit, Lock, Plus, Server, Trash2 } from 'lucide-react';
+
 import {
   useCompanyEmailConfig,
   useCreateCompanyEmailConfig,
@@ -22,6 +17,65 @@ import {
   type CreateEmailConfigFormData,
   type UpdateEmailConfigFormData,
 } from '@/lib/validation/schemas';
+import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/components/ui/use-toast';
+
+type CompanyEmailConfigData = ReturnType<typeof useCompanyEmailConfig>['data'];
+
+interface CompanyEmailConfigDialogsProps {
+  formOpen: boolean;
+  setFormOpen: (open: boolean) => void;
+  deleteOpen: boolean;
+  setDeleteOpen: (open: boolean) => void;
+  hasConfig: boolean;
+  emailConfig: CompanyEmailConfigData;
+  onSubmit: (data: CreateEmailConfigFormData | UpdateEmailConfigFormData) => void;
+  onDelete: () => void;
+  testSmtp: ReturnType<typeof useTestCompanySmtp>;
+  testImap: ReturnType<typeof useTestCompanyImap>;
+}
+
+function CompanyEmailConfigDialogs({
+  formOpen,
+  setFormOpen,
+  deleteOpen,
+  setDeleteOpen,
+  hasConfig,
+  emailConfig,
+  onSubmit,
+  onDelete,
+  testSmtp,
+  testImap,
+}: CompanyEmailConfigDialogsProps) {
+  return (
+    <>
+      <EmailConfigFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        config={hasConfig ? emailConfig : undefined}
+        onSubmit={onSubmit}
+        type="company"
+        onTestSmtp={(data) => testSmtp.mutate(data)}
+        onTestImap={(data) => testImap.mutate(data)}
+        isTestingSmtp={testSmtp.isPending}
+        isTestingImap={testImap.isPending}
+      />
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Usuń konfigurację email firmy"
+        description="Czy na pewno chcesz usunąć konfigurację email firmy? Wpłynie to na wszystkie operacje email w firmie i będziesz musiał ponownie ją skonfigurować."
+        confirmText="Usuń konfigurację"
+        onConfirm={onDelete}
+        variant="destructive"
+      />
+    </>
+  );
+}
 
 export default function CompanyEmailConfigPage() {
   const { data: emailConfig, isPending, isError, error } = useCompanyEmailConfig();
@@ -37,39 +91,41 @@ export default function CompanyEmailConfigPage() {
 
   const hasConfig = !!emailConfig && !isError;
 
-  const handleCreate = (data: CreateEmailConfigFormData) => {
-    createConfig.mutate(data, {
-      onSuccess: () => setFormOpen(false),
-      onError: (err: Error) => {
-        toast({
-          title: 'Error',
-          description: err.message || 'Failed to create email configuration',
-          variant: 'destructive',
-        });
-      },
-    });
-  };
-
-  const handleUpdate = (data: UpdateEmailConfigFormData) => {
-    updateConfig.mutate(data, {
-      onSuccess: () => setFormOpen(false),
-      onError: (err: Error) => {
-        toast({
-          title: 'Error',
-          description: err.message || 'Failed to update email configuration',
-          variant: 'destructive',
-        });
-      },
-    });
+  const handleSubmit = (data: CreateEmailConfigFormData | UpdateEmailConfigFormData) => {
+    if (hasConfig) {
+      updateConfig.mutate(data as UpdateEmailConfigFormData, {
+        onSuccess: () => setFormOpen(false),
+        onError: (err: unknown) => {
+          toast({
+            title: 'Error',
+            description:
+              err instanceof Error ? err.message : 'Failed to update email configuration',
+            variant: 'destructive',
+          });
+        },
+      });
+    } else {
+      createConfig.mutate(data as CreateEmailConfigFormData, {
+        onSuccess: () => setFormOpen(false),
+        onError: (err: unknown) => {
+          toast({
+            title: 'Error',
+            description:
+              err instanceof Error ? err.message : 'Failed to create email configuration',
+            variant: 'destructive',
+          });
+        },
+      });
+    }
   };
 
   const handleDelete = () => {
     deleteConfig.mutate(undefined, {
       onSuccess: () => setDeleteOpen(false),
-      onError: (err: Error) => {
+      onError: (err: unknown) => {
         toast({
           title: 'Error',
-          description: err.message || 'Failed to delete email configuration',
+          description: err instanceof Error ? err.message : 'Failed to delete email configuration',
           variant: 'destructive',
         });
         setDeleteOpen(false);
@@ -293,10 +349,7 @@ export default function CompanyEmailConfigPage() {
                         Firma: {emailConfig.company.name}
                       </p>
                     )}
-                    <p>
-                      Ostatnia aktualizacja:{' '}
-                      {new Date(emailConfig.updatedAt).toLocaleDateString('pl-PL')}
-                    </p>
+                    <p>Ostatnia aktualizacja: {formatDate(emailConfig.updatedAt)}</p>
                   </div>
                 </div>
               </div>
@@ -305,34 +358,17 @@ export default function CompanyEmailConfigPage() {
         </div>
       )}
 
-      {/* Form Dialog */}
-      <EmailConfigFormDialog
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        config={hasConfig ? emailConfig : undefined}
-        onSubmit={(data) => {
-          if (hasConfig) {
-            handleUpdate(data as UpdateEmailConfigFormData);
-          } else {
-            handleCreate(data as CreateEmailConfigFormData);
-          }
-        }}
-        type="company"
-        onTestSmtp={(data) => testSmtp.mutate(data)}
-        onTestImap={(data) => testImap.mutate(data)}
-        isTestingSmtp={testSmtp.isPending}
-        isTestingImap={testImap.isPending}
-      />
-
-      {/* Delete Confirmation */}
-      <ConfirmDialog
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        title="Usuń konfigurację email firmy"
-        description="Czy na pewno chcesz usunąć konfigurację email firmy? Wpłynie to na wszystkie operacje email w firmie i będziesz musiał ponownie ją skonfigurować."
-        confirmText="Usuń konfigurację"
-        onConfirm={handleDelete}
-        variant="destructive"
+      <CompanyEmailConfigDialogs
+        formOpen={formOpen}
+        setFormOpen={setFormOpen}
+        deleteOpen={deleteOpen}
+        setDeleteOpen={setDeleteOpen}
+        hasConfig={hasConfig}
+        emailConfig={emailConfig}
+        onSubmit={handleSubmit}
+        onDelete={handleDelete}
+        testSmtp={testSmtp}
+        testImap={testImap}
       />
     </div>
   );

@@ -30,13 +30,14 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import {
   useDeleteEmails,
-  useFolders,
-  useMarkAsRead,
-  useMoveMessages,
+  useEmailFolders,
+  useMarkEmailsAsRead,
+  useMoveEmails,
   useSearchEmails,
-  useUpdateFlags,
+  useUpdateEmailFlags,
 } from '@/lib/hooks/use-email-client';
 import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
+import { formatDate } from '@/lib/utils/format-date';
 
 import { EmailListSkeleton } from '../../pages/modules/email-client/components/email-inbox-skeleton';
 import { EmailSidebar } from '../../pages/modules/email-client/components/email-sidebar';
@@ -143,11 +144,11 @@ export function BaseEmailList({
   showMoveAction = true,
 }: BaseEmailListProps) {
   'use no memo';
-  const markAsRead = useMarkAsRead();
+  const markAsRead = useMarkEmailsAsRead();
   const deleteEmails = useDeleteEmails();
-  const updateFlags = useUpdateFlags();
-  const moveMessages = useMoveMessages();
-  const { data: folders } = useFolders();
+  const updateFlags = useUpdateEmailFlags();
+  const moveMessages = useMoveEmails();
+  const { data: folders } = useEmailFolders();
   const { toast } = useToast();
   const emailNav = useEmailClientNavigation();
 
@@ -238,11 +239,13 @@ export function BaseEmailList({
   const handleToggleStar = async (uid: number, isStarred: boolean, event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
+    const addFlags = isStarred ? undefined : ['\\Flagged'];
+    const removeFlags = isStarred ? ['\\Flagged'] : undefined;
     try {
       await updateFlags.mutateAsync({
         uid,
-        add: isStarred ? undefined : ['\\Flagged'],
-        remove: isStarred ? ['\\Flagged'] : undefined,
+        add: addFlags,
+        remove: removeFlags,
         mailbox: currentMailbox,
       });
     } catch {
@@ -536,7 +539,7 @@ export function BaseEmailList({
                           </p>
                         </div>
                         <div className="text-muted-foreground ml-4 text-xs whitespace-nowrap">
-                          {new Date(email.date).toLocaleDateString('pl-PL')}
+                          {formatDate(email.date)}
                         </div>
                       </div>
                     </Link>

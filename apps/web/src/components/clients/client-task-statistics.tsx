@@ -6,22 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useClientTaskStatistics } from '@/lib/hooks/use-tasks';
-import { TaskStatus, TaskStatusLabels } from '@/types/enums';
+import { TaskStatus, TaskStatusColors, TaskStatusLabels } from '@/types/enums';
 
 interface ClientTaskStatisticsProps {
   clientId: string;
 }
 
-const statusColors: Record<TaskStatus, string> = {
-  [TaskStatus.BACKLOG]: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-  [TaskStatus.TODO]: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-  [TaskStatus.IN_PROGRESS]: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
-  [TaskStatus.IN_REVIEW]: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
-  [TaskStatus.DONE]: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-  [TaskStatus.CANCELLED]: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
-};
-
-function formatTime(minutes: number): string {
+function formatMinutesAsHoursDisplay(minutes: number): string {
   if (minutes === 0) return '-';
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
@@ -123,7 +114,7 @@ export const ClientTaskStatistics = memo(function ClientTaskStatistics({
             return (
               <div key={status} className="flex items-center justify-between">
                 <span className="text-muted-foreground text-sm">{TaskStatusLabels[status]}</span>
-                <Badge className={statusColors[status]}>{count}</Badge>
+                <Badge className={TaskStatusColors[status]}>{count}</Badge>
               </div>
             );
           })}
@@ -137,7 +128,7 @@ export const ClientTaskStatistics = memo(function ClientTaskStatistics({
               Estymowany czas
             </span>
             <span className="text-sm font-medium">
-              {formatTime(statistics.totalEstimatedMinutes)}
+              {formatMinutesAsHoursDisplay(statistics.totalEstimatedMinutes)}
             </span>
           </div>
         )}

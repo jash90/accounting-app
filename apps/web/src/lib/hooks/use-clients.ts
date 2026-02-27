@@ -4,6 +4,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { type ApiErrorResponse } from '@/types/api';
 import {
   type ClientFiltersDto,
+  type ClientResponseDto,
   type CreateClientDto,
   type CreateClientFieldDefinitionDto,
   type CreateClientIconDto,
@@ -16,6 +17,8 @@ import {
 } from '@/types/dtos';
 
 
+import { createExportHook } from './create-export-hook';
+import { createMutationHook } from './create-mutation-hook';
 import {
   clientIconsApi,
   clientsApi,
@@ -30,6 +33,8 @@ import {
   type IconQueryDto,
 } from '../api/endpoints/clients';
 import { queryKeys } from '../api/query-client';
+import { downloadBlob } from '../utils/download';
+import { buildQueryFilters, getApiErrorMessage } from '../utils/query-filters';
 
 // ============================================
 // Cache Time Constants
@@ -72,24 +77,9 @@ const isClientListQuery = (query: Query): boolean => {
 // ============================================
 
 export function useClients(filters?: ClientFiltersDto) {
-  let stableFilters: ClientFiltersDto | undefined;
-  if (filters) {
-    const result: ClientFiltersDto = {};
-    if (filters.search !== undefined) result.search = filters.search;
-    if (filters.status !== undefined) result.status = filters.status;
-    if (filters.type !== undefined) result.type = filters.type;
-    if (filters.assignedUserId !== undefined) result.assignedUserId = filters.assignedUserId;
-    if (filters.page !== undefined) result.page = filters.page;
-    if (filters.limit !== undefined) result.limit = filters.limit;
-    if (filters.sortBy !== undefined) result.sortBy = filters.sortBy;
-    if (filters.sortOrder !== undefined) result.sortOrder = filters.sortOrder;
-    if (filters.includeDeleted !== undefined) result.includeDeleted = filters.includeDeleted;
-    stableFilters = Object.keys(result).length > 0 ? result : undefined;
-  }
-
   return useQuery({
-    queryKey: queryKeys.clients.list(stableFilters),
-    queryFn: () => clientsApi.getAll(stableFilters),
+    queryKey: queryKeys.clients.list(buildQueryFilters(filters)),
+    queryFn: () => clientsApi.getAll(filters),
     ...CLIENT_LIST_CACHE,
   });
 }
@@ -103,164 +93,70 @@ export function useClient(id: string) {
   });
 }
 
-export function useCreateClient() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useCreateClient = createMutationHook<ClientResponseDto, CreateClientDto>({
+  mutationFn: (clientData) => clientsApi.create(clientData),
+  invalidatePredicate: isClientListQuery,
+  successMessage: 'Klient został utworzony',
+  errorMessage: 'Nie udało się utworzyć klienta',
+});
 
-  return useMutation({
-    mutationFn: (clientData: CreateClientDto) => clientsApi.create(clientData),
-    onSuccess: () => {
-      // Only invalidate list queries, not detail queries (new client won't have detail cache)
-      queryClient.invalidateQueries({ predicate: isClientListQuery });
-      toast({
-        title: 'Sukces',
-        description: 'Klient został utworzony',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się utworzyć klienta',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateClient = createMutationHook<void, { id: string; data: UpdateClientDto }>({
+  mutationFn: ({ id, data }) => clientsApi.update(id, data),
+  invalidatePredicate: isClientListQuery,
+  onSuccess: (_, variables, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.clients.detail(variables.id) });
+  },
+  successMessage: 'Klient został zaktualizowany',
+  errorMessage: 'Nie udało się zaktualizować klienta',
+});
 
-export function useUpdateClient() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useDeleteClient = createMutationHook<void, string>({
+  mutationFn: (id) => clientsApi.delete(id),
+  invalidatePredicate: isClientListQuery,
+  onSuccess: (_, deletedId, qc) => {
+    qc.removeQueries({ queryKey: queryKeys.clients.detail(deletedId) });
+  },
+  successMessage: 'Klient został usunięty',
+  errorMessage: 'Nie udało się usunąć klienta',
+});
 
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateClientDto }) =>
-      clientsApi.update(id, data),
-    onSuccess: (_data, variables) => {
-      // Invalidate the specific client detail and list queries
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(variables.id) });
-      queryClient.invalidateQueries({ predicate: isClientListQuery });
-      toast({
-        title: 'Sukces',
-        description: 'Klient został zaktualizowany',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować klienta',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useRestoreClient = createMutationHook<void, string>({
+  mutationFn: (id) => clientsApi.restore(id),
+  invalidatePredicate: isClientListQuery,
+  onSuccess: (_, restoredId, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.clients.detail(restoredId) });
+  },
+  successMessage: 'Klient został przywrócony',
+  errorMessage: 'Nie udało się przywrócić klienta',
+});
 
-export function useDeleteClient() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useAssignClientIcon = createMutationHook<
+  void,
+  { clientId: string; iconId: string }
+>({
+  mutationFn: ({ clientId, iconId }) => clientIconsApi.assignIcon(clientId, iconId),
+  invalidatePredicate: isClientListQuery,
+  onSuccess: (_, variables, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.clients.detail(variables.clientId) });
+    qc.invalidateQueries({ queryKey: queryKeys.clientIcons.byClient(variables.clientId) });
+  },
+  successMessage: 'Ikona została przypisana do klienta',
+  errorMessage: 'Nie udało się przypisać ikony',
+});
 
-  return useMutation({
-    mutationFn: (id: string) => clientsApi.delete(id),
-    onSuccess: (_, deletedId) => {
-      // Remove specific client from cache first
-      queryClient.removeQueries({ queryKey: queryKeys.clients.detail(deletedId) });
-      // Only invalidate list queries
-      queryClient.invalidateQueries({ predicate: isClientListQuery });
-      toast({
-        title: 'Sukces',
-        description: 'Klient został usunięty',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć klienta',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useRestoreClient() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => clientsApi.restore(id),
-    onSuccess: (_data, restoredId) => {
-      // Invalidate the specific client detail and list queries
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(restoredId) });
-      queryClient.invalidateQueries({ predicate: isClientListQuery });
-      toast({
-        title: 'Sukces',
-        description: 'Klient został przywrócony',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się przywrócić klienta',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useAssignClientIcon() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ clientId, iconId }: { clientId: string; iconId: string }) =>
-      clientIconsApi.assignIcon(clientId, iconId),
-    onSuccess: (_data, variables) => {
-      // Invalidate the specific client and its icons
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(variables.clientId) });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.clientIcons.byClient(variables.clientId),
-      });
-      queryClient.invalidateQueries({ predicate: isClientListQuery });
-      toast({
-        title: 'Sukces',
-        description: 'Ikona została przypisana do klienta',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się przypisać ikony',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useUnassignClientIcon() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ clientId, iconId }: { clientId: string; iconId: string }) =>
-      clientIconsApi.unassignIcon(clientId, iconId),
-    onSuccess: (_data, variables) => {
-      // Invalidate the specific client and its icons
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(variables.clientId) });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.clientIcons.byClient(variables.clientId),
-      });
-      queryClient.invalidateQueries({ predicate: isClientListQuery });
-      toast({
-        title: 'Sukces',
-        description: 'Ikona została odłączona od klienta',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się odłączyć ikony',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUnassignClientIcon = createMutationHook<
+  void,
+  { clientId: string; iconId: string }
+>({
+  mutationFn: ({ clientId, iconId }) => clientIconsApi.unassignIcon(clientId, iconId),
+  invalidatePredicate: isClientListQuery,
+  onSuccess: (_, variables, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.clients.detail(variables.clientId) });
+    qc.invalidateQueries({ queryKey: queryKeys.clientIcons.byClient(variables.clientId) });
+  },
+  successMessage: 'Ikona została odłączona od klienta',
+  errorMessage: 'Nie udało się odłączyć ikony',
+});
 
 export function useIconsForClient(clientId: string) {
   return useQuery({
@@ -271,29 +167,17 @@ export function useIconsForClient(clientId: string) {
   });
 }
 
-export function useSetClientCustomFields() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: SetCustomFieldValuesDto }) =>
-      clientsApi.setCustomFieldValues(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients.detail(variables.id) });
-      toast({
-        title: 'Sukces',
-        description: 'Pola niestandardowe zostały zaktualizowane',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować pól',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useSetClientCustomFields = createMutationHook<
+  void,
+  { id: string; data: SetCustomFieldValuesDto }
+>({
+  mutationFn: ({ id, data }) => clientsApi.setCustomFieldValues(id, data),
+  onSuccess: (_, variables, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.clients.detail(variables.id) });
+  },
+  successMessage: 'Pola niestandardowe zostały zaktualizowane',
+  errorMessage: 'Nie udało się zaktualizować pól',
+});
 
 export function useClientChangelog(clientId: string) {
   return useQuery({
@@ -318,7 +202,7 @@ export function useClientStatistics() {
 
 export function useClientTaskTimeStats() {
   return useQuery<ClientTaskTimeStatsDto[]>({
-    queryKey: ['clients', 'statistics', 'task-time'],
+    queryKey: queryKeys.clients.taskTimeStats,
     queryFn: () => clientsApi.getClientTaskTimeStats(),
     ...CLIENT_LOOKUP_CACHE,
   });
@@ -328,7 +212,7 @@ export function useClientTaskTimeStats() {
 // Duplicate Detection Hook
 // ============================================
 
-export function useCheckDuplicates() {
+export function useCheckClientDuplicates() {
   return useMutation({
     mutationFn: (dto: CheckDuplicatesDto) => clientsApi.checkDuplicates(dto),
   });
@@ -370,7 +254,7 @@ export function useBulkDeleteClients() {
     onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć klientów',
+        description: getApiErrorMessage(error, 'Nie udało się usunąć klientów'),
         variant: 'destructive',
       });
     },
@@ -408,7 +292,7 @@ export function useBulkRestoreClients() {
     onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się przywrócić klientów',
+        description: getApiErrorMessage(error, 'Nie udało się przywrócić klientów'),
         variant: 'destructive',
       });
     },
@@ -446,7 +330,7 @@ export function useBulkEditClients() {
     onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować klientów',
+        description: getApiErrorMessage(error, 'Nie udało się zaktualizować klientów'),
         variant: 'destructive',
       });
     },
@@ -457,68 +341,29 @@ export function useBulkEditClients() {
 // Export/Import Hooks
 // ============================================
 
-export function useExportClients() {
-  const { toast } = useToast();
+export const useExportClients = createExportHook<ClientFiltersDto>(
+  (filters) => clientsApi.exportCsv(filters),
+  'klienci',
+  'Nie udało się wyeksportować danych'
+);
 
-  return useMutation({
-    mutationFn: (filters?: ClientFiltersDto) => clientsApi.exportCsv(filters),
-    onSuccess: (blob) => {
-      // Create download link with try/finally for guaranteed cleanup
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      try {
-        link.href = url;
-        link.download = `klienci-${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        toast({
-          title: 'Sukces',
-          description: 'Plik CSV został pobrany',
-        });
-      } finally {
-        window.URL.revokeObjectURL(url);
-      }
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się wyeksportować danych',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useDownloadImportTemplate() {
+export function useDownloadClientImportTemplate() {
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: () => clientsApi.getImportTemplate(),
     onSuccess: (blob) => {
-      // Create download link with try/finally for guaranteed cleanup
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      try {
-        link.href = url;
-        link.download = 'szablon-importu-klientow.csv';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      downloadBlob(blob, 'szablon-importu-klientow.csv');
 
-        toast({
-          title: 'Sukces',
-          description: 'Szablon CSV został pobrany',
-        });
-      } finally {
-        window.URL.revokeObjectURL(url);
-      }
+      toast({
+        title: 'Sukces',
+        description: 'Szablon CSV został pobrany',
+      });
     },
     onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się pobrać szablonu',
+        description: getApiErrorMessage(error, 'Nie udało się pobrać szablonu'),
         variant: 'destructive',
       });
     },
@@ -545,7 +390,7 @@ export function useImportClients() {
     onError: (error: ApiErrorResponse) => {
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaimportować danych',
+        description: getApiErrorMessage(error, 'Nie udało się zaimportować danych'),
         variant: 'destructive',
       });
     },
@@ -556,7 +401,7 @@ export function useImportClients() {
 // Field Definition Hooks
 // ============================================
 
-export function useFieldDefinitions(query?: FieldDefinitionQueryDto) {
+export function useClientFieldDefinitions(query?: FieldDefinitionQueryDto) {
   return useQuery({
     queryKey: queryKeys.clientFieldDefinitions.list(query),
     queryFn: () => fieldDefinitionsApi.getAll(query),
@@ -564,7 +409,7 @@ export function useFieldDefinitions(query?: FieldDefinitionQueryDto) {
   });
 }
 
-export function useFieldDefinition(id: string) {
+export function useClientFieldDefinition(id: string) {
   return useQuery({
     queryKey: queryKeys.clientFieldDefinitions.detail(id),
     queryFn: () => fieldDefinitionsApi.getById(id),
@@ -573,100 +418,39 @@ export function useFieldDefinition(id: string) {
   });
 }
 
-export function useCreateFieldDefinition() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useCreateClientFieldDefinition = createMutationHook<
+  void,
+  CreateClientFieldDefinitionDto
+>({
+  mutationFn: (fieldData) => fieldDefinitionsApi.create(fieldData),
+  invalidateKeys: [queryKeys.clientFieldDefinitions.all],
+  successMessage: 'Definicja pola została utworzona',
+  errorMessage: 'Nie udało się utworzyć definicji pola',
+});
 
-  return useMutation({
-    mutationFn: (fieldData: CreateClientFieldDefinitionDto) =>
-      fieldDefinitionsApi.create(fieldData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clientFieldDefinitions.all });
-      toast({
-        title: 'Sukces',
-        description: 'Definicja pola została utworzona',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się utworzyć definicji pola',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateClientFieldDefinition = createMutationHook<
+  void,
+  { id: string; data: UpdateClientFieldDefinitionDto }
+>({
+  mutationFn: ({ id, data }) => fieldDefinitionsApi.update(id, data),
+  invalidateKeys: [queryKeys.clientFieldDefinitions.all],
+  successMessage: 'Definicja pola została zaktualizowana',
+  errorMessage: 'Nie udało się zaktualizować definicji pola',
+});
 
-export function useUpdateFieldDefinition() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useDeleteClientFieldDefinition = createMutationHook<void, string>({
+  mutationFn: (id) => fieldDefinitionsApi.delete(id),
+  invalidateKeys: [queryKeys.clientFieldDefinitions.all],
+  successMessage: 'Definicja pola została usunięta',
+  errorMessage: 'Nie udało się usunąć definicji pola',
+});
 
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateClientFieldDefinitionDto }) =>
-      fieldDefinitionsApi.update(id, data),
-    onSuccess: () => {
-      // Simple prefix invalidation - invalidates all field definition queries
-      queryClient.invalidateQueries({ queryKey: ['client-field-definitions'] });
-      toast({
-        title: 'Sukces',
-        description: 'Definicja pola została zaktualizowana',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować definicji pola',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useDeleteFieldDefinition() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => fieldDefinitionsApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clientFieldDefinitions.all });
-      toast({
-        title: 'Sukces',
-        description: 'Definicja pola została usunięta',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć definicji pola',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useReorderFieldDefinitions() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (orderedIds: string[]) => fieldDefinitionsApi.reorder(orderedIds),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clientFieldDefinitions.all });
-      toast({
-        title: 'Sukces',
-        description: 'Kolejność pól została zaktualizowana',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zmienić kolejności pól',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useReorderClientFieldDefinitions = createMutationHook<void, string[]>({
+  mutationFn: (orderedIds) => fieldDefinitionsApi.reorder(orderedIds),
+  invalidateKeys: [queryKeys.clientFieldDefinitions.all],
+  successMessage: 'Kolejność pól została zaktualizowana',
+  errorMessage: 'Nie udało się zmienić kolejności pól',
+});
 
 // ============================================
 // Client Icon Hooks
@@ -689,83 +473,38 @@ export function useClientIcon(id: string) {
   });
 }
 
-export function useCreateClientIcon() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useCreateClientIcon = createMutationHook<
+  void,
+  { iconData: CreateClientIconDto; file?: File }
+>({
+  mutationFn: ({ iconData, file }) => clientIconsApi.create(iconData, file),
+  invalidateKeys: [queryKeys.clientIcons.all],
+  successMessage: 'Ikona została utworzona',
+  errorMessage: 'Nie udało się utworzyć ikony',
+});
 
-  return useMutation({
-    mutationFn: ({ iconData, file }: { iconData: CreateClientIconDto; file?: File }) =>
-      clientIconsApi.create(iconData, file),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clientIcons.all });
-      toast({
-        title: 'Sukces',
-        description: 'Ikona została utworzona',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się utworzyć ikony',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateClientIcon = createMutationHook<
+  void,
+  { id: string; data: UpdateClientIconDto }
+>({
+  mutationFn: ({ id, data }) => clientIconsApi.update(id, data),
+  invalidateKeys: [queryKeys.clientIcons.all],
+  successMessage: 'Ikona została zaktualizowana',
+  errorMessage: 'Nie udało się zaktualizować ikony',
+});
 
-export function useUpdateClientIcon() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateClientIconDto }) =>
-      clientIconsApi.update(id, data),
-    onSuccess: () => {
-      // Simple prefix invalidation - invalidates all icon queries
-      queryClient.invalidateQueries({ queryKey: ['client-icons'] });
-      toast({
-        title: 'Sukces',
-        description: 'Ikona została zaktualizowana',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować ikony',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useDeleteClientIcon() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => clientIconsApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clientIcons.all });
-      toast({
-        title: 'Sukces',
-        description: 'Ikona została usunięta',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć ikony',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useDeleteClientIcon = createMutationHook<void, string>({
+  mutationFn: (id) => clientIconsApi.delete(id),
+  invalidateKeys: [queryKeys.clientIcons.all],
+  successMessage: 'Ikona została usunięta',
+  errorMessage: 'Nie udało się usunąć ikony',
+});
 
 // ============================================
 // Notification Settings Hooks
 // ============================================
 
-export function useNotificationSettings() {
+export function useClientNotificationSettings() {
   return useQuery({
     queryKey: queryKeys.notificationSettings.me,
     queryFn: notificationSettingsApi.getMe,
@@ -773,74 +512,29 @@ export function useNotificationSettings() {
   });
 }
 
-export function useCreateNotificationSettings() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useCreateNotificationSettings = createMutationHook<
+  void,
+  CreateNotificationSettingsDto
+>({
+  mutationFn: (settingsData) => notificationSettingsApi.create(settingsData),
+  invalidateKeys: [queryKeys.notificationSettings.me],
+  successMessage: 'Ustawienia powiadomień zostały utworzone',
+  errorMessage: 'Nie udało się utworzyć ustawień powiadomień',
+});
 
-  return useMutation({
-    mutationFn: (settingsData: CreateNotificationSettingsDto) =>
-      notificationSettingsApi.create(settingsData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.notificationSettings.me });
-      toast({
-        title: 'Sukces',
-        description: 'Ustawienia powiadomień zostały utworzone',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się utworzyć ustawień powiadomień',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateNotificationSettings = createMutationHook<
+  void,
+  UpdateNotificationSettingsDto
+>({
+  mutationFn: (settingsData) => notificationSettingsApi.update(settingsData),
+  invalidateKeys: [queryKeys.notificationSettings.me],
+  successMessage: 'Ustawienia powiadomień zostały zaktualizowane',
+  errorMessage: 'Nie udało się zaktualizować ustawień powiadomień',
+});
 
-export function useUpdateNotificationSettings() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (settingsData: UpdateNotificationSettingsDto) =>
-      notificationSettingsApi.update(settingsData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.notificationSettings.me });
-      toast({
-        title: 'Sukces',
-        description: 'Ustawienia powiadomień zostały zaktualizowane',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description:
-          error.response?.data?.message || 'Nie udało się zaktualizować ustawień powiadomień',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useDeleteNotificationSettings() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: () => notificationSettingsApi.delete(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.notificationSettings.me });
-      toast({
-        title: 'Sukces',
-        description: 'Ustawienia powiadomień zostały usunięte',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć ustawień powiadomień',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useDeleteNotificationSettings = createMutationHook({
+  mutationFn: () => notificationSettingsApi.delete(),
+  invalidateKeys: [queryKeys.notificationSettings.me],
+  successMessage: 'Ustawienia powiadomień zostały usunięte',
+  errorMessage: 'Nie udało się usunąć ustawień powiadomień',
+});

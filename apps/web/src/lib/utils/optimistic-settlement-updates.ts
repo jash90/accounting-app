@@ -2,17 +2,12 @@ import { type Query, type QueryClient } from '@tanstack/react-query';
 
 import { type PaginatedResponse } from '@/types/api';
 
+import { createListPredicate } from './query-predicates';
 import { type SettlementResponseDto } from '../api/endpoints/settlements';
 import { queryKeys } from '../api/query-client';
 
-/**
- * Predicate to identify settlement list queries for invalidation.
- * Prevents unnecessary refetches of individual detail queries.
- */
-export const isSettlementListQuery = (query: Query): boolean => {
-  const key = query.queryKey;
-  return Array.isArray(key) && key[0] === 'settlements' && key[1] === 'list';
-};
+/** Predicate to identify settlement list queries for invalidation. */
+export const isSettlementListQuery = createListPredicate('settlements');
 
 /**
  * Creates a predicate to invalidate all settlement stats queries for a specific month/year.

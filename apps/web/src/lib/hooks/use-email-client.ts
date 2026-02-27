@@ -9,7 +9,9 @@ import {
 } from '@tanstack/react-query';
 
 import apiClient from '../api/client';
+import { queryKeys } from '../api/query-client';
 import { tokenStorage } from '../auth/token-storage';
+import { downloadBlob } from '../utils/download';
 
 // ============================================
 // Helper Functions
@@ -92,9 +94,9 @@ interface SyncResult {
   errors: string[];
 }
 
-export function useInbox(limit = 50, unseenOnly = false) {
+export function useEmailInbox(limit = 50, unseenOnly = false) {
   return useQuery({
-    queryKey: ['email-inbox', limit, unseenOnly],
+    queryKey: queryKeys.email.inbox(limit, unseenOnly),
     queryFn: async () => {
       const { data } = await apiClient.get<Email[]>('/api/modules/email-client/messages/inbox', {
         params: { limit, unseenOnly },
@@ -107,9 +109,9 @@ export function useInbox(limit = 50, unseenOnly = false) {
   });
 }
 
-export function useDrafts() {
+export function useEmailDrafts() {
   return useQuery({
-    queryKey: ['email-drafts'],
+    queryKey: queryKeys.email.drafts.all,
     queryFn: async () => {
       const { data } = await apiClient.get<Draft[]>('/api/modules/email-client/drafts/my');
       return data;
@@ -140,7 +142,7 @@ export function useSendEmail() {
   });
 }
 
-export function useCreateDraft() {
+export function useCreateEmailDraft() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -155,7 +157,7 @@ export function useCreateDraft() {
   });
 }
 
-export function useSendDraft() {
+export function useSendEmailDraft() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -175,11 +177,11 @@ export function useSendDraft() {
  * Fetch single email by UID
  * Uses initialData from inbox cache for instant display when navigating from inbox
  */
-export function useEmail(uid: number | undefined) {
+export function useEmailMessage(uid: number | undefined) {
   const queryClient = useQueryClient();
 
   return useQuery({
-    queryKey: ['email', uid],
+    queryKey: queryKeys.email.detail(uid),
     queryFn: async () => {
       const { data } = await apiClient.get<Email>(`/api/modules/email-client/messages/${uid}`);
       return data;
@@ -188,18 +190,18 @@ export function useEmail(uid: number | undefined) {
     initialData: () => {
       if (!uid) return undefined;
       // Try to get email from inbox cache (check both with and without filters)
-      const inboxData = queryClient.getQueryData<Email[]>(['email-inbox', 50, false]);
+      const inboxData = queryClient.getQueryData<Email[]>(queryKeys.email.inbox(50, false));
       if (inboxData) {
         const cachedEmail = inboxData.find((email) => email.uid === uid);
         if (cachedEmail) return cachedEmail;
       }
       // Also check unseenOnly cache
-      const unseenData = queryClient.getQueryData<Email[]>(['email-inbox', 50, true]);
+      const unseenData = queryClient.getQueryData<Email[]>(queryKeys.email.inbox(50, true));
       return unseenData?.find((email) => email.uid === uid);
     },
     initialDataUpdatedAt: () => {
       // Use inbox query's dataUpdatedAt for stale time calculation
-      return queryClient.getQueryState(['email-inbox', 50, false])?.dataUpdatedAt;
+      return queryClient.getQueryState(queryKeys.email.inbox(50, false))?.dataUpdatedAt;
     },
   });
 }
@@ -207,9 +209,9 @@ export function useEmail(uid: number | undefined) {
 /**
  * Fetch single draft by ID
  */
-export function useDraft(draftId: string | undefined) {
+export function useEmailDraft(draftId: string | undefined) {
   return useQuery({
-    queryKey: ['email-draft', draftId],
+    queryKey: queryKeys.email.drafts.detail(draftId),
     queryFn: async () => {
       const { data } = await apiClient.get<Draft>(`/api/modules/email-client/drafts/${draftId}`);
       return data;
@@ -221,7 +223,7 @@ export function useDraft(draftId: string | undefined) {
 /**
  * Update existing draft
  */
-export function useUpdateDraft() {
+export function useUpdateEmailDraft() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -247,7 +249,7 @@ export function useUpdateDraft() {
     },
     onSuccess: (_, variables) => {
       // Invalidate the specific draft detail
-      queryClient.invalidateQueries({ queryKey: ['email-draft', variables.draftId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.email.drafts.detail(variables.draftId) });
       // Only invalidate draft list queries
       queryClient.invalidateQueries({ predicate: isEmailDraftListQuery });
     },
@@ -257,7 +259,7 @@ export function useUpdateDraft() {
 /**
  * Delete draft
  */
-export function useDeleteDraft() {
+export function useDeleteEmailDraft() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -266,7 +268,7 @@ export function useDeleteDraft() {
     },
     onSuccess: (_, deletedId) => {
       // Remove the specific draft from cache
-      queryClient.removeQueries({ queryKey: ['email-draft', deletedId] });
+      queryClient.removeQueries({ queryKey: queryKeys.email.drafts.detail(deletedId) });
       // Only invalidate draft list queries
       queryClient.invalidateQueries({ predicate: isEmailDraftListQuery });
     },
@@ -276,9 +278,9 @@ export function useDeleteDraft() {
 /**
  * List email folders
  */
-export function useFolders() {
+export function useEmailFolders() {
   return useQuery({
-    queryKey: ['email-folders'],
+    queryKey: queryKeys.email.folders,
     queryFn: async () => {
       const { data } = await apiClient.get<string[]>('/api/modules/email-client/messages/folders');
       return data;
@@ -290,9 +292,9 @@ export function useFolders() {
 /**
  * Fetch emails from specific folder
  */
-export function useFolder(folderName: string | undefined, limit = 50) {
+export function useEmailFolder(folderName: string | undefined, limit = 50) {
   return useQuery({
-    queryKey: ['email-folder', folderName, limit],
+    queryKey: queryKeys.email.folder(folderName, limit),
     queryFn: async () => {
       const { data } = await apiClient.get<Email[]>(
         `/api/modules/email-client/messages/folder/${folderName}`,
@@ -309,7 +311,7 @@ export function useFolder(folderName: string | undefined, limit = 50) {
 /**
  * Mark emails as read
  */
-export function useMarkAsRead() {
+export function useMarkEmailsAsRead() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -322,7 +324,7 @@ export function useMarkAsRead() {
     onSuccess: (_, messageUids) => {
       // Invalidate specific email details that were marked as read
       messageUids.forEach((uid) => {
-        queryClient.invalidateQueries({ queryKey: ['email', uid] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.email.detail(uid) });
       });
       // Only invalidate inbox and folder list queries
       queryClient.invalidateQueries({ predicate: isEmailInboxQuery });
@@ -347,7 +349,7 @@ export function useDeleteEmails() {
     onSuccess: (_, messageUids) => {
       // Remove deleted emails from cache
       messageUids.forEach((uid) => {
-        queryClient.removeQueries({ queryKey: ['email', uid] });
+        queryClient.removeQueries({ queryKey: queryKeys.email.detail(uid) });
       });
       // Only invalidate inbox and folder list queries
       queryClient.invalidateQueries({ predicate: isEmailInboxQuery });
@@ -359,7 +361,7 @@ export function useDeleteEmails() {
 /**
  * Generate AI draft reply using AI Agent module
  */
-export function useGenerateAiDraft() {
+export function useGenerateEmailAiDraft() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -378,7 +380,7 @@ export function useGenerateAiDraft() {
     onSuccess: () => {
       // Only invalidate draft list queries
       queryClient.invalidateQueries({ predicate: isEmailDraftListQuery });
-      queryClient.invalidateQueries({ queryKey: ['ai-drafts'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.email.aiDrafts });
     },
   });
 }
@@ -386,9 +388,9 @@ export function useGenerateAiDraft() {
 /**
  * List AI-generated drafts
  */
-export function useAiDrafts() {
+export function useEmailAiDrafts() {
   return useQuery({
-    queryKey: ['ai-drafts'],
+    queryKey: queryKeys.email.aiDrafts,
     queryFn: async () => {
       const { data } = await apiClient.get<Draft[]>('/api/modules/email-client/drafts/ai');
       return data;
@@ -405,7 +407,7 @@ interface UploadedAttachment {
 /**
  * Upload email attachment
  */
-export function useUploadAttachment() {
+export function useUploadEmailAttachment() {
   return useMutation({
     mutationFn: async (file: File): Promise<UploadedAttachment> => {
       const formData = new FormData();
@@ -450,7 +452,7 @@ interface StreamChunk {
  * Hook for streaming AI draft generation.
  * Returns state and a function to start streaming.
  */
-export function useGenerateAiDraftStream() {
+export function useGenerateEmailAiDraftStream() {
   const queryClient = useQueryClient();
   const [state, setState] = useState<StreamState>({
     isStreaming: false,
@@ -546,7 +548,7 @@ export function useGenerateAiDraftStream() {
                   }));
                   // Invalidate queries to refresh draft lists (using predicates)
                   queryClient.invalidateQueries({ predicate: isEmailDraftListQuery });
-                  queryClient.invalidateQueries({ queryKey: ['ai-drafts'] });
+                  queryClient.invalidateQueries({ queryKey: queryKeys.email.aiDrafts });
                 } else if (chunk.type === 'error') {
                   setState((prev) => ({
                     ...prev,
@@ -606,7 +608,7 @@ export function useGenerateAiDraftStream() {
 /**
  * Sync drafts with IMAP server
  */
-export function useSyncDrafts() {
+export function useSyncEmailDrafts() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -617,7 +619,7 @@ export function useSyncDrafts() {
     onSuccess: () => {
       // Only invalidate draft list queries
       queryClient.invalidateQueries({ predicate: isEmailDraftListQuery });
-      queryClient.invalidateQueries({ queryKey: ['email-draft-conflicts'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.email.draftConflicts });
     },
   });
 }
@@ -625,9 +627,9 @@ export function useSyncDrafts() {
 /**
  * Get drafts with sync conflicts
  */
-export function useDraftConflicts() {
+export function useEmailDraftConflicts() {
   return useQuery({
-    queryKey: ['email-draft-conflicts'],
+    queryKey: queryKeys.email.draftConflicts,
     queryFn: async () => {
       const { data } = await apiClient.get<Draft[]>('/api/modules/email-client/drafts/conflicts');
       return data;
@@ -638,7 +640,7 @@ export function useDraftConflicts() {
 /**
  * Resolve a draft sync conflict
  */
-export function useResolveConflict() {
+export function useResolveEmailDraftConflict() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -657,10 +659,10 @@ export function useResolveConflict() {
     },
     onSuccess: (_, variables) => {
       // Invalidate the specific draft detail
-      queryClient.invalidateQueries({ queryKey: ['email-draft', variables.draftId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.email.drafts.detail(variables.draftId) });
       // Only invalidate draft list queries
       queryClient.invalidateQueries({ predicate: isEmailDraftListQuery });
-      queryClient.invalidateQueries({ queryKey: ['email-draft-conflicts'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.email.draftConflicts });
     },
   });
 }
@@ -673,7 +675,7 @@ interface DeleteAllResult {
 /**
  * Delete all drafts for company
  */
-export function useDeleteAllDrafts() {
+export function useDeleteAllEmailDrafts() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -688,8 +690,8 @@ export function useDeleteAllDrafts() {
       queryClient.removeQueries({ queryKey: ['email-draft'] });
       // Only invalidate draft list queries
       queryClient.invalidateQueries({ predicate: isEmailDraftListQuery });
-      queryClient.invalidateQueries({ queryKey: ['email-draft-conflicts'] });
-      queryClient.invalidateQueries({ queryKey: ['ai-drafts'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.email.draftConflicts });
+      queryClient.invalidateQueries({ queryKey: queryKeys.email.aiDrafts });
     },
   });
 }
@@ -697,9 +699,9 @@ export function useDeleteAllDrafts() {
 /**
  * Infinite scroll inbox using cursor-based pagination
  */
-export function useInfiniteInbox(limit = 50) {
+export function useInfiniteEmailInbox(limit = 50) {
   return useInfiniteQuery({
-    queryKey: ['email-inbox-infinite', limit],
+    queryKey: queryKeys.email.inboxInfinite(limit),
     queryFn: async ({ pageParam }) => {
       const params: Record<string, unknown> = { limit };
       if (pageParam) {
@@ -723,9 +725,9 @@ export function useInfiniteInbox(limit = 50) {
 /**
  * Infinite scroll folder using cursor-based pagination
  */
-export function useInfiniteFolder(folderName: string | undefined, limit = 50) {
+export function useInfiniteEmailFolder(folderName: string | undefined, limit = 50) {
   return useInfiniteQuery({
-    queryKey: ['email-folder-infinite', folderName, limit],
+    queryKey: queryKeys.email.folderInfinite(folderName, limit),
     queryFn: async ({ pageParam }) => {
       const params: Record<string, unknown> = { limit };
       if (pageParam) {
@@ -750,7 +752,7 @@ export function useInfiniteFolder(folderName: string | undefined, limit = 50) {
 /**
  * Update email flags (star, etc.)
  */
-export function useUpdateFlags() {
+export function useUpdateEmailFlags() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -789,7 +791,7 @@ export function useUpdateFlags() {
 /**
  * Move messages between folders
  */
-export function useMoveMessages() {
+export function useMoveEmails() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -811,7 +813,7 @@ export function useMoveMessages() {
     },
     onSuccess: (_, variables) => {
       variables.uids.forEach((uid) => {
-        queryClient.removeQueries({ queryKey: ['email', uid] });
+        queryClient.removeQueries({ queryKey: queryKeys.email.detail(uid) });
       });
       queryClient.invalidateQueries({ predicate: isEmailInboxQuery });
       queryClient.invalidateQueries({ predicate: isEmailFolderQuery });
@@ -828,7 +830,7 @@ export function useSearchEmails(
   field: 'all' | 'subject' | 'from' | 'body' = 'all'
 ) {
   return useQuery({
-    queryKey: ['email-search', query, mailbox, field],
+    queryKey: queryKeys.email.search(query, mailbox, field),
     queryFn: async () => {
       const { data } = await apiClient.get<{
         messages: Email[];
@@ -848,7 +850,7 @@ export function useSearchEmails(
 /**
  * Download IMAP attachment
  */
-export function useDownloadAttachment() {
+export function useDownloadEmailAttachment() {
   return useMutation({
     mutationFn: async ({
       uid,
@@ -868,14 +870,7 @@ export function useDownloadAttachment() {
       );
 
       // Trigger browser download
-      const url = window.URL.createObjectURL(new Blob([data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      downloadBlob(new Blob([data]), filename);
 
       return { success: true };
     },

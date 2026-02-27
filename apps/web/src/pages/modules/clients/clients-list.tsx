@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { type ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import {
   ArrowLeft,
   BarChart3,
@@ -33,9 +33,6 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { DataTable } from '@/components/common/data-table';
 import { PageHeader } from '@/components/common/page-header';
 import { ViewModeToggle } from '@/components/common/view-mode-toggle';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
-import { useTablePreferences, type ColumnConfig } from '@/lib/hooks/use-table-preferences';
-import type { CreateClientFormData, UpdateClientFormData } from '@/lib/validation/schemas';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -54,19 +51,23 @@ import {
   useBulkDeleteClients,
   useBulkEditClients,
   useBulkRestoreClients,
-  useCheckDuplicates,
+  useCheckClientDuplicates,
   useClients,
   useClientStatistics,
   useCreateClient,
   useDeleteClient,
-  useDownloadImportTemplate,
+  useDownloadClientImportTemplate,
   useExportClients,
-  useFieldDefinitions,
+  useClientFieldDefinitions,
   useImportClients,
   useRestoreClient,
   useSetClientCustomFields,
   useUpdateClient,
 } from '@/lib/hooks/use-clients';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import { useTablePreferences, type ColumnConfig } from '@/lib/hooks/use-table-preferences';
+import { formatDate } from '@/lib/utils/format-date';
+import type { CreateClientFormData, UpdateClientFormData } from '@/lib/validation/schemas';
 import {
   type ClientFiltersDto,
   type ClientResponseDto,
@@ -224,7 +225,7 @@ export default function ClientsListPage() {
   }, [user?.role]);
 
   // Fetch custom field definitions
-  const { data: fieldDefinitionsResponse } = useFieldDefinitions({ isActive: true });
+  const { data: fieldDefinitionsResponse } = useClientFieldDefinitions({ isActive: true });
   const fieldDefinitions = useMemo(
     () => fieldDefinitionsResponse?.data ?? [],
     [fieldDefinitionsResponse?.data]
@@ -317,13 +318,13 @@ export default function ClientsListPage() {
   const deleteClient = useDeleteClient();
   const restoreClient = useRestoreClient();
   const setCustomFields = useSetClientCustomFields();
-  const checkDuplicates = useCheckDuplicates();
+  const checkDuplicates = useCheckClientDuplicates();
   const bulkDelete = useBulkDeleteClients();
   const bulkRestore = useBulkRestoreClients();
   const bulkEdit = useBulkEditClients();
   const exportClients = useExportClients();
   const importClients = useImportClients();
-  const downloadTemplate = useDownloadImportTemplate();
+  const downloadTemplate = useDownloadClientImportTemplate();
 
   const [dialogState, dispatchDialog] = useReducer(clientDialogReducer, clientDialogInitialState);
   const {
@@ -489,25 +490,25 @@ export default function ClientsListPage() {
       data: CreateClientFormData | UpdateClientFormData,
       customFields?: { values: Record<string, string | null> }
     ) => {
+      const createDto: CreateClientDto = {
+        name: data.name!,
+        nip: data.nip || undefined,
+        email: data.email || undefined,
+        phone: data.phone || undefined,
+        companyStartDate: data.companyStartDate ?? undefined,
+        cooperationStartDate: data.cooperationStartDate ?? undefined,
+        companySpecificity: data.companySpecificity || undefined,
+        additionalInfo: data.additionalInfo || undefined,
+        gtuCode: data.gtuCode || undefined,
+        pkdCode: data.pkdCode || undefined,
+        amlGroup: data.amlGroup || undefined,
+        employmentType: data.employmentType as EmploymentType | undefined,
+        vatStatus: data.vatStatus as VatStatus | undefined,
+        taxScheme: data.taxScheme as TaxScheme | undefined,
+        zusStatus: data.zusStatus as ZusStatus | undefined,
+        receiveEmailCopy: data.receiveEmailCopy,
+      };
       try {
-        const createDto: CreateClientDto = {
-          name: data.name!,
-          nip: data.nip || undefined,
-          email: data.email || undefined,
-          phone: data.phone || undefined,
-          companyStartDate: data.companyStartDate ?? undefined,
-          cooperationStartDate: data.cooperationStartDate ?? undefined,
-          companySpecificity: data.companySpecificity || undefined,
-          additionalInfo: data.additionalInfo || undefined,
-          gtuCode: data.gtuCode || undefined,
-          pkdCode: data.pkdCode || undefined,
-          amlGroup: data.amlGroup || undefined,
-          employmentType: data.employmentType as EmploymentType | undefined,
-          vatStatus: data.vatStatus as VatStatus | undefined,
-          taxScheme: data.taxScheme as TaxScheme | undefined,
-          zusStatus: data.zusStatus as ZusStatus | undefined,
-          receiveEmailCopy: data.receiveEmailCopy,
-        };
         await handleCreateWithDuplicateCheck(createDto, customFields);
       } catch {
         // Error is handled by mutation's onError callback
@@ -523,6 +524,7 @@ export default function ClientsListPage() {
       customFields?: { values: Record<string, string | null> }
     ) => {
       if (!editingClient) return;
+      const hasCustomFields = customFields != null && Object.keys(customFields.values).length > 0;
       try {
         // Execute client update and custom fields update in parallel for faster saves
         const operations: Promise<unknown>[] = [
@@ -532,7 +534,7 @@ export default function ClientsListPage() {
           }),
         ];
 
-        if (customFields && Object.keys(customFields.values).length > 0) {
+        if (hasCustomFields) {
           operations.push(
             setCustomFields.mutateAsync({
               id: editingClient.id,
@@ -787,7 +789,7 @@ export default function ClientsListPage() {
             const dateValue = new Date(value);
             // Check if date is valid (getTime() returns NaN for invalid dates)
             if (!isNaN(dateValue.getTime())) {
-              return <span className="text-sm">{dateValue.toLocaleDateString('pl-PL')}</span>;
+              return <span className="text-sm">{formatDate(dateValue)}</span>;
             }
             // Log invalid date for debugging
             if (import.meta.env.DEV) {

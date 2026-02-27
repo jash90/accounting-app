@@ -104,6 +104,25 @@ export interface CompanyDto {
   owner?: UserDto;
   isActive: boolean;
   isSystemCompany: boolean;
+  nip?: string | null;
+  regon?: string | null;
+  street?: string | null;
+  buildingNumber?: string | null;
+  apartmentNumber?: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  country?: string | null;
+  phone?: string | null;
+  bankAccount?: string | null;
+  bankName?: string | null;
+  krs?: string | null;
+  ownerName?: string | null;
+  ownerFirstName?: string | null;
+  ownerLastName?: string | null;
+  ownerEmail?: string | null;
+  ownerPhone?: string | null;
+  defaultEmailSignature?: string | null;
+  defaultDocumentFooter?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -116,6 +135,25 @@ export interface CreateCompanyDto {
 export interface UpdateCompanyDto {
   name?: string;
   isActive?: boolean;
+  nip?: string | null;
+  regon?: string | null;
+  street?: string | null;
+  buildingNumber?: string | null;
+  apartmentNumber?: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  country?: string | null;
+  phone?: string | null;
+  bankAccount?: string | null;
+  bankName?: string | null;
+  krs?: string | null;
+  ownerName?: string | null;
+  ownerFirstName?: string | null;
+  ownerLastName?: string | null;
+  ownerEmail?: string | null;
+  ownerPhone?: string | null;
+  defaultEmailSignature?: string | null;
+  defaultDocumentFooter?: string | null;
 }
 
 // Module DTOs

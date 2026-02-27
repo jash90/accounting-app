@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-
 import { type ApiErrorResponse } from '@/types/api';
 import {
   type CreateAIConfigurationDto,
@@ -11,9 +8,12 @@ import {
   type SetTokenLimitDto,
   type UpdateAIConfigurationDto,
 } from '@/types/dtos';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 import { aiAgentApi } from '../api/endpoints/ai-agent';
 import { queryKeys } from '../api/query-client';
+import { getApiErrorMessage } from '../utils/query-filters';
 
 // ============================================
 // Cache Time Constants
@@ -35,7 +35,7 @@ const CONVERSATION_DETAIL_CACHE = {
 // Conversation Hooks
 // ============================================================================
 
-export function useConversations() {
+export function useAiConversations() {
   return useQuery({
     queryKey: queryKeys.aiAgent.conversations.all,
     queryFn: aiAgentApi.conversations.getAll,
@@ -43,7 +43,7 @@ export function useConversations() {
   });
 }
 
-export function useConversation(id: string) {
+export function useAiConversation(id: string) {
   return useQuery({
     queryKey: queryKeys.aiAgent.conversations.detail(id),
     queryFn: () => aiAgentApi.conversations.getById(id),
@@ -52,7 +52,7 @@ export function useConversation(id: string) {
   });
 }
 
-export function useCreateConversation() {
+export function useCreateAiConversation() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -62,12 +62,12 @@ export function useCreateConversation() {
       toast.success('Konwersacja została utworzona');
     },
     onError: (error: ApiErrorResponse) => {
-      toast.error(error.response?.data?.message || 'Nie udało się utworzyć konwersacji');
+      toast.error(getApiErrorMessage(error, 'Nie udało się utworzyć konwersacji'));
     },
   });
 }
 
-export function useSendMessage(conversationId: string) {
+export function useSendAiMessage(conversationId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -83,8 +83,7 @@ export function useSendMessage(conversationId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.aiAgent.tokenUsage.company });
     },
     onError: (error: ApiErrorResponse) => {
-      const message = error.response?.data?.message || 'Nie udało się wysłać wiadomości';
-      toast.error(message);
+      toast.error(getApiErrorMessage(error, 'Nie udało się wysłać wiadomości'));
     },
   });
 }
@@ -96,7 +95,7 @@ export function useSendMessage(conversationId: string) {
 /** Maximum streaming content size (100KB) to prevent memory issues on large responses */
 const MAX_STREAM_SIZE = 100_000;
 
-export function useSendMessageStream(conversationId: string) {
+export function useSendAiMessageStream(conversationId: string) {
   const queryClient = useQueryClient();
   const [streamingContent, setStreamingContent] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -113,6 +112,14 @@ export function useSendMessageStream(conversationId: string) {
   useEffect(() => {
     queryClientRef.current = queryClient;
   }, [queryClient]);
+
+  // Abort any in-flight stream when the component unmounts to prevent
+  // state updates on an unmounted component.
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -200,7 +207,7 @@ export function useSendMessageStream(conversationId: string) {
   };
 }
 
-export function useDeleteConversation() {
+export function useDeleteAiConversation() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -210,7 +217,7 @@ export function useDeleteConversation() {
       toast.success('Konwersacja została usunięta');
     },
     onError: (error: ApiErrorResponse) => {
-      toast.error(error.response?.data?.message || 'Nie udało się usunąć konwersacji');
+      toast.error(getApiErrorMessage(error, 'Nie udało się usunąć konwersacji'));
     },
   });
 }
@@ -238,7 +245,7 @@ export function useCreateAIConfiguration() {
       toast.success('Konfiguracja AI została utworzona');
     },
     onError: (error: ApiErrorResponse) => {
-      toast.error(error.response?.data?.message || 'Nie udało się utworzyć konfiguracji AI');
+      toast.error(getApiErrorMessage(error, 'Nie udało się utworzyć konfiguracji AI'));
     },
   });
 }
@@ -253,7 +260,7 @@ export function useUpdateAIConfiguration() {
       toast.success('Konfiguracja AI została zaktualizowana');
     },
     onError: (error: ApiErrorResponse) => {
-      toast.error(error.response?.data?.message || 'Nie udało się zaktualizować konfiguracji AI');
+      toast.error(getApiErrorMessage(error, 'Nie udało się zaktualizować konfiguracji AI'));
     },
   });
 }
@@ -285,7 +292,7 @@ export function useOpenAIEmbeddingModels() {
   });
 }
 
-export function useResetApiKey() {
+export function useResetAiApiKey() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -297,7 +304,7 @@ export function useResetApiKey() {
       );
     },
     onError: (error: ApiErrorResponse) => {
-      toast.error(error.response?.data?.message || 'Nie udało się zresetować klucza API');
+      toast.error(getApiErrorMessage(error, 'Nie udało się zresetować klucza API'));
     },
   });
 }
@@ -351,7 +358,7 @@ export function useCompanyTokenUsageById(companyId: string) {
 // Token Limit Hooks
 // ============================================================================
 
-export function useTokenLimit(targetType: 'company' | 'user', targetId: string) {
+export function useAiTokenLimit(targetType: 'company' | 'user', targetId: string) {
   return useQuery({
     queryKey: queryKeys.aiAgent.tokenLimit.byTarget(targetType, targetId),
     queryFn: () => aiAgentApi.tokenLimit.get(targetType, targetId),
@@ -361,7 +368,7 @@ export function useTokenLimit(targetType: 'company' | 'user', targetId: string) 
   });
 }
 
-export function useSetTokenLimit() {
+export function useSetAiTokenLimit() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -373,12 +380,12 @@ export function useSetTokenLimit() {
       toast.success('Limit tokenów został ustawiony');
     },
     onError: (error: ApiErrorResponse) => {
-      toast.error(error.response?.data?.message || 'Nie udało się ustawić limitu tokenów');
+      toast.error(getApiErrorMessage(error, 'Nie udało się ustawić limitu tokenów'));
     },
   });
 }
 
-export function useDeleteTokenLimit() {
+export function useDeleteAiTokenLimit() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -391,7 +398,7 @@ export function useDeleteTokenLimit() {
       toast.success('Limit tokenów został usunięty');
     },
     onError: (error: ApiErrorResponse) => {
-      toast.error(error.response?.data?.message || 'Nie udało się usunąć limitu tokenów');
+      toast.error(getApiErrorMessage(error, 'Nie udało się usunąć limitu tokenów'));
     },
   });
 }
@@ -400,7 +407,7 @@ export function useDeleteTokenLimit() {
 // Context/RAG Hooks
 // ============================================================================
 
-export function useContextFiles() {
+export function useAiContextFiles() {
   return useQuery({
     queryKey: queryKeys.aiAgent.context.all,
     queryFn: aiAgentApi.context.getAll,
@@ -408,7 +415,7 @@ export function useContextFiles() {
   });
 }
 
-export function useContextFile(id: string | null) {
+export function useAiContextFile(id: string | null) {
   return useQuery({
     queryKey: queryKeys.aiAgent.context.detail(id!),
     queryFn: () => aiAgentApi.context.getOne(id!),
@@ -417,7 +424,7 @@ export function useContextFile(id: string | null) {
   });
 }
 
-export function useUploadContextFile() {
+export function useUploadAiContextFile() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -454,7 +461,7 @@ export function useUploadContextFile() {
   });
 }
 
-export function useDeleteContextFile() {
+export function useDeleteAiContextFile() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -464,7 +471,7 @@ export function useDeleteContextFile() {
       toast.success('Plik został usunięty');
     },
     onError: (error: ApiErrorResponse) => {
-      toast.error(error.response?.data?.message || 'Nie udało się usunąć pliku');
+      toast.error(getApiErrorMessage(error, 'Nie udało się usunąć pliku'));
     },
   });
 }

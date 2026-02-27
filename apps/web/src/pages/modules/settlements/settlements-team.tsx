@@ -24,11 +24,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { type EmployeeStatsDto } from '@/lib/api/endpoints/settlements';
 import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import {
-  useAllAssignableUsers,
+  useAllSettlementAssignableUsers,
   useBulkAssignSettlements,
-  useTeamPageData,
+  useSettlementTeamPageData,
 } from '@/lib/hooks/use-settlements';
-import { getEmployeeName } from '@/lib/utils/user';
+import { getUserName } from '@/lib/utils/user';
 
 import { employeeStatsColumns } from './columns/employee-stats-columns';
 import { MonthSelector } from './components/month-selector';
@@ -90,7 +90,7 @@ export default function SettlementsTeamPage() {
 
   // Fetch data in parallel using useQueries for better performance
   // This reduces 2 sequential network requests to 1 parallel batch (30-50ms faster)
-  const [employeeStatsQuery, unassignedQuery] = useTeamPageData(month, year);
+  const [employeeStatsQuery, unassignedQuery] = useSettlementTeamPageData(month, year);
 
   const statsPending = employeeStatsQuery.isPending;
   const employeeStats = employeeStatsQuery.data?.employees ?? [];
@@ -102,7 +102,7 @@ export default function SettlementsTeamPage() {
     [unassignedQuery.data?.data]
   );
 
-  const { data: assignableUsers } = useAllAssignableUsers();
+  const { data: assignableUsers } = useAllSettlementAssignableUsers();
   const employees = assignableUsers ?? [];
 
   const bulkAssign = useBulkAssignSettlements(month, year);
@@ -249,7 +249,7 @@ export default function SettlementsTeamPage() {
                     <SelectContent>
                       {employees.map((employee) => (
                         <SelectItem key={employee.id} value={employee.id}>
-                          {getEmployeeName(employee)}
+                          {getUserName(employee)}
                         </SelectItem>
                       ))}
                     </SelectContent>

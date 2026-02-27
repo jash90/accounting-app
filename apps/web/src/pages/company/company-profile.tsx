@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
-
 import { useForm } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { useCompanyProfile, useUpdateCompanyProfile } from '@/lib/hooks/use-company-profile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useCompanyProfile, useUpdateCompanyProfile } from '@/lib/hooks/use-company-profile';
 
 function validateNip(nip: string | undefined): boolean {
   if (!nip) return true;
@@ -102,29 +101,28 @@ export default function CompanyProfilePage() {
   });
 
   useEffect(() => {
-    if (profile) {
-      form.reset({
-        nip: profile.nip ?? '',
-        regon: profile.regon ?? '',
-        krs: profile.krs ?? '',
-        ownerName: profile.ownerName ?? '',
-        ownerFirstName: profile.ownerFirstName ?? '',
-        ownerLastName: profile.ownerLastName ?? '',
-        ownerEmail: profile.ownerEmail ?? '',
-        ownerPhone: profile.ownerPhone ?? '',
-        street: profile.street ?? '',
-        buildingNumber: profile.buildingNumber ?? '',
-        apartmentNumber: profile.apartmentNumber ?? '',
-        city: profile.city ?? '',
-        postalCode: profile.postalCode ?? '',
-        country: profile.country ?? 'Polska',
-        phone: profile.phone ?? '',
-        bankAccount: profile.bankAccount ?? '',
-        bankName: profile.bankName ?? '',
-        defaultEmailSignature: profile.defaultEmailSignature ?? '',
-        defaultDocumentFooter: profile.defaultDocumentFooter ?? '',
-      });
-    }
+    if (!profile) return;
+    form.reset({
+      nip: profile.nip ?? '',
+      regon: profile.regon ?? '',
+      krs: profile.krs ?? '',
+      ownerName: profile.ownerName ?? '',
+      ownerFirstName: profile.ownerFirstName ?? '',
+      ownerLastName: profile.ownerLastName ?? '',
+      ownerEmail: profile.ownerEmail ?? '',
+      ownerPhone: profile.ownerPhone ?? '',
+      street: profile.street ?? '',
+      buildingNumber: profile.buildingNumber ?? '',
+      apartmentNumber: profile.apartmentNumber ?? '',
+      city: profile.city ?? '',
+      postalCode: profile.postalCode ?? '',
+      country: profile.country ?? 'Polska',
+      phone: profile.phone ?? '',
+      bankAccount: profile.bankAccount ?? '',
+      bankName: profile.bankName ?? '',
+      defaultEmailSignature: profile.defaultEmailSignature ?? '',
+      defaultDocumentFooter: profile.defaultDocumentFooter ?? '',
+    });
   }, [profile, form]);
 
   const onSubmit = async (data: ProfileFormData) => {
