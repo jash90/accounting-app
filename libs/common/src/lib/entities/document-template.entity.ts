@@ -11,6 +11,7 @@ import {
 
 import { Company } from './company.entity';
 import { User } from './user.entity';
+import { type ContentBlock } from '../types/content-block.types';
 
 export type DocumentCategory = 'offer' | 'contract' | 'invoice' | 'report' | 'other';
 
@@ -38,6 +39,12 @@ export class DocumentTemplate {
 
   @Column({ type: 'jsonb', nullable: true })
   placeholders?: string[] | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  contentBlocks?: ContentBlock[] | null;
+
+  @Column({ type: 'varchar', length: 20, default: 'text' })
+  documentSourceType!: 'text' | 'blocks';
 
   @Column({ type: 'varchar', length: 50, default: 'other' })
   category!: DocumentCategory;
