@@ -27,12 +27,24 @@ export * from './lib/constants';
 
 // Utils
 export * from './lib/utils/database-errors';
+export * from './lib/utils/query.utils';
+export * from './lib/utils/csv.utils';
+export * from './lib/utils/stats.utils';
+export * from './lib/utils/error.utils';
+// NOTE: pdfmake-bootstrap uses Node.js require() for font loading and must only be
+// imported in backend (NestJS) code. Do NOT import in frontend bundles.
+export {
+  ensurePdfmakeFonts,
+  DEFAULT_PDF_STYLES,
+  DEFAULT_PDF_DEFAULT_STYLE,
+} from './lib/utils/pdfmake-bootstrap';
 
 // Types
 export * from './lib/types';
 
 // Decorators
 export * from './lib/decorators/sanitize.decorator';
+export { ApiCsvResponse } from './lib/decorators/api-csv-response.decorator';
 
 // Entities
 export * from './lib/entities/user.entity';
@@ -84,6 +96,8 @@ export { AIMessageRole } from './lib/entities/ai-message.entity';
 export * from './lib/dto/responses';
 export * from './lib/dto/requests';
 export * from './lib/dto/pagination.dto';
+export * from './lib/dto/period-filter.dto';
+export * from './lib/dto/employee-ranking.dto';
 // NOTE: EncryptionService is NOT exported from the barrel file because it uses
 // Node.js-specific modules (crypto, fs, util.promisify) that don't work in browsers.
 // Import directly from './lib/services/encryption.service' in backend code where needed.

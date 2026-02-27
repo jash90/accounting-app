@@ -82,15 +82,3 @@ export class PaginatedResponseDto<T> {
     };
   }
 }
-
-/**
- * Helper function to create paginated response
- */
-export function createPaginatedResponse<T>(
-  data: T[],
-  total: number,
-  page: number,
-  limit: number
-): PaginatedResponseDto<T> {
-  return new PaginatedResponseDto(data, total, page, limit);
-}
