@@ -7,11 +7,14 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Res,
   UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+
+import { Response } from 'express';
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { User } from '@accounting/common';
@@ -40,6 +43,20 @@ export class GeneratedDocumentsController {
     return this.service.findAll(user);
   }
 
+  @Get(':id/pdf')
+  @ApiOperation({ summary: 'Download generated document as PDF' })
+  @RequirePermission('documents', 'read')
+  async downloadPdf(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: User,
+    @Res() res: Response
+  ) {
+    const { buffer, filename } = await this.service.generatePdf(id, user);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+    res.send(buffer);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get generated document by ID' })
   @RequirePermission('documents', 'read')
@@ -52,7 +69,7 @@ export class GeneratedDocumentsController {
   @RequirePermission('documents', 'read')
   @Header('Content-Type', 'text/html; charset=utf-8')
   async getContent(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
-    return this.service.getContent(id, user);
+    return this.service.getRenderedContent(id, user);
   }
 
   @Post('generate')

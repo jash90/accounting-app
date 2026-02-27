@@ -7,6 +7,7 @@ import { RBACModule } from '@accounting/rbac';
 
 import { DocumentTemplatesController } from './controllers/document-templates.controller';
 import { GeneratedDocumentsController } from './controllers/generated-documents.controller';
+import { DocumentPdfService } from './services/document-pdf.service';
 import { DocumentTemplatesService } from './services/document-templates.service';
 import { GeneratedDocumentsService } from './services/generated-documents.service';
 
@@ -17,7 +18,7 @@ import { GeneratedDocumentsService } from './services/generated-documents.servic
     RBACModule,
   ],
   controllers: [DocumentTemplatesController, GeneratedDocumentsController],
-  providers: [DocumentTemplatesService, GeneratedDocumentsService],
-  exports: [DocumentTemplatesService, GeneratedDocumentsService],
+  providers: [DocumentTemplatesService, GeneratedDocumentsService, DocumentPdfService],
+  exports: [DocumentTemplatesService, GeneratedDocumentsService, DocumentPdfService],
 })
 export class DocumentsModule {}

@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { DocumentTemplate, User } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 
+import { UpdateDocumentContentBlocksDto } from '../dto/content-blocks.dto';
 import { CreateDocumentTemplateDto, UpdateDocumentTemplateDto } from '../dto/document-template.dto';
 
 @Injectable()
@@ -51,5 +52,40 @@ export class DocumentTemplatesService {
   async remove(id: string, user: User): Promise<void> {
     const template = await this.findOne(id, user);
     await this.templateRepository.remove(template);
+  }
+
+  async getContentBlocks(
+    id: string,
+    user: User
+  ): Promise<{
+    contentBlocks: DocumentTemplate['contentBlocks'];
+    documentSourceType: DocumentTemplate['documentSourceType'];
+    name: string;
+    placeholders: DocumentTemplate['placeholders'];
+  }> {
+    const template = await this.findOne(id, user);
+    return {
+      contentBlocks: template.contentBlocks,
+      documentSourceType: template.documentSourceType,
+      name: template.name,
+      placeholders: template.placeholders,
+    };
+  }
+
+  async updateContentBlocks(
+    id: string,
+    dto: UpdateDocumentContentBlocksDto,
+    user: User
+  ): Promise<DocumentTemplate> {
+    const template = await this.findOne(id, user);
+
+    if (dto.contentBlocks !== undefined) {
+      template.contentBlocks = dto.contentBlocks;
+    }
+    if (dto.documentSourceType !== undefined) {
+      template.documentSourceType = dto.documentSourceType;
+    }
+
+    return this.templateRepository.save(template);
   }
 }
