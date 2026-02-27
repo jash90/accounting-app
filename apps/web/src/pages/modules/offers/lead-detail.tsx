@@ -47,6 +47,7 @@ import {
   useLead,
   useUpdateLead,
 } from '@/lib/hooks/use-offers';
+import { formatDate } from '@/lib/utils/format-date';
 import { type CreateLeadFormData, type UpdateLeadFormData } from '@/lib/validation/schemas';
 import { type CreateOfferDto, type LeadResponseDto, type UpdateLeadDto } from '@/types/dtos';
 import { LeadSourceLabels, LeadStatus, LeadStatusLabels } from '@/types/enums';
@@ -208,9 +209,7 @@ function LeadDetailsSidebar({ lead, onCreateOfferClick }: LeadDetailsSidebarProp
               <Calendar className="h-4 w-4" />
               Utworzono
             </span>
-            <span className="font-medium">
-              {new Date(lead.createdAt).toLocaleDateString('pl-PL')}
-            </span>
+            <span className="font-medium">{formatDate(lead.createdAt)}</span>
           </div>
           {lead.createdBy && (
             <div className="text-muted-foreground text-right text-sm">
@@ -222,9 +221,7 @@ function LeadDetailsSidebar({ lead, onCreateOfferClick }: LeadDetailsSidebarProp
               <Separator />
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Przekonwertowano</span>
-                <span className="font-medium text-green-600">
-                  {new Date(lead.convertedAt).toLocaleDateString('pl-PL')}
-                </span>
+                <span className="font-medium text-green-600">{formatDate(lead.convertedAt)}</span>
               </div>
             </>
           )}

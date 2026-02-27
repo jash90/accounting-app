@@ -362,3 +362,43 @@ export const OfferActivityTypeLabels: Record<OfferActivityType, string> = {
   [OfferActivityType.DUPLICATED]: 'Zduplikowano',
   [OfferActivityType.COMMENT_ADDED]: 'Dodano komentarz',
 };
+
+export enum SettlementStatus {
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  MISSING_INVOICE_VERIFICATION = 'MISSING_INVOICE_VERIFICATION',
+  MISSING_INVOICE = 'MISSING_INVOICE',
+  COMPLETED = 'COMPLETED',
+}
+
+export const SettlementStatusLabels: Record<SettlementStatus, string> = {
+  [SettlementStatus.PENDING]: 'Oczekujące',
+  [SettlementStatus.IN_PROGRESS]: 'W trakcie',
+  [SettlementStatus.MISSING_INVOICE_VERIFICATION]: 'Brakująca weryfikacja faktury',
+  [SettlementStatus.MISSING_INVOICE]: 'Brakująca faktura',
+  [SettlementStatus.COMPLETED]: 'Zakończone',
+};
+
+export const SettlementStatusColors: Record<SettlementStatus, string> = {
+  [SettlementStatus.PENDING]: 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100',
+  [SettlementStatus.IN_PROGRESS]: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100',
+  [SettlementStatus.MISSING_INVOICE_VERIFICATION]:
+    'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-100',
+  [SettlementStatus.MISSING_INVOICE]: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-100',
+  [SettlementStatus.COMPLETED]: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-100',
+};
+
+export enum ReliefType {
+  ULGA_NA_START = 'ULGA_NA_START',
+  MALY_ZUS = 'MALY_ZUS',
+}
+
+export const ReliefTypeLabels: Record<ReliefType, string> = {
+  [ReliefType.ULGA_NA_START]: 'Ulga na start',
+  [ReliefType.MALY_ZUS]: 'Mały ZUS',
+};
+
+export const ReliefTypeDurationMonths: Record<ReliefType, number> = {
+  [ReliefType.ULGA_NA_START]: 6,
+  [ReliefType.MALY_ZUS]: 36,
+};

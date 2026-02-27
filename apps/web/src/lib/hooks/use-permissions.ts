@@ -9,6 +9,7 @@ import { type GrantModuleAccessDto, type UpdateModulePermissionDto } from '@/typ
 import { UserRole } from '@/types/enums';
 
 
+import { createMutationHook } from './create-mutation-hook';
 import { permissionsApi } from '../api/endpoints/permissions';
 import { queryKeys } from '../api/query-client';
 
@@ -103,14 +104,14 @@ export function useModulePermissions(_moduleSlug: string) {
   }, [user, isAuthenticated]);
 }
 
-export function useCompanyModules() {
+export function useCompanyPermissionModules() {
   return useQuery({
     queryKey: queryKeys.permissions.companyModules,
     queryFn: permissionsApi.getCompanyModules,
   });
 }
 
-export function useEmployeeModules(employeeId: string) {
+export function useEmployeeModulePermissions(employeeId: string) {
   return useQuery({
     queryKey: queryKeys.permissions.byEmployee(employeeId),
     queryFn: () => permissionsApi.getEmployeeModules(employeeId),
@@ -142,19 +143,15 @@ export function useGrantModuleAccess() {
       });
     },
     onError: (error: ApiErrorResponse) => {
-      let errorMessage = 'Nie udało się przyznać dostępu do modułu';
+      const rawMessage = error.response?.data?.message ?? '';
+      let errorMessage = rawMessage || 'Nie udało się przyznać dostępu do modułu';
 
-      // Provide specific error messages based on the error
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-
-        // Check for specific error patterns
-        if (errorMessage.includes('does not have access to this module')) {
-          errorMessage =
-            'Twoja firma nie ma dostępu do tego modułu. Skontaktuj się z administratorem, aby najpierw włączyć ten moduł dla firmy.';
-        } else if (errorMessage.includes('Module not found')) {
-          errorMessage = 'Wybrany moduł nie istnieje lub jest nieaktywny.';
-        }
+      // Check for specific error patterns
+      if (rawMessage.includes('does not have access to this module')) {
+        errorMessage =
+          'Twoja firma nie ma dostępu do tego modułu. Skontaktuj się z administratorem, aby najpierw włączyć ten moduł dla firmy.';
+      } else if (rawMessage.includes('Module not found')) {
+        errorMessage = 'Wybrany moduł nie istnieje lub jest nieaktywny.';
       }
 
       toast({
@@ -166,61 +163,32 @@ export function useGrantModuleAccess() {
   });
 }
 
-export function useUpdateModulePermission() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useUpdateModulePermission = createMutationHook<
+  void,
+  { employeeId: string; moduleSlug: string; permissions: UpdateModulePermissionDto }
+>({
+  mutationFn: ({ employeeId, moduleSlug, permissions }) =>
+    permissionsApi.updateModulePermission(employeeId, moduleSlug, permissions),
+  onSuccess: (_, variables, queryClient) => {
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.permissions.byEmployee(variables.employeeId),
+    });
+  },
+  successMessage: 'Uprawnienia zostały zaktualizowane',
+  errorMessage: 'Nie udało się zaktualizować uprawnień',
+});
 
-  return useMutation({
-    mutationFn: ({
-      employeeId,
-      moduleSlug,
-      permissions,
-    }: {
-      employeeId: string;
-      moduleSlug: string;
-      permissions: UpdateModulePermissionDto;
-    }) => permissionsApi.updateModulePermission(employeeId, moduleSlug, permissions),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.permissions.byEmployee(variables.employeeId),
-      });
-      toast({
-        title: 'Sukces',
-        description: 'Uprawnienia zostały zaktualizowane',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować uprawnień',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useRevokeModuleAccess() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ employeeId, moduleSlug }: { employeeId: string; moduleSlug: string }) =>
-      permissionsApi.revokeModuleAccess(employeeId, moduleSlug),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.permissions.byEmployee(variables.employeeId),
-      });
-      toast({
-        title: 'Sukces',
-        description: 'Dostęp do modułu został cofnięty',
-      });
-    },
-    onError: (error: ApiErrorResponse) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się cofnąć dostępu do modułu',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useRevokeModuleAccess = createMutationHook<
+  void,
+  { employeeId: string; moduleSlug: string }
+>({
+  mutationFn: ({ employeeId, moduleSlug }) =>
+    permissionsApi.revokeModuleAccess(employeeId, moduleSlug),
+  onSuccess: (_, variables, queryClient) => {
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.permissions.byEmployee(variables.employeeId),
+    });
+  },
+  successMessage: 'Dostęp do modułu został cofnięty',
+  errorMessage: 'Nie udało się cofnąć dostępu do modułu',
+});

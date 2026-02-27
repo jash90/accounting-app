@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import { CalendarIcon, Loader2, Maximize2, X } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';

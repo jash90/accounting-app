@@ -1,6 +1,25 @@
+import {
+  EmploymentType,
+  LeadSource,
+  LeadStatus,
+  TaskPriority,
+  TaskStatus,
+  TaxScheme,
+  UserRole,
+  VatStatus,
+  ZusStatus,
+} from '@/types/enums';
 import { z } from 'zod';
 
-import { TaskPriority, TaskStatus, UserRole } from '@/types/enums';
+// Shared password validation used across create/register/change password forms.
+// Requires min 12 chars, upper, lower, digit, and special character.
+const passwordSchema = z
+  .string()
+  .min(12, 'Hasło musi mieć co najmniej 12 znaków')
+  .regex(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
+  .regex(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
+  .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę')
+  .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Hasło musi zawierać znak specjalny');
 
 // Auth Schemas
 export const loginSchema = z.object({
@@ -13,13 +32,7 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, 'Aktualne hasło jest wymagane'),
-    newPassword: z
-      .string()
-      .min(12, 'Nowe hasło musi mieć co najmniej 12 znaków')
-      .regex(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
-      .regex(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
-      .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę')
-      .regex(/[@$!%*?&]/, 'Hasło musi zawierać znak specjalny (@$!%*?&)'),
+    newPassword: passwordSchema,
     confirmPassword: z.string().min(1, 'Potwierdzenie hasła jest wymagane'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -31,13 +44,7 @@ export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 
 export const registerSchema = z.object({
   email: z.string().email('Nieprawidłowy adres email'),
-  password: z
-    .string()
-    .min(12, 'Hasło musi mieć co najmniej 12 znaków')
-    .regex(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
-    .regex(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
-    .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę')
-    .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Hasło musi zawierać znak specjalny'),
+  password: passwordSchema,
   firstName: z.string().min(1, 'Imię jest wymagane'),
   lastName: z.string().min(1, 'Nazwisko jest wymagane'),
   role: z.nativeEnum(UserRole),
@@ -50,13 +57,7 @@ export type RegisterFormData = z.infer<typeof registerSchema>;
 export const createUserSchema = z
   .object({
     email: z.string().email('Nieprawidłowy adres email'),
-    password: z
-      .string()
-      .min(12, 'Hasło musi mieć co najmniej 12 znaków')
-      .regex(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
-      .regex(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
-      .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę')
-      .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Hasło musi zawierać znak specjalny'),
+    password: passwordSchema,
     firstName: z.string().min(1, 'Imię jest wymagane'),
     lastName: z.string().min(1, 'Nazwisko jest wymagane'),
     role: z.nativeEnum(UserRole),
@@ -138,13 +139,7 @@ export type UpdateModuleFormData = z.infer<typeof updateModuleSchema>;
 // Employee Schemas
 export const createEmployeeSchema = z.object({
   email: z.string().email('Nieprawidłowy adres email'),
-  password: z
-    .string()
-    .min(12, 'Hasło musi mieć co najmniej 12 znaków')
-    .regex(/[A-Z]/, 'Hasło musi zawierać co najmniej jedną wielką literę')
-    .regex(/[a-z]/, 'Hasło musi zawierać co najmniej jedną małą literę')
-    .regex(/[0-9]/, 'Hasło musi zawierać co najmniej jedną cyfrę')
-    .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Hasło musi zawierać znak specjalny'),
+  password: passwordSchema,
   firstName: z.string().min(1, 'Imię jest wymagane'),
   lastName: z.string().min(1, 'Nazwisko jest wymagane'),
 });
@@ -317,12 +312,10 @@ export const createClientSchema = z.object({
   gtuCode: gtuCodeSchema,
   pkdCode: pkdCodeSchema,
   amlGroup: z.string().max(50).optional(),
-  employmentType: z
-    .enum(['DG', 'DG_ETAT', 'DG_AKCJONARIUSZ', 'DG_HALF_TIME_BELOW_MIN', 'DG_HALF_TIME_ABOVE_MIN'])
-    .optional(),
-  vatStatus: z.enum(['VAT_MONTHLY', 'VAT_QUARTERLY', 'NO', 'NO_WATCH_LIMIT']).optional(),
-  taxScheme: z.enum(['PIT_17', 'PIT_19', 'LUMP_SUM', 'GENERAL']).optional(),
-  zusStatus: z.enum(['FULL', 'PREFERENTIAL', 'NONE']).optional(),
+  employmentType: z.nativeEnum(EmploymentType).optional(),
+  vatStatus: z.nativeEnum(VatStatus).optional(),
+  taxScheme: z.nativeEnum(TaxScheme).optional(),
+  zusStatus: z.nativeEnum(ZusStatus).optional(),
   receiveEmailCopy: z.boolean().optional().default(true),
 });
 
@@ -340,12 +333,10 @@ export const customFieldFilterSchema = z.object({
 
 export const clientFiltersSchema = z.object({
   search: z.string().optional(),
-  employmentType: z
-    .enum(['DG', 'DG_ETAT', 'DG_AKCJONARIUSZ', 'DG_HALF_TIME_BELOW_MIN', 'DG_HALF_TIME_ABOVE_MIN'])
-    .optional(),
-  vatStatus: z.enum(['VAT_MONTHLY', 'VAT_QUARTERLY', 'NO', 'NO_WATCH_LIMIT']).optional(),
-  taxScheme: z.enum(['PIT_17', 'PIT_19', 'LUMP_SUM', 'GENERAL']).optional(),
-  zusStatus: z.enum(['FULL', 'PREFERENTIAL', 'NONE']).optional(),
+  employmentType: z.nativeEnum(EmploymentType).optional(),
+  vatStatus: z.nativeEnum(VatStatus).optional(),
+  taxScheme: z.nativeEnum(TaxScheme).optional(),
+  zusStatus: z.nativeEnum(ZusStatus).optional(),
   amlGroupEnum: z.enum(['LOW', 'STANDARD', 'ELEVATED', 'HIGH']).optional(),
   gtuCode: z.string().optional(),
   pkdCode: z.string().optional(),
@@ -513,25 +504,29 @@ export const notificationSettingsSchema = z.object({
 
 export type NotificationSettingsFormData = z.infer<typeof notificationSettingsSchema>;
 
-// Client Suspension Schemas
-export const createSuspensionSchema = z
-  .object({
-    startDate: z.date({ message: 'Data zawieszenia jest wymagana' }),
-    endDate: z.date({ message: 'Nieprawidłowy format daty odwieszenia' }).optional().nullable(),
-    reason: z.string().max(1000, 'Powód nie może przekraczać 1000 znaków').optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.endDate && data.startDate) {
-        return data.endDate > data.startDate;
+// Shared date range refinement helper
+// Validates that endDate is after startDate when both are present.
+const applyDateRangeRefinement = <T extends z.ZodTypeAny>(schema: T, message: string) =>
+  schema.refine(
+    (data: unknown) => {
+      const d = data as { startDate?: Date | null; endDate?: Date | null };
+      if (d.endDate && d.startDate) {
+        return d.endDate > d.startDate;
       }
       return true;
     },
-    {
-      message: 'Data odwieszenia musi być późniejsza niż data zawieszenia',
-      path: ['endDate'],
-    }
+    { message, path: ['endDate'] }
   );
+
+// Client Suspension Schemas
+export const createSuspensionSchema = applyDateRangeRefinement(
+  z.object({
+    startDate: z.date({ message: 'Data zawieszenia jest wymagana' }),
+    endDate: z.date({ message: 'Nieprawidłowy format daty odwieszenia' }).optional().nullable(),
+    reason: z.string().max(1000, 'Powód nie może przekraczać 1000 znaków').optional(),
+  }),
+  'Data odwieszenia musi być późniejsza niż data zawieszenia'
+);
 
 export type CreateSuspensionFormData = z.infer<typeof createSuspensionSchema>;
 
@@ -549,12 +544,7 @@ export type UpdateSuspensionFormData = z.infer<typeof updateSuspensionSchema>;
 // Lead Schemas
 export const createLeadSchema = z.object({
   name: z.string().min(2, 'Nazwa musi mieć minimum 2 znaki').max(255),
-  nip: z
-    .string()
-    .optional()
-    .refine((val) => !val || /^\d{10}$/.test(val), {
-      message: 'NIP musi składać się z 10 cyfr',
-    }),
+  nip: nipSchema,
   regon: z
     .string()
     .optional()
@@ -569,9 +559,7 @@ export const createLeadSchema = z.object({
   contactPosition: z.string().max(100).optional(),
   email: z.string().email('Nieprawidłowy format adresu email').optional().or(z.literal('')),
   phone: z.string().max(50).optional(),
-  source: z
-    .enum(['WEBSITE', 'REFERRAL', 'PHONE', 'EMAIL', 'SOCIAL_MEDIA', 'ADVERTISEMENT', 'OTHER'])
-    .optional(),
+  source: z.nativeEnum(LeadSource).optional(),
   notes: z.string().optional(),
   estimatedValue: z.number().min(0).optional(),
   assignedToId: z.string().uuid().optional(),
@@ -580,9 +568,7 @@ export const createLeadSchema = z.object({
 export type CreateLeadFormData = z.infer<typeof createLeadSchema>;
 
 export const updateLeadSchema = createLeadSchema.partial().extend({
-  status: z
-    .enum(['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL_SENT', 'NEGOTIATION', 'CONVERTED', 'LOST'])
-    .optional(),
+  status: z.nativeEnum(LeadStatus).optional(),
 });
 
 export type UpdateLeadFormData = z.infer<typeof updateLeadSchema>;
@@ -697,45 +683,25 @@ export const reliefTypeSchema = z.enum(['ULGA_NA_START', 'MALY_ZUS'], {
 
 export type ReliefType = z.infer<typeof reliefTypeSchema>;
 
-export const createReliefPeriodSchema = z
-  .object({
+export const createReliefPeriodSchema = applyDateRangeRefinement(
+  z.object({
     reliefType: reliefTypeSchema,
     startDate: z.date({ message: 'Data rozpoczęcia jest wymagana' }),
     endDate: z.date({ message: 'Nieprawidłowy format daty zakończenia' }).optional().nullable(),
-  })
-  .refine(
-    (data) => {
-      if (data.endDate && data.startDate) {
-        return data.endDate > data.startDate;
-      }
-      return true;
-    },
-    {
-      message: 'Data zakończenia musi być późniejsza niż data rozpoczęcia',
-      path: ['endDate'],
-    }
-  );
+  }),
+  'Data zakończenia musi być późniejsza niż data rozpoczęcia'
+);
 
 export type CreateReliefPeriodFormData = z.infer<typeof createReliefPeriodSchema>;
 
-export const updateReliefPeriodSchema = z
-  .object({
+export const updateReliefPeriodSchema = applyDateRangeRefinement(
+  z.object({
     startDate: z.date({ message: 'Nieprawidłowy format daty rozpoczęcia' }).optional(),
     endDate: z.date({ message: 'Nieprawidłowy format daty zakończenia' }).optional().nullable(),
     isActive: z.boolean().optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.endDate && data.startDate) {
-        return data.endDate > data.startDate;
-      }
-      return true;
-    },
-    {
-      message: 'Data zakończenia musi być późniejsza niż data rozpoczęcia',
-      path: ['endDate'],
-    }
-  );
+  }),
+  'Data zakończenia musi być późniejsza niż data rozpoczęcia'
+);
 
 export type UpdateReliefPeriodFormData = z.infer<typeof updateReliefPeriodSchema>;
 

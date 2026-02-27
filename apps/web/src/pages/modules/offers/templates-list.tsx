@@ -257,13 +257,13 @@ export default function TemplatesListPage() {
                   onClick={() => dispatchDialog({ type: 'SET_EDITING', payload: template })}
                 >
                   <Pencil className="mr-2 h-4 w-4" />
-                  Edytuj
+                  Edytuj parametry szablonu
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => navigate(`${basePath}/templates/${template.id}/editor`)}
                 >
                   <FileText className="mr-2 h-4 w-4" />
-                  Edytuj treść
+                  Edytuj szablon
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => handleFileUpload(template)}>

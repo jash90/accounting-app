@@ -25,6 +25,17 @@ export function stableFilterKey(filters?: unknown): string | undefined {
   return JSON.stringify(cleanedFilters, Object.keys(cleanedFilters).sort());
 }
 
+/**
+ * Create a standard set of query keys for a resource with all/list/detail pattern.
+ */
+function createResourceKeys<T extends string>(prefix: T) {
+  return {
+    all: [prefix] as const,
+    list: (filters?: unknown) => [prefix, 'list', stableFilterKey(filters)] as const,
+    detail: (id: string) => [prefix, id] as const,
+  };
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -42,21 +53,17 @@ export const queryClient = new QueryClient({
 
 // Query key factory for type-safe cache management
 export const queryKeys = {
-  users: {
-    all: ['users'] as const,
-    detail: (id: string) => ['users', id] as const,
-  },
+  users: createResourceKeys('users'),
   companies: {
     all: ['companies'] as const,
     detail: (id: string) => ['companies', id] as const,
+    modules: (companyId: string) => ['companies', companyId, 'modules'] as const,
+    availableOwners: ['available-owners'] as const,
+    companyEmployees: ['company', 'employees'] as const,
   },
-  modules: {
-    all: ['modules'] as const,
-    detail: (id: string) => ['modules', id] as const,
-  },
+  modules: createResourceKeys('modules'),
   employees: {
-    all: ['employees'] as const,
-    detail: (id: string) => ['employees', id] as const,
+    ...createResourceKeys('employees'),
     byCompany: (companyId: string) => ['employees', 'company', companyId] as const,
   },
   permissions: {
@@ -97,6 +104,7 @@ export const queryKeys = {
     icons: (clientId: string) => ['clients', clientId, 'icons'] as const,
     customFields: (clientId: string) => ['clients', clientId, 'custom-fields'] as const,
     statistics: ['clients', 'statistics'] as const,
+    taskTimeStats: ['clients', 'statistics', 'task-time'] as const,
     suspensions: {
       byClient: (clientId: string) => ['clients', clientId, 'suspensions'] as const,
       detail: (clientId: string, suspensionId: string) =>
@@ -108,11 +116,12 @@ export const queryKeys = {
         ['clients', clientId, 'relief-periods', reliefId] as const,
     },
   },
-  clientFieldDefinitions: {
-    all: ['client-field-definitions'] as const,
-    list: (filters?: unknown) =>
-      ['client-field-definitions', 'list', stableFilterKey(filters)] as const,
-    detail: (id: string) => ['client-field-definitions', id] as const,
+  clientFieldDefinitions: createResourceKeys('client-field-definitions'),
+  pkdCodes: {
+    search: (search?: string, section?: string) =>
+      ['pkd-codes', 'search', search, section] as const,
+    sections: ['pkd-codes', 'sections'] as const,
+    single: (code: string | null | undefined) => ['pkd-codes', 'single', code] as const,
   },
   clientIcons: {
     all: ['client-icons'] as const,
@@ -142,22 +151,24 @@ export const queryKeys = {
     subtasks: (taskId: string) => ['tasks', taskId, 'subtasks'] as const,
     comments: (taskId: string) => ['tasks', taskId, 'comments'] as const,
     dependencies: (taskId: string) => ['tasks', taskId, 'dependencies'] as const,
+    blockedBy: (taskId: string) => ['tasks', taskId, 'dependencies', 'blocked-by'] as const,
+    blocking: (taskId: string) => ['tasks', taskId, 'dependencies', 'blocking'] as const,
     lookupAssignees: ['tasks', 'lookup', 'assignees'] as const,
     lookupClients: ['tasks', 'lookup', 'clients'] as const,
     clientStatistics: (clientId: string) => ['tasks', 'client-statistics', clientId] as const,
     globalStatistics: ['tasks', 'global-statistics'] as const,
+    extendedStats: {
+      completionDuration: (filters?: unknown) =>
+        ['tasks', 'stats', 'completion-duration', stableFilterKey(filters)] as const,
+      employeeRanking: (filters?: unknown) =>
+        ['tasks', 'stats', 'employee-ranking', stableFilterKey(filters)] as const,
+    },
   },
   taskLabels: {
-    all: ['task-labels'] as const,
-    list: (filters?: unknown) => ['task-labels', 'list', stableFilterKey(filters)] as const,
-    detail: (id: string) => ['task-labels', id] as const,
+    ...createResourceKeys('task-labels'),
     byTask: (taskId: string) => ['task-labels', 'by-task', taskId] as const,
   },
-  taskTemplates: {
-    all: ['task-templates'] as const,
-    list: (filters?: unknown) => ['task-templates', 'list', stableFilterKey(filters)] as const,
-    detail: (id: string) => ['task-templates', id] as const,
-  },
+  taskTemplates: createResourceKeys('task-templates'),
   timeTracking: {
     entries: {
       all: ['time-entries'] as const,
@@ -177,6 +188,13 @@ export const queryKeys = {
         ['time-reports', 'summary', stableFilterKey(params)] as const,
       byClient: (params?: Record<string, unknown>) =>
         ['time-reports', 'by-client', stableFilterKey(params)] as const,
+    },
+    extendedStats: {
+      topTasks: (preset: string) => ['time-tracking', 'extended', 'top-tasks', preset] as const,
+      topSettlements: (preset: string) =>
+        ['time-tracking', 'extended', 'top-settlements', preset] as const,
+      employeeBreakdown: (preset: string) =>
+        ['time-tracking', 'extended', 'employee-breakdown', preset] as const,
     },
   },
   notifications: {
@@ -206,6 +224,11 @@ export const queryKeys = {
     statistics: ['leads', 'statistics'] as const,
     lookupAssignees: ['leads', 'lookup', 'assignees'] as const,
   },
+  documentTemplates: {
+    all: ['document-templates'] as const,
+    detail: (id: string) => ['document-templates', id] as const,
+    contentBlocks: (id: string) => ['document-templates', id, 'content-blocks'] as const,
+  },
   offerTemplates: {
     all: ['offer-templates'] as const,
     list: (filters?: Record<string, unknown>) =>
@@ -224,6 +247,26 @@ export const queryKeys = {
       employees: (month: number, year: number) =>
         ['settlements', 'stats', 'employees', month, year] as const,
       my: (month: number, year: number) => ['settlements', 'stats', 'my', month, year] as const,
+      extended: {
+        completion: (filters?: unknown) =>
+          ['settlements', 'stats', 'extended', 'completion', stableFilterKey(filters)] as const,
+        employeeRanking: (filters?: unknown) =>
+          [
+            'settlements',
+            'stats',
+            'extended',
+            'employee-ranking',
+            stableFilterKey(filters),
+          ] as const,
+        blockedClients: (filters?: unknown) =>
+          [
+            'settlements',
+            'stats',
+            'extended',
+            'blocked-clients',
+            stableFilterKey(filters),
+          ] as const,
+      },
     },
     comments: (settlementId: string) => ['settlements', settlementId, 'comments'] as const,
     assignableUsers: {
@@ -234,16 +277,25 @@ export const queryKeys = {
     settings: ['settlements', 'settings'] as const,
   },
   email: {
-    inbox: (filters?: unknown) => ['email-inbox', stableFilterKey(filters)] as const,
-    folder: (name: string, filters?: unknown) =>
-      ['email-folder', name, stableFilterKey(filters)] as const,
-    detail: (uid: number) => ['email', uid] as const,
+    inbox: (limit?: number, unseenOnly?: boolean) => ['email-inbox', limit, unseenOnly] as const,
+    inboxInfinite: (limit?: number) => ['email-inbox-infinite', limit] as const,
+    folder: (name: string | undefined, limit?: number) => ['email-folder', name, limit] as const,
+    folderInfinite: (name: string | undefined, limit?: number) =>
+      ['email-folder-infinite', name, limit] as const,
+    detail: (uid: number | undefined) => ['email', uid] as const,
     search: (q: string, mailbox: string, field?: string) =>
       ['email-search', q, mailbox, field] as const,
     folders: ['email-folders'] as const,
+    aiDrafts: ['ai-drafts'] as const,
+    draftConflicts: ['email-draft-conflicts'] as const,
     drafts: {
       all: ['email-drafts'] as const,
-      detail: (id: string) => ['email-draft', id] as const,
+      detail: (id: string | undefined) => ['email-draft', id] as const,
     },
+    autoReplyTemplates: ['email', 'auto-reply-templates'] as const,
+  },
+  documents: {
+    templates: ['documents', 'templates'] as const,
+    generated: ['documents', 'generated'] as const,
   },
 };

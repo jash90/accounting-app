@@ -2,6 +2,12 @@
  * Utility functions for user-related operations.
  */
 
+import { UserRole } from '@/types/enums';
+
+export function isOwnerOrAdmin(user?: { role: UserRole } | null): boolean {
+  return user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER;
+}
+
 export interface UserNameInfo {
   firstName?: string;
   lastName?: string;
@@ -15,7 +21,7 @@ export interface UserNameInfo {
  * @param user - User object with optional firstName/lastName and required email
  * @returns Display name string (e.g., "John Doe" or "john@example.com")
  */
-export function getEmployeeName(user: UserNameInfo): string {
+export function getUserName(user: UserNameInfo): string {
   if (user.firstName && user.lastName) {
     return `${user.firstName} ${user.lastName}`;
   }

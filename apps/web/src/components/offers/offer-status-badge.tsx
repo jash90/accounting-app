@@ -1,16 +1,9 @@
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils/cn';
-import { type OfferStatus, OfferStatusColors, OfferStatusLabels } from '@/types/enums';
+import { createStatusBadge } from '@/components/common/status-badge';
+import { OfferStatusColors, OfferStatusLabels, type OfferStatus } from '@/types/enums';
 
-interface OfferStatusBadgeProps {
-  status: OfferStatus;
-  className?: string;
-}
-
-export function OfferStatusBadge({ status, className }: OfferStatusBadgeProps) {
-  return (
-    <Badge variant="outline" className={cn(OfferStatusColors[status], 'border-0', className)}>
-      {OfferStatusLabels[status]}
-    </Badge>
-  );
-}
+export const OfferStatusBadge = createStatusBadge<OfferStatus>({
+  colors: OfferStatusColors,
+  labels: OfferStatusLabels,
+  variant: 'outline',
+  baseClassName: 'border-0',
+});

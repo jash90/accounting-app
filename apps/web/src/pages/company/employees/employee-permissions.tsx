@@ -1,10 +1,18 @@
 import { useState } from 'react';
-
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { PageHeader } from '@/components/common/page-header';
+import { ModulePermission } from '@/types/enums';
 import { ArrowLeft, Key, Package, Plus, Shield, Trash2 } from 'lucide-react';
 
-import { PageHeader } from '@/components/common/page-header';
+import { useEmployee } from '@/lib/hooks/use-employees';
+import {
+  useCompanyPermissionModules,
+  useEmployeeModulePermissions,
+  useGrantModuleAccess,
+  useRevokeModuleAccess,
+  useUpdateModulePermission,
+} from '@/lib/hooks/use-permissions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -17,25 +25,139 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
-import { useEmployee } from '@/lib/hooks/use-employees';
-import {
-  useCompanyModules,
-  useEmployeeModules,
-  useGrantModuleAccess,
-  useRevokeModuleAccess,
-  useUpdateModulePermission,
-} from '@/lib/hooks/use-permissions';
-import { ModulePermission } from '@/types/enums';
+
+interface AvailableModule {
+  id: string;
+  slug: string;
+  name: string;
+}
+
+interface GrantAccessDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  availableModulesForGrant: AvailableModule[];
+  selectedModule: string | null;
+  setSelectedModule: (slug: string | null) => void;
+  selectedPermissions: string[];
+  setSelectedPermissions: (perms: string[]) => void;
+  onGrant: () => void;
+  isPending: boolean;
+}
+
+function GrantAccessDialog({
+  open,
+  onOpenChange,
+  availableModulesForGrant,
+  selectedModule,
+  setSelectedModule,
+  selectedPermissions,
+  setSelectedPermissions,
+  onGrant,
+  isPending,
+}: GrantAccessDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Nadaj dostęp do modułu</DialogTitle>
+          <DialogDescription>
+            Wybierz moduł i uprawnienia do przyznania temu pracownikowi.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div>
+            <label
+              htmlFor="grant-module-select"
+              className="text-foreground mb-2 block text-sm font-medium"
+            >
+              Moduł
+            </label>
+            {availableModulesForGrant.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                Wszystkie dostępne moduły zostały już przyznane temu pracownikowi.
+              </p>
+            ) : (
+              <select
+                id="grant-module-select"
+                className="focus:ring-primary/20 focus:border-primary w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:ring-2 focus:outline-none"
+                value={selectedModule || ''}
+                onChange={(e) => {
+                  setSelectedModule(e.target.value);
+                  setSelectedPermissions([]);
+                }}
+              >
+                <option value="">Wybierz moduł</option>
+                {availableModulesForGrant.map((module) => (
+                  <option key={module.id} value={module.slug}>
+                    {module.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {selectedModule && (
+            <div>
+              <span className="text-foreground mb-2 block text-sm font-medium">Uprawnienia</span>
+              <div className="mt-2 space-y-3">
+                {[ModulePermission.READ, ModulePermission.WRITE, ModulePermission.DELETE].map(
+                  (permission) => (
+                    <div key={permission} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`grant-${permission}`}
+                        checked={selectedPermissions.includes(permission)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedPermissions([...selectedPermissions, permission]);
+                          } else {
+                            setSelectedPermissions(
+                              selectedPermissions.filter((p) => p !== permission)
+                            );
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor={`grant-${permission}`}
+                        className="cursor-pointer text-sm text-foreground"
+                      >
+                        {permission.charAt(0).toUpperCase() + permission.slice(1)}
+                      </label>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="border-accent hover:bg-accent/20"
+          >
+            Anuluj
+          </Button>
+          <Button
+            onClick={onGrant}
+            disabled={!selectedModule || selectedPermissions.length === 0 || isPending}
+            className="bg-primary hover:bg-primary/90"
+          >
+            Nadaj dostęp
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function EmployeePermissionsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: employee, isPending: employeeLoading } = useEmployee(id || '');
-  const { data: availableModules = [], isPending: _modulesLoading } = useCompanyModules();
-  const { data: employeeModules = [], isPending: permissionsLoading } = useEmployeeModules(
-    id || ''
-  );
+  const { data: availableModules = [], isPending: _modulesLoading } = useCompanyPermissionModules();
+  const { data: employeeModules = [], isPending: permissionsLoading } =
+    useEmployeeModulePermissions(id || '');
   const grantAccess = useGrantModuleAccess();
   const updatePermission = useUpdateModulePermission();
   const revokeAccess = useRevokeModuleAccess();
@@ -251,99 +373,17 @@ export default function EmployeePermissionsPage() {
         </div>
       )}
 
-      <Dialog open={grantDialogOpen} onOpenChange={setGrantDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nadaj dostęp do modułu</DialogTitle>
-            <DialogDescription>
-              Wybierz moduł i uprawnienia do przyznania temu pracownikowi.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label
-                htmlFor="grant-module-select"
-                className="text-foreground mb-2 block text-sm font-medium"
-              >
-                Moduł
-              </label>
-              {availableModulesForGrant.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  Wszystkie dostępne moduły zostały już przyznane temu pracownikowi.
-                </p>
-              ) : (
-                <select
-                  id="grant-module-select"
-                  className="focus:ring-primary/20 focus:border-primary w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:ring-2 focus:outline-none"
-                  value={selectedModule || ''}
-                  onChange={(e) => {
-                    setSelectedModule(e.target.value);
-                    setSelectedPermissions([]);
-                  }}
-                >
-                  <option value="">Wybierz moduł</option>
-                  {availableModulesForGrant.map((module) => (
-                    <option key={module.id} value={module.slug}>
-                      {module.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            {selectedModule && (
-              <div>
-                <span className="text-foreground mb-2 block text-sm font-medium">Uprawnienia</span>
-                <div className="mt-2 space-y-3">
-                  {[ModulePermission.READ, ModulePermission.WRITE, ModulePermission.DELETE].map(
-                    (permission) => (
-                      <div key={permission} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`grant-${permission}`}
-                          checked={selectedPermissions.includes(permission)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedPermissions([...selectedPermissions, permission]);
-                            } else {
-                              setSelectedPermissions(
-                                selectedPermissions.filter((p) => p !== permission)
-                              );
-                            }
-                          }}
-                        />
-                        <label
-                          htmlFor={`grant-${permission}`}
-                          className="cursor-pointer text-sm text-foreground"
-                        >
-                          {permission.charAt(0).toUpperCase() + permission.slice(1)}
-                        </label>
-                      </div>
-                    )
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setGrantDialogOpen(false)}
-              className="border-accent hover:bg-accent/20"
-            >
-              Anuluj
-            </Button>
-            <Button
-              onClick={handleGrantAccess}
-              disabled={
-                !selectedModule || selectedPermissions.length === 0 || grantAccess.isPending
-              }
-              className="bg-primary hover:bg-primary/90"
-            >
-              Nadaj dostęp
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <GrantAccessDialog
+        open={grantDialogOpen}
+        onOpenChange={setGrantDialogOpen}
+        availableModulesForGrant={availableModulesForGrant}
+        selectedModule={selectedModule}
+        setSelectedModule={setSelectedModule}
+        selectedPermissions={selectedPermissions}
+        setSelectedPermissions={setSelectedPermissions}
+        onGrant={handleGrantAccess}
+        isPending={grantAccess.isPending}
+      />
     </div>
   );
 }

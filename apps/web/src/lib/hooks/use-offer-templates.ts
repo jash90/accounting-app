@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -7,6 +7,7 @@ import {
   type UpdateOfferTemplateDto,
 } from '@/types/dtos';
 
+import { createMutationHook } from './create-mutation-hook';
 import { offerTemplatesApi } from '../api/endpoints/offers';
 import { queryKeys } from '../api/query-client';
 import { downloadBlob } from '../utils/download';
@@ -43,117 +44,51 @@ export function useDefaultOfferTemplate(options?: { enabled?: boolean }) {
   });
 }
 
-export function useCreateOfferTemplate() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useCreateOfferTemplate = createMutationHook<void, CreateOfferTemplateDto>({
+  mutationFn: (templateData) => offerTemplatesApi.create(templateData),
+  invalidateKeys: [queryKeys.offerTemplates.default],
+  invalidatePredicate: isOfferTemplateListQuery,
+  successMessage: 'Szablon został utworzony',
+  errorMessage: 'Nie udało się utworzyć szablonu',
+});
 
-  return useMutation({
-    mutationFn: (templateData: CreateOfferTemplateDto) => offerTemplatesApi.create(templateData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        predicate: isOfferTemplateListQuery,
-        refetchType: 'active',
-      });
-      queryClient.invalidateQueries({ queryKey: queryKeys.offerTemplates.default });
-      toast({
-        title: 'Sukces',
-        description: 'Szablon został utworzony',
-      });
-    },
-    onError: (error: unknown) => {
-      toast({
-        title: 'Błąd',
-        description: getApiErrorMessage(error, 'Nie udało się utworzyć szablonu'),
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateOfferTemplate = createMutationHook<
+  void,
+  { id: string; data: UpdateOfferTemplateDto }
+>({
+  mutationFn: ({ id, data }) => offerTemplatesApi.update(id, data),
+  invalidateKeys: [queryKeys.offerTemplates.default],
+  invalidatePredicate: isOfferTemplateListQuery,
+  onSuccess: (_, variables, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.offerTemplates.detail(variables.id) });
+  },
+  successMessage: 'Szablon został zaktualizowany',
+  errorMessage: 'Nie udało się zaktualizować szablonu',
+});
 
-export function useUpdateOfferTemplate() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useDeleteOfferTemplate = createMutationHook<void, string>({
+  mutationFn: (id) => offerTemplatesApi.delete(id),
+  invalidateKeys: [queryKeys.offerTemplates.default],
+  invalidatePredicate: isOfferTemplateListQuery,
+  onSuccess: (_, deletedId, qc) => {
+    qc.removeQueries({ queryKey: queryKeys.offerTemplates.detail(deletedId) });
+  },
+  successMessage: 'Szablon został usunięty',
+  errorMessage: 'Nie udało się usunąć szablonu',
+});
 
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateOfferTemplateDto }) =>
-      offerTemplatesApi.update(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.offerTemplates.detail(variables.id) });
-      queryClient.invalidateQueries({
-        predicate: isOfferTemplateListQuery,
-        refetchType: 'active',
-      });
-      queryClient.invalidateQueries({ queryKey: queryKeys.offerTemplates.default });
-      toast({
-        title: 'Sukces',
-        description: 'Szablon został zaktualizowany',
-      });
-    },
-    onError: (error: unknown) => {
-      toast({
-        title: 'Błąd',
-        description: getApiErrorMessage(error, 'Nie udało się zaktualizować szablonu'),
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useDeleteOfferTemplate() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => offerTemplatesApi.delete(id),
-    onSuccess: (_, deletedId) => {
-      queryClient.removeQueries({ queryKey: queryKeys.offerTemplates.detail(deletedId) });
-      queryClient.invalidateQueries({
-        predicate: isOfferTemplateListQuery,
-        refetchType: 'active',
-      });
-      queryClient.invalidateQueries({ queryKey: queryKeys.offerTemplates.default });
-      toast({
-        title: 'Sukces',
-        description: 'Szablon został usunięty',
-      });
-    },
-    onError: (error: unknown) => {
-      toast({
-        title: 'Błąd',
-        description: getApiErrorMessage(error, 'Nie udało się usunąć szablonu'),
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useUploadOfferTemplateFile() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ id, file }: { id: string; file: File }) =>
-      offerTemplatesApi.uploadTemplate(id, file),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.offerTemplates.detail(variables.id) });
-      queryClient.invalidateQueries({
-        predicate: isOfferTemplateListQuery,
-        refetchType: 'active',
-      });
-      toast({
-        title: 'Sukces',
-        description: 'Plik szablonu został przesłany',
-      });
-    },
-    onError: (error: unknown) => {
-      toast({
-        title: 'Błąd',
-        description: getApiErrorMessage(error, 'Nie udało się przesłać pliku szablonu'),
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUploadOfferTemplateFile = createMutationHook<
+  void,
+  { id: string; file: File }
+>({
+  mutationFn: ({ id, file }) => offerTemplatesApi.uploadTemplate(id, file),
+  invalidatePredicate: isOfferTemplateListQuery,
+  onSuccess: (_, variables, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.offerTemplates.detail(variables.id) });
+  },
+  successMessage: 'Plik szablonu został przesłany',
+  errorMessage: 'Nie udało się przesłać pliku szablonu',
+});
 
 export function useDownloadOfferTemplateFile() {
   const { toast } = useToast();

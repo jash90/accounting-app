@@ -15,8 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import { useOfferTemplate } from '@/lib/hooks/use-offer-templates';
 import {
-  useTemplateContentBlocks,
-  useUpdateContentBlocks,
+  useOfferTemplateContentBlocks,
+  useUpdateOfferTemplateContentBlocks,
 } from '@/lib/hooks/use-template-content-blocks';
 import { type ContentBlock, type ContentBlockType } from '@/types/content-blocks';
 
@@ -26,8 +26,8 @@ export default function TemplateEditorPage() {
   const basePath = useModuleBasePath('offers');
 
   const { data: template, isPending: templateLoading } = useOfferTemplate(id!);
-  const { data: contentData, isPending: blocksLoading } = useTemplateContentBlocks(id!);
-  const updateMutation = useUpdateContentBlocks();
+  const { data: contentData, isPending: blocksLoading } = useOfferTemplateContentBlocks(id!);
+  const updateMutation = useUpdateOfferTemplateContentBlocks();
 
   const [blocks, setBlocks] = useState<ContentBlock[] | null>(null);
   const [initialized, setInitialized] = useState(false);

@@ -1,5 +1,5 @@
 import { BaseEmailList } from '@/components/email/base-email-list';
-import { useFolder, useFolders } from '@/lib/hooks/use-email-client';
+import { useEmailFolder, useEmailFolders } from '@/lib/hooks/use-email-client';
 
 // Helper to find the Trash folder name from available folders
 function findTrashFolder(folders: string[] | undefined): string {
@@ -31,9 +31,9 @@ function findTrashFolder(folders: string[] | undefined): string {
 }
 
 export default function EmailTrash() {
-  const { data: folders } = useFolders();
+  const { data: folders } = useEmailFolders();
   const trashFolder = findTrashFolder(folders);
-  const { data: emails, isLoading, refetch, isRefetching, error } = useFolder(trashFolder);
+  const { data: emails, isLoading, refetch, isRefetching, error } = useEmailFolder(trashFolder);
 
   return (
     <BaseEmailList

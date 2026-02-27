@@ -8,6 +8,7 @@ import {
   type UpdateLeadDto,
 } from '@/types/dtos';
 
+import { createMutationHook } from './create-mutation-hook';
 import { leadsApi } from '../api/endpoints/offers';
 import { queryKeys } from '../api/query-client';
 import { isLeadListQuery, OFFERS_CACHE_TIMES } from '../utils/optimistic-offers-updates';
@@ -46,88 +47,35 @@ export function useLeadAssignees() {
   });
 }
 
-export function useCreateLead() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useCreateLead = createMutationHook<void, CreateLeadDto>({
+  mutationFn: (leadData) => leadsApi.create(leadData),
+  invalidateKeys: [queryKeys.leads.statistics],
+  invalidatePredicate: isLeadListQuery,
+  successMessage: 'Prospekt został utworzony',
+  errorMessage: 'Nie udało się utworzyć prospektu',
+});
 
-  return useMutation({
-    mutationFn: (leadData: CreateLeadDto) => leadsApi.create(leadData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        predicate: isLeadListQuery,
-        refetchType: 'active',
-      });
-      queryClient.invalidateQueries({ queryKey: queryKeys.leads.statistics });
-      toast({
-        title: 'Sukces',
-        description: 'Prospekt został utworzony',
-      });
-    },
-    onError: (error: unknown) => {
-      toast({
-        title: 'Błąd',
-        description: getApiErrorMessage(error, 'Nie udało się utworzyć prospektu'),
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateLead = createMutationHook<void, { id: string; data: UpdateLeadDto }>({
+  mutationFn: ({ id, data }) => leadsApi.update(id, data),
+  invalidateKeys: [queryKeys.leads.statistics],
+  invalidatePredicate: isLeadListQuery,
+  onSuccess: (_, variables, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.leads.detail(variables.id) });
+  },
+  successMessage: 'Prospekt został zaktualizowany',
+  errorMessage: 'Nie udało się zaktualizować prospektu',
+});
 
-export function useUpdateLead() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateLeadDto }) => leadsApi.update(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.leads.detail(variables.id) });
-      queryClient.invalidateQueries({
-        predicate: isLeadListQuery,
-        refetchType: 'active',
-      });
-      queryClient.invalidateQueries({ queryKey: queryKeys.leads.statistics });
-      toast({
-        title: 'Sukces',
-        description: 'Prospekt został zaktualizowany',
-      });
-    },
-    onError: (error: unknown) => {
-      toast({
-        title: 'Błąd',
-        description: getApiErrorMessage(error, 'Nie udało się zaktualizować prospektu'),
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useDeleteLead() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => leadsApi.delete(id),
-    onSuccess: (_, deletedId) => {
-      queryClient.removeQueries({ queryKey: queryKeys.leads.detail(deletedId) });
-      queryClient.invalidateQueries({
-        predicate: isLeadListQuery,
-        refetchType: 'active',
-      });
-      queryClient.invalidateQueries({ queryKey: queryKeys.leads.statistics });
-      toast({
-        title: 'Sukces',
-        description: 'Prospekt został usunięty',
-      });
-    },
-    onError: (error: unknown) => {
-      toast({
-        title: 'Błąd',
-        description: getApiErrorMessage(error, 'Nie udało się usunąć prospektu'),
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useDeleteLead = createMutationHook<void, string>({
+  mutationFn: (id) => leadsApi.delete(id),
+  invalidateKeys: [queryKeys.leads.statistics],
+  invalidatePredicate: isLeadListQuery,
+  onSuccess: (_, deletedId, qc) => {
+    qc.removeQueries({ queryKey: queryKeys.leads.detail(deletedId) });
+  },
+  successMessage: 'Prospekt został usunięty',
+  errorMessage: 'Nie udało się usunąć prospektu',
+});
 
 export function useConvertLeadToClient() {
   const queryClient = useQueryClient();

@@ -33,6 +33,77 @@ const EmailConfigFormDialog = lazy(() =>
 const preloadEmailConfigFormDialog = () => {
   import('@/components/forms/email-config-form-dialog');
 };
+
+type UserEmailConfigData = ReturnType<typeof useUserEmailConfig>['data'];
+
+interface UserEmailConfigDialogsProps {
+  formOpen: boolean;
+  setFormOpen: (open: boolean) => void;
+  deleteOpen: boolean;
+  setDeleteOpen: (open: boolean) => void;
+  hasConfig: boolean;
+  emailConfig: UserEmailConfigData;
+  onSubmit: (data: CreateEmailConfigFormData | UpdateEmailConfigFormData) => void;
+  onDelete: () => void;
+  testSmtp: ReturnType<typeof useTestSmtp>;
+  testImap: ReturnType<typeof useTestImap>;
+}
+
+function UserEmailConfigDialogs({
+  formOpen,
+  setFormOpen,
+  deleteOpen,
+  setDeleteOpen,
+  hasConfig,
+  emailConfig,
+  onSubmit,
+  onDelete,
+  testSmtp,
+  testImap,
+}: UserEmailConfigDialogsProps) {
+  return (
+    <>
+      {formOpen && (
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+              <Card className="w-[400px]">
+                <CardContent className="space-y-4 p-6">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </CardContent>
+              </Card>
+            </div>
+          }
+        >
+          <EmailConfigFormDialog
+            open={formOpen}
+            onOpenChange={setFormOpen}
+            config={hasConfig ? emailConfig : undefined}
+            onSubmit={onSubmit}
+            type="user"
+            onTestSmtp={(data) => testSmtp.mutate(data)}
+            onTestImap={(data) => testImap.mutate(data)}
+            isTestingSmtp={testSmtp.isPending}
+            isTestingImap={testImap.isPending}
+          />
+        </Suspense>
+      )}
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete Email Configuration"
+        description="Are you sure you want to delete your email configuration? This action cannot be undone and you will need to reconfigure your email settings."
+        confirmText="Delete Configuration"
+        onConfirm={onDelete}
+        variant="destructive"
+      />
+    </>
+  );
+}
+
 export default function UserEmailConfigPage() {
   const { data: emailConfig, isPending, isError, error } = useUserEmailConfig();
   const createConfig = useCreateUserEmailConfig();
@@ -51,10 +122,11 @@ export default function UserEmailConfigPage() {
     if (hasConfig) {
       updateConfig.mutate(data as UpdateEmailConfigFormData, {
         onSuccess: () => setFormOpen(false),
-        onError: (err: Error) => {
+        onError: (err: unknown) => {
           toast({
             title: 'Error',
-            description: err.message || 'Failed to update email configuration',
+            description:
+              err instanceof Error ? err.message : 'Failed to update email configuration',
             variant: 'destructive',
           });
         },
@@ -62,10 +134,11 @@ export default function UserEmailConfigPage() {
     } else {
       createConfig.mutate(data as CreateEmailConfigFormData, {
         onSuccess: () => setFormOpen(false),
-        onError: (err: Error) => {
+        onError: (err: unknown) => {
           toast({
             title: 'Error',
-            description: err.message || 'Failed to create email configuration',
+            description:
+              err instanceof Error ? err.message : 'Failed to create email configuration',
             variant: 'destructive',
           });
         },
@@ -76,10 +149,10 @@ export default function UserEmailConfigPage() {
   const handleDelete = () => {
     deleteConfig.mutate(undefined, {
       onSuccess: () => setDeleteOpen(false),
-      onError: (err: Error) => {
+      onError: (err: unknown) => {
         toast({
           title: 'Error',
-          description: err.message || 'Failed to delete email configuration',
+          description: err instanceof Error ? err.message : 'Failed to delete email configuration',
           variant: 'destructive',
         });
         setDeleteOpen(false);
@@ -297,45 +370,17 @@ export default function UserEmailConfigPage() {
         </div>
       )}
 
-      {/* Form Dialog - Lazy-loaded with Suspense */}
-      {formOpen && (
-        <Suspense
-          fallback={
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-              <Card className="w-[400px]">
-                <CardContent className="space-y-4 p-6">
-                  <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                </CardContent>
-              </Card>
-            </div>
-          }
-        >
-          <EmailConfigFormDialog
-            open={formOpen}
-            onOpenChange={setFormOpen}
-            config={hasConfig ? emailConfig : undefined}
-            onSubmit={handleSubmit}
-            type="user"
-            onTestSmtp={(data) => testSmtp.mutate(data)}
-            onTestImap={(data) => testImap.mutate(data)}
-            isTestingSmtp={testSmtp.isPending}
-            isTestingImap={testImap.isPending}
-          />
-        </Suspense>
-      )}
-
-      {/* Delete Confirmation */}
-      <ConfirmDialog
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        title="Delete Email Configuration"
-        description="Are you sure you want to delete your email configuration? This action cannot be undone and you will need to reconfigure your email settings."
-        confirmText="Delete Configuration"
-        onConfirm={handleDelete}
-        variant="destructive"
+      <UserEmailConfigDialogs
+        formOpen={formOpen}
+        setFormOpen={setFormOpen}
+        deleteOpen={deleteOpen}
+        setDeleteOpen={setDeleteOpen}
+        hasConfig={hasConfig}
+        emailConfig={emailConfig}
+        onSubmit={handleSubmit}
+        onDelete={handleDelete}
+        testSmtp={testSmtp}
+        testImap={testImap}
       />
     </div>
   );

@@ -53,8 +53,8 @@ export function OfferPipelineChart({
         <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} />
         <ChartTooltip content={<ChartTooltipContent />} />
         <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-          {data.map((_, index) => (
-            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+          {data.map((entry, index) => (
+            <Cell key={entry.status} fill={COLORS[index % COLORS.length]} />
           ))}
         </Bar>
       </BarChart>

@@ -12,6 +12,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import {
+  useAiContextFile,
+  useAiContextFiles,
+  useDeleteAiContextFile,
+  useUploadAiContextFile,
+} from '@/lib/hooks/use-ai-agent';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -31,20 +37,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  useContextFile,
-  useContextFiles,
-  useDeleteContextFile,
-  useUploadContextFile,
-} from '@/lib/hooks/use-ai-agent';
 
 export default function ContextFilesPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewFileId, setPreviewFileId] = useState<string | null>(null);
-  const { data: files, isLoading } = useContextFiles();
-  const { data: previewFile, isLoading: isLoadingPreview } = useContextFile(previewFileId);
-  const uploadFile = useUploadContextFile();
-  const deleteFile = useDeleteContextFile();
+  const { data: files, isLoading } = useAiContextFiles();
+  const { data: previewFile, isLoading: isLoadingPreview } = useAiContextFile(previewFileId);
+  const uploadFile = useUploadAiContextFile();
+  const deleteFile = useDeleteAiContextFile();
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

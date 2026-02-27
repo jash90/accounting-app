@@ -1,13 +1,13 @@
+import { PageHeader } from '@/components/common/page-header';
+import { getModuleIcon } from '@/lib/utils/module-icons';
 import { Package } from 'lucide-react';
 
-import { PageHeader } from '@/components/common/page-header';
+import { useCompanyPermissionModules } from '@/lib/hooks/use-permissions';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ModuleCard } from '@/components/ui/module-card';
-import { useCompanyModules } from '@/lib/hooks/use-permissions';
-import { getModuleIcon } from '@/lib/utils/module-icons';
 
 export default function CompanyModulesListPage() {
-  const { data: modules = [], isPending } = useCompanyModules();
+  const { data: modules = [], isPending } = useCompanyPermissionModules();
 
   return (
     <div className="space-y-6">

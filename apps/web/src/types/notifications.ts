@@ -41,6 +41,27 @@ export enum NotificationType {
   CLIENT_DELETE_APPROVED = 'client.delete.approved',
   CLIENT_DELETE_REJECTED = 'client.delete.rejected',
 
+  // Suspension
+  CLIENT_SUSPENSION_CREATED = 'client.suspension.created',
+  CLIENT_SUSPENSION_UPDATED = 'client.suspension.updated',
+  CLIENT_SUSPENSION_DELETED = 'client.suspension.deleted',
+  CLIENT_SUSPENSION_START_REMINDER_7D = 'client.suspension.start.reminder.7d',
+  CLIENT_SUSPENSION_START_REMINDER_1D = 'client.suspension.start.reminder.1d',
+  CLIENT_SUSPENSION_END_REMINDER_7D = 'client.suspension.end.reminder.7d',
+  CLIENT_SUSPENSION_END_REMINDER_1D = 'client.suspension.end.reminder.1d',
+  CLIENT_RESUMED = 'client.resumed',
+
+  // Relief Periods (Ulgi)
+  CLIENT_RELIEF_CREATED = 'client.relief.created',
+  CLIENT_RELIEF_UPDATED = 'client.relief.updated',
+  CLIENT_RELIEF_DELETED = 'client.relief.deleted',
+  CLIENT_RELIEF_END_REMINDER_7D = 'client.relief.end.reminder.7d',
+  CLIENT_RELIEF_END_REMINDER_1D = 'client.relief.end.reminder.1d',
+
+  // Custom Field Reminders
+  CLIENT_CUSTOM_FIELD_REMINDER_7D = 'client.custom_field.reminder.7d',
+  CLIENT_CUSTOM_FIELD_REMINDER_1D = 'client.custom_field.reminder.1d',
+
   // ========================================
   // TIME TRACKING MODULE
   // ========================================
@@ -50,6 +71,41 @@ export enum NotificationType {
   TIME_ENTRY_APPROVED = 'time.entry.approved',
   TIME_ENTRY_REJECTED = 'time.entry.rejected',
   TIME_ENTRY_SUBMITTED = 'time.entry.submitted',
+
+  // ========================================
+  // OFFERS MODULE
+  // ========================================
+  OFFER_CREATED = 'offer.created',
+  OFFER_UPDATED = 'offer.updated',
+  OFFER_DELETED = 'offer.deleted',
+  OFFER_STATUS_CHANGED = 'offer.status.changed',
+  OFFER_SENT = 'offer.sent',
+  OFFER_DOCUMENT_GENERATED = 'offer.document.generated',
+  OFFER_ACCEPTED = 'offer.accepted',
+  OFFER_REJECTED = 'offer.rejected',
+  OFFER_EXPIRED = 'offer.expired',
+  OFFER_DUPLICATED = 'offer.duplicated',
+
+  // ========================================
+  // LEADS MODULE
+  // ========================================
+  LEAD_CREATED = 'lead.created',
+  LEAD_UPDATED = 'lead.updated',
+  LEAD_DELETED = 'lead.deleted',
+  LEAD_CONVERTED = 'lead.converted',
+
+  // ========================================
+  // SETTLEMENTS MODULE
+  // ========================================
+  SETTLEMENT_STATUS_CHANGED = 'settlement.status.changed',
+  SETTLEMENT_ASSIGNED = 'settlement.assigned',
+  SETTLEMENT_UNASSIGNED = 'settlement.unassigned',
+  SETTLEMENT_COMPLETED = 'settlement.completed',
+  SETTLEMENT_UPDATED = 'settlement.updated',
+  SETTLEMENT_MONTH_INITIALIZED = 'settlement.month.initialized',
+  SETTLEMENT_BULK_ASSIGNED = 'settlement.bulk.assigned',
+  SETTLEMENT_COMMENT_ADDED = 'settlement.comment.added',
+  SETTLEMENT_DEADLINE_APPROACHING = 'settlement.deadline.approaching',
 
   // ========================================
   // EMAIL CLIENT MODULE
@@ -113,6 +169,23 @@ export const NotificationTypeLabels: Record<NotificationType, string> = {
   [NotificationType.CLIENT_DELETE_REQUESTED]: 'Żądanie usunięcia klienta',
   [NotificationType.CLIENT_DELETE_APPROVED]: 'Zatwierdzono usunięcie klienta',
   [NotificationType.CLIENT_DELETE_REJECTED]: 'Odrzucono usunięcie klienta',
+  [NotificationType.CLIENT_SUSPENSION_CREATED]: 'Utworzono zawieszenie działalności',
+  [NotificationType.CLIENT_SUSPENSION_UPDATED]: 'Zaktualizowano zawieszenie działalności',
+  [NotificationType.CLIENT_SUSPENSION_DELETED]: 'Usunięto zawieszenie działalności',
+  [NotificationType.CLIENT_SUSPENSION_START_REMINDER_7D]: 'Przypomnienie: zawieszenie za 7 dni',
+  [NotificationType.CLIENT_SUSPENSION_START_REMINDER_1D]: 'Przypomnienie: zawieszenie jutro',
+  [NotificationType.CLIENT_SUSPENSION_END_REMINDER_7D]: 'Przypomnienie: wznowienie za 7 dni',
+  [NotificationType.CLIENT_SUSPENSION_END_REMINDER_1D]: 'Przypomnienie: wznowienie jutro',
+  [NotificationType.CLIENT_RESUMED]: 'Działalność klienta została wznowiona',
+  [NotificationType.CLIENT_RELIEF_CREATED]: 'Dodano ulgę dla klienta',
+  [NotificationType.CLIENT_RELIEF_UPDATED]: 'Zaktualizowano ulgę klienta',
+  [NotificationType.CLIENT_RELIEF_DELETED]: 'Usunięto ulgę klienta',
+  [NotificationType.CLIENT_RELIEF_END_REMINDER_7D]: 'Przypomnienie: ulga kończy się za 7 dni',
+  [NotificationType.CLIENT_RELIEF_END_REMINDER_1D]: 'Przypomnienie: ulga kończy się jutro',
+  [NotificationType.CLIENT_CUSTOM_FIELD_REMINDER_7D]:
+    'Przypomnienie o polu niestandardowym (7 dni)',
+  [NotificationType.CLIENT_CUSTOM_FIELD_REMINDER_1D]:
+    'Przypomnienie o polu niestandardowym (1 dzień)',
 
   // Time Tracking
   [NotificationType.TIME_ENTRY_CREATED]: 'Utworzono wpis czasu',
@@ -121,6 +194,35 @@ export const NotificationTypeLabels: Record<NotificationType, string> = {
   [NotificationType.TIME_ENTRY_APPROVED]: 'Zatwierdzono wpis czasu',
   [NotificationType.TIME_ENTRY_REJECTED]: 'Odrzucono wpis czasu',
   [NotificationType.TIME_ENTRY_SUBMITTED]: 'Przesłano wpis czasu do zatwierdzenia',
+
+  // Offers
+  [NotificationType.OFFER_CREATED]: 'Utworzono ofertę',
+  [NotificationType.OFFER_UPDATED]: 'Zaktualizowano ofertę',
+  [NotificationType.OFFER_DELETED]: 'Usunięto ofertę',
+  [NotificationType.OFFER_STATUS_CHANGED]: 'Zmieniono status oferty',
+  [NotificationType.OFFER_SENT]: 'Wysłano ofertę',
+  [NotificationType.OFFER_DOCUMENT_GENERATED]: 'Wygenerowano dokument oferty',
+  [NotificationType.OFFER_ACCEPTED]: 'Oferta zaakceptowana',
+  [NotificationType.OFFER_REJECTED]: 'Oferta odrzucona',
+  [NotificationType.OFFER_EXPIRED]: 'Oferta wygasła',
+  [NotificationType.OFFER_DUPLICATED]: 'Zduplikowano ofertę',
+
+  // Leads
+  [NotificationType.LEAD_CREATED]: 'Utworzono lead',
+  [NotificationType.LEAD_UPDATED]: 'Zaktualizowano lead',
+  [NotificationType.LEAD_DELETED]: 'Usunięto lead',
+  [NotificationType.LEAD_CONVERTED]: 'Lead przekonwertowany na klienta',
+
+  // Settlements
+  [NotificationType.SETTLEMENT_STATUS_CHANGED]: 'Zmieniono status rozliczenia',
+  [NotificationType.SETTLEMENT_ASSIGNED]: 'Przypisano rozliczenie',
+  [NotificationType.SETTLEMENT_UNASSIGNED]: 'Usunięto przypisanie rozliczenia',
+  [NotificationType.SETTLEMENT_COMPLETED]: 'Ukończono rozliczenie',
+  [NotificationType.SETTLEMENT_UPDATED]: 'Zaktualizowano rozliczenie',
+  [NotificationType.SETTLEMENT_MONTH_INITIALIZED]: 'Zainicjalizowano miesiąc rozliczeń',
+  [NotificationType.SETTLEMENT_BULK_ASSIGNED]: 'Masowe przypisanie rozliczeń',
+  [NotificationType.SETTLEMENT_COMMENT_ADDED]: 'Dodano komentarz do rozliczenia',
+  [NotificationType.SETTLEMENT_DEADLINE_APPROACHING]: 'Zbliża się termin rozliczenia',
 
   // Email
   [NotificationType.EMAIL_RECEIVED]: 'Otrzymano nową wiadomość',
@@ -156,6 +258,9 @@ export function getModuleFromNotificationType(type: NotificationType): string {
     task: 'tasks',
     client: 'clients',
     time: 'time-tracking',
+    offer: 'offers',
+    lead: 'offers',
+    settlement: 'settlements',
     email: 'email-client',
     ai: 'ai-agent',
     user: 'company',

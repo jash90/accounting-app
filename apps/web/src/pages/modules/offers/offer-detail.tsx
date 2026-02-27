@@ -60,6 +60,7 @@ import {
   useSendOffer,
   useUpdateOfferStatus,
 } from '@/lib/hooks/use-offers';
+import { formatDate } from '@/lib/utils/format-date';
 import { type SendOfferDto } from '@/types/dtos';
 import {
   OfferActivityType,
@@ -312,8 +313,8 @@ export default function OfferDetailPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {offer.serviceTerms.items.map((item, index) => (
-                      <TableRow key={`${item.name}-${index}`}>
+                    {offer.serviceTerms.items.map((item) => (
+                      <TableRow key={`${item.name}-${item.unitPrice}-${item.quantity}`}>
                         <TableCell>
                           <div>{item.name}</div>
                           {item.description && (
@@ -383,9 +384,7 @@ export default function OfferDetailPage() {
             <CardContent className="space-y-4">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Data oferty</span>
-                <span className="font-medium">
-                  {new Date(offer.offerDate).toLocaleDateString('pl-PL')}
-                </span>
+                <span className="font-medium">{formatDate(offer.offerDate)}</span>
               </div>
               <Separator />
               <div className="flex justify-between">
@@ -397,7 +396,7 @@ export default function OfferDetailPage() {
                       : ''
                   }`}
                 >
-                  {new Date(offer.validUntil).toLocaleDateString('pl-PL')}
+                  {formatDate(offer.validUntil)}
                 </span>
               </div>
               {offer.template && (
@@ -414,9 +413,7 @@ export default function OfferDetailPage() {
                   <Separator />
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Wysłano</span>
-                    <span className="font-medium">
-                      {new Date(offer.sentAt).toLocaleDateString('pl-PL')}
-                    </span>
+                    <span className="font-medium">{formatDate(offer.sentAt)}</span>
                   </div>
                   {offer.sentToEmail && (
                     <div className="text-muted-foreground text-sm">Na: {offer.sentToEmail}</div>
@@ -426,9 +423,7 @@ export default function OfferDetailPage() {
               <Separator />
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Utworzono</span>
-                <span className="font-medium">
-                  {new Date(offer.createdAt).toLocaleDateString('pl-PL')}
-                </span>
+                <span className="font-medium">{formatDate(offer.createdAt)}</span>
               </div>
               {offer.createdBy && (
                 <div className="text-muted-foreground text-sm">

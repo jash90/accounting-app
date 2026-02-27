@@ -61,7 +61,7 @@ export const employeeStatsColumns: ColumnDef<EmployeeStatsDto>[] = [
     accessorKey: 'completionRate',
     header: 'Realizacja',
     cell: ({ row }) => {
-      const rate = Math.round(row.original.completionRate * 100);
+      const rate = row.original.completionRate;
       return (
         <div className="flex items-center gap-2">
           <div className="h-2 w-16 rounded-full bg-gray-200">

@@ -17,7 +17,7 @@ interface Props {
 
 // ── Helpers ──────────────────────────────────────────────────────
 
-const PLACEHOLDER_RE = /(\{\{[^}]+\}\})/g;
+const PLACEHOLDER_RE = /(\{\{[^}]+\}\})/;
 
 function renderTextSegment(text: string, key: number) {
   const parts = text.split(PLACEHOLDER_RE);

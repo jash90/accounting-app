@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import { CalendarIcon, ChevronDown, Loader2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useFieldDefinitions } from '@/lib/hooks/use-clients';
+import { useClientFieldDefinitions } from '@/lib/hooks/use-clients';
 import { cn } from '@/lib/utils/cn';
 import { type CustomFieldFilter } from '@/types/dtos';
 import { type ClientFieldDefinition } from '@/types/entities';
@@ -445,7 +445,7 @@ function CustomFieldFilterControl({ field, filter, onChange }: CustomFieldFilter
 
 export function ClientCustomFilters({ filters, onFiltersChange }: ClientCustomFiltersProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { data: fieldDefinitionsData, isLoading } = useFieldDefinitions({ limit: 100 });
+  const { data: fieldDefinitionsData, isLoading } = useClientFieldDefinitions({ limit: 100 });
 
   const activeFieldDefinitions = useMemo(() => {
     return fieldDefinitionsData?.data?.filter((fd) => fd.isActive) || [];

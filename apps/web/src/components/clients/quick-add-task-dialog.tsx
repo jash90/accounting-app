@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form';
 
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import { Building2, CalendarIcon, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';

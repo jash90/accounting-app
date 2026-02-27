@@ -1,26 +1,14 @@
 import { type PaginatedResponse } from '@/types/api';
+import { SettlementStatus, SettlementStatusLabels } from '@/types/enums';
 
 import apiClient from '../client';
+import { createBlobExport } from '../crud-factory';
 
 // ============================================
 // Settlement Types
 // ============================================
 
-export enum SettlementStatus {
-  PENDING = 'PENDING',
-  IN_PROGRESS = 'IN_PROGRESS',
-  MISSING_INVOICE_VERIFICATION = 'MISSING_INVOICE_VERIFICATION',
-  MISSING_INVOICE = 'MISSING_INVOICE',
-  COMPLETED = 'COMPLETED',
-}
-
-export const SettlementStatusLabels: Record<SettlementStatus, string> = {
-  [SettlementStatus.PENDING]: 'Oczekujące',
-  [SettlementStatus.IN_PROGRESS]: 'W trakcie',
-  [SettlementStatus.MISSING_INVOICE_VERIFICATION]: 'Brakująca weryfikacja faktury',
-  [SettlementStatus.MISSING_INVOICE]: 'Brakująca faktura',
-  [SettlementStatus.COMPLETED]: 'Zakończone',
-};
+export { SettlementStatus, SettlementStatusLabels };
 
 export interface ClientSummaryDto {
   id: string;
@@ -386,13 +374,7 @@ export const settlementsApi = {
   },
 
   // CSV export
-  exportCsv: async (filters?: GetSettlementsQueryDto): Promise<Blob> => {
-    const { data } = await apiClient.get<Blob>(`${BASE_URL}/export`, {
-      params: filters,
-      responseType: 'blob',
-    });
-    return data;
-  },
+  exportCsv: createBlobExport<GetSettlementsQueryDto>(`${BASE_URL}/export`),
 
   // Missing invoice email
   sendMissingInvoiceEmail: async (id: string): Promise<{ message: string }> => {

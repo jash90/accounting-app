@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useState, type Dispatch } from 'react';
 
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -78,6 +78,7 @@ import {
   useSendOffer,
   useUpdateOffer,
 } from '@/lib/hooks/use-offers';
+import { formatDate } from '@/lib/utils/format-date';
 import { formDataToCreateDto, formDataToUpdateDto } from '@/lib/utils/offer-converters';
 import { type CreateOfferFormData, type UpdateOfferFormData } from '@/lib/validation/schemas';
 import { type OfferFiltersDto, type OfferResponseDto, type SendOfferDto } from '@/types/dtos';
@@ -118,6 +119,224 @@ function offerDialogReducer(state: OfferDialogState, action: OfferDialogAction):
     case 'SET_SENDING':
       return { ...state, sendingOffer: action.payload };
   }
+}
+
+interface OffersListDialogsProps {
+  isCreateDialogOpen: boolean;
+  editingOffer: OfferResponseDto | undefined;
+  deletingOfferId: string | null;
+  sendingOffer: OfferResponseDto | null;
+  dispatchDialog: Dispatch<OfferDialogAction>;
+  handleCreateOffer: (data: CreateOfferFormData | UpdateOfferFormData) => Promise<void>;
+  handleUpdateOffer: (data: CreateOfferFormData | UpdateOfferFormData) => Promise<void>;
+  handleDeleteOffer: () => Promise<void>;
+  handleSendOffer: (data: SendOfferDto) => Promise<void>;
+  isSendPending: boolean;
+}
+
+function OffersListDialogs({
+  isCreateDialogOpen,
+  editingOffer,
+  deletingOfferId,
+  sendingOffer,
+  dispatchDialog,
+  handleCreateOffer,
+  handleUpdateOffer,
+  handleDeleteOffer,
+  handleSendOffer,
+  isSendPending,
+}: OffersListDialogsProps) {
+  return (
+    <>
+      <OfferFormDialog
+        open={isCreateDialogOpen}
+        onOpenChange={(open) => dispatchDialog({ type: open ? 'OPEN_CREATE' : 'CLOSE_CREATE' })}
+        onSubmit={handleCreateOffer}
+      />
+
+      <OfferFormDialog
+        open={!!editingOffer}
+        onOpenChange={(open) =>
+          !open && dispatchDialog({ type: 'SET_EDITING', payload: undefined })
+        }
+        offer={editingOffer}
+        onSubmit={handleUpdateOffer}
+      />
+
+      {sendingOffer && (
+        <SendOfferDialog
+          open={!!sendingOffer}
+          onOpenChange={(open) => !open && dispatchDialog({ type: 'SET_SENDING', payload: null })}
+          offer={sendingOffer}
+          onSubmit={handleSendOffer}
+          isLoading={isSendPending}
+        />
+      )}
+
+      <AlertDialog
+        open={!!deletingOfferId}
+        onOpenChange={() => dispatchDialog({ type: 'SET_DELETING', payload: null })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Czy na pewno chcesz usunąć tę ofertę?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Ta operacja jest nieodwracalna. Oferta zostanie trwale usunięta z systemu.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteOffer}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Usuń
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+function useOffersColumns(
+  basePath: string,
+  handleNavigateToDetails: (id: string) => void,
+  handleEditClick: (offer: OfferResponseDto) => void,
+  handleSendClick: (offer: OfferResponseDto) => void,
+  handleDeleteClick: (id: string) => void,
+  handleGenerateDocument: (offer: OfferResponseDto) => Promise<void>,
+  handleDownloadDocument: (offer: OfferResponseDto) => Promise<void>,
+  handleDuplicate: (offer: OfferResponseDto) => Promise<void>
+): ColumnDef<OfferResponseDto>[] {
+  return useMemo(
+    () => [
+      {
+        accessorKey: 'offerNumber',
+        header: 'Numer',
+        cell: ({ row }) => (
+          <Link
+            to={`${basePath}/${row.original.id}`}
+            className="text-primary font-medium hover:underline"
+          >
+            {row.original.offerNumber}
+          </Link>
+        ),
+      },
+      {
+        accessorKey: 'title',
+        header: 'Tytuł',
+        cell: ({ row }) => (
+          <div className="max-w-[200px] truncate" title={row.original.title}>
+            {row.original.title}
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'recipientSnapshot.name',
+        header: 'Odbiorca',
+        cell: ({ row }) => row.original.recipientSnapshot?.name || '-',
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row }) => <OfferStatusBadge status={row.original.status} />,
+      },
+      {
+        accessorKey: 'totalGrossAmount',
+        header: 'Wartość brutto',
+        cell: ({ row }) => `${Number(row.original.totalGrossAmount).toFixed(2)} PLN`,
+      },
+      {
+        accessorKey: 'offerDate',
+        header: 'Data oferty',
+        cell: ({ row }) => formatDate(row.original.offerDate),
+      },
+      {
+        accessorKey: 'validUntil',
+        header: 'Ważna do',
+        cell: ({ row }) => {
+          const date = new Date(row.original.validUntil);
+          const isExpired = date < new Date() && row.original.status !== OfferStatus.ACCEPTED;
+          return (
+            <span className={isExpired ? 'text-destructive font-medium' : ''}>
+              {formatDate(date)}
+            </span>
+          );
+        },
+      },
+      {
+        id: 'actions',
+        cell: ({ row }) => {
+          const offer = row.original;
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Akcje">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleNavigateToDetails(offer.id)}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  Szczegóły
+                </DropdownMenuItem>
+                {offer.status === OfferStatus.DRAFT && (
+                  <DropdownMenuItem onClick={() => handleEditClick(offer)}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edytuj
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                {!offer.generatedDocumentPath && (
+                  <DropdownMenuItem onClick={() => handleGenerateDocument(offer)}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Generuj dokument
+                  </DropdownMenuItem>
+                )}
+                {offer.generatedDocumentPath && (
+                  <DropdownMenuItem onClick={() => handleDownloadDocument(offer)}>
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Pobierz dokument
+                  </DropdownMenuItem>
+                )}
+                {offer.status === OfferStatus.READY && (
+                  <DropdownMenuItem onClick={() => handleSendClick(offer)}>
+                    <Send className="mr-2 h-4 w-4" />
+                    Wyślij ofertę
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => handleDuplicate(offer)}>
+                  <Copy className="mr-2 h-4 w-4" />
+                  Duplikuj
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {offer.status === OfferStatus.DRAFT && (
+                  <DropdownMenuItem
+                    onClick={() => handleDeleteClick(offer.id)}
+                    className="text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Usuń
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+      },
+    ],
+    [
+      basePath,
+      handleNavigateToDetails,
+      handleEditClick,
+      handleSendClick,
+      handleDeleteClick,
+      handleGenerateDocument,
+      handleDownloadDocument,
+      handleDuplicate,
+    ]
+  );
 }
 
 export default function OffersListPage() {
@@ -202,133 +421,15 @@ export default function OffersListPage() {
     [navigate, basePath]
   );
 
-  const columns: ColumnDef<OfferResponseDto>[] = useMemo(
-    () => [
-      {
-        accessorKey: 'offerNumber',
-        header: 'Numer',
-        cell: ({ row }) => (
-          <Link
-            to={`${basePath}/${row.original.id}`}
-            className="text-primary font-medium hover:underline"
-          >
-            {row.original.offerNumber}
-          </Link>
-        ),
-      },
-      {
-        accessorKey: 'title',
-        header: 'Tytuł',
-        cell: ({ row }) => (
-          <div className="max-w-[200px] truncate" title={row.original.title}>
-            {row.original.title}
-          </div>
-        ),
-      },
-      {
-        accessorKey: 'recipientSnapshot.name',
-        header: 'Odbiorca',
-        cell: ({ row }) => row.original.recipientSnapshot?.name || '-',
-      },
-      {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ row }) => <OfferStatusBadge status={row.original.status} />,
-      },
-      {
-        accessorKey: 'totalGrossAmount',
-        header: 'Wartość brutto',
-        cell: ({ row }) => `${Number(row.original.totalGrossAmount).toFixed(2)} PLN`,
-      },
-      {
-        accessorKey: 'offerDate',
-        header: 'Data oferty',
-        cell: ({ row }) => new Date(row.original.offerDate).toLocaleDateString('pl-PL'),
-      },
-      {
-        accessorKey: 'validUntil',
-        header: 'Ważna do',
-        cell: ({ row }) => {
-          const date = new Date(row.original.validUntil);
-          const isExpired = date < new Date() && row.original.status !== OfferStatus.ACCEPTED;
-          return (
-            <span className={isExpired ? 'text-destructive font-medium' : ''}>
-              {date.toLocaleDateString('pl-PL')}
-            </span>
-          );
-        },
-      },
-      {
-        id: 'actions',
-        cell: ({ row }) => {
-          const offer = row.original;
-          return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Akcje">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleNavigateToDetails(offer.id)}>
-                  <Eye className="mr-2 h-4 w-4" />
-                  Szczegóły
-                </DropdownMenuItem>
-                {offer.status === OfferStatus.DRAFT && (
-                  <DropdownMenuItem onClick={() => handleEditClick(offer)}>
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edytuj
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                {!offer.generatedDocumentPath && (
-                  <DropdownMenuItem onClick={() => handleGenerateDocument(offer)}>
-                    <FileText className="mr-2 h-4 w-4" />
-                    Generuj dokument
-                  </DropdownMenuItem>
-                )}
-                {offer.generatedDocumentPath && (
-                  <DropdownMenuItem onClick={() => handleDownloadDocument(offer)}>
-                    <FileDown className="mr-2 h-4 w-4" />
-                    Pobierz dokument
-                  </DropdownMenuItem>
-                )}
-                {offer.status === OfferStatus.READY && (
-                  <DropdownMenuItem onClick={() => handleSendClick(offer)}>
-                    <Send className="mr-2 h-4 w-4" />
-                    Wyślij ofertę
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={() => handleDuplicate(offer)}>
-                  <Copy className="mr-2 h-4 w-4" />
-                  Duplikuj
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {offer.status === OfferStatus.DRAFT && (
-                  <DropdownMenuItem
-                    onClick={() => handleDeleteClick(offer.id)}
-                    className="text-destructive"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Usuń
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          );
-        },
-      },
-    ],
-    [
-      basePath,
-      handleNavigateToDetails,
-      handleEditClick,
-      handleSendClick,
-      handleDeleteClick,
-      handleGenerateDocument,
-      handleDownloadDocument,
-      handleDuplicate,
-    ]
+  const columns = useOffersColumns(
+    basePath,
+    handleNavigateToDetails,
+    handleEditClick,
+    handleSendClick,
+    handleDeleteClick,
+    handleGenerateDocument,
+    handleDownloadDocument,
+    handleDuplicate
   );
 
   const table = useReactTable({
@@ -522,54 +623,18 @@ export default function OffersListPage() {
         </div>
       )}
 
-      {/* Dialogs */}
-      <OfferFormDialog
-        open={isCreateDialogOpen}
-        onOpenChange={(open) => dispatchDialog({ type: open ? 'OPEN_CREATE' : 'CLOSE_CREATE' })}
-        onSubmit={handleCreateOffer}
+      <OffersListDialogs
+        isCreateDialogOpen={isCreateDialogOpen}
+        editingOffer={editingOffer}
+        deletingOfferId={deletingOfferId}
+        sendingOffer={sendingOffer}
+        dispatchDialog={dispatchDialog}
+        handleCreateOffer={handleCreateOffer}
+        handleUpdateOffer={handleUpdateOffer}
+        handleDeleteOffer={handleDeleteOffer}
+        handleSendOffer={handleSendOffer}
+        isSendPending={sendMutation.isPending}
       />
-
-      <OfferFormDialog
-        open={!!editingOffer}
-        onOpenChange={(open) =>
-          !open && dispatchDialog({ type: 'SET_EDITING', payload: undefined })
-        }
-        offer={editingOffer}
-        onSubmit={handleUpdateOffer}
-      />
-
-      {sendingOffer && (
-        <SendOfferDialog
-          open={!!sendingOffer}
-          onOpenChange={(open) => !open && dispatchDialog({ type: 'SET_SENDING', payload: null })}
-          offer={sendingOffer}
-          onSubmit={handleSendOffer}
-          isLoading={sendMutation.isPending}
-        />
-      )}
-
-      <AlertDialog
-        open={!!deletingOfferId}
-        onOpenChange={() => dispatchDialog({ type: 'SET_DELETING', payload: null })}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Czy na pewno chcesz usunąć tę ofertę?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Ta operacja jest nieodwracalna. Oferta zostanie trwale usunięta z systemu.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Anuluj</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteOffer}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              Usuń
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

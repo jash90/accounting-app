@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { endOfMonth, format, startOfMonth, subDays } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import {
   ArrowLeft,
   BarChart3,
@@ -35,6 +35,72 @@ import {
   useTimeSummaryReport,
 } from '@/lib/hooks/use-time-tracking';
 import { UserRole } from '@/types/enums';
+
+interface ClientReportItem {
+  clientId: string;
+  clientName: string;
+  entryCount: number;
+  totalMinutes: number;
+  billableMinutes: number;
+  totalAmount: number;
+}
+
+interface ClientReportCardProps {
+  clientReport: ClientReportItem[] | undefined;
+  clientLoading: boolean;
+}
+
+function ClientReportCard({ clientReport, clientLoading }: ClientReportCardProps) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          Raport wg klientów
+        </CardTitle>
+        <CardDescription>Szczegółowy podział czasu i kosztów według klientów</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {clientLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map((num) => (
+              <Skeleton key={num} className="h-16" />
+            ))}
+          </div>
+        ) : clientReport && clientReport.length > 0 ? (
+          <div className="space-y-2">
+            {clientReport.map((client) => (
+              <div
+                key={client.clientId || 'no-client'}
+                className="hover:bg-muted/50 flex items-center justify-between rounded-lg border p-4"
+              >
+                <div>
+                  <h4 className="font-medium">{client.clientName || 'Bez klienta'}</h4>
+                  <p className="text-muted-foreground text-sm">{client.entryCount} wpisów</p>
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="text-right">
+                    <p className="font-mono font-semibold">{formatDuration(client.totalMinutes)}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {formatDuration(client.billableMinutes)} rozliczalnego
+                    </p>
+                  </div>
+                  <div className="min-w-[100px] text-right">
+                    <p className="font-semibold">
+                      {client.totalAmount.toLocaleString('pl-PL')} PLN
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground py-8 text-center">Brak danych dla wybranego okresu</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
@@ -317,57 +383,7 @@ export default function TimeTrackingReportsPage() {
       </Card>
 
       {/* Client Report */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Raport wg klientów
-          </CardTitle>
-          <CardDescription>Szczegółowy podział czasu i kosztów według klientów</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {clientLoading ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map((num) => (
-                <Skeleton key={num} className="h-16" />
-              ))}
-            </div>
-          ) : clientReport && clientReport.length > 0 ? (
-            <div className="space-y-2">
-              {clientReport.map((client) => (
-                <div
-                  key={client.clientId || 'no-client'}
-                  className="hover:bg-muted/50 flex items-center justify-between rounded-lg border p-4"
-                >
-                  <div>
-                    <h4 className="font-medium">{client.clientName || 'Bez klienta'}</h4>
-                    <p className="text-muted-foreground text-sm">{client.entryCount} wpisów</p>
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <p className="font-mono font-semibold">
-                        {formatDuration(client.totalMinutes)}
-                      </p>
-                      <p className="text-muted-foreground text-xs">
-                        {formatDuration(client.billableMinutes)} rozliczalnego
-                      </p>
-                    </div>
-                    <div className="min-w-[100px] text-right">
-                      <p className="font-semibold">
-                        {client.totalAmount.toLocaleString('pl-PL')} PLN
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-muted-foreground py-8 text-center">
-              Brak danych dla wybranego okresu
-            </p>
-          )}
-        </CardContent>
-      </Card>
+      <ClientReportCard clientReport={clientReport} clientLoading={clientLoading} />
     </div>
   );
 }

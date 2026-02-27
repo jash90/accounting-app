@@ -16,12 +16,14 @@ import {
 
 import { ErrorBoundary } from '@/components/common/error-boundary';
 import { TimeTrackedChart } from '@/components/dashboard/charts/time-tracked-chart';
+import { RankedListCard } from '@/components/dashboard/ranked-list-card';
 import { TimerWidget } from '@/components/time-tracking/timer-widget';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
+import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import {
   useActiveTimer,
   useEmployeeTimeBreakdown,
@@ -30,7 +32,7 @@ import {
   useTopSettlementsByTime,
   useTopTasksByTime,
 } from '@/lib/hooks/use-time-tracking';
-import { UserRole } from '@/types/enums';
+import { isOwnerOrAdmin } from '@/lib/utils/user';
 
 function getMonthDateRange() {
   const now = new Date();
@@ -102,21 +104,9 @@ export default function TimeTrackingDashboardPage() {
     };
   }, [entriesData?.data]);
 
-  // Determine the base path based on user role
-  const getBasePath = () => {
-    switch (user?.role) {
-      case UserRole.ADMIN:
-        return '/admin/modules/time-tracking';
-      case UserRole.COMPANY_OWNER:
-        return '/company/modules/time-tracking';
-      default:
-        return '/modules/time-tracking';
-    }
-  };
+  const basePath = useModuleBasePath('time-tracking');
 
-  const basePath = getBasePath();
-
-  const formatHours = (minutes: number) => {
+  const formatMinutesAsHoursMinutes = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}h ${mins}m`;
@@ -158,8 +148,7 @@ export default function TimeTrackingDashboardPage() {
   );
 
   // Settings option (only for admins and company owners)
-  const showSettings = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER;
-  const isOwnerOrAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER;
+  const showSettings = isOwnerOrAdmin(user);
 
   return (
     <div className="container mx-auto space-y-6 p-6">
@@ -203,7 +192,7 @@ export default function TimeTrackingDashboardPage() {
 
         <StatCard
           label="Czas rozliczalny"
-          value={formatHours(billableMinutes)}
+          value={formatMinutesAsHoursMinutes(billableMinutes)}
           icon={TrendingUp}
           iconBg="bg-blue-500"
           valueColor="text-blue-600"
@@ -273,7 +262,7 @@ export default function TimeTrackingDashboardPage() {
       )}
 
       {/* Extended Statistics Section — only for admins and company owners */}
-      {isOwnerOrAdmin && (
+      {showSettings && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-foreground text-xl font-semibold">Rozszerzone statystyki</h2>
@@ -296,89 +285,50 @@ export default function TimeTrackingDashboardPage() {
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {/* Top Tasks by Time */}
-            <Card className="border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Top zadania (czas)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {topTasksLoading ? (
-                  <p className="text-muted-foreground text-sm">Ładowanie...</p>
-                ) : !topTasks || topTasks.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">Brak danych</p>
-                ) : (
-                  <div className="space-y-2">
-                    {topTasks
-                      .slice(0, 10)
-                      .map(
-                        (item: {
-                          taskId: string;
-                          taskTitle: string;
-                          totalMinutes: number;
-                          totalHours: number;
-                        }) => (
-                          <div
-                            key={item.taskId}
-                            className="flex items-center justify-between text-sm"
-                          >
-                            <span
-                              className="text-foreground max-w-[65%] truncate"
-                              title={item.taskTitle}
-                            >
-                              {item.taskTitle}
-                            </span>
-                            <span className="text-muted-foreground ml-2 shrink-0">
-                              {item.totalHours}h
-                            </span>
-                          </div>
-                        )
-                      )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <RankedListCard
+              title="Top zadania (czas)"
+              isPending={topTasksLoading}
+              items={topTasks?.map(
+                (item: {
+                  taskId: string;
+                  taskTitle: string;
+                  totalMinutes: number;
+                  totalHours: number;
+                }) => ({
+                  key: item.taskId,
+                  label: item.taskTitle,
+                  value: `${item.totalHours}h`,
+                })
+              )}
+              limit={10}
+              valueClassName="text-muted-foreground ml-2 shrink-0"
+              className="border-border"
+            />
 
             {/* Top Settlements by Time */}
-            <Card className="border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Top rozliczenia (czas)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {topSettlementsLoading ? (
-                  <p className="text-muted-foreground text-sm">Ładowanie...</p>
-                ) : !topSettlements || topSettlements.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">Brak danych</p>
-                ) : (
-                  <div className="space-y-2">
-                    {topSettlements
-                      .slice(0, 10)
-                      .map(
-                        (item: {
-                          settlementId: string;
-                          month: number;
-                          year: number;
-                          clientName?: string;
-                          totalMinutes: number;
-                          totalHours: number;
-                        }) => (
-                          <div
-                            key={item.settlementId}
-                            className="flex items-center justify-between text-sm"
-                          >
-                            <span className="text-foreground max-w-[65%] truncate">
-                              {item.clientName
-                                ? `${item.clientName} (${item.month}/${item.year})`
-                                : `${item.month}/${item.year}`}
-                            </span>
-                            <span className="text-muted-foreground ml-2 shrink-0">
-                              {item.totalHours}h
-                            </span>
-                          </div>
-                        )
-                      )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <RankedListCard
+              title="Top rozliczenia (czas)"
+              isPending={topSettlementsLoading}
+              items={topSettlements?.map(
+                (item: {
+                  settlementId: string;
+                  month: number;
+                  year: number;
+                  clientName?: string;
+                  totalMinutes: number;
+                  totalHours: number;
+                }) => ({
+                  key: item.settlementId,
+                  label: item.clientName
+                    ? `${item.clientName} (${item.month}/${item.year})`
+                    : `${item.month}/${item.year}`,
+                  value: `${item.totalHours}h`,
+                })
+              )}
+              limit={10}
+              valueClassName="text-muted-foreground ml-2 shrink-0"
+              className="border-border"
+            />
 
             {/* Employee Time Breakdown */}
             <Card className="border-border md:col-span-2 xl:col-span-1">

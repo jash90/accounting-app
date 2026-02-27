@@ -1,7 +1,7 @@
 import { memo } from 'react';
 
 import { format, startOfToday } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import { CalendarClock, Edit, Gift, Trash2 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';

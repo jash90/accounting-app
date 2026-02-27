@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 
-import { useDebounce } from './use-debounce';
 import { clientsApi } from '../api/endpoints/clients';
+import { queryKeys } from '../api/query-client';
+import { useDebounce } from './use-debounce';
 
 const PKD_SEARCH_DEBOUNCE_MS = 300;
 const PKD_SEARCH_STALE_TIME = 5 * 60 * 1000; // 5 minutes
@@ -43,7 +44,7 @@ export function usePkdSearch(initialSearch = '', initialSection?: string) {
     isLoading,
     isFetching,
   } = useQuery({
-    queryKey: ['pkd-codes', 'search', debouncedSearch, section],
+    queryKey: queryKeys.pkdCodes.search(debouncedSearch, section),
     queryFn: () =>
       clientsApi.searchPkdCodes({
         search: debouncedSearch || undefined,
@@ -57,7 +58,7 @@ export function usePkdSearch(initialSearch = '', initialSection?: string) {
 
   // Fetch PKD sections for the section filter dropdown
   const { data: sectionsData } = useQuery({
-    queryKey: ['pkd-codes', 'sections'],
+    queryKey: queryKeys.pkdCodes.sections,
     queryFn: () => clientsApi.getPkdSections(),
     staleTime: Infinity, // Sections never change
   });
@@ -122,7 +123,7 @@ export function usePkdSearch(initialSearch = '', initialSection?: string) {
  */
 export function usePkdCode(code: string | null | undefined) {
   const { data } = useQuery({
-    queryKey: ['pkd-codes', 'single', code],
+    queryKey: queryKeys.pkdCodes.single(code),
     queryFn: () =>
       clientsApi.searchPkdCodes({
         search: code || undefined,

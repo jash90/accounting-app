@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { type GlobalDashboardData } from '@/lib/hooks/use-global-dashboard';
 import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
+import { formatDate } from '@/lib/utils/format-date';
 
 interface DashboardActivitySectionProps {
   data: GlobalDashboardData;
@@ -86,7 +87,7 @@ export function DashboardActivitySection({ data, enabledModules }: DashboardActi
                     </p>
                   </div>
                   <time className="text-muted-foreground shrink-0 text-xs">
-                    {new Date(activity.createdAt).toLocaleDateString('pl-PL')}
+                    {formatDate(activity.createdAt)}
                   </time>
                 </div>
               ))}

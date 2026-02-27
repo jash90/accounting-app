@@ -11,77 +11,68 @@ import {
 } from 'lucide-react';
 
 import { SettlementsStatusChart } from '@/components/dashboard/charts/settlements-status-chart';
+import { RankedListCard } from '@/components/dashboard/ranked-list-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import {
-  useBlockedClientsStats,
-  useMyStats,
+  useMySettlementStats,
+  useSettlementBlockedClientsStats,
   useSettlementEmployeeRanking,
   useSettlementStats,
 } from '@/lib/hooks/use-settlements';
+import { isOwnerOrAdmin } from '@/lib/utils/user';
 import { UserRole } from '@/types/enums';
+
 
 function ExtendedSettlementStats() {
   const employeeRankingQuery = useSettlementEmployeeRanking();
-  const blockedClientsQuery = useBlockedClientsStats();
+  const blockedClientsQuery = useSettlementBlockedClientsStats();
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      {/* Employee Ranking */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Ranking pracowników (ukończone rozliczenia)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {employeeRankingQuery.isPending ? (
-            <p className="text-muted-foreground text-sm">Ładowanie...</p>
-          ) : !employeeRankingQuery.data?.rankings?.length ? (
-            <p className="text-muted-foreground text-sm">Brak danych</p>
-          ) : (
-            <div className="space-y-2">
-              {employeeRankingQuery.data.rankings.slice(0, 10).map((item, index) => (
-                <div key={item.userId} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground w-5 text-right">{index + 1}.</span>
-                    <span>
-                      {item.firstName || item.lastName
-                        ? `${item.firstName ?? ''} ${item.lastName ?? ''}`.trim()
-                        : item.email}
-                    </span>
-                  </div>
-                  <span className="font-semibold text-green-600">{item.completedCount}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Blocked Clients */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Klienci z blokadami rozliczeń</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {blockedClientsQuery.isPending ? (
-            <p className="text-muted-foreground text-sm">Ładowanie...</p>
-          ) : !blockedClientsQuery.data?.clients?.length ? (
-            <p className="text-muted-foreground text-sm">Brak klientów z blokadami</p>
-          ) : (
-            <div className="space-y-2">
-              {blockedClientsQuery.data.clients.slice(0, 10).map((item) => (
-                <div key={item.clientId} className="flex items-center justify-between text-sm">
-                  <span>{item.clientName}</span>
-                  <span className="font-semibold text-red-600">{item.blockCount}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <RankedListCard
+        title="Ranking pracowników (ukończone rozliczenia)"
+        isPending={employeeRankingQuery.isPending}
+        items={employeeRankingQuery.data?.rankings?.map(
+          (
+            item: {
+              userId: string;
+              firstName?: string;
+              lastName?: string;
+              email: string;
+              completedCount: number;
+            },
+            index: number
+          ) => ({
+            key: item.userId,
+            label: `${index + 1}. ${
+              item.firstName || item.lastName
+                ? `${item.firstName ?? ''} ${item.lastName ?? ''}`.trim()
+                : item.email
+            }`,
+            value: item.completedCount,
+          })
+        )}
+        limit={10}
+        valueClassName="font-semibold text-green-600"
+      />
+      <RankedListCard
+        title="Klienci z blokadami rozliczeń"
+        isPending={blockedClientsQuery.isPending}
+        items={blockedClientsQuery.data?.clients?.map(
+          (item: { clientId: string; clientName: string; blockCount: number }) => ({
+            key: item.clientId,
+            label: item.clientName,
+            value: item.blockCount,
+          })
+        )}
+        limit={10}
+        emptyMessage="Brak klientów z blokadami"
+        valueClassName="font-semibold text-red-600"
+      />
     </div>
   );
 }
@@ -96,24 +87,22 @@ export default function SettlementsDashboardPage() {
   const currentYear = currentDate.getFullYear();
 
   // Check if user is owner or admin
-  const isOwnerOrAdmin = user?.role === UserRole.COMPANY_OWNER || user?.role === UserRole.ADMIN;
+  const showForOwner = isOwnerOrAdmin(user);
 
   // Fetch stats conditionally based on role to avoid unnecessary API calls
   // Performance: Employees only fetch their own stats (1 request vs 3)
   // Owners/Admins fetch overview stats which includes all data they need
   const overviewQuery = useSettlementStats(currentMonth, currentYear);
-  const myQuery = useMyStats(currentMonth, currentYear);
+  const myQuery = useMySettlementStats(currentMonth, currentYear);
 
   // Use appropriate stats based on role
-  const stats = isOwnerOrAdmin ? overviewQuery.data : myQuery.data;
-  const isPending = isOwnerOrAdmin ? overviewQuery.isPending : myQuery.isPending;
+  const stats = showForOwner ? overviewQuery.data : myQuery.data;
+  const isPending = showForOwner ? overviewQuery.isPending : myQuery.isPending;
   const overviewStats = overviewQuery.data;
   const overviewPending = overviewQuery.isPending;
 
   // Calculate completion rate percentage
-  const completionRate = stats?.completionRate
-    ? `${Math.round(stats.completionRate * 100)}%`
-    : '0%';
+  const completionRate = stats?.completionRate ? `${stats.completionRate}%` : '0%';
 
   // Features available based on role
   const features = [
@@ -233,7 +222,7 @@ export default function SettlementsDashboardPage() {
           isLoading={isPending}
         />
 
-        {isOwnerOrAdmin && overviewStats && (
+        {showForOwner && overviewStats && (
           <>
             <StatCard
               label="Nieprzypisane"
@@ -259,7 +248,7 @@ export default function SettlementsDashboardPage() {
       </div>
 
       {/* Status Chart */}
-      {isOwnerOrAdmin && !overviewPending && overviewStats && (
+      {showForOwner && !overviewPending && overviewStats && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Status rozliczeń</CardTitle>
@@ -291,7 +280,7 @@ export default function SettlementsDashboardPage() {
       </div>
 
       {/* Extended Stats - only for admin/owner */}
-      {isOwnerOrAdmin && (
+      {showForOwner && (
         <div className="space-y-4">
           <h2 className="text-foreground text-xl font-semibold">Rozszerzone statystyki</h2>
           <ExtendedSettlementStats />

@@ -9,12 +9,14 @@ import {
   type ReactNode,
 } from 'react';
 
+import { useAuthContext } from '@/contexts/auth-context';
+import { tokenStorage } from '@/lib/auth/token-storage';
 import { useQueryClient } from '@tanstack/react-query';
 import type { io as ioType, Socket } from 'socket.io-client';
 
 import { useToast } from '@/components/ui/use-toast';
-import { useAuthContext } from '@/contexts/auth-context';
-import { tokenStorage } from '@/lib/auth/token-storage';
+
+const loadSocketIo = () => import('socket.io-client');
 
 const getWsBaseUrl = (): string => {
   if (typeof window !== 'undefined' && window.__APP_CONFIG__?.WS_URL) {
@@ -65,7 +67,7 @@ export function EmailSocketProvider({ children }: { children: ReactNode }) {
   const socketModuleRef = useRef<Promise<{ io: typeof ioType }> | null>(null);
   const getSocketModule = useCallback(() => {
     if (!socketModuleRef.current) {
-      socketModuleRef.current = import('socket.io-client');
+      socketModuleRef.current = loadSocketIo();
     }
     return socketModuleRef.current;
   }, []);

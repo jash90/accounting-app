@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { addMonths, format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import { CalendarIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';

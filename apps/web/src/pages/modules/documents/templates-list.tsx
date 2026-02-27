@@ -1,8 +1,9 @@
 import { useState } from 'react';
 
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { FileText, Loader2, Pencil, Play, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -34,12 +36,16 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { type DocumentTemplateDto } from '@/lib/api/endpoints/documents';
+import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
 import {
   useCreateDocumentTemplate,
   useDeleteDocumentTemplate,
   useDocumentTemplates,
+  useGenerateDocument,
   useUpdateDocumentTemplate,
 } from '@/lib/hooks/use-documents';
+import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
+import { formatDate } from '@/lib/utils/format-date';
 
 const CATEGORIES = [
   { value: 'offer', label: 'Oferta' },
@@ -243,11 +249,107 @@ function TemplateFormDialog({
   );
 }
 
+function GenerateDocumentDialog({
+  open,
+  onOpenChange,
+  template,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  template: DocumentTemplateDto | null;
+}) {
+  const generateMutation = useGenerateDocument();
+  const [name, setName] = useState(() =>
+    template ? `${template.name} – ${formatDate(new Date())}` : ''
+  );
+  const [fields, setFields] = useState<Record<string, string>>({});
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!template || !name.trim()) return;
+    try {
+      await generateMutation.mutateAsync({
+        templateId: template.id,
+        name: name.trim(),
+        placeholderData: fields,
+      });
+      toast.success('Dokument wygenerowany');
+      onOpenChange(false);
+    } catch {
+      toast.error('Błąd podczas generowania dokumentu');
+    }
+  };
+
+  if (!template) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Generuj: {template.name}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1">
+            <Label htmlFor="doc-name">Nazwa dokumentu</Label>
+            <Input
+              id="doc-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nazwa wygenerowanego dokumentu"
+              required
+            />
+          </div>
+          {(template.placeholders ?? []).length > 0 && (
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-muted-foreground">Wypełnij placeholdery:</p>
+              {template.placeholders!.map((key) => (
+                <div key={key} className="space-y-1">
+                  <Label htmlFor={`ph-${key}`} className="font-mono text-xs">{`{{${key}}}`}</Label>
+                  <Input
+                    id={`ph-${key}`}
+                    value={fields[key] ?? ''}
+                    onChange={(e) => setFields((prev) => ({ ...prev, [key]: e.target.value }))}
+                    placeholder={key}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Anuluj
+            </Button>
+            <Button type="submit" disabled={generateMutation.isPending}>
+              {generateMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Play className="mr-2 h-4 w-4" />
+              )}
+              Generuj
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function DocumentsTemplatesListPage() {
   const { data: templates, isLoading } = useDocumentTemplates();
   const deleteTemplate = useDeleteDocumentTemplate();
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<DocumentTemplateDto | null>(null);
+  const navigate = useNavigate();
+  const basePath = useModuleBasePath('documents');
+  const {
+    createOpen,
+    editing: editingTemplate,
+    openCreate: handleCreate,
+    closeCreate,
+    startEditing,
+    closeEditing,
+  } = useCrudDialogs<DocumentTemplateDto>();
+  const formOpen = createOpen || !!editingTemplate;
+  const [generateOpen, setGenerateOpen] = useState(false);
+  const [generatingTemplate, setGeneratingTemplate] = useState<DocumentTemplateDto | null>(null);
 
   const handleDelete = async (id: string) => {
     try {
@@ -259,18 +361,24 @@ export default function DocumentsTemplatesListPage() {
   };
 
   const handleEdit = (template: DocumentTemplateDto) => {
-    setEditingTemplate(template);
-    setFormOpen(true);
-  };
-
-  const handleCreate = () => {
-    setEditingTemplate(null);
-    setFormOpen(true);
+    startEditing(template);
   };
 
   const handleFormClose = (open: boolean) => {
-    setFormOpen(open);
-    if (!open) setEditingTemplate(null);
+    if (!open) {
+      closeCreate();
+      closeEditing();
+    }
+  };
+
+  const handleGenerate = (template: DocumentTemplateDto) => {
+    setGeneratingTemplate(template);
+    setGenerateOpen(true);
+  };
+
+  const handleGenerateClose = (open: boolean) => {
+    setGenerateOpen(open);
+    if (!open) setGeneratingTemplate(null);
   };
 
   if (isLoading) return <div className="p-6">Ładowanie...</div>;
@@ -306,6 +414,22 @@ export default function DocumentsTemplatesListPage() {
                   {CATEGORIES.find((c) => c.value === template.category)?.label ??
                     template.category}
                 </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  title="Generuj dokument"
+                  onClick={() => handleGenerate(template)}
+                >
+                  <Play className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  title="Edytor bloków"
+                  onClick={() => navigate(`${basePath}/templates/${template.id}/editor`)}
+                >
+                  <FileText className="h-4 w-4" />
+                </Button>
                 <Button variant="ghost" size="sm" onClick={() => handleEdit(template)}>
                   <Pencil className="h-4 w-4" />
                 </Button>
@@ -339,6 +463,12 @@ export default function DocumentsTemplatesListPage() {
         open={formOpen}
         onOpenChange={handleFormClose}
         template={editingTemplate}
+      />
+      <GenerateDocumentDialog
+        key={generatingTemplate?.id ?? 'generate-none'}
+        open={generateOpen}
+        onOpenChange={handleGenerateClose}
+        template={generatingTemplate}
       />
     </div>
   );

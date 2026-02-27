@@ -1,17 +1,17 @@
 import { useMemo, useState } from 'react';
 
+import { cn } from '@/lib/utils/cn';
+import { formatDuration } from '@/lib/utils/time';
+import { type TimeEntryResponseDto } from '@/types/dtos';
 import { addDays, format, parseISO, startOfDay, subDays } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import { Calendar, ChevronLeft, ChevronRight, Clock, DollarSign, Plus } from 'lucide-react';
 
+import { useDailyTimesheet } from '@/lib/hooks/use-time-tracking';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useDailyTimesheet } from '@/lib/hooks/use-time-tracking';
-import { cn } from '@/lib/utils/cn';
-import { formatDuration } from '@/lib/utils/time';
-import { type TimeEntryResponseDto } from '@/types/dtos';
 
 import { TimeEntryFormDialog } from './time-entry-form-dialog';
 import { TimeEntryStatusBadge } from './time-entry-status-badge';
@@ -25,7 +25,7 @@ interface DailyTimesheetProps {
   onEntryClick?: (entry: TimeEntryResponseDto) => void;
 }
 
-function formatTime(date: Date | string): string {
+function formatClockTime(date: Date | string): string {
   const d = typeof date === 'string' ? parseISO(date) : date;
   return format(d, 'HH:mm');
 }
@@ -200,9 +200,9 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
                 >
                   <div className="flex items-center gap-3">
                     <div className="min-w-[80px] text-center">
-                      <div className="font-mono text-sm">{formatTime(entry.startTime)}</div>
+                      <div className="font-mono text-sm">{formatClockTime(entry.startTime)}</div>
                       <div className="text-muted-foreground text-xs">
-                        {entry.endTime ? formatTime(entry.endTime) : '...'}
+                        {entry.endTime ? formatClockTime(entry.endTime) : '...'}
                       </div>
                     </div>
                     <div className="bg-border h-10 w-px" />

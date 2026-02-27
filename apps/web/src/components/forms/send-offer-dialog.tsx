@@ -18,6 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
+import { formatDate } from '@/lib/utils/format-date';
 import { sendOfferSchema, type SendOfferFormData } from '@/lib/validation/schemas';
 import { type OfferResponseDto } from '@/types/dtos';
 
@@ -50,7 +51,7 @@ export function SendOfferDialog({
 W załączeniu przesyłamy ofertę nr ${offer.offerNumber} - ${offer.title}.
 
 Wartość oferty: ${Number(offer.totalGrossAmount).toFixed(2)} PLN brutto
-Ważność oferty: do ${new Date(offer.validUntil).toLocaleDateString('pl-PL')}
+Ważność oferty: do ${formatDate(offer.validUntil)}
 
 W razie pytań prosimy o kontakt.
 
@@ -83,7 +84,7 @@ Z poważaniem`;
 W załączeniu przesyłamy ofertę nr ${offer.offerNumber} - ${offer.title}.
 
 Wartość oferty: ${Number(offer.totalGrossAmount).toFixed(2)} PLN brutto
-Ważność oferty: do ${new Date(offer.validUntil).toLocaleDateString('pl-PL')}
+Ważność oferty: do ${formatDate(offer.validUntil)}
 
 W razie pytań prosimy o kontakt.
 

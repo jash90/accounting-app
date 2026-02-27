@@ -1,8 +1,8 @@
 import { BaseEmailList } from '@/components/email/base-email-list';
-import { useInbox } from '@/lib/hooks/use-email-client';
+import { useEmailInbox } from '@/lib/hooks/use-email-client';
 
 export default function EmailInbox() {
-  const { data: emails, isLoading, refetch, isRefetching, error } = useInbox();
+  const { data: emails, isLoading, refetch, isRefetching, error } = useEmailInbox();
 
   return (
     <BaseEmailList

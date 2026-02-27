@@ -19,6 +19,7 @@ import {
 import { type EmploymentType, type TaxScheme, type VatStatus, type ZusStatus } from '@/types/enums';
 
 import apiClient from '../client';
+import { createCrudApi } from '../crud-factory';
 
 // ============================================
 // Bulk Operations Types
@@ -148,7 +149,7 @@ export interface PkdSearchParams {
 const BASE_URL = '/api/modules/clients';
 
 // Helper function to convert custom field filters to query params
-function buildCustomFieldParams(filters?: ClientFiltersDto): Record<string, string | undefined> {
+function buildClientFilterQueryParams(filters?: ClientFiltersDto): Record<string, string | undefined> {
   if (!filters) return {};
 
   const { customFieldFilters, ...rest } = filters;
@@ -171,7 +172,7 @@ function buildCustomFieldParams(filters?: ClientFiltersDto): Record<string, stri
 // Client API
 export const clientsApi = {
   getAll: async (filters?: ClientFiltersDto): Promise<PaginatedResponse<ClientResponseDto>> => {
-    const params = buildCustomFieldParams(filters);
+    const params = buildClientFilterQueryParams(filters);
     const { data } = await apiClient.get<PaginatedResponse<ClientResponseDto>>(BASE_URL, {
       params,
     });
@@ -302,7 +303,7 @@ export const clientsApi = {
 
   // Export/Import
   exportCsv: async (filters?: ClientFiltersDto): Promise<Blob> => {
-    const params = buildCustomFieldParams(filters);
+    const params = buildClientFilterQueryParams(filters);
     const { data } = await apiClient.get(`${BASE_URL}/export`, {
       params,
       responseType: 'blob',
@@ -348,49 +349,12 @@ export interface FieldDefinitionQueryDto {
 }
 
 export const fieldDefinitionsApi = {
-  getAll: async (
-    query?: FieldDefinitionQueryDto
-  ): Promise<PaginatedResponse<ClientFieldDefinitionResponseDto>> => {
-    const { data } = await apiClient.get<PaginatedResponse<ClientFieldDefinitionResponseDto>>(
-      FIELD_DEFINITIONS_URL,
-      {
-        params: query,
-      }
-    );
-    return data;
-  },
-
-  getById: async (id: string): Promise<ClientFieldDefinitionResponseDto> => {
-    const { data } = await apiClient.get<ClientFieldDefinitionResponseDto>(
-      `${FIELD_DEFINITIONS_URL}/${id}`
-    );
-    return data;
-  },
-
-  create: async (
-    fieldData: CreateClientFieldDefinitionDto
-  ): Promise<ClientFieldDefinitionResponseDto> => {
-    const { data } = await apiClient.post<ClientFieldDefinitionResponseDto>(
-      FIELD_DEFINITIONS_URL,
-      fieldData
-    );
-    return data;
-  },
-
-  update: async (
-    id: string,
-    fieldData: UpdateClientFieldDefinitionDto
-  ): Promise<ClientFieldDefinitionResponseDto> => {
-    const { data } = await apiClient.patch<ClientFieldDefinitionResponseDto>(
-      `${FIELD_DEFINITIONS_URL}/${id}`,
-      fieldData
-    );
-    return data;
-  },
-
-  delete: async (id: string): Promise<void> => {
-    await apiClient.delete(`${FIELD_DEFINITIONS_URL}/${id}`);
-  },
+  ...createCrudApi<
+    ClientFieldDefinitionResponseDto,
+    CreateClientFieldDefinitionDto,
+    UpdateClientFieldDefinitionDto,
+    FieldDefinitionQueryDto
+  >(FIELD_DEFINITIONS_URL),
 
   reorder: async (orderedIds: string[]): Promise<ClientFieldDefinitionResponseDto[]> => {
     const { data } = await apiClient.put<ClientFieldDefinitionResponseDto[]>(

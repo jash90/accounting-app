@@ -36,6 +36,7 @@ const TABLE_ROW_STYLE = {
 
 // Pre-allocated skeleton count to avoid array recreation
 const SKELETON_COUNT = 5;
+const SKELETON_KEYS = Array.from({ length: SKELETON_COUNT }, (_, i) => `skeleton-row-${i}`);
 
 /**
  * Generic data table component with sorting, pagination, and row selection.
@@ -198,8 +199,8 @@ function DataTableInner<TData, TValue>({
     return (
       <div className="space-y-3 p-4" role="status" aria-busy="true">
         <span className="sr-only">Ładowanie danych tabeli...</span>
-        {Array.from({ length: SKELETON_COUNT }, (_, i) => (
-          <Skeleton key={i} className="bg-accent/10 h-12 w-full rounded-lg" />
+        {SKELETON_KEYS.map((k) => (
+          <Skeleton key={k} className="bg-accent/10 h-12 w-full rounded-lg" />
         ))}
       </div>
     );

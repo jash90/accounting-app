@@ -19,6 +19,7 @@ const CARD_STYLE = {
 
 // Pre-allocated skeleton count to avoid array recreation
 const SKELETON_COUNT = 8;
+const SKELETON_KEYS = Array.from({ length: SKELETON_COUNT }, (_, i) => `skeleton-card-${i}`);
 
 interface ClientPermissions {
   write: boolean;
@@ -97,8 +98,8 @@ export const ClientGrid = memo(function ClientGrid({
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {Array.from({ length: SKELETON_COUNT }, (_, idx) => (
-          <Skeleton key={`sk-${idx}`} className="bg-accent/10 h-48 w-full rounded-lg" />
+        {SKELETON_KEYS.map((k) => (
+          <Skeleton key={k} className="bg-accent/10 h-48 w-full rounded-lg" />
         ))}
       </div>
     );

@@ -14,6 +14,8 @@ import {
   type UpdateOfferStatusDto,
 } from '@/types/dtos';
 
+import { createExportHook } from './create-export-hook';
+import { createMutationHook } from './create-mutation-hook';
 import { leadsApi, offersApi } from '../api/endpoints/offers';
 import { queryKeys } from '../api/query-client';
 import { downloadBlob } from '../utils/download';
@@ -90,7 +92,7 @@ export function useOfferStatistics() {
  * Hook that fetches offer and lead statistics in parallel using useQueries.
  * This prevents the waterfall effect of sequential queries.
  */
-export function useDashboardStatistics() {
+export function useOffersDashboardStatistics() {
   const results = useQueries({
     queries: [
       {
@@ -128,7 +130,7 @@ export function useDashboardStatistics() {
   );
 }
 
-export function useStandardPlaceholders() {
+export function useOfferStandardPlaceholders() {
   return useQuery({
     queryKey: queryKeys.offers.placeholders,
     queryFn: () => offersApi.getStandardPlaceholders(),
@@ -136,32 +138,13 @@ export function useStandardPlaceholders() {
   });
 }
 
-export function useCreateOffer() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (offerData: CreateOfferDto) => offersApi.create(offerData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        predicate: isOfferListQuery,
-        refetchType: 'active',
-      });
-      queryClient.invalidateQueries({ queryKey: queryKeys.offers.statistics });
-      toast({
-        title: 'Sukces',
-        description: 'Oferta została utworzona',
-      });
-    },
-    onError: (error: unknown) => {
-      toast({
-        title: 'Błąd',
-        description: getApiErrorMessage(error, 'Nie udało się utworzyć oferty'),
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useCreateOffer = createMutationHook<OfferResponseDto, CreateOfferDto>({
+  mutationFn: (offerData) => offersApi.create(offerData),
+  invalidatePredicate: isOfferListQuery,
+  invalidateKeys: [queryKeys.offers.statistics],
+  successMessage: 'Oferta została utworzona',
+  errorMessage: 'Nie udało się utworzyć oferty',
+});
 
 export function useUpdateOffer() {
   const queryClient = useQueryClient();
@@ -201,33 +184,16 @@ export function useUpdateOffer() {
   });
 }
 
-export function useDeleteOffer() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => offersApi.delete(id),
-    onSuccess: (_, deletedId) => {
-      queryClient.removeQueries({ queryKey: queryKeys.offers.detail(deletedId) });
-      queryClient.invalidateQueries({
-        predicate: isOfferListQuery,
-        refetchType: 'active',
-      });
-      queryClient.invalidateQueries({ queryKey: queryKeys.offers.statistics });
-      toast({
-        title: 'Sukces',
-        description: 'Oferta została usunięta',
-      });
-    },
-    onError: (error: unknown) => {
-      toast({
-        title: 'Błąd',
-        description: getApiErrorMessage(error, 'Nie udało się usunąć oferty'),
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useDeleteOffer = createMutationHook<void, string>({
+  mutationFn: (id) => offersApi.delete(id),
+  invalidatePredicate: isOfferListQuery,
+  invalidateKeys: [queryKeys.offers.statistics],
+  onSuccess: (_, deletedId, qc) => {
+    qc.removeQueries({ queryKey: queryKeys.offers.detail(deletedId) });
+  },
+  successMessage: 'Oferta została usunięta',
+  errorMessage: 'Nie udało się usunąć oferty',
+});
 
 export function useUpdateOfferStatus() {
   const queryClient = useQueryClient();
@@ -267,29 +233,15 @@ export function useUpdateOfferStatus() {
   });
 }
 
-export function useGenerateOfferDocument() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => offersApi.generateDocument(id),
-    onSuccess: (_, offerId) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.offers.detail(offerId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.offers.activities(offerId) });
-      toast({
-        title: 'Sukces',
-        description: 'Dokument został wygenerowany',
-      });
-    },
-    onError: (error: unknown) => {
-      toast({
-        title: 'Błąd',
-        description: getApiErrorMessage(error, 'Nie udało się wygenerować dokumentu'),
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useGenerateOfferDocument = createMutationHook<unknown, string>({
+  mutationFn: (id) => offersApi.generateDocument(id),
+  onSuccess: (_, offerId, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.offers.detail(offerId) });
+    qc.invalidateQueries({ queryKey: queryKeys.offers.activities(offerId) });
+  },
+  successMessage: 'Dokument został wygenerowany',
+  errorMessage: 'Nie udało się wygenerować dokumentu',
+});
 
 export function useDownloadOfferDocument() {
   const { toast } = useToast();
@@ -349,92 +301,29 @@ export function useSendOffer() {
   });
 }
 
-export function useDuplicateOffer() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data?: DuplicateOfferDto }) =>
-      offersApi.duplicate(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        predicate: isOfferListQuery,
-        refetchType: 'active',
-      });
-      queryClient.invalidateQueries({ queryKey: queryKeys.offers.statistics });
-      toast({
-        title: 'Sukces',
-        description: 'Oferta została zduplikowana',
-      });
-    },
-    onError: (error: unknown) => {
-      toast({
-        title: 'Błąd',
-        description: getApiErrorMessage(error, 'Nie udało się zduplikować oferty'),
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useDuplicateOffer = createMutationHook<
+  OfferResponseDto,
+  { id: string; data?: DuplicateOfferDto }
+>({
+  mutationFn: ({ id, data }) => offersApi.duplicate(id, data),
+  invalidatePredicate: isOfferListQuery,
+  invalidateKeys: [queryKeys.offers.statistics],
+  successMessage: 'Oferta została zduplikowana',
+  errorMessage: 'Nie udało się zduplikować oferty',
+});
 
 // ============================================
 // Export Hooks
 // ============================================
 
-export function useExportOffers() {
-  const { toast } = useToast();
+export const useExportOffers = createExportHook<OfferFiltersDto>(
+  (filters) => offersApi.exportCsv(filters),
+  'oferty',
+  'Nie udało się wyeksportować ofert'
+);
 
-  return useMutation({
-    mutationFn: (filters?: OfferFiltersDto) => offersApi.exportCsv(filters),
-    onSuccess: (blob) => {
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      try {
-        link.href = url;
-        link.download = `oferty-${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast({ title: 'Sukces', description: 'Plik CSV został pobrany' });
-      } finally {
-        window.URL.revokeObjectURL(url);
-      }
-    },
-    onError: (error: unknown) => {
-      toast({
-        title: 'Błąd',
-        description: getApiErrorMessage(error, 'Nie udało się wyeksportować ofert'),
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useExportLeads() {
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (filters?: LeadFiltersDto) => leadsApi.exportCsv(filters),
-    onSuccess: (blob) => {
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      try {
-        link.href = url;
-        link.download = `prospekty-${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast({ title: 'Sukces', description: 'Plik CSV został pobrany' });
-      } finally {
-        window.URL.revokeObjectURL(url);
-      }
-    },
-    onError: (error: unknown) => {
-      toast({
-        title: 'Błąd',
-        description: getApiErrorMessage(error, 'Nie udało się wyeksportować prospektów'),
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useExportLeads = createExportHook<LeadFiltersDto>(
+  (filters) => leadsApi.exportCsv(filters),
+  'prospekty',
+  'Nie udało się wyeksportować prospektów'
+);

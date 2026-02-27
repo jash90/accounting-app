@@ -16,7 +16,7 @@ import {
   subMonths,
   subWeeks,
 } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 import {
   ArrowLeft,
   Calendar,

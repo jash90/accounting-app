@@ -1,7 +1,7 @@
+import { type ApiErrorResponse } from '@/types/api';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
-import { type ApiErrorResponse } from '@/types/api';
 
 import {
   suspensionsApi,
@@ -10,6 +10,7 @@ import {
   type UpdateSuspensionDto,
 } from '../api/endpoints/suspensions';
 import { queryKeys } from '../api/query-client';
+import { getApiErrorMessage } from '../utils/query-filters';
 
 // ============================================
 // Suspension Query Hooks
@@ -101,7 +102,7 @@ export function useCreateSuspension() {
       }
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się utworzyć zawieszenia',
+        description: getApiErrorMessage(error, 'Nie udało się utworzyć zawieszenia'),
         variant: 'destructive',
       });
     },
@@ -180,7 +181,7 @@ export function useUpdateSuspension() {
       }
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować zawieszenia',
+        description: getApiErrorMessage(error, 'Nie udało się zaktualizować zawieszenia'),
         variant: 'destructive',
       });
     },
@@ -245,7 +246,7 @@ export function useDeleteSuspension() {
       }
       toast({
         title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć zawieszenia',
+        description: getApiErrorMessage(error, 'Nie udało się usunąć zawieszenia'),
         variant: 'destructive',
       });
     },

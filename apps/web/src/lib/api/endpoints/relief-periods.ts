@@ -1,23 +1,12 @@
+import { ReliefType, ReliefTypeDurationMonths, ReliefTypeLabels } from '@/types/enums';
+
 import apiClient from '../client';
 
 // ============================================
 // Types
 // ============================================
 
-export enum ReliefType {
-  ULGA_NA_START = 'ULGA_NA_START',
-  MALY_ZUS = 'MALY_ZUS',
-}
-
-export const ReliefTypeLabels: Record<ReliefType, string> = {
-  [ReliefType.ULGA_NA_START]: 'Ulga na start',
-  [ReliefType.MALY_ZUS]: 'Mały ZUS',
-};
-
-export const ReliefTypeDurationMonths: Record<ReliefType, number> = {
-  [ReliefType.ULGA_NA_START]: 6,
-  [ReliefType.MALY_ZUS]: 36,
-};
+export { ReliefType, ReliefTypeLabels, ReliefTypeDurationMonths };
 
 export interface CreateReliefPeriodDto {
   reliefType: ReliefType;

@@ -1,5 +1,5 @@
 import { format, isValid, parseISO } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { pl } from 'date-fns/locale/pl';
 
 /**
  * Safely parses a date value from various input types.

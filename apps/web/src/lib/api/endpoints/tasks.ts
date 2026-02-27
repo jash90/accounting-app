@@ -1,4 +1,3 @@
-import { type PaginatedResponse } from '@/types/api';
 import {
   type AssignLabelDto,
   type BulkUpdateStatusDto,
@@ -20,6 +19,7 @@ import {
 } from '@/types/dtos';
 
 import apiClient from '../client';
+import { createBlobExport, createCrudApi } from '../crud-factory';
 
 const BASE_URL = '/api/modules/tasks';
 
@@ -56,31 +56,7 @@ export interface GlobalTaskStatisticsDto {
 
 // Tasks API
 export const tasksApi = {
-  getAll: async (filters?: TaskFiltersDto): Promise<PaginatedResponse<TaskResponseDto>> => {
-    const { data } = await apiClient.get<PaginatedResponse<TaskResponseDto>>(BASE_URL, {
-      params: filters,
-    });
-    return data;
-  },
-
-  getById: async (id: string): Promise<TaskResponseDto> => {
-    const { data } = await apiClient.get<TaskResponseDto>(`${BASE_URL}/${id}`);
-    return data;
-  },
-
-  create: async (taskData: CreateTaskDto): Promise<TaskResponseDto> => {
-    const { data } = await apiClient.post<TaskResponseDto>(BASE_URL, taskData);
-    return data;
-  },
-
-  update: async (id: string, taskData: UpdateTaskDto): Promise<TaskResponseDto> => {
-    const { data } = await apiClient.patch<TaskResponseDto>(`${BASE_URL}/${id}`, taskData);
-    return data;
-  },
-
-  delete: async (id: string): Promise<void> => {
-    await apiClient.delete(`${BASE_URL}/${id}`);
-  },
+  ...createCrudApi<TaskResponseDto, CreateTaskDto, UpdateTaskDto, TaskFiltersDto>(BASE_URL),
 
   // Kanban view
   getKanbanBoard: async (
@@ -161,13 +137,7 @@ export const tasksApi = {
   },
 
   // CSV export
-  exportCsv: async (filters?: TaskFiltersDto): Promise<Blob> => {
-    const { data } = await apiClient.get<Blob>(`${BASE_URL}/export`, {
-      params: filters,
-      responseType: 'blob',
-    });
-    return data;
-  },
+  exportCsv: createBlobExport<TaskFiltersDto>(`${BASE_URL}/export`),
 
   // Extended statistics
   getCompletionDurationStats: (params?: { startDate?: string; endDate?: string }) =>
@@ -245,36 +215,12 @@ export interface TaskTemplateFiltersDto {
 const TEMPLATES_URL = `${BASE_URL}/templates`;
 
 export const taskTemplatesApi = {
-  getAll: async (
-    filters?: TaskTemplateFiltersDto
-  ): Promise<PaginatedResponse<TaskTemplateResponseDto>> => {
-    const { data } = await apiClient.get<PaginatedResponse<TaskTemplateResponseDto>>(
-      TEMPLATES_URL,
-      {
-        params: filters,
-      }
-    );
-    return data;
-  },
-
-  getById: async (id: string): Promise<TaskTemplateResponseDto> => {
-    const { data } = await apiClient.get<TaskTemplateResponseDto>(`${TEMPLATES_URL}/${id}`);
-    return data;
-  },
-
-  create: async (dto: CreateTaskTemplateDto): Promise<TaskTemplateResponseDto> => {
-    const { data } = await apiClient.post<TaskTemplateResponseDto>(TEMPLATES_URL, dto);
-    return data;
-  },
-
-  update: async (id: string, dto: UpdateTaskTemplateDto): Promise<TaskTemplateResponseDto> => {
-    const { data } = await apiClient.patch<TaskTemplateResponseDto>(`${TEMPLATES_URL}/${id}`, dto);
-    return data;
-  },
-
-  delete: async (id: string): Promise<void> => {
-    await apiClient.delete(`${TEMPLATES_URL}/${id}`);
-  },
+  ...createCrudApi<
+    TaskTemplateResponseDto,
+    CreateTaskTemplateDto,
+    UpdateTaskTemplateDto,
+    TaskTemplateFiltersDto
+  >(TEMPLATES_URL),
 
   createTaskFromTemplate: async (templateId: string): Promise<TaskTemplateResponseDto> => {
     const { data } = await apiClient.post<TaskTemplateResponseDto>(
@@ -295,31 +241,9 @@ export interface TaskLabelQueryDto {
 }
 
 export const taskLabelsApi = {
-  getAll: async (query?: TaskLabelQueryDto): Promise<PaginatedResponse<TaskLabelResponseDto>> => {
-    const { data } = await apiClient.get<PaginatedResponse<TaskLabelResponseDto>>(LABELS_URL, {
-      params: query,
-    });
-    return data;
-  },
-
-  getById: async (id: string): Promise<TaskLabelResponseDto> => {
-    const { data } = await apiClient.get<TaskLabelResponseDto>(`${LABELS_URL}/${id}`);
-    return data;
-  },
-
-  create: async (labelData: CreateTaskLabelDto): Promise<TaskLabelResponseDto> => {
-    const { data } = await apiClient.post<TaskLabelResponseDto>(LABELS_URL, labelData);
-    return data;
-  },
-
-  update: async (id: string, labelData: UpdateTaskLabelDto): Promise<TaskLabelResponseDto> => {
-    const { data } = await apiClient.patch<TaskLabelResponseDto>(`${LABELS_URL}/${id}`, labelData);
-    return data;
-  },
-
-  delete: async (id: string): Promise<void> => {
-    await apiClient.delete(`${LABELS_URL}/${id}`);
-  },
+  ...createCrudApi<TaskLabelResponseDto, CreateTaskLabelDto, UpdateTaskLabelDto, TaskLabelQueryDto>(
+    LABELS_URL
+  ),
 
   // Assign label to task
   assignToTask: async (

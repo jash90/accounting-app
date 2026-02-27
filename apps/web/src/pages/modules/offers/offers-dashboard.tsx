@@ -19,24 +19,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
-import { useDashboardStatistics } from '@/lib/hooks/use-offers';
-import { UserRole } from '@/types/enums';
+import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
+import { useOffersDashboardStatistics } from '@/lib/hooks/use-offers';
+import { isOwnerOrAdmin } from '@/lib/utils/user';
 
 export default function OffersDashboardPage() {
   const { user } = useAuthContext();
   // Use parallel queries hook instead of sequential queries
-  const { offerStats, leadStats, offersLoading, leadsLoading, isError } = useDashboardStatistics();
+  const { offerStats, leadStats, offersLoading, leadsLoading, isError } =
+    useOffersDashboardStatistics();
 
-  const basePath = useMemo(() => {
-    switch (user?.role) {
-      case UserRole.ADMIN:
-        return '/admin/modules/offers';
-      case UserRole.COMPANY_OWNER:
-        return '/company/modules/offers';
-      default:
-        return '/modules/offers';
-    }
-  }, [user?.role]);
+  const basePath = useModuleBasePath('offers');
 
   const views = useMemo(
     () => [
@@ -65,7 +58,7 @@ export default function OffersDashboardPage() {
     [basePath]
   );
 
-  const showSettings = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER;
+  const showSettings = isOwnerOrAdmin(user);
 
   return (
     <div className="container mx-auto space-y-6 p-6">
@@ -166,7 +159,7 @@ export default function OffersDashboardPage() {
           />
           <StatCard
             label="Konwersja"
-            value={`${((leadStats?.conversionRate ?? 0) * 100).toFixed(1)}%`}
+            value={`${(leadStats?.conversionRate ?? 0).toFixed(1)}%`}
             icon={TrendingUp}
             iconBg="bg-orange-500"
             valueColor="text-orange-600"

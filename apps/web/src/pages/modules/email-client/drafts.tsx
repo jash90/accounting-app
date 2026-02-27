@@ -12,6 +12,15 @@ import {
   Trash2,
 } from 'lucide-react';
 
+import {
+  useDeleteAllEmailDrafts,
+  useEmailDraftConflicts,
+  useEmailDrafts,
+  useResolveEmailDraftConflict,
+  useSendEmailDraft,
+  useSyncEmailDrafts,
+} from '@/lib/hooks/use-email-client';
+import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -22,15 +31,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
-import {
-  useDeleteAllDrafts,
-  useDraftConflicts,
-  useDrafts,
-  useResolveConflict,
-  useSendDraft,
-  useSyncDrafts,
-} from '@/lib/hooks/use-email-client';
-import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 
 import { EmailSidebar } from './components/email-sidebar';
 
@@ -79,12 +79,12 @@ function SyncStatusIcon({ status }: { status: SyncStatus }) {
 
 export default function EmailDrafts() {
   'use no memo';
-  const { data: drafts, isLoading } = useDrafts();
-  const sendDraft = useSendDraft();
-  const syncDrafts = useSyncDrafts();
-  const { data: conflicts } = useDraftConflicts();
-  const resolveConflict = useResolveConflict();
-  const deleteAllDrafts = useDeleteAllDrafts();
+  const { data: drafts, isLoading } = useEmailDrafts();
+  const sendDraft = useSendEmailDraft();
+  const syncDrafts = useSyncEmailDrafts();
+  const { data: conflicts } = useEmailDraftConflicts();
+  const resolveConflict = useResolveEmailDraftConflict();
+  const deleteAllDrafts = useDeleteAllEmailDrafts();
   const emailNav = useEmailClientNavigation();
   const { toast } = useToast();
 
@@ -142,17 +142,21 @@ export default function EmailDrafts() {
     setConflictDialogOpen(true);
   };
 
-  const handleDeleteAll = async () => {
-    try {
-      const result = await deleteAllDrafts.mutateAsync();
-      toast({
-        title: 'Sukces',
-        description: `Usunięto ${result.deleted} szkiców${result.errors.length > 0 ? ` (${result.errors.length} błędów)` : ''}`,
+  const handleDeleteAll = () => {
+    void deleteAllDrafts
+      .mutateAsync()
+      .then((result) => {
+        const errorDetail = result.errors.length > 0 ? ` (${result.errors.length} błędów)` : '';
+        toast({ title: 'Sukces', description: `Usunięto ${result.deleted} szkiców${errorDetail}` });
+        setDeleteAllDialogOpen(false);
+      })
+      .catch(() => {
+        toast({
+          title: 'Błąd',
+          description: 'Nie udało się usunąć szkiców',
+          variant: 'destructive',
+        });
       });
-      setDeleteAllDialogOpen(false);
-    } catch {
-      toast({ title: 'Błąd', description: 'Nie udało się usunąć szkiców', variant: 'destructive' });
-    }
   };
 
   if (isLoading) {

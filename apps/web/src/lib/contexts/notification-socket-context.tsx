@@ -9,15 +9,16 @@ import {
   type ReactNode,
 } from 'react';
 
+import { useAuthContext } from '@/contexts/auth-context';
+import { tokenStorage } from '@/lib/auth/token-storage';
+import type { NotificationResponseDto } from '@/types/notifications';
 import { useQueryClient } from '@tanstack/react-query';
 import type { io as ioType, Socket } from 'socket.io-client';
 
-import { useToast } from '@/components/ui/use-toast';
-import { useAuthContext } from '@/contexts/auth-context';
 import { queryKeys } from '@/lib/api/query-client';
-import { tokenStorage } from '@/lib/auth/token-storage';
-import type { NotificationResponseDto } from '@/types/notifications';
+import { useToast } from '@/components/ui/use-toast';
 
+const loadSocketIo = () => import('socket.io-client');
 
 // Window.__APP_CONFIG__ is declared in lib/api/client.ts
 
@@ -125,7 +126,7 @@ export function NotificationSocketProvider({ children }: NotificationSocketProvi
   // Get or create the socket module promise (lazy singleton)
   const getSocketModule = useCallback(() => {
     if (!socketModuleRef.current) {
-      socketModuleRef.current = import('socket.io-client');
+      socketModuleRef.current = loadSocketIo();
     }
     return socketModuleRef.current;
   }, []);
@@ -227,6 +228,7 @@ export function NotificationSocketProvider({ children }: NotificationSocketProvi
       // Batches cache invalidations to prevent storms when multiple notifications arrive
       socketInstance.on('notification:new', (notification: NotificationResponseDto) => {
         if (isCancelled) return;
+        const description = notification.message || undefined;
         try {
           setLastNotification(notification);
 
@@ -237,7 +239,7 @@ export function NotificationSocketProvider({ children }: NotificationSocketProvi
 
           toastRef.current({
             title: notification.title,
-            description: notification.message || undefined,
+            description,
             duration: 5000,
           });
         } catch (error) {

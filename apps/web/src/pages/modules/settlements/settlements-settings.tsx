@@ -21,7 +21,7 @@ import { Switch } from '@/components/ui/switch';
 import { type UpdateSettlementSettingsDto } from '@/lib/api/endpoints/settlements';
 import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import {
-  useAllAssignableUsers,
+  useAllSettlementAssignableUsers,
   useSettlementSettings,
   useUpdateSettlementSettings,
 } from '@/lib/hooks/use-settlements';
@@ -46,6 +46,15 @@ const initialFormState: SettingsState = {
 
 function formReducer(state: SettingsState, update: Partial<SettingsState>): SettingsState {
   return { ...state, ...update };
+}
+
+function formatAssignableUserName(u: {
+  firstName?: string | null;
+  lastName?: string | null;
+  email: string;
+}): string {
+  const fullName = `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim();
+  return fullName || u.email;
 }
 
 function SettingsFormSkeleton() {
@@ -73,7 +82,7 @@ export default function SettlementsSettingsPage() {
   const basePath = useModuleBasePath('settlements');
 
   const { data: settings, isPending } = useSettlementSettings();
-  const { data: assignableUsers } = useAllAssignableUsers();
+  const { data: assignableUsers } = useAllSettlementAssignableUsers();
   const updateSettings = useUpdateSettlementSettings();
 
   const [formState, dispatch] = useReducer(formReducer, initialFormState);
@@ -230,9 +239,7 @@ export default function SettlementsSettingsPage() {
                   <p className="text-muted-foreground text-sm">
                     Reguły przypisywania klientów do pracowników można zarządzać po włączeniu
                     automatyzacji. Dostępni pracownicy:{' '}
-                    {assignableUsers
-                      .map((u) => `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email)
-                      .join(', ')}
+                    {assignableUsers.map((u) => formatAssignableUserName(u)).join(', ')}
                   </p>
                 </div>
               )}

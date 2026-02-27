@@ -1,7 +1,13 @@
 import { useMemo, useState } from 'react';
-
 import { useForm, useWatch } from 'react-hook-form';
 
+import { ModelPickerModal } from '@/components/modules/ai-agent/model-picker-modal';
+import {
+  type AIConfigurationResponseDto,
+  type AIProvider,
+  type OpenAIModelDto,
+  type OpenRouterModelDto,
+} from '@/types/dtos';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   AlertTriangle,
@@ -17,7 +23,19 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { ModelPickerModal } from '@/components/modules/ai-agent/model-picker-modal';
+import {
+  useAIConfiguration,
+  useCreateAIConfiguration,
+  useOpenAIEmbeddingModels,
+  useOpenAIModels,
+  useOpenRouterModels,
+  useResetAiApiKey,
+  useUpdateAIConfiguration,
+} from '@/lib/hooks/use-ai-agent';
+import {
+  updateAIConfigurationSchema,
+  type UpdateAIConfigurationFormData,
+} from '@/lib/validation/schemas';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,25 +67,6 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  useAIConfiguration,
-  useCreateAIConfiguration,
-  useOpenAIEmbeddingModels,
-  useOpenAIModels,
-  useOpenRouterModels,
-  useResetApiKey,
-  useUpdateAIConfiguration,
-} from '@/lib/hooks/use-ai-agent';
-import {
-  updateAIConfigurationSchema,
-  type UpdateAIConfigurationFormData,
-} from '@/lib/validation/schemas';
-import {
-  type AIConfigurationResponseDto,
-  type AIProvider,
-  type OpenAIModelDto,
-  type OpenRouterModelDto,
-} from '@/types/dtos';
 
 // Fallback models used while loading or if API fails
 const FALLBACK_OPENAI_MODELS: OpenAIModelDto[] = [
@@ -676,7 +675,7 @@ export default function AdminConfigurationPage() {
   const { data: config, isLoading } = useAIConfiguration();
   const createConfig = useCreateAIConfiguration();
   const updateConfig = useUpdateAIConfiguration();
-  const resetApiKey = useResetApiKey();
+  const resetApiKey = useResetAiApiKey();
   const { data: openRouterModels = [], isLoading: isLoadingModels } = useOpenRouterModels();
   const { data: openAIModels = FALLBACK_OPENAI_MODELS, isLoading: isLoadingOpenAIModels } =
     useOpenAIModels();

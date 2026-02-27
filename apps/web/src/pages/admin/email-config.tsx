@@ -24,6 +24,7 @@ import {
   useUpdateUserEmailConfig,
   useUserEmailConfig,
 } from '@/lib/hooks/use-email-config';
+import { formatDate } from '@/lib/utils/format-date';
 import {
   type CreateEmailConfigFormData,
   type UpdateEmailConfigFormData,
@@ -243,7 +244,7 @@ function EmailConfigDisplay({
                   </p>
                   <p className="text-muted-foreground text-sm">
                     Ostatnia aktualizacja:{' '}
-                    {new Date(emailConfig.updatedAt).toLocaleDateString('pl-PL')}
+                    {formatDate(emailConfig.updatedAt)}
                   </p>
                 </div>
               </div>

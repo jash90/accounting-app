@@ -20,10 +20,10 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import {
   useDeleteEmails,
-  useDownloadAttachment,
-  useEmail,
-  useMarkAsRead,
-  useUpdateFlags,
+  useDownloadEmailAttachment,
+  useEmailMessage,
+  useMarkEmailsAsRead,
+  useUpdateEmailFlags,
 } from '@/lib/hooks/use-email-client';
 import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 
@@ -36,16 +36,18 @@ export default function EmailMessage() {
   const { toast } = useToast();
   const emailUid = uid ? parseInt(uid, 10) : undefined;
 
-  const { data: email, isLoading, error } = useEmail(emailUid);
-  const markAsRead = useMarkAsRead();
+  const { data: email, isLoading, error } = useEmailMessage(emailUid);
+  // Destructure the stable `mutate` function to avoid the full mutation object
+  // in the effect deps (the object changes every render, but mutate is stable).
+  const { mutate: markEmailsAsRead } = useMarkEmailsAsRead();
   const deleteEmails = useDeleteEmails();
 
   // Mark as read when email loads
   useEffect(() => {
     if (email && emailUid && !email.flags.includes('\\Seen')) {
-      markAsRead.mutate([emailUid]);
+      markEmailsAsRead([emailUid]);
     }
-  }, [email, emailUid, markAsRead]);
+  }, [email, emailUid, markEmailsAsRead]);
 
   const handleDelete = async () => {
     if (!emailUid) return;
@@ -83,19 +85,17 @@ export default function EmailMessage() {
     });
   };
 
-  const updateFlags = useUpdateFlags();
-  const downloadAttachment = useDownloadAttachment();
+  const updateFlags = useUpdateEmailFlags();
+  const downloadAttachment = useDownloadEmailAttachment();
 
   const isStarred = email?.flags.includes('\\Flagged') ?? false;
 
   const handleToggleStar = async () => {
     if (!emailUid) return;
+    const addFlags = isStarred ? undefined : ['\\Flagged'];
+    const removeFlags = isStarred ? ['\\Flagged'] : undefined;
     try {
-      await updateFlags.mutateAsync({
-        uid: emailUid,
-        add: isStarred ? undefined : ['\\Flagged'],
-        remove: isStarred ? ['\\Flagged'] : undefined,
-      });
+      await updateFlags.mutateAsync({ uid: emailUid, add: addFlags, remove: removeFlags });
     } catch {
       toast({
         title: 'Błąd',
@@ -144,7 +144,7 @@ export default function EmailMessage() {
     return addr.address;
   };
 
-  const formatDate = (date: Date) => {
+  const formatDateTimeLocalized = (date: Date) => {
     return new Date(date).toLocaleString('pl-PL', {
       year: 'numeric',
       month: 'long',
@@ -227,7 +227,7 @@ export default function EmailMessage() {
             )}
             <div className="flex items-start gap-4">
               <span className="text-muted-foreground w-16 shrink-0 text-sm">Data:</span>
-              <span className="text-sm">{formatDate(email.date)}</span>
+              <span className="text-sm">{formatDateTimeLocalized(email.date)}</span>
             </div>
             <div className="flex items-start gap-4">
               <span className="text-muted-foreground w-16 shrink-0 text-sm">Temat:</span>

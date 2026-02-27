@@ -7,29 +7,18 @@ import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
 import { type ClientTaskTimeStatsDto } from '@/lib/api/endpoints/clients';
 import { useClientStatistics, useClientTaskTimeStats } from '@/lib/hooks/use-clients';
+import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
+import { isOwnerOrAdmin } from '@/lib/utils/user';
 import { UserRole } from '@/types/enums';
 
 export default function ClientsDashboardPage() {
   const { user } = useAuthContext();
   const { data, isPending } = useClientStatistics();
+  const basePath = useModuleBasePath('clients');
 
   const totalClients = data?.total ?? 0;
   const activeClients = data?.active ?? 0;
   const inactiveClients = data?.inactive ?? 0;
-
-  // Determine the base path based on user role
-  const getBasePath = () => {
-    switch (user?.role) {
-      case UserRole.ADMIN:
-        return '/admin/modules/clients';
-      case UserRole.COMPANY_OWNER:
-        return '/company/modules/clients';
-      default:
-        return '/modules/clients';
-    }
-  };
-
-  const basePath = getBasePath();
 
   // Features available based on role
   const features = [
@@ -129,7 +118,7 @@ export default function ClientsDashboardPage() {
       </div>
 
       {/* Client Task and Time Statistics - admin/owner only */}
-      {(user?.role === UserRole.ADMIN || user?.role === UserRole.COMPANY_OWNER) && (
+      {isOwnerOrAdmin(user) && (
         <ClientTaskTimeStatsSection />
       )}
     </div>

@@ -5,11 +5,12 @@ import {
   useQueryClient,
   type UseQueryOptions,
 } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
 
 import { useToast } from '@/components/ui/use-toast';
 import { type PaginatedResponse } from '@/types/api';
 
+import { createExportHook } from './create-export-hook';
+import { createMutationHook } from './create-mutation-hook';
 import {
   settlementsApi,
   type AssignSettlementDto,
@@ -32,21 +33,7 @@ import {
   performOptimisticSettlementUpdate,
   rollbackOptimisticSettlementUpdate,
 } from '../utils/optimistic-settlement-updates';
-
-// ============================================
-// Helper Functions
-// ============================================
-
-/**
- * Extracts error message from Axios error response or returns fallback.
- * Uses axios's isAxiosError type guard for type-safe access.
- */
-const getErrorMessage = (error: unknown, fallback: string): string => {
-  if (isAxiosError(error) && typeof error.response?.data?.message === 'string') {
-    return error.response.data.message;
-  }
-  return fallback;
-};
+import { getApiErrorMessage } from '../utils/query-filters';
 
 // ============================================
 // Settlement List Hooks
@@ -83,7 +70,7 @@ export function useSettlementStats(month: number, year: number) {
   });
 }
 
-export function useEmployeeStats(
+export function useSettlementEmployeeStats(
   month: number,
   year: number,
   options?: Partial<UseQueryOptions<EmployeeStatsListDto>>
@@ -97,7 +84,7 @@ export function useEmployeeStats(
   });
 }
 
-export function useMyStats(month: number, year: number) {
+export function useMySettlementStats(month: number, year: number) {
   return useQuery({
     queryKey: queryKeys.settlements.stats.my(month, year),
     queryFn: () => settlementsApi.getMyStats(month, year),
@@ -146,7 +133,7 @@ export function useAllSettlementStats(month: number, year: number) {
  *
  * Performance: Reduces 2 sequential network requests to 1 parallel batch (30-50ms faster).
  */
-export function useTeamPageData(month: number, year: number) {
+export function useSettlementTeamPageData(month: number, year: number) {
   const enabled = !!month && !!year;
 
   const unassignedParams: GetSettlementsQueryDto = {
@@ -178,7 +165,7 @@ export function useTeamPageData(month: number, year: number) {
 // Initialization Hooks
 // ============================================
 
-export function useInitializeMonth() {
+export function useInitializeSettlementMonth() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -206,7 +193,7 @@ export function useInitializeMonth() {
     onError: (error: unknown) => {
       toast({
         title: 'Błąd',
-        description: getErrorMessage(error, 'Nie udało się zainicjalizować miesiąca'),
+        description: getApiErrorMessage(error, 'Nie udało się zainicjalizować miesiąca'),
         variant: 'destructive',
       });
     },
@@ -237,7 +224,7 @@ export function useUpdateSettlement() {
     onError: (error: unknown) => {
       toast({
         title: 'Błąd',
-        description: getErrorMessage(error, 'Nie udało się zaktualizować rozliczenia'),
+        description: getApiErrorMessage(error, 'Nie udało się zaktualizować rozliczenia'),
         variant: 'destructive',
       });
     },
@@ -264,7 +251,7 @@ export function useUpdateSettlementStatus() {
       rollbackOptimisticSettlementUpdate(queryClient, variables.id, context);
       toast({
         title: 'Błąd',
-        description: getErrorMessage(error, 'Nie udało się zmienić statusu rozliczenia'),
+        description: getApiErrorMessage(error, 'Nie udało się zmienić statusu rozliczenia'),
         variant: 'destructive',
       });
     },
@@ -290,7 +277,7 @@ export function useUpdateSettlementStatus() {
 // Assignment Hooks
 // ============================================
 
-export function useAssignableUsers(settlementId: string) {
+export function useSettlementAssignableUsers(settlementId: string) {
   return useQuery({
     queryKey: queryKeys.settlements.assignableUsers.bySettlement(settlementId),
     queryFn: () => settlementsApi.getAssignableUsers(settlementId),
@@ -300,7 +287,7 @@ export function useAssignableUsers(settlementId: string) {
   });
 }
 
-export function useAllAssignableUsers() {
+export function useAllSettlementAssignableUsers() {
   return useQuery({
     queryKey: queryKeys.settlements.assignableUsers.all,
     queryFn: () => settlementsApi.getAllAssignableUsers(),
@@ -328,7 +315,7 @@ export function useAssignSettlement() {
       rollbackOptimisticSettlementUpdate(queryClient, variables.id, context);
       toast({
         title: 'Błąd',
-        description: getErrorMessage(error, 'Nie udało się przypisać rozliczenia'),
+        description: getApiErrorMessage(error, 'Nie udało się przypisać rozliczenia'),
         variant: 'destructive',
       });
     },
@@ -402,7 +389,7 @@ export function useBulkAssignSettlements(currentMonth?: number, currentYear?: nu
 
       toast({
         title: 'Błąd',
-        description: getErrorMessage(error, 'Nie udało się przypisać rozliczeń'),
+        description: getApiErrorMessage(error, 'Nie udało się przypisać rozliczeń'),
         variant: 'destructive',
       });
     },
@@ -478,64 +465,27 @@ export function useSettlementCommentsPageData(settlementId: string) {
   });
 }
 
-export function useAddSettlementComment() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ settlementId, data }: { settlementId: string; data: CreateCommentDto }) =>
-      settlementsApi.addComment(settlementId, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.settlements.comments(variables.settlementId),
-      });
-      toast({
-        title: 'Sukces',
-        description: 'Komentarz został dodany',
-      });
-    },
-    onError: (error: unknown) => {
-      toast({
-        title: 'Błąd',
-        description: getErrorMessage(error, 'Nie udało się dodać komentarza'),
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useAddSettlementComment = createMutationHook<
+  unknown,
+  { settlementId: string; data: CreateCommentDto }
+>({
+  mutationFn: ({ settlementId, data }) => settlementsApi.addComment(settlementId, data),
+  onSuccess: (_, vars, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.settlements.comments(vars.settlementId) });
+  },
+  successMessage: 'Komentarz został dodany',
+  errorMessage: 'Nie udało się dodać komentarza',
+});
 
 // ============================================
 // Export Hooks
 // ============================================
 
-export function useExportSettlements() {
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (filters?: GetSettlementsQueryDto) => settlementsApi.exportCsv(filters),
-    onSuccess: (blob) => {
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      try {
-        link.href = url;
-        link.download = `rozliczenia-${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        toast({ title: 'Sukces', description: 'Plik CSV został pobrany' });
-      } finally {
-        window.URL.revokeObjectURL(url);
-      }
-    },
-    onError: (error: unknown) => {
-      toast({
-        title: 'Błąd',
-        description: getErrorMessage(error, 'Nie udało się wyeksportować rozliczeń'),
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useExportSettlements = createExportHook<GetSettlementsQueryDto>(
+  (filters) => settlementsApi.exportCsv(filters),
+  'rozliczenia',
+  'Nie udało się wyeksportować rozliczeń'
+);
 
 // ============================================
 // Missing Invoice Email Hook
@@ -553,21 +503,21 @@ export function useSendMissingInvoiceEmail() {
 
 export function useSettlementCompletionStats(filters?: { startDate?: string; endDate?: string }) {
   return useQuery({
-    queryKey: ['settlements', 'stats', 'extended', 'completion', filters],
+    queryKey: queryKeys.settlements.stats.extended.completion(filters),
     queryFn: () => settlementsApi.getExtendedCompletionStats(filters),
   });
 }
 
 export function useSettlementEmployeeRanking(filters?: { startDate?: string; endDate?: string }) {
   return useQuery({
-    queryKey: ['settlements', 'stats', 'extended', 'employee-ranking', filters],
+    queryKey: queryKeys.settlements.stats.extended.employeeRanking(filters),
     queryFn: () => settlementsApi.getExtendedEmployeeRanking(filters),
   });
 }
 
-export function useBlockedClientsStats(filters?: { startDate?: string; endDate?: string }) {
+export function useSettlementBlockedClientsStats(filters?: { startDate?: string; endDate?: string }) {
   return useQuery({
-    queryKey: ['settlements', 'stats', 'extended', 'blocked-clients', filters],
+    queryKey: queryKeys.settlements.stats.extended.blockedClients(filters),
     queryFn: () => settlementsApi.getBlockedClientsStats(filters),
   });
 }
@@ -583,22 +533,14 @@ export function useSettlementSettings() {
   });
 }
 
-export function useUpdateSettlementSettings() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (dto: UpdateSettlementSettingsDto) => settlementsApi.updateSettings(dto),
-    onSuccess: (data: SettlementSettingsDto) => {
-      queryClient.setQueryData(queryKeys.settlements.settings, data);
-      toast({ title: 'Sukces', description: 'Ustawienia zostały zapisane' });
-    },
-    onError: (error: unknown) => {
-      toast({
-        title: 'Błąd',
-        description: getErrorMessage(error, 'Nie udało się zapisać ustawień'),
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateSettlementSettings = createMutationHook<
+  SettlementSettingsDto,
+  UpdateSettlementSettingsDto
+>({
+  mutationFn: (dto) => settlementsApi.updateSettings(dto),
+  onSuccess: (data, _, qc) => {
+    qc.setQueryData(queryKeys.settlements.settings, data);
+  },
+  successMessage: 'Ustawienia zostały zapisane',
+  errorMessage: 'Nie udało się zapisać ustawień',
+});
