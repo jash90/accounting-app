@@ -44,10 +44,20 @@ export default defineConfig({
   ],
 
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@accounting/common/browser': path.resolve(__dirname, '../../libs/common/src/browser.ts'),
-    },
+    alias: [
+      { find: '@', replacement: path.resolve(__dirname, './src') },
+      {
+        find: '@accounting/common/browser',
+        replacement: path.resolve(__dirname, '../../libs/common/src/browser.ts'),
+      },
+      // Replace date-fns/locale barrel (pulls in ~100 locales) with a shim
+      // that only exports locales used by this app (enUS + pl).
+      // Must use regex to avoid matching date-fns/locale/pl etc.
+      {
+        find: /^date-fns\/locale$/,
+        replacement: path.resolve(__dirname, './src/lib/vendor-shims/date-fns-locale.ts'),
+      },
+    ],
   },
 
   // Dependency optimization configuration
@@ -92,6 +102,23 @@ export default defineConfig({
         '@nestjs/common',
         '@nestjs/core',
       ],
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts';
+          if (id.includes('@tiptap')) return 'vendor-editor';
+          if (id.includes('@radix-ui')) return 'vendor-radix';
+          if (id.includes('@tanstack')) return 'vendor-query';
+          if (id.includes('@dnd-kit')) return 'vendor-dnd';
+          if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('/zod/'))
+            return 'vendor-forms';
+          if (id.includes('date-fns') || id.includes('react-day-picker')) return 'vendor-date';
+          if (id.includes('lucide-react')) return 'vendor-icons';
+          if (id.includes('@sentry')) return 'vendor-sentry';
+          if (id.includes('socket.io-client')) return 'vendor-realtime';
+          return 'vendor-misc';
+        },
+      },
     },
   },
 
