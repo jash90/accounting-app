@@ -78,7 +78,7 @@ export class TaskLabelsService {
     return this.labelRepository.save(label);
   }
 
-  async remove(id: string, user: User): Promise<void> {
+  async softDeleteTaskLabel(id: string, user: User): Promise<void> {
     const label = await this.findOne(id, user);
 
     // Soft delete

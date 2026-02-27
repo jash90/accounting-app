@@ -11,7 +11,7 @@ import {
   PaginatedResponseDto,
   User,
 } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { calculatePagination, TenantService } from '@accounting/common/backend';
 
 import {
   ClientErrorCode,
@@ -64,9 +64,7 @@ export class CustomFieldsService {
     query?: FieldDefinitionQueryDto
   ): Promise<PaginatedResponseDto<ClientFieldDefinition>> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
-    const page = query?.page ?? 1;
-    const limit = query?.limit ?? 50;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = calculatePagination(query, 50);
 
     const [data, total] = await this.fieldDefinitionRepository.findAndCount({
       where: { companyId, isActive: true },
@@ -169,7 +167,7 @@ export class CustomFieldsService {
     return this.fieldDefinitionRepository.save(definition);
   }
 
-  async removeDefinition(id: string, user: User): Promise<void> {
+  async softDeleteDefinition(id: string, user: User): Promise<void> {
     const definition = await this.findDefinitionById(id, user);
 
     // Soft delete
@@ -435,7 +433,7 @@ export class CustomFieldsService {
     }
   }
 
-  async removeCustomFieldValue(
+  async softDeleteCustomFieldValue(
     clientId: string,
     fieldDefinitionId: string,
     user: User

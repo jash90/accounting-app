@@ -3,8 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { Task, TaskStatus, User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import {
+  calcRankedDurationStats,
+  mapRawToRankings,
+  Task,
+  TaskStatus,
+  User,
+} from '@accounting/common';
+import { applyDateRangeFilter, TenantService } from '@accounting/common/backend';
 
 import {
   EmployeeTaskRankingDto,
@@ -43,44 +49,30 @@ export class TaskExtendedStatsService {
       .andWhere('task.status = :status', { status: TaskStatus.DONE })
       .andWhere('task.isTemplate = :isTemplate', { isTemplate: false });
 
-    if (filters?.startDate) {
-      qb.andWhere('task.updatedAt >= :startDate', { startDate: filters.startDate });
-    }
-    if (filters?.endDate) {
-      qb.andWhere('task.updatedAt <= :endDate', { endDate: filters.endDate });
-    }
+    applyDateRangeFilter(qb, 'task', 'updatedAt', filters);
 
     const tasks = await qb.getMany();
 
-    const withDuration = tasks
-      .map((task) => {
-        const durationMs = task.updatedAt.getTime() - task.createdAt.getTime();
-        const durationHours = durationMs / (1000 * 60 * 60);
-        return {
-          id: task.id,
-          title: task.title,
-          durationHours: Math.round(durationHours * 10) / 10,
-          completedAt: task.updatedAt.toISOString(),
-          assigneeName: task.assignee
-            ? `${task.assignee.firstName ?? ''} ${task.assignee.lastName ?? ''}`.trim() ||
-              task.assignee.email
-            : undefined,
-        };
-      })
-      .sort((a, b) => b.durationHours - a.durationHours);
+    const withDuration = tasks.map((task) => {
+      const durationMs = task.updatedAt.getTime() - task.createdAt.getTime();
+      return {
+        id: task.id,
+        title: task.title,
+        durationHours: Math.round((durationMs / (1000 * 60 * 60)) * 10) / 10,
+        completedAt: task.updatedAt.toISOString(),
+        assigneeName: task.assignee
+          ? `${task.assignee.firstName ?? ''} ${task.assignee.lastName ?? ''}`.trim() ||
+            task.assignee.email
+          : undefined,
+      };
+    });
 
-    const longest = withDuration.slice(0, 10);
-    const shortest = [...withDuration]
-      .sort((a, b) => a.durationHours - b.durationHours)
-      .slice(0, 10);
-    const averageDurationHours =
-      withDuration.length > 0
-        ? Math.round(
-            (withDuration.reduce((sum, t) => sum + t.durationHours, 0) / withDuration.length) * 10
-          ) / 10
-        : 0;
+    const { longest, shortest, averageDuration } = calcRankedDurationStats(
+      withDuration,
+      (t) => t.durationHours
+    );
 
-    return { longest, shortest, averageDurationHours };
+    return { longest, shortest, averageDurationHours: averageDuration };
   }
 
   async getEmployeeCompletionRanking(
@@ -106,14 +98,9 @@ export class TaskExtendedStatsService {
       .addGroupBy('assignee.email')
       .addGroupBy('assignee.firstName')
       .addGroupBy('assignee.lastName')
-      .orderBy('completedCount', 'DESC');
+      .orderBy('COUNT(*)', 'DESC');
 
-    if (filters?.startDate) {
-      qb.andWhere('task.updatedAt >= :startDate', { startDate: filters.startDate });
-    }
-    if (filters?.endDate) {
-      qb.andWhere('task.updatedAt <= :endDate', { endDate: filters.endDate });
-    }
+    applyDateRangeFilter(qb, 'task', 'updatedAt', filters);
 
     const raw = await qb.getRawMany<{
       userId: string;
@@ -123,14 +110,6 @@ export class TaskExtendedStatsService {
       completedCount: string;
     }>();
 
-    return {
-      rankings: raw.map((r) => ({
-        userId: r.userId,
-        email: r.email,
-        firstName: r.firstName,
-        lastName: r.lastName,
-        completedCount: parseInt(r.completedCount, 10),
-      })),
-    };
+    return { rankings: mapRawToRankings(raw) };
   }
 }

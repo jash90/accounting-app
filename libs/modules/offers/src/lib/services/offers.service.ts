@@ -7,19 +7,19 @@ import { Brackets, DataSource, Repository } from 'typeorm';
 
 import {
   Client,
-  createPaginatedResponse,
+  escapeLikePattern,
   Lead,
   LeadStatus,
   Offer,
   OfferActivity,
   OfferStatus,
   OfferTemplate,
+  PaginatedResponseDto,
   RecipientSnapshot,
   User,
   VALID_OFFER_STATUS_TRANSITIONS,
-  type PaginatedResponseDto,
 } from '@accounting/common';
-import { SystemCompanyService } from '@accounting/common/backend';
+import { calculatePagination, SystemCompanyService } from '@accounting/common/backend';
 import { StorageService } from '@accounting/infrastructure/storage';
 
 import { DocxGenerationService } from './docx-generation.service';
@@ -80,14 +80,6 @@ export class OffersService {
     private readonly eventEmitter: EventEmitter2,
     private readonly dataSource: DataSource
   ) {}
-
-  private getCompanyId(user: User): Promise<string> {
-    return this.systemCompanyService.getCompanyIdForUser(user);
-  }
-
-  private escapeLikePattern(pattern: string): string {
-    return pattern.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-  }
 
   /**
    * Builds recipient snapshot from client or lead
@@ -155,10 +147,9 @@ export class OffersService {
   }
 
   async findAll(user: User, filters: OfferFiltersDto): Promise<PaginatedResponseDto<Offer>> {
-    const companyId = await this.getCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
+    const { page, limit, skip } = calculatePagination(filters);
     const {
-      page = 1,
-      limit = 20,
       search,
       status,
       statuses,
@@ -182,7 +173,7 @@ export class OffersService {
       .where('offer.companyId = :companyId', { companyId });
 
     if (search) {
-      const escapedSearch = `%${this.escapeLikePattern(search)}%`;
+      const escapedSearch = `%${escapeLikePattern(search)}%`;
       query.andWhere(
         new Brackets((qb) => {
           qb.where('offer.offerNumber ILIKE :search', { search: escapedSearch })
@@ -234,16 +225,13 @@ export class OffersService {
 
     query.orderBy('offer.createdAt', 'DESC');
 
-    const [data, total] = await query
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getManyAndCount();
+    const [data, total] = await query.skip(skip).take(limit).getManyAndCount();
 
-    return createPaginatedResponse(data, total, page, limit);
+    return new PaginatedResponseDto(data, total, page, limit);
   }
 
   async findOne(id: string, user: User): Promise<Offer> {
-    const companyId = await this.getCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const offer = await this.offerRepository.findOne({
       where: { id, companyId },
@@ -258,7 +246,7 @@ export class OffersService {
   }
 
   async create(dto: CreateOfferDto, user: User): Promise<Offer> {
-    const companyId = await this.getCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Get recipient (client or lead) - throw specific errors
     let client: Client | null = null;
@@ -367,7 +355,7 @@ export class OffersService {
       throw new OfferCannotModifyException(offer.status);
     }
 
-    const companyId = await this.getCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Track changes
     const changes: Record<string, { old: unknown; new: unknown }> = {};
@@ -653,7 +641,7 @@ export class OffersService {
 
   async duplicate(id: string, dto: DuplicateOfferDto, user: User): Promise<Offer> {
     const sourceOffer = await this.findOne(id, user);
-    const companyId = await this.getCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Determine recipient
     let clientId = dto.clientId || sourceOffer.clientId;
@@ -728,7 +716,7 @@ export class OffersService {
   }
 
   async getStatistics(user: User): Promise<OfferStatisticsDto> {
-    const companyId = await this.getCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const stats = await this.offerRepository
       .createQueryBuilder('offer')

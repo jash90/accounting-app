@@ -14,24 +14,14 @@ import {
   Notification,
   NotificationData,
   NotificationType,
+  PaginatedResponseDto,
   User,
-  UserRole,
 } from '@accounting/common';
-import { SystemCompanyService } from '@accounting/common/backend';
+import { calculatePagination, SystemCompanyService } from '@accounting/common/backend';
 
 import { CreateNotificationDto } from '../dto/create-notification.dto';
 import { NotificationFiltersDto } from '../dto/notification-filters.dto';
 import { NotificationResponseDto } from '../dto/notification-response.dto';
-
-export interface PaginatedNotifications {
-  data: NotificationResponseDto[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
 
 @Injectable()
 export class NotificationService {
@@ -42,17 +32,6 @@ export class NotificationService {
     private readonly notificationRepository: Repository<Notification>,
     private readonly systemCompanyService: SystemCompanyService
   ) {}
-
-  /**
-   * Get the effective companyId for a user.
-   * ADMIN users use System Admin Company, others use their assigned companyId.
-   */
-  private getEffectiveCompanyId(user: User): Promise<string | null> {
-    if (user.role === UserRole.ADMIN) {
-      return this.systemCompanyService.getSystemCompanyId();
-    }
-    return Promise.resolve(user.companyId);
-  }
 
   async create(dto: CreateNotificationDto): Promise<Notification> {
     const notification = this.notificationRepository.create({
@@ -92,12 +71,16 @@ export class NotificationService {
     });
   }
 
-  async findAll(user: User, filters: NotificationFiltersDto): Promise<PaginatedNotifications> {
-    const { page = 1, limit = 20, type, moduleSlug, isRead, isArchived = false } = filters;
+  async findAll(
+    user: User,
+    filters: NotificationFiltersDto
+  ): Promise<PaginatedResponseDto<NotificationResponseDto>> {
+    const { page, limit, skip } = calculatePagination(filters);
+    const { type, moduleSlug, isRead, isArchived = false } = filters;
 
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     if (!companyId) {
-      return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
+      return new PaginatedResponseDto<NotificationResponseDto>([], 0, page, limit);
     }
 
     const queryBuilder = this.notificationRepository
@@ -123,22 +106,17 @@ export class NotificationService {
 
     const data = await queryBuilder
       .orderBy('notification.createdAt', 'DESC')
-      .skip((page - 1) * limit)
+      .skip(skip)
       .take(limit)
       .getMany();
 
-    return {
-      data: data.map(this.mapToResponseDto),
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return new PaginatedResponseDto(data.map(this.mapToResponseDto), total, page, limit);
   }
 
-  findArchived(user: User, filters: NotificationFiltersDto): Promise<PaginatedNotifications> {
+  findArchived(
+    user: User,
+    filters: NotificationFiltersDto
+  ): Promise<PaginatedResponseDto<NotificationResponseDto>> {
     return this.findAll(user, { ...filters, isArchived: true });
   }
 
@@ -152,7 +130,7 @@ export class NotificationService {
       throw new NotFoundException(`Notification with ID ${id} not found`);
     }
 
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     if (notification.recipientId !== user.id || notification.companyId !== companyId) {
       throw new ForbiddenException('Access denied to this notification');
     }
@@ -161,7 +139,7 @@ export class NotificationService {
   }
 
   async getUnreadCount(user: User): Promise<number> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     if (!companyId) {
       return 0;
     }
@@ -198,7 +176,7 @@ export class NotificationService {
   }
 
   async markAllAsRead(user: User): Promise<{ count: number }> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     if (!companyId) {
       return { count: 0 };
     }
@@ -229,7 +207,7 @@ export class NotificationService {
     return this.findOne(id, user);
   }
 
-  async restore(id: string, user: User): Promise<NotificationResponseDto> {
+  async unarchiveNotification(id: string, user: User): Promise<NotificationResponseDto> {
     const notification = await this.findOneEntity(id, user);
 
     notification.isArchived = false;
@@ -241,7 +219,7 @@ export class NotificationService {
   }
 
   async archiveMultiple(ids: string[], user: User): Promise<{ count: number }> {
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     if (!companyId) {
       return { count: 0 };
     }
@@ -281,7 +259,7 @@ export class NotificationService {
       throw new NotFoundException(`Notification with ID ${id} not found`);
     }
 
-    const companyId = await this.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     if (notification.recipientId !== user.id || notification.companyId !== companyId) {
       throw new ForbiddenException('Access denied to this notification');
     }

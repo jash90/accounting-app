@@ -13,12 +13,12 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
-import { User } from '@accounting/common';
+import { PaginatedResponseDto, User } from '@accounting/common';
 
 import { MarkMultipleDto, NotificationFiltersDto } from '../dto/notification-filters.dto';
 import { NotificationResponseDto, UnreadCountResponseDto } from '../dto/notification-response.dto';
 import { NotificationGateway } from '../gateways/notification.gateway';
-import { NotificationService, PaginatedNotifications } from '../services/notification.service';
+import { NotificationService } from '../services/notification.service';
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
@@ -41,7 +41,7 @@ export class NotificationsController {
   async findAll(
     @CurrentUser() user: User,
     @Query() filters: NotificationFiltersDto
-  ): Promise<PaginatedNotifications> {
+  ): Promise<PaginatedResponseDto<NotificationResponseDto>> {
     return this.notificationService.findAll(user, filters);
   }
 
@@ -59,7 +59,7 @@ export class NotificationsController {
   async findArchived(
     @CurrentUser() user: User,
     @Query() filters: NotificationFiltersDto
-  ): Promise<PaginatedNotifications> {
+  ): Promise<PaginatedResponseDto<NotificationResponseDto>> {
     return this.notificationService.findArchived(user, filters);
   }
 
@@ -133,7 +133,7 @@ export class NotificationsController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: User
   ): Promise<NotificationResponseDto> {
-    const notification = await this.notificationService.restore(id, user);
+    const notification = await this.notificationService.unarchiveNotification(id, user);
     if (!notification.isRead) {
       const unreadCount = await this.notificationService.getUnreadCount(user);
       this.notificationGateway.sendUnreadCountUpdate(user.id, unreadCount);

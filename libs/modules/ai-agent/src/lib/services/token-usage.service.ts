@@ -44,13 +44,7 @@ export class TokenUsageService {
    * Track token usage for a user
    */
   async trackUsage(user: User, inputTokens: number, outputTokens: number): Promise<void> {
-    let companyId: string | null;
-
-    if (user.role === UserRole.ADMIN) {
-      companyId = await this.systemCompanyService.getSystemCompanyId();
-    } else {
-      companyId = user.companyId;
-    }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -93,12 +87,7 @@ export class TokenUsageService {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    let companyId: string | null;
-    if (user.role === UserRole.ADMIN) {
-      companyId = await this.systemCompanyService.getSystemCompanyId();
-    } else {
-      companyId = user.companyId;
-    }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const dailyUsage = await this.usageRepository.find({
       where: {
@@ -148,16 +137,13 @@ export class TokenUsageService {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    let companyId: string;
+    if (user.role !== UserRole.ADMIN && !user.companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     let companyName = 'System Admin';
-    if (user.role === UserRole.ADMIN) {
-      companyId = await this.systemCompanyService.getSystemCompanyId();
-    } else {
-      if (!user.companyId) {
-        throw new ForbiddenException('User must belong to a company');
-      }
-      companyId = user.companyId;
-      // Get company name
+    if (user.role !== UserRole.ADMIN) {
+      // Get company name for non-admin users
       const company = await this.companyRepository.findOne({
         where: { id: companyId },
       });
@@ -249,12 +235,7 @@ export class TokenUsageService {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    let companyId: string | null;
-    if (user.role === UserRole.ADMIN) {
-      companyId = await this.systemCompanyService.getSystemCompanyId();
-    } else {
-      companyId = user.companyId;
-    }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const result = await this.usageRepository
       .createQueryBuilder('usage')

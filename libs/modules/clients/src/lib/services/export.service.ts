@@ -3,8 +3,19 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { DataSource, EntityManager, Repository } from 'typeorm';
 
-import { Client, EmploymentType, TaxScheme, User, VatStatus, ZusStatus } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import {
+  Client,
+  EmploymentType,
+  escapeCsvField,
+  escapeLikePattern,
+  generateCsvContent,
+  parseCsvLine,
+  TaxScheme,
+  User,
+  VatStatus,
+  ZusStatus,
+} from '@accounting/common';
+import { sanitizeForLog, TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import { ClientFiltersDto } from '../dto/client.dto';
@@ -91,7 +102,7 @@ export class ClientExportService {
     }
 
     if (filters?.search) {
-      const escapedSearch = this.escapeLikePattern(filters.search);
+      const escapedSearch = escapeLikePattern(filters.search);
       queryBuilder.andWhere(
         "(client.name ILIKE :search ESCAPE '\\' OR client.nip ILIKE :search ESCAPE '\\' OR client.email ILIKE :search ESCAPE '\\')",
         { search: `%${escapedSearch}%` }
@@ -110,7 +121,7 @@ export class ClientExportService {
   /**
    * Generate CSV template for import.
    */
-  getTemplate(): Buffer {
+  generateCsvImportTemplate(): Buffer {
     const headers = [
       'name',
       'nip',
@@ -137,9 +148,7 @@ export class ClientExportService {
       'Dodatkowe informacje',
     ];
 
-    const csvContent = [headers.join(','), exampleRow.map(this.escapeCsvField).join(',')].join(
-      '\n'
-    );
+    const csvContent = [headers.join(','), exampleRow.map(escapeCsvField).join(',')].join('\n');
 
     return Buffer.from(csvContent, 'utf-8');
   }
@@ -159,7 +168,7 @@ export class ClientExportService {
       );
     }
 
-    const headers = this.parseCsvLine(lines[0]);
+    const headers = parseCsvLine(lines[0]);
     const requiredHeaders = ['name'];
     for (const required of requiredHeaders) {
       if (!headers.includes(required)) {
@@ -173,7 +182,7 @@ export class ClientExportService {
 
     for (let i = 1; i < lines.length; i++) {
       const rowNumber = i + 1;
-      const values = this.parseCsvLine(lines[i]);
+      const values = parseCsvLine(lines[i]);
 
       if (values.length < headers.length) {
         validationErrors.push({
@@ -280,17 +289,17 @@ export class ClientExportService {
   /**
    * Parse a single row of imported CSV to preview before committing.
    */
-  parseForPreview(content: string): CsvRow[] {
+  parseCsvForImportPreview(content: string): CsvRow[] {
     const lines = content.split('\n').filter((line) => line.trim());
     if (lines.length < 2) {
       return [];
     }
 
-    const headers = this.parseCsvLine(lines[0]);
+    const headers = parseCsvLine(lines[0]);
     const rows: CsvRow[] = [];
 
     for (let i = 1; i < lines.length && i <= 100; i++) {
-      const values = this.parseCsvLine(lines[i]);
+      const values = parseCsvLine(lines[i]);
       const row = {} as Record<string, string | undefined>;
 
       for (let j = 0; j < headers.length; j++) {
@@ -333,74 +342,7 @@ export class ClientExportService {
       client.isActive ? 'true' : 'false',
     ]);
 
-    return [headers.join(','), ...rows.map((row) => row.map(this.escapeCsvField).join(','))].join(
-      '\n'
-    );
-  }
-
-  /**
-   * Escape special LIKE pattern characters to prevent SQL injection.
-   */
-  private escapeLikePattern(pattern: string): string {
-    return pattern.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-  }
-
-  /**
-   * Escape a CSV field value for safe export.
-   * Protects against CSV injection (formula injection) and handles special characters.
-   */
-  private escapeCsvField(field: string): string {
-    if (!field) return '';
-
-    let value = field;
-
-    // CSV injection protection: prefix values starting with formula characters
-    // This prevents Excel/Sheets from interpreting them as formulas
-    const formulaChars = ['=', '+', '-', '@', '\t', '\r'];
-    if (formulaChars.some((char) => value.startsWith(char))) {
-      value = "'" + value;
-    }
-
-    // Handle special characters that require quoting
-    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-      return `"${value.replace(/"/g, '""')}"`;
-    }
-    return value;
-  }
-
-  private parseCsvLine(line: string): string[] {
-    const result: string[] = [];
-    let current = '';
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-
-      if (inQuotes) {
-        if (char === '"') {
-          if (line[i + 1] === '"') {
-            current += '"';
-            i++;
-          } else {
-            inQuotes = false;
-          }
-        } else {
-          current += char;
-        }
-      } else {
-        if (char === '"') {
-          inQuotes = true;
-        } else if (char === ',') {
-          result.push(current);
-          current = '';
-        } else {
-          current += char;
-        }
-      }
-    }
-
-    result.push(current);
-    return result;
+    return generateCsvContent(headers, rows);
   }
 
   private validateRow(row: CsvRow, rowNumber: number): ImportErrorDto[] {
@@ -488,18 +430,18 @@ export class ClientExportService {
   }
 
   private sanitizeClientForLog(client: Client): Record<string, unknown> {
-    return {
-      name: client.name,
-      nip: client.nip,
-      email: client.email,
-      phone: client.phone,
-      employmentType: client.employmentType,
-      vatStatus: client.vatStatus,
-      taxScheme: client.taxScheme,
-      zusStatus: client.zusStatus,
-      companySpecificity: client.companySpecificity,
-      additionalInfo: client.additionalInfo,
-      isActive: client.isActive,
-    };
+    return sanitizeForLog(client, [
+      'name',
+      'nip',
+      'email',
+      'phone',
+      'employmentType',
+      'vatStatus',
+      'taxScheme',
+      'zusStatus',
+      'companySpecificity',
+      'additionalInfo',
+      'isActive',
+    ]);
   }
 }

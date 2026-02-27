@@ -124,7 +124,7 @@ export class ModulesService {
     return this.moduleRepository.save(module);
   }
 
-  async delete(id: string) {
+  async softDeleteModule(id: string) {
     const module = await this.findById(id);
     module.isActive = false;
     return this.moduleRepository.save(module);

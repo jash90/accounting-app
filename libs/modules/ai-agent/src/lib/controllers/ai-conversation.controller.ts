@@ -9,6 +9,7 @@ import {
   HttpStatus,
   MessageEvent,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   Sse,
@@ -40,7 +41,8 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { CurrentUser } from '@accounting/auth';
-import { User } from '@accounting/common';
+import { PaginationQueryDto, User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 import {
   ModuleAccessGuard,
   PermissionGuard,
@@ -51,7 +53,6 @@ import {
 import { AIContextResponseDto } from '../dto/ai-context-response.dto';
 import { ConversationResponseDto } from '../dto/conversation-response.dto';
 import { CreateConversationDto } from '../dto/create-conversation.dto';
-import { PaginationQueryDto } from '../dto/pagination.dto';
 import { SendMessageDto } from '../dto/send-message.dto';
 import { AIConfigurationService } from '../services/ai-configuration.service';
 import { AIConversationService } from '../services/ai-conversation.service';
@@ -66,7 +67,8 @@ export class AIConversationController {
   constructor(
     private readonly conversationService: AIConversationService,
     private readonly ragService: RAGService,
-    private readonly configService: AIConfigurationService
+    private readonly configService: AIConfigurationService,
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   @Get('conversations')
@@ -132,7 +134,7 @@ export class AIConversationController {
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing JWT token',
   })
-  async findOneConversation(@Param('id') id: string, @CurrentUser() user: User) {
+  async findOneConversation(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.conversationService.findOne(id, user);
   }
 
@@ -201,7 +203,7 @@ export class AIConversationController {
     description: 'Invalid or missing JWT token',
   })
   async sendMessage(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() sendDto: SendMessageDto,
     @CurrentUser() user: User
   ) {
@@ -258,7 +260,7 @@ export class AIConversationController {
     description: 'Invalid or missing JWT token',
   })
   sendMessageStream(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() sendDto: SendMessageDto,
     @CurrentUser() user: User
   ): Observable<MessageEvent> {
@@ -292,7 +294,7 @@ export class AIConversationController {
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing JWT token',
   })
-  async removeConversation(@Param('id') id: string, @CurrentUser() user: User) {
+  async removeConversation(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.conversationService.remove(id, user);
   }
 
@@ -361,9 +363,9 @@ export class AIConversationController {
     // Get embedding configuration (separate API key, model, and provider if configured)
     const embeddingConfig = await this.configService.getEmbeddingConfig(user);
 
-    const companyId = await this.ragService.resolveCompanyIdForUser(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
-    const context = await this.ragService.processFile(
+    const context = await this.ragService.extractAndEmbedFile(
       file.path,
       file.originalname,
       file.mimetype,
@@ -423,7 +425,7 @@ export class AIConversationController {
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing JWT token',
   })
-  async getContextFile(@Param('id') id: string, @CurrentUser() user: User) {
+  async getContextFile(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     const context = await this.ragService.findContext(id, user);
     return {
       id: context.id,
@@ -476,7 +478,7 @@ export class AIConversationController {
   @ApiUnauthorizedResponse({
     description: 'Invalid or missing JWT token',
   })
-  async removeContext(@Param('id') id: string, @CurrentUser() user: User) {
+  async removeContext(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     await this.ragService.removeContext(id, user);
   }
 }

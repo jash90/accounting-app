@@ -1,9 +1,9 @@
 import { Global, Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { createJwtModuleConfig } from '@accounting/auth';
 import { Company, Notification, NotificationSettings, User } from '@accounting/common';
 import { CommonModule } from '@accounting/common/backend';
 import { EmailModule } from '@accounting/email';
@@ -49,20 +49,7 @@ import { NotificationService } from './services/notification.service';
       maxListeners: 20,
       verboseMemoryLeak: true,
     }),
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
-        const expiresIn = configService.get<string>('JWT_EXPIRES_IN') || '1d';
-        return {
-          secret: configService.get<string>('JWT_SECRET'),
-          signOptions: {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- @nestjs/jwt StringValue type is overly strict
-            expiresIn: expiresIn as any,
-          },
-        };
-      },
-      inject: [ConfigService],
-    }),
+    JwtModule.registerAsync(createJwtModuleConfig()),
     EmailModule,
     RBACModule,
     CommonModule,

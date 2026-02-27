@@ -1,5 +1,6 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
@@ -10,8 +11,7 @@ import {
   Post,
   Query,
   UseGuards,
-  UsePipes,
-  ValidationPipe,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -46,6 +46,7 @@ import { AdminService } from '../services/admin.service';
 @Controller('admin')
 @UseGuards(RolesGuard)
 @Roles(UserRole.ADMIN)
+@UseInterceptors(ClassSerializerInterceptor)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
@@ -122,7 +123,7 @@ export class AdminController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
   deleteUser(@Param('id') id: string) {
-    return this.adminService.deleteUser(id);
+    return this.adminService.softDeleteUser(id);
   }
 
   @Patch('users/:id/activate')
@@ -145,7 +146,7 @@ export class AdminController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
   activateUser(@Param('id') id: string, @Query('isActive') isActive: string) {
-    return this.adminService.activateUser(id, isActive === 'true');
+    return this.adminService.setUserActiveStatus(id, isActive === 'true');
   }
 
   // Available Owners (for company creation dropdown)
@@ -250,7 +251,7 @@ export class AdminController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
   deleteCompany(@Param('id') id: string) {
-    return this.adminService.deleteCompany(id);
+    return this.adminService.softDeleteCompany(id);
   }
 
   @Get('companies/:id/profile')
@@ -283,7 +284,6 @@ export class AdminController {
   })
   @ApiOkResponse({ description: 'Updated company profile' })
   @ApiNotFoundResponse({ description: 'Company not found' })
-  @UsePipes(new ValidationPipe({ whitelist: true }))
   updateCompanyProfile(@Param('id') id: string, @Body() dto: UpdateCompanyProfileDto) {
     return this.adminService.updateCompanyProfileById(id, dto);
   }

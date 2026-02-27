@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { MonthlySettlement, SettlementComment, User, UserRole } from '@accounting/common';
+import { isOwnerOrAdmin, MonthlySettlement, SettlementComment, User } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 
 import { CreateCommentDto } from '../dto';
@@ -19,10 +19,6 @@ export class SettlementCommentsService {
     private readonly tenantService: TenantService
   ) {}
 
-  private canViewAllClients(user: User): boolean {
-    return [UserRole.COMPANY_OWNER, UserRole.ADMIN].includes(user.role);
-  }
-
   async getComments(settlementId: string, user: User): Promise<SettlementComment[]> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
@@ -35,7 +31,7 @@ export class SettlementCommentsService {
       throw new SettlementNotFoundException(settlementId, companyId);
     }
 
-    if (!this.canViewAllClients(user) && settlement.userId !== user.id) {
+    if (!isOwnerOrAdmin(user) && settlement.userId !== user.id) {
       throw new SettlementAccessDeniedException(settlementId);
     }
 
@@ -66,7 +62,7 @@ export class SettlementCommentsService {
       throw new SettlementNotFoundException(settlementId, companyId);
     }
 
-    if (!this.canViewAllClients(user) && settlement.userId !== user.id) {
+    if (!isOwnerOrAdmin(user) && settlement.userId !== user.id) {
       throw new SettlementAccessDeniedException(settlementId);
     }
 

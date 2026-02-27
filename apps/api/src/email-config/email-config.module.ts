@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { EmailConfiguration } from '@accounting/common';
-import { CommonModule, EncryptionService } from '@accounting/common/backend';
+import { CommonModule } from '@accounting/common/backend';
 import { RBACModule } from '@accounting/rbac';
 
 import { EmailConfigController } from './controllers/email-config.controller';
@@ -13,6 +13,6 @@ import { SmtpImapService } from './services/smtp-imap.service';
   imports: [TypeOrmModule.forFeature([EmailConfiguration]), CommonModule, RBACModule],
   controllers: [EmailConfigController],
   providers: [EmailConfigService, SmtpImapService],
-  exports: [EmailConfigService, EncryptionService, SmtpImapService],
+  exports: [EmailConfigService, CommonModule, SmtpImapService],
 })
 export class EmailConfigModule {}

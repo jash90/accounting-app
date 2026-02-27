@@ -1,34 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
-import * as pdfmakeModule from 'pdfmake';
 import type { TDocumentDefinitions } from 'pdfmake/interfaces';
 
+import { ensurePdfmakeFonts } from '@accounting/common';
+
 import { GroupedReportData, ReportSummary } from './timesheet.service';
-
-// pdfmake 0.3.x runtime exports a singleton with `virtualfs` + `createPdf`,
-// but @types/pdfmake doesn't declare `virtualfs`, so we cast.
-const pdfmake = pdfmakeModule as typeof pdfmakeModule & {
-  virtualfs: { writeFileSync(name: string, data: Buffer): void };
-};
-
-// Lazily initialised once per process
-let fontsReady = false;
-function ensureFonts(): void {
-  if (fontsReady) return;
-   
-  const { fonts, vfs } = require('pdfmake/build/fonts/Roboto') as {
-    fonts: Record<string, { normal: string; bold: string; italics: string; bolditalics: string }>;
-    vfs: Record<string, { data: string; encoding?: string }>;
-  };
-  for (const [filename, entry] of Object.entries(vfs)) {
-    pdfmake.virtualfs.writeFileSync(
-      filename,
-      Buffer.from(entry.data, (entry.encoding as BufferEncoding) ?? 'base64')
-    );
-  }
-  pdfmake.addFonts(fonts);
-  fontsReady = true;
-}
 
 @Injectable()
 export class TimeTrackingPdfService {
@@ -42,8 +18,8 @@ export class TimeTrackingPdfService {
     return `${amount.toFixed(2)} PLN`;
   }
 
-  generatePdf(data: ReportSummary): Promise<Buffer> {
-    ensureFonts();
+  generateTimeReportPdf(data: ReportSummary): Promise<Buffer> {
+    const pdfmake = ensurePdfmakeFonts();
 
     const content: TDocumentDefinitions['content'] = [
       {

@@ -11,7 +11,7 @@ import {
   PaginatedResponseDto,
   User,
 } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { calculatePagination, TenantService } from '@accounting/common/backend';
 import { StorageService } from '@accounting/infrastructure/storage';
 
 import { AssignIconDto, CreateIconDto, IconQueryDto, UpdateIconDto } from '../dto/icon.dto';
@@ -41,9 +41,7 @@ export class ClientIconsService {
 
   async findAllIcons(user: User, query?: IconQueryDto): Promise<PaginatedResponseDto<ClientIcon>> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
-    const page = query?.page ?? 1;
-    const limit = query?.limit ?? 50;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = calculatePagination(query, 50);
 
     const [data, total] = await this.iconRepository.findAndCount({
       where: { companyId, isActive: true },

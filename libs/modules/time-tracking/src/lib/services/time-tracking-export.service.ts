@@ -1,27 +1,12 @@
 import { Injectable } from '@nestjs/common';
 
+import { escapeCsvField } from '@accounting/common';
+
 @Injectable()
 export class TimeTrackingExportService {
-  /**
-   * Sanitize a CSV field value to prevent CSV injection attacks.
-   * Values starting with =, +, -, @, Tab, or CR are prefixed with a single quote.
-   * Values containing quotes, commas, or newlines are properly quoted and escaped.
-   */
-  escapeCsvField(value: string | number | null | undefined): string {
-    if (value === null || value === undefined) return '';
-    const str = String(value);
-    if (/^[=+\-@\t\r]/.test(str)) {
-      return `'${str}`;
-    }
-    if (str.includes('"') || str.includes(',') || str.includes('\n')) {
-      return `"${str.replace(/"/g, '""')}"`;
-    }
-    return str;
-  }
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   generateCsv(reportData: any): string {
-    const escape = (v: string | number | null | undefined) => this.escapeCsvField(v);
+    const escape = (v: string | number | null | undefined) => escapeCsvField(v);
     const lines: string[] = [];
 
     lines.push(escape('Raport czasu pracy'));

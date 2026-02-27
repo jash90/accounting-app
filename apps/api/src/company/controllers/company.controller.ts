@@ -188,6 +188,6 @@ export class CompanyController {
     if (!user.companyId) {
       throw new BadRequestException('User is not associated with a company');
     }
-    return this.companyService.deleteEmployee(user.companyId, id);
+    return this.companyService.softDeleteEmployee(user.companyId, id);
   }
 }

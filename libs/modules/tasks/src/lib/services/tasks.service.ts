@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, DataSource, In, Repository } from 'typeorm';
 
 import {
+  escapeLikePattern,
   PaginatedResponseDto,
   Task,
   TaskLabel,
@@ -12,7 +13,7 @@ import {
   TaskStatusLabels,
   User,
 } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { calculatePagination, sanitizeForLog, TenantService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import {
@@ -61,15 +62,9 @@ export class TasksService {
     private readonly dataSource: DataSource
   ) {}
 
-  private escapeLikePattern(pattern: string): string {
-    return pattern.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-  }
-
   async findAll(user: User, filters?: TaskFiltersDto): Promise<PaginatedResponseDto<Task>> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
-    const page = filters?.page ?? 1;
-    const limit = filters?.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = calculatePagination(filters);
 
     const queryBuilder = this.taskRepository
       .createQueryBuilder('task')
@@ -81,7 +76,7 @@ export class TasksService {
 
     // Search filter
     if (filters?.search) {
-      const escapedSearch = this.escapeLikePattern(filters.search);
+      const escapedSearch = escapeLikePattern(filters.search);
       queryBuilder.andWhere(
         new Brackets((qb) => {
           qb.where("task.title ILIKE :search ESCAPE '\\'", {
@@ -259,6 +254,7 @@ export class TasksService {
       return {
         status,
         label: TaskStatusLabels[status],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         tasks: columnTasks as any[],
         count: columnTasks.length,
       };
@@ -606,7 +602,7 @@ export class TasksService {
     return this.findOne(id, user);
   }
 
-  async remove(id: string, user: User): Promise<void> {
+  async softDeleteTask(id: string, user: User): Promise<void> {
     const task = await this.findOne(id, user);
     const oldValues = this.sanitizeTaskForLog(task);
 
@@ -700,7 +696,12 @@ export class TasksService {
     });
   }
 
-  private async isDescendant(potentialDescendantId: string, ancestorId: string): Promise<boolean> {
+  private async isDescendant(
+    potentialDescendantId: string,
+    ancestorId: string,
+    depth = 20
+  ): Promise<boolean> {
+    if (depth <= 0) return false;
     // Check if potentialDescendantId is a descendant of ancestorId
     const subtasks = await this.taskRepository.find({
       where: { parentTaskId: ancestorId },
@@ -711,7 +712,7 @@ export class TasksService {
       if (subtask.id === potentialDescendantId) {
         return true;
       }
-      if (await this.isDescendant(potentialDescendantId, subtask.id)) {
+      if (await this.isDescendant(potentialDescendantId, subtask.id, depth - 1)) {
         return true;
       }
     }
@@ -757,19 +758,19 @@ export class TasksService {
   }
 
   private sanitizeTaskForLog(task: Task): Record<string, unknown> {
-    return {
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      priority: task.priority,
-      dueDate: task.dueDate,
-      startDate: task.startDate,
-      estimatedMinutes: task.estimatedMinutes,
-      storyPoints: task.storyPoints,
-      assigneeId: task.assigneeId,
-      clientId: task.clientId,
-      parentTaskId: task.parentTaskId,
-      isActive: task.isActive,
-    };
+    return sanitizeForLog(task, [
+      'title',
+      'description',
+      'status',
+      'priority',
+      'dueDate',
+      'startDate',
+      'estimatedMinutes',
+      'storyPoints',
+      'assigneeId',
+      'clientId',
+      'parentTaskId',
+      'isActive',
+    ]);
   }
 }

@@ -1,11 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { IsDateString, IsOptional } from 'class-validator';
+import { EmployeeRankingDto, EmployeeRankingItemDto, PeriodFilterDto } from '@accounting/common';
 
-export class SettlementStatsPeriodFilterDto {
-  @ApiPropertyOptional() @IsOptional() @IsDateString() startDate?: string;
-  @ApiPropertyOptional() @IsOptional() @IsDateString() endDate?: string;
-}
+// Re-export shared types under module-specific names for backward compatibility
+export { PeriodFilterDto as SettlementStatsPeriodFilterDto };
+export { EmployeeRankingItemDto as SettlementEmployeeRankingItemDto };
+export { EmployeeRankingDto as SettlementEmployeeRankingDto };
 
 export class SettlementDurationItemDto {
   @ApiProperty() id!: string;
@@ -20,19 +20,6 @@ export class SettlementCompletionDurationStatsDto {
   @ApiProperty({ type: [SettlementDurationItemDto] }) longest!: SettlementDurationItemDto[];
   @ApiProperty({ type: [SettlementDurationItemDto] }) shortest!: SettlementDurationItemDto[];
   @ApiProperty() averageDurationDays!: number;
-}
-
-export class SettlementEmployeeRankingItemDto {
-  @ApiProperty() userId!: string;
-  @ApiProperty() email!: string;
-  @ApiPropertyOptional() firstName?: string;
-  @ApiPropertyOptional() lastName?: string;
-  @ApiProperty() completedCount!: number;
-}
-
-export class SettlementEmployeeRankingDto {
-  @ApiProperty({ type: [SettlementEmployeeRankingItemDto] })
-  rankings!: SettlementEmployeeRankingItemDto[];
 }
 
 export class BlockedClientItemDto {

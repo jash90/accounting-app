@@ -87,7 +87,7 @@ export class TaskTemplatesController {
   @ApiResponse({ status: 204, description: 'Template deleted' })
   @RequirePermission('tasks', 'delete')
   async delete(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User): Promise<void> {
-    return this.templateService.delete(id, user);
+    return this.templateService.softDeleteTaskTemplate(id, user);
   }
 
   @Post(':id/create-task')

@@ -85,7 +85,7 @@ export class TaskLabelsController {
   @ApiResponse({ status: 404, description: 'Label not found', type: TaskErrorResponseDto })
   @RequirePermission('tasks', 'manage')
   async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
-    await this.labelsService.remove(id, user);
+    await this.labelsService.softDeleteTaskLabel(id, user);
     return { message: 'Etykieta została usunięta' };
   }
 }

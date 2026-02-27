@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AuthModule } from '@accounting/auth';
-import { Company, EmailConfiguration } from '@accounting/common';
+import { EmailConfiguration } from '@accounting/common';
 import { CommonModule } from '@accounting/common/backend';
 import { RBACModule } from '@accounting/rbac';
 
@@ -41,12 +41,7 @@ import { ProviderLookupService } from './services/provider-lookup.service';
  * ```
  */
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([EmailConfiguration, Company]),
-    CommonModule,
-    AuthModule,
-    RBACModule,
-  ],
+  imports: [TypeOrmModule.forFeature([EmailConfiguration]), CommonModule, AuthModule, RBACModule],
   controllers: [EmailConfigurationController],
   providers: [
     // Core email services

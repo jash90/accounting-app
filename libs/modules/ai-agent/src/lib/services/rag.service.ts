@@ -6,7 +6,7 @@ import * as fs from 'fs/promises';
 import * as pdfParse from 'pdf-parse';
 import { Repository } from 'typeorm';
 
-import { AIContext, Company, User, UserRole } from '@accounting/common';
+import { AIContext, escapeLikePattern, User } from '@accounting/common';
 import { SystemCompanyService } from '@accounting/common/backend';
 
 import { OpenAIProviderService } from './openai-provider.service';
@@ -18,50 +18,15 @@ export class RAGService {
   constructor(
     @InjectRepository(AIContext)
     private readonly contextRepository: Repository<AIContext>,
-    @InjectRepository(Company)
-    private readonly companyRepository: Repository<Company>,
     private readonly openaiProvider: OpenAIProviderService,
     private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   /**
-   * Resolve the effective companyId for a user (system company for ADMINs).
-   * Returns null for ADMIN with no system company (graceful fallback).
-   */
-  async resolveCompanyIdForUser(user: User): Promise<string | null> {
-    if (user.role === UserRole.ADMIN) {
-      const systemCompany = await this.companyRepository.findOne({
-        where: { isSystemCompany: true },
-      });
-      return systemCompany?.id ?? null;
-    }
-    return user.companyId;
-  }
-
-  /**
-   * Resolve the effective companyId for a user (system company for ADMINs)
-   */
-  private async resolveCompanyId(user: User): Promise<string> {
-    if (user.role === UserRole.ADMIN) {
-      const systemCompany = await this.companyRepository.findOne({
-        where: { isSystemCompany: true },
-      });
-      if (!systemCompany) {
-        throw new Error('System Admin company not found');
-      }
-      return systemCompany.id;
-    }
-    if (!user.companyId) {
-      throw new Error('User does not have a company assigned');
-    }
-    return user.companyId;
-  }
-
-  /**
    * Find all context files for a user's company
    */
   async findAllContexts(user: User): Promise<AIContext[]> {
-    const companyId = await this.resolveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     return this.contextRepository.find({
       where: { companyId },
       relations: ['uploadedBy', 'company'],
@@ -73,7 +38,7 @@ export class RAGService {
    * Find a single context file by ID (scoped to user's company)
    */
   async findContext(id: string, user: User): Promise<AIContext> {
-    const companyId = await this.resolveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const context = await this.contextRepository.findOne({
       where: { id, companyId },
       relations: ['uploadedBy', 'company'],
@@ -88,7 +53,7 @@ export class RAGService {
    * Remove a context file (deletes physical file + DB record)
    */
   async removeContext(id: string, user: User): Promise<void> {
-    const companyId = await this.resolveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const context = await this.contextRepository.findOne({
       where: { id, companyId },
     });
@@ -111,6 +76,7 @@ export class RAGService {
 
     switch (mimeType) {
       case 'application/pdf': {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const pdfData = await (pdfParse as any).default(buffer);
         return pdfData.text;
       }
@@ -127,7 +93,7 @@ export class RAGService {
   /**
    * Process uploaded file: extract text and generate embedding
    */
-  async processFile(
+  async extractAndEmbedFile(
     filePath: string,
     filename: string,
     mimeType: string,
@@ -395,7 +361,7 @@ export class RAGService {
    * Note: pgvector not available on Railway - using text search as alternative
    * Returns empty array gracefully if system company is not found.
    */
-  async findSimilarContext(
+  async searchContextByKeywords(
     query: string,
     companyId: string | null,
     limit = 3
@@ -457,7 +423,7 @@ export class RAGService {
 
     const keywordParams: Record<string, string> = {};
     keywords.forEach((kw, i) => {
-      keywordParams[`keyword${i}`] = `%${this.escapeLikePattern(kw)}%`;
+      keywordParams[`keyword${i}`] = `%${escapeLikePattern(kw)}%`;
     });
 
     queryBuilder
@@ -477,10 +443,6 @@ export class RAGService {
     }
 
     return results;
-  }
-
-  private escapeLikePattern(value: string): string {
-    return value.replace(/[%_\\]/g, '\\$&');
   }
 
   /**

@@ -131,7 +131,7 @@ export class ModulesController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
   delete(@Param('id') id: string) {
-    return this.modulesService.delete(id);
+    return this.modulesService.softDeleteModule(id);
   }
 
   // ==================== Unified Permission Management ====================

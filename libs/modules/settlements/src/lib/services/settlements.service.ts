@@ -10,6 +10,8 @@ import { In, Repository } from 'typeorm';
 
 import {
   Client,
+  escapeLikePattern,
+  isOwnerOrAdmin,
   MonthlySettlement,
   PaginatedResponseDto,
   SettlementStatus,
@@ -17,7 +19,7 @@ import {
   UserRole,
   type SettlementStatusHistoryEntry,
 } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { calculatePagination, TenantService } from '@accounting/common/backend';
 import { EmailConfigurationService, EmailSenderService } from '@accounting/email';
 
 import { SETTLEMENT_MESSAGES } from '../constants/settlement-messages';
@@ -51,28 +53,12 @@ export class SettlementsService {
     private readonly emailConfigService: EmailConfigurationService
   ) {}
 
-  /**
-   * Check if user can view all clients (owner/admin) or only their own (employee)
-   */
-  private canViewAllClients(user: User): boolean {
-    return [UserRole.COMPANY_OWNER, UserRole.ADMIN].includes(user.role);
-  }
-
-  /**
-   * Escape special characters in LIKE patterns
-   */
-  private escapeLikePattern(pattern: string): string {
-    return pattern.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-  }
-
   async findAll(
     query: GetSettlementsQueryDto,
     user: User
   ): Promise<PaginatedResponseDto<MonthlySettlement>> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = calculatePagination(query);
 
     const qb = this.settlementRepository
       .createQueryBuilder('settlement')
@@ -85,7 +71,7 @@ export class SettlementsService {
       .andWhere('settlement.year = :year', { year: query.year });
 
     // CRITICAL: Role-based filtering
-    if (!this.canViewAllClients(user)) {
+    if (!isOwnerOrAdmin(user)) {
       // EMPLOYEE sees only their assigned settlements
       qb.andWhere('settlement.userId = :userId', { userId: user.id });
     } else if (query.unassigned) {
@@ -113,7 +99,7 @@ export class SettlementsService {
 
     // Search filter (client name or NIP)
     if (query.search) {
-      const escapedSearch = this.escapeLikePattern(query.search);
+      const escapedSearch = escapeLikePattern(query.search);
       qb.andWhere(
         "(client.name ILIKE :search ESCAPE '\\' OR client.nip ILIKE :search ESCAPE '\\')",
         { search: `%${escapedSearch}%` }
@@ -145,14 +131,14 @@ export class SettlementsService {
     }
 
     // Check access for employees
-    if (!this.canViewAllClients(user) && settlement.userId !== user.id) {
+    if (!isOwnerOrAdmin(user) && settlement.userId !== user.id) {
       throw new SettlementAccessDeniedException(id);
     }
 
     return settlement;
   }
 
-  async initializeMonth(
+  async createMonthlySettlements(
     dto: InitializeMonthDto,
     user: User
   ): Promise<{ created: number; skipped: number }> {
@@ -218,7 +204,7 @@ export class SettlementsService {
     const settlement = await this.findOne(id, user);
 
     // Check if employee can update (only their own settlements)
-    if (!this.canViewAllClients(user) && settlement.userId !== user.id) {
+    if (!isOwnerOrAdmin(user) && settlement.userId !== user.id) {
       throw new SettlementAccessDeniedException(id);
     }
 
@@ -258,7 +244,7 @@ export class SettlementsService {
     const settlement = await this.findOne(id, user);
 
     // Check if employee can update (only their own settlements)
-    if (!this.canViewAllClients(user) && settlement.userId !== user.id) {
+    if (!isOwnerOrAdmin(user) && settlement.userId !== user.id) {
       throw new SettlementAccessDeniedException(id);
     }
 

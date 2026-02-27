@@ -4,13 +4,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, DataSource, Repository } from 'typeorm';
 
 import {
-  createPaginatedResponse,
+  escapeLikePattern,
   isForeignKeyViolation,
   OfferTemplate,
+  PaginatedResponseDto,
   User,
-  type PaginatedResponseDto,
 } from '@accounting/common';
-import { SystemCompanyService } from '@accounting/common/backend';
+import { calculatePagination, SystemCompanyService } from '@accounting/common/backend';
 import { StorageService } from '@accounting/infrastructure/storage';
 
 import { UpdateContentBlocksDto } from '../dto/content-blocks.dto';
@@ -67,27 +67,20 @@ export class OfferTemplatesService {
     private readonly dataSource: DataSource
   ) {}
 
-  private getCompanyId(user: User): Promise<string> {
-    return this.systemCompanyService.getCompanyIdForUser(user);
-  }
-
-  private escapeLikePattern(pattern: string): string {
-    return pattern.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-  }
-
   async findAll(
     user: User,
     filters: OfferTemplateFiltersDto
   ): Promise<PaginatedResponseDto<OfferTemplate>> {
-    const companyId = await this.getCompanyId(user);
-    const { page = 1, limit = 20, search, isActive } = filters;
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
+    const { page, limit, skip } = calculatePagination(filters);
+    const { search, isActive } = filters;
 
     const query = this.templateRepository
       .createQueryBuilder('template')
       .where('template.companyId = :companyId', { companyId });
 
     if (search) {
-      const escapedSearch = `%${this.escapeLikePattern(search)}%`;
+      const escapedSearch = `%${escapeLikePattern(search)}%`;
       query.andWhere(
         new Brackets((qb) => {
           qb.where('template.name ILIKE :search', { search: escapedSearch }).orWhere(
@@ -104,16 +97,13 @@ export class OfferTemplatesService {
 
     query.orderBy('template.isDefault', 'DESC').addOrderBy('template.name', 'ASC');
 
-    const [data, total] = await query
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getManyAndCount();
+    const [data, total] = await query.skip(skip).take(limit).getManyAndCount();
 
-    return createPaginatedResponse(data, total, page, limit);
+    return new PaginatedResponseDto(data, total, page, limit);
   }
 
   async findOne(id: string, user: User): Promise<OfferTemplate> {
-    const companyId = await this.getCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const template = await this.templateRepository.findOne({
       where: { id, companyId },
@@ -127,7 +117,7 @@ export class OfferTemplatesService {
   }
 
   async findDefault(user: User): Promise<OfferTemplate | null> {
-    const companyId = await this.getCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     return this.templateRepository.findOne({
       where: { companyId, isDefault: true, isActive: true },
@@ -135,7 +125,7 @@ export class OfferTemplatesService {
   }
 
   async create(dto: CreateOfferTemplateDto, user: User): Promise<OfferTemplate> {
-    const companyId = await this.getCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     return this.dataSource.transaction(async (manager) => {
       const templateRepo = manager.getRepository(OfferTemplate);
@@ -157,7 +147,7 @@ export class OfferTemplatesService {
 
   async update(id: string, dto: UpdateOfferTemplateDto, user: User): Promise<OfferTemplate> {
     const template = await this.findOne(id, user);
-    const companyId = await this.getCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     return this.dataSource.transaction(async (manager) => {
       const templateRepo = manager.getRepository(OfferTemplate);

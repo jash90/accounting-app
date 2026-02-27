@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { MonthlySettlement, User } from '@accounting/common';
+import { generateCsvBuffer, MonthlySettlement, User } from '@accounting/common';
 import { TenantService } from '@accounting/common/backend';
 
 import { GetSettlementsQueryDto } from '../dto/get-settlements-query.dto';
@@ -47,11 +47,10 @@ export class SettlementExportService {
       .addOrderBy('settlement.month', 'DESC');
 
     const settlements = await queryBuilder.getMany();
-    const csvContent = this.generateCsv(settlements);
-    return Buffer.from(csvContent, 'utf-8');
+    return this.generateCsv(settlements);
   }
 
-  private generateCsv(settlements: MonthlySettlement[]): string {
+  private generateCsv(settlements: MonthlySettlement[]): Buffer {
     const headers = [
       'Klient',
       'NIP',
@@ -78,21 +77,6 @@ export class SettlementExportService {
       s.notes || '',
     ]);
 
-    return [headers.join(','), ...rows.map((row) => row.map(this.escapeCsvField).join(','))].join(
-      '\n'
-    );
-  }
-
-  private escapeCsvField(field: string): string {
-    if (!field) return '';
-    let value = field;
-    const formulaChars = ['=', '+', '-', '@', '\t', '\r'];
-    if (formulaChars.some((char) => value.startsWith(char))) {
-      value = "'" + value;
-    }
-    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-      return `"${value.replace(/"/g, '""')}"`;
-    }
-    return value;
+    return generateCsvBuffer(headers, rows);
   }
 }

@@ -55,6 +55,7 @@ export class TimeReportsController {
 
   // ========== Extended Statistics ==========
 
+  // eslint-disable-next-line @darraghor/nestjs-typed/api-method-should-specify-api-response
   @Get('reports/extended/top-tasks')
   @ApiOperation({ summary: 'Get top tasks by time spent' })
   @RequirePermission('time-tracking', 'read')
@@ -67,6 +68,7 @@ export class TimeReportsController {
     return this.extendedStatsService.getTopTasksByTime(user, { preset, startDate, endDate });
   }
 
+  // eslint-disable-next-line @darraghor/nestjs-typed/api-method-should-specify-api-response
   @Get('reports/extended/top-settlements')
   @ApiOperation({ summary: 'Get top settlements by time spent' })
   @RequirePermission('time-tracking', 'read')
@@ -79,6 +81,7 @@ export class TimeReportsController {
     return this.extendedStatsService.getTopSettlementsByTime(user, { preset, startDate, endDate });
   }
 
+  // eslint-disable-next-line @darraghor/nestjs-typed/api-method-should-specify-api-response
   @Get('reports/extended/employee-breakdown')
   @ApiOperation({ summary: 'Get employee time breakdown (tasks vs settlements)' })
   @RequirePermission('time-tracking', 'read')
@@ -219,7 +222,7 @@ export class TimeReportsController {
         };
       }
       case ExportFormat.PDF: {
-        const pdfBuffer = await this.pdfService.generatePdf(reportData);
+        const pdfBuffer = await this.pdfService.generateTimeReportPdf(reportData);
         return {
           data: pdfBuffer,
           filename: `time-report-${dto.startDate}-${dto.endDate}.pdf`,
