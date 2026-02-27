@@ -22,6 +22,7 @@ import {
   RequirePermission,
 } from '@accounting/rbac';
 
+import { UpdateDocumentContentBlocksDto } from '../dto/content-blocks.dto';
 import { CreateDocumentTemplateDto, UpdateDocumentTemplateDto } from '../dto/document-template.dto';
 import { DocumentTemplatesService } from '../services/document-templates.service';
 
@@ -38,6 +39,25 @@ export class DocumentTemplatesController {
   @RequirePermission('documents', 'read')
   findAll(@CurrentUser() user: User) {
     return this.service.findAll(user);
+  }
+
+  @Get(':id/content-blocks')
+  @ApiOperation({ summary: 'Get content blocks for a document template' })
+  @RequirePermission('documents', 'read')
+  getContentBlocks(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return this.service.getContentBlocks(id, user);
+  }
+
+  @Patch(':id/content-blocks')
+  @ApiOperation({ summary: 'Update content blocks for a document template' })
+  @RequirePermission('documents', 'write')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  updateContentBlocks(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateDocumentContentBlocksDto,
+    @CurrentUser() user: User
+  ) {
+    return this.service.updateContentBlocks(id, dto, user);
   }
 
   @Get(':id')
