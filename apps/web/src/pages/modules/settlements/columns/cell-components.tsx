@@ -1,6 +1,6 @@
 import { memo, useCallback } from 'react';
 
-import { MessageSquare, MoreHorizontal, UserPlus } from 'lucide-react';
+import { MessageSquare, MoreHorizontal, Pencil, UserPlus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -67,8 +67,13 @@ interface ActionsCellProps {
 }
 
 export const ActionsCell = memo(function ActionsCell({ settlementId }: ActionsCellProps) {
-  const { hasManagePermission, onNavigateToComments, onNavigateToAssign } =
-    useSettlementColumnsContext();
+  const {
+    hasWritePermission,
+    hasManagePermission,
+    onNavigateToComments,
+    onNavigateToAssign,
+    onEdit,
+  } = useSettlementColumnsContext();
 
   // Memoize callbacks to prevent re-creating on each render
   const handleNavigateToComments = useCallback(() => {
@@ -78,6 +83,10 @@ export const ActionsCell = memo(function ActionsCell({ settlementId }: ActionsCe
   const handleNavigateToAssign = useCallback(() => {
     onNavigateToAssign(settlementId);
   }, [onNavigateToAssign, settlementId]);
+
+  const handleEdit = useCallback(() => {
+    onEdit(settlementId);
+  }, [onEdit, settlementId]);
 
   return (
     <DropdownMenu>
@@ -91,6 +100,16 @@ export const ActionsCell = memo(function ActionsCell({ settlementId }: ActionsCe
           <MessageSquare className="mr-2 h-4 w-4" />
           Komentarze
         </DropdownMenuItem>
+
+        {hasWritePermission ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleEdit}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edytuj
+            </DropdownMenuItem>
+          </>
+        ) : null}
 
         {hasManagePermission ? (
           <>

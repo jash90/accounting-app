@@ -59,6 +59,11 @@ export class GetSettlementsQueryDto {
   @IsUUID()
   assigneeId?: string;
 
+  @ApiPropertyOptional({ description: 'Filter by client ID' })
+  @IsOptional()
+  @IsUUID()
+  clientId?: string;
+
   @ApiPropertyOptional({ description: 'Show only unassigned settlements' })
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)

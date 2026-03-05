@@ -77,7 +77,7 @@ export function createSettlementsListColumns(): ColumnDef<SettlementResponseDto>
     },
     {
       accessorKey: 'documentsDate',
-      header: 'Data dokumentów',
+      header: 'Data dostarczenia dokumentów',
       cell: ({ row }) => {
         const date = row.original.documentsDate;
         return date ? (

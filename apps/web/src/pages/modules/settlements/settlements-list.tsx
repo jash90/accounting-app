@@ -23,6 +23,7 @@ import {
   type GetSettlementsQueryDto,
   type SettlementResponseDto,
   type SettlementStatus,
+  type UpdateSettlementDto,
 } from '@/lib/api/endpoints/settlements';
 import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
@@ -31,6 +32,7 @@ import {
   useInitializeSettlementMonth,
   useSendMissingInvoiceEmail,
   useSettlements,
+  useUpdateSettlement,
   useUpdateSettlementStatus,
 } from '@/lib/hooks/use-settlements';
 import { isOwnerOrAdmin } from '@/lib/utils/user';
@@ -38,6 +40,7 @@ import { isOwnerOrAdmin } from '@/lib/utils/user';
 import { createSettlementsListColumns } from './columns/settlements-list-columns';
 import { FiltersPanel, type SettlementFilters } from './components/filters-panel';
 import { MonthSelector } from './components/month-selector';
+import { SettlementEditDialog } from './components/settlement-edit-dialog';
 import { SettlementColumnsProvider } from './contexts/settlement-columns-context';
 
 // Lazy-load DataTable for better initial bundle size
@@ -156,8 +159,12 @@ export default function SettlementsListPage() {
   const { data: settlementsResponse, isPending } = useSettlements(query);
   const settlements = settlementsResponse?.data ?? [];
 
+  // Edit dialog state
+  const [editingSettlement, setEditingSettlement] = useState<SettlementResponseDto | null>(null);
+
   // Mutations
   const updateStatus = useUpdateSettlementStatus();
+  const updateSettlement = useUpdateSettlement();
   const initializeMonth = useInitializeSettlementMonth();
   const exportSettlements = useExportSettlements();
   const sendMissingInvoiceEmail = useSendMissingInvoiceEmail();
@@ -231,6 +238,28 @@ export default function SettlementsListPage() {
     [basePath, navigate]
   );
 
+  const handleEdit = useCallback(
+    (settlementId: string) => {
+      const settlement = settlements.find((s) => s.id === settlementId) ?? null;
+      setEditingSettlement(settlement);
+    },
+    [settlements]
+  );
+
+  const handleEditSave = useCallback(
+    (id: string, data: UpdateSettlementDto) => {
+      updateSettlement.mutate(
+        { id, data },
+        {
+          onSuccess: () => {
+            setEditingSettlement(null);
+          },
+        }
+      );
+    },
+    [updateSettlement]
+  );
+
   // Context value for column cell components
   // This allows cells to read isPending from context instead of having it as a column dependency
   const columnsContextValue = useMemo(
@@ -241,6 +270,7 @@ export default function SettlementsListPage() {
       onSendEmail: handleSendMissingInvoiceEmail,
       onNavigateToComments: handleNavigateToComments,
       onNavigateToAssign: handleNavigateToAssign,
+      onEdit: handleEdit,
       isStatusUpdatePending: updateStatus.isPending,
     }),
     [
@@ -250,73 +280,87 @@ export default function SettlementsListPage() {
       handleSendMissingInvoiceEmail,
       handleNavigateToComments,
       handleNavigateToAssign,
+      handleEdit,
       updateStatus.isPending,
     ]
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={() => navigate(basePath)}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Powrót
-        </Button>
-      </div>
-
-      <PageHeader
-        title="Rozliczenia"
-        description="Lista rozliczeń klientów za wybrany miesiąc"
-        icon={<Calculator className="h-6 w-6" />}
-        action={
-          <div className="flex items-center gap-4">
-            <MonthSelector
-              month={month}
-              year={year}
-              onMonthChange={handleMonthChange}
-              onYearChange={handleYearChange}
-            />
-            <Button
-              variant="outline"
-              onClick={() => exportSettlements.mutate(query)}
-              disabled={exportSettlements.isPending}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              {exportSettlements.isPending ? 'Eksport...' : 'Eksportuj CSV'}
-            </Button>
-            {hasManagePermission ? (
-              <Button
-                onClick={handleInitializeMonth}
-                disabled={initializeMonth.isPending || isMonthTransition}
-                className="bg-primary hover:bg-primary/90"
-              >
-                <PlayCircle className="mr-2 h-4 w-4" />
-                {initializeMonth.isPending ? 'Inicjalizacja...' : 'Zainicjalizuj miesiąc'}
-              </Button>
-            ) : null}
-          </div>
-        }
+    <>
+      <SettlementEditDialog
+        settlement={editingSettlement}
+        open={editingSettlement !== null}
+        onClose={() => setEditingSettlement(null)}
+        onSave={handleEditSave}
+        isPending={updateSettlement.isPending}
       />
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" onClick={() => navigate(basePath)}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Powrót
+          </Button>
+        </div>
 
-      <FiltersPanel filters={filters} onChange={handleFiltersChange} showEmployeeFilter={isOwner} />
+        <PageHeader
+          title="Rozliczenia"
+          description="Lista rozliczeń klientów za wybrany miesiąc"
+          icon={<Calculator className="h-6 w-6" />}
+          action={
+            <div className="flex items-center gap-4">
+              <MonthSelector
+                month={month}
+                year={year}
+                onMonthChange={handleMonthChange}
+                onYearChange={handleYearChange}
+              />
+              <Button
+                variant="outline"
+                onClick={() => exportSettlements.mutate(query)}
+                disabled={exportSettlements.isPending}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                {exportSettlements.isPending ? 'Eksport...' : 'Eksportuj CSV'}
+              </Button>
+              {hasManagePermission ? (
+                <Button
+                  onClick={handleInitializeMonth}
+                  disabled={initializeMonth.isPending || isMonthTransition}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  <PlayCircle className="mr-2 h-4 w-4" />
+                  {initializeMonth.isPending ? 'Inicjalizacja...' : 'Zainicjalizuj miesiąc'}
+                </Button>
+              ) : null}
+            </div>
+          }
+        />
 
-      <Card className="border-border">
-        <CardContent className="p-0">
-          <SettlementColumnsProvider value={columnsContextValue}>
-            <ErrorBoundary
-              fallback={<SettlementsTableErrorFallback />}
-              resetKeys={[location.pathname, month, year]}
-            >
-              <Suspense fallback={<TableSkeleton />}>
-                <LazyDataTable
-                  columns={columns}
-                  data={settlements}
-                  isLoading={isPending || isMonthTransition}
-                />
-              </Suspense>
-            </ErrorBoundary>
-          </SettlementColumnsProvider>
-        </CardContent>
-      </Card>
-    </div>
+        <FiltersPanel
+          filters={filters}
+          onChange={handleFiltersChange}
+          showEmployeeFilter={isOwner}
+        />
+
+        <Card className="border-border">
+          <CardContent className="p-0">
+            <SettlementColumnsProvider value={columnsContextValue}>
+              <ErrorBoundary
+                fallback={<SettlementsTableErrorFallback />}
+                resetKeys={[location.pathname, month, year]}
+              >
+                <Suspense fallback={<TableSkeleton />}>
+                  <LazyDataTable
+                    columns={columns}
+                    data={settlements}
+                    isLoading={isPending || isMonthTransition}
+                  />
+                </Suspense>
+              </ErrorBoundary>
+            </SettlementColumnsProvider>
+          </CardContent>
+        </Card>
+      </div>
+    </>
   );
 }

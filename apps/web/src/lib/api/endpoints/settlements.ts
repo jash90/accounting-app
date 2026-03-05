@@ -79,6 +79,7 @@ export interface SettlementCommentResponseDto {
 export interface GetSettlementsQueryDto {
   month: number;
   year: number;
+  clientId?: string;
   status?: SettlementStatus;
   assigneeId?: string;
   unassigned?: boolean;
