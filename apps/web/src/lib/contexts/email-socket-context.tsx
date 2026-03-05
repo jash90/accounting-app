@@ -9,12 +9,12 @@ import {
   type ReactNode,
 } from 'react';
 
-import { useAuthContext } from '@/contexts/auth-context';
-import { tokenStorage } from '@/lib/auth/token-storage';
 import { useQueryClient } from '@tanstack/react-query';
 import type { io as ioType, Socket } from 'socket.io-client';
 
 import { useToast } from '@/components/ui/use-toast';
+import { useAuthContext } from '@/contexts/auth-context';
+import { tokenStorage } from '@/lib/auth/token-storage';
 
 const loadSocketIo = () => import('socket.io-client');
 
@@ -28,9 +28,7 @@ const getWsBaseUrl = (): string => {
     if (url && url !== '__API_BASE_URL__') return url;
   }
   if (import.meta.env.DEV) {
-    return (
-      import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
-    );
+    return import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_BASE_URL || '';
   }
   return '';
 };

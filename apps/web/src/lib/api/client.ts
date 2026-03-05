@@ -26,9 +26,9 @@ const getApiBaseUrl = (): string => {
     }
   }
 
-  // Build-time env var - ONLY for local development
+  // In development, always use relative paths so requests go through the Vite proxy
   if (import.meta.env.DEV) {
-    return import.meta.env.VITE_API_BASE_URL || '';
+    return '';
   }
 
   // Production without runtime config - use relative paths (assumes same domain or proxy)

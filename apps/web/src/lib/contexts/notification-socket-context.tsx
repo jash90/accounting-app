@@ -9,14 +9,15 @@ import {
   type ReactNode,
 } from 'react';
 
-import { useAuthContext } from '@/contexts/auth-context';
-import { tokenStorage } from '@/lib/auth/token-storage';
-import type { NotificationResponseDto } from '@/types/notifications';
 import { useQueryClient } from '@tanstack/react-query';
 import type { io as ioType, Socket } from 'socket.io-client';
 
-import { queryKeys } from '@/lib/api/query-client';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuthContext } from '@/contexts/auth-context';
+import { queryKeys } from '@/lib/api/query-client';
+import { tokenStorage } from '@/lib/auth/token-storage';
+import type { NotificationResponseDto } from '@/types/notifications';
+
 
 const loadSocketIo = () => import('socket.io-client');
 
@@ -45,9 +46,7 @@ const getWsBaseUrl = (): string => {
 
   // Build-time env var - ONLY for local development
   if (import.meta.env.DEV) {
-    return (
-      import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
-    );
+    return import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_BASE_URL || '';
   }
 
   // Production fallback - use relative URL (same origin)
