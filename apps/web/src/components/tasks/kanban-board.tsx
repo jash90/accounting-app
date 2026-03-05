@@ -48,6 +48,8 @@ const statusOrder: TaskStatus[] = [
   TaskStatus.IN_PROGRESS,
   TaskStatus.IN_REVIEW,
   TaskStatus.DONE,
+  TaskStatus.BLOCKED,
+  TaskStatus.CANCELLED,
 ];
 
 export function KanbanBoard({

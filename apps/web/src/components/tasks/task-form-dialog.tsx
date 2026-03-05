@@ -114,6 +114,8 @@ export function TaskFormDialog({
         assigneeId: task.assigneeId || null,
         parentTaskId: task.parentTaskId || parentTaskId || null,
         labelIds: task.labels?.map((la) => la.labelId) || [],
+        blockingReason: task.blockingReason || null,
+        cancellationReason: task.cancellationReason || null,
       };
     }
     return {
@@ -129,6 +131,8 @@ export function TaskFormDialog({
       assigneeId: null,
       parentTaskId: parentTaskId || null,
       labelIds: [],
+      blockingReason: null,
+      cancellationReason: null,
     };
   }, [task, parentTaskId]);
 
@@ -154,6 +158,8 @@ export function TaskFormDialog({
       assigneeId: data.assigneeId || undefined,
       parentTaskId: data.parentTaskId || undefined,
       labelIds: data.labelIds,
+      blockingReason: data.blockingReason || undefined,
+      cancellationReason: data.cancellationReason || undefined,
     };
 
     await onSubmit(submitData);
@@ -161,6 +167,7 @@ export function TaskFormDialog({
   };
 
   const selectedLabelIds = form.watch('labelIds') || [];
+  const selectedStatus = form.watch('status');
 
   // Extract stable form methods to use as dependencies instead of entire form object
   const { getValues, setValue } = form;
@@ -288,6 +295,50 @@ export function TaskFormDialog({
                 )}
               />
             </div>
+
+            {/* Blocking reason — shown only when BLOCKED status selected */}
+            {selectedStatus === TaskStatus.BLOCKED && (
+              <FormField
+                control={form.control}
+                name="blockingReason"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Powód blokady *</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Opisz powód zablokowania zadania..."
+                        rows={2}
+                        {...field}
+                        value={field.value ?? ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {/* Cancellation reason — shown only when CANCELLED status selected */}
+            {selectedStatus === TaskStatus.CANCELLED && (
+              <FormField
+                control={form.control}
+                name="cancellationReason"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Powód anulowania *</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Opisz powód anulowania zadania..."
+                        rows={2}
+                        {...field}
+                        value={field.value ?? ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {/* Dates */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
