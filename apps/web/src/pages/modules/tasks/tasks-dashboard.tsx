@@ -1,5 +1,6 @@
 import {
   AlertCircle,
+  BarChart3,
   Calendar,
   CheckCircle2,
   CheckSquare,
@@ -12,68 +13,13 @@ import {
 } from 'lucide-react';
 
 import { TasksStatusChart } from '@/components/dashboard/charts/tasks-status-chart';
-import { RankedListCard } from '@/components/dashboard/ranked-list-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NavigationCard } from '@/components/ui/navigation-card';
 import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
-import {
-  useEmployeeTaskRanking,
-  useGlobalTaskStatistics,
-  useTaskCompletionStats,
-} from '@/lib/hooks/use-tasks';
+import { useGlobalTaskStatistics } from '@/lib/hooks/use-tasks';
 import { isOwnerOrAdmin } from '@/lib/utils/user';
-
-function ExtendedTaskStats() {
-  const { data: rankingData, isPending: rankingPending } = useEmployeeTaskRanking();
-  const { data: durationData, isPending: durationPending } = useTaskCompletionStats();
-
-  return (
-    <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <RankedListCard
-        title="Ranking pracowników - ukończone zadania"
-        isPending={rankingPending}
-        items={rankingData?.rankings?.map(
-          (
-            r: {
-              userId: string;
-              firstName?: string;
-              lastName?: string;
-              email: string;
-              completedCount: number;
-            },
-            i: number
-          ) => ({
-            key: r.userId,
-            label: `${i + 1}. ${r.firstName ?? ''} ${r.lastName ?? r.email}`.trim(),
-            value: r.completedCount,
-          })
-        )}
-        limit={10}
-      />
-      <RankedListCard
-        title="Najdłuższe zadania (godz.)"
-        isPending={durationPending}
-        items={durationData?.longest?.map(
-          (t: { id: string; title: string; durationHours: number }) => ({
-            key: t.id,
-            label: t.title,
-            value: `${t.durationHours}h`,
-          })
-        )}
-        limit={5}
-        footer={
-          durationData?.averageDurationHours != null ? (
-            <p className="text-muted-foreground mt-2 text-xs">
-              Średnia: {durationData.averageDurationHours}h
-            </p>
-          ) : null
-        }
-      />
-    </div>
-  );
-}
 
 export default function TasksDashboardPage() {
   const { user } = useAuthContext();
@@ -226,8 +172,18 @@ export default function TasksDashboardPage() {
         />
       )}
 
-      {/* Extended statistics - admin/owner only */}
-      {showSettings && <ExtendedTaskStats />}
+      {/* Statistics Card — admin/owner only */}
+      {showSettings && (
+        <NavigationCard
+          title="Statystyki zadań"
+          description="Rankingi pracowników, najdłuższe zadania i rozszerzone statystyki"
+          icon={BarChart3}
+          href={`${basePath}/statistics`}
+          gradient="bg-gradient-to-br from-indigo-500 to-blue-600"
+          buttonText="Zobacz statystyki"
+          buttonVariant="outline"
+        />
+      )}
     </div>
   );
 }

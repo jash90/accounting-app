@@ -160,6 +160,16 @@ export function useEmployeeTaskRanking(filters?: { startDate?: string; endDate?:
   });
 }
 
+export function useTaskStatusDuration(
+  status: string,
+  filters?: { startDate?: string; endDate?: string }
+) {
+  return useQuery({
+    queryKey: queryKeys.tasks.extendedStats.statusDuration(status, filters),
+    queryFn: () => tasksApi.getStatusDurationRanking({ status, ...filters }),
+  });
+}
+
 export const useCreateTask = createMutationHook<{ clientId?: string }, CreateTaskDto>({
   mutationFn: (taskData) => tasksApi.create(taskData),
   invalidatePredicate: isTaskViewQuery,
@@ -304,17 +314,15 @@ export const useAssignTaskLabel = createMutationHook<void, { taskId: string; lab
   errorMessage: 'Nie udało się przypisać etykiety',
 });
 
-export const useUnassignTaskLabel = createMutationHook<void, { taskId: string; labelId: string }>(
-  {
-    mutationFn: ({ taskId, labelId }) => taskLabelsApi.unassignFromTask(taskId, labelId),
-    invalidatePredicate: isTaskViewQuery,
-    onSuccess: (_, variables, qc) => {
-      qc.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
-    },
-    successMessage: 'Etykieta została usunięta z zadania',
-    errorMessage: 'Nie udało się usunąć etykiety z zadania',
-  }
-);
+export const useUnassignTaskLabel = createMutationHook<void, { taskId: string; labelId: string }>({
+  mutationFn: ({ taskId, labelId }) => taskLabelsApi.unassignFromTask(taskId, labelId),
+  invalidatePredicate: isTaskViewQuery,
+  onSuccess: (_, variables, qc) => {
+    qc.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
+  },
+  successMessage: 'Etykieta została usunięta z zadania',
+  errorMessage: 'Nie udało się usunąć etykiety z zadania',
+});
 
 // ============================================
 // Task Comment Hooks
@@ -353,17 +361,16 @@ export const useUpdateTaskComment = createMutationHook<
   errorMessage: 'Nie udało się zaktualizować komentarza',
 });
 
-export const useDeleteTaskComment = createMutationHook<
-  void,
-  { commentId: string; taskId: string }
->({
-  mutationFn: ({ commentId }) => taskCommentsApi.delete(commentId),
-  onSuccess: (_, variables, qc) => {
-    qc.invalidateQueries({ queryKey: queryKeys.tasks.comments(variables.taskId) });
-  },
-  successMessage: 'Komentarz został usunięty',
-  errorMessage: 'Nie udało się usunąć komentarza',
-});
+export const useDeleteTaskComment = createMutationHook<void, { commentId: string; taskId: string }>(
+  {
+    mutationFn: ({ commentId }) => taskCommentsApi.delete(commentId),
+    onSuccess: (_, variables, qc) => {
+      qc.invalidateQueries({ queryKey: queryKeys.tasks.comments(variables.taskId) });
+    },
+    successMessage: 'Komentarz został usunięty',
+    errorMessage: 'Nie udało się usunąć komentarza',
+  }
+);
 
 // ============================================
 // Task Dependency Hooks

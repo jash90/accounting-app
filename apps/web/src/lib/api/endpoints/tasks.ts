@@ -149,6 +149,11 @@ export const tasksApi = {
     apiClient
       .get(`${BASE_URL}/statistics/extended/employee-ranking`, { params })
       .then((r) => r.data),
+
+  getStatusDurationRanking: (params: { status: string; startDate?: string; endDate?: string }) =>
+    apiClient
+      .get(`${BASE_URL}/statistics/extended/status-duration`, { params })
+      .then((r) => r.data),
 };
 
 // ============================================
