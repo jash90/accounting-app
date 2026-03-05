@@ -12,9 +12,13 @@ export class AddCompanyIdToEntities1766502602648 implements MigrationInterface {
     );
 
     // Add columns as nullable first to handle existing data
-    await queryRunner.query(`ALTER TABLE "client_custom_field_values" ADD "companyId" uuid`);
-    await queryRunner.query(`ALTER TABLE "change_logs" ADD "companyId" uuid`);
-    await queryRunner.query(`ALTER TABLE "notification_settings" ADD "companyId" uuid`);
+    await queryRunner.query(
+      `ALTER TABLE "client_custom_field_values" ADD COLUMN IF NOT EXISTS "companyId" uuid`
+    );
+    await queryRunner.query(`ALTER TABLE "change_logs" ADD COLUMN IF NOT EXISTS "companyId" uuid`);
+    await queryRunner.query(
+      `ALTER TABLE "notification_settings" ADD COLUMN IF NOT EXISTS "companyId" uuid`
+    );
 
     // Populate companyId from related entities for existing data
     // client_custom_field_values gets companyId from client
