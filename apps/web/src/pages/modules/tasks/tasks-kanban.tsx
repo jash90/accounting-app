@@ -15,8 +15,19 @@ import {
 import { PageHeader } from '@/components/common/page-header';
 import { KanbanBoard } from '@/components/tasks/kanban-board';
 import { TaskFilters } from '@/components/tasks/task-filters';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useModulePermissions } from '@/lib/hooks/use-permissions';
 import {
@@ -31,8 +42,7 @@ import {
   type TaskResponseDto,
   type UpdateTaskDto,
 } from '@/types/dtos';
-import { TaskStatus, UserRole } from '@/types/enums';
-
+import { TaskStatus, TaskStatusLabels, UserRole } from '@/types/enums';
 
 // Lazy-load heavy form dialog to reduce initial bundle size - direct import for tree-shaking
 const TaskFormDialog = lazy(() =>
@@ -55,6 +65,14 @@ const DialogLoadingFallback = () => (
     </div>
   </div>
 );
+
+interface PendingMove {
+  taskId: string;
+  newStatus: TaskStatus;
+  newIndex: number;
+}
+
+const REASON_REQUIRED_STATUSES = new Set([TaskStatus.BLOCKED, TaskStatus.CANCELLED]);
 
 export default function TasksKanbanPage() {
   const { user } = useAuthContext();
@@ -86,6 +104,10 @@ export default function TasksKanbanPage() {
   const [createDefaultStatus, setCreateDefaultStatus] = useState<TaskStatus>(TaskStatus.TODO);
   const [editingTask, setEditingTask] = useState<TaskResponseDto | null>(null);
 
+  // Reason dialog state for BLOCKED/CANCELLED moves
+  const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
+  const [reasonText, setReasonText] = useState('');
+
   const handleFiltersChange = useCallback((newFilters: TaskFiltersDto) => {
     setFilters(newFilters);
   }, []);
@@ -94,34 +116,60 @@ export default function TasksKanbanPage() {
     setEditingTask(task);
   }, []);
 
-  const handleTaskMove = useCallback(
-    async (taskId: string, newStatus: TaskStatus, newIndex: number) => {
-      // Update task status
+  const executeMove = useCallback(
+    async (
+      taskId: string,
+      newStatus: TaskStatus,
+      newIndex: number,
+      extraData?: Partial<UpdateTaskDto>
+    ) => {
       await updateTask.mutateAsync({
         id: taskId,
-        data: { status: newStatus },
+        data: { status: newStatus, ...extraData },
       });
 
-      // Reorder tasks if needed
       if (kanbanData) {
         const columnTasks = kanbanData[newStatus] || [];
         const taskIds = columnTasks.map((t) => t.id);
-
-        // Move task to new position
         const currentIndex = taskIds.indexOf(taskId);
         if (currentIndex !== -1 && currentIndex !== newIndex) {
           taskIds.splice(currentIndex, 1);
           taskIds.splice(newIndex, 0, taskId);
-
-          await reorderTasks.mutateAsync({
-            taskIds,
-            status: newStatus,
-          });
+          await reorderTasks.mutateAsync({ taskIds, status: newStatus });
         }
       }
     },
     [kanbanData, updateTask, reorderTasks]
   );
+
+  const handleTaskMove = useCallback(
+    async (taskId: string, newStatus: TaskStatus, newIndex: number) => {
+      if (REASON_REQUIRED_STATUSES.has(newStatus)) {
+        setReasonText('');
+        setPendingMove({ taskId, newStatus, newIndex });
+        return;
+      }
+      await executeMove(taskId, newStatus, newIndex);
+    },
+    [executeMove]
+  );
+
+  const handleReasonConfirm = useCallback(async () => {
+    if (!pendingMove) return;
+    const reason = reasonText.trim();
+    const extraData: Partial<UpdateTaskDto> =
+      pendingMove.newStatus === TaskStatus.BLOCKED
+        ? { blockingReason: reason }
+        : { cancellationReason: reason };
+    await executeMove(pendingMove.taskId, pendingMove.newStatus, pendingMove.newIndex, extraData);
+    setPendingMove(null);
+    setReasonText('');
+  }, [pendingMove, executeMove, reasonText]);
+
+  const handleReasonCancel = useCallback(() => {
+    setPendingMove(null);
+    setReasonText('');
+  }, []);
 
   const handleAddTask = useCallback((status: TaskStatus) => {
     setCreateDefaultStatus(status);
@@ -249,6 +297,37 @@ export default function TasksKanbanPage() {
           )}
         </>
       )}
+
+      <AlertDialog open={!!pendingMove} onOpenChange={(open) => !open && handleReasonCancel()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Zmień status na: {pendingMove ? TaskStatusLabels[pendingMove.newStatus] : ''}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingMove?.newStatus === TaskStatus.BLOCKED
+                ? 'Podaj powód zablokowania zadania.'
+                : 'Podaj powód anulowania zadania.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Textarea
+            value={reasonText}
+            onChange={(e) => setReasonText(e.target.value)}
+            placeholder="Wpisz powód..."
+            className="mt-2"
+            rows={3}
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleReasonCancel}>Anuluj</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleReasonConfirm}
+              disabled={!reasonText.trim() || updateTask.isPending}
+            >
+              Potwierdź
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

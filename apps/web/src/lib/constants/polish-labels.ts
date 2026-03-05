@@ -220,6 +220,7 @@ export const TaskStatusLabels: Record<TaskStatus, string> = {
   [TaskStatus.IN_REVIEW]: 'Do przeglądu',
   [TaskStatus.DONE]: 'Zakończone',
   [TaskStatus.CANCELLED]: 'Anulowane',
+  [TaskStatus.BLOCKED]: 'Zablokowane',
 };
 
 // Task Priority Labels

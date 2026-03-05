@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import {
   EmploymentType,
   LeadSource,
@@ -9,7 +11,6 @@ import {
   VatStatus,
   ZusStatus,
 } from '@/types/enums';
-import { z } from 'zod';
 
 // Shared password validation used across create/register/change password forms.
 // Requires min 12 chars, upper, lower, digit, and special character.
@@ -743,19 +744,30 @@ export const clientReliefSectionSchema = z
 export type ClientReliefSectionFormData = z.infer<typeof clientReliefSectionSchema>;
 
 // Task Schemas
-export const taskFormSchema = z.object({
-  title: z.string().min(1, 'Tytuł jest wymagany').max(255),
-  description: z.string().optional(),
-  status: z.nativeEnum(TaskStatus),
-  priority: z.nativeEnum(TaskPriority),
-  dueDate: z.date().optional().nullable(),
-  startDate: z.date().optional().nullable(),
-  estimatedMinutes: z.number().min(0).optional().nullable(),
-  storyPoints: z.number().min(1).max(13).optional().nullable(),
-  clientId: z.string().optional().nullable(),
-  assigneeId: z.string().optional().nullable(),
-  parentTaskId: z.string().optional().nullable(),
-  labelIds: z.array(z.string()).optional(),
-});
+export const taskFormSchema = z
+  .object({
+    title: z.string().min(1, 'Tytuł jest wymagany').max(255),
+    description: z.string().optional(),
+    status: z.nativeEnum(TaskStatus),
+    priority: z.nativeEnum(TaskPriority),
+    dueDate: z.date().optional().nullable(),
+    startDate: z.date().optional().nullable(),
+    estimatedMinutes: z.number().min(0).optional().nullable(),
+    storyPoints: z.number().min(1).max(13).optional().nullable(),
+    clientId: z.string().optional().nullable(),
+    assigneeId: z.string().optional().nullable(),
+    parentTaskId: z.string().optional().nullable(),
+    labelIds: z.array(z.string()).optional(),
+    blockingReason: z.string().max(500).optional().nullable(),
+    cancellationReason: z.string().max(500).optional().nullable(),
+  })
+  .refine((data) => data.status !== TaskStatus.BLOCKED || !!data.blockingReason, {
+    message: 'Powód blokady jest wymagany',
+    path: ['blockingReason'],
+  })
+  .refine((data) => data.status !== TaskStatus.CANCELLED || !!data.cancellationReason, {
+    message: 'Powód anulowania jest wymagany',
+    path: ['cancellationReason'],
+  });
 
 export type TaskFormData = z.infer<typeof taskFormSchema>;
