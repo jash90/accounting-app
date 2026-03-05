@@ -162,6 +162,8 @@ export const queryKeys = {
         ['tasks', 'stats', 'completion-duration', stableFilterKey(filters)] as const,
       employeeRanking: (filters?: unknown) =>
         ['tasks', 'stats', 'employee-ranking', stableFilterKey(filters)] as const,
+      statusDuration: (status: string, filters?: unknown) =>
+        ['tasks', 'stats', 'status-duration', status, stableFilterKey(filters)] as const,
     },
   },
   taskLabels: {
