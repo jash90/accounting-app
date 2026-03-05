@@ -284,8 +284,11 @@ export function useTimeByClientReport(params: {
 }) {
   return useQuery({
     queryKey: queryKeys.timeTracking.reports.byClient(params),
-    queryFn: () => timeReportsApi.getByClient(params),
-    enabled: !!params.startDate && !!params.endDate,
+    queryFn: () =>
+      params.clientId
+        ? timeReportsApi.getByClient({ ...params, clientId: params.clientId })
+        : Promise.resolve([]),
+    enabled: !!params.startDate && !!params.endDate && !!params.clientId,
     ...REPORT_CACHE,
   });
 }

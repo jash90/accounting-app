@@ -1,17 +1,17 @@
 import { useMemo, useState } from 'react';
 
-import { cn } from '@/lib/utils/cn';
-import { formatDuration } from '@/lib/utils/time';
-import { type TimeEntryResponseDto } from '@/types/dtos';
 import { addDays, format, parseISO, startOfDay, subDays } from 'date-fns';
 import { pl } from 'date-fns/locale/pl';
 import { Calendar, ChevronLeft, ChevronRight, Clock, DollarSign, Plus } from 'lucide-react';
 
-import { useDailyTimesheet } from '@/lib/hooks/use-time-tracking';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useDailyTimesheet } from '@/lib/hooks/use-time-tracking';
+import { cn } from '@/lib/utils/cn';
+import { formatDuration } from '@/lib/utils/time';
+import { type TimeEntryResponseDto } from '@/types/dtos';
 
 import { TimeEntryFormDialog } from './time-entry-form-dialog';
 import { TimeEntryStatusBadge } from './time-entry-status-badge';
@@ -216,6 +216,14 @@ export function DailyTimesheet({ className, initialDate, onEntryClick }: DailyTi
                         {entry.task && (
                           <Badge variant="outline" className="text-xs">
                             {entry.task.title}
+                          </Badge>
+                        )}
+                        {entry.settlement && (
+                          <Badge variant="outline" className="text-xs">
+                            {entry.settlement.client?.name
+                              ? `${entry.settlement.client.name} — `
+                              : ''}
+                            {entry.settlement.month}/{entry.settlement.year}
                           </Badge>
                         )}
                         {entry.client && (

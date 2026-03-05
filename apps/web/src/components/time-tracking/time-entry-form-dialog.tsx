@@ -25,6 +25,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Select,
   SelectContent,
@@ -34,8 +35,9 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { useAuthContext } from '@/contexts/auth-context';
 import { useSettlements } from '@/lib/hooks/use-settlements';
-import { useTaskClients } from '@/lib/hooks/use-tasks';
+import { useTasks } from '@/lib/hooks/use-tasks';
 import { useCreateTimeEntry, useUpdateTimeEntry } from '@/lib/hooks/use-time-tracking';
 import { type CreateTimeEntryDto, type TimeEntryResponseDto } from '@/types/dtos';
 
@@ -45,6 +47,7 @@ import { type CreateTimeEntryDto, type TimeEntryResponseDto } from '@/types/dtos
  */
 const timeEntryFormSchema = z
   .object({
+    workType: z.enum(['task', 'settlement']),
     description: z.string().max(255, 'Opis może mieć maksymalnie 255 znaków').optional(),
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Nieprawidłowy format daty'),
     startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Nieprawidłowy format czasu'),
@@ -54,6 +57,7 @@ const timeEntryFormSchema = z
       .optional()
       .or(z.literal('')),
     clientId: z.string().optional(),
+    taskId: z.string().optional(),
     settlementId: z.string().optional(),
     isBillable: z.boolean(),
     hourlyRate: z
@@ -68,6 +72,21 @@ const timeEntryFormSchema = z
       return data.startTime < data.endTime;
     },
     { message: 'Czas zakończenia musi być późniejszy niż czas rozpoczęcia', path: ['endTime'] }
+  )
+  .refine(
+    (data) => {
+      if (data.workType === 'task') return !!data.taskId && data.taskId !== '__none__';
+      return true;
+    },
+    { message: 'Wybierz zadanie', path: ['taskId'] }
+  )
+  .refine(
+    (data) => {
+      if (data.workType === 'settlement')
+        return !!data.settlementId && data.settlementId !== '__none__';
+      return true;
+    },
+    { message: 'Wybierz rozliczenie', path: ['settlementId'] }
   );
 
 type FormData = z.infer<typeof timeEntryFormSchema>;
@@ -85,30 +104,36 @@ export const TimeEntryFormDialog = memo(function TimeEntryFormDialog({
 }: TimeEntryFormDialogProps) {
   const createEntry = useCreateTimeEntry();
   const updateEntry = useUpdateTimeEntry();
-  const { data: clientsData } = useTaskClients();
-  const { data: settlementsData } = useSettlements({
-    month: new Date().getMonth() + 1,
-    year: new Date().getFullYear(),
-    limit: 100,
-  });
-
-  const clients = clientsData || [];
-  const settlements = settlementsData?.data ?? [];
+  const { user } = useAuthContext();
 
   const form = useForm<FormData>({
     resolver: zodResolver(timeEntryFormSchema),
     defaultValues: {
+      workType: 'task',
       description: '',
       date: format(new Date(), 'yyyy-MM-dd'),
       startTime: format(new Date(), 'HH:mm'),
       endTime: '',
       clientId: '',
+      taskId: '',
       settlementId: '',
       isBillable: true,
       hourlyRate: '',
       tags: '',
     },
   });
+
+  const workType = form.watch('workType');
+
+  const { data: tasksData } = useTasks({ limit: 100, assigneeId: user?.id });
+  const { data: settlementsData } = useSettlements({
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
+    limit: 100,
+  });
+
+  const tasks = tasksData?.data ?? [];
+  const settlements = settlementsData?.data ?? [];
 
   const { reset } = form;
 
@@ -124,12 +149,15 @@ export const TimeEntryFormDialog = memo(function TimeEntryFormDialog({
               ? entry.endTime
               : parseISO(entry.endTime as string)
             : null;
+          const workType = entry.taskId ? 'task' : 'settlement';
           reset({
+            workType,
             description: entry.description || '',
             date: format(startDate, 'yyyy-MM-dd'),
             startTime: format(startDate, 'HH:mm'),
             endTime: endDate ? format(endDate, 'HH:mm') : '',
-            clientId: entry.clientId || '',
+            clientId: '',
+            taskId: entry.taskId || '',
             settlementId: entry.settlementId || '',
             isBillable: entry.isBillable,
             hourlyRate: entry.hourlyRate?.toString() || '',
@@ -137,11 +165,13 @@ export const TimeEntryFormDialog = memo(function TimeEntryFormDialog({
           });
         } else {
           reset({
+            workType: 'task',
             description: '',
             date: format(new Date(), 'yyyy-MM-dd'),
             startTime: format(new Date(), 'HH:mm'),
             endTime: '',
             clientId: '',
+            taskId: '',
             settlementId: '',
             isBillable: true,
             hourlyRate: '',
@@ -162,13 +192,26 @@ export const TimeEntryFormDialog = memo(function TimeEntryFormDialog({
         ? parse(`${data.date} ${data.endTime}`, 'yyyy-MM-dd HH:mm', new Date())
         : undefined;
 
+      const selectedTask =
+        data.workType === 'task' ? tasks.find((t) => t.id === data.taskId) : undefined;
+      const selectedSettlement =
+        data.workType === 'settlement'
+          ? settlements.find((s) => s.id === data.settlementId)
+          : undefined;
+
       const entryData: CreateTimeEntryDto = {
         description: data.description || undefined,
         startTime: startDateTime.toISOString(),
         endTime: endDateTime?.toISOString(),
-        clientId: data.clientId && data.clientId !== '__none__' ? data.clientId : undefined,
+        clientId: selectedTask?.clientId ?? selectedSettlement?.clientId,
+        taskId:
+          data.workType === 'task' && data.taskId && data.taskId !== '__none__'
+            ? data.taskId
+            : undefined,
         settlementId:
-          data.settlementId && data.settlementId !== '__none__' ? data.settlementId : undefined,
+          data.workType === 'settlement' && data.settlementId && data.settlementId !== '__none__'
+            ? data.settlementId
+            : undefined,
         isBillable: data.isBillable,
         hourlyRate: data.hourlyRate ? parseFloat(data.hourlyRate) : undefined,
         tags: data.tags
@@ -178,6 +221,15 @@ export const TimeEntryFormDialog = memo(function TimeEntryFormDialog({
               .filter(Boolean)
           : undefined,
       };
+
+      // When editing, explicitly clear the field that's no longer used
+      if (entry) {
+        if (data.workType === 'task') {
+          (entryData as unknown as Record<string, unknown>).settlementId = null;
+        } else {
+          (entryData as unknown as Record<string, unknown>).taskId = null;
+        }
+      }
 
       if (entry) {
         updateEntry.mutate(
@@ -206,7 +258,7 @@ export const TimeEntryFormDialog = memo(function TimeEntryFormDialog({
         });
       }
     },
-    [entry, updateEntry, createEntry, onOpenChange]
+    [entry, updateEntry, createEntry, onOpenChange, tasks, settlements]
   );
 
   const isLoading = createEntry.isPending || updateEntry.isPending;
@@ -287,56 +339,99 @@ export const TimeEntryFormDialog = memo(function TimeEntryFormDialog({
 
             <FormField
               control={form.control}
-              name="clientId"
+              name="workType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Klient</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || '__none__'}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Wybierz klienta" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="__none__">Brak klienta</SelectItem>
-                      {clients.map((client) => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Typ pracy</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      value={field.value}
+                      onValueChange={(val) => {
+                        field.onChange(val);
+                        // Clear the other field when switching type
+                        if (val === 'task') {
+                          form.setValue('settlementId', '');
+                        } else {
+                          form.setValue('taskId', '');
+                        }
+                      }}
+                      className="flex gap-4"
+                    >
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="task" id="workType-task" />
+                        <label htmlFor="workType-task" className="cursor-pointer text-sm">
+                          Zadanie
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="settlement" id="workType-settlement" />
+                        <label htmlFor="workType-settlement" className="cursor-pointer text-sm">
+                          Rozliczenie
+                        </label>
+                      </div>
+                    </RadioGroup>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="settlementId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Rozliczenie</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || '__none__'}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Wybierz rozliczenie" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="__none__">Brak rozliczenia</SelectItem>
-                      {settlements.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.client?.name ? `${s.client.name} — ` : ''}
-                          {s.month}/{s.year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {workType === 'task' && (
+              <FormField
+                control={form.control}
+                name="taskId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Zadanie</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || '__none__'}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Wybierz zadanie" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="__none__">Wybierz zadanie</SelectItem>
+                        {tasks.map((task) => (
+                          <SelectItem key={task.id} value={task.id}>
+                            {task.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {workType === 'settlement' && (
+              <FormField
+                control={form.control}
+                name="settlementId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rozliczenie</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || '__none__'}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Wybierz rozliczenie" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="__none__">Wybierz rozliczenie</SelectItem>
+                        {settlements.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.client?.name ? `${s.client.name} — ` : ''}
+                            {s.month}/{s.year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
