@@ -97,6 +97,11 @@ export class SettlementsService {
       });
     }
 
+    // Client filter
+    if (query.clientId) {
+      qb.andWhere('settlement.clientId = :clientId', { clientId: query.clientId });
+    }
+
     // Search filter (client name or NIP)
     if (query.search) {
       const escapedSearch = escapeLikePattern(query.search);

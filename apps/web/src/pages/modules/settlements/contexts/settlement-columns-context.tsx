@@ -9,6 +9,7 @@ export interface SettlementColumnsContextValue {
   onSendEmail: (settlementId: string) => void;
   onNavigateToComments: (settlementId: string) => void;
   onNavigateToAssign: (settlementId: string) => void;
+  onEdit: (settlementId: string) => void;
   isStatusUpdatePending: boolean;
 }
 
