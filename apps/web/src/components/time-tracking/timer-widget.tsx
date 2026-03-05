@@ -1,21 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { cn } from '@/lib/utils/cn';
-import { formatDurationSeconds } from '@/lib/utils/time';
 import { Clock, Play, Square, Trash2 } from 'lucide-react';
 
-import { useTaskClients } from '@/lib/hooks/use-tasks';
-import {
-  useActiveTimer,
-  useDiscardTimer,
-  useStartTimer,
-  useStopTimer,
-  useUpdateTimer,
-} from '@/lib/hooks/use-time-tracking';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Select,
   SelectContent,
@@ -24,16 +15,25 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-
-interface Client {
-  id: string;
-  name: string;
-}
+import { useAuthContext } from '@/contexts/auth-context';
+import { useSettlements } from '@/lib/hooks/use-settlements';
+import { useTasks } from '@/lib/hooks/use-tasks';
+import {
+  useActiveTimer,
+  useDiscardTimer,
+  useStartTimer,
+  useStopTimer,
+  useUpdateTimer,
+} from '@/lib/hooks/use-time-tracking';
+import { cn } from '@/lib/utils/cn';
+import { formatDurationSeconds } from '@/lib/utils/time';
 
 interface ActiveTimer {
   id: string;
   description?: string;
   clientId?: string;
+  taskId?: string;
+  settlementId?: string;
   isBillable: boolean;
   isRunning: boolean;
   startTime?: string | Date;
@@ -51,6 +51,7 @@ interface TimerFullViewControlsProps {
   isStopPending: boolean;
   isDiscardPending: boolean;
   isStartPending: boolean;
+  canStart: boolean;
 }
 
 function TimerFullViewControls({
@@ -65,6 +66,7 @@ function TimerFullViewControls({
   isStopPending,
   isDiscardPending,
   isStartPending,
+  canStart,
 }: TimerFullViewControlsProps) {
   return (
     <div className="flex items-center gap-4">
@@ -119,7 +121,7 @@ function TimerFullViewControls({
       ) : (
         <Button
           onClick={onStart}
-          disabled={isStartPending}
+          disabled={isStartPending || !canStart}
           className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
           aria-label="Rozpocznij timer"
         >
@@ -133,23 +135,26 @@ function TimerFullViewControls({
 
 interface TimerFormProps {
   initialDescription: string;
-  initialClientId: string;
+  initialWorkType: 'task' | 'settlement';
+  initialTaskId: string;
+  initialSettlementId: string;
   initialIsBillable: boolean;
   activeTimer: ActiveTimer | null | undefined;
-  clients: Client[];
   compact: boolean;
   className?: string;
 }
 
 function TimerForm({
   initialDescription,
-  initialClientId,
+  initialWorkType,
+  initialTaskId,
+  initialSettlementId,
   initialIsBillable,
   activeTimer,
-  clients,
   compact,
   className,
 }: TimerFormProps) {
+  const { user } = useAuthContext();
   const startTimer = useStartTimer();
   const stopTimer = useStopTimer();
   const updateTimer = useUpdateTimer();
@@ -157,9 +162,29 @@ function TimerForm({
 
   // Form state - initialized from props (no useEffect needed due to key prop in parent)
   const [description, setDescription] = useState(() => initialDescription);
-  const [clientId, setClientId] = useState(() => initialClientId);
+  const [workType, setWorkType] = useState<'task' | 'settlement'>(() => initialWorkType);
+  const [taskId, setTaskId] = useState(() => initialTaskId);
+  const [settlementId, setSettlementId] = useState(() => initialSettlementId);
   const [isBillable, setIsBillable] = useState(() => initialIsBillable);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  const { data: tasksData } = useTasks({ limit: 100, assigneeId: user?.id });
+  const { data: settlementsData } = useSettlements({
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
+    limit: 100,
+  });
+
+  const tasks = tasksData?.data ?? [];
+  const settlements = settlementsData?.data ?? [];
+
+  // Derive clientId from selected task or settlement
+  const derivedClientId =
+    workType === 'task' && taskId
+      ? tasks.find((t) => t.id === taskId)?.clientId
+      : workType === 'settlement' && settlementId
+        ? settlements.find((s) => s.id === settlementId)?.clientId
+        : undefined;
 
   // Ref to track component mount state to prevent memory leaks
   const mountedRef = useRef(true);
@@ -198,13 +223,21 @@ function TimerForm({
   // Derive formatted time - show 0 when not running since we don't reset state
   const formattedTime = formatDurationSeconds(timerIsRunning ? elapsedSeconds : 0);
 
+  // Can start only when a task or settlement is selected
+  const canStart =
+    workType === 'task'
+      ? !!taskId && taskId !== '__none__'
+      : !!settlementId && settlementId !== '__none__';
+
   const handleStart = useCallback(() => {
     startTimer.mutate({
       description: description || undefined,
-      clientId: clientId || undefined,
+      clientId: derivedClientId,
+      taskId: workType === 'task' && taskId ? taskId : undefined,
+      settlementId: workType === 'settlement' && settlementId ? settlementId : undefined,
       isBillable,
     });
-  }, [startTimer, description, clientId, isBillable]);
+  }, [startTimer, description, derivedClientId, workType, taskId, settlementId, isBillable]);
 
   const handleStop = useCallback(() => {
     stopTimer.mutate(
@@ -213,7 +246,9 @@ function TimerForm({
         onSuccess: () => {
           // Only clear form state on successful stop
           setDescription('');
-          setClientId('');
+          setWorkType('task');
+          setTaskId('');
+          setSettlementId('');
           setIsBillable(true);
         },
         // On error, keep the current state so user can retry
@@ -225,7 +260,9 @@ function TimerForm({
     discardTimer.mutate(undefined, {
       onSuccess: () => {
         setDescription('');
-        setClientId('');
+        setWorkType('task');
+        setTaskId('');
+        setSettlementId('');
         setIsBillable(true);
       },
       // On error, keep the current state so user can retry
@@ -237,7 +274,9 @@ function TimerForm({
       updateTimer.mutate(
         {
           description: description || undefined,
-          clientId: clientId || undefined,
+          clientId: derivedClientId,
+          taskId: workType === 'task' && taskId ? taskId : null,
+          settlementId: workType === 'settlement' && settlementId ? settlementId : null,
           isBillable,
         },
         {
@@ -248,30 +287,99 @@ function TimerForm({
         }
       );
     }
-  }, [activeTimer, description, clientId, isBillable, updateTimer]);
+  }, [
+    activeTimer,
+    description,
+    derivedClientId,
+    workType,
+    taskId,
+    settlementId,
+    isBillable,
+    updateTimer,
+  ]);
 
-  const handleClientChange = useCallback(
-    (value: string) => {
-      const actualValue = value === '__none__' ? '' : value;
-      const previousClientId = clientId;
-      setClientId(actualValue);
+  const handleWorkTypeChange = useCallback(
+    (value: 'task' | 'settlement') => {
+      const previousWorkType = workType;
+      const previousTaskId = taskId;
+      const previousSettlementId = settlementId;
+      setWorkType(value);
+      // Clear the other field
+      if (value === 'task') {
+        setSettlementId('');
+      } else {
+        setTaskId('');
+      }
       if (activeTimer?.isRunning) {
         updateTimer.mutate(
           {
             description: description || undefined,
-            clientId: actualValue || undefined,
+            clientId: null,
+            taskId: value === 'task' ? taskId || null : null,
+            settlementId: value === 'settlement' ? settlementId || null : null,
             isBillable,
           },
           {
             onError: () => {
-              // Restore the original client on error
-              setClientId(previousClientId);
+              setWorkType(previousWorkType);
+              setTaskId(previousTaskId);
+              setSettlementId(previousSettlementId);
             },
           }
         );
       }
     },
-    [activeTimer?.isRunning, clientId, description, isBillable, updateTimer]
+    [activeTimer?.isRunning, workType, taskId, settlementId, description, isBillable, updateTimer]
+  );
+
+  const handleTaskChange = useCallback(
+    (value: string) => {
+      const actualValue = value === '__none__' ? '' : value;
+      const previousTaskId = taskId;
+      setTaskId(actualValue);
+      if (activeTimer?.isRunning) {
+        updateTimer.mutate(
+          {
+            description: description || undefined,
+            clientId: tasks.find((t) => t.id === actualValue)?.clientId ?? null,
+            taskId: actualValue || null,
+            settlementId: null,
+            isBillable,
+          },
+          {
+            onError: () => {
+              setTaskId(previousTaskId);
+            },
+          }
+        );
+      }
+    },
+    [activeTimer?.isRunning, taskId, description, tasks, isBillable, updateTimer]
+  );
+
+  const handleSettlementChange = useCallback(
+    (value: string) => {
+      const actualValue = value === '__none__' ? '' : value;
+      const previousSettlementId = settlementId;
+      setSettlementId(actualValue);
+      if (activeTimer?.isRunning) {
+        updateTimer.mutate(
+          {
+            description: description || undefined,
+            clientId: settlements.find((s) => s.id === actualValue)?.clientId ?? null,
+            taskId: null,
+            settlementId: actualValue || null,
+            isBillable,
+          },
+          {
+            onError: () => {
+              setSettlementId(previousSettlementId);
+            },
+          }
+        );
+      }
+    },
+    [activeTimer?.isRunning, settlementId, description, settlements, isBillable, updateTimer]
   );
 
   const handleBillableChange = useCallback(
@@ -282,7 +390,9 @@ function TimerForm({
         updateTimer.mutate(
           {
             description: description || undefined,
-            clientId: clientId || undefined,
+            clientId: derivedClientId,
+            taskId: workType === 'task' && taskId ? taskId : null,
+            settlementId: workType === 'settlement' && settlementId ? settlementId : null,
             isBillable: checked,
           },
           {
@@ -294,7 +404,16 @@ function TimerForm({
         );
       }
     },
-    [activeTimer?.isRunning, description, clientId, isBillable, updateTimer]
+    [
+      activeTimer?.isRunning,
+      description,
+      derivedClientId,
+      workType,
+      taskId,
+      settlementId,
+      isBillable,
+      updateTimer,
+    ]
   );
 
   const isRunning = activeTimer?.isRunning;
@@ -355,7 +474,7 @@ function TimerForm({
               <Button
                 size="sm"
                 onClick={handleStart}
-                disabled={startTimer.isPending}
+                disabled={startTimer.isPending || !canStart}
                 className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
                 aria-label="Rozpocznij timer"
               >
@@ -383,27 +502,75 @@ function TimerForm({
           isStopPending={stopTimer.isPending}
           isDiscardPending={discardTimer.isPending}
           isStartPending={startTimer.isPending}
+          canStart={canStart}
         />
 
         <div className="flex flex-wrap items-center gap-4">
-          <div className="min-w-[200px] flex-1">
-            <Select
-              value={clientId || '__none__'}
-              onValueChange={handleClientChange}
+          <div className="flex w-full items-center gap-4">
+            <RadioGroup
+              value={workType}
+              onValueChange={(v) => handleWorkTypeChange(v as 'task' | 'settlement')}
+              className="flex gap-4"
               disabled={startTimer.isPending || stopTimer.isPending}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Wybierz klienta" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">Brak klienta</SelectItem>
-                {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="task" id="timer-workType-task" />
+                <label htmlFor="timer-workType-task" className="cursor-pointer text-sm">
+                  Zadanie
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="settlement" id="timer-workType-settlement" />
+                <label htmlFor="timer-workType-settlement" className="cursor-pointer text-sm">
+                  Rozliczenie
+                </label>
+              </div>
+            </RadioGroup>
+
+            {workType === 'task' && (
+              <div className="min-w-[200px] flex-1">
+                <Select
+                  value={taskId || '__none__'}
+                  onValueChange={handleTaskChange}
+                  disabled={startTimer.isPending || stopTimer.isPending}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Wybierz zadanie" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Wybierz zadanie</SelectItem>
+                    {tasks.map((task) => (
+                      <SelectItem key={task.id} value={task.id}>
+                        {task.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {workType === 'settlement' && (
+              <div className="min-w-[200px] flex-1">
+                <Select
+                  value={settlementId || '__none__'}
+                  onValueChange={handleSettlementChange}
+                  disabled={startTimer.isPending || stopTimer.isPending}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Wybierz rozliczenie" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Wybierz rozliczenie</SelectItem>
+                    {settlements.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.client?.name ? `${s.client.name} — ` : ''}
+                        {s.month}/{s.year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -430,9 +597,6 @@ interface TimerWidgetProps {
 
 export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
   const { data: activeTimer, isLoading } = useActiveTimer();
-  const { data: clientsData } = useTaskClients();
-
-  const clients = clientsData || [];
 
   if (isLoading) {
     return (
@@ -449,14 +613,18 @@ export function TimerWidget({ className, compact = false }: TimerWidgetProps) {
   // Key to reset form when active timer changes
   const formKey = activeTimer?.id ?? 'no-timer';
 
+  // Derive workType from active timer
+  const initialWorkType: 'task' | 'settlement' = activeTimer?.settlementId ? 'settlement' : 'task';
+
   return (
     <TimerForm
       key={formKey}
       initialDescription={activeTimer?.description || ''}
-      initialClientId={activeTimer?.clientId || ''}
+      initialWorkType={initialWorkType}
+      initialTaskId={activeTimer?.taskId || ''}
+      initialSettlementId={activeTimer?.settlementId || ''}
       initialIsBillable={activeTimer?.isBillable ?? true}
       activeTimer={activeTimer}
-      clients={clients}
       compact={compact}
       className={className}
     />

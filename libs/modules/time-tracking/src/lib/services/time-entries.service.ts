@@ -1,4 +1,10 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { DataSource, EntityManager, In, Repository } from 'typeorm';
@@ -7,6 +13,7 @@ import {
   Client,
   escapeLikePattern,
   isOwnerOrAdmin,
+  MonthlySettlement,
   PaginatedResponseDto,
   Task,
   TimeEntry,
@@ -76,6 +83,8 @@ export class TimeEntriesService {
       .leftJoinAndSelect('entry.user', 'user')
       .leftJoinAndSelect('entry.client', 'client')
       .leftJoinAndSelect('entry.task', 'task')
+      .leftJoinAndSelect('entry.settlement', 'settlement')
+      .leftJoinAndSelect('settlement.client', 'settlementClient')
       .where('entry.companyId = :companyId', { companyId });
 
     // User filter - non-managers can only see their own entries
@@ -153,7 +162,15 @@ export class TimeEntriesService {
 
     const entry = await this.entryRepository.findOne({
       where: { id, companyId },
-      relations: ['user', 'client', 'task', 'approvedBy', 'createdBy'],
+      relations: [
+        'user',
+        'client',
+        'task',
+        'settlement',
+        'settlement.client',
+        'approvedBy',
+        'createdBy',
+      ],
     });
 
     if (!entry) {
@@ -171,12 +188,21 @@ export class TimeEntriesService {
   async create(dto: CreateTimeEntryDto, user: User): Promise<TimeEntry> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
+    if (dto.taskId && dto.settlementId) {
+      throw new BadRequestException(
+        'Wpis czasu nie może być jednocześnie przypisany do zadania i rozliczenia.'
+      );
+    }
+
     // Validate client/task ownership to prevent cross-tenant data access
     if (dto.clientId) {
       await this.validateClientOwnership(dto.clientId, companyId);
     }
     if (dto.taskId) {
       await this.validateTaskOwnership(dto.taskId, companyId);
+    }
+    if (dto.settlementId) {
+      await this.validateSettlementOwnership(dto.settlementId, companyId);
     }
 
     // Fetch settings once to avoid N+1 query
@@ -265,12 +291,25 @@ export class TimeEntriesService {
     const entry = await this.findOne(id, user);
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
-    // Validate client/task ownership if being changed
+    // Validate client/task/settlement ownership if being changed
     if (dto.clientId && dto.clientId !== entry.clientId) {
       await this.validateClientOwnership(dto.clientId, companyId);
     }
     if (dto.taskId && dto.taskId !== entry.taskId) {
       await this.validateTaskOwnership(dto.taskId, companyId);
+    }
+    if (dto.settlementId && dto.settlementId !== entry.settlementId) {
+      await this.validateSettlementOwnership(dto.settlementId, companyId);
+    }
+
+    // Check mutual exclusivity with effective values
+    const effectiveTaskId = dto.taskId !== undefined ? dto.taskId : entry.taskId;
+    const effectiveSettlementId =
+      dto.settlementId !== undefined ? dto.settlementId : entry.settlementId;
+    if (effectiveTaskId && effectiveSettlementId) {
+      throw new BadRequestException(
+        'Wpis czasu nie może być jednocześnie przypisany do zadania i rozliczenia.'
+      );
     }
 
     // Check if entry is locked
@@ -400,12 +439,21 @@ export class TimeEntriesService {
   async startTimer(dto: StartTimerDto, user: User): Promise<TimeEntry> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
-    // Validate client/task ownership to prevent cross-tenant data access
+    if (dto.taskId && dto.settlementId) {
+      throw new BadRequestException(
+        'Wpis czasu nie może być jednocześnie przypisany do zadania i rozliczenia.'
+      );
+    }
+
+    // Validate client/task/settlement ownership to prevent cross-tenant data access
     if (dto.clientId) {
       await this.validateClientOwnership(dto.clientId, companyId);
     }
     if (dto.taskId) {
       await this.validateTaskOwnership(dto.taskId, companyId);
+    }
+    if (dto.settlementId) {
+      await this.validateSettlementOwnership(dto.settlementId, companyId);
     }
 
     try {
@@ -531,7 +579,7 @@ export class TimeEntriesService {
         isRunning: true,
         isActive: true,
       },
-      relations: ['client', 'task'],
+      relations: ['client', 'task', 'settlement', 'settlement.client'],
     });
 
     return runningEntry;
@@ -568,12 +616,15 @@ export class TimeEntriesService {
   async updateTimer(dto: UpdateTimerDto, user: User): Promise<TimeEntry> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
 
-    // Validate client/task ownership if being changed
+    // Validate client/task/settlement ownership if being changed
     if (dto.clientId) {
       await this.validateClientOwnership(dto.clientId, companyId);
     }
     if (dto.taskId) {
       await this.validateTaskOwnership(dto.taskId, companyId);
+    }
+    if (dto.settlementId) {
+      await this.validateSettlementOwnership(dto.settlementId, companyId);
     }
 
     // Use transaction with pessimistic locking to prevent race conditions
@@ -590,6 +641,16 @@ export class TimeEntriesService {
 
       if (!runningEntry) {
         throw new TimerNotRunningException();
+      }
+
+      // Check mutual exclusivity with effective values
+      const effectiveTaskId = dto.taskId !== undefined ? dto.taskId : runningEntry.taskId;
+      const effectiveSettlementId =
+        dto.settlementId !== undefined ? dto.settlementId : runningEntry.settlementId;
+      if (effectiveTaskId && effectiveSettlementId) {
+        throw new BadRequestException(
+          'Wpis czasu nie może być jednocześnie przypisany do zadania i rozliczenia.'
+        );
       }
 
       Object.assign(runningEntry, dto);
@@ -875,6 +936,22 @@ export class TimeEntriesService {
     });
     if (!client) {
       throw new NotFoundException('Klient nie należy do tej firmy lub nie istnieje');
+    }
+  }
+
+  /**
+   * Validates that a settlement belongs to the specified company.
+   * Throws NotFoundException if settlement doesn't exist or doesn't belong to company.
+   */
+  private async validateSettlementOwnership(
+    settlementId: string,
+    companyId: string
+  ): Promise<void> {
+    const settlement = await this.dataSource.getRepository(MonthlySettlement).findOne({
+      where: { id: settlementId, companyId },
+    });
+    if (!settlement) {
+      throw new NotFoundException('Rozliczenie nie należy do tej firmy lub nie istnieje');
     }
   }
 

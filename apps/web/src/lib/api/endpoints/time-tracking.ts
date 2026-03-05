@@ -186,11 +186,13 @@ export const timeReportsApi = {
   getByClient: async (params: {
     startDate: string;
     endDate: string;
-    clientId?: string;
+    clientId: string;
   }): Promise<TimeByClientReportDto[]> => {
-    const { data } = await apiClient.get<TimeByClientReportDto[]>(`${BASE_URL}/reports/by-client`, {
-      params,
-    });
+    const { clientId, ...queryParams } = params;
+    const { data } = await apiClient.get<TimeByClientReportDto[]>(
+      `${BASE_URL}/reports/by-client/${clientId}`,
+      { params: queryParams }
+    );
     return data;
   },
 
