@@ -123,11 +123,23 @@ export default function TimeTrackingReportsPage() {
     groupBy,
   });
 
-  const { data: clientReport, isPending: clientLoading } = useTimeByClientReport({
+  const { data: clientReportData, isPending: clientLoading } = useTimeByClientReport({
     startDate,
     endDate,
     clientId: clientId || undefined,
   });
+
+  // When no specific client is selected, derive client breakdown from summary groupedData
+  const clientReport: ClientReportItem[] | undefined = clientId
+    ? clientReportData
+    : summaryReport?.groupedData?.map((item) => ({
+        clientId: item.groupId,
+        clientName: item.groupName,
+        entryCount: item.entriesCount,
+        totalMinutes: item.totalMinutes,
+        billableMinutes: item.billableMinutes,
+        totalAmount: item.totalAmount,
+      }));
 
   const { data: clientsData } = useTaskClients();
   const exportReport = useExportTimeReport();
@@ -335,41 +347,39 @@ export default function TimeTrackingReportsPage() {
                 </div>
               </div>
 
-              {/* Breakdown by Client */}
-              {summaryReport.byClient && summaryReport.byClient.length > 0 && (
+              {/* Breakdown by group (client/user/project) */}
+              {summaryReport.groupedData && summaryReport.groupedData.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="flex items-center gap-2 font-medium">
                     <Users className="h-4 w-4" />
-                    Podział według klientów
+                    Podział według{' '}
+                    {groupBy === 'client'
+                      ? 'klientów'
+                      : groupBy === 'user'
+                        ? 'użytkowników'
+                        : 'projektów'}
                   </h4>
                   <div className="space-y-2">
-                    {summaryReport.byClient.map(
-                      (item: {
-                        clientId: string;
-                        clientName: string;
-                        totalMinutes: number;
-                        totalAmount: number;
-                      }) => (
-                        <div
-                          key={item.clientId || `no-client-${item.clientName}`}
-                          className="flex items-center justify-between rounded-lg border p-3"
-                        >
-                          <span>{item.clientName || 'Bez przypisania'}</span>
-                          <div className="flex items-center gap-6 text-sm">
-                            <span className="font-mono">{formatDuration(item.totalMinutes)}</span>
-                            <span className="text-muted-foreground w-16 text-right">
-                              {Math.round(
-                                (item.totalMinutes / (summaryReport.totalMinutes || 1)) * 100
-                              )}
-                              %
-                            </span>
-                            <span className="w-24 text-right font-semibold">
-                              {item.totalAmount.toLocaleString('pl-PL')} PLN
-                            </span>
-                          </div>
+                    {summaryReport.groupedData.map((item) => (
+                      <div
+                        key={item.groupId || `no-group-${item.groupName}`}
+                        className="flex items-center justify-between rounded-lg border p-3"
+                      >
+                        <span>{item.groupName || 'Bez przypisania'}</span>
+                        <div className="flex items-center gap-6 text-sm">
+                          <span className="font-mono">{formatDuration(item.totalMinutes)}</span>
+                          <span className="text-muted-foreground w-16 text-right">
+                            {Math.round(
+                              (item.totalMinutes / (summaryReport.totalMinutes || 1)) * 100
+                            )}
+                            %
+                          </span>
+                          <span className="w-24 text-right font-semibold">
+                            {item.totalAmount.toLocaleString('pl-PL')} PLN
+                          </span>
                         </div>
-                      )
-                    )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -383,7 +393,10 @@ export default function TimeTrackingReportsPage() {
       </Card>
 
       {/* Client Report */}
-      <ClientReportCard clientReport={clientReport} clientLoading={clientLoading} />
+      <ClientReportCard
+        clientReport={clientReport}
+        clientLoading={clientId ? clientLoading : summaryLoading}
+      />
     </div>
   );
 }
