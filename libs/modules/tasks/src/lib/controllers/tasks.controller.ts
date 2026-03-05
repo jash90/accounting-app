@@ -37,7 +37,7 @@ import {
   RequirePermission,
 } from '@accounting/rbac';
 
-import { StatsPeriodFilterDto } from '../dto/task-extended-stats.dto';
+import { StatsPeriodFilterDto, StatusDurationQueryDto } from '../dto/task-extended-stats.dto';
 import {
   ClientTaskStatisticsDto,
   GlobalTaskStatisticsDto,
@@ -209,6 +209,19 @@ export class TasksController {
     @Query() filters: StatsPeriodFilterDto
   ) {
     return this.taskExtendedStatsService.getEmployeeCompletionRanking(user, filters);
+  }
+
+  // eslint-disable-next-line @darraghor/nestjs-typed/api-method-should-specify-api-response
+  @Get('statistics/extended/status-duration')
+  @ApiOperation({ summary: 'Get tasks ranked by time spent in a given status' })
+  @ApiQuery({ name: 'status', enum: ['blocked', 'cancelled', 'in_review'] })
+  @RequirePermission('tasks', 'manage')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  async getStatusDurationRanking(
+    @CurrentUser() user: User,
+    @Query() query: StatusDurationQueryDto
+  ) {
+    return this.taskExtendedStatsService.getStatusDurationRanking(user, query);
   }
 
   @Get(':id')

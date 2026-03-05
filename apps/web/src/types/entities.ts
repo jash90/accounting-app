@@ -237,6 +237,8 @@ export interface Task {
   dependencies?: TaskDependency[];
   comments?: TaskComment[];
   isActive: boolean;
+  blockingReason?: string;
+  cancellationReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }

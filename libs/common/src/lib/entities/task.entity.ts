@@ -149,6 +149,12 @@ export class Task {
   @JoinColumn({ name: 'templateId' })
   template?: Task | null;
 
+  @Column({ type: 'varchar', nullable: true })
+  blockingReason?: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  cancellationReason?: string;
+
   @CreateDateColumn()
   createdAt!: Date;
 

@@ -15,7 +15,9 @@ import { applyDateRangeFilter, TenantService } from '@accounting/common/backend'
 import {
   EmployeeTaskRankingDto,
   StatsPeriodFilterDto,
+  StatusDurationQueryDto,
   TaskCompletionDurationStatsDto,
+  TaskStatusDurationStatsDto,
 } from '../dto/task-extended-stats.dto';
 
 @Injectable()
@@ -73,6 +75,65 @@ export class TaskExtendedStatsService {
     );
 
     return { longest, shortest, averageDurationHours: averageDuration };
+  }
+
+  async getStatusDurationRanking(
+    user: User,
+    query: StatusDurationQueryDto
+  ): Promise<TaskStatusDurationStatsDto> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const status = query.status as TaskStatus;
+
+    const qb = this.taskRepository
+      .createQueryBuilder('task')
+      .leftJoin('task.assignee', 'assignee')
+      .leftJoin('task.client', 'client')
+      .select([
+        'task.id',
+        'task.title',
+        'task.updatedAt',
+        'assignee.email',
+        'assignee.firstName',
+        'assignee.lastName',
+        'client.name',
+      ])
+      .where('task.companyId = :companyId', { companyId })
+      .andWhere('task.status = :status', { status })
+      .andWhere('task.isActive = :isActive', { isActive: true })
+      .andWhere('task.isTemplate = :isTemplate', { isTemplate: false });
+
+    applyDateRangeFilter(qb, 'task', 'updatedAt', {
+      startDate: query.startDate,
+      endDate: query.endDate,
+    });
+
+    const tasks = await qb.getMany();
+    const now = Date.now();
+
+    const withDuration = tasks.map((task) => {
+      const durationMs = now - task.updatedAt.getTime();
+      return {
+        id: task.id,
+        title: task.title,
+        durationHours: Math.round((durationMs / (1000 * 60 * 60)) * 10) / 10,
+        statusSince: task.updatedAt.toISOString(),
+        assigneeName: task.assignee
+          ? `${task.assignee.firstName ?? ''} ${task.assignee.lastName ?? ''}`.trim() ||
+            task.assignee.email
+          : undefined,
+        clientName: (task as Task & { client?: { name: string } }).client?.name,
+      };
+    });
+
+    const sorted = [...withDuration].sort((a, b) => b.durationHours - a.durationHours);
+    const avgHours =
+      withDuration.length > 0
+        ? Math.round(
+            (withDuration.reduce((sum, t) => sum + t.durationHours, 0) / withDuration.length) * 10
+          ) / 10
+        : 0;
+
+    return { longest: sorted.slice(0, 10), averageDurationHours: avgHours, status: query.status };
   }
 
   async getEmployeeCompletionRanking(

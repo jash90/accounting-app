@@ -37,12 +37,28 @@ import { TaskNotificationService } from './task-notification.service';
  * Prevents invalid state changes and ensures workflow integrity.
  */
 const VALID_STATUS_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
-  [TaskStatus.BACKLOG]: [TaskStatus.TODO, TaskStatus.CANCELLED],
-  [TaskStatus.TODO]: [TaskStatus.IN_PROGRESS, TaskStatus.BACKLOG, TaskStatus.CANCELLED],
-  [TaskStatus.IN_PROGRESS]: [TaskStatus.IN_REVIEW, TaskStatus.TODO, TaskStatus.CANCELLED],
-  [TaskStatus.IN_REVIEW]: [TaskStatus.DONE, TaskStatus.IN_PROGRESS, TaskStatus.CANCELLED],
+  [TaskStatus.BACKLOG]: [TaskStatus.TODO, TaskStatus.CANCELLED, TaskStatus.BLOCKED],
+  [TaskStatus.TODO]: [
+    TaskStatus.IN_PROGRESS,
+    TaskStatus.BACKLOG,
+    TaskStatus.CANCELLED,
+    TaskStatus.BLOCKED,
+  ],
+  [TaskStatus.IN_PROGRESS]: [
+    TaskStatus.IN_REVIEW,
+    TaskStatus.TODO,
+    TaskStatus.CANCELLED,
+    TaskStatus.BLOCKED,
+  ],
+  [TaskStatus.IN_REVIEW]: [
+    TaskStatus.DONE,
+    TaskStatus.IN_PROGRESS,
+    TaskStatus.CANCELLED,
+    TaskStatus.BLOCKED,
+  ],
   [TaskStatus.DONE]: [TaskStatus.IN_PROGRESS], // Allow reopening
   [TaskStatus.CANCELLED]: [TaskStatus.BACKLOG, TaskStatus.TODO], // Allow restoring
+  [TaskStatus.BLOCKED]: [TaskStatus.TODO, TaskStatus.IN_PROGRESS], // Unblock
 };
 
 @Injectable()
@@ -247,6 +263,8 @@ export class TasksService {
       TaskStatus.IN_PROGRESS,
       TaskStatus.IN_REVIEW,
       TaskStatus.DONE,
+      TaskStatus.BLOCKED,
+      TaskStatus.CANCELLED,
     ];
 
     const columns: KanbanColumnDto[] = statusOrder.map((status) => {
@@ -324,6 +342,7 @@ export class TasksService {
       [TaskStatus.IN_REVIEW]: 0,
       [TaskStatus.DONE]: 0,
       [TaskStatus.CANCELLED]: 0,
+      [TaskStatus.BLOCKED]: 0,
     };
 
     for (const row of statusCounts) {
@@ -360,6 +379,7 @@ export class TasksService {
       [TaskStatus.IN_REVIEW]: 0,
       [TaskStatus.DONE]: 0,
       [TaskStatus.CANCELLED]: 0,
+      [TaskStatus.BLOCKED]: 0,
     };
 
     let total = 0;
@@ -506,6 +526,17 @@ export class TasksService {
     // Validate status transition if status is being changed
     if (dto.status !== undefined && dto.status !== task.status) {
       this.validateStatusTransition(task.status, dto.status);
+
+      if (dto.status === TaskStatus.BLOCKED && !dto.blockingReason) {
+        throw new BadRequestException(
+          'Powód blokady jest wymagany przy zmianie statusu na Zablokowane'
+        );
+      }
+      if (dto.status === TaskStatus.CANCELLED && !dto.cancellationReason) {
+        throw new BadRequestException(
+          'Powód anulowania jest wymagany przy zmianie statusu na Anulowane'
+        );
+      }
     }
 
     // Validate new parent if provided

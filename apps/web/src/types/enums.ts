@@ -140,6 +140,7 @@ export enum TaskStatus {
   IN_REVIEW = 'in_review',
   DONE = 'done',
   CANCELLED = 'cancelled',
+  BLOCKED = 'blocked',
 }
 
 export const TaskStatusLabels: Record<TaskStatus, string> = {
@@ -149,6 +150,7 @@ export const TaskStatusLabels: Record<TaskStatus, string> = {
   [TaskStatus.IN_REVIEW]: 'W przeglądzie',
   [TaskStatus.DONE]: 'Ukończone',
   [TaskStatus.CANCELLED]: 'Anulowane',
+  [TaskStatus.BLOCKED]: 'Zablokowane',
 };
 
 export const TaskStatusColors: Record<TaskStatus, string> = {
@@ -158,6 +160,7 @@ export const TaskStatusColors: Record<TaskStatus, string> = {
   [TaskStatus.IN_REVIEW]: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
   [TaskStatus.DONE]: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
   [TaskStatus.CANCELLED]: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+  [TaskStatus.BLOCKED]: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
 };
 
 export enum TaskPriority {

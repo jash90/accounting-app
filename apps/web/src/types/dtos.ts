@@ -708,6 +708,8 @@ export interface CreateTaskDto {
   assigneeId?: string;
   parentTaskId?: string;
   labelIds?: string[];
+  blockingReason?: string;
+  cancellationReason?: string;
 }
 
 export interface UpdateTaskDto extends Partial<CreateTaskDto> {
@@ -869,7 +871,7 @@ export interface TimeEntryFiltersDto {
 
 export interface TimeEntryResponseDto extends Omit<
   TimeEntry,
-  'user' | 'client' | 'task' | 'createdBy' | 'approvedBy'
+  'user' | 'client' | 'task' | 'settlement' | 'createdBy' | 'approvedBy'
 > {
   user?: {
     id: string;
@@ -884,6 +886,15 @@ export interface TimeEntryResponseDto extends Omit<
   task?: {
     id: string;
     title: string;
+  };
+  settlement?: {
+    id: string;
+    month: number;
+    year: number;
+    client?: {
+      id: string;
+      name: string;
+    };
   };
   createdBy?: {
     id: string;
@@ -904,6 +915,7 @@ export interface StartTimerDto {
   description?: string;
   clientId?: string;
   taskId?: string;
+  settlementId?: string;
   isBillable?: boolean;
   tags?: string[];
 }
@@ -915,8 +927,9 @@ export interface StopTimerDto {
 
 export interface UpdateTimerDto {
   description?: string;
-  clientId?: string;
-  taskId?: string;
+  clientId?: string | null;
+  taskId?: string | null;
+  settlementId?: string | null;
   isBillable?: boolean;
   tags?: string[];
 }
@@ -991,26 +1004,24 @@ export interface WeeklyTimesheetDto {
 }
 
 // Report DTOs
+export interface TimeSummaryReportGroupItem {
+  groupId: string;
+  groupName: string;
+  totalMinutes: number;
+  billableMinutes: number;
+  totalAmount: number;
+  entriesCount: number;
+}
+
 export interface TimeSummaryReportDto {
-  periodStart: string;
-  periodEnd: string;
+  startDate: string;
+  endDate: string;
   totalMinutes: number;
   billableMinutes: number;
   nonBillableMinutes: number;
   totalAmount: number;
-  entryCount: number;
-  byClient?: {
-    clientId: string;
-    clientName: string;
-    totalMinutes: number;
-    totalAmount: number;
-  }[];
-  byUser?: {
-    userId: string;
-    userName: string;
-    totalMinutes: number;
-    totalAmount: number;
-  }[];
+  entriesCount: number;
+  groupedData?: TimeSummaryReportGroupItem[];
 }
 
 export interface TimeByClientReportDto {
