@@ -112,6 +112,18 @@ export class CreateTaskDto {
   @IsArray()
   @IsUUID('4', { each: true })
   labelIds?: string[];
+
+  @ApiPropertyOptional({ description: 'Reason for blocking the task' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  blockingReason?: string;
+
+  @ApiPropertyOptional({ description: 'Reason for cancelling the task' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  cancellationReason?: string;
 }
 
 export class UpdateTaskDto extends PartialType(CreateTaskDto) {}
