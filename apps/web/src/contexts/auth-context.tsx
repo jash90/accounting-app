@@ -108,14 +108,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ['auth', 'me'],
     queryFn: authApi.getCurrentUser,
     enabled: !!authState.token,
-    retry: false,
+    retry: 1,
   });
 
-  // Handle query error - clear tokens when invalid
+  // Handle query error - clear tokens only on 401 (invalid token), not on transient network errors
   useEffect(() => {
     if (queryError && authState.token) {
-      tokenStorage.clearTokens();
-      dispatch({ type: 'CLEAR_AUTH' });
+      const status = (queryError as { response?: { status?: number } })?.response?.status;
+      if (status === 401) {
+        tokenStorage.clearTokens();
+        dispatch({ type: 'CLEAR_AUTH' });
+      }
     }
   }, [queryError, authState.token]);
 

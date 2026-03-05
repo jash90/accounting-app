@@ -1,3 +1,5 @@
+import React from 'react';
+
 import { useForm } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,6 +18,81 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { loginSchema, type LoginFormData } from '@/lib/validation/schemas';
 
+const HeroPanel = React.memo(function HeroPanel() {
+  return (
+    <div className="bg-primary relative hidden overflow-hidden lg:flex lg:w-1/2">
+      {/* Animated Background Pattern */}
+      <div className="absolute inset-0">
+        {/* Primary floating blobs */}
+        <div className="bg-accent/10 animate-float absolute top-[-50%] right-[-20%] h-[600px] w-[600px] rounded-full blur-3xl" />
+        <div className="bg-primary/10 animate-float-reverse absolute bottom-[-30%] left-[-10%] h-[400px] w-[400px] rounded-full blur-3xl" />
+
+        {/* Secondary floating elements */}
+        <div className="bg-accent/5 animate-float absolute top-[20%] left-[10%] h-32 w-32 rounded-full blur-2xl delay-300" />
+        <div className="bg-primary/10 animate-float-reverse absolute right-[15%] bottom-[25%] h-24 w-24 rounded-full blur-2xl delay-500" />
+        <div className="bg-primary/5 animate-float absolute top-[60%] left-[40%] h-20 w-20 rounded-full blur-xl delay-200" />
+
+        {/* Decorative grid lines */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
+
+        {/* Shimmer effect overlay */}
+        <div className="animate-shimmer absolute inset-0 opacity-30" />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 mx-auto flex max-w-lg flex-col justify-center p-12">
+        {/* Logo */}
+        <div className="animate-fade-in-left mb-12 flex items-center gap-3">
+          <div className="relative">
+            <img src="/apptax-logomark.svg" alt="AppTax" className="h-12 w-12" />
+            {/* AI indicator glow behind logo */}
+            <div className="bg-accent/30 absolute inset-0 -z-10 rounded-lg blur-xl" />
+          </div>
+          <span className="text-2xl font-bold text-white">
+            App<span className="text-primary-foreground">Tax</span>
+          </span>
+        </div>
+
+        {/* Hero Text */}
+        <h1 className="animate-fade-in-left mb-6 text-4xl leading-tight font-extrabold text-white delay-100">
+          Inteligentna Księgowość AI
+        </h1>
+        <p className="animate-fade-in-left mb-8 text-lg text-white/80 delay-200">
+          Połącz tradycyjną niezawodność księgowości z innowacyjnymi możliwościami AI. Zmień sposób
+          działania Twojego biura rachunkowego.
+        </p>
+
+        {/* Features */}
+        <div className="space-y-4">
+          <div className="animate-fade-in-left group flex items-center gap-3 delay-300">
+            <div className="bg-accent animate-pulse-glow h-2.5 w-2.5 rounded-full transition-transform group-hover:scale-125" />
+            <span className="text-white/70 transition-colors group-hover:text-white/90">
+              Inteligentna automatyzacja
+            </span>
+          </div>
+          <div className="animate-fade-in-left group flex items-center gap-3 delay-400">
+            <div className="bg-accent animate-pulse-glow h-2.5 w-2.5 rounded-full transition-transform group-hover:scale-125" />
+            <span className="text-white/70 transition-colors group-hover:text-white/90">
+              Zgodność z polskim prawem podatkowym
+            </span>
+          </div>
+          <div className="animate-fade-in-left group flex items-center gap-3 delay-500">
+            <div className="bg-accent animate-pulse-glow h-2.5 w-2.5 rounded-full transition-transform group-hover:scale-125" />
+            <span className="text-white/70 transition-colors group-hover:text-white/90">
+              Bezpieczna platforma wielodostępowa
+            </span>
+          </div>
+        </div>
+
+        {/* Bottom decoration */}
+        <div className="animate-fade-in-left absolute right-12 bottom-8 left-12 delay-700">
+          <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+        </div>
+      </div>
+    </div>
+  );
+});
+
 export default function LoginPage() {
   const { login, isPending, error } = useAuth();
   const form = useForm<LoginFormData>({
@@ -32,81 +109,11 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left side - Brand Hero */}
-      <div className="bg-primary relative hidden overflow-hidden lg:flex lg:w-1/2">
-        {/* Animated Background Pattern */}
-        <div className="absolute inset-0">
-          {/* Primary floating blobs */}
-          <div className="bg-accent/10 animate-float absolute top-[-50%] right-[-20%] h-[600px] w-[600px] rounded-full blur-3xl" />
-          <div className="bg-primary/10 animate-float-reverse absolute bottom-[-30%] left-[-10%] h-[400px] w-[400px] rounded-full blur-3xl" />
-
-          {/* Secondary floating elements */}
-          <div className="bg-accent/5 animate-float absolute top-[20%] left-[10%] h-32 w-32 rounded-full blur-2xl delay-300" />
-          <div className="bg-primary/10 animate-float-reverse absolute right-[15%] bottom-[25%] h-24 w-24 rounded-full blur-2xl delay-500" />
-          <div className="bg-primary/5 animate-float absolute top-[60%] left-[40%] h-20 w-20 rounded-full blur-xl delay-200" />
-
-          {/* Decorative grid lines */}
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
-
-          {/* Shimmer effect overlay */}
-          <div className="animate-shimmer absolute inset-0 opacity-30" />
-        </div>
-
-        {/* Content */}
-        <div className="relative z-10 mx-auto flex max-w-lg flex-col justify-center p-12">
-          {/* Logo */}
-          <div className="animate-fade-in-left mb-12 flex items-center gap-3">
-            <div className="relative">
-              <img src="/apptax-logomark.svg" alt="AppTax" className="h-12 w-12" />
-              {/* AI indicator glow behind logo */}
-              <div className="bg-accent/30 absolute inset-0 -z-10 rounded-lg blur-xl" />
-            </div>
-            <span className="text-2xl font-bold text-white">
-              App<span className="text-primary-foreground">Tax</span>
-            </span>
-          </div>
-
-          {/* Hero Text */}
-          <h1 className="animate-fade-in-left mb-6 text-4xl leading-tight font-extrabold text-white delay-100">
-            Inteligentna Księgowość AI
-          </h1>
-          <p className="animate-fade-in-left mb-8 text-lg text-white/80 delay-200">
-            Połącz tradycyjną niezawodność księgowości z innowacyjnymi możliwościami AI. Zmień
-            sposób działania Twojego biura rachunkowego.
-          </p>
-
-          {/* Features */}
-          <div className="space-y-4">
-            <div className="animate-fade-in-left group flex items-center gap-3 delay-300">
-              <div className="bg-accent animate-pulse-glow h-2.5 w-2.5 rounded-full transition-transform group-hover:scale-125" />
-              <span className="text-white/70 transition-colors group-hover:text-white/90">
-                Inteligentna automatyzacja
-              </span>
-            </div>
-            <div className="animate-fade-in-left group flex items-center gap-3 delay-400">
-              <div className="bg-accent animate-pulse-glow h-2.5 w-2.5 rounded-full transition-transform group-hover:scale-125" />
-              <span className="text-white/70 transition-colors group-hover:text-white/90">
-                Zgodność z polskim prawem podatkowym
-              </span>
-            </div>
-            <div className="animate-fade-in-left group flex items-center gap-3 delay-500">
-              <div className="bg-accent animate-pulse-glow h-2.5 w-2.5 rounded-full transition-transform group-hover:scale-125" />
-              <span className="text-white/70 transition-colors group-hover:text-white/90">
-                Bezpieczna platforma wielodostępowa
-              </span>
-            </div>
-          </div>
-
-          {/* Bottom decoration */}
-          <div className="animate-fade-in-left absolute right-12 bottom-8 left-12 delay-700">
-            <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-          </div>
-        </div>
-      </div>
+      <HeroPanel />
 
       {/* Right side - Login Form */}
       <div className="bg-muted flex flex-1 items-center justify-center p-8">
-        <Card className="shadow-lg animate-fade-in-right w-full max-w-md border-0 backdrop-blur-sm transition-shadow duration-300 hover:shadow-[0_8px_40px_rgba(0,0,0,0.12)]">
+        <Card className="shadow-lg w-full max-w-md border-0 backdrop-blur-sm transition-shadow duration-300 hover:shadow-[0_8px_40px_rgba(0,0,0,0.12)]">
           <CardHeader className="space-y-4 pb-2">
             {/* Mobile Logo */}
             <div className="mb-4 flex items-center justify-center gap-2 lg:hidden">
@@ -143,7 +150,7 @@ export default function LoginPage() {
                   control={form.control}
                   name="email"
                   render={({ field }) => (
-                    <FormItem className="animate-fade-in-up delay-100">
+                    <FormItem>
                       <FormLabel className="text-foreground font-medium">Email</FormLabel>
                       <FormControl>
                         <Input
@@ -162,7 +169,7 @@ export default function LoginPage() {
                   control={form.control}
                   name="password"
                   render={({ field }) => (
-                    <FormItem className="animate-fade-in-up delay-200">
+                    <FormItem>
                       <FormLabel className="text-foreground font-medium">Hasło</FormLabel>
                       <FormControl>
                         <Input
@@ -179,7 +186,7 @@ export default function LoginPage() {
 
                 <Button
                   type="submit"
-                  className="bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md animate-fade-in-up h-12 w-full rounded-xl font-semibold text-primary-foreground transition-all delay-300 duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+                  className="bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md h-12 w-full rounded-xl font-semibold text-primary-foreground transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
                   disabled={isPending}
                 >
                   {isPending ? (
@@ -209,7 +216,7 @@ export default function LoginPage() {
             </Form>
 
             {/* Footer */}
-            <div className="animate-fade-in-up mt-8 border-t border-border pt-6 text-center delay-400">
+            <div className="mt-8 border-t border-border pt-6 text-center">
               <p className="text-muted-foreground flex items-center justify-center gap-1.5 text-xs">
                 Zasilane przez AI
                 <span className="bg-accent animate-pulse-glow inline-block h-2 w-2 rounded-full" />
