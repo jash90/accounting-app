@@ -4,8 +4,8 @@ export class AddTasksModule1768644507694 implements MigrationInterface {
   name = 'AddTasksModule1768644507694';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP INDEX "public"."IDX_modules_source"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_modules_category"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_modules_source"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "public"."IDX_modules_category"`);
     await queryRunner.query(
       `CREATE TYPE "public"."tasks_status_enum" AS ENUM('backlog', 'todo', 'in_progress', 'in_review', 'done', 'cancelled')`
     );
@@ -81,19 +81,46 @@ export class AddTasksModule1768644507694 implements MigrationInterface {
     await queryRunner.query(
       `CREATE INDEX "IDX_ba265816ca1d93f51083e06c52" ON "task_comments" ("taskId") `
     );
-    await queryRunner.query(`ALTER TABLE "companies" DROP COLUMN "notificationFromEmail"`);
     await queryRunner.query(
-      `ALTER TYPE "public"."module_source_enum" RENAME TO "module_source_enum_old"`
+      `ALTER TABLE "companies" DROP COLUMN IF EXISTS "notificationFromEmail"`
     );
-    await queryRunner.query(
-      `CREATE TYPE "public"."modules_source_enum" AS ENUM('file', 'database', 'legacy')`
-    );
-    await queryRunner.query(`ALTER TABLE "modules" ALTER COLUMN "source" DROP DEFAULT`);
-    await queryRunner.query(
-      `ALTER TABLE "modules" ALTER COLUMN "source" TYPE "public"."modules_source_enum" USING "source"::"text"::"public"."modules_source_enum"`
-    );
-    await queryRunner.query(`ALTER TABLE "modules" ALTER COLUMN "source" SET DEFAULT 'legacy'`);
-    await queryRunner.query(`DROP TYPE "public"."module_source_enum_old"`);
+
+    // Rename module_source_enum → modules_source_enum only if the old type exists.
+    // On a fresh DB, AddModuleDiscoveryColumns (timestamp 1768700000000) runs AFTER this
+    // migration and creates module_source_enum; we create modules_source_enum here instead
+    // so that the column has the correct TypeORM-generated type name.
+    const oldEnumExists = await queryRunner.query(`
+      SELECT 1 FROM "pg_type"
+      WHERE "typname" = 'module_source_enum'
+        AND "typnamespace" = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+    `);
+    const newEnumExists = await queryRunner.query(`
+      SELECT 1 FROM "pg_type"
+      WHERE "typname" = 'modules_source_enum'
+        AND "typnamespace" = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+    `);
+
+    if (oldEnumExists.length > 0 && newEnumExists.length === 0) {
+      // Old type exists: rename it to the TypeORM-generated name
+      await queryRunner.query(
+        `ALTER TYPE "public"."module_source_enum" RENAME TO "module_source_enum_old"`
+      );
+      await queryRunner.query(
+        `CREATE TYPE "public"."modules_source_enum" AS ENUM('file', 'database', 'legacy')`
+      );
+      await queryRunner.query(`ALTER TABLE "modules" ALTER COLUMN "source" DROP DEFAULT`);
+      await queryRunner.query(
+        `ALTER TABLE "modules" ALTER COLUMN "source" TYPE "public"."modules_source_enum" USING "source"::"text"::"public"."modules_source_enum"`
+      );
+      await queryRunner.query(`ALTER TABLE "modules" ALTER COLUMN "source" SET DEFAULT 'legacy'`);
+      await queryRunner.query(`DROP TYPE "public"."module_source_enum_old"`);
+    } else if (oldEnumExists.length === 0 && newEnumExists.length === 0) {
+      // Fresh DB: create modules_source_enum directly so AddModuleDiscoveryColumns can skip it
+      await queryRunner.query(
+        `CREATE TYPE "public"."modules_source_enum" AS ENUM('file', 'database', 'legacy')`
+      );
+    }
+    // else: modules_source_enum already exists — nothing to do
     await queryRunner.query(
       `ALTER TABLE "tasks" ADD CONSTRAINT "FK_683ad3f76f2544e5115afec26d2" FOREIGN KEY ("companyId") REFERENCES "companies"("id") ON DELETE CASCADE ON UPDATE NO ACTION`
     );
