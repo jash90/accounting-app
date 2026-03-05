@@ -82,6 +82,7 @@ const TasksTimelinePage = lazy(() => import('@/pages/modules/tasks/tasks-timelin
 const TasksSettingsPage = lazy(() => import('@/pages/modules/tasks/tasks-settings'));
 const TaskCreatePage = lazy(() => import('@/pages/modules/tasks/task-create'));
 const TaskTemplatesListPage = lazy(() => import('@/pages/modules/tasks/task-templates-list'));
+const TasksStatisticsPage = lazy(() => import('@/pages/modules/tasks/tasks-statistics'));
 
 // Time Tracking Pages
 const TimeTrackingDashboardPage = lazy(
@@ -101,6 +102,9 @@ const TimeTrackingReportsPage = lazy(
 );
 const TimeTrackingSettingsPage = lazy(
   () => import('@/pages/modules/time-tracking/time-tracking-settings')
+);
+const TimeTrackingStatisticsPage = lazy(
+  () => import('@/pages/modules/time-tracking/time-tracking-statistics')
 );
 
 // Offers Pages
@@ -534,6 +538,14 @@ function adminRouteGroup() {
           </LazyRoute>
         }
       />
+      <Route
+        path="modules/tasks/statistics"
+        element={
+          <LazyRoute>
+            <TasksStatisticsPage />
+          </LazyRoute>
+        }
+      />
       {/* Time Tracking Routes for Admin */}
       <Route
         path="modules/time-tracking"
@@ -580,6 +592,14 @@ function adminRouteGroup() {
         element={
           <LazyRoute>
             <TimeTrackingSettingsPage />
+          </LazyRoute>
+        }
+      />
+      <Route
+        path="modules/time-tracking/statistics"
+        element={
+          <LazyRoute>
+            <TimeTrackingStatisticsPage />
           </LazyRoute>
         }
       />
@@ -669,57 +689,57 @@ function adminRouteGroup() {
       <Route
         path="modules/offers"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <OffersDashboardPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route
         path="modules/offers/list"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <OffersListPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route
         path="modules/offers/:id"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <OfferDetailPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route
         path="modules/offers/leads"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <LeadsListPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route
         path="modules/offers/leads/:id"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <LeadDetailPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route
         path="modules/offers/templates"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <TemplatesListPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route
         path="modules/offers/templates/:id/editor"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <TemplateEditorPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
     </Route>
@@ -994,6 +1014,14 @@ function companyOwnerRouteGroup() {
           </LazyRoute>
         }
       />
+      <Route
+        path="modules/tasks/statistics"
+        element={
+          <LazyRoute>
+            <TasksStatisticsPage />
+          </LazyRoute>
+        }
+      />
       {/* Time Tracking Routes for Company Owner */}
       <Route
         path="modules/time-tracking"
@@ -1040,6 +1068,14 @@ function companyOwnerRouteGroup() {
         element={
           <LazyRoute>
             <TimeTrackingSettingsPage />
+          </LazyRoute>
+        }
+      />
+      <Route
+        path="modules/time-tracking/statistics"
+        element={
+          <LazyRoute>
+            <TimeTrackingStatisticsPage />
           </LazyRoute>
         }
       />
@@ -1129,57 +1165,57 @@ function companyOwnerRouteGroup() {
       <Route
         path="modules/offers"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <OffersDashboardPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route
         path="modules/offers/list"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <OffersListPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route
         path="modules/offers/:id"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <OfferDetailPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route
         path="modules/offers/leads"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <LeadsListPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route
         path="modules/offers/leads/:id"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <LeadDetailPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route
         path="modules/offers/templates"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <TemplatesListPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route
         path="modules/offers/templates/:id/editor"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <TemplateEditorPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
     </Route>
@@ -1389,6 +1425,14 @@ function moduleRouteGroup() {
           </LazyRoute>
         }
       />
+      <Route
+        path="tasks/statistics"
+        element={
+          <LazyRoute>
+            <TasksStatisticsPage />
+          </LazyRoute>
+        }
+      />
       {/* Time Tracking Routes for Employee */}
       <Route
         path="time-tracking"
@@ -1435,6 +1479,14 @@ function moduleRouteGroup() {
         element={
           <LazyRoute>
             <TimeTrackingSettingsPage />
+          </LazyRoute>
+        }
+      />
+      <Route
+        path="time-tracking/statistics"
+        element={
+          <LazyRoute>
+            <TimeTrackingStatisticsPage />
           </LazyRoute>
         }
       />
@@ -1500,57 +1552,57 @@ function moduleRouteGroup() {
       <Route
         path="offers"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <OffersDashboardPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route
         path="offers/list"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <OffersListPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route
         path="offers/:id"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <OfferDetailPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route
         path="offers/leads"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <LeadsListPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route
         path="offers/leads/:id"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <LeadDetailPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route
         path="offers/templates"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <TemplatesListPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
       <Route
         path="offers/templates/:id/editor"
         element={
-          <Suspense fallback={<PageLoader />}>
+          <LazyRoute>
             <TemplateEditorPage />
-          </Suspense>
+          </LazyRoute>
         }
       />
     </Route>
