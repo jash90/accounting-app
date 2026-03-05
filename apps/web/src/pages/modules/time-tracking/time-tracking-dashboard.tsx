@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import {
   AlertTriangle,
@@ -16,7 +16,6 @@ import {
 
 import { ErrorBoundary } from '@/components/common/error-boundary';
 import { TimeTrackedChart } from '@/components/dashboard/charts/time-tracked-chart';
-import { RankedListCard } from '@/components/dashboard/ranked-list-card';
 import { TimerWidget } from '@/components/time-tracking/timer-widget';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,11 +25,8 @@ import { useAuthContext } from '@/contexts/auth-context';
 import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
 import {
   useActiveTimer,
-  useEmployeeTimeBreakdown,
   useTimeEntries,
   useTimeSummaryReport,
-  useTopSettlementsByTime,
-  useTopTasksByTime,
 } from '@/lib/hooks/use-time-tracking';
 import { isOwnerOrAdmin } from '@/lib/utils/user';
 
@@ -74,13 +70,6 @@ export default function TimeTrackingDashboardPage() {
   const { data: activeTimer } = useActiveTimer();
   const { startDate, endDate } = useMemo(() => getMonthDateRange(), []);
   const { data: monthSummary } = useTimeSummaryReport({ startDate, endDate });
-
-  const [extendedPreset, setExtendedPreset] = useState<'30d' | '90d' | '365d'>('30d');
-  const { data: topTasks, isPending: topTasksLoading } = useTopTasksByTime(extendedPreset);
-  const { data: topSettlements, isPending: topSettlementsLoading } =
-    useTopSettlementsByTime(extendedPreset);
-  const { data: employeeBreakdown, isPending: employeeBreakdownLoading } =
-    useEmployeeTimeBreakdown(extendedPreset);
 
   // Calculate statistics - memoized to prevent recalculation on every render
   const { totalEntries, runningEntries, billableMinutes, totalAmount } = useMemo(() => {
@@ -261,132 +250,17 @@ export default function TimeTrackingDashboardPage() {
         />
       )}
 
-      {/* Extended Statistics Section — only for admins and company owners */}
+      {/* Statistics Card — only for admins and company owners */}
       {showSettings && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-foreground text-xl font-semibold">Rozszerzone statystyki</h2>
-            <div className="flex gap-2">
-              {(['30d', '90d', '365d'] as const).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setExtendedPreset(p)}
-                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                    extendedPreset === p
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                  }`}
-                >
-                  {p === '30d' ? '30 dni' : p === '90d' ? '90 dni' : 'Rok'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {/* Top Tasks by Time */}
-            <RankedListCard
-              title="Top zadania (czas)"
-              isPending={topTasksLoading}
-              items={topTasks?.map(
-                (item: {
-                  taskId: string;
-                  taskTitle: string;
-                  totalMinutes: number;
-                  totalHours: number;
-                }) => ({
-                  key: item.taskId,
-                  label: item.taskTitle,
-                  value: `${item.totalHours}h`,
-                })
-              )}
-              limit={10}
-              valueClassName="text-muted-foreground ml-2 shrink-0"
-              className="border-border"
-            />
-
-            {/* Top Settlements by Time */}
-            <RankedListCard
-              title="Top rozliczenia (czas)"
-              isPending={topSettlementsLoading}
-              items={topSettlements?.map(
-                (item: {
-                  settlementId: string;
-                  month: number;
-                  year: number;
-                  clientName?: string;
-                  totalMinutes: number;
-                  totalHours: number;
-                }) => ({
-                  key: item.settlementId,
-                  label: item.clientName
-                    ? `${item.clientName} (${item.month}/${item.year})`
-                    : `${item.month}/${item.year}`,
-                  value: `${item.totalHours}h`,
-                })
-              )}
-              limit={10}
-              valueClassName="text-muted-foreground ml-2 shrink-0"
-              className="border-border"
-            />
-
-            {/* Employee Time Breakdown */}
-            <Card className="border-border md:col-span-2 xl:col-span-1">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Czas pracownikow</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {employeeBreakdownLoading ? (
-                  <p className="text-muted-foreground text-sm">Ładowanie...</p>
-                ) : !employeeBreakdown || employeeBreakdown.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">Brak danych</p>
-                ) : (
-                  <div className="space-y-3">
-                    {employeeBreakdown
-                      .slice(0, 8)
-                      .map(
-                        (item: {
-                          userId: string;
-                          email: string;
-                          firstName?: string;
-                          lastName?: string;
-                          taskMinutes: number;
-                          settlementMinutes: number;
-                          totalMinutes: number;
-                        }) => {
-                          const name =
-                            item.firstName || item.lastName
-                              ? `${item.firstName ?? ''} ${item.lastName ?? ''}`.trim()
-                              : item.email;
-                          const taskHours = Math.round(item.taskMinutes / 6) / 10;
-                          const settlementHours = Math.round(item.settlementMinutes / 6) / 10;
-                          return (
-                            <div key={item.userId} className="space-y-1">
-                              <div className="flex items-center justify-between text-sm">
-                                <span
-                                  className="text-foreground max-w-[60%] truncate font-medium"
-                                  title={item.email}
-                                >
-                                  {name}
-                                </span>
-                                <span className="text-muted-foreground ml-2 shrink-0 text-xs">
-                                  {Math.round(item.totalMinutes / 6) / 10}h łącznie
-                                </span>
-                              </div>
-                              <div className="text-muted-foreground flex gap-3 text-xs">
-                                <span>Zadania: {taskHours}h</span>
-                                <span>Rozlicz.: {settlementHours}h</span>
-                              </div>
-                            </div>
-                          );
-                        }
-                      )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        <NavigationCard
+          title="Statystyki"
+          description="Rozszerzone statystyki czasu pracy: najdłuższe zadania, rozliczenia i breakdown pracowników"
+          icon={TrendingUp}
+          href={`${basePath}/statistics`}
+          gradient="bg-gradient-to-br from-indigo-500 to-blue-600"
+          buttonText="Zobacz statystyki"
+          buttonVariant="outline"
+        />
       )}
     </div>
   );
