@@ -170,7 +170,10 @@ export class DemoDataSeederService {
 
   private async isDemoDataSeeded(): Promise<boolean> {
     const existing = await this.companyRepo.findOne({ where: { name: 'Biuro Rachunkowe Nowak' } });
-    return existing !== null;
+    if (!existing) return false;
+    // Company skeleton may exist from the base seed; check that demo data (clients) was actually seeded
+    const clientCount = await this.clientRepo.count({ where: { companyId: existing.id } });
+    return clientCount > 5;
   }
 
   private async getExistingCompanyA(): Promise<{
@@ -191,74 +194,95 @@ export class DemoDataSeederService {
   private async seedCompanyB(): Promise<{ companyB: Company; ownerB: User; employeesB: User[] }> {
     const password = await bcrypt.hash('Demo12345678!', 10);
 
-    const ownerB = await this.userRepo.save(
-      this.userRepo.create({
-        email: 'nowak@biuro-nowak.pl',
-        password,
-        firstName: 'Krzysztof',
-        lastName: 'Nowak',
-        role: UserRole.COMPANY_OWNER,
-        isActive: true,
-      })
-    );
+    // Find-or-create: company and users may already exist from the base seed
+    let companyB = await this.companyRepo.findOne({ where: { name: 'Biuro Rachunkowe Nowak' } });
 
-    const companyB = await this.companyRepo.save(
-      this.companyRepo.create({
-        name: 'Biuro Rachunkowe Nowak',
-        ownerId: ownerB.id,
-        isActive: true,
-        nip: '7654321890',
-        regon: '123456789',
-        street: 'ul. Długa 15',
-        city: 'Kraków',
-        postalCode: '30-001',
-        country: 'Polska',
-        ownerFirstName: 'Krzysztof',
-        ownerLastName: 'Nowak',
-        ownerEmail: 'nowak@biuro-nowak.pl',
-        bankAccount: 'PL61109010140000071219812874',
-      })
-    );
+    let ownerB = await this.userRepo.findOne({ where: { email: 'nowak@biuro-nowak.pl' } });
+    if (!ownerB) {
+      ownerB = await this.userRepo.save(
+        this.userRepo.create({
+          email: 'nowak@biuro-nowak.pl',
+          password,
+          firstName: 'Krzysztof',
+          lastName: 'Nowak',
+          role: UserRole.COMPANY_OWNER,
+          isActive: true,
+        })
+      );
+    }
 
-    ownerB.companyId = companyB.id;
-    await this.userRepo.save(ownerB);
+    if (!companyB) {
+      companyB = await this.companyRepo.save(
+        this.companyRepo.create({
+          name: 'Biuro Rachunkowe Nowak',
+          ownerId: ownerB.id,
+          isActive: true,
+          nip: '7654321890',
+          regon: '123456789',
+          street: 'ul. Długa 15',
+          city: 'Kraków',
+          postalCode: '30-001',
+          country: 'Polska',
+          ownerFirstName: 'Krzysztof',
+          ownerLastName: 'Nowak',
+          ownerEmail: 'nowak@biuro-nowak.pl',
+          bankAccount: 'PL61109010140000071219812874',
+        })
+      );
+    }
 
-    const emp1 = await this.userRepo.save(
-      this.userRepo.create({
-        email: 'a.kowalska@biuro-nowak.pl',
-        password,
-        firstName: 'Anna',
-        lastName: 'Kowalska',
-        role: UserRole.EMPLOYEE,
-        companyId: companyB.id,
-        isActive: true,
-      })
-    );
+    if (!ownerB.companyId) {
+      ownerB.companyId = companyB.id;
+      await this.userRepo.save(ownerB);
+    }
 
-    const emp2 = await this.userRepo.save(
-      this.userRepo.create({
-        email: 'm.wisniewski@biuro-nowak.pl',
-        password,
-        firstName: 'Marek',
-        lastName: 'Wiśniewski',
-        role: UserRole.EMPLOYEE,
-        companyId: companyB.id,
-        isActive: true,
-      })
-    );
+    let emp1 = await this.userRepo.findOne({ where: { email: 'a.kowalska@biuro-nowak.pl' } });
+    if (!emp1) {
+      emp1 = await this.userRepo.save(
+        this.userRepo.create({
+          email: 'a.kowalska@biuro-nowak.pl',
+          password,
+          firstName: 'Anna',
+          lastName: 'Kowalska',
+          role: UserRole.EMPLOYEE,
+          companyId: companyB.id,
+          isActive: true,
+        })
+      );
+    }
+
+    let emp2 = await this.userRepo.findOne({ where: { email: 'm.wisniewski@biuro-nowak.pl' } });
+    if (!emp2) {
+      emp2 = await this.userRepo.save(
+        this.userRepo.create({
+          email: 'm.wisniewski@biuro-nowak.pl',
+          password,
+          firstName: 'Marek',
+          lastName: 'Wiśniewski',
+          role: UserRole.EMPLOYEE,
+          companyId: companyB.id,
+          isActive: true,
+        })
+      );
+    }
 
     return { companyB, ownerB, employeesB: [emp1, emp2] };
   }
 
   private async seedModuleAccess(company: Company, modules: ModuleEntity[]): Promise<void> {
     for (const module of modules) {
-      await this.moduleAccessRepo.save(
-        this.moduleAccessRepo.create({
-          companyId: company.id,
-          moduleId: module.id,
-          isEnabled: true,
-        })
-      );
+      const existing = await this.moduleAccessRepo.findOne({
+        where: { companyId: company.id, moduleId: module.id },
+      });
+      if (!existing) {
+        await this.moduleAccessRepo.save(
+          this.moduleAccessRepo.create({
+            companyId: company.id,
+            moduleId: module.id,
+            isEnabled: true,
+          })
+        );
+      }
     }
     this.logger.log(`Enabled ${modules.length} modules for ${company.name}`);
   }
@@ -270,15 +294,20 @@ export class DemoDataSeederService {
   ): Promise<void> {
     for (const employee of employees) {
       for (const module of modules) {
-        const permissions = module.defaultPermissions ?? ['read', 'write'];
-        await this.permissionRepo.save(
-          this.permissionRepo.create({
-            userId: employee.id,
-            moduleId: module.id,
-            permissions,
-            grantedById: grantedBy.id,
-          })
-        );
+        const existing = await this.permissionRepo.findOne({
+          where: { userId: employee.id, moduleId: module.id },
+        });
+        if (!existing) {
+          const permissions = module.defaultPermissions ?? ['read', 'write'];
+          await this.permissionRepo.save(
+            this.permissionRepo.create({
+              userId: employee.id,
+              moduleId: module.id,
+              permissions,
+              grantedById: grantedBy.id,
+            })
+          );
+        }
       }
     }
     this.logger.log(`Granted permissions to ${employees.length} employees`);
@@ -780,24 +809,39 @@ export class DemoDataSeederService {
     const allUsers = [owner, ...employees];
     const now = new Date();
 
-    for (let i = 0; i < 50; i++) {
-      const status = statuses[Math.floor(i / 10)];
+    // total 90 entries: 50 recent (0-50 days), 20 mid-range (30-60 days), 20 older (90-120 days)
+    const totalEntries = 90;
+    for (let i = 0; i < totalEntries; i++) {
+      const status = statuses[Math.floor((i % 50) / 10)];
       const user = allUsers[i % allUsers.length];
       const client = clients.length > 0 ? clients[i % clients.length] : undefined;
-      const task = tasks.length > 0 ? tasks[i % tasks.length] : undefined;
       const isBillable = i % 5 !== 0;
       const hourlyRate = 100 + (i % 5) * 50;
       const durationMinutes = 30 + (i % 8) * 30;
-      const dayOffset = i < 25 ? -(i % 25) : -(25 + (i % 25));
+      let dayOffset: number;
+      if (i < 50) {
+        dayOffset = i < 25 ? -(i % 25) : -(25 + (i % 25));
+      } else if (i < 70) {
+        // 30-60 days ago
+        dayOffset = -(30 + ((i - 50) % 30));
+      } else {
+        // 90-120 days ago
+        dayOffset = -(90 + ((i - 70) % 30));
+      }
       const startTime = new Date(now.getTime() + dayOffset * 24 * 60 * 60 * 1000);
       startTime.setHours(8 + (i % 4), 0, 0, 0);
       const endTime = new Date(startTime.getTime() + durationMinutes * 60 * 1000);
 
+      // Mutually exclusive: even entries → task, odd entries → settlement
+      const useTask = i % 2 === 0;
+      const task = useTask && tasks.length > 0 ? tasks[i % tasks.length] : undefined;
       const settlement =
-        settlements.length > 0 && i % 3 === 0 ? settlements[i % settlements.length] : undefined;
+        !useTask && settlements.length > 0 ? settlements[i % settlements.length] : undefined;
 
       const entry: Partial<TimeEntry> = {
-        description: `Praca nad: ${task?.title ?? 'projekt'} dla ${client?.name ?? 'klienta'}`,
+        description: task
+          ? `Praca nad zadaniem: ${task.title}`
+          : `Praca nad rozliczeniem: ${settlement ? `${settlement.month}/${settlement.year}` : 'brak'}`,
         startTime,
         endTime,
         durationMinutes,
@@ -839,7 +883,7 @@ export class DemoDataSeederService {
       await this.timeEntryRepo.save(this.timeEntryRepo.create(entry as TimeEntry));
     }
 
-    this.logger.log(`Seeded 50 time entries for ${company.name}`);
+    this.logger.log(`Seeded ${totalEntries} time entries for ${company.name}`);
   }
 
   private async seedTimeSettings(company: Company): Promise<void> {
