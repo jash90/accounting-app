@@ -12,16 +12,16 @@ export default defineConfig({
   cacheDir: '../../node_modules/.vite/web',
 
   server: {
-    port: 4200,
-    host: 'localhost',
+    port: Number(process.env.PORT) || 4200,
+    host: process.env.HOST || 'localhost',
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: process.env.API_URL || 'http://api.accounting.localhost:1355',
         changeOrigin: true,
         secure: false,
       },
       '/socket.io': {
-        target: 'http://localhost:3001',
+        target: process.env.API_URL || 'http://api.accounting.localhost:1355',
         changeOrigin: true,
         secure: false,
         ws: true,

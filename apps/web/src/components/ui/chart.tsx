@@ -1,8 +1,9 @@
 /* eslint_disable @typescript-eslint/no-explicit-any */
 import * as React from 'react';
 
-import { cn } from '@/lib/utils/cn';
 import * as RechartsPrimitive from 'recharts';
+
+import { cn } from '@/lib/utils/cn';
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: '', dark: '.dark' } as const;
@@ -54,7 +55,9 @@ function ChartContainer({
         {...props}
       >
         <ChartStyle id={chartId} config={config} />
-        <RechartsPrimitive.ResponsiveContainer>{children}</RechartsPrimitive.ResponsiveContainer>
+        <RechartsPrimitive.ResponsiveContainer width="100%" height="100%">
+          {children}
+        </RechartsPrimitive.ResponsiveContainer>
       </div>
     </ChartContext.Provider>
   );
