@@ -46,6 +46,10 @@ A full-stack multi-tenant SaaS application featuring Role-Based Access Control (
 | 👤 **Client Management** | CRM-style client tracking and history             |
 | ✅ **Task Management**   | Tasks with assignments and notifications          |
 | ⏱️ **Time Tracking**     | Billable hours and project time logging           |
+| 💰 **Settlements**       | Payroll calculations and monthly summaries        |
+| 📄 **Documents**         | Template-based document generation (PDF/DOCX)     |
+| 📊 **Offers**            | Sales offers tracking with templates              |
+| 🔔 **Notifications**     | Push and email notifications with preferences     |
 | 📁 **File Uploads**      | S3-compatible file storage                        |
 | 📖 **API Docs**          | Auto-generated Swagger/OpenAPI documentation      |
 
@@ -167,7 +171,11 @@ accounting/
 │   └── modules/
 │       ├── ai-agent/           # Claude/OpenAI integration
 │       ├── clients/            # Client management
+│       ├── documents/          # Document templates and generation
 │       ├── email-client/       # IMAP/SMTP email client
+│       ├── notifications/      # Push/email notifications
+│       ├── offers/             # Sales offers tracking
+│       ├── settlements/        # Payroll settlements
 │       ├── tasks/              # Task management
 │       └── time-tracking/      # Time tracking
 └── docs/                       # Documentation
