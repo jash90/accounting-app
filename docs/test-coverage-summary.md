@@ -648,6 +648,215 @@
 
 ## Notyfikacje — inwentarz i pokrycie testowe
 
+System zawiera **~75 typow notyfikacji** w 9 domenach. Ponizej pelna lista z oznaczeniem, ktore sa aktywnie podpiete (`@NotifyOn` / Cron / Event), a ktore istnieja tylko w enumie (zarejestrowane, ale bez implementacji wyzwalacza).
+
+### Architektura
+
+```
+Controller (@NotifyOn) → NotificationInterceptor → 'notification.dispatch' event
+  → NotificationListener (interpolacja szablonow, resolving odbiorcow)
+    → NotificationDispatcherService → in-app (DB) + email channel
+```
+
+Strategie odbiorcow: `actor`, `assignee`, `companyUsers`, `companyUsersExceptActor`, custom function.
+
+### Task (13 typow)
+
+| Typ                    | Wyzwalacz                                             | Odbiorca                | Status     |
+| ---------------------- | ----------------------------------------------------- | ----------------------- | ---------- |
+| TASK_CREATED           | `@NotifyOn` POST /tasks                               | assignee                | aktywny    |
+| TASK_UPDATED           | `@NotifyOn` PATCH /tasks/:id                          | assignee                | aktywny    |
+| TASK_DELETED           | `@NotifyOn` DELETE /tasks/:id                         | companyUsersExceptActor | aktywny    |
+| TASK_ASSIGNED          | —                                                     | —                       | tylko enum |
+| TASK_UNASSIGNED        | —                                                     | —                       | tylko enum |
+| TASK_COMPLETED         | `notifyTaskCompleted()` on DONE                       | companyUsersExceptActor | aktywny    |
+| TASK_REOPENED          | —                                                     | —                       | tylko enum |
+| TASK_OVERDUE           | `@Cron('0 8 * * *')` TaskDeadlineNotificationsService | assignee                | aktywny    |
+| TASK_DUE_SOON          | `@Cron('5 8 * * *')` TaskDeadlineNotificationsService | assignee                | aktywny    |
+| TASK_COMMENT_ADDED     | —                                                     | —                       | tylko enum |
+| TASK_COMMENT_MENTIONED | —                                                     | —                       | tylko enum |
+| TASK_BULK_UPDATED      | —                                                     | —                       | tylko enum |
+| TASK_BULK_DELETED      | —                                                     | —                       | tylko enum |
+
+### Client (24 typy)
+
+| Typ                                 | Wyzwalacz                           | Odbiorca                | Status     |
+| ----------------------------------- | ----------------------------------- | ----------------------- | ---------- |
+| CLIENT_CREATED                      | —                                   | —                       | tylko enum |
+| CLIENT_UPDATED                      | —                                   | —                       | tylko enum |
+| CLIENT_DELETED                      | —                                   | —                       | tylko enum |
+| CLIENT_RESTORED                     | —                                   | —                       | tylko enum |
+| CLIENT_BULK_UPDATED                 | —                                   | —                       | tylko enum |
+| CLIENT_BULK_DELETED                 | —                                   | —                       | tylko enum |
+| CLIENT_DELETE_REQUESTED             | —                                   | —                       | tylko enum |
+| CLIENT_DELETE_APPROVED              | —                                   | —                       | tylko enum |
+| CLIENT_DELETE_REJECTED              | —                                   | —                       | tylko enum |
+| CLIENT_SUSPENSION_CREATED           | `@NotifyOn` POST suspensions        | companyUsersExceptActor | aktywny    |
+| CLIENT_SUSPENSION_UPDATED           | —                                   | —                       | tylko enum |
+| CLIENT_SUSPENSION_DELETED           | —                                   | —                       | tylko enum |
+| CLIENT_SUSPENSION_START_REMINDER_7D | `@Cron` SuspensionReminderService   | companyUsers            | aktywny    |
+| CLIENT_SUSPENSION_START_REMINDER_1D | `@Cron` SuspensionReminderService   | companyUsers            | aktywny    |
+| CLIENT_SUSPENSION_END_REMINDER_7D   | `@Cron` SuspensionReminderService   | companyUsers            | aktywny    |
+| CLIENT_SUSPENSION_END_REMINDER_1D   | `@Cron` SuspensionReminderService   | companyUsers            | aktywny    |
+| CLIENT_RESUMED                      | —                                   | —                       | tylko enum |
+| CLIENT_RELIEF_CREATED               | `@NotifyOn` POST relief-periods     | companyUsersExceptActor | aktywny    |
+| CLIENT_RELIEF_UPDATED               | —                                   | —                       | tylko enum |
+| CLIENT_RELIEF_DELETED               | —                                   | —                       | tylko enum |
+| CLIENT_RELIEF_END_REMINDER_7D       | `@Cron` ReliefPeriodReminderService | companyUsers            | aktywny    |
+| CLIENT_RELIEF_END_REMINDER_1D       | `@Cron` ReliefPeriodReminderService | companyUsers            | aktywny    |
+| CLIENT_CUSTOM_FIELD_REMINDER_7D     | `@Cron` CustomFieldReminderService  | companyUsers            | aktywny    |
+| CLIENT_CUSTOM_FIELD_REMINDER_1D     | `@Cron` CustomFieldReminderService  | companyUsers            | aktywny    |
+
+### Time Tracking (6 typow)
+
+| Typ                  | Wyzwalacz                            | Odbiorca                | Status     |
+| -------------------- | ------------------------------------ | ----------------------- | ---------- |
+| TIME_ENTRY_CREATED   | `@NotifyOn` POST entries             | companyUsersExceptActor | aktywny    |
+| TIME_ENTRY_UPDATED   | `@NotifyOn` PATCH entries/:id        | companyUsersExceptActor | aktywny    |
+| TIME_ENTRY_DELETED   | `@NotifyOn` DELETE entries/:id       | companyUsersExceptActor | aktywny    |
+| TIME_ENTRY_APPROVED  | `@NotifyOn` POST entries/:id/approve | entry owner             | aktywny    |
+| TIME_ENTRY_REJECTED  | `@NotifyOn` POST entries/:id/reject  | entry owner             | aktywny    |
+| TIME_ENTRY_SUBMITTED | —                                    | —                       | tylko enum |
+
+### Settlement (9 typow)
+
+| Typ                             | Wyzwalacz                         | Odbiorca                | Status     |
+| ------------------------------- | --------------------------------- | ----------------------- | ---------- |
+| SETTLEMENT_MONTH_INITIALIZED    | `@NotifyOn` POST initialize-month | companyUsersExceptActor | aktywny    |
+| SETTLEMENT_STATUS_CHANGED       | `@NotifyOn` PATCH :id/status      | companyUsersExceptActor | aktywny    |
+| SETTLEMENT_UPDATED              | `@NotifyOn` PATCH :id             | companyUsersExceptActor | aktywny    |
+| SETTLEMENT_ASSIGNED             | `@NotifyOn` PATCH :id/assign      | companyUsersExceptActor | aktywny    |
+| SETTLEMENT_UNASSIGNED           | —                                 | —                       | tylko enum |
+| SETTLEMENT_COMPLETED            | —                                 | —                       | tylko enum |
+| SETTLEMENT_BULK_ASSIGNED        | `@NotifyOn` POST bulk-assign      | companyUsersExceptActor | aktywny    |
+| SETTLEMENT_COMMENT_ADDED        | `@NotifyOn` POST :id/comments     | companyUsersExceptActor | aktywny    |
+| SETTLEMENT_DEADLINE_APPROACHING | —                                 | —                       | tylko enum |
+
+### Offer (10 typow)
+
+| Typ                      | Wyzwalacz                              | Odbiorca                | Status     |
+| ------------------------ | -------------------------------------- | ----------------------- | ---------- |
+| OFFER_CREATED            | `@NotifyOn` POST /offers               | companyUsersExceptActor | aktywny    |
+| OFFER_UPDATED            | `@NotifyOn` PATCH /offers/:id          | companyUsersExceptActor | aktywny    |
+| OFFER_DELETED            | `@NotifyOn` DELETE /offers/:id         | companyUsersExceptActor | aktywny    |
+| OFFER_STATUS_CHANGED     | `@NotifyOn` PATCH :id/status           | companyUsersExceptActor | aktywny    |
+| OFFER_SENT               | `@NotifyOn` POST :id/send              | companyUsersExceptActor | aktywny    |
+| OFFER_DOCUMENT_GENERATED | `@NotifyOn` POST :id/generate-document | companyUsersExceptActor | aktywny    |
+| OFFER_DUPLICATED         | `@NotifyOn` POST :id/duplicate         | companyUsersExceptActor | aktywny    |
+| OFFER_ACCEPTED           | —                                      | —                       | tylko enum |
+| OFFER_REJECTED           | —                                      | —                       | tylko enum |
+| OFFER_EXPIRED            | —                                      | —                       | tylko enum |
+
+### Lead (4 typy)
+
+| Typ            | Wyzwalacz                    | Odbiorca     | Status     |
+| -------------- | ---------------------------- | ------------ | ---------- |
+| LEAD_CREATED   | `@NotifyOn` POST /leads      | companyUsers | aktywny    |
+| LEAD_UPDATED   | `@NotifyOn` PATCH /leads/:id | companyUsers | aktywny    |
+| LEAD_DELETED   | —                            | —            | tylko enum |
+| LEAD_CONVERTED | —                            | —            | tylko enum |
+
+### Email (2 typy)
+
+| Typ               | Wyzwalacz | Odbiorca | Status     |
+| ----------------- | --------- | -------- | ---------- |
+| EMAIL_RECEIVED    | —         | —        | tylko enum |
+| EMAIL_SEND_FAILED | —         | —        | tylko enum |
+
+### AI Agent (2 typy)
+
+| Typ                    | Wyzwalacz                        | Odbiorca      | Status  |
+| ---------------------- | -------------------------------- | ------------- | ------- |
+| AI_TOKEN_LIMIT_WARNING | TokenLimitService (programmatic) | company owner | aktywny |
+| AI_TOKEN_LIMIT_REACHED | TokenLimitService (programmatic) | company owner | aktywny |
+
+### Company / User Management (8 typow)
+
+| Typ                   | Wyzwalacz | Odbiorca | Status     |
+| --------------------- | --------- | -------- | ---------- |
+| USER_INVITED          | —         | —        | tylko enum |
+| USER_JOINED           | —         | —        | tylko enum |
+| USER_REMOVED          | —         | —        | tylko enum |
+| USER_ROLE_CHANGED     | —         | —        | tylko enum |
+| MODULE_ACCESS_GRANTED | —         | —        | tylko enum |
+| MODULE_ACCESS_REVOKED | —         | —        | tylko enum |
+| PERMISSION_GRANTED    | —         | —        | tylko enum |
+| PERMISSION_REVOKED    | —         | —        | tylko enum |
+
+### System (3 typy)
+
+| Typ                 | Wyzwalacz | Odbiorca | Status     |
+| ------------------- | --------- | -------- | ---------- |
+| SYSTEM_ANNOUNCEMENT | —         | —        | tylko enum |
+| SYSTEM_MAINTENANCE  | —         | —        | tylko enum |
+| SYSTEM_UPDATE       | —         | —        | tylko enum |
+
+---
+
+### Podsumowanie notyfikacji
+
+| Metryka                             | Wartosc |
+| ----------------------------------- | ------- |
+| Typow w enumie                      | ~75     |
+| Aktywnie podpietych (@NotifyOn)     | ~25     |
+| Wyzwalanych przez Cron              | ~8      |
+| Wyzwalanych programatycznie         | ~4      |
+| **Tylko w enumie (bez wyzwalacza)** | **~38** |
+
+### Brakujace testy e2e notyfikacji
+
+#### Testy dostarczania (API E2E)
+
+| #   | Test                                    | Priorytet | Opis                                                                     |
+| --- | --------------------------------------- | --------- | ------------------------------------------------------------------------ |
+| 1   | Task CRUD → notyfikacja in-app          | P0        | Utworz zadanie → sprawdz, czy assignee otrzymal notyfikacje TASK_CREATED |
+| 2   | Task OVERDUE cron                       | P1        | Zadanie po deadline → cron → notyfikacja TASK_OVERDUE                    |
+| 3   | Task DUE_SOON cron                      | P1        | Zadanie z deadline za 2 dni → cron → notyfikacja TASK_DUE_SOON           |
+| 4   | Task COMPLETED transition               | P1        | Zmiana statusu na DONE → TASK_COMPLETED                                  |
+| 5   | Time entry approve/reject → notyfikacja | P0        | Approve wpisu → notyfikacja do wlasciciela wpisu                         |
+| 6   | Settlement status change → notyfikacja  | P1        | Zmiana statusu rozliczenia → SETTLEMENT_STATUS_CHANGED                   |
+| 7   | Settlement comment → notyfikacja        | P1        | Dodanie komentarza → SETTLEMENT_COMMENT_ADDED                            |
+| 8   | Settlement month init → notyfikacja     | P1        | Inicjalizacja miesiaca → SETTLEMENT_MONTH_INITIALIZED                    |
+| 9   | Offer send → notyfikacja                | P1        | Wyslanie oferty → OFFER_SENT                                             |
+| 10  | Offer status change → notyfikacja       | P1        | Zmiana statusu → OFFER_STATUS_CHANGED                                    |
+| 11  | Lead created → notyfikacja              | P1        | Utworzenie leada → LEAD_CREATED do companyUsers                          |
+| 12  | Client suspension created → notyfikacja | P1        | Utworzenie zawieszenia → CLIENT_SUSPENSION_CREATED                       |
+| 13  | Client suspension reminders (cron)      | P2        | 7d/1d przed rozpoczeciem/zakonczeniem zawieszenia                        |
+| 14  | Client relief reminders (cron)          | P2        | 7d/1d przed zakonczeniem ulgi                                            |
+| 15  | Client custom field reminders (cron)    | P2        | 7d/1d przed terminem pola niestandardowego                               |
+| 16  | AI token limit warning                  | P2        | Zbliżanie się do limitu → AI_TOKEN_LIMIT_WARNING                         |
+| 17  | AI token limit reached                  | P2        | Osiagniecie limitu → AI_TOKEN_LIMIT_REACHED                              |
+
+#### Testy UI (Web E2E)
+
+| #   | Test                               | Priorytet | Opis                                                          |
+| --- | ---------------------------------- | --------- | ------------------------------------------------------------- |
+| 18  | Notyfikacja pojawia sie w bell     | P0        | Akcja (np. assign task) → dzwonek pokazuje nowa notyfikacje   |
+| 19  | Klikniecie notyfikacji → nawigacja | P1        | Notyfikacja z actionUrl → klikniecie przenosi do zasobu       |
+| 20  | Ustawienia notyfikacji per modul   | P1        | Wylaczenie in-app/email dla wybranego typu → brak notyfikacji |
+| 21  | Filtrowanie notyfikacji po module  | P2        | Dropdown filtra modulu na liscie powiadomien                  |
+| 22  | Notyfikacje email channel          | P2        | Weryfikacja wyslania emaila (mock SMTP)                       |
+
+#### Testy typow "tylko enum" (brak wyzwalacza)
+
+Ponizsze typy sa zarejestrowane w enumie, ale nie maja podpietego wyzwalacza. Nalezy zdecydowac, czy powinny zostac zaimplementowane, czy usuniete z enuma:
+
+| Domena        | Typy bez wyzwalacza                                                                                                                                                                                                                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Task          | TASK_ASSIGNED, TASK_UNASSIGNED, TASK_REOPENED, TASK_COMMENT_ADDED, TASK_COMMENT_MENTIONED, TASK_BULK_UPDATED, TASK_BULK_DELETED                                                                                                                                                                        |
+| Client        | CLIENT_CREATED, CLIENT_UPDATED, CLIENT_DELETED, CLIENT_RESTORED, CLIENT_BULK_UPDATED, CLIENT_BULK_DELETED, CLIENT_DELETE_REQUESTED, CLIENT_DELETE_APPROVED, CLIENT_DELETE_REJECTED, CLIENT_SUSPENSION_UPDATED, CLIENT_SUSPENSION_DELETED, CLIENT_RESUMED, CLIENT_RELIEF_UPDATED, CLIENT_RELIEF_DELETED |
+| Time Tracking | TIME_ENTRY_SUBMITTED                                                                                                                                                                                                                                                                                   |
+| Settlement    | SETTLEMENT_UNASSIGNED, SETTLEMENT_COMPLETED, SETTLEMENT_DEADLINE_APPROACHING                                                                                                                                                                                                                           |
+| Offer         | OFFER_ACCEPTED, OFFER_REJECTED, OFFER_EXPIRED                                                                                                                                                                                                                                                          |
+| Lead          | LEAD_DELETED, LEAD_CONVERTED                                                                                                                                                                                                                                                                           |
+| Email         | EMAIL_RECEIVED, EMAIL_SEND_FAILED                                                                                                                                                                                                                                                                      |
+| User/Company  | USER_INVITED, USER_JOINED, USER_REMOVED, USER_ROLE_CHANGED, MODULE_ACCESS_GRANTED, MODULE_ACCESS_REVOKED, PERMISSION_GRANTED, PERMISSION_REVOKED                                                                                                                                                       |
+| System        | SYSTEM_ANNOUNCEMENT, SYSTEM_MAINTENANCE, SYSTEM_UPDATE                                                                                                                                                                                                                                                 |
+
+> **Razem: 38 typow bez wyzwalacza** — do decyzji: implementacja lub cleanup enuma.
+
+---
+
 ## Znane ograniczenia
 
 - Brak backend unit testow dla: Tasks, Documents, Email Client, AI Agent, Leads
