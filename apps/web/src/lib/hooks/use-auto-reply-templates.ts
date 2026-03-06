@@ -19,7 +19,7 @@ export interface AutoReplyTemplate {
   lastMatchedAt?: string | null;
 }
 
-const ENDPOINT = '/modules/email-client/auto-reply-templates';
+const ENDPOINT = '/api/modules/email-client/auto-reply-templates';
 
 export function useAutoReplyTemplates() {
   return useQuery({
