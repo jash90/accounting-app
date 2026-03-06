@@ -11,6 +11,8 @@ import {
   type TextRun,
 } from '@/types/content-blocks';
 
+import * as S from './block-styles';
+
 interface Props {
   blocks: ContentBlock[];
 }
@@ -25,10 +27,7 @@ function renderTextSegment(text: string, key: number) {
     <span key={key}>
       {parts.map((part, partIndex) =>
         PLACEHOLDER_RE.test(part) ? (
-          <span
-            key={`${partIndex}-${part}`}
-            className="text-blue-600 underline decoration-blue-400 decoration-dotted"
-          >
+          <span key={`${partIndex}-${part}`} style={S.placeholder}>
             {part}
           </span>
         ) : (
@@ -54,53 +53,40 @@ function TextRuns({ runs }: { runs: TextRun[] }) {
   );
 }
 
-function alignClass(alignment?: string) {
-  switch (alignment) {
-    case 'center':
-      return 'text-center';
-    case 'right':
-      return 'text-right';
-    case 'justify':
-      return 'text-justify';
-    default:
-      return 'text-left';
-  }
-}
-
 // ── Block renderers ──────────────────────────────────────────────
 
 function ParagraphPreview({ block }: { block: ParagraphBlock }) {
   return (
-    <p className={`mb-3 leading-relaxed ${alignClass(block.alignment)}`}>
+    <p style={{ ...S.paragraph, ...S.alignStyle(block.alignment) }}>
       <TextRuns runs={block.content} />
     </p>
   );
 }
 
 function HeadingPreview({ block }: { block: HeadingBlock }) {
-  const cls = `${alignClass(block.alignment)} font-bold mb-3`;
+  const align = S.alignStyle(block.alignment);
   const content = <TextRuns runs={block.content} />;
 
   switch (block.level) {
     case 1:
-      return <h1 className={`text-2xl ${cls}`}>{content}</h1>;
+      return <h1 style={{ ...S.headingH1, ...align }}>{content}</h1>;
     case 2:
-      return <h2 className={`text-xl ${cls}`}>{content}</h2>;
+      return <h2 style={{ ...S.headingH2, ...align }}>{content}</h2>;
     case 3:
-      return <h3 className={`text-lg ${cls}`}>{content}</h3>;
+      return <h3 style={{ ...S.headingH3, ...align }}>{content}</h3>;
     default:
-      return <h3 className={`text-lg ${cls}`}>{content}</h3>;
+      return <h3 style={{ ...S.headingH3, ...align }}>{content}</h3>;
   }
 }
 
 function TablePreview({ block }: { block: TableBlock }) {
   return (
-    <table className="mb-4 w-full border-collapse border border-gray-400 text-sm">
+    <table style={S.table}>
       {block.headers && (
         <thead>
-          <tr className="bg-gray-100">
+          <tr style={S.tableHeaderRow}>
             {block.headers.cells.map((cell, ci) => (
-              <th key={ci} className="border border-gray-400 px-3 py-2 text-left font-semibold">
+              <th key={ci} style={S.tableTh}>
                 <TextRuns runs={cell.content} />
               </th>
             ))}
@@ -111,7 +97,7 @@ function TablePreview({ block }: { block: TableBlock }) {
         {block.rows.map((row, ri) => (
           <tr key={ri}>
             {row.cells.map((cell, ci) => (
-              <td key={ci} className="border border-gray-400 px-3 py-2">
+              <td key={ci} style={S.tableTd}>
                 <TextRuns runs={cell.content} />
               </td>
             ))}
@@ -124,15 +110,12 @@ function TablePreview({ block }: { block: TableBlock }) {
 
 function ListPreview({ block }: { block: ListBlock }) {
   const Tag = block.style === 'numbered' ? 'ol' : 'ul';
-  const listCls =
-    block.style === 'numbered'
-      ? 'list-decimal pl-6 mb-4 space-y-1'
-      : 'list-disc pl-6 mb-4 space-y-1';
+  const listStyle = block.style === 'numbered' ? S.listNumbered : S.listBulleted;
 
   return (
-    <Tag className={listCls}>
+    <Tag style={listStyle}>
       {block.items.map((item) => (
-        <li key={item.id}>
+        <li key={item.id} style={S.listItem}>
           <TextRuns runs={item.content} />
         </li>
       ))}
@@ -141,23 +124,21 @@ function ListPreview({ block }: { block: ListBlock }) {
 }
 
 function SeparatorPreview() {
-  return <hr className="my-4 border-gray-400" />;
+  return <hr style={S.separator} />;
 }
 
 function SignaturePreview({ block }: { block: SignatureBlock }) {
   return (
-    <div className="my-6 grid grid-cols-2 gap-12">
-      <div className="space-y-8">
-        <p className="text-sm font-semibold">{block.leftLabel}</p>
-        <div className="border-b border-gray-400 pt-8" />
-        {block.leftPlaceholder && <p className="text-xs text-gray-500">{block.leftPlaceholder}</p>}
+    <div style={S.signatureGrid}>
+      <div style={S.signatureCol}>
+        <p style={S.signatureLabel}>{block.leftLabel}</p>
+        <div style={S.signatureLine} />
+        {block.leftPlaceholder && <p style={S.signaturePlaceholder}>{block.leftPlaceholder}</p>}
       </div>
-      <div className="space-y-8">
-        <p className="text-sm font-semibold">{block.rightLabel}</p>
-        <div className="border-b border-gray-400 pt-8" />
-        {block.rightPlaceholder && (
-          <p className="text-xs text-gray-500">{block.rightPlaceholder}</p>
-        )}
+      <div style={S.signatureCol}>
+        <p style={S.signatureLabel}>{block.rightLabel}</p>
+        <div style={S.signatureLine} />
+        {block.rightPlaceholder && <p style={S.signaturePlaceholder}>{block.rightPlaceholder}</p>}
       </div>
     </div>
   );
@@ -165,11 +146,11 @@ function SignaturePreview({ block }: { block: SignatureBlock }) {
 
 function AttachmentPreview({ block }: { block: AttachmentSectionBlock }) {
   return (
-    <div className="mb-4">
-      <p className="mb-1 font-bold">
+    <div style={S.attachmentContainer}>
+      <p style={S.attachmentTitle}>
         Załącznik nr {block.sectionNumber}: {block.title}
       </p>
-      <div className="leading-relaxed">
+      <div style={S.attachmentBody}>
         <TextRuns runs={block.content} />
       </div>
     </div>
@@ -178,18 +159,14 @@ function AttachmentPreview({ block }: { block: AttachmentSectionBlock }) {
 
 function ClientDataPreview({ block }: { block: ClientDataBlock }) {
   return (
-    <div className="mb-4">
-      {block.title && <p className="mb-2 font-bold">{block.title}</p>}
-      <table className="w-full border-collapse text-sm">
+    <div style={S.clientDataContainer}>
+      {block.title && <p style={S.clientDataTitle}>{block.title}</p>}
+      <table style={S.clientDataTable}>
         <tbody>
           {block.fields.map((field, i) => (
-            <tr key={field.label || `field-${i}`} className="border-b border-gray-200">
-              <td className="w-1/3 py-1.5 pr-4 font-medium text-gray-700">{field.label}</td>
-              <td className="py-1.5">
-                <span className="text-blue-600 underline decoration-blue-400 decoration-dotted">
-                  {field.placeholder}
-                </span>
-              </td>
+            <tr key={field.label || `field-${i}`} style={S.clientDataRow}>
+              <td style={S.clientDataLabel}>{field.label}</td>
+              <td style={S.clientDataValue}>{field.placeholder}</td>
             </tr>
           ))}
         </tbody>
@@ -236,7 +213,7 @@ export function BlockPreview({ blocks }: Props) {
 
   return (
     <div className="mx-auto max-w-[210mm] rounded border bg-white p-12 shadow-md">
-      <div className="font-serif text-base leading-relaxed text-gray-900">
+      <div className="font-sans text-base leading-relaxed text-gray-900">
         {blocks.map((block) => (
           <div key={block.id} data-block-id={block.id}>
             <BlockPreviewItem block={block} />
