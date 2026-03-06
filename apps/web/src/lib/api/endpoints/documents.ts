@@ -33,6 +33,11 @@ export interface GeneratedDocumentDto {
   fileName?: string | null;
   templateId?: string | null;
   sourceModule?: string | null;
+  metadata?: {
+    resolvedBlocks?: ContentBlock[];
+    renderedContent?: string;
+    [key: string]: unknown;
+  } | null;
   createdAt: string;
 }
 
@@ -41,9 +46,13 @@ export const documentsApi = {
   getTemplates: () =>
     apiClient.get<DocumentTemplateDto[]>('/api/modules/documents/templates').then((r) => r.data),
   getTemplate: (id: string) =>
-    apiClient.get<DocumentTemplateDto>(`/api/modules/documents/templates/${id}`).then((r) => r.data),
+    apiClient
+      .get<DocumentTemplateDto>(`/api/modules/documents/templates/${id}`)
+      .then((r) => r.data),
   createTemplate: (data: Partial<DocumentTemplateDto>) =>
-    apiClient.post<DocumentTemplateDto>('/api/modules/documents/templates', data).then((r) => r.data),
+    apiClient
+      .post<DocumentTemplateDto>('/api/modules/documents/templates', data)
+      .then((r) => r.data),
   updateTemplate: (id: string, data: Partial<DocumentTemplateDto>) =>
     apiClient
       .patch<DocumentTemplateDto>(`/api/modules/documents/templates/${id}`, data)
@@ -68,10 +77,12 @@ export const documentsApi = {
   // Generated docs
   getGeneratedDocuments: () =>
     apiClient.get<GeneratedDocumentDto[]>('/api/modules/documents/generated').then((r) => r.data),
-  getDocumentContent: (id: string) =>
+  getGeneratedDocument: (id: string) =>
     apiClient
-      .get<string>(`/api/modules/documents/generated/${id}/content`)
+      .get<GeneratedDocumentDto>(`/api/modules/documents/generated/${id}`)
       .then((r) => r.data),
+  getDocumentContent: (id: string) =>
+    apiClient.get<string>(`/api/modules/documents/generated/${id}/content`).then((r) => r.data),
   generateDocument: (data: {
     templateId: string;
     name: string;

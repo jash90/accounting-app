@@ -1,32 +1,41 @@
 import { useState } from 'react';
 
-import { downloadBlob } from '@/lib/utils/download';
-import { formatDate } from '@/lib/utils/format-date';
+import DOMPurify from 'dompurify';
 import { Download, Eye, FileText, Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { BlockPreview } from '@/components/template-editor/block-preview';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { documentsApi } from '@/lib/api/endpoints/documents';
 import {
   useDeleteGeneratedDocument,
   useDownloadDocumentPdf,
   useGeneratedDocuments,
 } from '@/lib/hooks/use-documents';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { downloadBlob } from '@/lib/utils/download';
+import { formatDate } from '@/lib/utils/format-date';
+import type { ContentBlock } from '@/types/content-blocks';
 
 export default function GeneratedDocumentsListPage() {
   const { data: documents, isLoading } = useGeneratedDocuments();
   const deleteDoc = useDeleteGeneratedDocument();
   const downloadPdf = useDownloadDocumentPdf();
-  const [viewContent, setViewContent] = useState<{ name: string; content: string } | null>(null);
+  const [viewContent, setViewContent] = useState<{
+    name: string;
+    content: string;
+    resolvedBlocks?: ContentBlock[];
+  } | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const handleView = async (id: string, name: string) => {
     setLoadingId(id);
     try {
-      const content = await documentsApi.getDocumentContent(id);
-      setViewContent({ name, content });
+      const doc = await documentsApi.getGeneratedDocument(id);
+      const resolvedBlocks = doc.metadata?.resolvedBlocks;
+      const content = doc.metadata?.renderedContent ?? '';
+      setViewContent({ name, content, resolvedBlocks });
       setLoadingId(null);
     } catch {
       toast.error('Nie udało się załadować treści dokumentu');
@@ -103,9 +112,13 @@ export default function GeneratedDocumentsListPage() {
                   size="sm"
                   title="Pobierz PDF"
                   onClick={() => handleDownloadPdf(doc.id, doc.name)}
-                  disabled={downloadPdf.isPending}
+                  disabled={downloadPdf.isPending && downloadPdf.variables === doc.id}
                 >
-                  <Download className="h-4 w-4" />
+                  {downloadPdf.isPending && downloadPdf.variables === doc.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
                 </Button>
                 <Button
                   variant="ghost"
@@ -131,9 +144,24 @@ export default function GeneratedDocumentsListPage() {
           <DialogHeader>
             <DialogTitle>{viewContent?.name}</DialogTitle>
           </DialogHeader>
-          <pre className="whitespace-pre-wrap text-sm font-mono bg-muted rounded-md p-4 overflow-y-auto flex-1">
-            {viewContent?.content}
-          </pre>
+          {viewContent?.resolvedBlocks?.length ? (
+            <div className="overflow-y-auto flex-1 p-4">
+              <BlockPreview blocks={viewContent.resolvedBlocks} />
+            </div>
+          ) : viewContent?.content && /<[a-z][\s\S]*>/i.test(viewContent.content) ? (
+            <div className="overflow-y-auto flex-1 px-4 py-2">
+              <div
+                className="document-html-content mx-auto max-w-[210mm] rounded border bg-white p-12 shadow-md"
+                dangerouslySetInnerHTML={{
+                  __html: DOMPurify.sanitize(viewContent.content),
+                }}
+              />
+            </div>
+          ) : (
+            <pre className="whitespace-pre-wrap text-sm font-mono bg-muted rounded-md p-4 overflow-y-auto flex-1">
+              {viewContent?.content}
+            </pre>
+          )}
         </DialogContent>
       </Dialog>
     </div>
