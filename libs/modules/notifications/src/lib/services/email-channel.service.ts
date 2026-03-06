@@ -8,7 +8,7 @@ import * as handlebars from 'handlebars';
 import * as path from 'path';
 import { Repository } from 'typeorm';
 
-import { NotificationType, NotificationTypeLabels, User } from '@accounting/common';
+import { escapeHtml, NotificationType, NotificationTypeLabels, User } from '@accounting/common';
 import { EmailConfigurationService, EmailSenderService } from '@accounting/email';
 
 import { NotificationService } from './notification.service';
@@ -26,16 +26,6 @@ interface EmailNotificationPayload {
 }
 
 const ALLOWED_URL_SCHEMES = ['http:', 'https:', 'mailto:'];
-
-function escapeHtml(value: unknown): string {
-  const str = String(value ?? '');
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 function sanitizeUrl(url: string): string {
   try {

@@ -31,6 +31,7 @@ export * from './lib/utils/query.utils';
 export * from './lib/utils/csv.utils';
 export * from './lib/utils/stats.utils';
 export * from './lib/utils/error.utils';
+export { escapeHtml } from './lib/utils/html.utils';
 // NOTE: pdfmake-bootstrap uses Node.js require() for font loading and must only be
 // imported in backend (NestJS) code. Do NOT import in frontend bundles.
 export {
