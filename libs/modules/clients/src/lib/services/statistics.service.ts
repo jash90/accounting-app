@@ -8,6 +8,7 @@ import {
   Client,
   EmploymentType,
   Task,
+  TaskStatus,
   TaxScheme,
   TimeEntry,
   User,
@@ -234,7 +235,7 @@ export class ClientStatisticsService {
       .andWhere('task.clientId IS NOT NULL')
       .andWhere('task.isTemplate = :isTemplate', { isTemplate: false })
       .groupBy('task.clientId')
-      .setParameter('done', 'DONE')
+      .setParameter('done', TaskStatus.DONE)
       .getRawMany<{ clientId: string; totalTasks: string; completedTasks: string }>();
 
     // Get time spent per client

@@ -40,7 +40,7 @@ export class ClientFieldDefinition {
   })
   fieldType!: CustomFieldType;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ name: 'options', type: 'jsonb', nullable: true })
   enumValues?: string[]; // For ENUM type
 
   @Column({ type: 'boolean', default: false })
