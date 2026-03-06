@@ -27,8 +27,9 @@ const getWsBaseUrl = (): string => {
     const url = window.__APP_CONFIG__.API_BASE_URL;
     if (url && url !== '__API_BASE_URL__') return url;
   }
+  // DEV mode: always use empty string so requests go through Vite proxy
   if (import.meta.env.DEV) {
-    return import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_BASE_URL || '';
+    return '';
   }
   return '';
 };

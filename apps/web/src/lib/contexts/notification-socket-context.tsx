@@ -44,9 +44,9 @@ const getWsBaseUrl = (): string => {
     }
   }
 
-  // Build-time env var - ONLY for local development
+  // DEV mode: always use empty string so requests go through Vite proxy
   if (import.meta.env.DEV) {
-    return import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_BASE_URL || '';
+    return '';
   }
 
   // Production fallback - use relative URL (same origin)
