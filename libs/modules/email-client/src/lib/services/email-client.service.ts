@@ -16,6 +16,7 @@ import {
   PaginatedEmailsResult,
   ReceivedEmail,
   SmtpConfig,
+  type MailboxInfo,
 } from '@accounting/email';
 
 /** Default timeout for IMAP operations in milliseconds */
@@ -188,7 +189,7 @@ export class EmailClientService {
   /**
    * List available mailboxes/folders
    */
-  async listFolders(user: User): Promise<string[]> {
+  async listFolders(user: User): Promise<MailboxInfo[]> {
     const emailConfig = await this.getEmailConfigForUser(user);
 
     return this.withTimeout(this.emailReaderService.listMailboxes(emailConfig.imap), 'listFolders');

@@ -1,9 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
 
-import { cn } from '@/lib/utils/cn';
 import {
   AlertTriangle,
   Archive,
+  BotMessageSquare,
   FileText,
   Folder,
   Inbox,
@@ -15,9 +15,10 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-import { useEmailFolders } from '@/lib/hooks/use-email-client';
-import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useEmailFolders, type MailboxInfo } from '@/lib/hooks/use-email-client';
+import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
+import { cn } from '@/lib/utils/cn';
 
 /**
  * Skeleton component for folder list loading state
@@ -35,23 +36,33 @@ function EmailSidebarSkeleton() {
   );
 }
 
-// Map IMAP folder names to appropriate icons
-function getFolderIcon(folderName: string): LucideIcon {
-  const lower = folderName.toLowerCase();
+// Map IMAP folder to appropriate icon — specialUse first, then name matching
+function getFolderIcon(folder: MailboxInfo): LucideIcon {
+  // Check specialUse (RFC 6154) first
+  if (folder.specialUse) {
+    switch (folder.specialUse) {
+      case '\\Sent':
+        return Send;
+      case '\\Drafts':
+        return FileText;
+      case '\\Trash':
+        return Trash2;
+      case '\\Junk':
+        return AlertTriangle;
+      case '\\Archive':
+        return Archive;
+      case '\\Inbox':
+        return Inbox;
+    }
+  }
 
-  // Standard folders
+  // Fallback: name matching
+  const lower = folder.path.toLowerCase();
+
   if (lower === 'inbox') return Inbox;
-
-  // Sent folder variants (English + Polish)
   if (lower.includes('sent') || lower.includes('wysłane') || lower.includes('wyslane')) return Send;
-
-  // Drafts folder variants
   if (lower.includes('draft') || lower.includes('robocz')) return FileText;
-
-  // Trash folder variants
   if (lower.includes('trash') || lower.includes('kosz') || lower.includes('deleted')) return Trash2;
-
-  // Spam/Junk folder variants
   if (
     lower.includes('spam') ||
     lower.includes('śmieci') ||
@@ -59,34 +70,28 @@ function getFolderIcon(folderName: string): LucideIcon {
     lower.includes('junk')
   )
     return AlertTriangle;
-
-  // Archive folder variants
   if (lower.includes('archive') || lower.includes('archiwum')) return Archive;
-
-  // Special folders (Polish email providers)
   if (lower.includes('społeczności') || lower.includes('spolecznosci') || lower.includes('social'))
     return Users;
   if (lower.includes('oferty') || lower.includes('promotions') || lower.includes('promo'))
     return ShoppingBag;
   if (lower.includes('kategori') || lower.includes('label')) return Tag;
 
-  // Default folder icon
   return Folder;
 }
 
-// Get display label for folder (use original IMAP name)
-function getFolderLabel(folderName: string): string {
-  // Special case for INBOX - use Polish translation
-  if (folderName === 'INBOX') return 'Odebrane';
-  return folderName;
+// Get display label for folder
+function getFolderLabel(folder: MailboxInfo): string {
+  if (folder.path === 'INBOX') return 'Odebrane';
+  return folder.path;
 }
 
 // Sort folders with INBOX first, then alphabetically
-function sortFolders(folders: string[]): string[] {
+function sortFolders(folders: MailboxInfo[]): MailboxInfo[] {
   return [...folders].sort((a, b) => {
-    if (a === 'INBOX') return -1;
-    if (b === 'INBOX') return 1;
-    return a.localeCompare(b, 'pl');
+    if (a.path === 'INBOX') return -1;
+    if (b.path === 'INBOX') return 1;
+    return a.path.localeCompare(b.path, 'pl');
   });
 }
 
@@ -95,16 +100,11 @@ export function EmailSidebar() {
   const emailNav = useEmailClientNavigation();
   const { data: folders, isPending, isFetching, isError } = useEmailFolders();
 
-  const isActive = (folderName: string) => {
-    const encodedFolder = encodeURIComponent(folderName);
+  const isActive = (folderPath: string) => {
+    const encodedFolder = encodeURIComponent(folderPath);
     return location.pathname.includes(`/email-client/folder/${encodedFolder}`);
   };
 
-  // Show skeleton when:
-  // 1. Initial loading (isPending) - no cached data
-  // 2. Fetching with no data yet (isFetching && !folders)
-  // 3. Error state (e.g., missing email config)
-  // 4. No folders data available
   const showSkeleton = isPending || (isFetching && !folders) || isError || !folders;
 
   if (showSkeleton) {
@@ -117,17 +117,20 @@ export function EmailSidebar() {
 
   const sortedFolders = sortFolders(folders);
 
+  const autoReplyHref = `${emailNav.basePath}/auto-reply-templates`;
+  const autoReplyActive = location.pathname.includes('/auto-reply-templates');
+
   return (
-    <aside className="bg-muted/30 w-48 flex-shrink-0 border-r">
-      <nav className="space-y-1 p-2">
-        {sortedFolders.map((folderName) => {
-          const Icon = getFolderIcon(folderName);
-          const active = isActive(folderName);
-          const href = `${emailNav.basePath}/folder/${encodeURIComponent(folderName)}`;
+    <aside className="bg-muted/30 flex w-48 flex-shrink-0 flex-col border-r">
+      <nav className="flex-1 space-y-1 p-2">
+        {sortedFolders.map((folder) => {
+          const Icon = getFolderIcon(folder);
+          const active = isActive(folder.path);
+          const href = `${emailNav.basePath}/folder/${encodeURIComponent(folder.path)}`;
 
           return (
             <Link
-              key={folderName}
+              key={folder.path}
               to={href}
               className={cn(
                 'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
@@ -137,11 +140,25 @@ export function EmailSidebar() {
               )}
             >
               <Icon className="h-4 w-4" />
-              {getFolderLabel(folderName)}
+              {getFolderLabel(folder)}
             </Link>
           );
         })}
       </nav>
+      <div className="border-t p-2">
+        <Link
+          to={autoReplyHref}
+          className={cn(
+            'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+            autoReplyActive
+              ? 'bg-primary text-primary-foreground'
+              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+          )}
+        >
+          <BotMessageSquare className="h-4 w-4" />
+          Auto-odpowiedzi
+        </Link>
+      </div>
     </aside>
   );
 }

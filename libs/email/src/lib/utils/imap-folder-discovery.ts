@@ -1,5 +1,7 @@
 import { type Logger } from '@nestjs/common';
 
+import { type MailboxInfo } from './imap-connection.factory';
+
 /**
  * Common Sent folder names across different email providers
  * Listed in order of priority for matching
@@ -64,10 +66,18 @@ export const DRAFT_PARTIAL_MATCHES = [
  * @param logger - Optional logger for debugging
  * @returns Found mailbox name or 'Sent' as fallback
  */
-export function findSentMailboxFromList(boxes: string[], logger?: Logger): string {
-  // Check against known Sent folder names (case-insensitive)
+export function findSentMailboxFromList(boxes: MailboxInfo[], logger?: Logger): string {
+  // 1. Try specialUse (RFC 6154) — PRIMARY
+  const bySpecialUse = boxes.find((b) => b.specialUse === '\\Sent');
+  if (bySpecialUse) {
+    logger?.log(`Found Sent mailbox via specialUse: ${bySpecialUse.path}`);
+    return bySpecialUse.path;
+  }
+
+  // 2. Fallback: name matching
+  const paths = boxes.map((b) => b.path);
   for (const sentName of SENT_FOLDER_NAMES) {
-    const found = boxes.find((box) => box.toLowerCase() === sentName.toLowerCase());
+    const found = paths.find((box) => box.toLowerCase() === sentName.toLowerCase());
     if (found) {
       logger?.log(`Found Sent mailbox: ${found}`);
       return found;
@@ -94,12 +104,22 @@ export function findSentMailboxFromList(boxes: string[], logger?: Logger): strin
  * @returns Object with found mailbox name or null, and needsCreation flag
  */
 export function findDraftsMailboxFromList(
-  boxes: string[],
+  boxes: MailboxInfo[],
   logger?: Logger
 ): { mailbox: string | null; needsCreation: boolean } {
+  // 1. Try specialUse (RFC 6154) — PRIMARY
+  const bySpecialUse = boxes.find((b) => b.specialUse === '\\Drafts');
+  if (bySpecialUse) {
+    logger?.log(`Found Drafts mailbox via specialUse: ${bySpecialUse.path}`);
+    return { mailbox: bySpecialUse.path, needsCreation: false };
+  }
+
+  // 2. Fallback: name matching
+  const paths = boxes.map((b) => b.path);
+
   // First try exact match (case-insensitive)
   for (const draftName of DRAFT_FOLDER_NAMES) {
-    const found = boxes.find((box) => box.toLowerCase() === draftName.toLowerCase());
+    const found = paths.find((box) => box.toLowerCase() === draftName.toLowerCase());
     if (found) {
       logger?.log(`Found Drafts mailbox: ${found}`);
       return { mailbox: found, needsCreation: false };
@@ -108,7 +128,7 @@ export function findDraftsMailboxFromList(
 
   // Try partial match - look for folders containing draft-related keywords
   for (const partial of DRAFT_PARTIAL_MATCHES) {
-    const found = boxes.find((box) => box.toLowerCase().includes(partial));
+    const found = paths.find((box) => box.toLowerCase().includes(partial));
     if (found) {
       logger?.log(`Found Drafts mailbox by partial match: ${found}`);
       return { mailbox: found, needsCreation: false };
@@ -142,10 +162,19 @@ export const TRASH_FOLDER_NAMES = [
  * @param logger - Optional logger for debugging
  * @returns Found mailbox name or null
  */
-export function findTrashMailboxFromList(boxes: string[], logger?: Logger): string | null {
-  // Check against known Trash folder names (case-insensitive)
+export function findTrashMailboxFromList(boxes: MailboxInfo[], logger?: Logger): string | null {
+  // 1. Try specialUse (RFC 6154) — PRIMARY
+  const bySpecialUse = boxes.find((b) => b.specialUse === '\\Trash');
+  if (bySpecialUse) {
+    logger?.log(`Found Trash mailbox via specialUse: ${bySpecialUse.path}`);
+    return bySpecialUse.path;
+  }
+
+  // 2. Fallback: name matching
+  const paths = boxes.map((b) => b.path);
+
   for (const trashName of TRASH_FOLDER_NAMES) {
-    const found = boxes.find((box) => box.toLowerCase() === trashName.toLowerCase());
+    const found = paths.find((box) => box.toLowerCase() === trashName.toLowerCase());
     if (found) {
       logger?.log(`Found Trash mailbox: ${found}`);
       return found;
@@ -153,7 +182,7 @@ export function findTrashMailboxFromList(boxes: string[], logger?: Logger): stri
   }
 
   // Partial match fallback
-  const partial = boxes.find(
+  const partial = paths.find(
     (box) =>
       box.toLowerCase().includes('trash') ||
       box.toLowerCase().includes('deleted') ||

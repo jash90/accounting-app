@@ -13,8 +13,9 @@ import { convertParsedMailToReceivedEmail } from '../utils/email-message.parser'
 import {
   buildSearchCriteria,
   createImapFlowClient,
-  extractMailboxNames,
+  extractMailboxInfo,
   sendClientIdentification,
+  type MailboxInfo,
 } from '../utils/imap-connection.factory';
 import {
   findDraftsMailboxFromList,
@@ -94,13 +95,12 @@ export class EmailReaderService {
 
         this.logger.log(`[IMAP] Fetching ${uidsToFetch.length} messages`);
 
-        // Fetch messages using async iterator
-        for await (const message of client.fetch(uidsToFetch, {
-          uid: true,
-          flags: true,
-          envelope: true,
-          source: true, // Get full RFC822 message for parsing
-        })) {
+        // Fetch messages using async iterator (uid: true in options = interpret range as UIDs)
+        for await (const message of client.fetch(
+          uidsToFetch,
+          { uid: true, flags: true, envelope: true, source: true },
+          { uid: true }
+        )) {
           try {
             const email = await this.processMessage(message, client, options.markAsSeen);
             if (email) {
@@ -165,7 +165,7 @@ export class EmailReaderService {
   /**
    * Get list of available mailboxes/folders
    */
-  async listMailboxes(imapConfig: ImapConfig): Promise<string[]> {
+  async listMailboxes(imapConfig: ImapConfig): Promise<MailboxInfo[]> {
     const client = createImapFlowClient(imapConfig);
 
     try {
@@ -173,7 +173,7 @@ export class EmailReaderService {
       await sendClientIdentification(client, this.logger);
 
       const mailboxes = await client.list();
-      return extractMailboxNames(mailboxes);
+      return extractMailboxInfo(mailboxes);
     } finally {
       await client.logout().catch(() => {});
     }
@@ -312,7 +312,7 @@ export class EmailReaderService {
   async findDraftsMailbox(imapConfig: ImapConfig): Promise<string> {
     try {
       const boxes = await this.listMailboxes(imapConfig);
-      this.logger.log(`Available mailboxes: ${boxes.join(', ')}`);
+      this.logger.log(`Available mailboxes: ${boxes.map((b) => b.path).join(', ')}`);
 
       const result = findDraftsMailboxFromList(boxes, this.logger);
 
@@ -324,7 +324,7 @@ export class EmailReaderService {
         } catch (createError) {
           this.logger.error(`Failed to create Drafts folder: ${(createError as Error).message}`);
           throw new Error(
-            `Drafts folder not found and could not be created. Available folders: ${boxes.join(', ')}`
+            `Drafts folder not found and could not be created. Available folders: ${boxes.map((b) => b.path).join(', ')}`
           );
         }
       }
@@ -538,12 +538,11 @@ export class EmailReaderService {
           return { messages: [], total, unseen, nextCursor, prevCursor };
         }
 
-        for await (const message of client.fetch(uidsToFetch, {
-          uid: true,
-          flags: true,
-          envelope: true,
-          source: true,
-        })) {
+        for await (const message of client.fetch(
+          uidsToFetch,
+          { uid: true, flags: true, envelope: true, source: true },
+          { uid: true }
+        )) {
           try {
             const email = await this.processMessage(message, client, options.markAsSeen);
             if (email) messages.push(email);
@@ -642,12 +641,11 @@ export class EmailReaderService {
           prevCursor = startIndex > 0 ? matchingUids[startIndex] : null;
         }
 
-        for await (const message of client.fetch(uidsToFetch, {
-          uid: true,
-          flags: true,
-          envelope: true,
-          source: true,
-        })) {
+        for await (const message of client.fetch(
+          uidsToFetch,
+          { uid: true, flags: true, envelope: true, source: true },
+          { uid: true }
+        )) {
           try {
             const email = await this.processMessage(message, client);
             if (email) messages.push(email);

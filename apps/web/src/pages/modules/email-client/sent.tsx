@@ -1,34 +1,14 @@
 import { BaseEmailList } from '@/components/email/base-email-list';
 import { useEmailFolder, useEmailFolders } from '@/lib/hooks/use-email-client';
 
-// Helper to find the Sent folder name from available folders
-function findSentFolder(folders: string[] | undefined): string {
-  if (!folders) return 'Sent';
-
-  const sentNames = [
-    'Sent',
-    'Sent Items',
-    'Sent Mail',
-    '[Gmail]/Sent Mail',
-    'Wysłane',
-    'INBOX.Sent',
-    'INBOX/Sent',
-  ];
-
-  for (const name of sentNames) {
-    const found = folders.find((f) => f.toLowerCase() === name.toLowerCase());
-    if (found) return found;
-  }
-
-  const partial = folders.find(
-    (f) => f.toLowerCase().includes('sent') || f.toLowerCase().includes('wysłan')
-  );
-  return partial || 'Sent';
-}
-
 export default function EmailSent() {
   const { data: folders } = useEmailFolders();
-  const sentFolder = findSentFolder(folders);
+  const sentFolder =
+    folders?.find((f) => f.specialUse === '\\Sent')?.path ??
+    folders?.find(
+      (f) => f.path.toLowerCase().includes('sent') || f.path.toLowerCase().includes('wysłan')
+    )?.path ??
+    'Sent';
   const { data: emails, isLoading, refetch, isRefetching, error } = useEmailFolder(sentFolder);
 
   return (

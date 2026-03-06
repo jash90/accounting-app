@@ -275,6 +275,11 @@ export function useDeleteEmailDraft() {
   });
 }
 
+export interface MailboxInfo {
+  path: string;
+  specialUse?: string;
+}
+
 /**
  * List email folders
  */
@@ -282,7 +287,9 @@ export function useEmailFolders() {
   return useQuery({
     queryKey: queryKeys.email.folders,
     queryFn: async () => {
-      const { data } = await apiClient.get<string[]>('/api/modules/email-client/messages/folders');
+      const { data } = await apiClient.get<MailboxInfo[]>(
+        '/api/modules/email-client/messages/folders'
+      );
       return data;
     },
     refetchInterval: 30000, // Auto-refresh every 30s (consistent with useInbox)

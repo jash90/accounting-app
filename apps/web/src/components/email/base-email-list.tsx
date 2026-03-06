@@ -324,7 +324,7 @@ export function BaseEmailList({
 
   // Available folders for move (excluding current)
   const availableFolders = useMemo(
-    () => (folders || []).filter((f) => f !== currentMailbox),
+    () => (folders || []).filter((f) => f.path !== currentMailbox),
     [folders, currentMailbox]
   );
 
@@ -415,8 +415,11 @@ export function BaseEmailList({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                     {availableFolders.map((folder) => (
-                      <DropdownMenuItem key={folder} onClick={() => handleMoveSelected(folder)}>
-                        {folder}
+                      <DropdownMenuItem
+                        key={folder.path}
+                        onClick={() => handleMoveSelected(folder.path)}
+                      >
+                        {folder.path}
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>

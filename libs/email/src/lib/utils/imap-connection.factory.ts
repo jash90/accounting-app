@@ -175,13 +175,24 @@ function convertLegacySearchCriteria(criteria: unknown[]): Record<string, unknow
 }
 
 /**
- * Extract mailbox names from ImapFlow list response
+ * Mailbox info with optional RFC 6154 special-use attribute
+ */
+export interface MailboxInfo {
+  path: string;
+  specialUse?: string;
+}
+
+/**
+ * Extract mailbox info (path + specialUse) from ImapFlow list response
  *
  * @param mailboxes - ImapFlow list response array
- * @returns Array of mailbox names with full paths
+ * @returns Array of MailboxInfo with path and optional specialUse flag
  */
-export function extractMailboxNames(mailboxes: ListResponse[]): string[] {
-  return mailboxes.map((mailbox) => mailbox.path);
+export function extractMailboxInfo(mailboxes: ListResponse[]): MailboxInfo[] {
+  return mailboxes.map((mailbox) => ({
+    path: mailbox.path,
+    specialUse: mailbox.specialUse || undefined,
+  }));
 }
 
 /**
