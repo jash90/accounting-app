@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
@@ -218,13 +218,13 @@ function TemplateFormDialog({
               name="templateContent"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Treść szablonu (Handlebars)</FormLabel>
+                  <FormLabel>Treść szablonu (HTML + Handlebars)</FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder={
-                        'Użyj składni {{placeholder}} dla zmiennych.\n\nPrzykład:\nSzanowny {{klient_nazwa}},\n\nNiniejsza umowa zawarta w dniu {{data_umowy}}...'
+                        'Użyj HTML do formatowania i {{placeholder}} dla zmiennych.\n\nPrzykład:\n<h1>FAKTURA VAT {{numer_faktury}}</h1>\n<p>Data wystawienia: {{data_wystawienia}}</p>\n<hr>\n<table>\n  <tr><th>Usługa</th><th>Kwota</th></tr>\n  <tr><td>{{usluga}}</td><td>{{kwota}} zł</td></tr>\n</table>\n<p><strong>Razem: {{suma}} zł</strong></p>'
                       }
-                      rows={10}
+                      rows={14}
                       className="font-mono text-sm"
                       {...field}
                     />
@@ -280,6 +280,22 @@ function GenerateDocumentDialog({
     }
   };
 
+  const allPlaceholders = useMemo(() => {
+    const manual = template?.placeholders ?? [];
+    const detected: string[] = [];
+    if (template?.templateContent) {
+      const re = /\{\{([^{}#/]+?)\}\}/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(template.templateContent))) {
+        const key = m[1].trim();
+        if (key && !key.startsWith('else')) {
+          detected.push(key);
+        }
+      }
+    }
+    return [...new Set([...manual, ...detected])];
+  }, [template]);
+
   if (!template) return null;
 
   return (
@@ -299,10 +315,10 @@ function GenerateDocumentDialog({
               required
             />
           </div>
-          {(template.placeholders ?? []).length > 0 && (
+          {allPlaceholders.length > 0 && (
             <div className="space-y-3">
               <p className="text-sm font-medium text-muted-foreground">Wypełnij placeholdery:</p>
-              {template.placeholders!.map((key) => (
+              {allPlaceholders.map((key) => (
                 <div key={key} className="space-y-1">
                   <Label htmlFor={`ph-${key}`} className="font-mono text-xs">{`{{${key}}}`}</Label>
                   <Input
