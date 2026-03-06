@@ -3,8 +3,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ImapConfig } from '../interfaces/email-config.interface';
 import {
   createImapFlowClient,
-  extractMailboxNames,
+  extractMailboxInfo,
   sendClientIdentification,
+  type MailboxInfo,
 } from '../utils/imap-connection.factory';
 import { findDraftsMailboxFromList, findSentMailboxFromList } from '../utils/imap-folder-discovery';
 
@@ -21,7 +22,7 @@ export class ImapMailboxService {
   /**
    * Get list of available mailboxes/folders
    */
-  async listMailboxes(imapConfig: ImapConfig): Promise<string[]> {
+  async listMailboxes(imapConfig: ImapConfig): Promise<MailboxInfo[]> {
     const client = createImapFlowClient(imapConfig);
 
     try {
@@ -29,7 +30,7 @@ export class ImapMailboxService {
       await sendClientIdentification(client, this.logger);
 
       const mailboxes = await client.list();
-      return extractMailboxNames(mailboxes);
+      return extractMailboxInfo(mailboxes);
     } finally {
       await client.logout().catch(() => {});
     }
@@ -116,7 +117,7 @@ export class ImapMailboxService {
   async findDraftsMailbox(imapConfig: ImapConfig): Promise<string> {
     try {
       const boxes = await this.listMailboxes(imapConfig);
-      this.logger.log(`Available mailboxes: ${boxes.join(', ')}`);
+      this.logger.log(`Available mailboxes: ${boxes.map((b) => b.path).join(', ')}`);
 
       const result = findDraftsMailboxFromList(boxes, this.logger);
 
@@ -128,7 +129,7 @@ export class ImapMailboxService {
         } catch (createError) {
           this.logger.error(`Failed to create Drafts folder: ${(createError as Error).message}`);
           throw new Error(
-            `Drafts folder not found and could not be created. Available folders: ${boxes.join(', ')}`
+            `Drafts folder not found and could not be created. Available folders: ${boxes.map((b) => b.path).join(', ')}`
           );
         }
       }
