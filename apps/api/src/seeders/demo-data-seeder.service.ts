@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import * as bcrypt from 'bcryptjs';
+import * as Handlebars from 'handlebars';
 import { Repository } from 'typeorm';
 
 import {
@@ -16,6 +17,7 @@ import {
   ClientSuspension,
   Company,
   CompanyModuleAccess,
+  ContentBlockType,
   DocumentTemplate,
   EmailAutoReplyTemplate,
   EmploymentType,
@@ -55,7 +57,9 @@ import {
   UserRole,
   VatStatus,
   ZusStatus,
+  type ContentBlock,
 } from '@accounting/common';
+import { resolveBlockPlaceholders } from '@accounting/common/backend';
 
 @Injectable()
 export class DemoDataSeederService {
@@ -1185,13 +1189,258 @@ export class DemoDataSeederService {
   }
 
   private async seedDocuments(company: Company, owner: User): Promise<void> {
+    const contractBlocks: ContentBlock[] = [
+      {
+        id: 'c1',
+        type: ContentBlockType.HEADING,
+        order: 0,
+        level: 1,
+        content: [{ text: 'UMOWA O ŚWIADCZENIE USŁUG KSIĘGOWYCH', bold: true }],
+        alignment: 'center',
+      },
+      {
+        id: 'c2',
+        type: ContentBlockType.PARAGRAPH,
+        order: 1,
+        content: [
+          { text: 'Zawarta dnia ' },
+          { text: '{{data}}', bold: true },
+          { text: ' w {{miasto}}' },
+        ],
+      },
+      { id: 'c3', type: ContentBlockType.SEPARATOR, order: 2 },
+      {
+        id: 'c4',
+        type: ContentBlockType.HEADING,
+        order: 3,
+        level: 2,
+        content: [{ text: 'Strony umowy' }],
+      },
+      {
+        id: 'c5',
+        type: ContentBlockType.CLIENT_DATA,
+        order: 4,
+        title: 'Wykonawca',
+        fields: [{ id: 'f1', label: 'Nazwa biura', placeholder: 'biuro' }],
+      },
+      {
+        id: 'c6',
+        type: ContentBlockType.CLIENT_DATA,
+        order: 5,
+        title: 'Zleceniodawca',
+        fields: [
+          { id: 'f2', label: 'Nazwa klienta', placeholder: 'klient' },
+          { id: 'f3', label: 'NIP', placeholder: 'nip' },
+        ],
+      },
+      { id: 'c7', type: ContentBlockType.SEPARATOR, order: 6 },
+      {
+        id: 'c8',
+        type: ContentBlockType.HEADING,
+        order: 7,
+        level: 2,
+        content: [{ text: '§1 Przedmiot umowy' }],
+      },
+      {
+        id: 'c9',
+        type: ContentBlockType.PARAGRAPH,
+        order: 8,
+        content: [
+          {
+            text: 'Biuro zobowiązuje się do świadczenia kompleksowych usług księgowych za wynagrodzeniem ',
+          },
+          { text: '{{kwota}} PLN', bold: true },
+          { text: '/miesiąc.' },
+        ],
+      },
+      {
+        id: 'c10',
+        type: ContentBlockType.HEADING,
+        order: 9,
+        level: 2,
+        content: [{ text: '§2 Zakres usług' }],
+      },
+      {
+        id: 'c11',
+        type: ContentBlockType.LIST,
+        order: 10,
+        style: 'numbered',
+        items: [
+          { id: 'l1', content: [{ text: 'Prowadzenie ksiąg rachunkowych' }] },
+          { id: 'l2', content: [{ text: 'Sporządzanie deklaracji podatkowych (VAT, CIT/PIT)' }] },
+          { id: 'l3', content: [{ text: 'Rozliczenia z ZUS' }] },
+          { id: 'l4', content: [{ text: 'Sporządzanie sprawozdań finansowych' }] },
+          { id: 'l5', content: [{ text: 'Reprezentacja przed organami skarbowymi' }] },
+        ],
+      },
+      {
+        id: 'c12',
+        type: ContentBlockType.HEADING,
+        order: 11,
+        level: 2,
+        content: [{ text: '§3 Czas obowiązywania' }],
+      },
+      {
+        id: 'c13',
+        type: ContentBlockType.PARAGRAPH,
+        order: 12,
+        content: [
+          { text: 'Umowa zawarta na czas nieokreślony od dnia ' },
+          { text: '{{data_rozpoczecia}}', bold: true },
+          { text: ' z jednomiesięcznym okresem wypowiedzenia.' },
+        ],
+      },
+      { id: 'c14', type: ContentBlockType.SEPARATOR, order: 13 },
+      {
+        id: 'c15',
+        type: ContentBlockType.SIGNATURE,
+        order: 14,
+        leftLabel: 'Wykonawca ({{biuro}})',
+        rightLabel: 'Zleceniodawca ({{klient}})',
+      },
+    ];
+
+    const invoiceBlocks: ContentBlock[] = [
+      {
+        id: 'i1',
+        type: ContentBlockType.HEADING,
+        order: 0,
+        level: 1,
+        content: [{ text: 'FAKTURA VAT Nr {{numer}}', bold: true }],
+        alignment: 'center',
+      },
+      {
+        id: 'i2',
+        type: ContentBlockType.PARAGRAPH,
+        order: 1,
+        content: [{ text: 'Data wystawienia: ' }, { text: '{{data}}', bold: true }],
+        alignment: 'right',
+      },
+      { id: 'i3', type: ContentBlockType.SEPARATOR, order: 2 },
+      {
+        id: 'i4',
+        type: ContentBlockType.CLIENT_DATA,
+        order: 3,
+        title: 'Sprzedawca',
+        fields: [
+          { id: 'f1', label: 'Nazwa', placeholder: 'sprzedawca' },
+          { id: 'f2', label: 'NIP', placeholder: 'nip_sprzedawcy' },
+        ],
+      },
+      {
+        id: 'i5',
+        type: ContentBlockType.CLIENT_DATA,
+        order: 4,
+        title: 'Nabywca',
+        fields: [
+          { id: 'f3', label: 'Nazwa', placeholder: 'nabywca' },
+          { id: 'f4', label: 'NIP', placeholder: 'nip_nabywcy' },
+        ],
+      },
+      { id: 'i6', type: ContentBlockType.SEPARATOR, order: 5 },
+      {
+        id: 'i7',
+        type: ContentBlockType.TABLE,
+        order: 6,
+        columnCount: 4,
+        headers: {
+          cells: [
+            { content: [{ text: 'Opis', bold: true }] },
+            { content: [{ text: 'Netto', bold: true }] },
+            { content: [{ text: 'VAT ({{stawka}}%)', bold: true }] },
+            { content: [{ text: 'Brutto', bold: true }] },
+          ],
+        },
+        rows: [
+          {
+            cells: [
+              { content: [{ text: '{{opis}}' }] },
+              { content: [{ text: '{{kwota_netto}} PLN' }] },
+              { content: [{ text: '{{vat}} PLN' }] },
+              { content: [{ text: '{{kwota_brutto}} PLN' }] },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'i8',
+        type: ContentBlockType.PARAGRAPH,
+        order: 7,
+        content: [{ text: 'Termin płatności: ' }, { text: '{{termin}}', bold: true }],
+      },
+      { id: 'i9', type: ContentBlockType.SEPARATOR, order: 8 },
+      {
+        id: 'i10',
+        type: ContentBlockType.SIGNATURE,
+        order: 9,
+        leftLabel: 'Wystawił',
+        rightLabel: 'Odebrał',
+      },
+    ];
+
+    const protocolBlocks: ContentBlock[] = [
+      {
+        id: 'p1',
+        type: ContentBlockType.HEADING,
+        order: 0,
+        level: 1,
+        content: [{ text: 'PROTOKÓŁ PRZEKAZANIA DOKUMENTÓW', bold: true }],
+        alignment: 'center',
+      },
+      {
+        id: 'p2',
+        type: ContentBlockType.PARAGRAPH,
+        order: 1,
+        content: [
+          { text: 'Data: ' },
+          { text: '{{data}}', bold: true },
+          { text: '    Miejscowość: ' },
+          { text: '{{miasto}}', bold: true },
+        ],
+      },
+      { id: 'p3', type: ContentBlockType.SEPARATOR, order: 2 },
+      {
+        id: 'p4',
+        type: ContentBlockType.CLIENT_DATA,
+        order: 3,
+        title: 'Strony',
+        fields: [
+          { id: 'f1', label: 'Przekazujący', placeholder: 'klient' },
+          { id: 'f2', label: 'Przyjmujący', placeholder: 'biuro' },
+        ],
+      },
+      {
+        id: 'p5',
+        type: ContentBlockType.HEADING,
+        order: 4,
+        level: 2,
+        content: [{ text: 'Wykaz dokumentów' }],
+      },
+      {
+        id: 'p6',
+        type: ContentBlockType.PARAGRAPH,
+        order: 5,
+        content: [{ text: '{{dokumenty}}' }],
+      },
+      { id: 'p7', type: ContentBlockType.SEPARATOR, order: 6 },
+      {
+        id: 'p8',
+        type: ContentBlockType.SIGNATURE,
+        order: 7,
+        leftLabel: 'Przekazujący ({{klient}})',
+        rightLabel: 'Przyjmujący ({{biuro}})',
+      },
+    ];
+
     const templateDefs = [
       {
         name: 'Umowa o świadczenie usług księgowych',
         category: 'contract' as const,
+        documentSourceType: 'blocks' as const,
         templateContent:
           'UMOWA O ŚWIADCZENIE USŁUG KSIĘGOWYCH\n\nZawarta dnia {{data}} w {{miasto}}\n\nMiędzy:\n{{biuro}}\na\n{{klient}} (NIP: {{nip}})\n\n§1 Przedmiot umowy\nBiuro zobowiązuje się do świadczenia usług księgowych za wynagrodzeniem {{kwota}} PLN/miesiąc.\n\n§2 Czas obowiązywania\nUmowa zawarta na czas nieokreślony od dnia {{data_rozpoczecia}}.',
         placeholders: ['data', 'miasto', 'biuro', 'klient', 'nip', 'kwota', 'data_rozpoczecia'],
+        contentBlocks: contractBlocks,
       },
       {
         name: 'Raport miesięczny VAT',
@@ -1214,6 +1463,7 @@ export class DemoDataSeederService {
       {
         name: 'Faktura za usługi księgowe',
         category: 'invoice' as const,
+        documentSourceType: 'blocks' as const,
         templateContent:
           'FAKTURA VAT Nr {{numer}}\n\nData wystawienia: {{data}}\n\nSprzedawca: {{sprzedawca}} NIP: {{nip_sprzedawcy}}\nNabywca: {{nabywca}} NIP: {{nip_nabywcy}}\n\nOpis: {{opis}}\nNetto: {{kwota_netto}} PLN\nVAT {{stawka}}%: {{vat}} PLN\nBrutto: {{kwota_brutto}} PLN\nTermin płatności: {{termin}}',
         placeholders: [
@@ -1230,13 +1480,16 @@ export class DemoDataSeederService {
           'kwota_brutto',
           'termin',
         ],
+        contentBlocks: invoiceBlocks,
       },
       {
         name: 'Protokół przekazania dokumentów',
         category: 'other' as const,
+        documentSourceType: 'blocks' as const,
         templateContent:
           'PROTOKÓŁ PRZEKAZANIA DOKUMENTÓW\n\nData: {{data}}\nMiejscowość: {{miasto}}\n\nPrzekazujący: {{klient}}\nPrzyjmujący: {{biuro}}\n\nWykaz dokumentów:\n{{dokumenty}}\n\nPodpisy: {{klient}} / {{biuro}}',
         placeholders: ['data', 'miasto', 'klient', 'biuro', 'dokumenty'],
+        contentBlocks: protocolBlocks,
       },
       {
         name: 'Oferta usług rachunkowych',
@@ -1261,16 +1514,74 @@ export class DemoDataSeederService {
       );
     }
 
+    const today = new Date().toLocaleDateString('pl-PL');
+    const placeholderDataPerTemplate: Record<string, string>[] = [
+      {
+        data: today,
+        miasto: 'Warszawa',
+        biuro: company.name,
+        klient: 'Apex Consulting Sp. z o.o.',
+        nip: '5272876543',
+        kwota: '1 500',
+        data_rozpoczecia: '01.01.2026',
+      },
+      {
+        miesiac: 'Luty',
+        rok: '2026',
+        klient: 'GreenTech Solutions S.A.',
+        nip: '1182345678',
+        vat23: '24 350,00',
+        vat8: '3 120,00',
+        vat_odliczony: '8 740,00',
+        vat_do_zaplaty: '18 730,00',
+        autor:
+          owner.firstName && owner.lastName ? `${owner.firstName} ${owner.lastName}` : owner.email,
+        data: today,
+      },
+      {
+        numer: 'FV/2026/03/001',
+        data: today,
+        sprzedawca: company.name,
+        nip_sprzedawcy: company.nip ?? '9512345678',
+        nabywca: 'Budmax Inwestycje Sp. z o.o.',
+        nip_nabywcy: '7731234567',
+        opis: 'Usługi księgowe za miesiąc luty 2026',
+        kwota_netto: '2 000,00',
+        stawka: '23',
+        vat: '460,00',
+        kwota_brutto: '2 460,00',
+        termin: '21.03.2026',
+      },
+    ];
+
     for (let i = 0; i < 3; i++) {
+      const template = savedTemplates[i];
+      const placeholderData = placeholderDataPerTemplate[i];
+
+      let renderedContent: string | null = null;
+      if (template.templateContent) {
+        try {
+          renderedContent = Handlebars.compile(template.templateContent)(placeholderData);
+        } catch {
+          renderedContent = template.templateContent;
+        }
+      }
+
+      let resolvedBlocks: ContentBlock[] | undefined;
+      const blocks = templateDefs[i].contentBlocks;
+      if (blocks?.length) {
+        resolvedBlocks = resolveBlockPlaceholders(blocks as ContentBlock[], placeholderData);
+      }
+
       await this.generatedDocRepo.save(
         this.generatedDocRepo.create({
-          name: `${savedTemplates[i].name} - ${new Date().toLocaleDateString('pl-PL')}`,
-          templateId: savedTemplates[i].id,
+          name: `${template.name} – ${today}`,
+          templateId: template.id,
           generatedById: owner.id,
           metadata: {
-            data: new Date().toLocaleDateString('pl-PL'),
-            klient: 'Apex Consulting',
-            kwota: '1500',
+            ...placeholderData,
+            renderedContent,
+            ...(resolvedBlocks ? { resolvedBlocks } : {}),
           },
           sourceModule: 'documents',
           companyId: company.id,

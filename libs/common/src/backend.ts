@@ -10,3 +10,4 @@ export { calculatePagination } from './lib/utils/pagination.utils';
 export type { PaginationInput } from './lib/utils/pagination.utils';
 export { applyDateRangeFilter, resolvePresetDateRange } from './lib/utils/typeorm.utils';
 export { sanitizeForLog } from './lib/utils/log.utils';
+export { resolveBlockPlaceholders } from './lib/utils/content-block.utils';
