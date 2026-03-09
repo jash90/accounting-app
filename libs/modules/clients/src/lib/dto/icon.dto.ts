@@ -1,20 +1,21 @@
-import {
-  IsString,
-  IsOptional,
-  MaxLength,
-  MinLength,
-  IsUUID,
-  IsEnum,
-  ValidateNested,
-  IsObject,
-  IsInt,
-  Min,
-  Max,
-  Matches,
-} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+
 import { Transform, Type } from 'class-transformer';
-import { IconType, AutoAssignCondition, Sanitize } from '@accounting/common';
+import {
+  IsEnum,
+  IsInt,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
+
+import { AutoAssignCondition, IconType, Sanitize } from '@accounting/common';
 
 export class CreateIconDto {
   @ApiProperty({ description: 'Icon name', minLength: 1, maxLength: 100 })
@@ -24,7 +25,10 @@ export class CreateIconDto {
   @MaxLength(100)
   name!: string;
 
-  @ApiPropertyOptional({ description: 'Icon color in hex format (e.g., #FF5733)', example: '#FF5733' })
+  @ApiPropertyOptional({
+    description: 'Icon color in hex format (e.g., #FF5733)',
+    example: '#FF5733',
+  })
   @IsOptional()
   @Sanitize()
   @IsString()
@@ -156,7 +160,10 @@ export class IconResponseDto {
 
   @ApiPropertyOptional({
     description: 'Auto-assign condition for automatic icon assignment to clients',
-    example: { type: 'AND', conditions: [{ field: 'vatStatus', operator: 'equals', value: 'VAT_MONTHLY' }] },
+    example: {
+      type: 'AND',
+      conditions: [{ field: 'vatStatus', operator: 'equals', value: 'VAT_MONTHLY' }],
+    },
   })
   autoAssignCondition?: AutoAssignCondition | null;
 

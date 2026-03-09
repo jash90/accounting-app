@@ -1,57 +1,66 @@
+
 import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  ConflictException,
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+
+import * as crypto from 'crypto';
 import { Repository } from 'typeorm';
+
 import { AIConfiguration, User, UserRole } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
+
 import { CreateAIConfigurationDto } from '../dto/create-ai-configuration.dto';
 import { UpdateAIConfigurationDto } from '../dto/update-ai-configuration.dto';
-import { SystemCompanyService } from './system-company.service';
-import * as crypto from 'crypto';
 
 @Injectable()
 export class AIConfigurationService {
+  private readonly logger = new Logger(AIConfigurationService.name);
   private readonly ENCRYPTION_KEY: string;
-  private readonly ALGORITHM = 'aes-256-cbc';
+  private readonly ALGORITHM_GCM = 'aes-256-gcm';
+  private readonly ALGORITHM_CBC = 'aes-256-cbc';
 
   constructor(
     @InjectRepository(AIConfiguration)
-    private configRepository: Repository<AIConfiguration>,
-    private systemCompanyService: SystemCompanyService,
+    private readonly configRepository: Repository<AIConfiguration>,
+    private readonly systemCompanyService: SystemCompanyService,
+    private readonly configService: ConfigService
   ) {
-    const encryptionKey = process.env.AI_API_KEY_ENCRYPTION_KEY;
+    const encryptionKey = this.configService.get<string>('AI_API_KEY_ENCRYPTION_KEY');
     if (!encryptionKey) {
       throw new Error('AI_API_KEY_ENCRYPTION_KEY environment variable is required but not set');
     }
     if (Buffer.byteLength(encryptionKey, 'utf8') !== 32) {
       throw new Error(
-        `AI_API_KEY_ENCRYPTION_KEY must be exactly 32 bytes for AES-256-CBC. Current length: ${Buffer.byteLength(encryptionKey, 'utf8')} bytes`
+        `AI_API_KEY_ENCRYPTION_KEY must be exactly 32 bytes for AES-256. Current length: ${Buffer.byteLength(encryptionKey, 'utf8')} bytes`
       );
     }
     this.ENCRYPTION_KEY = encryptionKey;
   }
 
   /**
-   * Encrypt API key
+   * Encrypt API key using AES-256-GCM (authenticated encryption).
+   * Format: iv:authTag:encryptedData (3 parts, hex-encoded)
    */
   private encryptApiKey(apiKey: string): string {
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv(
-      this.ALGORITHM,
-      Buffer.from(this.ENCRYPTION_KEY),
-      iv,
-    );
+    const iv = crypto.randomBytes(12); // GCM recommends 12-byte IV
+    const cipher = crypto.createCipheriv(this.ALGORITHM_GCM, Buffer.from(this.ENCRYPTION_KEY), iv);
     let encrypted = cipher.update(apiKey, 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    return `${iv.toString('hex')}:${encrypted}`;
+    const authTag = (cipher as crypto.CipherGCM).getAuthTag();
+    return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
   }
 
   /**
-   * Decrypt API key
+   * Decrypt API key with format auto-detection.
+   * 3 parts (iv:authTag:data) = GCM (new format)
+   * 2 parts (iv:data) = legacy CBC fallback
    */
   private decryptApiKey(encryptedKey: string): string {
     try {
@@ -59,24 +68,46 @@ export class AIConfigurationService {
         throw new Error('Invalid encrypted key format');
       }
 
-      const [ivHex, encrypted] = encryptedKey.split(':');
-      if (!ivHex || !encrypted) {
-        throw new Error('Invalid encrypted key format: missing IV or encrypted data');
-      }
+      const parts = encryptedKey.split(':');
+      const keyBuf = Buffer.from(this.ENCRYPTION_KEY);
 
-      const iv = Buffer.from(ivHex, 'hex');
-      const decipher = crypto.createDecipheriv(
-        this.ALGORITHM,
-        Buffer.from(this.ENCRYPTION_KEY),
-        iv,
-      );
-      let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-      decrypted += decipher.final('utf8');
-      return decrypted;
+      if (parts.length === 3) {
+        // New GCM format: iv:authTag:encryptedData
+        const [ivHex, authTagHex, encrypted] = parts;
+        if (!ivHex || !authTagHex || !encrypted) {
+          throw new Error('Invalid GCM encrypted key format');
+        }
+        const iv = Buffer.from(ivHex, 'hex');
+        const authTag = Buffer.from(authTagHex, 'hex');
+        const decipher = crypto.createDecipheriv(
+          this.ALGORITHM_GCM,
+          keyBuf,
+          iv
+        ) as crypto.DecipherGCM;
+        decipher.setAuthTag(authTag);
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return decrypted;
+      } else if (parts.length === 2) {
+        // Legacy CBC format: iv:encryptedData
+        const [ivHex, encrypted] = parts;
+        if (!ivHex || !encrypted) {
+          throw new Error('Invalid CBC encrypted key format');
+        }
+        const iv = Buffer.from(ivHex, 'hex');
+        const decipher = crypto.createDecipheriv(this.ALGORITHM_CBC, keyBuf, iv);
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return decrypted;
+      } else {
+        throw new Error('Invalid encrypted key format: unexpected number of parts');
+      }
     } catch (error) {
-      console.error('API key decryption failed:', error instanceof Error ? error.message : error);
+      this.logger.error(
+        `API key decryption failed: ${error instanceof Error ? error.message : String(error)}`
+      );
       throw new BadRequestException(
-        'Failed to decrypt API key. The key may be corrupted. Please reconfigure the API key in settings.',
+        'Failed to decrypt API key. The key may be corrupted. Please reconfigure the API key in settings.'
       );
     }
   }
@@ -86,7 +117,7 @@ export class AIConfigurationService {
    * All users (ADMIN, COMPANY_OWNER, EMPLOYEE) use the same config
    * stored under System Admin company
    */
-  async getConfiguration(user: User): Promise<AIConfiguration | null> {
+  async getConfiguration(_user: User): Promise<AIConfiguration | null> {
     // Global config - all users use the admin's configuration
     const systemCompanyId = await this.systemCompanyService.getSystemCompanyId();
 
@@ -101,10 +132,7 @@ export class AIConfigurationService {
   /**
    * Create configuration (ADMIN only)
    */
-  async create(
-    createDto: CreateAIConfigurationDto,
-    user: User,
-  ): Promise<AIConfiguration> {
+  async create(createDto: CreateAIConfigurationDto, user: User): Promise<AIConfiguration> {
     if (user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Only admins can create AI configuration');
     }
@@ -148,10 +176,7 @@ export class AIConfigurationService {
   /**
    * Update configuration (ADMIN only)
    */
-  async update(
-    updateDto: UpdateAIConfigurationDto,
-    user: User,
-  ): Promise<AIConfiguration> {
+  async update(updateDto: UpdateAIConfigurationDto, user: User): Promise<AIConfiguration> {
     if (user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Only admins can update AI configuration');
     }
@@ -175,7 +200,8 @@ export class AIConfigurationService {
     }
 
     // Update embedding configuration
-    if (updateDto.embeddingProvider !== undefined) config.embeddingProvider = updateDto.embeddingProvider;
+    if (updateDto.embeddingProvider !== undefined)
+      config.embeddingProvider = updateDto.embeddingProvider;
     if (updateDto.embeddingModel !== undefined) config.embeddingModel = updateDto.embeddingModel;
 
     // Encrypt new embedding API key if provided, or clear if empty string
@@ -203,7 +229,14 @@ export class AIConfigurationService {
   async getDecryptedApiKey(user: User): Promise<string> {
     const config = await this.getConfiguration(user);
     if (!config) {
-      throw new NotFoundException('AI configuration not found. Please configure the AI agent first.');
+      throw new NotFoundException(
+        'AI configuration not found. Please configure the AI agent first.'
+      );
+    }
+    if (!config.apiKey) {
+      throw new NotFoundException(
+        'API key not configured. Please add an API key in the AI agent settings.'
+      );
     }
     return this.decryptApiKey(config.apiKey);
   }
@@ -215,7 +248,9 @@ export class AIConfigurationService {
   async getDecryptedEmbeddingApiKey(user: User): Promise<string> {
     const config = await this.getConfiguration(user);
     if (!config) {
-      throw new NotFoundException('AI configuration not found. Please configure the AI agent first.');
+      throw new NotFoundException(
+        'AI configuration not found. Please configure the AI agent first.'
+      );
     }
 
     // If separate embedding API key is configured, use it
@@ -229,14 +264,16 @@ export class AIConfigurationService {
     }
 
     // No API key available
-    throw new BadRequestException('No API key configured. Please configure an API key in AI settings.');
+    throw new BadRequestException(
+      'No API key configured. Please configure an API key in AI settings.'
+    );
   }
 
   /**
-   * Reset (clear) API key (ADMIN only)
+   * Clear API key (ADMIN only)
    * This clears the API key, requiring reconfiguration before AI can be used
    */
-  async resetApiKey(user: User): Promise<AIConfiguration> {
+  async clearApiKey(user: User): Promise<AIConfiguration> {
     if (user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Only admins can reset API key');
     }
@@ -271,7 +308,9 @@ export class AIConfigurationService {
   }> {
     const config = await this.getConfiguration(user);
     if (!config) {
-      throw new NotFoundException('AI configuration not found. Please configure the AI agent first.');
+      throw new NotFoundException(
+        'AI configuration not found. Please configure the AI agent first.'
+      );
     }
 
     // Get embedding API key (separate or fallback to main)
@@ -281,7 +320,9 @@ export class AIConfigurationService {
     } else if (config.apiKey) {
       embeddingApiKey = this.decryptApiKey(config.apiKey);
     } else {
-      throw new BadRequestException('No API key configured. Please configure an API key in AI settings to use embedding features.');
+      throw new BadRequestException(
+        'No API key configured. Please configure an API key in AI settings to use embedding features.'
+      );
     }
 
     // Get embedding model (default to text-embedding-ada-002)

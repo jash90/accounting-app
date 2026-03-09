@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
 import { AIProvider } from '@accounting/common';
 
 class UserBasicInfoDto {

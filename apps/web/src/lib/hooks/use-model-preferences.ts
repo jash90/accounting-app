@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const FAVORITES_KEY = 'openrouter_favorite_models';
 const RECENTS_KEY = 'openrouter_recent_models';
@@ -40,15 +40,11 @@ export function useModelPreferences(): ModelPreferences {
   const [favorites, setFavorites] = useState<string[]>(() => loadFromStorage(FAVORITES_KEY));
   const [recents, setRecents] = useState<string[]>(() => loadFromStorage(RECENTS_KEY));
 
-  // Sync favorites to localStorage
+  // Batch localStorage writes into single effect to reduce storage operations
   useEffect(() => {
     saveToStorage(FAVORITES_KEY, favorites);
-  }, [favorites]);
-
-  // Sync recents to localStorage
-  useEffect(() => {
     saveToStorage(RECENTS_KEY, recents);
-  }, [recents]);
+  }, [favorites, recents]);
 
   const toggleFavorite = useCallback((modelId: string) => {
     setFavorites((prev) => {
@@ -59,10 +55,10 @@ export function useModelPreferences(): ModelPreferences {
     });
   }, []);
 
-  const isFavorite = useCallback(
-    (modelId: string) => favorites.includes(modelId),
-    [favorites]
-  );
+  // Use Set for O(1) lookup instead of Array.includes O(n)
+  const favoriteSet = useMemo(() => new Set(favorites), [favorites]);
+
+  const isFavorite = useCallback((modelId: string) => favoriteSet.has(modelId), [favoriteSet]);
 
   const addRecent = useCallback((modelId: string) => {
     setRecents((prev) => {

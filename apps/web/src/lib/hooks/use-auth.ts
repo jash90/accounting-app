@@ -1,9 +1,12 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { authApi } from '../api/endpoints/auth';
-import { LoginDto, RegisterDto } from '@/types/dtos';
-import { tokenStorage } from '../auth/token-storage';
 import { useNavigate } from 'react-router-dom';
+
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { type LoginDto, type RegisterDto } from '@/types/dtos';
 import { UserRole } from '@/types/enums';
+
+import { authApi } from '../api/endpoints/auth';
+import { tokenStorage } from '../auth/token-storage';
 
 export const useAuth = () => {
   const queryClient = useQueryClient();
@@ -63,4 +66,3 @@ export const useAuth = () => {
     error: loginMutation.error || registerMutation.error,
   };
 };
-

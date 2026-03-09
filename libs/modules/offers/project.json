@@ -1,0 +1,20 @@
+{
+  "name": "modules-offers",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/modules/offers/src",
+  "projectType": "library",
+  "tags": ["type:feature", "scope:backend"],
+  "targets": {
+    "test": {
+      "executor": "./tools/executors/bun-test:test",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "testDir": "src",
+        "passWithNoTests": false
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}

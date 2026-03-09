@@ -1,64 +1,114 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+import {
+  Building2,
+  ChevronDown,
+  ChevronUp,
+  Coins,
+  MessageSquare,
+  Sparkles,
+  Users,
+} from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useAllCompaniesTokenUsage } from '@/lib/hooks/use-ai-agent';
-import { Building2, Users, MessageSquare, Coins, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
-import { CompanyTokenUsageDto } from '@/types/dtos';
+import { type CompanyTokenUsageDto } from '@/types/dtos';
 
 function CompanyRow({ company }: { company: CompanyTokenUsageDto }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <>
-      <TableRow className="cursor-pointer hover:bg-apptax-soft-teal/30 transition-colors" onClick={() => setIsExpanded(!isExpanded)}>
+      <TableRow
+        className="hover:bg-accent/10/30 cursor-pointer transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
         <TableCell className="font-medium">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-apptax-soft-teal rounded-lg flex items-center justify-center">
-              <Building2 className="h-4 w-4 text-apptax-blue" />
+            <div className="bg-accent/10 flex h-8 w-8 items-center justify-center rounded-lg">
+              <Building2 className="text-primary h-4 w-4" />
             </div>
-            <span className="text-apptax-navy">{company.companyName}</span>
+            <span className="text-foreground">{company.companyName}</span>
           </div>
         </TableCell>
-        <TableCell className="text-right font-semibold text-apptax-blue">{company.totalTokens.toLocaleString()}</TableCell>
+        <TableCell className="text-primary text-right font-semibold">
+          {company.totalTokens.toLocaleString()}
+        </TableCell>
         <TableCell className="text-right">{company.totalInputTokens.toLocaleString()}</TableCell>
         <TableCell className="text-right">{company.totalOutputTokens.toLocaleString()}</TableCell>
         <TableCell className="text-right">{company.userCount}</TableCell>
         <TableCell className="text-right">{company.conversationCount}</TableCell>
         <TableCell className="text-right">{company.messageCount}</TableCell>
         <TableCell>
-          <Button variant="ghost" size="sm" className="hover:bg-apptax-soft-teal" onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}>
-            {isExpanded ? <ChevronUp className="h-4 w-4 text-apptax-navy" /> : <ChevronDown className="h-4 w-4 text-apptax-navy" />}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="hover:bg-accent/10"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+          >
+            {isExpanded ? (
+              <ChevronUp className="text-foreground h-4 w-4" />
+            ) : (
+              <ChevronDown className="text-foreground h-4 w-4" />
+            )}
           </Button>
         </TableCell>
       </TableRow>
       {isExpanded && company.users.length > 0 && (
         <TableRow>
-          <TableCell colSpan={8} className="bg-apptax-soft-teal/20 p-0">
+          <TableCell colSpan={8} className="bg-accent/10/20 p-0">
             <div className="px-8 py-4">
-              <h4 className="text-sm font-medium mb-3 text-apptax-navy">Szczegóły użytkowników</h4>
+              <h4 className="text-foreground mb-3 text-sm font-medium">Szczegóły użytkowników</h4>
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-apptax-navy/5 hover:bg-apptax-navy/5">
-                    <TableHead className="text-apptax-navy font-semibold">Użytkownik</TableHead>
-                    <TableHead className="text-right text-apptax-navy font-semibold">Razem tokenów</TableHead>
-                    <TableHead className="text-right text-apptax-navy font-semibold">Wejście</TableHead>
-                    <TableHead className="text-right text-apptax-navy font-semibold">Wyjście</TableHead>
-                    <TableHead className="text-right text-apptax-navy font-semibold">Rozmowy</TableHead>
-                    <TableHead className="text-right text-apptax-navy font-semibold">Wiadomości</TableHead>
+                  <TableRow className="bg-muted hover:bg-muted">
+                    <TableHead className="text-foreground font-semibold">Użytkownik</TableHead>
+                    <TableHead className="text-foreground text-right font-semibold">
+                      Razem tokenów
+                    </TableHead>
+                    <TableHead className="text-foreground text-right font-semibold">
+                      Wejście
+                    </TableHead>
+                    <TableHead className="text-foreground text-right font-semibold">
+                      Wyjście
+                    </TableHead>
+                    <TableHead className="text-foreground text-right font-semibold">
+                      Rozmowy
+                    </TableHead>
+                    <TableHead className="text-foreground text-right font-semibold">
+                      Wiadomości
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {company.users.map((user) => (
-                    <TableRow key={user.userId} className="hover:bg-apptax-soft-teal/30 transition-colors">
-                      <TableCell className="text-apptax-navy">
+                    <TableRow key={user.userId} className="hover:bg-accent/10/30 transition-colors">
+                      <TableCell className="text-foreground">
                         {user.firstName} {user.lastName}
                         <br />
-                        <span className="text-xs text-muted-foreground">{user.email}</span>
+                        <span className="text-muted-foreground text-xs">{user.email}</span>
                       </TableCell>
-                      <TableCell className="text-right font-medium text-apptax-blue">{user.totalTokens.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">{user.totalInputTokens.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">{user.totalOutputTokens.toLocaleString()}</TableCell>
+                      <TableCell className="text-primary text-right font-medium">
+                        {user.totalTokens.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {user.totalInputTokens.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {user.totalOutputTokens.toLocaleString()}
+                      </TableCell>
                       <TableCell className="text-right">{user.conversationCount}</TableCell>
                       <TableCell className="text-right">{user.messageCount}</TableCell>
                     </TableRow>
@@ -71,7 +121,7 @@ function CompanyRow({ company }: { company: CompanyTokenUsageDto }) {
       )}
       {isExpanded && company.users.length === 0 && (
         <TableRow>
-          <TableCell colSpan={8} className="bg-apptax-soft-teal/20 text-center text-muted-foreground py-4">
+          <TableCell colSpan={8} className="bg-accent/10/20 text-muted-foreground py-4 text-center">
             Brak aktywności użytkowników w tej firmie
           </TableCell>
         </TableRow>
@@ -85,9 +135,9 @@ export default function AdminTokenUsagePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="flex items-center gap-3 text-apptax-navy">
-          <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow animate-pulse" />
+      <div className="flex h-full items-center justify-center">
+        <div className="text-foreground flex items-center gap-3">
+          <div className="bg-accent ai-glow h-3 w-3 animate-pulse rounded-full" />
           Ładowanie...
         </div>
       </div>
@@ -97,9 +147,9 @@ export default function AdminTokenUsagePage() {
   if (!companies || companies.length === 0) {
     return (
       <div className="container mx-auto p-8">
-        <Card className="border-apptax-soft-teal/50">
+        <Card className="border-accent/50">
           <CardHeader>
-            <CardTitle className="text-apptax-navy">Brak danych o użyciu</CardTitle>
+            <CardTitle className="text-foreground">Brak danych o użyciu</CardTitle>
             <CardDescription>Brak danych o zużyciu tokenów z żadnej firmy.</CardDescription>
           </CardHeader>
         </Card>
@@ -130,92 +180,109 @@ export default function AdminTokenUsagePage() {
   const activeCompanies = companies.filter((c) => c.totalTokens > 0).length;
 
   return (
-    <div className="container mx-auto p-8 space-y-8">
+    <div className="container mx-auto space-y-8 p-8">
       <div>
-        <h1 className="text-3xl font-bold text-apptax-navy flex items-center gap-3">
+        <h1 className="text-foreground flex items-center gap-3 text-3xl font-bold">
           Zużycie tokenów w systemie
-          <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow" />
+          <div className="bg-accent ai-glow h-3 w-3 rounded-full" />
         </h1>
-        <p className="text-muted-foreground mt-1">Monitoruj zużycie tokenów AI we wszystkich firmach</p>
+        <p className="text-muted-foreground mt-1">
+          Monitoruj zużycie tokenów AI we wszystkich firmach
+        </p>
       </div>
 
       {/* Summary Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-white border-apptax-soft-teal/50 hover:shadow-apptax-md transition-all duration-300 hover:-translate-y-1">
+        <Card className="border-accent/50 hover:shadow-md bg-card transition-all duration-300 hover:-translate-y-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-apptax-navy">Razem tokenów</CardTitle>
-            <div className="w-10 h-10 bg-apptax-soft-teal rounded-lg flex items-center justify-center">
-              <Coins className="h-5 w-5 text-apptax-blue" />
+            <CardTitle className="text-foreground text-sm font-medium">Razem tokenów</CardTitle>
+            <div className="bg-accent/10 flex h-10 w-10 items-center justify-center rounded-lg">
+              <Coins className="text-primary h-5 w-5" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-apptax-navy">{totals.totalTokens.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {totals.totalInputTokens.toLocaleString()} wejście / {totals.totalOutputTokens.toLocaleString()} wyjście
+            <div className="text-foreground text-3xl font-bold">
+              {totals.totalTokens.toLocaleString()}
+            </div>
+            <p className="text-muted-foreground mt-1 text-xs">
+              {totals.totalInputTokens.toLocaleString()} wejście /{' '}
+              {totals.totalOutputTokens.toLocaleString()} wyjście
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-apptax-soft-teal/50 hover:shadow-apptax-md transition-all duration-300 hover:-translate-y-1">
+        <Card className="border-accent/50 hover:shadow-md bg-card transition-all duration-300 hover:-translate-y-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-apptax-navy">Aktywne firmy</CardTitle>
-            <div className="w-10 h-10 bg-apptax-soft-teal rounded-lg flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-apptax-blue" />
+            <CardTitle className="text-foreground text-sm font-medium">Aktywne firmy</CardTitle>
+            <div className="bg-accent/10 flex h-10 w-10 items-center justify-center rounded-lg">
+              <Building2 className="text-primary h-5 w-5" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-apptax-navy">{activeCompanies}</div>
-            <p className="text-xs text-muted-foreground mt-1">z {companies.length} wszystkich firm</p>
+            <div className="text-foreground text-3xl font-bold">{activeCompanies}</div>
+            <p className="text-muted-foreground mt-1 text-xs">
+              z {companies.length} wszystkich firm
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-apptax-soft-teal/50 hover:shadow-apptax-md transition-all duration-300 hover:-translate-y-1">
+        <Card className="border-accent/50 hover:shadow-md bg-card transition-all duration-300 hover:-translate-y-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-apptax-navy">Użytkownicy</CardTitle>
-            <div className="w-10 h-10 bg-apptax-soft-teal rounded-lg flex items-center justify-center">
-              <Users className="h-5 w-5 text-apptax-blue" />
+            <CardTitle className="text-foreground text-sm font-medium">Użytkownicy</CardTitle>
+            <div className="bg-accent/10 flex h-10 w-10 items-center justify-center rounded-lg">
+              <Users className="text-primary h-5 w-5" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-apptax-navy">{totals.userCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Aktywni użytkownicy AI</p>
+            <div className="text-foreground text-3xl font-bold">{totals.userCount}</div>
+            <p className="text-muted-foreground mt-1 text-xs">Aktywni użytkownicy AI</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-apptax-soft-teal/50 hover:shadow-apptax-md transition-all duration-300 hover:-translate-y-1">
+        <Card className="border-accent/50 hover:shadow-md bg-card transition-all duration-300 hover:-translate-y-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-apptax-navy">Rozmowy</CardTitle>
-            <div className="w-10 h-10 bg-apptax-soft-teal rounded-lg flex items-center justify-center">
-              <MessageSquare className="h-5 w-5 text-apptax-teal" />
+            <CardTitle className="text-foreground text-sm font-medium">Rozmowy</CardTitle>
+            <div className="bg-accent/10 flex h-10 w-10 items-center justify-center rounded-lg">
+              <MessageSquare className="text-accent h-5 w-5" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-apptax-navy">{totals.conversationCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">{totals.messageCount} wszystkich wiadomości</p>
+            <div className="text-foreground text-3xl font-bold">{totals.conversationCount}</div>
+            <p className="text-muted-foreground mt-1 text-xs">
+              {totals.messageCount} wszystkich wiadomości
+            </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Companies Table */}
-      <Card className="border-apptax-soft-teal/30">
+      <Card className="border-accent/30">
         <CardHeader>
-          <CardTitle className="text-apptax-navy flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-apptax-teal" />
+          <CardTitle className="text-foreground flex items-center gap-2">
+            <Sparkles className="text-accent h-5 w-5" />
             Zużycie według firmy
           </CardTitle>
-          <CardDescription>Kliknij wiersz firmy, aby zobaczyć szczegóły użytkowników</CardDescription>
+          <CardDescription>
+            Kliknij wiersz firmy, aby zobaczyć szczegóły użytkowników
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
-              <TableRow className="bg-apptax-navy/5 hover:bg-apptax-navy/5">
-                <TableHead className="text-apptax-navy font-semibold">Firma</TableHead>
-                <TableHead className="text-right text-apptax-navy font-semibold">Razem tokenów</TableHead>
-                <TableHead className="text-right text-apptax-navy font-semibold">Wejście</TableHead>
-                <TableHead className="text-right text-apptax-navy font-semibold">Wyjście</TableHead>
-                <TableHead className="text-right text-apptax-navy font-semibold">Użytkownicy</TableHead>
-                <TableHead className="text-right text-apptax-navy font-semibold">Rozmowy</TableHead>
-                <TableHead className="text-right text-apptax-navy font-semibold">Wiadomości</TableHead>
+              <TableRow className="bg-muted hover:bg-muted">
+                <TableHead className="text-foreground font-semibold">Firma</TableHead>
+                <TableHead className="text-foreground text-right font-semibold">
+                  Razem tokenów
+                </TableHead>
+                <TableHead className="text-foreground text-right font-semibold">Wejście</TableHead>
+                <TableHead className="text-foreground text-right font-semibold">Wyjście</TableHead>
+                <TableHead className="text-foreground text-right font-semibold">
+                  Użytkownicy
+                </TableHead>
+                <TableHead className="text-foreground text-right font-semibold">Rozmowy</TableHead>
+                <TableHead className="text-foreground text-right font-semibold">
+                  Wiadomości
+                </TableHead>
                 <TableHead className="w-10"></TableHead>
               </TableRow>
             </TableHeader>

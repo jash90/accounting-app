@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
 export class AddImapSyncToEmailDrafts1768500000000 implements MigrationInterface {
   name = 'AddImapSyncToEmailDrafts1768500000000';

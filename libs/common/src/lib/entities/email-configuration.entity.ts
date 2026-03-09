@@ -1,16 +1,17 @@
+import { Exclude } from 'class-transformer';
 import {
-  Entity,
-  PrimaryGeneratedColumn,
+  Check,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
-  OneToOne,
+  Entity,
   JoinColumn,
-  Check,
+  OneToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
-import { Exclude } from 'class-transformer';
-import { User } from './user.entity';
+
 import { Company } from './company.entity';
+import { User } from './user.entity';
 
 /**
  * Email Configuration Entity
@@ -23,7 +24,9 @@ import { Company } from './company.entity';
  * Passwords are stored encrypted using EncryptionService
  */
 @Entity('email_configurations')
-@Check(`("userId" IS NOT NULL AND "companyId" IS NULL) OR ("userId" IS NULL AND "companyId" IS NOT NULL)`)
+@Check(
+  `("userId" IS NOT NULL AND "companyId" IS NULL) OR ("userId" IS NULL AND "companyId" IS NOT NULL)`
+)
 export class EmailConfiguration {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -40,57 +43,60 @@ export class EmailConfiguration {
   @Column({ type: 'uuid', nullable: true })
   companyId!: string | null;
 
-  @OneToOne(() => Company, (company) => company.emailConfig, { nullable: true, onDelete: 'CASCADE' })
+  @OneToOne(() => Company, (company) => company.emailConfig, {
+    nullable: true,
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'companyId' })
   company!: Company | null;
 
   // SMTP Configuration
-  @Column()
+  @Column({ type: 'varchar' })
   smtpHost!: string;
 
   @Column({ type: 'int' })
   smtpPort!: number;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   smtpSecure!: boolean;
 
-  @Column()
+  @Column({ type: 'varchar' })
   smtpUser!: string;
 
   /**
    * Encrypted SMTP password
    * Use EncryptionService to encrypt before saving and decrypt after reading
    */
-  @Column()
+  @Column({ type: 'varchar' })
   @Exclude()
   smtpPassword!: string;
 
   // IMAP Configuration
-  @Column()
+  @Column({ type: 'varchar' })
   imapHost!: string;
 
   @Column({ type: 'int' })
   imapPort!: number;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   imapTls!: boolean;
 
-  @Column()
+  @Column({ type: 'varchar' })
   imapUser!: string;
 
   /**
    * Encrypted IMAP password
    * Use EncryptionService to encrypt before saving and decrypt after reading
    */
-  @Column()
+  @Column({ type: 'varchar' })
   @Exclude()
   imapPassword!: string;
 
   // Optional metadata
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   displayName?: string;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
   @CreateDateColumn()

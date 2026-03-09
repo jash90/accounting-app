@@ -9,6 +9,8 @@ export * from './lib/services/email-sender.service';
 export * from './lib/services/email-reader.service';
 export * from './lib/services/email-configuration.service';
 export * from './lib/services/email-autodiscovery.service';
+export * from './lib/services/email-verification.service';
+export * from './lib/services/imap-mailbox.service';
 
 // Interfaces
 export * from './lib/interfaces/email-config.interface';
@@ -29,3 +31,9 @@ export * from './lib/data/known-providers';
 
 // Utils
 export * from './lib/utils/email-config.helper';
+export * from './lib/utils/email-message.parser';
+export * from './lib/utils/fetch-with-timeout';
+export * from './lib/utils/autoconfig-xml.parser';
+export * from './lib/utils/autodiscover-xml.parser';
+export * from './lib/utils/imap-connection.factory';
+export * from './lib/utils/imap-folder-discovery';

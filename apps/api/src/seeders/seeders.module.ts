@@ -1,16 +1,18 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
 import {
-  User,
-  Company,
-  Module as ModuleEntity,
-  CompanyModuleAccess,
-  UserModulePermission,
   Client,
   ClientFieldDefinition,
+  Company,
+  CompanyModuleAccess,
+  Module as ModuleEntity,
+  User,
+  UserModulePermission,
 } from '@accounting/common';
 import { EmailModule } from '@accounting/email';
 import { RBACModule } from '@accounting/rbac';
+
 import { SeederService } from './seeder.service';
 
 @Module({

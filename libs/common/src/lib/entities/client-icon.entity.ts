@@ -1,18 +1,19 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  ManyToOne,
-  OneToMany,
-  JoinColumn,
-  Index,
   BeforeInsert,
   BeforeUpdate,
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
+
+import { ClientIconAssignment } from './client-icon-assignment.entity';
 import { Company } from './company.entity';
 import { User } from './user.entity';
-import { ClientIconAssignment } from './client-icon-assignment.entity';
 import { IconType } from '../enums/icon-type.enum';
 import { AutoAssignCondition } from '../types/auto-assign-condition.types';
 
@@ -22,7 +23,7 @@ export class ClientIcon {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   name!: string;
 
   // Icon type: 'lucide' | 'custom' | 'emoji'
@@ -34,37 +35,37 @@ export class ClientIcon {
   iconType!: IconType;
 
   // Lucide icon name or emoji character (for lucide/emoji types)
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   iconValue?: string;
 
   // File-related columns (only required for 'custom' type)
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   fileName?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   filePath?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   mimeType?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'integer', nullable: true })
   fileSize?: number;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   color?: string;
 
   // Tooltip text for hover
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   tooltip?: string;
 
   // Auto-assign condition (JSON) for automatic icon assignment
   @Column({ type: 'jsonb', nullable: true })
   autoAssignCondition?: AutoAssignCondition;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
-  @Column()
+  @Column({ type: 'uuid' })
   companyId!: string;
 
   @ManyToOne(() => Company, {
@@ -73,7 +74,7 @@ export class ClientIcon {
   @JoinColumn({ name: 'companyId' })
   company!: Company;
 
-  @Column()
+  @Column({ type: 'uuid' })
   createdById!: string;
 
   @ManyToOne(() => User)
@@ -95,16 +96,12 @@ export class ClientIcon {
     if (this.iconType === IconType.CUSTOM) {
       // Custom icons require file-related fields
       if (!this.fileName || !this.filePath || !this.mimeType) {
-        throw new Error(
-          'Custom icons require fileName, filePath, and mimeType to be set'
-        );
+        throw new Error('Custom icons require fileName, filePath, and mimeType to be set');
       }
     } else if (this.iconType === IconType.LUCIDE || this.iconType === IconType.EMOJI) {
       // Lucide and emoji icons require iconValue
       if (!this.iconValue) {
-        throw new Error(
-          `${this.iconType} icons require iconValue to be set`
-        );
+        throw new Error(`${this.iconType} icons require iconValue to be set`);
       }
     }
   }

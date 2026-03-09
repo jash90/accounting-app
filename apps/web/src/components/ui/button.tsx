@@ -1,6 +1,8 @@
-import * as React from 'react';
+import type * as React from 'react';
+
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
+
 import { cn } from '@/lib/utils/cn';
 
 const buttonVariants = cva(
@@ -8,13 +10,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-apptax-blue text-white hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md',
-        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-apptax-sm hover:shadow-apptax-md',
-        outline: 'border-2 border-apptax-blue bg-white text-apptax-blue hover:bg-apptax-soft-teal shadow-apptax-sm hover:shadow-apptax-md',
-        secondary: 'bg-apptax-navy text-white hover:bg-apptax-navy/90 shadow-apptax-sm hover:shadow-apptax-md',
-        ghost: 'text-apptax-navy hover:bg-apptax-soft-teal transition-all',
-        link: 'text-apptax-blue underline-offset-4 hover:underline',
-        teal: 'bg-apptax-teal text-white hover:bg-apptax-teal/90 shadow-apptax-sm hover:shadow-apptax-md ai-glow',
+        default: 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md',
+        destructive:
+          'bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm hover:shadow-md',
+        outline:
+          'border-2 border-primary bg-background text-primary hover:bg-accent/10 shadow-sm hover:shadow-md',
+        secondary:
+          'bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-sm hover:shadow-md',
+        ghost: 'text-foreground hover:bg-accent/10 transition-all',
+        link: 'text-primary underline-offset-4 hover:underline',
+        teal: 'bg-accent text-accent-foreground hover:bg-accent/90 shadow-sm hover:shadow-md ai-glow',
       },
       size: {
         default: 'h-10 px-5 py-2 min-w-[80px]',
@@ -31,19 +36,14 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  ref?: React.Ref<HTMLButtonElement>;
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : 'button';
-    return (
-      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
-    );
-  }
-);
-Button.displayName = 'Button';
+function Button({ className, variant, size, asChild = false, ref, ...props }: ButtonProps) {
+  const Comp = asChild ? Slot : 'button';
+  return <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />;
+}
 
 export { Button, buttonVariants };

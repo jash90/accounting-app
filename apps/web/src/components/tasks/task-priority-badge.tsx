@@ -1,13 +1,9 @@
-import { cn } from '@/lib/utils/cn';
-import { TaskPriority, TaskPriorityLabels, TaskPriorityColors } from '@/types/enums';
+import { AlertTriangle, ArrowDown, ArrowRight, ArrowUp, Minus } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
-import {
-  AlertTriangle,
-  ArrowUp,
-  ArrowRight,
-  ArrowDown,
-  Minus,
-} from 'lucide-react';
+import { cn } from '@/lib/utils/cn';
+import { TaskPriority, TaskPriorityColors, TaskPriorityLabels } from '@/types/enums';
+
 
 interface TaskPriorityBadgeProps {
   priority: TaskPriority;
@@ -29,7 +25,10 @@ const iconSizeMap = {
   lg: 16,
 };
 
-const priorityIcons: Record<TaskPriority, React.ComponentType<{ size?: number; className?: string }>> = {
+const priorityIcons: Record<
+  TaskPriority,
+  React.ComponentType<{ size?: number; className?: string }>
+> = {
   [TaskPriority.URGENT]: AlertTriangle,
   [TaskPriority.HIGH]: ArrowUp,
   [TaskPriority.MEDIUM]: ArrowRight,
@@ -52,7 +51,7 @@ export function TaskPriorityBadge({
       className={cn(
         TaskPriorityColors[priority],
         sizeClasses[size],
-        'font-medium inline-flex items-center gap-1',
+        'inline-flex items-center gap-1 font-medium',
         className
       )}
     >

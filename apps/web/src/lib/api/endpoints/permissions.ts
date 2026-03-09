@@ -1,10 +1,11 @@
-import apiClient from '../client';
 import {
-  ManageModulePermissionDto,
   PermissionTargetType,
-  UserModulePermission,
-  ModuleDto,
+  type ManageModulePermissionDto,
+  type ModuleDto,
+  type UserModulePermission,
 } from '@/types/dtos';
+
+import apiClient from '../client';
 
 export const permissionsApi = {
   /**
@@ -21,7 +22,9 @@ export const permissionsApi = {
    * Uses GET /modules/employee/:employeeId endpoint
    */
   getEmployeeModules: async (employeeId: string): Promise<UserModulePermission[]> => {
-    const { data } = await apiClient.get<UserModulePermission[]>(`/api/modules/employee/${employeeId}`);
+    const { data } = await apiClient.get<UserModulePermission[]>(
+      `/api/modules/employee/${employeeId}`
+    );
     return data;
   },
 
@@ -77,10 +80,7 @@ export const permissionsApi = {
   /**
    * Grant module access to company (Admin only)
    */
-  grantModuleToCompany: async (
-    companyId: string,
-    moduleSlug: string
-  ): Promise<void> => {
+  grantModuleToCompany: async (companyId: string, moduleSlug: string): Promise<void> => {
     const dto: ManageModulePermissionDto = {
       targetType: PermissionTargetType.COMPANY,
       targetId: companyId,
@@ -102,4 +102,3 @@ export const permissionsApi = {
     await apiClient.delete('/api/modules/permissions', { data: dto });
   },
 };
-

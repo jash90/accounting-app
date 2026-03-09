@@ -5,6 +5,7 @@ export enum TaskStatus {
   IN_REVIEW = 'in_review',
   DONE = 'done',
   CANCELLED = 'cancelled',
+  BLOCKED = 'blocked',
 }
 
 export const TaskStatusLabels: Record<TaskStatus, string> = {
@@ -14,6 +15,7 @@ export const TaskStatusLabels: Record<TaskStatus, string> = {
   [TaskStatus.IN_REVIEW]: 'Do przeglądu',
   [TaskStatus.DONE]: 'Gotowe',
   [TaskStatus.CANCELLED]: 'Anulowane',
+  [TaskStatus.BLOCKED]: 'Zablokowane',
 };
 
 export const TaskStatusColors: Record<TaskStatus, string> = {
@@ -23,6 +25,7 @@ export const TaskStatusColors: Record<TaskStatus, string> = {
   [TaskStatus.IN_REVIEW]: 'purple',
   [TaskStatus.DONE]: 'green',
   [TaskStatus.CANCELLED]: 'red',
+  [TaskStatus.BLOCKED]: 'orange',
 };
 
 export const TaskStatusOrder: TaskStatus[] = [
@@ -32,4 +35,5 @@ export const TaskStatusOrder: TaskStatus[] = [
   TaskStatus.IN_REVIEW,
   TaskStatus.DONE,
   TaskStatus.CANCELLED,
+  TaskStatus.BLOCKED,
 ];

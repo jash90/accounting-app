@@ -1,8 +1,15 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from '../../../../api/src/app/app.module';
+
 import { VatStatus } from '@accounting/common';
+
+import {
+  authHeader,
+  bootstrapApp,
+  cleanupResource,
+  expectPaginatedResponse,
+  loginAs,
+} from '../support/api-test-helper';
 
 /**
  * E2E Tests for Clients CRUD Operations
@@ -24,87 +31,20 @@ describe('Clients CRUD E2E Tests', () => {
   let deletedClientId: string;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-      }),
-    );
-    await app.init();
+    app = await bootstrapApp();
+    ownerToken = await loginAs(app, 'owner');
+    employeeToken = await loginAs(app, 'employee');
+    ownerBToken = await loginAs(app, 'ownerB');
   });
 
   afterAll(async () => {
-    // Cleanup created test clients
-    if (createdClientId && ownerToken) {
-      try {
-        await request(app.getHttpServer())
-          .delete(`/modules/clients/${createdClientId}`)
-          .set('Authorization', `Bearer ${ownerToken}`);
-      } catch {
-        // Ignore cleanup errors
-      }
+    if (createdClientId) {
+      await cleanupResource(app, `/modules/clients/${createdClientId}`, ownerToken);
     }
-    if (deletedClientId && ownerToken) {
-      try {
-        await request(app.getHttpServer())
-          .delete(`/modules/clients/${deletedClientId}`)
-          .set('Authorization', `Bearer ${ownerToken}`);
-      } catch {
-        // Ignore cleanup errors
-      }
+    if (deletedClientId) {
+      await cleanupResource(app, `/modules/clients/${deletedClientId}`, ownerToken);
     }
     await app.close();
-  });
-
-  // ============================================
-  // Authentication Setup
-  // ============================================
-
-  describe('Authentication Setup', () => {
-    it('should login as company A owner', async () => {
-      const response = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({
-          email: 'bartlomiej.zimny@onet.pl',
-          password: 'Owner123!',
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('access_token');
-      ownerToken = response.body.access_token;
-    });
-
-    it('should login as company A employee', async () => {
-      const response = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({
-          email: 'bartlomiej.zimny@interia.pl',
-          password: 'Employee123!',
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('access_token');
-      employeeToken = response.body.access_token;
-    });
-
-    it('should login as company B owner', async () => {
-      const response = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({
-          email: 'bartlomiej.zimny@onet.pl',
-          password: 'Owner123!',
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('access_token');
-      ownerBToken = response.body.access_token;
-    });
   });
 
   // ============================================
@@ -115,7 +55,7 @@ describe('Clients CRUD E2E Tests', () => {
     it('should create a new client with required fields only', async () => {
       const response = await request(app.getHttpServer())
         .post('/modules/clients')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .send({
           name: 'E2E Test Client Basic',
         })
@@ -145,7 +85,7 @@ describe('Clients CRUD E2E Tests', () => {
 
       const response = await request(app.getHttpServer())
         .post('/modules/clients')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .send(clientData)
         .expect(201);
 
@@ -163,7 +103,7 @@ describe('Clients CRUD E2E Tests', () => {
     it('should fail to create client without name', async () => {
       const response = await request(app.getHttpServer())
         .post('/modules/clients')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .send({
           nip: '1234567890',
         })
@@ -175,7 +115,7 @@ describe('Clients CRUD E2E Tests', () => {
     it('should fail to create client with invalid email', async () => {
       const response = await request(app.getHttpServer())
         .post('/modules/clients')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .send({
           name: 'Test Invalid Email',
           email: 'not-an-email',
@@ -197,7 +137,7 @@ describe('Clients CRUD E2E Tests', () => {
     it('should allow employee with write permission to create client', async () => {
       const response = await request(app.getHttpServer())
         .post('/modules/clients')
-        .set('Authorization', `Bearer ${employeeToken}`)
+        .set(...authHeader(employeeToken))
         .send({
           name: 'E2E Employee Created Client',
         })
@@ -208,9 +148,7 @@ describe('Clients CRUD E2E Tests', () => {
       expect(response.body.name).toBe('E2E Employee Created Client');
 
       // Cleanup
-      await request(app.getHttpServer())
-        .delete(`/modules/clients/${response.body.id}`)
-        .set('Authorization', `Bearer ${ownerToken}`);
+      await cleanupResource(app, `/modules/clients/${response.body.id}`, ownerToken);
     });
   });
 
@@ -222,21 +160,20 @@ describe('Clients CRUD E2E Tests', () => {
     it('should list clients with default pagination', async () => {
       const response = await request(app.getHttpServer())
         .get('/modules/clients')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(200);
 
-      expect(response.body).toHaveProperty('data');
+      expectPaginatedResponse(response.body);
       expect(response.body).toHaveProperty('total');
       expect(response.body).toHaveProperty('page');
       expect(response.body).toHaveProperty('limit');
-      expect(Array.isArray(response.body.data)).toBe(true);
     });
 
     it('should support pagination parameters', async () => {
       const response = await request(app.getHttpServer())
         .get('/modules/clients')
         .query({ page: 1, limit: 5 })
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(200);
 
       expect(response.body.page).toBe(1);
@@ -248,40 +185,46 @@ describe('Clients CRUD E2E Tests', () => {
       const response = await request(app.getHttpServer())
         .get('/modules/clients')
         .query({ search: 'E2E Test' })
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(200);
 
-      expect(response.body.data.every((c: { name: string }) =>
-        c.name.toLowerCase().includes('e2e') || c.name.toLowerCase().includes('test')
-      )).toBe(true);
+      expect(
+        response.body.data.every(
+          (c: { name: string }) =>
+            c.name.toLowerCase().includes('e2e') || c.name.toLowerCase().includes('test')
+        )
+      ).toBe(true);
     });
 
     it('should filter by VAT status', async () => {
       const response = await request(app.getHttpServer())
         .get('/modules/clients')
         .query({ vatStatus: VatStatus.VAT_MONTHLY })
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(200);
 
-      if (response.body.data.length > 0) {
-        expect(response.body.data.every((c: { vatStatus: string }) => c.vatStatus === VatStatus.VAT_MONTHLY)).toBe(true);
-      }
+      expect(response.body.data.length).toBeGreaterThan(0);
+      expect(
+        response.body.data.every(
+          (c: { vatStatus: string }) => c.vatStatus === VatStatus.VAT_MONTHLY
+        )
+      ).toBe(true);
     });
 
     it('should filter by active status', async () => {
       const response = await request(app.getHttpServer())
         .get('/modules/clients')
         .query({ isActive: true })
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(200);
 
-      expect(response.body.data.every((c: { isActive: boolean }) => c.isActive === true)).toBe(true);
+      expect(response.body.data.every((c: { isActive: boolean }) => c.isActive === true)).toBe(
+        true
+      );
     });
 
     it('should fail without authentication', async () => {
-      await request(app.getHttpServer())
-        .get('/modules/clients')
-        .expect(401);
+      await request(app.getHttpServer()).get('/modules/clients').expect(401);
     });
   });
 
@@ -289,7 +232,7 @@ describe('Clients CRUD E2E Tests', () => {
     it('should get client by ID', async () => {
       const response = await request(app.getHttpServer())
         .get(`/modules/clients/${createdClientId}`)
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(200);
 
       expect(response.body.id).toBe(createdClientId);
@@ -299,14 +242,14 @@ describe('Clients CRUD E2E Tests', () => {
     it('should fail with invalid UUID', async () => {
       await request(app.getHttpServer())
         .get('/modules/clients/invalid-uuid')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(400);
     });
 
     it('should return 404 for non-existent client', async () => {
       await request(app.getHttpServer())
         .get('/modules/clients/00000000-0000-0000-0000-000000000000')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(404);
     });
   });
@@ -319,7 +262,7 @@ describe('Clients CRUD E2E Tests', () => {
     it('should not allow company B to access company A clients', async () => {
       const response = await request(app.getHttpServer())
         .get(`/modules/clients/${createdClientId}`)
-        .set('Authorization', `Bearer ${ownerBToken}`)
+        .set(...authHeader(ownerBToken))
         .expect(404);
 
       // Company B should not see Company A's client
@@ -329,7 +272,7 @@ describe('Clients CRUD E2E Tests', () => {
     it('should not allow company B to list company A clients', async () => {
       const response = await request(app.getHttpServer())
         .get('/modules/clients')
-        .set('Authorization', `Bearer ${ownerBToken}`)
+        .set(...authHeader(ownerBToken))
         .expect(200);
 
       // Company B should only see their own clients
@@ -340,7 +283,7 @@ describe('Clients CRUD E2E Tests', () => {
     it('should not allow company B to update company A client', async () => {
       await request(app.getHttpServer())
         .patch(`/modules/clients/${createdClientId}`)
-        .set('Authorization', `Bearer ${ownerBToken}`)
+        .set(...authHeader(ownerBToken))
         .send({ name: 'Hacked Name' })
         .expect(404);
     });
@@ -348,7 +291,7 @@ describe('Clients CRUD E2E Tests', () => {
     it('should not allow company B to delete company A client', async () => {
       await request(app.getHttpServer())
         .delete(`/modules/clients/${createdClientId}`)
-        .set('Authorization', `Bearer ${ownerBToken}`)
+        .set(...authHeader(ownerBToken))
         .expect(404);
     });
   });
@@ -361,7 +304,7 @@ describe('Clients CRUD E2E Tests', () => {
     it('should update client name', async () => {
       const response = await request(app.getHttpServer())
         .patch(`/modules/clients/${createdClientId}`)
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .send({ name: 'E2E Test Client Updated' })
         .expect(200);
 
@@ -377,7 +320,7 @@ describe('Clients CRUD E2E Tests', () => {
 
       const response = await request(app.getHttpServer())
         .patch(`/modules/clients/${createdClientId}`)
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .send(updateData)
         .expect(200);
 
@@ -389,7 +332,7 @@ describe('Clients CRUD E2E Tests', () => {
     it('should fail to update with invalid email', async () => {
       await request(app.getHttpServer())
         .patch(`/modules/clients/${createdClientId}`)
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .send({ email: 'not-valid-email' })
         .expect(400);
     });
@@ -397,7 +340,7 @@ describe('Clients CRUD E2E Tests', () => {
     it('should not update non-existent client', async () => {
       await request(app.getHttpServer())
         .patch('/modules/clients/00000000-0000-0000-0000-000000000000')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .send({ name: 'Ghost Client' })
         .expect(404);
     });
@@ -411,7 +354,7 @@ describe('Clients CRUD E2E Tests', () => {
     it('should retrieve client changelog', async () => {
       const response = await request(app.getHttpServer())
         .get(`/modules/clients/${createdClientId}/changelog`)
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(200);
 
       expect(response.body).toHaveProperty('logs');
@@ -430,14 +373,14 @@ describe('Clients CRUD E2E Tests', () => {
       // Make an update
       await request(app.getHttpServer())
         .patch(`/modules/clients/${createdClientId}`)
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .send({ additionalInfo: 'Changelog test update' })
         .expect(200);
 
       // Check changelog
       const response = await request(app.getHttpServer())
         .get(`/modules/clients/${createdClientId}/changelog`)
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(200);
 
       const updateLogs = response.body.logs.filter(
@@ -455,14 +398,14 @@ describe('Clients CRUD E2E Tests', () => {
     it('should not allow employee to delete directly', async () => {
       await request(app.getHttpServer())
         .delete(`/modules/clients/${deletedClientId}`)
-        .set('Authorization', `Bearer ${employeeToken}`)
+        .set(...authHeader(employeeToken))
         .expect(403);
     });
 
     it('should allow owner to delete client', async () => {
       const response = await request(app.getHttpServer())
         .delete(`/modules/clients/${deletedClientId}`)
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(200);
 
       expect(response.body.message).toContain('deleted');
@@ -471,7 +414,7 @@ describe('Clients CRUD E2E Tests', () => {
     it('should not find deleted client in list', async () => {
       const response = await request(app.getHttpServer())
         .get('/modules/clients')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(200);
 
       const clientIds = response.body.data.map((c: { id: string }) => c.id);
@@ -482,7 +425,7 @@ describe('Clients CRUD E2E Tests', () => {
       const response = await request(app.getHttpServer())
         .get('/modules/clients')
         .query({ isActive: false })
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(200);
 
       const clientIds = response.body.data.map((c: { id: string }) => c.id);
@@ -498,7 +441,7 @@ describe('Clients CRUD E2E Tests', () => {
     it('should restore deleted client', async () => {
       const response = await request(app.getHttpServer())
         .post(`/modules/clients/${deletedClientId}/restore`)
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(200);
 
       expect(response.body.id).toBe(deletedClientId);
@@ -509,7 +452,7 @@ describe('Clients CRUD E2E Tests', () => {
       const response = await request(app.getHttpServer())
         .get('/modules/clients')
         .query({ isActive: true })
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(200);
 
       const clientIds = response.body.data.map((c: { id: string }) => c.id);
@@ -519,7 +462,7 @@ describe('Clients CRUD E2E Tests', () => {
     it('should record RESTORE action in changelog', async () => {
       const response = await request(app.getHttpServer())
         .get(`/modules/clients/${deletedClientId}/changelog`)
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(200);
 
       const restoreLogs = response.body.logs.filter(
@@ -532,7 +475,7 @@ describe('Clients CRUD E2E Tests', () => {
       // Try to restore already active client
       await request(app.getHttpServer())
         .post(`/modules/clients/${deletedClientId}/restore`)
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(400);
     });
   });
@@ -545,7 +488,7 @@ describe('Clients CRUD E2E Tests', () => {
     it('should get custom field values for client', async () => {
       const response = await request(app.getHttpServer())
         .get(`/modules/clients/${createdClientId}/custom-fields`)
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
@@ -555,7 +498,7 @@ describe('Clients CRUD E2E Tests', () => {
       // First, get available field definitions
       const defsResponse = await request(app.getHttpServer())
         .get('/modules/clients/field-definitions')
-        .set('Authorization', `Bearer ${ownerToken}`)
+        .set(...authHeader(ownerToken))
         .expect(200);
 
       if (defsResponse.body.data && defsResponse.body.data.length > 0) {
@@ -563,7 +506,7 @@ describe('Clients CRUD E2E Tests', () => {
 
         const response = await request(app.getHttpServer())
           .put(`/modules/clients/${createdClientId}/custom-fields`)
-          .set('Authorization', `Bearer ${ownerToken}`)
+          .set(...authHeader(ownerToken))
           .send({
             values: {
               [fieldDef.id]: 'Test custom value',

@@ -1,5 +1,7 @@
+import { Zap } from 'lucide-react';
+
+import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -7,15 +9,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
-import { Zap } from 'lucide-react';
-import { AutoAssignCondition, SingleCondition, VatStatus, EmploymentType, TaxScheme, ZusStatus } from '@/types/enums';
+import { Switch } from '@/components/ui/switch';
+import {
+  EmploymentType,
+  TaxScheme,
+  VatStatus,
+  ZusStatus,
+  type AutoAssignCondition,
+  type SingleCondition,
+} from '@/types/enums';
 
 // Field definitions with Polish labels and enum values
-const ASSIGNABLE_FIELDS: Record<string, {
-  label: string;
-  values: Record<string, string>;
-}> = {
+const ASSIGNABLE_FIELDS: Record<
+  string,
+  {
+    label: string;
+    values: Record<string, string>;
+  }
+> = {
   vatStatus: {
     label: 'VAT',
     values: {
@@ -63,10 +74,7 @@ function isSingleCondition(condition: AutoAssignCondition): condition is SingleC
   return 'field' in condition && 'operator' in condition;
 }
 
-export function AutoAssignConditionBuilder({
-  value,
-  onChange,
-}: AutoAssignConditionBuilderProps) {
+export function AutoAssignConditionBuilder({ value, onChange }: AutoAssignConditionBuilderProps) {
   // Extract current values from condition (only support simple field=value for now)
   const isEnabled = !!value;
   const currentField = value && isSingleCondition(value) ? value.field : '';
@@ -112,29 +120,25 @@ export function AutoAssignConditionBuilder({
   return (
     <Card className="border-dashed">
       <CardContent className="pt-4 pb-4">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-amber-500" />
             <Label htmlFor="auto-assign-toggle" className="text-sm font-medium">
               Automatyczne przypisywanie
             </Label>
           </div>
-          <Switch
-            id="auto-assign-toggle"
-            checked={isEnabled}
-            onCheckedChange={handleToggle}
-          />
+          <Switch id="auto-assign-toggle" checked={isEnabled} onCheckedChange={handleToggle} />
         </div>
 
         {isEnabled && (
-          <div className="space-y-3 pl-6 border-l-2 border-amber-200">
-            <p className="text-xs text-muted-foreground mb-2">
+          <div className="space-y-3 border-l-2 border-amber-200 pl-6">
+            <p className="text-muted-foreground mb-2 text-xs">
               Ikona zostanie automatycznie przypisana do klientów spełniających warunek:
             </p>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Gdy pole</Label>
+                <Label className="text-muted-foreground text-xs">Gdy pole</Label>
                 <Select value={currentField} onValueChange={handleFieldChange}>
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Wybierz pole" />
@@ -150,7 +154,7 @@ export function AutoAssignConditionBuilder({
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">ma wartość</Label>
+                <Label className="text-muted-foreground text-xs">ma wartość</Label>
                 <Select
                   value={currentValue}
                   onValueChange={handleValueChange}

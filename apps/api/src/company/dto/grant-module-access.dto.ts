@@ -1,5 +1,6 @@
-import { IsArray, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+
+import { IsArray, IsString } from 'class-validator';
 
 export class GrantModuleAccessDto {
   @ApiProperty({ example: ['read', 'write', 'delete'] })
@@ -7,4 +8,3 @@ export class GrantModuleAccessDto {
   @IsString({ each: true })
   permissions: string[];
 }
-

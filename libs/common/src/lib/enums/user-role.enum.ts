@@ -3,4 +3,3 @@ export enum UserRole {
   COMPANY_OWNER = 'COMPANY_OWNER',
   EMPLOYEE = 'EMPLOYEE',
 }
-

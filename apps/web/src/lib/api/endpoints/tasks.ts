@@ -1,24 +1,25 @@
-import apiClient from '../client';
 import {
-  CreateTaskDto,
-  UpdateTaskDto,
-  TaskFiltersDto,
-  TaskResponseDto,
-  ReorderTasksDto,
-  BulkUpdateStatusDto,
-  KanbanBoardDto,
-  CalendarTaskDto,
-  CreateTaskLabelDto,
-  UpdateTaskLabelDto,
-  TaskLabelResponseDto,
-  AssignLabelDto,
-  CreateTaskCommentDto,
-  UpdateTaskCommentDto,
-  TaskCommentResponseDto,
-  CreateTaskDependencyDto,
-  TaskDependencyResponseDto,
+  type AssignLabelDto,
+  type BulkUpdateStatusDto,
+  type CalendarTaskDto,
+  type CreateTaskCommentDto,
+  type CreateTaskDependencyDto,
+  type CreateTaskDto,
+  type CreateTaskLabelDto,
+  type KanbanBoardDto,
+  type ReorderTasksDto,
+  type TaskCommentResponseDto,
+  type TaskDependencyResponseDto,
+  type TaskFiltersDto,
+  type TaskLabelResponseDto,
+  type TaskResponseDto,
+  type UpdateTaskCommentDto,
+  type UpdateTaskDto,
+  type UpdateTaskLabelDto,
 } from '@/types/dtos';
-import { PaginatedResponse } from '@/types/api';
+
+import apiClient from '../client';
+import { createBlobExport, createCrudApi } from '../crud-factory';
 
 const BASE_URL = '/api/modules/tasks';
 
@@ -44,36 +45,23 @@ export interface ClientTaskStatisticsDto {
   totalStoryPoints: number;
 }
 
+// Global task statistics
+export interface GlobalTaskStatisticsDto {
+  byStatus: Record<string, number>;
+  total: number;
+  overdue: number;
+  dueSoon: number;
+  unassigned: number;
+}
+
 // Tasks API
 export const tasksApi = {
-  getAll: async (filters?: TaskFiltersDto): Promise<PaginatedResponse<TaskResponseDto>> => {
-    const { data } = await apiClient.get<PaginatedResponse<TaskResponseDto>>(BASE_URL, {
-      params: filters,
-    });
-    return data;
-  },
-
-  getById: async (id: string): Promise<TaskResponseDto> => {
-    const { data } = await apiClient.get<TaskResponseDto>(`${BASE_URL}/${id}`);
-    return data;
-  },
-
-  create: async (taskData: CreateTaskDto): Promise<TaskResponseDto> => {
-    const { data } = await apiClient.post<TaskResponseDto>(BASE_URL, taskData);
-    return data;
-  },
-
-  update: async (id: string, taskData: UpdateTaskDto): Promise<TaskResponseDto> => {
-    const { data } = await apiClient.patch<TaskResponseDto>(`${BASE_URL}/${id}`, taskData);
-    return data;
-  },
-
-  delete: async (id: string): Promise<void> => {
-    await apiClient.delete(`${BASE_URL}/${id}`);
-  },
+  ...createCrudApi<TaskResponseDto, CreateTaskDto, UpdateTaskDto, TaskFiltersDto>(BASE_URL),
 
   // Kanban view
-  getKanbanBoard: async (filters?: Omit<TaskFiltersDto, 'page' | 'limit'>): Promise<KanbanBoardDto> => {
+  getKanbanBoard: async (
+    filters?: Omit<TaskFiltersDto, 'page' | 'limit'>
+  ): Promise<KanbanBoardDto> => {
     const { data } = await apiClient.get<{
       columns: Array<{
         status: string;
@@ -141,6 +129,110 @@ export const tasksApi = {
     );
     return data;
   },
+
+  // Global statistics
+  getGlobalStatistics: async (): Promise<GlobalTaskStatisticsDto> => {
+    const { data } = await apiClient.get<GlobalTaskStatisticsDto>(`${BASE_URL}/statistics`);
+    return data;
+  },
+
+  // CSV export
+  exportCsv: createBlobExport<TaskFiltersDto>(`${BASE_URL}/export`),
+
+  // Extended statistics
+  getCompletionDurationStats: (params?: { startDate?: string; endDate?: string }) =>
+    apiClient
+      .get(`${BASE_URL}/statistics/extended/completion-duration`, { params })
+      .then((r) => r.data),
+
+  getEmployeeTaskRanking: (params?: { startDate?: string; endDate?: string }) =>
+    apiClient
+      .get(`${BASE_URL}/statistics/extended/employee-ranking`, { params })
+      .then((r) => r.data),
+
+  getStatusDurationRanking: (params: { status: string; startDate?: string; endDate?: string }) =>
+    apiClient
+      .get(`${BASE_URL}/statistics/extended/status-duration`, { params })
+      .then((r) => r.data),
+};
+
+// ============================================
+// Task Templates API
+// ============================================
+
+export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly';
+
+export interface RecurrencePatternDto {
+  frequency: RecurrenceFrequency;
+  interval: number;
+  daysOfWeek?: number[];
+  dayOfMonth?: number;
+  endDate?: string;
+  maxOccurrences?: number;
+}
+
+export interface TaskTemplateResponseDto {
+  id: string;
+  title: string;
+  description?: string;
+  priority?: string;
+  assigneeId?: string;
+  assignee?: { id: string; firstName?: string; lastName?: string; email: string };
+  clientId?: string;
+  client?: { id: string; name: string };
+  estimatedMinutes?: number;
+  recurrencePattern?: RecurrencePatternDto | null;
+  recurrenceEndDate?: string | null;
+  lastRecurrenceDate?: string | null;
+  companyId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTaskTemplateDto {
+  title: string;
+  description?: string;
+  priority?: string;
+  assigneeId?: string;
+  clientId?: string;
+  estimatedMinutes?: number;
+  recurrencePattern?: RecurrencePatternDto;
+  recurrenceEndDate?: string;
+}
+
+export interface UpdateTaskTemplateDto {
+  title?: string;
+  description?: string;
+  priority?: string;
+  assigneeId?: string;
+  clientId?: string;
+  estimatedMinutes?: number;
+  recurrencePattern?: RecurrencePatternDto | null;
+  recurrenceEndDate?: string | null;
+}
+
+export interface TaskTemplateFiltersDto {
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+const TEMPLATES_URL = `${BASE_URL}/templates`;
+
+export const taskTemplatesApi = {
+  ...createCrudApi<
+    TaskTemplateResponseDto,
+    CreateTaskTemplateDto,
+    UpdateTaskTemplateDto,
+    TaskTemplateFiltersDto
+  >(TEMPLATES_URL),
+
+  createTaskFromTemplate: async (templateId: string): Promise<TaskTemplateResponseDto> => {
+    const { data } = await apiClient.post<TaskTemplateResponseDto>(
+      `${TEMPLATES_URL}/${templateId}/create-task`
+    );
+    return data;
+  },
 };
 
 // Task Labels API
@@ -149,37 +241,20 @@ const LABELS_URL = `${BASE_URL}/labels`;
 export interface TaskLabelQueryDto {
   page?: number;
   limit?: number;
+  search?: string;
+  isActive?: boolean;
 }
 
 export const taskLabelsApi = {
-  getAll: async (query?: TaskLabelQueryDto): Promise<PaginatedResponse<TaskLabelResponseDto>> => {
-    const { data } = await apiClient.get<PaginatedResponse<TaskLabelResponseDto>>(LABELS_URL, {
-      params: query,
-    });
-    return data;
-  },
-
-  getById: async (id: string): Promise<TaskLabelResponseDto> => {
-    const { data } = await apiClient.get<TaskLabelResponseDto>(`${LABELS_URL}/${id}`);
-    return data;
-  },
-
-  create: async (labelData: CreateTaskLabelDto): Promise<TaskLabelResponseDto> => {
-    const { data } = await apiClient.post<TaskLabelResponseDto>(LABELS_URL, labelData);
-    return data;
-  },
-
-  update: async (id: string, labelData: UpdateTaskLabelDto): Promise<TaskLabelResponseDto> => {
-    const { data } = await apiClient.patch<TaskLabelResponseDto>(`${LABELS_URL}/${id}`, labelData);
-    return data;
-  },
-
-  delete: async (id: string): Promise<void> => {
-    await apiClient.delete(`${LABELS_URL}/${id}`);
-  },
+  ...createCrudApi<TaskLabelResponseDto, CreateTaskLabelDto, UpdateTaskLabelDto, TaskLabelQueryDto>(
+    LABELS_URL
+  ),
 
   // Assign label to task
-  assignToTask: async (taskId: string, assignData: AssignLabelDto): Promise<{ message: string }> => {
+  assignToTask: async (
+    taskId: string,
+    assignData: AssignLabelDto
+  ): Promise<{ message: string }> => {
     const { data } = await apiClient.post<{ message: string }>(
       `${BASE_URL}/${taskId}/labels`,
       assignData
@@ -196,11 +271,16 @@ export const taskLabelsApi = {
 // Task Comments API
 export const taskCommentsApi = {
   getByTaskId: async (taskId: string): Promise<TaskCommentResponseDto[]> => {
-    const { data } = await apiClient.get<TaskCommentResponseDto[]>(`${BASE_URL}/${taskId}/comments`);
+    const { data } = await apiClient.get<TaskCommentResponseDto[]>(
+      `${BASE_URL}/${taskId}/comments`
+    );
     return data;
   },
 
-  create: async (taskId: string, commentData: CreateTaskCommentDto): Promise<TaskCommentResponseDto> => {
+  create: async (
+    taskId: string,
+    commentData: CreateTaskCommentDto
+  ): Promise<TaskCommentResponseDto> => {
     const { data } = await apiClient.post<TaskCommentResponseDto>(
       `${BASE_URL}/${taskId}/comments`,
       commentData
@@ -208,7 +288,10 @@ export const taskCommentsApi = {
     return data;
   },
 
-  update: async (commentId: string, commentData: UpdateTaskCommentDto): Promise<TaskCommentResponseDto> => {
+  update: async (
+    commentId: string,
+    commentData: UpdateTaskCommentDto
+  ): Promise<TaskCommentResponseDto> => {
     const { data } = await apiClient.patch<TaskCommentResponseDto>(
       `${BASE_URL}/comments/${commentId}`,
       commentData
@@ -244,7 +327,10 @@ export const taskDependenciesApi = {
     return data;
   },
 
-  create: async (taskId: string, dependencyData: CreateTaskDependencyDto): Promise<TaskDependencyResponseDto> => {
+  create: async (
+    taskId: string,
+    dependencyData: CreateTaskDependencyDto
+  ): Promise<TaskDependencyResponseDto> => {
     const { data } = await apiClient.post<TaskDependencyResponseDto>(
       `${BASE_URL}/${taskId}/dependencies`,
       dependencyData

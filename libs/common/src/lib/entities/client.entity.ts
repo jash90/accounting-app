@@ -1,23 +1,26 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
   ManyToOne,
   OneToMany,
-  JoinColumn,
-  Index,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
-import { User } from './user.entity';
-import { Company } from './company.entity';
-import { EmploymentType } from '../enums/employment-type.enum';
-import { VatStatus } from '../enums/vat-status.enum';
-import { TaxScheme } from '../enums/tax-scheme.enum';
-import { ZusStatus } from '../enums/zus-status.enum';
-import { AmlGroup } from '../enums/aml-group.enum';
+
 import { ClientCustomFieldValue } from './client-custom-field-value.entity';
 import { ClientIconAssignment } from './client-icon-assignment.entity';
+import { ClientReliefPeriod } from './client-relief-period.entity';
+import { ClientSuspension } from './client-suspension.entity';
+import { Company } from './company.entity';
+import { User } from './user.entity';
+import { AmlGroup } from '../enums/aml-group.enum';
+import { EmploymentType } from '../enums/employment-type.enum';
+import { TaxScheme } from '../enums/tax-scheme.enum';
+import { VatStatus } from '../enums/vat-status.enum';
+import { ZusStatus } from '../enums/zus-status.enum';
 
 @Entity('clients')
 @Index(['companyId'])
@@ -30,20 +33,21 @@ import { ClientIconAssignment } from './client-icon-assignment.entity';
 @Index(['taxScheme']) // For tax scheme filtering
 @Index(['zusStatus']) // For ZUS status filtering
 @Index(['email']) // For email search queries
+@Index(['pkdCode']) // For PKD code filtering
 export class Client {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   name!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   nip?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   email?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   phone?: string;
 
   @Column({ type: 'date', nullable: true })
@@ -52,9 +56,6 @@ export class Client {
   @Column({ type: 'date', nullable: true })
   cooperationStartDate?: Date;
 
-  @Column({ type: 'date', nullable: true })
-  suspensionDate?: Date;
-
   @Column({ type: 'text', nullable: true })
   companySpecificity?: string;
 
@@ -62,15 +63,19 @@ export class Client {
   additionalInfo?: string;
 
   // Legacy single GTU code (kept for backward compatibility)
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   gtuCode?: string;
 
   // Multiple GTU codes array
   @Column({ type: 'text', array: true, nullable: true })
   gtuCodes?: string[];
 
+  // Main PKD code (Polska Klasyfikacja Działalności)
+  @Column({ type: 'varchar', nullable: true, length: 10 })
+  pkdCode?: string;
+
   // Legacy amlGroup string (kept for backward compatibility)
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   amlGroup?: string;
 
   // New amlGroup enum
@@ -83,7 +88,7 @@ export class Client {
   amlGroupEnum?: AmlGroup;
 
   // Flag for client receiving email copies
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   receiveEmailCopy!: boolean;
 
   @Column({
@@ -114,7 +119,7 @@ export class Client {
   })
   zusStatus?: ZusStatus;
 
-  @Column()
+  @Column({ type: 'uuid' })
   companyId!: string;
 
   @ManyToOne(() => Company, (company) => company.clients, {
@@ -123,17 +128,17 @@ export class Client {
   @JoinColumn({ name: 'companyId' })
   company!: Company;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
-  @Column()
+  @Column({ type: 'uuid' })
   createdById!: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'createdById' })
   createdBy!: User;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   updatedById?: string;
 
   @ManyToOne(() => User)
@@ -145,6 +150,12 @@ export class Client {
 
   @OneToMany(() => ClientIconAssignment, (cia) => cia.client)
   iconAssignments?: ClientIconAssignment[];
+
+  @OneToMany(() => ClientSuspension, (suspension) => suspension.client)
+  suspensions?: ClientSuspension[];
+
+  @OneToMany(() => ClientReliefPeriod, (relief) => relief.client)
+  reliefPeriods?: ClientReliefPeriod[];
 
   @CreateDateColumn()
   createdAt!: Date;

@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
-import { Observable } from 'rxjs';
+
+import { type Observable } from 'rxjs';
 
 /**
  * Custom error class for AI provider errors with user-friendly messages.
@@ -8,7 +9,7 @@ export class AIProviderError extends HttpException {
   constructor(
     public readonly userMessage: string,
     public readonly technicalDetails: string,
-    status: HttpStatus = HttpStatus.SERVICE_UNAVAILABLE,
+    status: HttpStatus = HttpStatus.SERVICE_UNAVAILABLE
   ) {
     super(userMessage, status);
   }
@@ -51,7 +52,7 @@ export abstract class AIProviderService {
     model: string,
     temperature: number,
     maxTokens: number,
-    apiKey: string,
+    apiKey: string
   ): Promise<ChatCompletionResponse>;
 
   /**
@@ -63,7 +64,7 @@ export abstract class AIProviderService {
     model: string,
     temperature: number,
     maxTokens: number,
-    apiKey: string,
+    apiKey: string
   ): Observable<ChatStreamChunk>;
 
   /**
@@ -72,7 +73,11 @@ export abstract class AIProviderService {
    * @param apiKey - API key for the provider
    * @param model - Optional model to use (defaults to provider-specific default)
    */
-  abstract generateEmbedding(text: string, apiKey: string, model?: string): Promise<EmbeddingResponse>;
+  abstract generateEmbedding(
+    text: string,
+    apiKey: string,
+    model?: string
+  ): Promise<EmbeddingResponse>;
 
   /**
    * Validate API key

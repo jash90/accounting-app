@@ -1,16 +1,29 @@
 import {
-  ExceptionFilter,
-  Catch,
   ArgumentsHost,
+  Catch,
+  ExceptionFilter,
   HttpException,
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+
+import { SentryExceptionCaptured } from '@sentry/nestjs';
 import { Request, Response } from 'express';
-import { ClientException } from '@accounting/modules/clients';
-import { ClientErrorCode } from '@accounting/modules/clients';
-import { ErrorResponseDto } from '../dto/error-response.dto';
 import { v4 as uuidv4 } from 'uuid';
+
+import { ClientErrorCode, ClientException } from '@accounting/modules/clients';
+
+import { ErrorResponseDto } from '../dto/error-response.dto';
+
+/**
+ * Request with optional user property from authentication
+ */
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    companyId?: string;
+  };
+}
 
 /**
  * Global exception filter that catches all exceptions and normalizes error responses.
@@ -24,24 +37,44 @@ import { v4 as uuidv4 } from 'uuid';
  * Keys that should never be exposed in error responses
  */
 const SENSITIVE_KEYS = new Set([
-  'password', 'secret', 'token', 'apiKey', 'api_key', 'auth', 'authorization',
-  'credential', 'credentials', 'ssn', 'social_security', 'credit_card', 'creditCard',
-  'cvv', 'pin', 'private_key', 'privateKey', 'client_secret', 'clientSecret',
-  'refresh_token', 'refreshToken', 'access_token', 'accessToken', 'jwt',
+  'password',
+  'secret',
+  'token',
+  'apiKey',
+  'api_key',
+  'auth',
+  'authorization',
+  'credential',
+  'credentials',
+  'ssn',
+  'social_security',
+  'credit_card',
+  'creditCard',
+  'cvv',
+  'pin',
+  'private_key',
+  'privateKey',
+  'client_secret',
+  'clientSecret',
+  'refresh_token',
+  'refreshToken',
+  'access_token',
+  'accessToken',
+  'jwt',
 ]);
 
 /**
  * Sanitize context object to prevent sensitive data leakage
  */
 function sanitizeContext(
-  context: Record<string, any> | undefined,
-  maxDepth = 2,
-): Record<string, any> | undefined {
+  context: Record<string, unknown> | undefined,
+  maxDepth = 2
+): Record<string, unknown> | undefined {
   if (!context || typeof context !== 'object') {
     return undefined;
   }
 
-  const sanitize = (obj: any, depth: number): any => {
+  const sanitize = (obj: unknown, depth: number): unknown => {
     if (depth > maxDepth) {
       return '[truncated]';
     }
@@ -51,7 +84,7 @@ function sanitizeContext(
     }
 
     if (obj && typeof obj === 'object') {
-      const result: Record<string, any> = {};
+      const result: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(obj)) {
         const lowerKey = key.toLowerCase();
         if (SENSITIVE_KEYS.has(lowerKey) || SENSITIVE_KEYS.has(key)) {
@@ -70,17 +103,18 @@ function sanitizeContext(
     return obj;
   };
 
-  return sanitize(context, 0);
+  return sanitize(context, 0) as Record<string, unknown> | undefined;
 }
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
+  @SentryExceptionCaptured()
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const request = ctx.getRequest<AuthenticatedRequest>();
 
     // Generate or extract request correlation ID for distributed tracing
     const requestId = (request.headers['x-request-id'] as string) || uuidv4();
@@ -119,26 +153,25 @@ export class AllExceptionsFilter implements ExceptionFilter {
   private handleClientException(
     exception: ClientException,
     errorResponse: ErrorResponseDto,
-    request: Request,
-    requestId: string,
+    request: AuthenticatedRequest,
+    requestId: string
   ): void {
     errorResponse.statusCode = exception.getStatus();
     errorResponse.message = exception.message;
     errorResponse.errorCode = exception.errorCode;
-    errorResponse.context = sanitizeContext(exception.context);
+    errorResponse.context = sanitizeContext(
+      exception.context as Record<string, unknown> | undefined
+    );
 
     // Log custom exceptions at warn level (business logic errors)
-    this.logger.warn(
-      `ClientException: ${exception.errorCode} - ${exception.message}`,
-      {
-        requestId,
-        path: request.url,
-        method: request.method,
-        userId: (request as any).user?.id,
-        companyId: (request as any).user?.companyId,
-        context: exception.context,
-      },
-    );
+    this.logger.warn(`ClientException: ${exception.errorCode} - ${exception.message}`, {
+      requestId,
+      path: request.url,
+      method: request.method,
+      userId: request.user?.id,
+      companyId: request.user?.companyId,
+      context: exception.context,
+    });
   }
 
   /**
@@ -148,8 +181,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
   private handleHttpException(
     exception: HttpException,
     errorResponse: ErrorResponseDto,
-    request: Request,
-    requestId: string,
+    request: AuthenticatedRequest,
+    requestId: string
   ): void {
     const status = exception.getStatus();
     const exceptionResponse = exception.getResponse();
@@ -160,8 +193,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (typeof exceptionResponse === 'string') {
       errorResponse.message = exceptionResponse;
     } else if (typeof exceptionResponse === 'object') {
-      const responseObj = exceptionResponse as any;
-      errorResponse.message = responseObj.message || exception.message;
+      const responseObj = exceptionResponse as { message?: string | string[] };
+      errorResponse.message =
+        (Array.isArray(responseObj.message) ? responseObj.message[0] : responseObj.message) ||
+        exception.message;
 
       // Handle validation errors specially
       if (Array.isArray(responseObj.message)) {
@@ -184,7 +219,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       requestId,
       path: request.url,
       method: request.method,
-      userId: (request as any).user?.id,
+      userId: request.user?.id,
       statusCode: status,
     });
   }
@@ -196,30 +231,27 @@ export class AllExceptionsFilter implements ExceptionFilter {
   private handleUnexpectedError(
     exception: unknown,
     errorResponse: ErrorResponseDto,
-    request: Request,
-    requestId: string,
+    request: AuthenticatedRequest,
+    requestId: string
   ): void {
-    const error = exception as Error;
+    const error = exception instanceof Error ? exception : null;
 
     // Use safe, generic message for clients
     errorResponse.message = 'An unexpected error occurred';
     errorResponse.errorCode = ClientErrorCode.UNKNOWN_ERROR;
 
     // Log unexpected errors at error level with full details for debugging
-    this.logger.error(
-      `Unexpected error: ${error?.message || 'Unknown error'}`,
-      {
-        requestId,
-        path: request.url,
-        method: request.method,
-        userId: (request as any).user?.id,
-        companyId: (request as any).user?.companyId,
-        errorName: error?.name,
-        errorMessage: error?.message,
-        stack: error?.stack,
-        error: error?.toString(),
-      },
-    );
+    this.logger.error(`Unexpected error: ${error?.message || 'Unknown error'}`, {
+      requestId,
+      path: request.url,
+      method: request.method,
+      userId: request.user?.id,
+      companyId: request.user?.companyId,
+      errorName: error?.name,
+      errorMessage: error?.message,
+      stack: error?.stack,
+      error: error?.toString(),
+    });
   }
 
   /**

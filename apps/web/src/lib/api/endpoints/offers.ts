@@ -1,0 +1,202 @@
+import {
+  type ContentBlocksResponseDto,
+  type ConvertLeadToClientDto,
+  type CreateLeadDto,
+  type CreateOfferDto,
+  type CreateOfferTemplateDto,
+  type DuplicateOfferDto,
+  type LeadFiltersDto,
+  type LeadResponseDto,
+  type LeadStatisticsDto,
+  type OfferActivityResponseDto,
+  type OfferFiltersDto,
+  type OfferResponseDto,
+  type OfferStatisticsDto,
+  type OfferTemplateFiltersDto,
+  type OfferTemplateResponseDto,
+  type SendOfferDto,
+  type StandardPlaceholdersResponseDto,
+  type UpdateContentBlocksDto,
+  type UpdateLeadDto,
+  type UpdateOfferDto,
+  type UpdateOfferStatusDto,
+  type UpdateOfferTemplateDto,
+} from '@/types/dtos';
+
+import apiClient from '../client';
+import { createBlobExport, createCrudApi } from '../crud-factory';
+
+const BASE_URL = '/api/modules/offers';
+
+// ============================================
+// Offers API
+// ============================================
+
+export const offersApi = {
+  ...createCrudApi<OfferResponseDto, CreateOfferDto, UpdateOfferDto, OfferFiltersDto>(BASE_URL),
+
+  updateStatus: async (id: string, statusData: UpdateOfferStatusDto): Promise<OfferResponseDto> => {
+    const { data } = await apiClient.patch<OfferResponseDto>(
+      `${BASE_URL}/${id}/status`,
+      statusData
+    );
+    return data;
+  },
+
+  generateDocument: async (id: string): Promise<OfferResponseDto> => {
+    const { data } = await apiClient.post<OfferResponseDto>(`${BASE_URL}/${id}/generate-document`);
+    return data;
+  },
+
+  downloadDocument: async (id: string): Promise<Blob> => {
+    const { data } = await apiClient.get<Blob>(`${BASE_URL}/${id}/download-document`, {
+      responseType: 'blob',
+    });
+    return data;
+  },
+
+  sendEmail: async (id: string, sendData: SendOfferDto): Promise<OfferResponseDto> => {
+    const { data } = await apiClient.post<OfferResponseDto>(`${BASE_URL}/${id}/send`, sendData);
+    return data;
+  },
+
+  duplicate: async (id: string, duplicateData?: DuplicateOfferDto): Promise<OfferResponseDto> => {
+    const { data } = await apiClient.post<OfferResponseDto>(
+      `${BASE_URL}/${id}/duplicate`,
+      duplicateData || {}
+    );
+    return data;
+  },
+
+  getActivities: async (id: string): Promise<OfferActivityResponseDto[]> => {
+    const { data } = await apiClient.get<OfferActivityResponseDto[]>(
+      `${BASE_URL}/${id}/activities`
+    );
+    return data;
+  },
+
+  getStatistics: async (): Promise<OfferStatisticsDto> => {
+    const { data } = await apiClient.get<OfferStatisticsDto>(`${BASE_URL}/statistics`);
+    return data;
+  },
+
+  getStandardPlaceholders: async (): Promise<StandardPlaceholdersResponseDto> => {
+    const { data } = await apiClient.get<StandardPlaceholdersResponseDto>(
+      `${BASE_URL}/placeholders`
+    );
+    return data;
+  },
+
+  // CSV export
+  exportCsv: createBlobExport<OfferFiltersDto>(`${BASE_URL}/export`),
+};
+
+// ============================================
+// Leads API
+// ============================================
+
+const LEADS_URL = `${BASE_URL}/leads`;
+
+export interface LeadAssigneeDto {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+export const leadsApi = {
+  ...createCrudApi<LeadResponseDto, CreateLeadDto, UpdateLeadDto, LeadFiltersDto>(LEADS_URL),
+
+  convertToClient: async (
+    id: string,
+    convertData?: ConvertLeadToClientDto
+  ): Promise<{ clientId: string; message: string }> => {
+    const { data } = await apiClient.post<{ clientId: string; message: string }>(
+      `${LEADS_URL}/${id}/convert`,
+      convertData || {}
+    );
+    return data;
+  },
+
+  getStatistics: async (): Promise<LeadStatisticsDto> => {
+    const { data } = await apiClient.get<LeadStatisticsDto>(`${LEADS_URL}/statistics`);
+    return data;
+  },
+
+  getAssignees: async (): Promise<LeadAssigneeDto[]> => {
+    const { data } = await apiClient.get<LeadAssigneeDto[]>(`${LEADS_URL}/lookup/assignees`);
+    return data;
+  },
+
+  // CSV export
+  exportCsv: createBlobExport<LeadFiltersDto>(`${LEADS_URL}/export`),
+};
+
+// ============================================
+// Offer Templates API
+// ============================================
+
+const TEMPLATES_URL = `${BASE_URL}/templates`;
+
+export const offerTemplatesApi = {
+  ...createCrudApi<
+    OfferTemplateResponseDto,
+    CreateOfferTemplateDto,
+    UpdateOfferTemplateDto,
+    OfferTemplateFiltersDto
+  >(TEMPLATES_URL),
+
+  getDefault: async (): Promise<OfferTemplateResponseDto | null> => {
+    try {
+      const { data } = await apiClient.get<OfferTemplateResponseDto>(`${TEMPLATES_URL}/default`);
+      return data;
+    } catch (error: unknown) {
+      const status =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { status?: number } }).response?.status
+          : undefined;
+      if (status === 404) return null;
+      throw error;
+    }
+  },
+
+  uploadTemplate: async (id: string, file: File): Promise<OfferTemplateResponseDto> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await apiClient.post<OfferTemplateResponseDto>(
+      `${TEMPLATES_URL}/${id}/upload`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return data;
+  },
+
+  downloadTemplate: async (id: string): Promise<Blob> => {
+    const { data } = await apiClient.get<Blob>(`${TEMPLATES_URL}/${id}/download`, {
+      responseType: 'blob',
+    });
+    return data;
+  },
+
+  getContentBlocks: async (id: string): Promise<ContentBlocksResponseDto> => {
+    const { data } = await apiClient.get<ContentBlocksResponseDto>(
+      `${TEMPLATES_URL}/${id}/content-blocks`
+    );
+    return data;
+  },
+
+  updateContentBlocks: async (
+    id: string,
+    payload: UpdateContentBlocksDto
+  ): Promise<OfferTemplateResponseDto> => {
+    const { data } = await apiClient.patch<OfferTemplateResponseDto>(
+      `${TEMPLATES_URL}/${id}/content-blocks`,
+      payload
+    );
+    return data;
+  },
+};

@@ -4,6 +4,8 @@ export * from './lib/services/module-discovery.service';
 export * from './lib/guards/module-access.guard';
 export * from './lib/guards/permission.guard';
 export * from './lib/guards/owner-or-admin.guard';
+export * from './lib/guards/require-company.guard';
 export * from './lib/decorators/require-module.decorator';
 export * from './lib/decorators/require-permission.decorator';
 export * from './lib/decorators/owner-or-admin.decorator';
+export * from './lib/decorators/require-company.decorator';

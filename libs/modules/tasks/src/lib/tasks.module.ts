@@ -1,29 +1,38 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
 import {
+  Client,
+  Company,
+  NotificationSettings,
   Task,
+  TaskComment,
+  TaskDependency,
   TaskLabel,
   TaskLabelAssignment,
-  TaskDependency,
-  TaskComment,
-  Company,
   User,
-  Client,
-  NotificationSettings,
-  CommonModule,
 } from '@accounting/common';
-import { RBACModule } from '@accounting/rbac';
+import { CommonModule } from '@accounting/common/backend';
 import { EmailModule } from '@accounting/email';
-import { TasksService } from './services/tasks.service';
-import { TaskLabelsService } from './services/task-labels.service';
-import { TaskCommentsService } from './services/task-comments.service';
-import { TaskDependenciesService } from './services/task-dependencies.service';
-import { TaskNotificationService } from './services/task-notification.service';
-import { TasksController } from './controllers/tasks.controller';
-import { TaskLabelsController } from './controllers/task-labels.controller';
+import { RBACModule } from '@accounting/rbac';
+
 import { TaskCommentsController } from './controllers/task-comments.controller';
 import { TaskDependenciesController } from './controllers/task-dependencies.controller';
+import { TaskLabelsController } from './controllers/task-labels.controller';
+import { TaskTemplatesController } from './controllers/task-templates.controller';
 import { TasksLookupController } from './controllers/tasks-lookup.controller';
+import { TasksController } from './controllers/tasks.controller';
+import { TaskCommentsService } from './services/task-comments.service';
+import { TaskDeadlineNotificationsService } from './services/task-deadline-notifications.service';
+import { TaskDependenciesService } from './services/task-dependencies.service';
+import { TaskExportService } from './services/task-export.service';
+import { TaskExtendedStatsService } from './services/task-extended-stats.service';
+import { TaskLabelsService } from './services/task-labels.service';
+import { TaskNotificationService } from './services/task-notification.service';
+import { TaskRecurrenceService } from './services/task-recurrence.service';
+import { TaskTemplateService } from './services/task-template.service';
+import { TasksLookupService } from './services/tasks-lookup.service';
+import { TasksService } from './services/tasks.service';
 
 @Module({
   imports: [
@@ -44,6 +53,7 @@ import { TasksLookupController } from './controllers/tasks-lookup.controller';
   ],
   controllers: [
     // More specific routes must be registered before generic /:id routes
+    TaskTemplatesController,
     TasksLookupController,
     TaskLabelsController,
     TaskCommentsController,
@@ -52,16 +62,23 @@ import { TasksLookupController } from './controllers/tasks-lookup.controller';
   ],
   providers: [
     TasksService,
+    TasksLookupService,
+    TaskExportService,
+    TaskExtendedStatsService,
     TaskLabelsService,
     TaskCommentsService,
     TaskDependenciesService,
     TaskNotificationService,
+    TaskTemplateService,
+    TaskRecurrenceService,
+    TaskDeadlineNotificationsService,
   ],
   exports: [
     TasksService,
     TaskLabelsService,
     TaskCommentsService,
     TaskDependenciesService,
+    TaskTemplateService,
   ],
 })
 export class TasksModule {}

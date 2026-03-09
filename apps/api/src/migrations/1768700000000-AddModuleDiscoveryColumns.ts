@@ -1,74 +1,70 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
 export class AddModuleDiscoveryColumns1768700000000 implements MigrationInterface {
   name = 'AddModuleDiscoveryColumns1768700000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Create enum for module source
-    await queryRunner.query(`
-      CREATE TYPE "module_source_enum" AS ENUM ('file', 'database', 'legacy')
+    // AddTasksModule (timestamp 1768644507694) may have already created modules_source_enum.
+    // In that case, skip creating the old module_source_enum and use the existing type for source.
+    const modulesSourceEnumExists = await queryRunner.query(`
+      SELECT 1 FROM "pg_type"
+      WHERE "typname" = 'modules_source_enum'
+        AND "typnamespace" = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
     `);
 
-    // Add new columns to modules table
-    await queryRunner.query(`
-      ALTER TABLE "modules"
-      ADD COLUMN "source" "module_source_enum" NOT NULL DEFAULT 'legacy'
-    `);
+    if (modulesSourceEnumExists.length === 0) {
+      // Fresh install without AddTasksModule having run: create module_source_enum
+      await queryRunner.query(`
+        CREATE TYPE "module_source_enum" AS ENUM ('file', 'database', 'legacy')
+      `);
+    }
 
-    await queryRunner.query(`
-      ALTER TABLE "modules"
-      ADD COLUMN "version" VARCHAR NULL
-    `);
+    const sourceType =
+      modulesSourceEnumExists.length > 0 ? '"modules_source_enum"' : '"module_source_enum"';
 
-    await queryRunner.query(`
-      ALTER TABLE "modules"
-      ADD COLUMN "permissions" TEXT NULL
+    // Add new columns to modules table (IF NOT EXISTS for idempotency)
+    const sourceColExists = await queryRunner.query(`
+      SELECT 1 FROM "information_schema"."columns"
+      WHERE "table_schema" = 'public' AND "table_name" = 'modules' AND "column_name" = 'source'
     `);
+    if (sourceColExists.length === 0) {
+      await queryRunner.query(`
+        ALTER TABLE "modules"
+        ADD COLUMN "source" ${sourceType} NOT NULL DEFAULT 'legacy'
+      `);
+    }
 
-    await queryRunner.query(`
-      ALTER TABLE "modules"
-      ADD COLUMN "defaultPermissions" TEXT NULL
-    `);
+    await queryRunner.query(
+      `ALTER TABLE "modules" ADD COLUMN IF NOT EXISTS "version" VARCHAR NULL`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "modules" ADD COLUMN IF NOT EXISTS "permissions" TEXT NULL`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "modules" ADD COLUMN IF NOT EXISTS "defaultPermissions" TEXT NULL`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "modules" ADD COLUMN IF NOT EXISTS "configPath" VARCHAR NULL`
+    );
+    await queryRunner.query(`ALTER TABLE "modules" ADD COLUMN IF NOT EXISTS "icon" VARCHAR NULL`);
+    await queryRunner.query(
+      `ALTER TABLE "modules" ADD COLUMN IF NOT EXISTS "category" VARCHAR NULL`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "modules" ADD COLUMN IF NOT EXISTS "dependencies" TEXT NULL`
+    );
+    await queryRunner.query(`ALTER TABLE "modules" ADD COLUMN IF NOT EXISTS "config" JSONB NULL`);
+    await queryRunner.query(
+      `ALTER TABLE "modules" ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP NOT NULL DEFAULT now()`
+    );
 
-    await queryRunner.query(`
-      ALTER TABLE "modules"
-      ADD COLUMN "configPath" VARCHAR NULL
-    `);
-
-    await queryRunner.query(`
-      ALTER TABLE "modules"
-      ADD COLUMN "icon" VARCHAR NULL
-    `);
-
-    await queryRunner.query(`
-      ALTER TABLE "modules"
-      ADD COLUMN "category" VARCHAR NULL
-    `);
-
-    await queryRunner.query(`
-      ALTER TABLE "modules"
-      ADD COLUMN "dependencies" TEXT NULL
-    `);
-
-    await queryRunner.query(`
-      ALTER TABLE "modules"
-      ADD COLUMN "config" JSONB NULL
-    `);
-
-    await queryRunner.query(`
-      ALTER TABLE "modules"
-      ADD COLUMN "updatedAt" TIMESTAMP NOT NULL DEFAULT now()
-    `);
-
-    // Create index for source column for faster queries
-    await queryRunner.query(`
-      CREATE INDEX "IDX_modules_source" ON "modules" ("source")
-    `);
-
-    // Create index for category for grouping
-    await queryRunner.query(`
-      CREATE INDEX "IDX_modules_category" ON "modules" ("category")
-    `);
+    // Create indexes (IF NOT EXISTS to support re-runs and cross-migration ordering)
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "IDX_modules_source" ON "modules" ("source")`
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "IDX_modules_category" ON "modules" ("category")`
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

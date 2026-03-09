@@ -1,8 +1,13 @@
+import { createElement } from 'react';
+
+import { Image } from 'lucide-react';
+
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils/cn';
-import { ClientIcon } from '@/types/entities';
+import { getIconByKebabName } from '@/lib/utils/lucide-icon-registry';
+import { type ClientIcon } from '@/types/entities';
 import { IconType } from '@/types/enums';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import * as LucideIcons from 'lucide-react';
+
 
 interface IconBadgeProps {
   icon: ClientIcon;
@@ -29,93 +34,60 @@ const emojiSizeClasses = {
   lg: 'text-xl',
 };
 
-export function IconBadge({
-  icon,
-  size = 'md',
-  showTooltip = true,
-  className,
-}: IconBadgeProps) {
-  const renderIcon = () => {
-    switch (icon.iconType) {
-      case IconType.LUCIDE: {
-        // Get Lucide icon dynamically
-        const iconName = icon.iconValue || 'Circle';
-        // Convert kebab-case to PascalCase for Lucide icons
-        const pascalCaseName = iconName
-          .split('-')
-          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-          .join('');
-
-        const LucideIcon = (LucideIcons as Record<string, React.ComponentType<{ size?: number; className?: string }>>)[pascalCaseName];
-
-        if (LucideIcon) {
-          // Use inline style for color - Tailwind can't detect dynamic classes like text-[${color}]
-          return (
-            <LucideIcon
-              size={iconSizeMap[size]}
-              className="shrink-0"
-              style={icon.color ? { color: icon.color } : undefined}
-            />
-          );
-        }
-        // Fallback to a circle if icon not found
-        return (
-          <LucideIcons.Circle
-            size={iconSizeMap[size]}
-            className="shrink-0"
-            style={icon.color ? { color: icon.color } : undefined}
-          />
-        );
-      }
-
-      case IconType.EMOJI: {
-        return (
-          <span
-            className={cn(
-              'flex items-center justify-center shrink-0',
-              emojiSizeClasses[size]
-            )}
-            role="img"
-            aria-label={icon.name}
-          >
-            {icon.iconValue || '⭐'}
-          </span>
-        );
-      }
-
-      case IconType.CUSTOM: {
-        if (!icon.filePath) {
-          // Fallback if no file path
-          return (
-            <div
-              className={cn(
-                'rounded-full bg-muted flex items-center justify-center',
-                sizeClasses[size]
-              )}
-              style={icon.color ? { backgroundColor: icon.color } : undefined}
-            >
-              <LucideIcons.Image
-                size={iconSizeMap[size] * 0.6}
-                className="text-muted-foreground"
-              />
-            </div>
-          );
-        }
-
-        return (
-          <img
-            src={`/api/modules/clients/icons/${icon.id}/file`}
-            alt={icon.name}
-            className={cn('object-contain rounded', sizeClasses[size])}
-          />
-        );
-      }
-
-      default:
-        return null;
+function IconRenderer({ icon, size }: { icon: ClientIcon; size: 'sm' | 'md' | 'lg' }) {
+  switch (icon.iconType) {
+    case IconType.LUCIDE: {
+      const iconName = icon.iconValue || 'Circle';
+      const LucideIcon = getIconByKebabName(iconName);
+      return createElement(LucideIcon, {
+        size: iconSizeMap[size],
+        className: 'shrink-0',
+        style: icon.color ? { color: icon.color } : undefined,
+      });
     }
-  };
 
+    case IconType.EMOJI: {
+      return (
+        <span
+          className={cn('flex shrink-0 items-center justify-center', emojiSizeClasses[size])}
+          role="img"
+          aria-label={icon.name}
+        >
+          {icon.iconValue || '⭐'}
+        </span>
+      );
+    }
+
+    case IconType.CUSTOM: {
+      if (!icon.filePath) {
+        return (
+          <div
+            className={cn(
+              'bg-muted flex items-center justify-center rounded-full',
+              sizeClasses[size]
+            )}
+            style={icon.color ? { backgroundColor: icon.color } : undefined}
+          >
+            <Image size={iconSizeMap[size] * 0.6} className="text-muted-foreground" />
+          </div>
+        );
+      }
+
+      return (
+        <img
+          src={`/api/modules/clients/icons/${icon.id}/file`}
+          alt={icon.name}
+          className={cn('rounded object-contain', sizeClasses[size])}
+        />
+      );
+    }
+
+    default:
+      return null;
+  }
+}
+
+export function IconBadge({ icon, size = 'md', showTooltip = true, className }: IconBadgeProps) {
   const badge = (
     <div
       className={cn(
@@ -124,20 +96,18 @@ export function IconBadge({
         className
       )}
     >
-      {renderIcon()}
+      <IconRenderer icon={icon} size={size} />
     </div>
   );
 
   if (showTooltip && (icon.tooltip || icon.name)) {
     return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>{badge}</TooltipTrigger>
-          <TooltipContent>
-            <p>{icon.tooltip || icon.name}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{badge}</TooltipTrigger>
+        <TooltipContent>
+          <p>{icon.tooltip || icon.name}</p>
+        </TooltipContent>
+      </Tooltip>
     );
   }
 
@@ -166,29 +136,27 @@ export function IconBadgeList({
         <IconBadge key={icon.id} icon={icon} size={size} />
       ))}
       {hiddenCount > 0 && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div
-                className={cn(
-                  'inline-flex items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-medium',
-                  size === 'sm' && 'w-5 h-5',
-                  size === 'md' && 'w-6 h-6',
-                  size === 'lg' && 'w-8 h-8'
-                )}
-              >
-                +{hiddenCount}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <div className="flex flex-col gap-1">
-                {icons.slice(maxVisible).map((icon) => (
-                  <span key={icon.id}>{icon.name}</span>
-                ))}
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              className={cn(
+                'bg-muted text-muted-foreground inline-flex items-center justify-center rounded-full text-xs font-medium',
+                size === 'sm' && 'h-5 w-5',
+                size === 'md' && 'h-6 w-6',
+                size === 'lg' && 'h-8 w-8'
+              )}
+            >
+              +{hiddenCount}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <div className="flex flex-col gap-1">
+              {icons.slice(maxVisible).map((icon) => (
+                <span key={icon.id}>{icon.name}</span>
+              ))}
+            </div>
+          </TooltipContent>
+        </Tooltip>
       )}
     </div>
   );

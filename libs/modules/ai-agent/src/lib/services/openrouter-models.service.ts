@@ -90,7 +90,7 @@ export class OpenRouterModelsService {
       return models;
     } catch (error) {
       this.logger.warn(
-        `Failed to fetch models from API: ${error instanceof Error ? error.message : error}`,
+        `Failed to fetch models from API: ${error instanceof Error ? error.message : error}`
       );
       // Return fallback models
       const fallbackModels = this.getDefaultModels();
@@ -111,13 +111,10 @@ export class OpenRouterModelsService {
       headers['Authorization'] = `Bearer ${apiKey}`;
     }
 
-    const response = await axios.get<{ data: OpenRouterAPIModel[] }>(
-      `${this.baseURL}/models`,
-      {
-        headers,
-        timeout: this.TIMEOUT_MS,
-      },
-    );
+    const response = await axios.get<{ data: OpenRouterAPIModel[] }>(`${this.baseURL}/models`, {
+      headers,
+      timeout: this.TIMEOUT_MS,
+    });
 
     if (!response.data?.data || !Array.isArray(response.data.data)) {
       throw new Error('Invalid response format from OpenRouter API');
@@ -138,8 +135,7 @@ export class OpenRouterModelsService {
     const costPer1kOutput = parseFloat(apiModel.pricing?.completion || '0') * 1000;
 
     // Check for vision support
-    const supportsVision =
-      apiModel.architecture?.modality?.includes('image') ?? false;
+    const supportsVision = apiModel.architecture?.modality?.includes('image') ?? false;
 
     // Check for function calling support
     const supportsFunctionCalling =
@@ -173,11 +169,11 @@ export class OpenRouterModelsService {
       mistralai: 'Mistral',
       cohere: 'Cohere',
       deepseek: 'DeepSeek',
-      'perplexity': 'Perplexity',
-      'microsoft': 'Microsoft',
-      'qwen': 'Qwen',
-      'nous': 'Nous Research',
-      'nvidia': 'NVIDIA',
+      perplexity: 'Perplexity',
+      microsoft: 'Microsoft',
+      qwen: 'Qwen',
+      nous: 'Nous Research',
+      nvidia: 'NVIDIA',
     };
 
     const prefix = modelId.split('/')[0];
@@ -300,7 +296,7 @@ export class OpenRouterModelsService {
         id: 'google/gemini-pro-1.5',
         name: 'Gemini Pro 1.5',
         provider: 'Google',
-        description: 'Google\'s most capable model',
+        description: "Google's most capable model",
         contextWindow: 1000000,
         maxOutputTokens: 8192,
         costPer1kInput: 2.5,

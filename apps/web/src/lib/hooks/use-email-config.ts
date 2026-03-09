@@ -1,8 +1,20 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+
+import { type ApiErrorResponse } from '@/types/api';
+import {
+  type CreateEmailConfigDto,
+  type TestImapDto,
+  type TestSmtpDto,
+  type UpdateEmailConfigDto,
+} from '@/types/dtos';
+
+import { createMutationHook } from './create-mutation-hook';
 import { emailConfigApi } from '../api/endpoints/email-config';
 import { queryKeys } from '../api/query-client';
-import { CreateEmailConfigDto, UpdateEmailConfigDto, TestSmtpDto, TestImapDto } from '@/types/dtos';
-import { useToast } from '@/components/ui/use-toast';
+
+// Don't retry on 404 (no config exists yet) — shared across all three scopes
+const emailConfigRetry = (failureCount: number, error: ApiErrorResponse) =>
+  error?.response?.status === 404 ? false : failureCount < 1;
 
 // User Email Configuration Hooks
 
@@ -10,84 +22,30 @@ export function useUserEmailConfig() {
   return useQuery({
     queryKey: queryKeys.emailConfig.user,
     queryFn: emailConfigApi.getUserConfig,
-    retry: (failureCount, error: any) => {
-      // Don't retry on 404 (no config exists yet)
-      if (error?.response?.status === 404) {
-        return false;
-      }
-      return failureCount < 1;
-    },
+    retry: emailConfigRetry,
   });
 }
 
-export function useCreateUserEmailConfig() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useCreateUserEmailConfig = createMutationHook<void, CreateEmailConfigDto>({
+  mutationFn: (configData) => emailConfigApi.createUserConfig(configData),
+  invalidateKeys: [queryKeys.emailConfig.user],
+  successMessage: 'Konfiguracja email została utworzona',
+  errorMessage: 'Nie udało się utworzyć konfiguracji email',
+});
 
-  return useMutation({
-    mutationFn: (configData: CreateEmailConfigDto) => emailConfigApi.createUserConfig(configData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.emailConfig.user });
-      toast({
-        title: 'Sukces',
-        description: 'Konfiguracja email została utworzona',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się utworzyć konfiguracji email',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateUserEmailConfig = createMutationHook<void, UpdateEmailConfigDto>({
+  mutationFn: (configData) => emailConfigApi.updateUserConfig(configData),
+  invalidateKeys: [queryKeys.emailConfig.user],
+  successMessage: 'Konfiguracja email została zaktualizowana',
+  errorMessage: 'Nie udało się zaktualizować konfiguracji email',
+});
 
-export function useUpdateUserEmailConfig() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (configData: UpdateEmailConfigDto) => emailConfigApi.updateUserConfig(configData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.emailConfig.user });
-      toast({
-        title: 'Sukces',
-        description: 'Konfiguracja email została zaktualizowana',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować konfiguracji email',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useDeleteUserEmailConfig() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: emailConfigApi.deleteUserConfig,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.emailConfig.user });
-      toast({
-        title: 'Sukces',
-        description: 'Konfiguracja email została usunięta',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć konfiguracji email',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useDeleteUserEmailConfig = createMutationHook<void, void>({
+  mutationFn: () => emailConfigApi.deleteUserConfig(),
+  invalidateKeys: [queryKeys.emailConfig.user],
+  successMessage: 'Konfiguracja email została usunięta',
+  errorMessage: 'Nie udało się usunąć konfiguracji email',
+});
 
 // Company Email Configuration Hooks
 
@@ -95,175 +53,60 @@ export function useCompanyEmailConfig() {
   return useQuery({
     queryKey: queryKeys.emailConfig.company,
     queryFn: emailConfigApi.getCompanyConfig,
-    retry: (failureCount, error: any) => {
-      // Don't retry on 404 (no config exists yet)
-      if (error?.response?.status === 404) {
-        return false;
-      }
-      return failureCount < 1;
-    },
+    retry: emailConfigRetry,
   });
 }
 
-export function useCreateCompanyEmailConfig() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useCreateCompanyEmailConfig = createMutationHook<void, CreateEmailConfigDto>({
+  mutationFn: (configData) => emailConfigApi.createCompanyConfig(configData),
+  invalidateKeys: [queryKeys.emailConfig.company],
+  successMessage: 'Konfiguracja email firmy została utworzona',
+  errorMessage: 'Nie udało się utworzyć konfiguracji email firmy',
+});
 
-  return useMutation({
-    mutationFn: (configData: CreateEmailConfigDto) =>
-      emailConfigApi.createCompanyConfig(configData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.emailConfig.company });
-      toast({
-        title: 'Sukces',
-        description: 'Konfiguracja email firmy została utworzona',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd',
-        description:
-          error.response?.data?.message || 'Nie udało się utworzyć konfiguracji email firmy',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateCompanyEmailConfig = createMutationHook<void, UpdateEmailConfigDto>({
+  mutationFn: (configData) => emailConfigApi.updateCompanyConfig(configData),
+  invalidateKeys: [queryKeys.emailConfig.company],
+  successMessage: 'Konfiguracja email firmy została zaktualizowana',
+  errorMessage: 'Nie udało się zaktualizować konfiguracji email firmy',
+});
 
-export function useUpdateCompanyEmailConfig() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (configData: UpdateEmailConfigDto) =>
-      emailConfigApi.updateCompanyConfig(configData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.emailConfig.company });
-      toast({
-        title: 'Sukces',
-        description: 'Konfiguracja email firmy została zaktualizowana',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd',
-        description:
-          error.response?.data?.message || 'Nie udało się zaktualizować konfiguracji email firmy',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useDeleteCompanyEmailConfig() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: emailConfigApi.deleteCompanyConfig,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.emailConfig.company });
-      toast({
-        title: 'Sukces',
-        description: 'Konfiguracja email firmy została usunięta',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd',
-        description:
-          error.response?.data?.message || 'Nie udało się usunąć konfiguracji email firmy',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useDeleteCompanyEmailConfig = createMutationHook<void, void>({
+  mutationFn: () => emailConfigApi.deleteCompanyConfig(),
+  invalidateKeys: [queryKeys.emailConfig.company],
+  successMessage: 'Konfiguracja email firmy została usunięta',
+  errorMessage: 'Nie udało się usunąć konfiguracji email firmy',
+});
 
 // Connection Test Hooks
 
-export function useTestSmtp() {
-  const { toast } = useToast();
+export const useTestSmtp = createMutationHook<{ message: string }, TestSmtpDto>({
+  mutationFn: (data) => emailConfigApi.testSmtp(data),
+  successMessageFn: (result) => result.message,
+  errorTitle: 'Błąd testu SMTP',
+  errorMessage: 'Nie udało się połączyć z serwerem SMTP',
+});
 
-  return useMutation({
-    mutationFn: (data: TestSmtpDto) => emailConfigApi.testSmtp(data),
-    onSuccess: (result) => {
-      toast({
-        title: 'Sukces',
-        description: result.message,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd testu SMTP',
-        description: error.response?.data?.message || 'Nie udało się połączyć z serwerem SMTP',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useTestImap = createMutationHook<{ message: string }, TestImapDto>({
+  mutationFn: (data) => emailConfigApi.testImap(data),
+  successMessageFn: (result) => result.message,
+  errorTitle: 'Błąd testu IMAP',
+  errorMessage: 'Nie udało się połączyć z serwerem IMAP',
+});
 
-export function useTestImap() {
-  const { toast } = useToast();
+export const useTestCompanySmtp = createMutationHook<{ message: string }, TestSmtpDto>({
+  mutationFn: (data) => emailConfigApi.testCompanySmtp(data),
+  successMessageFn: (result) => result.message,
+  errorTitle: 'Błąd testu SMTP',
+  errorMessage: 'Nie udało się połączyć z serwerem SMTP',
+});
 
-  return useMutation({
-    mutationFn: (data: TestImapDto) => emailConfigApi.testImap(data),
-    onSuccess: (result) => {
-      toast({
-        title: 'Sukces',
-        description: result.message,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd testu IMAP',
-        description: error.response?.data?.message || 'Nie udało się połączyć z serwerem IMAP',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useTestCompanySmtp() {
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (data: TestSmtpDto) => emailConfigApi.testCompanySmtp(data),
-    onSuccess: (result) => {
-      toast({
-        title: 'Sukces',
-        description: result.message,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd testu SMTP',
-        description: error.response?.data?.message || 'Nie udało się połączyć z serwerem SMTP',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useTestCompanyImap() {
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (data: TestImapDto) => emailConfigApi.testCompanyImap(data),
-    onSuccess: (result) => {
-      toast({
-        title: 'Sukces',
-        description: result.message,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd testu IMAP',
-        description: error.response?.data?.message || 'Nie udało się połączyć z serwerem IMAP',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useTestCompanyImap = createMutationHook<{ message: string }, TestImapDto>({
+  mutationFn: (data) => emailConfigApi.testCompanyImap(data),
+  successMessageFn: (result) => result.message,
+  errorTitle: 'Błąd testu IMAP',
+  errorMessage: 'Nie udało się połączyć z serwerem IMAP',
+});
 
 // System Admin Email Configuration Hooks (ADMIN only)
 
@@ -271,130 +114,43 @@ export function useSystemAdminEmailConfig() {
   return useQuery({
     queryKey: queryKeys.emailConfig.systemAdmin,
     queryFn: emailConfigApi.getSystemAdminConfig,
-    retry: (failureCount, error: any) => {
-      // Don't retry on 404 (no config exists yet)
-      if (error?.response?.status === 404) {
-        return false;
-      }
-      return failureCount < 1;
-    },
+    retry: emailConfigRetry,
   });
 }
 
-export function useCreateSystemAdminEmailConfig() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useCreateSystemAdminEmailConfig = createMutationHook<void, CreateEmailConfigDto>({
+  mutationFn: (configData) => emailConfigApi.createSystemAdminConfig(configData),
+  invalidateKeys: [queryKeys.emailConfig.systemAdmin],
+  successMessage: 'Konfiguracja email System Admin została utworzona',
+  errorMessage: 'Nie udało się utworzyć konfiguracji email System Admin',
+});
 
-  return useMutation({
-    mutationFn: (configData: CreateEmailConfigDto) =>
-      emailConfigApi.createSystemAdminConfig(configData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.emailConfig.systemAdmin });
-      toast({
-        title: 'Sukces',
-        description: 'Konfiguracja email System Admin została utworzona',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd',
-        description:
-          error.response?.data?.message || 'Nie udało się utworzyć konfiguracji email System Admin',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateSystemAdminEmailConfig = createMutationHook<void, UpdateEmailConfigDto>({
+  mutationFn: (configData) => emailConfigApi.updateSystemAdminConfig(configData),
+  invalidateKeys: [queryKeys.emailConfig.systemAdmin],
+  successMessage: 'Konfiguracja email System Admin została zaktualizowana',
+  errorMessage: 'Nie udało się zaktualizować konfiguracji email System Admin',
+});
 
-export function useUpdateSystemAdminEmailConfig() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (configData: UpdateEmailConfigDto) =>
-      emailConfigApi.updateSystemAdminConfig(configData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.emailConfig.systemAdmin });
-      toast({
-        title: 'Sukces',
-        description: 'Konfiguracja email System Admin została zaktualizowana',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd',
-        description:
-          error.response?.data?.message || 'Nie udało się zaktualizować konfiguracji email System Admin',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useDeleteSystemAdminEmailConfig() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: emailConfigApi.deleteSystemAdminConfig,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.emailConfig.systemAdmin });
-      toast({
-        title: 'Sukces',
-        description: 'Konfiguracja email System Admin została usunięta',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd',
-        description:
-          error.response?.data?.message || 'Nie udało się usunąć konfiguracji email System Admin',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useDeleteSystemAdminEmailConfig = createMutationHook<void, void>({
+  mutationFn: () => emailConfigApi.deleteSystemAdminConfig(),
+  invalidateKeys: [queryKeys.emailConfig.systemAdmin],
+  successMessage: 'Konfiguracja email System Admin została usunięta',
+  errorMessage: 'Nie udało się usunąć konfiguracji email System Admin',
+});
 
 // System Admin Connection Test Hooks
 
-export function useTestSystemAdminSmtp() {
-  const { toast } = useToast();
+export const useTestSystemAdminSmtp = createMutationHook<{ message: string }, TestSmtpDto>({
+  mutationFn: (data) => emailConfigApi.testSystemAdminSmtp(data),
+  successMessageFn: (result) => result.message,
+  errorTitle: 'Błąd testu SMTP',
+  errorMessage: 'Nie udało się połączyć z serwerem SMTP',
+});
 
-  return useMutation({
-    mutationFn: (data: TestSmtpDto) => emailConfigApi.testSystemAdminSmtp(data),
-    onSuccess: (result) => {
-      toast({
-        title: 'Sukces',
-        description: result.message,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd testu SMTP',
-        description: error.response?.data?.message || 'Nie udało się połączyć z serwerem SMTP',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useTestSystemAdminImap() {
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (data: TestImapDto) => emailConfigApi.testSystemAdminImap(data),
-    onSuccess: (result) => {
-      toast({
-        title: 'Sukces',
-        description: result.message,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd testu IMAP',
-        description: error.response?.data?.message || 'Nie udało się połączyć z serwerem IMAP',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useTestSystemAdminImap = createMutationHook<{ message: string }, TestImapDto>({
+  mutationFn: (data) => emailConfigApi.testSystemAdminImap(data),
+  successMessageFn: (result) => result.message,
+  errorTitle: 'Błąd testu IMAP',
+  errorMessage: 'Nie udało się połączyć z serwerem IMAP',
+});

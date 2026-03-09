@@ -1,9 +1,12 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
-import { TokenUsage, User, UserRole, Company } from '@accounting/common';
+
+import { Between, IsNull, Repository } from 'typeorm';
+
+import { Company, TokenUsage, User, UserRole } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
+
 import { TokenUsageStatsDto } from '../dto/token-usage-response.dto';
-import { SystemCompanyService } from './system-company.service';
 
 interface CompanyTokenUsageDto {
   companyId: string;
@@ -31,23 +34,17 @@ interface CompanyTokenUsageDto {
 export class TokenUsageService {
   constructor(
     @InjectRepository(TokenUsage)
-    private usageRepository: Repository<TokenUsage>,
+    private readonly usageRepository: Repository<TokenUsage>,
     @InjectRepository(Company)
-    private companyRepository: Repository<Company>,
-    private systemCompanyService: SystemCompanyService,
+    private readonly companyRepository: Repository<Company>,
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   /**
    * Track token usage for a user
    */
   async trackUsage(user: User, inputTokens: number, outputTokens: number): Promise<void> {
-    let companyId: string | null;
-
-    if (user.role === UserRole.ADMIN) {
-      companyId = await this.systemCompanyService.getSystemCompanyId();
-    } else {
-      companyId = user.companyId;
-    }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -56,7 +53,7 @@ export class TokenUsageService {
     let usage = await this.usageRepository.findOne({
       where: {
         userId: user.id,
-        companyId,
+        companyId: companyId ?? IsNull(),
         date: today,
       },
     });
@@ -90,17 +87,12 @@ export class TokenUsageService {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    let companyId: string | null;
-    if (user.role === UserRole.ADMIN) {
-      companyId = await this.systemCompanyService.getSystemCompanyId();
-    } else {
-      companyId = user.companyId;
-    }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const dailyUsage = await this.usageRepository.find({
       where: {
         userId: user.id,
-        companyId,
+        companyId: companyId ?? IsNull(),
         date: Between(startDate, endDate),
       },
       relations: ['user', 'company'],
@@ -121,7 +113,7 @@ export class TokenUsageService {
         totalOutputTokens: 0,
         conversationCount: 0,
         messageCount: 0,
-      },
+      }
     );
 
     return {
@@ -145,13 +137,13 @@ export class TokenUsageService {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    let companyId: string;
+    if (user.role !== UserRole.ADMIN && !user.companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     let companyName = 'System Admin';
-    if (user.role === UserRole.ADMIN) {
-      companyId = await this.systemCompanyService.getSystemCompanyId();
-    } else {
-      companyId = user.companyId!;
-      // Get company name
+    if (user.role !== UserRole.ADMIN) {
+      // Get company name for non-admin users
       const company = await this.companyRepository.findOne({
         where: { id: companyId },
       });
@@ -170,17 +162,20 @@ export class TokenUsageService {
     });
 
     // Aggregate by user
-    const userAggregation = new Map<string, {
-      userId: string;
-      email: string;
-      firstName: string;
-      lastName: string;
-      totalTokens: number;
-      totalInputTokens: number;
-      totalOutputTokens: number;
-      conversationCount: number;
-      messageCount: number;
-    }>();
+    const userAggregation = new Map<
+      string,
+      {
+        userId: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        totalTokens: number;
+        totalInputTokens: number;
+        totalOutputTokens: number;
+        conversationCount: number;
+        messageCount: number;
+      }
+    >();
 
     let companyTotalTokens = 0;
     let companyTotalInputTokens = 0;
@@ -240,12 +235,7 @@ export class TokenUsageService {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    let companyId: string | null;
-    if (user.role === UserRole.ADMIN) {
-      companyId = await this.systemCompanyService.getSystemCompanyId();
-    } else {
-      companyId = user.companyId;
-    }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const result = await this.usageRepository
       .createQueryBuilder('usage')
@@ -313,17 +303,20 @@ export class TokenUsageService {
       });
 
       // Aggregate by user
-      const userAggregation = new Map<string, {
-        userId: string;
-        email: string;
-        firstName: string;
-        lastName: string;
-        totalTokens: number;
-        totalInputTokens: number;
-        totalOutputTokens: number;
-        conversationCount: number;
-        messageCount: number;
-      }>();
+      const userAggregation = new Map<
+        string,
+        {
+          userId: string;
+          email: string;
+          firstName: string;
+          lastName: string;
+          totalTokens: number;
+          totalInputTokens: number;
+          totalOutputTokens: number;
+          conversationCount: number;
+          messageCount: number;
+        }
+      >();
 
       let companyTotalTokens = 0;
       let companyTotalInputTokens = 0;

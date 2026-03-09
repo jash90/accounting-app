@@ -1,28 +1,25 @@
-import apiClient from '../client';
+import { type PaginatedResponse } from '@/types/api';
 import {
-  CreateClientDto,
-  UpdateClientDto,
-  ClientFiltersDto,
-  ClientResponseDto,
-  SetCustomFieldValuesDto,
-  CreateClientFieldDefinitionDto,
-  UpdateClientFieldDefinitionDto,
-  ClientFieldDefinitionResponseDto,
-  CreateClientIconDto,
-  UpdateClientIconDto,
-  ClientIconResponseDto,
-  CreateNotificationSettingsDto,
-  UpdateNotificationSettingsDto,
-  NotificationSettingsResponseDto,
-  ChangeLogResponseDto,
+  type ChangeLogResponseDto,
+  type ClientFieldDefinitionResponseDto,
+  type ClientFiltersDto,
+  type ClientIconResponseDto,
+  type ClientResponseDto,
+  type CreateClientDto,
+  type CreateClientFieldDefinitionDto,
+  type CreateClientIconDto,
+  type CreateNotificationSettingsDto,
+  type NotificationSettingsResponseDto,
+  type SetCustomFieldValuesDto,
+  type UpdateClientDto,
+  type UpdateClientFieldDefinitionDto,
+  type UpdateClientIconDto,
+  type UpdateNotificationSettingsDto,
 } from '@/types/dtos';
-import { PaginatedResponse } from '@/types/api';
-import {
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
-} from '@/types/enums';
+import { type EmploymentType, type TaxScheme, type VatStatus, type ZusStatus } from '@/types/enums';
+
+import apiClient from '../client';
+import { createCrudApi } from '../crud-factory';
 
 // ============================================
 // Bulk Operations Types
@@ -110,6 +107,19 @@ export interface ClientStatisticsDto {
 }
 
 // ============================================
+// Task and Time Statistics Types
+// ============================================
+
+export interface ClientTaskTimeStatsDto {
+  clientId: string;
+  clientName: string;
+  totalTasks: number;
+  completedTasks: number;
+  totalMinutes: number;
+  totalHours: number;
+}
+
+// ============================================
 // Import Types
 // ============================================
 
@@ -119,13 +129,52 @@ export interface ImportResultDto {
   errors: { row: number; field: string; message: string }[];
 }
 
+// ============================================
+// PKD Code Types
+// ============================================
+
+export interface PkdCodeOption {
+  code: string;
+  label: string;
+  section: string;
+  division: string;
+}
+
+export interface PkdSearchParams {
+  search?: string;
+  section?: string;
+  limit?: number;
+}
+
 const BASE_URL = '/api/modules/clients';
+
+// Helper function to convert custom field filters to query params
+function buildClientFilterQueryParams(filters?: ClientFiltersDto): Record<string, string | undefined> {
+  if (!filters) return {};
+
+  const { customFieldFilters, ...rest } = filters;
+  const params: Record<string, string | undefined> = { ...rest } as Record<
+    string,
+    string | undefined
+  >;
+
+  // Convert customFieldFilters to customField_[fieldId]=operator:value format
+  if (customFieldFilters && customFieldFilters.length > 0) {
+    customFieldFilters.forEach((filter) => {
+      const value = Array.isArray(filter.value) ? filter.value.join(',') : filter.value;
+      params[`customField_${filter.fieldId}`] = `${filter.operator}:${value}`;
+    });
+  }
+
+  return params;
+}
 
 // Client API
 export const clientsApi = {
   getAll: async (filters?: ClientFiltersDto): Promise<PaginatedResponse<ClientResponseDto>> => {
+    const params = buildClientFilterQueryParams(filters);
     const { data } = await apiClient.get<PaginatedResponse<ClientResponseDto>>(BASE_URL, {
-      params: filters,
+      params,
     });
     return data;
   },
@@ -220,6 +269,13 @@ export const clientsApi = {
     return data;
   },
 
+  getClientTaskTimeStats: async (): Promise<ClientTaskTimeStatsDto[]> => {
+    const { data } = await apiClient.get<ClientTaskTimeStatsDto[]>(
+      `${BASE_URL}/statistics/task-time`
+    );
+    return data;
+  },
+
   // Duplicate Detection
   checkDuplicates: async (dto: CheckDuplicatesDto): Promise<DuplicateCheckResultDto> => {
     const { data } = await apiClient.post<DuplicateCheckResultDto>(
@@ -231,33 +287,25 @@ export const clientsApi = {
 
   // Bulk Operations
   bulkDelete: async (dto: BulkDeleteClientsDto): Promise<BulkOperationResultDto> => {
-    const { data } = await apiClient.patch<BulkOperationResultDto>(
-      `${BASE_URL}/bulk/delete`,
-      dto
-    );
+    const { data } = await apiClient.patch<BulkOperationResultDto>(`${BASE_URL}/bulk/delete`, dto);
     return data;
   },
 
   bulkRestore: async (dto: BulkRestoreClientsDto): Promise<BulkOperationResultDto> => {
-    const { data } = await apiClient.patch<BulkOperationResultDto>(
-      `${BASE_URL}/bulk/restore`,
-      dto
-    );
+    const { data } = await apiClient.patch<BulkOperationResultDto>(`${BASE_URL}/bulk/restore`, dto);
     return data;
   },
 
   bulkEdit: async (dto: BulkEditClientsDto): Promise<BulkOperationResultDto> => {
-    const { data } = await apiClient.patch<BulkOperationResultDto>(
-      `${BASE_URL}/bulk/edit`,
-      dto
-    );
+    const { data } = await apiClient.patch<BulkOperationResultDto>(`${BASE_URL}/bulk/edit`, dto);
     return data;
   },
 
   // Export/Import
   exportCsv: async (filters?: ClientFiltersDto): Promise<Blob> => {
+    const params = buildClientFilterQueryParams(filters);
     const { data } = await apiClient.get(`${BASE_URL}/export`, {
-      params: filters,
+      params,
       responseType: 'blob',
     });
     return data;
@@ -276,6 +324,19 @@ export const clientsApi = {
     const { data } = await apiClient.post<ImportResultDto>(`${BASE_URL}/import`, formData);
     return data;
   },
+
+  // PKD Codes (lazy loading)
+  searchPkdCodes: async (params?: PkdSearchParams): Promise<PkdCodeOption[]> => {
+    const { data } = await apiClient.get<PkdCodeOption[]>(`${BASE_URL}/pkd-codes/search`, {
+      params,
+    });
+    return data;
+  },
+
+  getPkdSections: async (): Promise<Record<string, string>> => {
+    const { data } = await apiClient.get<Record<string, string>>(`${BASE_URL}/pkd-codes/sections`);
+    return data;
+  },
 };
 
 // Field Definitions API
@@ -284,47 +345,16 @@ const FIELD_DEFINITIONS_URL = '/api/modules/clients/field-definitions';
 export interface FieldDefinitionQueryDto {
   page?: number;
   limit?: number;
+  isActive?: boolean;
 }
 
 export const fieldDefinitionsApi = {
-  getAll: async (query?: FieldDefinitionQueryDto): Promise<PaginatedResponse<ClientFieldDefinitionResponseDto>> => {
-    const { data } = await apiClient.get<PaginatedResponse<ClientFieldDefinitionResponseDto>>(FIELD_DEFINITIONS_URL, {
-      params: query,
-    });
-    return data;
-  },
-
-  getById: async (id: string): Promise<ClientFieldDefinitionResponseDto> => {
-    const { data } = await apiClient.get<ClientFieldDefinitionResponseDto>(
-      `${FIELD_DEFINITIONS_URL}/${id}`
-    );
-    return data;
-  },
-
-  create: async (
-    fieldData: CreateClientFieldDefinitionDto
-  ): Promise<ClientFieldDefinitionResponseDto> => {
-    const { data } = await apiClient.post<ClientFieldDefinitionResponseDto>(
-      FIELD_DEFINITIONS_URL,
-      fieldData
-    );
-    return data;
-  },
-
-  update: async (
-    id: string,
-    fieldData: UpdateClientFieldDefinitionDto
-  ): Promise<ClientFieldDefinitionResponseDto> => {
-    const { data } = await apiClient.patch<ClientFieldDefinitionResponseDto>(
-      `${FIELD_DEFINITIONS_URL}/${id}`,
-      fieldData
-    );
-    return data;
-  },
-
-  delete: async (id: string): Promise<void> => {
-    await apiClient.delete(`${FIELD_DEFINITIONS_URL}/${id}`);
-  },
+  ...createCrudApi<
+    ClientFieldDefinitionResponseDto,
+    CreateClientFieldDefinitionDto,
+    UpdateClientFieldDefinitionDto,
+    FieldDefinitionQueryDto
+  >(FIELD_DEFINITIONS_URL),
 
   reorder: async (orderedIds: string[]): Promise<ClientFieldDefinitionResponseDto[]> => {
     const { data } = await apiClient.put<ClientFieldDefinitionResponseDto[]>(
@@ -389,9 +419,8 @@ export const clientIconsApi = {
     // Handle autoAssignCondition - need to send null explicitly to clear it
     const payload = {
       ...iconData,
-      autoAssignCondition: iconData.autoAssignCondition === null
-        ? null
-        : iconData.autoAssignCondition,
+      autoAssignCondition:
+        iconData.autoAssignCondition === null ? null : iconData.autoAssignCondition,
     };
     const { data } = await apiClient.patch<ClientIconResponseDto>(`${ICONS_URL}/${id}`, payload);
     return data;
@@ -402,11 +431,22 @@ export const clientIconsApi = {
   },
 
   getClientIcons: async (clientId: string): Promise<ClientIconResponseDto[]> => {
-    const { data } = await apiClient.get<ClientIconResponseDto[]>(`${ICONS_URL}/client/${clientId}`);
+    const { data } = await apiClient.get<ClientIconResponseDto[]>(
+      `${ICONS_URL}/client/${clientId}`
+    );
     return data;
   },
 
-  assignIcon: async (clientId: string, iconId: string): Promise<{ id: string; clientId: string; iconId: string; isAutoAssigned: boolean; createdAt: Date }> => {
+  assignIcon: async (
+    clientId: string,
+    iconId: string
+  ): Promise<{
+    id: string;
+    clientId: string;
+    iconId: string;
+    isAutoAssigned: boolean;
+    createdAt: Date;
+  }> => {
     const { data } = await apiClient.post(`${ICONS_URL}/assign`, { clientId, iconId });
     return data;
   },
@@ -431,8 +471,9 @@ export const notificationSettingsApi = {
         `${NOTIFICATION_SETTINGS_URL}/me`
       );
       return data;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { status?: number } };
+      if (axiosError.response?.status === 404) {
         return null;
       }
       throw error;

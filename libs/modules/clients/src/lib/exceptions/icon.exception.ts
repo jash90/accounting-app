@@ -1,5 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
-import { ClientException, ClientExceptionContext } from './client.exception';
+
+import { ClientException, type ClientExceptionContext } from './client.exception';
 import { ClientErrorCode } from './error-codes.enum';
 
 export class IconNotFoundException extends ClientException {
@@ -8,22 +9,18 @@ export class IconNotFoundException extends ClientException {
       ClientErrorCode.ICON_NOT_FOUND,
       `Icon with ID ${iconId} not found`,
       { additionalInfo: { iconId }, companyId },
-      HttpStatus.NOT_FOUND,
+      HttpStatus.NOT_FOUND
     );
   }
 }
 
 export class IconUploadException extends ClientException {
-  constructor(
-    fileName: string,
-    reason: string,
-    context?: ClientExceptionContext,
-  ) {
+  constructor(fileName: string, reason: string, context?: ClientExceptionContext) {
     super(
       ClientErrorCode.ICON_UPLOAD_FAILED,
       `Failed to upload icon file "${fileName}": ${reason}`,
       { ...context, additionalInfo: { fileName, reason } },
-      HttpStatus.BAD_REQUEST,
+      HttpStatus.BAD_REQUEST
     );
   }
 }
@@ -33,13 +30,13 @@ export class IconAssignmentException extends ClientException {
     clientId: string,
     iconCount: number,
     reason: string,
-    context?: ClientExceptionContext,
+    context?: ClientExceptionContext
   ) {
     super(
       ClientErrorCode.ICON_ASSIGNMENT_FAILED,
       `Failed to assign ${iconCount} icon(s) to client: ${reason}`,
       { ...context, clientId, additionalInfo: { iconCount, reason } },
-      HttpStatus.BAD_REQUEST,
+      HttpStatus.BAD_REQUEST
     );
   }
 }

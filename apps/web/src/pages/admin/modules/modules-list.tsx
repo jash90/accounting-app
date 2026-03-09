@@ -1,35 +1,51 @@
 import { useState } from 'react';
-import { ColumnDef } from '@tanstack/react-table';
-import { useModules, useDeleteModule } from '@/lib/hooks/use-modules';
-import { useCreateModule, useUpdateModule } from '@/lib/hooks/use-modules';
-import { PageHeader } from '@/components/common/page-header';
-import { DataTable } from '@/components/common/data-table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Edit, Trash2, Package } from 'lucide-react';
-import { ModuleDto } from '@/types/dtos';
-import { ModuleFormDialog } from '@/components/forms/module-form-dialog';
+
+import { type ColumnDef } from '@tanstack/react-table';
+import { Edit, Package, Plus, Trash2 } from 'lucide-react';
+
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { DataTable } from '@/components/common/data-table';
+import { PageHeader } from '@/components/common/page-header';
+import { ModuleFormDialog } from '@/components/forms/module-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  useCreateModule,
+  useDeleteModule,
+  useModules,
+  useUpdateModule,
+} from '@/lib/hooks/use-modules';
+import { getModuleIcon } from '@/lib/utils/module-icons';
+import { type CreateModuleDto, type ModuleDto, type UpdateModuleDto } from '@/types/dtos';
 
 const columns: ColumnDef<ModuleDto>[] = [
   {
     accessorKey: 'name',
     header: 'Nazwa',
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <span className="font-medium text-apptax-navy">{row.original.name}</span>
-        {row.original.slug === 'ai-agent' && (
-          <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
-        )}
-      </div>
-    ),
+    cell: ({ row }) => {
+      const ModuleIcon = getModuleIcon(row.original.icon);
+      const isAiModule = row.original.slug === 'ai-agent';
+      return (
+        <div className="flex items-center gap-3">
+          <div
+            className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+              isAiModule ? 'bg-accent ai-glow' : 'bg-primary'
+            }`}
+          >
+            <ModuleIcon className="h-4 w-4 text-white" />
+          </div>
+          <span className="text-foreground font-medium">{row.original.name}</span>
+          {isAiModule && <div className="bg-accent ai-glow h-2 w-2 rounded-full" />}
+        </div>
+      );
+    },
   },
   {
     accessorKey: 'slug',
     header: 'Slug',
     cell: ({ row }) => (
-      <code className="px-2 py-1 bg-apptax-soft-teal rounded text-sm text-apptax-navy">
+      <code className="bg-accent/10 text-foreground rounded px-2 py-1 text-sm">
         {row.original.slug}
       </code>
     ),
@@ -38,7 +54,7 @@ const columns: ColumnDef<ModuleDto>[] = [
     accessorKey: 'description',
     header: 'Opis',
     cell: ({ row }) => (
-      <span className="text-apptax-navy/70 line-clamp-1">{row.original.description}</span>
+      <span className="text-foreground/70 line-clamp-1">{row.original.description}</span>
     ),
   },
   {
@@ -72,26 +88,26 @@ export default function ModulesListPage() {
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:bg-apptax-soft-teal"
+            className="hover:bg-accent/10 h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               setEditingModule(row.original);
             }}
             title="Edytuj moduł"
           >
-            <Edit className="h-4 w-4 text-apptax-blue" />
+            <Edit className="text-primary h-4 w-4" />
           </Button>
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8 hover:bg-destructive/10"
+            className="hover:bg-destructive/10 h-8 w-8"
             onClick={(e) => {
               e.stopPropagation();
               setDeletingModule(row.original);
             }}
             title="Usuń moduł"
           >
-            <Trash2 className="h-4 w-4 text-destructive" />
+            <Trash2 className="text-destructive h-4 w-4" />
           </Button>
         </div>
       ),
@@ -107,7 +123,7 @@ export default function ModulesListPage() {
         action={
           <Button
             onClick={() => setCreateOpen(true)}
-            className="bg-apptax-blue hover:bg-apptax-blue/90 shadow-apptax-sm hover:shadow-apptax-md transition-all"
+            className="bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md transition-all"
           >
             <Plus className="mr-2 h-4 w-4" />
             Utwórz moduł
@@ -115,7 +131,7 @@ export default function ModulesListPage() {
         }
       />
 
-      <Card className="border-apptax-soft-teal/30">
+      <Card className="border-border">
         <CardContent className="p-0">
           <DataTable columns={actionColumns} data={modules} isLoading={isPending} />
         </CardContent>
@@ -125,7 +141,7 @@ export default function ModulesListPage() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         onSubmit={(data) => {
-          createModule.mutate(data);
+          createModule.mutate(data as CreateModuleDto);
           setCreateOpen(false);
         }}
       />
@@ -136,7 +152,7 @@ export default function ModulesListPage() {
           onOpenChange={(open) => !open && setEditingModule(null)}
           module={editingModule}
           onSubmit={(data) => {
-            updateModule.mutate({ id: editingModule.id, data });
+            updateModule.mutate({ id: editingModule.id, data: data as UpdateModuleDto });
             setEditingModule(null);
           }}
         />

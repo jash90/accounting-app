@@ -1,37 +1,24 @@
-import { Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Users, Settings, ArrowRight, UserCheck, UserX, Building2 } from 'lucide-react';
+import { Building2, Settings, UserCheck, Users, UserX } from 'lucide-react';
+
+import { ClientsTypeChart } from '@/components/dashboard/charts/clients-type-chart';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { NavigationCard } from '@/components/ui/navigation-card';
+import { StatCard } from '@/components/ui/stat-card';
 import { useAuthContext } from '@/contexts/auth-context';
-import { useClients } from '@/lib/hooks/use-clients';
+import { type ClientTaskTimeStatsDto } from '@/lib/api/endpoints/clients';
+import { useClientStatistics, useClientTaskTimeStats } from '@/lib/hooks/use-clients';
+import { useModuleBasePath } from '@/lib/hooks/use-module-base-path';
+import { isOwnerOrAdmin } from '@/lib/utils/user';
 import { UserRole } from '@/types/enums';
-import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ClientsDashboardPage() {
   const { user } = useAuthContext();
-  const { data, isPending } = useClients();
+  const { data, isPending } = useClientStatistics();
+  const basePath = useModuleBasePath('clients');
 
-  // Extract clients array from paginated response
-  const clients = data?.data ?? [];
-
-  // Calculate statistics
-  const totalClients = clients.length;
-  const activeClients = clients.filter((c) => c.isActive).length;
-  const inactiveClients = clients.filter((c) => !c.isActive).length;
-
-  // Determine the base path based on user role
-  const getBasePath = () => {
-    switch (user?.role) {
-      case UserRole.ADMIN:
-        return '/admin/modules/clients';
-      case UserRole.COMPANY_OWNER:
-        return '/company/modules/clients';
-      default:
-        return '/modules/clients';
-    }
-  };
-
-  const basePath = getBasePath();
+  const totalClients = data?.total ?? 0;
+  const activeClients = data?.active ?? 0;
+  const inactiveClients = data?.inactive ?? 0;
 
   // Features available based on role
   const features = [
@@ -40,7 +27,7 @@ export default function ClientsDashboardPage() {
       description: 'Przeglądaj, dodawaj i zarządzaj klientami biura rachunkowego',
       icon: Users,
       href: `${basePath}/list`,
-      gradient: 'bg-apptax-gradient',
+      gradient: 'bg-primary',
       roles: [UserRole.ADMIN, UserRole.COMPANY_OWNER, UserRole.EMPLOYEE],
     },
     {
@@ -48,7 +35,7 @@ export default function ClientsDashboardPage() {
       description: 'Pola niestandardowe, ikony klientów, powiadomienia',
       icon: Settings,
       href: `${basePath}/settings`,
-      gradient: 'bg-apptax-dark-gradient',
+      gradient: 'bg-primary',
       roles: [UserRole.ADMIN, UserRole.COMPANY_OWNER],
     },
   ];
@@ -59,104 +46,114 @@ export default function ClientsDashboardPage() {
   );
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto space-y-6 p-6">
       <div>
-        <h1 className="text-3xl font-bold text-apptax-navy flex items-center gap-3">
+        <h1 className="text-foreground flex items-center gap-3 text-3xl font-bold">
           Moduł Klienci
-          <div className="w-3 h-3 rounded-full bg-apptax-teal" />
+          <div className="bg-accent h-3 w-3 rounded-full" />
         </h1>
-        <p className="text-muted-foreground mt-1">
-          Zarządzanie klientami biura rachunkowego
-        </p>
+        <p className="text-muted-foreground mt-1">Zarządzanie klientami biura rachunkowego</p>
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="border-apptax-soft-teal/30">
-          <CardHeader className="pb-2">
-            <CardDescription>Wszyscy klienci</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-apptax-gradient text-white">
-                <Building2 className="h-5 w-5" />
-              </div>
-              {isPending ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <span className="text-3xl font-bold text-apptax-navy">{totalClients}</span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex flex-wrap gap-6">
+        <StatCard
+          label="Wszyscy klienci"
+          value={totalClients}
+          icon={Building2}
+          iconBg="bg-primary"
+          valueColor="text-foreground"
+          borderColor="border-accent/30"
+          isLoading={isPending}
+        />
 
-        <Card className="border-green-200">
-          <CardHeader className="pb-2">
-            <CardDescription>Aktywni</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-500 text-white">
-                <UserCheck className="h-5 w-5" />
-              </div>
-              {isPending ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <span className="text-3xl font-bold text-green-600">{activeClients}</span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          label="Aktywni"
+          value={activeClients}
+          icon={UserCheck}
+          iconBg="bg-green-500"
+          valueColor="text-green-600"
+          borderColor="border-green-200"
+          isLoading={isPending}
+        />
 
-        <Card className="border-orange-200">
-          <CardHeader className="pb-2">
-            <CardDescription>Nieaktywni</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-orange-500 text-white">
-                <UserX className="h-5 w-5" />
-              </div>
-              {isPending ? (
-                <Skeleton className="h-8 w-16" />
-              ) : (
-                <span className="text-3xl font-bold text-orange-600">{inactiveClients}</span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          label="Nieaktywni"
+          value={inactiveClients}
+          icon={UserX}
+          iconBg="bg-orange-500"
+          valueColor="text-orange-600"
+          borderColor="border-orange-200"
+          isLoading={isPending}
+        />
       </div>
+
+      {/* Employment Type Chart */}
+      {!isPending && data && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Typy zatrudnienia</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ClientsTypeChart
+              byEmploymentType={data.byEmploymentType as Record<string, number>}
+              total={totalClients}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Feature Cards */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {availableFeatures.map((feature) => {
-          const Icon = feature.icon;
-          return (
-            <Card
-              key={feature.title}
-              className="hover:shadow-apptax-md transition-all duration-200 hover:border-apptax-blue"
-            >
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className={`p-3 rounded-xl ${feature.gradient} text-white`}>
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <CardTitle className="text-apptax-navy">{feature.title}</CardTitle>
-                </div>
-                <CardDescription>{feature.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link to={feature.href}>
-                  <Button className="w-full bg-apptax-blue hover:bg-apptax-blue/90">
-                    Otwórz
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          );
-        })}
+      <div className="flex flex-wrap gap-6">
+        {availableFeatures.map((feature) => (
+          <NavigationCard
+            key={feature.title}
+            title={feature.title}
+            description={feature.description}
+            icon={feature.icon}
+            href={feature.href}
+            gradient={feature.gradient}
+          />
+        ))}
       </div>
+
+      {/* Client Task and Time Statistics - admin/owner only */}
+      {isOwnerOrAdmin(user) && (
+        <ClientTaskTimeStatsSection />
+      )}
     </div>
+  );
+}
+
+function ClientTaskTimeStatsSection() {
+  const { data, isLoading } = useClientTaskTimeStats();
+
+  if (isLoading) return null;
+  if (!data?.length) return null;
+
+  return (
+    <Card className="mt-6">
+      <CardHeader>
+        <CardTitle>Statystyki zadań i czasu per klient</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {data.slice(0, 15).map((client: ClientTaskTimeStatsDto) => (
+            <div
+              key={client.clientId}
+              className="flex items-center justify-between py-1 border-b last:border-0"
+            >
+              <span className="text-sm font-medium">{client.clientName}</span>
+              <div className="flex gap-4 text-sm text-muted-foreground">
+                <span>
+                  Zadania: {client.completedTasks}/{client.totalTasks}
+                </span>
+                <span>Czas: {client.totalHours}h</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

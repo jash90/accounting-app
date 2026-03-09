@@ -4,9 +4,9 @@
  */
 
 import {
-  AutodiscoveryResult,
-  DiscoverySource,
-  ConfidenceLevel,
+  type AutodiscoveryResult,
+  type ConfidenceLevel,
+  type DiscoverySource,
 } from './autodiscovery.interface';
 
 /**
@@ -165,7 +165,5 @@ export function isHighConfidence(config: DiscoveredEmailConfig): boolean {
  * Type guard to check if a DiscoveredEmailConfig uses SSL for both connections
  */
 export function isFullySsl(config: DiscoveredEmailConfig): boolean {
-  return (
-    config.incoming.security === 'SSL' && config.outgoing.security === 'SSL'
-  );
+  return config.incoming.security === 'SSL' && config.outgoing.security === 'SSL';
 }

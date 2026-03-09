@@ -1,20 +1,23 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, DataSource, QueryRunner, EntityManager } from 'typeorm';
-import { AutoAssignService } from './auto-assign.service';
-import { ConditionEvaluatorService } from './condition-evaluator.service';
+
+import { DataSource, type EntityManager, type QueryRunner, type Repository } from 'typeorm';
+
 import {
   ClientIcon,
   ClientIconAssignment,
-  Client,
-  IconType,
   EmploymentType,
-  VatStatus,
+  IconType,
   TaxScheme,
+  VatStatus,
   ZusStatus,
-  AutoAssignCondition,
+  type AutoAssignCondition,
+  type Client,
 } from '@accounting/common';
-import { ClientException, ClientErrorCode } from '../exceptions';
+
+import { ClientErrorCode, ClientException } from '../exceptions';
+import { AutoAssignService } from './auto-assign.service';
+import { ConditionEvaluatorService } from './condition-evaluator.service';
 
 describe('AutoAssignService', () => {
   let service: AutoAssignService;
@@ -29,60 +32,94 @@ describe('AutoAssignService', () => {
   const mockClientId = 'client-456';
   const mockIconId = 'icon-789';
 
-  const createMockClient = (overrides: Partial<Client> = {}): Client => ({
-    id: mockClientId,
-    companyId: mockCompanyId,
-    name: 'Test Client',
-    nip: '1234567890',
-    email: 'test@example.com',
-    employmentType: EmploymentType.DG,
-    vatStatus: VatStatus.VAT_MONTHLY,
-    taxScheme: TaxScheme.GENERAL,
-    zusStatus: ZusStatus.FULL,
-    isActive: true,
-    receiveEmailCopy: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    ...overrides,
-  } as Client);
+  const createMockClient = (overrides: Partial<Client> = {}): Client =>
+    ({
+      id: mockClientId,
+      companyId: mockCompanyId,
+      name: 'Test Client',
+      nip: '1234567890',
+      email: 'test@example.com',
+      employmentType: EmploymentType.DG,
+      vatStatus: VatStatus.VAT_MONTHLY,
+      taxScheme: TaxScheme.GENERAL,
+      zusStatus: ZusStatus.FULL,
+      isActive: true,
+      receiveEmailCopy: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...overrides,
+    }) as Client;
 
-  const createMockIcon = (overrides: Partial<ClientIcon> = {}): ClientIcon => ({
-    id: mockIconId,
-    companyId: mockCompanyId,
-    name: 'Test Icon',
-    type: IconType.LUCIDE,
-    value: 'star',
-    color: '#FF0000',
-    isActive: true,
-    autoAssignCondition: {
-      logicalOperator: 'and',
-      conditions: [
-        { field: 'employmentType', operator: 'equals', value: EmploymentType.DG },
-      ],
-    },
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    ...overrides,
-  } as ClientIcon);
+  const createMockIcon = (overrides: Partial<ClientIcon> = {}): ClientIcon =>
+    ({
+      id: mockIconId,
+      companyId: mockCompanyId,
+      name: 'Test Icon',
+      type: IconType.LUCIDE,
+      value: 'star',
+      color: '#FF0000',
+      isActive: true,
+      autoAssignCondition: {
+        logicalOperator: 'and',
+        conditions: [{ field: 'employmentType', operator: 'equals', value: EmploymentType.DG }],
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...overrides,
+    }) as ClientIcon;
 
-  const createMockAssignment = (overrides: Partial<ClientIconAssignment> = {}): ClientIconAssignment => ({
-    id: 'assignment-001',
-    clientId: mockClientId,
-    iconId: mockIconId,
-    isAutoAssigned: true,
-    createdAt: new Date(),
-    ...overrides,
-  } as ClientIconAssignment);
+  const createMockAssignment = (
+    overrides: Partial<ClientIconAssignment> = {}
+  ): ClientIconAssignment =>
+    ({
+      id: 'assignment-001',
+      clientId: mockClientId,
+      iconId: mockIconId,
+      isAutoAssigned: true,
+      createdAt: new Date(),
+      ...overrides,
+    }) as ClientIconAssignment;
 
   beforeEach(async () => {
+    // Create mock QueryBuilder for assignment operations (insert/delete)
+    const mockInsertQueryBuilder = {
+      insert: jest.fn().mockReturnThis(),
+      into: jest.fn().mockReturnThis(),
+      values: jest.fn().mockReturnThis(),
+      orIgnore: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ affected: 1, generatedMaps: [] }),
+    };
+
+    const mockDeleteQueryBuilder = {
+      delete: jest.fn().mockReturnThis(),
+      from: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ affected: 0 }),
+    };
+
+    // Create mock repository that returns appropriate QueryBuilder
+    const mockAssignmentRepo = {
+      findOne: jest.fn(),
+      find: jest.fn(),
+      createQueryBuilder: jest.fn().mockImplementation(() => {
+        // Return insert or delete builder based on call pattern
+        // The service first calls for insert, then for delete
+        return {
+          ...mockInsertQueryBuilder,
+          ...mockDeleteQueryBuilder,
+        };
+      }),
+    };
+
     // Create mock entity manager
     entityManager = {
       find: jest.fn(),
       findOne: jest.fn(),
-      create: jest.fn(),
-      save: jest.fn(),
+      create: jest.fn().mockImplementation((entity, data) => data),
+      save: jest.fn().mockImplementation((data) => Promise.resolve({ id: 'new-id', ...data })),
       remove: jest.fn(),
-      getRepository: jest.fn(),
+      getRepository: jest.fn().mockReturnValue(mockAssignmentRepo),
     } as unknown as jest.Mocked<EntityManager>;
 
     // Create mock query runner
@@ -115,17 +152,46 @@ describe('AutoAssignService', () => {
       findOne: jest.fn(),
     } as unknown as jest.Mocked<Repository<ClientIcon>>;
 
+    // Create QueryBuilder mock for assignmentRepository (used in processBatch)
+    const mockRepoQueryBuilder = {
+      delete: jest.fn().mockReturnThis(),
+      from: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      insert: jest.fn().mockReturnThis(),
+      into: jest.fn().mockReturnThis(),
+      values: jest.fn().mockReturnThis(),
+      orIgnore: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ affected: 0 }),
+    };
+
     assignmentRepository = {
       find: jest.fn(),
       findOne: jest.fn(),
       delete: jest.fn(),
       remove: jest.fn(),
+      createQueryBuilder: jest.fn().mockReturnValue(mockRepoQueryBuilder),
       manager: mockAssignmentManager,
     } as unknown as jest.Mocked<Repository<ClientIconAssignment>>;
 
+    const mockConditionEvaluator = {
+      evaluate: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        AutoAssignService,
+        // Use useFactory to manually wire dependencies (needed for Bun which doesn't emit decorator metadata)
+        {
+          provide: AutoAssignService,
+          useFactory: () => {
+            return new AutoAssignService(
+              iconRepository as any,
+              assignmentRepository as any,
+              mockConditionEvaluator as any,
+              dataSource as any
+            );
+          },
+        },
         {
           provide: getRepositoryToken(ClientIcon),
           useValue: iconRepository,
@@ -136,9 +202,7 @@ describe('AutoAssignService', () => {
         },
         {
           provide: ConditionEvaluatorService,
-          useValue: {
-            evaluate: jest.fn(),
-          },
+          useValue: mockConditionEvaluator,
         },
         {
           provide: DataSource,
@@ -187,16 +251,17 @@ describe('AutoAssignService', () => {
         fail('Expected ClientException to be thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(ClientException);
-        expect((error as ClientException).errorCode).toBe(ClientErrorCode.AUTO_ASSIGN_EVALUATION_FAILED);
+        expect((error as ClientException).errorCode).toBe(
+          ClientErrorCode.AUTO_ASSIGN_EVALUATION_FAILED
+        );
       }
     });
 
     it('should do nothing when no icons with conditions exist', async () => {
       const client = createMockClient();
 
-      // First call: find icons with conditions - returns empty
-      // Second call: removeStaleAutoAssignments - returns empty
-      entityManager.find.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+      // Mock find to return empty arrays for both calls (icons and assignments)
+      entityManager.find.mockResolvedValue([]);
 
       await service.evaluateAndAssign(client);
 
@@ -209,71 +274,136 @@ describe('AutoAssignService', () => {
       const client = createMockClient();
       const icon = createMockIcon();
 
-      // First find: icons with conditions
-      entityManager.find
-        .mockResolvedValueOnce([icon])  // Icons with conditions
-        .mockResolvedValueOnce([])      // Current auto-assignments
-        .mockResolvedValueOnce([]);     // For removeStaleAutoAssignments
+      // Track values passed to the insert QueryBuilder
+      let insertedValues: any = null;
+      const mockRepoQb = {
+        findOne: jest.fn().mockResolvedValue(null), // No existing manual assignment
+        createQueryBuilder: jest.fn().mockReturnValue({
+          insert: jest.fn().mockReturnThis(),
+          into: jest.fn().mockReturnThis(),
+          values: jest.fn().mockImplementation((vals) => {
+            insertedValues = vals;
+            return {
+              orIgnore: jest.fn().mockReturnThis(),
+              execute: jest.fn().mockResolvedValue({ affected: 1 }),
+            };
+          }),
+          delete: jest.fn().mockReturnThis(),
+          from: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 0 }),
+        }),
+      };
+      (entityManager.getRepository as jest.Mock).mockReturnValue(mockRepoQb);
+
+      // Mock find to return icon on first call (icons query) and empty array for assignments
+      let findCallCount = 0;
+      entityManager.find.mockImplementation(() => {
+        findCallCount++;
+        if (findCallCount === 1) return Promise.resolve([icon]); // Icons with conditions
+        return Promise.resolve([]); // Current auto-assignments
+      });
 
       conditionEvaluator.evaluate.mockReturnValue(true);
-
-      // For addAutoAssignment - no existing assignments
-      entityManager.findOne
-        .mockResolvedValueOnce(null)  // No manual assignment
-        .mockResolvedValueOnce(null); // No auto assignment
-
-      const createdAssignment = createMockAssignment();
-      (entityManager.create as jest.Mock).mockReturnValue(createdAssignment);
-      entityManager.save.mockResolvedValue(createdAssignment);
 
       await service.evaluateAndAssign(client);
 
       expect(conditionEvaluator.evaluate).toHaveBeenCalledWith(client, icon.autoAssignCondition);
-      expect(entityManager.create).toHaveBeenCalledWith(ClientIconAssignment, {
+      // Verify insert was called with correct values
+      expect(insertedValues).toEqual({
         clientId: client.id,
         iconId: icon.id,
         isAutoAssigned: true,
       });
-      expect(entityManager.save).toHaveBeenCalled();
     });
 
     it('should not override existing manual assignment', async () => {
       const client = createMockClient();
       const icon = createMockIcon();
 
-      entityManager.find
-        .mockResolvedValueOnce([icon])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
+      // Track if insert was called
+      let insertCalled = false;
+      const manualAssignment = createMockAssignment({ isAutoAssigned: false });
+      const mockRepoQb = {
+        findOne: jest.fn().mockResolvedValue(manualAssignment), // Manual assignment exists
+        createQueryBuilder: jest.fn().mockReturnValue({
+          insert: jest.fn().mockImplementation(() => {
+            insertCalled = true;
+            return {
+              into: jest.fn().mockReturnThis(),
+              values: jest.fn().mockReturnThis(),
+              orIgnore: jest.fn().mockReturnThis(),
+              execute: jest.fn().mockResolvedValue({ affected: 0 }),
+            };
+          }),
+          delete: jest.fn().mockReturnThis(),
+          from: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 0 }),
+        }),
+      };
+      (entityManager.getRepository as jest.Mock).mockReturnValue(mockRepoQb);
+
+      // Mock find to return icon on first call, empty array for assignments
+      let findCallCount = 0;
+      entityManager.find.mockImplementation(() => {
+        findCallCount++;
+        if (findCallCount === 1) return Promise.resolve([icon]); // Icons with conditions
+        return Promise.resolve([]); // Current auto-assignments
+      });
 
       conditionEvaluator.evaluate.mockReturnValue(true);
 
-      // Manual assignment exists
-      const manualAssignment = createMockAssignment({ isAutoAssigned: false });
-      entityManager.findOne.mockResolvedValueOnce(manualAssignment);
-
       await service.evaluateAndAssign(client);
 
-      // Should not create new assignment
-      expect(entityManager.create).not.toHaveBeenCalled();
+      // Should not create new assignment since manual assignment exists
+      expect(insertCalled).toBe(false);
     });
 
     it('should not duplicate existing auto-assignment', async () => {
       const client = createMockClient();
       const icon = createMockIcon();
+      const existingAssignment = createMockAssignment({ iconId: icon.id }); // Match the icon ID
 
-      // Icon exists and matches
-      entityManager.find
-        .mockResolvedValueOnce([icon])
-        .mockResolvedValueOnce([createMockAssignment()]) // Current auto-assignment exists
-        .mockResolvedValueOnce([createMockAssignment()]);
+      // Track if insert was called
+      let insertCalled = false;
+      const mockRepoQb = {
+        findOne: jest.fn().mockResolvedValue(null),
+        createQueryBuilder: jest.fn().mockReturnValue({
+          insert: jest.fn().mockImplementation(() => {
+            insertCalled = true;
+            return {
+              into: jest.fn().mockReturnThis(),
+              values: jest.fn().mockReturnThis(),
+              orIgnore: jest.fn().mockReturnThis(),
+              execute: jest.fn().mockResolvedValue({ affected: 0 }),
+            };
+          }),
+          delete: jest.fn().mockReturnThis(),
+          from: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 0 }),
+        }),
+      };
+      (entityManager.getRepository as jest.Mock).mockReturnValue(mockRepoQb);
+
+      // Mock find to return icon and then existing assignment
+      let findCallCount = 0;
+      entityManager.find.mockImplementation(() => {
+        findCallCount++;
+        if (findCallCount === 1) return Promise.resolve([icon]); // Icons with conditions
+        return Promise.resolve([existingAssignment]); // Current auto-assignment already exists
+      });
 
       conditionEvaluator.evaluate.mockReturnValue(true);
 
       await service.evaluateAndAssign(client);
 
       // Since assignment already exists (in currentAutoIconIds), addAutoAssignment should not be called
-      expect(entityManager.create).not.toHaveBeenCalled();
+      expect(insertCalled).toBe(false);
     });
 
     it('should remove stale auto-assignments when condition no longer matches', async () => {
@@ -281,27 +411,42 @@ describe('AutoAssignService', () => {
       const icon = createMockIcon();
       const staleAssignment = createMockAssignment({ iconId: 'stale-icon-id' });
 
-      entityManager.find
-        .mockResolvedValueOnce([icon])
-        .mockResolvedValueOnce([staleAssignment]) // Current assignments include stale one
-        .mockResolvedValueOnce([staleAssignment]); // For removeStaleAutoAssignments
+      // Track delete QueryBuilder calls
+      let deleteExecuted = false;
+      const mockRepoQb = {
+        findOne: jest.fn().mockResolvedValue(null),
+        createQueryBuilder: jest.fn().mockReturnValue({
+          insert: jest.fn().mockReturnThis(),
+          into: jest.fn().mockReturnThis(),
+          values: jest.fn().mockReturnThis(),
+          orIgnore: jest.fn().mockReturnThis(),
+          delete: jest.fn().mockReturnThis(),
+          from: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockImplementation(() => {
+            deleteExecuted = true;
+            return Promise.resolve({ affected: 1 });
+          }),
+        }),
+      };
+      (entityManager.getRepository as jest.Mock).mockReturnValue(mockRepoQb);
+
+      // Mock find to return icon and then stale assignment
+      let findCallCount = 0;
+      entityManager.find.mockImplementation(() => {
+        findCallCount++;
+        if (findCallCount === 1) return Promise.resolve([icon]); // Icons with conditions
+        return Promise.resolve([staleAssignment]); // Current assignments include stale one
+      });
 
       // New icon matches, but stale one doesn't (different icon)
       conditionEvaluator.evaluate.mockReturnValue(true);
 
-      // For addAutoAssignment
-      entityManager.findOne
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(null);
-
-      const newAssignment = createMockAssignment();
-      (entityManager.create as jest.Mock).mockReturnValue(newAssignment);
-      entityManager.save.mockResolvedValue(newAssignment);
-
       await service.evaluateAndAssign(client);
 
-      // Stale assignment should be removed
-      expect(entityManager.remove).toHaveBeenCalledWith(staleAssignment);
+      // Stale assignment should be removed via delete QueryBuilder
+      expect(deleteExecuted).toBe(true);
     });
 
     it('should handle condition evaluation errors gracefully and continue', async () => {
@@ -309,36 +454,57 @@ describe('AutoAssignService', () => {
       const icon1 = createMockIcon({ id: 'icon-1' });
       const icon2 = createMockIcon({ id: 'icon-2' });
 
-      entityManager.find
-        .mockResolvedValueOnce([icon1, icon2])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
+      // Track if insert was called for the second icon
+      let insertCalled = false;
+      const mockRepoQb = {
+        findOne: jest.fn().mockResolvedValue(null),
+        createQueryBuilder: jest.fn().mockReturnValue({
+          insert: jest.fn().mockImplementation(() => {
+            insertCalled = true;
+            return {
+              into: jest.fn().mockReturnThis(),
+              values: jest.fn().mockReturnThis(),
+              orIgnore: jest.fn().mockReturnThis(),
+              execute: jest.fn().mockResolvedValue({ affected: 1 }),
+            };
+          }),
+          delete: jest.fn().mockReturnThis(),
+          from: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 0 }),
+        }),
+      };
+      (entityManager.getRepository as jest.Mock).mockReturnValue(mockRepoQb);
+
+      // Mock find to return icons and then empty assignments
+      let findCallCount = 0;
+      entityManager.find.mockImplementation(() => {
+        findCallCount++;
+        if (findCallCount === 1) return Promise.resolve([icon1, icon2]); // Icons with conditions
+        return Promise.resolve([]); // Current auto-assignments
+      });
 
       // First icon throws error, second one succeeds
       conditionEvaluator.evaluate
-        .mockImplementationOnce(() => { throw new Error('Condition error'); })
+        .mockImplementationOnce(() => {
+          throw new Error('Condition error');
+        })
         .mockReturnValueOnce(true);
-
-      entityManager.findOne
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(null);
-
-      const createdAssignment = createMockAssignment({ iconId: 'icon-2' });
-      (entityManager.create as jest.Mock).mockReturnValue(createdAssignment);
-      entityManager.save.mockResolvedValue(createdAssignment);
 
       await service.evaluateAndAssign(client);
 
       // Should still process second icon despite first one failing
       expect(conditionEvaluator.evaluate).toHaveBeenCalledTimes(2);
-      expect(entityManager.create).toHaveBeenCalled();
+      expect(insertCalled).toBe(true);
       expect(queryRunner.commitTransaction).toHaveBeenCalled();
     });
 
     it('should filter icons by companyId and isActive', async () => {
       const client = createMockClient();
 
-      entityManager.find.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+      // Mock find to return empty arrays for both icons and assignments queries
+      entityManager.find.mockResolvedValue([]);
 
       await service.evaluateAndAssign(client);
 
@@ -357,39 +523,50 @@ describe('AutoAssignService', () => {
       const icon2 = createMockIcon({ id: 'icon-2', name: 'Icon 2' });
       const icon3 = createMockIcon({ id: 'icon-3', name: 'Icon 3' });
 
-      entityManager.find
-        .mockResolvedValueOnce([icon1, icon2, icon3])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
+      // Track inserted values
+      const insertedIconIds: string[] = [];
+      const mockRepoQb = {
+        findOne: jest.fn().mockResolvedValue(null),
+        createQueryBuilder: jest.fn().mockReturnValue({
+          insert: jest.fn().mockReturnThis(),
+          into: jest.fn().mockReturnThis(),
+          values: jest.fn().mockImplementation((vals: any) => {
+            insertedIconIds.push(vals.iconId);
+            return {
+              orIgnore: jest.fn().mockReturnThis(),
+              execute: jest.fn().mockResolvedValue({ affected: 1 }),
+            };
+          }),
+          delete: jest.fn().mockReturnThis(),
+          from: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 0 }),
+        }),
+      };
+      (entityManager.getRepository as jest.Mock).mockReturnValue(mockRepoQb);
+
+      // Mock find to return icons and then empty assignments
+      let findCallCount = 0;
+      entityManager.find.mockImplementation(() => {
+        findCallCount++;
+        if (findCallCount === 1) return Promise.resolve([icon1, icon2, icon3]); // Icons with conditions
+        return Promise.resolve([]); // Current auto-assignments
+      });
 
       // icon1 and icon3 match, icon2 doesn't
       conditionEvaluator.evaluate
-        .mockReturnValueOnce(true)   // icon1 matches
-        .mockReturnValueOnce(false)  // icon2 doesn't match
-        .mockReturnValueOnce(true);  // icon3 matches
-
-      entityManager.findOne.mockResolvedValue(null);
-
-      const createAssignment = (iconId: string) => createMockAssignment({ iconId });
-      (entityManager.create as jest.Mock)
-        .mockReturnValueOnce(createAssignment('icon-1'))
-        .mockReturnValueOnce(createAssignment('icon-3'));
-      entityManager.save.mockResolvedValue({} as ClientIconAssignment);
+        .mockReturnValueOnce(true) // icon1 matches
+        .mockReturnValueOnce(false) // icon2 doesn't match
+        .mockReturnValueOnce(true); // icon3 matches
 
       await service.evaluateAndAssign(client);
 
       // Should create assignments for icon1 and icon3, but not icon2
-      expect(entityManager.create).toHaveBeenCalledTimes(2);
-      expect(entityManager.create).toHaveBeenCalledWith(ClientIconAssignment, {
-        clientId: client.id,
-        iconId: 'icon-1',
-        isAutoAssigned: true,
-      });
-      expect(entityManager.create).toHaveBeenCalledWith(ClientIconAssignment, {
-        clientId: client.id,
-        iconId: 'icon-3',
-        isAutoAssigned: true,
-      });
+      expect(insertedIconIds).toHaveLength(2);
+      expect(insertedIconIds).toContain('icon-1');
+      expect(insertedIconIds).toContain('icon-3');
+      expect(insertedIconIds).not.toContain('icon-2');
     });
   });
 
@@ -401,10 +578,12 @@ describe('AutoAssignService', () => {
     beforeEach(() => {
       capturedCallback = null;
       // Capture setImmediate callback so we can run it synchronously
-      setImmediateSpy = jest.spyOn(global, 'setImmediate').mockImplementation((callback: () => void) => {
-        capturedCallback = callback;
-        return {} as NodeJS.Immediate;
-      });
+      setImmediateSpy = jest
+        .spyOn(global, 'setImmediate')
+        .mockImplementation((callback: () => void) => {
+          capturedCallback = callback;
+          return {} as NodeJS.Immediate;
+        });
     });
 
     afterEach(() => {
@@ -419,7 +598,7 @@ describe('AutoAssignService', () => {
         // Wait for microtasks (promises) to settle
         await new Promise(process.nextTick);
         // Additional wait to ensure all chained promises complete
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       }
     };
 
@@ -471,7 +650,8 @@ describe('AutoAssignService', () => {
 
       const mockClientRepo = {
         count: jest.fn().mockResolvedValue(250),
-        find: jest.fn()
+        find: jest
+          .fn()
           .mockResolvedValueOnce(clients.slice(0, 100))
           .mockResolvedValueOnce(clients.slice(100, 200))
           .mockResolvedValueOnce(clients.slice(200, 250)),
@@ -523,7 +703,7 @@ describe('AutoAssignService', () => {
 
       // Mock addAutoAssignment dependencies
       (assignmentRepository.manager.findOne as jest.Mock)
-        .mockResolvedValueOnce(null)  // No manual
+        .mockResolvedValueOnce(null) // No manual
         .mockResolvedValueOnce(null); // No auto
 
       const createdAssignment = createMockAssignment();
@@ -545,6 +725,20 @@ describe('AutoAssignService', () => {
         find: jest.fn().mockResolvedValue([client]),
       };
 
+      // Track if delete QueryBuilder was called
+      let deleteExecuted = false;
+      const mockDeleteQb = {
+        delete: jest.fn().mockReturnThis(),
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockImplementation(() => {
+          deleteExecuted = true;
+          return Promise.resolve({ affected: 1 });
+        }),
+      };
+      assignmentRepository.createQueryBuilder = jest.fn().mockReturnValue(mockDeleteQb);
+
       (assignmentRepository.manager.getRepository as jest.Mock).mockReturnValue(mockClientRepo);
       conditionEvaluator.evaluate.mockReturnValue(false);
       assignmentRepository.findOne.mockResolvedValue(existingAssignment);
@@ -552,7 +746,8 @@ describe('AutoAssignService', () => {
       await service.reevaluateIconForAllClients(icon);
       await runBackgroundTask();
 
-      expect(assignmentRepository.remove).toHaveBeenCalledWith(existingAssignment);
+      // The delete happens via QueryBuilder, not remove()
+      expect(deleteExecuted).toBe(true);
     });
 
     it('should not remove manual assignment even when condition no longer matches', async () => {
@@ -587,7 +782,9 @@ describe('AutoAssignService', () => {
 
       // First client throws error, second succeeds
       conditionEvaluator.evaluate
-        .mockImplementationOnce(() => { throw new Error('Evaluation error'); })
+        .mockImplementationOnce(() => {
+          throw new Error('Evaluation error');
+        })
         .mockReturnValueOnce(true);
 
       assignmentRepository.findOne.mockResolvedValue(null);
@@ -662,10 +859,10 @@ describe('AutoAssignService', () => {
 
       // Use mockResolvedValueOnce for each sequential call to avoid overwriting
       entityManager.find
-        .mockResolvedValueOnce([icon])  // First call: get icons with conditions
-        .mockResolvedValueOnce([])      // First call: get current assignments
-        .mockResolvedValueOnce([icon])  // Second call: get icons with conditions
-        .mockResolvedValueOnce([]);     // Second call: get current assignments
+        .mockResolvedValueOnce([icon]) // First call: get icons with conditions
+        .mockResolvedValueOnce([]) // First call: get current assignments
+        .mockResolvedValueOnce([icon]) // Second call: get icons with conditions
+        .mockResolvedValueOnce([]); // Second call: get current assignments
 
       conditionEvaluator.evaluate.mockReturnValue(true);
       entityManager.findOne.mockResolvedValue(null);
@@ -731,45 +928,76 @@ describe('AutoAssignService', () => {
       const icon = createMockIcon();
       const existingAssignment = createMockAssignment();
 
+      // Track delete operations
+      let deleteExecuted = false;
+      const mockRepoQb = {
+        findOne: jest.fn().mockResolvedValue(null),
+        createQueryBuilder: jest.fn().mockReturnValue({
+          insert: jest.fn().mockReturnThis(),
+          into: jest.fn().mockReturnThis(),
+          values: jest.fn().mockReturnThis(),
+          orIgnore: jest.fn().mockReturnThis(),
+          delete: jest.fn().mockReturnThis(),
+          from: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockImplementation(() => {
+            deleteExecuted = true;
+            return Promise.resolve({ affected: 1 });
+          }),
+        }),
+      };
+      (entityManager.getRepository as jest.Mock).mockReturnValue(mockRepoQb);
+
       // Initial state: assignment exists
-      entityManager.find
-        .mockResolvedValueOnce([icon])
-        .mockResolvedValueOnce([existingAssignment])
-        .mockResolvedValueOnce([existingAssignment]);
+      entityManager.find.mockResolvedValueOnce([icon]).mockResolvedValueOnce([existingAssignment]);
 
       // Client no longer matches
       conditionEvaluator.evaluate.mockReturnValue(false);
 
       await service.evaluateAndAssign(client);
 
-      // Should remove the existing assignment
-      expect(entityManager.remove).toHaveBeenCalledWith(existingAssignment);
+      // Should remove the existing assignment via delete QueryBuilder
+      expect(deleteExecuted).toBe(true);
     });
 
     it('should correctly update assignments when client changes from non-matching to matching', async () => {
       const client = createMockClient();
       const icon = createMockIcon();
 
+      // Track insert operations
+      let insertedIconId: string | null = null;
+      const mockRepoQb = {
+        findOne: jest.fn().mockResolvedValue(null),
+        createQueryBuilder: jest.fn().mockReturnValue({
+          insert: jest.fn().mockReturnThis(),
+          into: jest.fn().mockReturnThis(),
+          values: jest.fn().mockImplementation((vals: any) => {
+            insertedIconId = vals.iconId;
+            return {
+              orIgnore: jest.fn().mockReturnThis(),
+              execute: jest.fn().mockResolvedValue({ affected: 1 }),
+            };
+          }),
+          delete: jest.fn().mockReturnThis(),
+          from: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 0 }),
+        }),
+      };
+      (entityManager.getRepository as jest.Mock).mockReturnValue(mockRepoQb);
+
       // Initial state: no assignments
-      entityManager.find
-        .mockResolvedValueOnce([icon])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
+      entityManager.find.mockResolvedValueOnce([icon]).mockResolvedValueOnce([]);
 
       // Client now matches
       conditionEvaluator.evaluate.mockReturnValue(true);
-      entityManager.findOne.mockResolvedValue(null);
-      (entityManager.create as jest.Mock).mockReturnValue(createMockAssignment());
-      entityManager.save.mockResolvedValue(createMockAssignment());
 
       await service.evaluateAndAssign(client);
 
       // Should create new assignment
-      expect(entityManager.create).toHaveBeenCalledWith(ClientIconAssignment, {
-        clientId: client.id,
-        iconId: icon.id,
-        isAutoAssigned: true,
-      });
+      expect(insertedIconId).toBe(icon.id);
     });
 
     it('should handle mix of matching and non-matching icons for same client', async () => {
@@ -778,30 +1006,48 @@ describe('AutoAssignService', () => {
       const nonMatchingIcon = createMockIcon({ id: 'non-matching-icon' });
       const staleAssignment = createMockAssignment({ iconId: 'old-icon' });
 
+      // Track operations
+      let insertedIconId: string | null = null;
+      let deleteExecuted = false;
+      const mockRepoQb = {
+        findOne: jest.fn().mockResolvedValue(null),
+        createQueryBuilder: jest.fn().mockReturnValue({
+          insert: jest.fn().mockReturnThis(),
+          into: jest.fn().mockReturnThis(),
+          values: jest.fn().mockImplementation((vals: any) => {
+            insertedIconId = vals.iconId;
+            return {
+              orIgnore: jest.fn().mockReturnThis(),
+              execute: jest.fn().mockResolvedValue({ affected: 1 }),
+            };
+          }),
+          delete: jest.fn().mockReturnThis(),
+          from: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockImplementation(() => {
+            deleteExecuted = true;
+            return Promise.resolve({ affected: 1 });
+          }),
+        }),
+      };
+      (entityManager.getRepository as jest.Mock).mockReturnValue(mockRepoQb);
+
       entityManager.find
         .mockResolvedValueOnce([matchingIcon, nonMatchingIcon])
-        .mockResolvedValueOnce([staleAssignment])
         .mockResolvedValueOnce([staleAssignment]);
 
       conditionEvaluator.evaluate
-        .mockReturnValueOnce(true)   // matchingIcon
+        .mockReturnValueOnce(true) // matchingIcon
         .mockReturnValueOnce(false); // nonMatchingIcon
-
-      entityManager.findOne.mockResolvedValue(null);
-      (entityManager.create as jest.Mock).mockReturnValue(createMockAssignment({ iconId: 'matching-icon' }));
-      entityManager.save.mockResolvedValue(createMockAssignment());
 
       await service.evaluateAndAssign(client);
 
       // Should create assignment for matching icon
-      expect(entityManager.create).toHaveBeenCalledWith(ClientIconAssignment, {
-        clientId: client.id,
-        iconId: 'matching-icon',
-        isAutoAssigned: true,
-      });
+      expect(insertedIconId).toBe('matching-icon');
 
-      // Should remove stale assignment
-      expect(entityManager.remove).toHaveBeenCalledWith(staleAssignment);
+      // Should execute delete for stale assignment
+      expect(deleteExecuted).toBe(true);
     });
   });
 });

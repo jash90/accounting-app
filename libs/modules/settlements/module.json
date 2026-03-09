@@ -1,0 +1,20 @@
+{
+  "$schema": "../../../schemas/module.schema.json",
+  "slug": "settlements",
+  "name": "Rozliczenia",
+  "description": "Moduł rozliczeń miesięcznych klientów z workflow statusów i komentarzami",
+  "version": "1.0.0",
+  "isActive": true,
+  "permissions": ["read", "write", "delete", "manage"],
+  "defaultPermissions": ["read", "write"],
+  "icon": "file-text",
+  "category": "accounting",
+  "dependencies": ["clients"],
+  "config": {
+    "enableComments": true,
+    "enableAssignment": true,
+    "enableStatusWorkflow": true,
+    "enablePriority": true,
+    "enableDeadlines": true
+  }
+}

@@ -17,6 +17,7 @@ Shared email module providing IMAP and SMTP functionality for multi-tenant appli
 Each user can now configure their own email account, and company owners can assign an additional email configuration to their company. All passwords are securely encrypted in the database.
 
 **API Endpoints:**
+
 - `POST /api/email-config/user` - Create user email config
 - `GET /api/email-config/user` - Get user email config
 - `PUT /api/email-config/user` - Update user email config

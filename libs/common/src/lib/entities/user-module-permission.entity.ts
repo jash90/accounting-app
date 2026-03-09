@@ -1,14 +1,15 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
   CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
   Unique,
 } from 'typeorm';
-import { User } from './user.entity';
+
 import { Module } from './module.entity';
+import { User } from './user.entity';
 
 @Entity('user_module_permissions')
 @Unique(['userId', 'moduleId'])
@@ -16,7 +17,7 @@ export class UserModulePermission {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column('uuid')
   userId!: string;
 
   @ManyToOne(() => User, (user) => user.modulePermissions, {
@@ -25,7 +26,7 @@ export class UserModulePermission {
   @JoinColumn({ name: 'userId' })
   user!: User;
 
-  @Column()
+  @Column('uuid')
   moduleId!: string;
 
   @ManyToOne(() => Module, (module) => module.userPermissions, {
@@ -37,7 +38,7 @@ export class UserModulePermission {
   @Column('simple-array')
   permissions!: string[];
 
-  @Column()
+  @Column('uuid')
   grantedById!: string;
 
   @ManyToOne(() => User)
@@ -47,4 +48,3 @@ export class UserModulePermission {
   @CreateDateColumn()
   createdAt!: Date;
 }
-

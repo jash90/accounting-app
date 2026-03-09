@@ -1,43 +1,38 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
-import * as bcrypt from 'bcrypt';
 import {
-  User,
-  Company,
-  UserRole,
-} from '@accounting/common';
-import { CreateUserDto } from '../dto/create-user.dto';
-import { UpdateUserDto } from '../dto/update-user.dto';
-import { CreateCompanyDto } from '../dto/create-company.dto';
-import { UpdateCompanyDto } from '../dto/update-company.dto';
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+
+import * as bcrypt from 'bcryptjs';
+import { DataSource, Repository } from 'typeorm';
+
+import { Company, User, UserRole } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 import { RBACService } from '@accounting/rbac';
+
+import { UpdateCompanyProfileDto } from '../../company/dto/update-company-profile.dto';
+import { CreateCompanyDto } from '../dto/create-company.dto';
+import { CreateUserDto } from '../dto/create-user.dto';
+import { UpdateCompanyDto } from '../dto/update-company.dto';
+import { UpdateUserDto } from '../dto/update-user.dto';
 
 @Injectable()
 export class AdminService {
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private readonly userRepository: Repository<User>,
     @InjectRepository(Company)
-    private companyRepository: Repository<Company>,
-    private rbacService: RBACService,
-    private dataSource: DataSource,
+    private readonly companyRepository: Repository<Company>,
+    private readonly rbacService: RBACService,
+    private readonly dataSource: DataSource,
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
-  private async getSystemCompany(): Promise<Company> {
-    const systemCompany = await this.companyRepository.findOne({
-      where: { isSystemCompany: true },
-    });
-
-    if (!systemCompany) {
-      throw new Error('System Admin company not found. Please run migrations.');
-    }
-
-    return systemCompany;
-  }
-
   // User Management
-  async findAllUsers() {
+  findAllUsers() {
     return this.userRepository.find({
       relations: ['company'],
       order: { createdAt: 'DESC' },
@@ -68,7 +63,7 @@ export class AdminService {
 
     // Auto-assign ADMIN users to System Admin company
     if (createUserDto.role === UserRole.ADMIN) {
-      const systemCompany = await this.getSystemCompany();
+      const systemCompany = await this.systemCompanyService.getSystemCompany();
       createUserDto.companyId = systemCompany.id;
     }
 
@@ -136,7 +131,7 @@ export class AdminService {
 
     // Auto-assign to System Admin company when promoting to ADMIN role
     if (updateUserDto.role === UserRole.ADMIN) {
-      const systemCompany = await this.getSystemCompany();
+      const systemCompany = await this.systemCompanyService.getSystemCompany();
       updateUserDto.companyId = systemCompany.id;
     }
 
@@ -144,20 +139,20 @@ export class AdminService {
     return this.userRepository.save(user);
   }
 
-  async deleteUser(id: string) {
+  async softDeleteUser(id: string) {
     const user = await this.findUserById(id);
     user.isActive = false;
     return this.userRepository.save(user);
   }
 
-  async activateUser(id: string, isActive: boolean) {
+  async setUserActiveStatus(id: string, isActive: boolean) {
     const user = await this.findUserById(id);
     user.isActive = isActive;
     return this.userRepository.save(user);
   }
 
   // Get available owners (COMPANY_OWNER without assigned company)
-  async findAvailableOwners() {
+  findAvailableOwners() {
     return this.userRepository.find({
       where: {
         role: UserRole.COMPANY_OWNER,
@@ -169,7 +164,7 @@ export class AdminService {
   }
 
   // Company Management
-  async findAllCompanies() {
+  findAllCompanies() {
     return this.companyRepository.find({
       where: { isSystemCompany: false }, // Hide System Admin company from list
       relations: ['owner', 'employees'],
@@ -243,7 +238,7 @@ export class AdminService {
     return this.companyRepository.save(company);
   }
 
-  async deleteCompany(id: string) {
+  async softDeleteCompany(id: string) {
     const company = await this.findCompanyById(id);
 
     // Prevent deletion of System Admin company
@@ -259,5 +254,20 @@ export class AdminService {
     const company = await this.findCompanyById(companyId);
     return company.employees;
   }
-}
 
+  async getCompanyProfileById(companyId: string): Promise<Company> {
+    const company = await this.companyRepository.findOne({ where: { id: companyId } });
+    if (!company) throw new NotFoundException('Company not found');
+    return company;
+  }
+
+  async updateCompanyProfileById(
+    companyId: string,
+    dto: UpdateCompanyProfileDto
+  ): Promise<Company> {
+    const company = await this.companyRepository.findOne({ where: { id: companyId } });
+    if (!company) throw new NotFoundException('Company not found');
+    Object.assign(company, dto);
+    return this.companyRepository.save(company);
+  }
+}

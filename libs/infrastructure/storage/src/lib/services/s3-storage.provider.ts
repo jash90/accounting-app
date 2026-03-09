@@ -1,15 +1,18 @@
+
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+
 import {
-  S3Client,
-  PutObjectCommand,
   DeleteObjectCommand,
-  HeadObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+
 import { StorageProvider, StorageResult } from '../interfaces/storage-provider.interface';
 
 @Injectable()
@@ -19,7 +22,7 @@ export class S3StorageProvider implements StorageProvider {
   private readonly bucket: string;
   private readonly region: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(private readonly configService: ConfigService) {
     this.bucket = this.configService.get<string>('S3_BUCKET', 'accounting-uploads');
     this.region = this.configService.get<string>('S3_REGION', 'us-east-1');
 
@@ -30,13 +33,13 @@ export class S3StorageProvider implements StorageProvider {
     if (!accessKeyId || !accessKeyId.trim()) {
       throw new Error(
         'S3 storage provider requires S3_ACCESS_KEY environment variable. ' +
-        'Please configure S3 credentials or use local storage provider instead.',
+          'Please configure S3 credentials or use local storage provider instead.'
       );
     }
     if (!secretAccessKey || !secretAccessKey.trim()) {
       throw new Error(
         'S3 storage provider requires S3_SECRET_KEY environment variable. ' +
-        'Please configure S3 credentials or use local storage provider instead.',
+          'Please configure S3 credentials or use local storage provider instead.'
       );
     }
 
@@ -63,7 +66,7 @@ export class S3StorageProvider implements StorageProvider {
           Key: key,
           Body: file.buffer,
           ContentType: file.mimetype,
-        }),
+        })
       );
 
       const url = `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
@@ -90,7 +93,7 @@ export class S3StorageProvider implements StorageProvider {
         new DeleteObjectCommand({
           Bucket: this.bucket,
           Key: key,
-        }),
+        })
       );
 
       this.logger.log(`File deleted from S3: ${key}`);
@@ -101,8 +104,8 @@ export class S3StorageProvider implements StorageProvider {
     }
   }
 
-  async getUrl(key: string): Promise<string> {
-    return `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
+  getUrl(key: string): Promise<string> {
+    return Promise.resolve(`https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`);
   }
 
   async getSignedUrl(key: string, expiresIn = 3600): Promise<string> {
@@ -125,7 +128,7 @@ export class S3StorageProvider implements StorageProvider {
         new HeadObjectCommand({
           Bucket: this.bucket,
           Key: key,
-        }),
+        })
       );
       return true;
     } catch {

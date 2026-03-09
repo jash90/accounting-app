@@ -7,6 +7,7 @@ The AI Agent module has been fully implemented and is ready for use!
 ## 📋 What Was Implemented
 
 ### Backend (100% Complete)
+
 - ✅ 6 TypeORM entities with full functionality:
   - AIConfiguration - AI configuration (provider, model, API keys)
   - AIConversation - chat conversations
@@ -22,6 +23,7 @@ The AI Agent module has been fully implemented and is ready for use!
 - ✅ Full Swagger documentation
 
 ### Frontend (100% Complete)
+
 - ✅ DTOs and TypeScript types
 - ✅ Zod validation for forms
 - ✅ API Client with all endpoints
@@ -84,6 +86,7 @@ npm run seed
 ```
 
 This will create:
+
 - The "ai-agent" module in the system
 - Module access for Company A and Company B
 - Employee permissions (read + write)
@@ -103,8 +106,10 @@ npm run dev
 
 ## 👥 Testing with Different Roles
 
-### ADMIN (admin@system.com / Admin123!)
+### ADMIN (Credentials in .env)
+
 **Available features:**
+
 - `/admin/modules/ai-agent/chat` - Chat with AI (System Admin Company context)
 - `/admin/modules/ai-agent/configuration` - Global configuration:
   - Provider selection (OpenAI / OpenRouter)
@@ -114,8 +119,10 @@ npm run dev
   - Temperature and Max Tokens
 - `/admin/modules/ai-agent/context` - Upload global RAG files (PDF/TXT/MD)
 
-### COMPANY OWNER (bartlomiej.zimny@onet.pl / Owner123!)
+### COMPANY OWNER (Credentials in .env)
+
 **Available features:**
+
 - `/company/modules/ai-agent/chat` - Chat with AI
 - `/company/modules/ai-agent/token-usage` - Token statistics:
   - Total tokens used by the company
@@ -123,8 +130,10 @@ npm run dev
   - Number of conversations and messages
 - `/company/modules/ai-agent/context` - Manage RAG files for the company
 
-### EMPLOYEE (bartlomiej.zimny@interia.pl / Employee123!)
+### EMPLOYEE (Credentials in .env)
+
 **Available features:**
+
 - `/modules/ai-agent/chat` - Chat with AI (read and send messages only)
 - No access to statistics or file management
 
@@ -146,18 +155,21 @@ npm run dev
 ### Uploading Context Files (RAG)
 
 **As ADMIN (global files):**
+
 1. Go to `/admin/modules/ai-agent/context`
 2. Select a file (PDF, TXT, MD - max 10MB)
 3. Click "Upload"
 4. The file will be processed and available for all conversations
 
 **As OWNER (company files):**
+
 1. Go to `/company/modules/ai-agent/context`
 2. Same process as ADMIN, but files are only available for this company
 
 ## 📊 Features
 
 ### 1. Chat with AI
+
 - Create new conversations
 - Send messages
 - Conversation history
@@ -166,6 +178,7 @@ npm run dev
 - RAG - automatic context injection from uploaded files
 
 ### 2. Token Tracking
+
 - Track each token usage (input + output)
 - Per-user statistics
 - Per-company statistics
@@ -173,6 +186,7 @@ npm run dev
 - Breakdown by conversations and messages
 
 ### 3. RAG (Retrieval Augmented Generation)
+
 - Upload PDF, TXT, MD files
 - Automatic text extraction
 - Embedding generation (OpenAI ada-002)
@@ -180,6 +194,7 @@ npm run dev
 - Context injection to AI
 
 ### 4. Multi-tenancy
+
 - Each company has its own:
   - Conversations
   - RAG files
@@ -190,6 +205,7 @@ npm run dev
 ## 🔍 API Endpoints
 
 ### Conversations
+
 - `GET /api/modules/ai-agent/conversations` - List conversations
 - `GET /api/modules/ai-agent/conversations/:id` - Single conversation
 - `POST /api/modules/ai-agent/conversations` - New conversation
@@ -197,17 +213,20 @@ npm run dev
 - `DELETE /api/modules/ai-agent/conversations/:id` - Delete conversation
 
 ### Configuration (ADMIN only)
+
 - `GET /api/modules/ai-agent/configuration` - Get configuration
 - `POST /api/modules/ai-agent/configuration` - Create configuration
 - `PATCH /api/modules/ai-agent/configuration` - Update configuration
 
 ### Token Usage
+
 - `GET /api/modules/ai-agent/token-usage/me` - My summary
 - `GET /api/modules/ai-agent/token-usage/me/detailed` - My details
 - `GET /api/modules/ai-agent/token-usage/company` - Company (OWNER)
 - `GET /api/modules/ai-agent/token-usage/all-companies` - All companies (ADMIN)
 
 ### Context/RAG
+
 - `GET /api/modules/ai-agent/context` - List files
 - `POST /api/modules/ai-agent/context` - Upload file (multipart/form-data)
 - `DELETE /api/modules/ai-agent/context/:id` - Delete file
@@ -215,29 +234,38 @@ npm run dev
 ## 🛠️ Troubleshooting
 
 ### Problem: No access to module
+
 **Solution:** Re-run the seeder:
+
 ```bash
 npm run seed
 ```
 
 ### Problem: Error "AI configuration not found"
+
 **Solution:** Configure AI as ADMIN at `/admin/modules/ai-agent/configuration`
 
 ### Problem: Error during file upload
+
 **Solution:**
+
 1. Check if the `uploads/ai-context` folder exists
 2. Check write permissions
 3. Check file size (<10MB)
 
 ### Problem: pgvector extension missing
+
 **Solution:**
+
 ```sql
 -- In psql as superuser:
 CREATE EXTENSION IF NOT EXISTS vector;
 ```
 
 ### Problem: Token usage not working
+
 **Solution:** Check if migration was executed correctly:
+
 ```bash
 npm run migration:run
 ```
@@ -260,6 +288,7 @@ The module is ready for use, but you can add:
 **The AI Agent module is fully functional and production-ready!**
 
 Implemented:
+
 - ✅ Backend with full CRUD and business logic
 - ✅ Frontend with React Query and modern UI
 - ✅ Routing for all 3 roles
