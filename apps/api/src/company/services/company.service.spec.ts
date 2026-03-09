@@ -10,6 +10,7 @@ import { EmailConfigurationService, EmailSenderService } from '@accounting/email
 import { EmailService } from '@accounting/infrastructure/email';
 
 import { CompanyService } from './company.service';
+import { createMockRepository } from '../../testing/mock-helpers';
 
 describe('CompanyService', () => {
   let service: CompanyService;
@@ -50,20 +51,9 @@ describe('CompanyService', () => {
     companyId,
   } as User;
 
-  beforeEach(async () => {
-    jest.clearAllMocks();
-
-    userRepository = {
-      find: jest.fn(),
-      findOne: jest.fn(),
-      create: jest.fn(),
-      save: jest.fn(),
-    } as unknown as jest.Mocked<Repository<User>>;
-
-    companyRepository = {
-      findOne: jest.fn(),
-      save: jest.fn(),
-    } as unknown as jest.Mocked<Repository<Company>>;
+  beforeAll(async () => {
+    userRepository = createMockRepository<User>();
+    companyRepository = createMockRepository<Company>();
 
     emailService = {};
 
@@ -103,6 +93,10 @@ describe('CompanyService', () => {
     }).compile();
 
     service = module.get(CompanyService);
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('getEmployees', () => {

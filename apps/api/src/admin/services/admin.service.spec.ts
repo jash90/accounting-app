@@ -9,6 +9,7 @@ import { SystemCompanyService } from '@accounting/common/backend';
 import { RBACService } from '@accounting/rbac';
 
 import { AdminService } from './admin.service';
+import { createMockRepository } from '../../testing/mock-helpers';
 
 describe('AdminService', () => {
   let service: AdminService;
@@ -44,22 +45,9 @@ describe('AdminService', () => {
     employees: [],
   } as unknown as Company;
 
-  beforeEach(async () => {
-    jest.clearAllMocks();
-
-    userRepository = {
-      find: jest.fn(),
-      findOne: jest.fn(),
-      create: jest.fn(),
-      save: jest.fn(),
-    } as unknown as jest.Mocked<Repository<User>>;
-
-    companyRepository = {
-      find: jest.fn(),
-      findOne: jest.fn(),
-      create: jest.fn(),
-      save: jest.fn(),
-    } as unknown as jest.Mocked<Repository<Company>>;
+  beforeAll(async () => {
+    userRepository = createMockRepository<User>();
+    companyRepository = createMockRepository<Company>();
 
     rbacService = {};
 
@@ -93,6 +81,10 @@ describe('AdminService', () => {
     }).compile();
 
     service = module.get(AdminService);
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('findAllUsers', () => {

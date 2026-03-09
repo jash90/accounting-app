@@ -7,6 +7,7 @@ import { type Repository } from 'typeorm';
 import { Company, CompanyModuleAccess, Module as ModuleEntity } from '@accounting/common';
 
 import { CompanyModuleAccessService } from './company-module-access.service';
+import { createMockRepository } from '../../testing/mock-helpers';
 
 describe('CompanyModuleAccessService', () => {
   let service: CompanyModuleAccessService;
@@ -36,26 +37,16 @@ describe('CompanyModuleAccessService', () => {
     isEnabled: true,
   } as CompanyModuleAccess;
 
-  beforeEach(async () => {
-    jest.clearAllMocks();
+  beforeAll(async () => {
+    moduleRepository = createMockRepository<ModuleEntity>();
 
-    moduleRepository = {
-      findOne: jest.fn(),
-    } as unknown as jest.Mocked<Repository<ModuleEntity>>;
-
-    companyModuleAccessRepository = {
-      find: jest.fn(),
-      findOne: jest.fn(),
-      create: jest.fn(),
-      save: jest.fn(),
+    companyModuleAccessRepository = createMockRepository<CompanyModuleAccess>({
       manager: {
         transaction: jest.fn(),
       },
-    } as unknown as jest.Mocked<Repository<CompanyModuleAccess>>;
+    });
 
-    companyRepository = {
-      findOne: jest.fn(),
-    } as unknown as jest.Mocked<Repository<Company>>;
+    companyRepository = createMockRepository<Company>();
 
     const module = await Test.createTestingModule({
       providers: [
@@ -78,6 +69,10 @@ describe('CompanyModuleAccessService', () => {
     }).compile();
 
     service = module.get(CompanyModuleAccessService);
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('getCompanyModules', () => {
