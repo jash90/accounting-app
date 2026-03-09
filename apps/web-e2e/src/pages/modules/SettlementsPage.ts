@@ -54,7 +54,7 @@ export class SettlementsPage extends BasePage {
   async expectAllSettingsSections(): Promise<void> {
     await this.expectVisible('text=Domyślne wartości');
     await this.expectVisible('text=Automatyzacja');
-    await this.expectVisible('text=Powiadomienia');
+    await expect(this.page.getByRole('heading', { name: 'Powiadomienia' })).toBeVisible();
   }
 
   async setDefaultPriority(priority: '0' | '1' | '2' | '3'): Promise<void> {

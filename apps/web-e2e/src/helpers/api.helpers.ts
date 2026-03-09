@@ -1,4 +1,4 @@
-import { APIRequestContext, request } from '@playwright/test';
+import { request, type APIRequestContext, type APIResponse } from '@playwright/test';
 
 /**
  * API Helper for direct API calls (bypassing UI)
@@ -25,24 +25,12 @@ export class APIHelper {
     });
   }
 
-  /**
-   * Login and get access token
-   */
-  async login(email: string, password: string): Promise<string> {
+  // ─── Internal request helpers ──────────────────────────────
+
+  private async ensureInit(): Promise<void> {
     if (!this.apiContext) await this.init();
-
-    const response = await this.apiContext!.post('/api/auth/login', {
-      data: { email, password },
-    });
-
-    const data = await response.json();
-    this.accessToken = data.accessToken;
-    return this.accessToken;
   }
 
-  /**
-   * Get auth headers with access token
-   */
   private getAuthHeaders(): Record<string, string> {
     return {
       Authorization: `Bearer ${this.accessToken}`,
@@ -50,148 +38,326 @@ export class APIHelper {
     };
   }
 
-  /**
-   * Create user via API
-   */
+  private async assertOk(response: APIResponse): Promise<void> {
+    if (!response.ok()) {
+      const body = await response.text().catch(() => '');
+      throw new Error(`API ${response.status()} ${response.statusText()}: ${body}`);
+    }
+  }
+
+  private async jsonOrThrow(response: APIResponse): Promise<any> {
+    await this.assertOk(response);
+    return response.json();
+  }
+
+  private async doGet(
+    path: string,
+    params?: Record<string, string | number | boolean | undefined>
+  ): Promise<any> {
+    await this.ensureInit();
+    let url = path;
+    if (params) {
+      const query = new URLSearchParams();
+      for (const [k, v] of Object.entries(params)) {
+        if (v !== undefined) query.set(k, String(v));
+      }
+      const qs = query.toString();
+      if (qs) url = `${path}?${qs}`;
+    }
+    const response = await this.apiContext!.get(url, { headers: this.getAuthHeaders() });
+    return this.jsonOrThrow(response);
+  }
+
+  private async doPost(path: string, data?: unknown): Promise<any> {
+    await this.ensureInit();
+    const response = await this.apiContext!.post(path, {
+      headers: this.getAuthHeaders(),
+      data,
+    });
+    return this.jsonOrThrow(response);
+  }
+
+  private async doPatch(path: string, data?: unknown): Promise<any> {
+    await this.ensureInit();
+    const response = await this.apiContext!.patch(path, {
+      headers: this.getAuthHeaders(),
+      data,
+    });
+    return this.jsonOrThrow(response);
+  }
+
+  private async doDel(path: string): Promise<void> {
+    await this.ensureInit();
+    const response = await this.apiContext!.delete(path, { headers: this.getAuthHeaders() });
+    await this.assertOk(response);
+  }
+
+  // ─── Auth ──────────────────────────────────────────────────
+
+  async login(email: string, password: string): Promise<string> {
+    await this.ensureInit();
+    const response = await this.apiContext!.post('/api/auth/login', {
+      data: { email, password },
+    });
+    const data = await this.jsonOrThrow(response);
+    this.accessToken = data.access_token || data.accessToken;
+    return this.accessToken;
+  }
+
+  // ─── Admin Users ───────────────────────────────────────────
+
   async createUser(data: {
     email: string;
     password: string;
     role: 'ADMIN' | 'COMPANY_OWNER' | 'EMPLOYEE';
     companyId?: number;
   }): Promise<any> {
-    if (!this.apiContext) await this.init();
-
-    const response = await this.apiContext!.post('/api/admin/users', {
-      headers: this.getAuthHeaders(),
-      data,
-    });
-
-    return await response.json();
+    return this.doPost('/api/admin/users', data);
   }
 
-  /**
-   * Create company via API
-   */
-  async createCompany(name: string, description?: string): Promise<any> {
-    if (!this.apiContext) await this.init();
-
-    const response = await this.apiContext!.post('/api/admin/companies', {
-      headers: this.getAuthHeaders(),
-      data: { name, description },
-    });
-
-    return await response.json();
-  }
-
-  /**
-   * Create employee via API
-   */
-  async createEmployee(email: string, password: string): Promise<any> {
-    if (!this.apiContext) await this.init();
-
-    const response = await this.apiContext!.post('/api/company/employees', {
-      headers: this.getAuthHeaders(),
-      data: { email, password },
-    });
-
-    return await response.json();
-  }
-
-  /**
-   * Grant permission via API
-   */
-  async grantPermission(
-    employeeId: number,
-    moduleId: number,
-    permissions: {
-      read?: boolean;
-      write?: boolean;
-      delete?: boolean;
-    }
-  ): Promise<void> {
-    if (!this.apiContext) await this.init();
-
-    await this.apiContext!.post(`/api/company/employees/${employeeId}/permissions`, {
-      headers: this.getAuthHeaders(),
-      data: { moduleId, ...permissions },
-    });
-  }
-
-  /**
-   * Delete user via API
-   */
-  async deleteUser(userId: number): Promise<void> {
-    if (!this.apiContext) await this.init();
-
-    await this.apiContext!.delete(`/api/admin/users/${userId}`, {
-      headers: this.getAuthHeaders(),
-    });
-  }
-
-  /**
-   * Delete company via API
-   */
-  async deleteCompany(companyId: number): Promise<void> {
-    if (!this.apiContext) await this.init();
-
-    await this.apiContext!.delete(`/api/admin/companies/${companyId}`, {
-      headers: this.getAuthHeaders(),
-    });
-  }
-
-  /**
-   * Get user by email via API
-   */
   async getUserByEmail(email: string): Promise<any> {
-    if (!this.apiContext) await this.init();
-
-    const response = await this.apiContext!.get('/api/admin/users', {
-      headers: this.getAuthHeaders(),
-    });
-
-    const users = await response.json();
+    const users = await this.doGet('/api/admin/users');
     return users.find((u: any) => u.email === email);
   }
 
-  /**
-   * Get company by name via API
-   */
+  async deleteUser(userId: number): Promise<void> {
+    return this.doDel(`/api/admin/users/${userId}`);
+  }
+
+  // ─── Admin Companies ──────────────────────────────────────
+
+  async createCompany(name: string, description?: string): Promise<any> {
+    return this.doPost('/api/admin/companies', { name, description });
+  }
+
   async getCompanyByName(name: string): Promise<any> {
-    if (!this.apiContext) await this.init();
-
-    const response = await this.apiContext!.get('/api/admin/companies', {
-      headers: this.getAuthHeaders(),
-    });
-
-    const companies = await response.json();
+    const companies = await this.doGet('/api/admin/companies');
     return companies.find((c: any) => c.name === name);
   }
 
-  /**
-   * Enable module for company via API
-   */
+  async deleteCompany(companyId: number): Promise<void> {
+    return this.doDel(`/api/admin/companies/${companyId}`);
+  }
+
   async enableModuleForCompany(companyId: number, moduleId: number): Promise<void> {
-    if (!this.apiContext) await this.init();
-
-    await this.apiContext!.post(`/api/admin/companies/${companyId}/modules/${moduleId}`, {
-      headers: this.getAuthHeaders(),
-    });
+    await this.doPost(`/api/admin/companies/${companyId}/modules/${moduleId}`);
   }
 
-  /**
-   * Disable module for company via API
-   */
   async disableModuleForCompany(companyId: number, moduleId: number): Promise<void> {
-    if (!this.apiContext) await this.init();
+    return this.doDel(`/api/admin/companies/${companyId}/modules/${moduleId}`);
+  }
 
-    await this.apiContext!.delete(`/api/admin/companies/${companyId}/modules/${moduleId}`, {
-      headers: this.getAuthHeaders(),
+  // ─── Company ──────────────────────────────────────────────
+
+  async createEmployee(email: string, password: string): Promise<any> {
+    return this.doPost('/api/company/employees', { email, password });
+  }
+
+  async grantPermission(
+    employeeId: number,
+    moduleId: number,
+    permissions: { read?: boolean; write?: boolean; delete?: boolean }
+  ): Promise<void> {
+    await this.doPost(`/api/company/employees/${employeeId}/permissions`, {
+      moduleId,
+      ...permissions,
     });
   }
 
-  /**
-   * Create document template via API
-   */
+  async getCompanyProfile(): Promise<any> {
+    return this.doGet('/api/company/profile');
+  }
+
+  async updateCompanyProfile(data: Record<string, string | undefined>): Promise<any> {
+    return this.doPatch('/api/company/profile', data);
+  }
+
+  // ─── Tasks ────────────────────────────────────────────────
+
+  async createTask(data: {
+    title: string;
+    description?: string;
+    status?: string;
+    priority?: string;
+  }): Promise<any> {
+    return this.doPost('/api/modules/tasks', data);
+  }
+
+  async getTasks(): Promise<any> {
+    return this.doGet('/api/modules/tasks');
+  }
+
+  async updateTaskStatus(id: string, status: string, reason?: string): Promise<any> {
+    const data: Record<string, string> = { status };
+    if (reason) {
+      if (status === 'BLOCKED') data.blockingReason = reason;
+      if (status === 'CANCELLED') data.cancellationReason = reason;
+    }
+    return this.doPatch(`/api/modules/tasks/${id}`, data);
+  }
+
+  async deleteTask(id: string): Promise<void> {
+    return this.doDel(`/api/modules/tasks/${id}`);
+  }
+
+  // ─── Task Templates ───────────────────────────────────────
+
+  async createTaskTemplate(data: {
+    title: string;
+    description?: string;
+    priority?: string;
+    recurrencePattern?: object;
+  }): Promise<any> {
+    return this.doPost('/api/modules/tasks/templates', data);
+  }
+
+  async deleteTaskTemplate(id: string): Promise<void> {
+    return this.doDel(`/api/modules/tasks/templates/${id}`);
+  }
+
+  // ─── Settlements ──────────────────────────────────────────
+
+  async getSettlements(month: number, year: number): Promise<any> {
+    return this.doGet('/api/modules/settlements', { month, year });
+  }
+
+  async getSettlement(id: string): Promise<any> {
+    return this.doGet(`/api/modules/settlements/${id}`);
+  }
+
+  async initializeSettlementMonth(month: number, year: number): Promise<any> {
+    return this.doPost('/api/modules/settlements/initialize', { month, year });
+  }
+
+  async updateSettlementStatus(id: string, status: string, notes?: string): Promise<any> {
+    const data: Record<string, string> = { status };
+    if (notes) data.notes = notes;
+    return this.doPatch(`/api/modules/settlements/${id}/status`, data);
+  }
+
+  async updateSettlement(id: string, data: Record<string, unknown>): Promise<any> {
+    return this.doPatch(`/api/modules/settlements/${id}`, data);
+  }
+
+  async addSettlementComment(settlementId: string, content: string): Promise<any> {
+    return this.doPost(`/api/modules/settlements/${settlementId}/comments`, { content });
+  }
+
+  async getSettlementSettings(): Promise<any> {
+    return this.doGet('/api/modules/settlements/settings');
+  }
+
+  async updateSettlementSettings(data: Record<string, unknown>): Promise<any> {
+    return this.doPatch('/api/modules/settlements/settings', data);
+  }
+
+  // ─── Clients ──────────────────────────────────────────────
+
+  async createClient(data: {
+    name: string;
+    nip?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    vatStatus?: string;
+  }): Promise<any> {
+    return this.doPost('/api/modules/clients', data);
+  }
+
+  async getClients(params?: { search?: string; page?: number; limit?: number }): Promise<any> {
+    return this.doGet('/api/modules/clients', params);
+  }
+
+  async deleteClient(id: string): Promise<void> {
+    return this.doDel(`/api/modules/clients/${id}`);
+  }
+
+  // ─── Time Tracking ────────────────────────────────────────
+
+  async createTimeEntry(data: {
+    description: string;
+    startTime: string;
+    endTime?: string;
+    clientId?: string;
+    taskId?: string;
+  }): Promise<any> {
+    return this.doPost('/api/modules/time-tracking/entries', data);
+  }
+
+  async getTimeEntries(params?: { page?: number; limit?: number }): Promise<any> {
+    return this.doGet('/api/modules/time-tracking/entries', params);
+  }
+
+  async deleteTimeEntry(id: string): Promise<void> {
+    return this.doDel(`/api/modules/time-tracking/entries/${id}`);
+  }
+
+  // ─── Offers ───────────────────────────────────────────────
+
+  async createOffer(data: {
+    title: string;
+    description?: string;
+    clientId?: string;
+    validUntil?: string;
+  }): Promise<any> {
+    return this.doPost('/api/modules/offers', data);
+  }
+
+  async deleteOffer(id: string): Promise<void> {
+    return this.doDel(`/api/modules/offers/${id}`);
+  }
+
+  // ─── Offer Templates ─────────────────────────────────────
+
+  async createOfferTemplate(data: {
+    name: string;
+    description?: string;
+    content?: string;
+  }): Promise<any> {
+    return this.doPost('/api/modules/offers/templates', data);
+  }
+
+  async deleteOfferTemplate(id: string): Promise<void> {
+    return this.doDel(`/api/modules/offers/templates/${id}`);
+  }
+
+  // ─── Leads ────────────────────────────────────────────────
+
+  async createLead(data: {
+    companyName: string;
+    contactPerson?: string;
+    email?: string;
+    phone?: string;
+    source?: string;
+    status?: string;
+  }): Promise<any> {
+    return this.doPost('/api/modules/offers/leads', data);
+  }
+
+  async deleteLead(id: string): Promise<void> {
+    return this.doDel(`/api/modules/offers/leads/${id}`);
+  }
+
+  // ─── Notifications ────────────────────────────────────────
+
+  async getNotifications(params?: {
+    page?: number;
+    limit?: number;
+    isRead?: boolean;
+  }): Promise<any> {
+    return this.doGet('/api/notifications', params);
+  }
+
+  async markNotificationRead(id: string): Promise<any> {
+    return this.doPatch(`/api/notifications/${id}/read`);
+  }
+
+  async deleteNotification(id: string): Promise<void> {
+    return this.doDel(`/api/notifications/${id}`);
+  }
+
+  // ─── Documents ────────────────────────────────────────────
+
   async createDocumentTemplate(data: {
     name: string;
     description?: string;
@@ -200,54 +366,31 @@ export class APIHelper {
     category?: string;
     isActive?: boolean;
   }): Promise<any> {
-    if (!this.apiContext) await this.init();
-    const response = await this.apiContext!.post('/api/modules/documents/templates', {
-      headers: this.getAuthHeaders(),
-      data: { category: 'other', isActive: true, ...data },
+    return this.doPost('/api/modules/documents/templates', {
+      category: 'other',
+      isActive: true,
+      ...data,
     });
-    return await response.json();
   }
 
-  /**
-   * Delete document template via API
-   */
   async deleteDocumentTemplate(id: string): Promise<void> {
-    if (!this.apiContext) await this.init();
-    await this.apiContext!.delete(`/api/modules/documents/templates/${id}`, {
-      headers: this.getAuthHeaders(),
-    });
+    return this.doDel(`/api/modules/documents/templates/${id}`);
   }
 
-  /**
-   * Create task template via API
-   */
-  async createTaskTemplate(data: {
-    title: string;
-    description?: string;
-    priority?: string;
-    recurrencePattern?: object;
+  async generateDocument(data: {
+    templateId: string;
+    clientId: string;
+    variables?: Record<string, string>;
   }): Promise<any> {
-    if (!this.apiContext) await this.init();
-    const response = await this.apiContext!.post('/api/modules/tasks/templates', {
-      headers: this.getAuthHeaders(),
-      data,
-    });
-    return await response.json();
+    return this.doPost('/api/modules/documents/generated', data);
   }
 
-  /**
-   * Delete task template via API
-   */
-  async deleteTaskTemplate(id: string): Promise<void> {
-    if (!this.apiContext) await this.init();
-    await this.apiContext!.delete(`/api/modules/tasks/templates/${id}`, {
-      headers: this.getAuthHeaders(),
-    });
+  async deleteGeneratedDocument(id: string): Promise<void> {
+    return this.doDel(`/api/modules/documents/generated/${id}`);
   }
 
-  /**
-   * Create email auto-reply template via API
-   */
+  // ─── Email Auto-Reply Templates ───────────────────────────
+
   async createAutoReplyTemplate(data: {
     name: string;
     triggerKeywords: string[];
@@ -257,79 +400,31 @@ export class APIHelper {
     tone?: string;
     keywordMatchMode?: string;
   }): Promise<any> {
-    if (!this.apiContext) await this.init();
-    const response = await this.apiContext!.post('/api/modules/email-client/auto-reply-templates', {
-      headers: this.getAuthHeaders(),
-      data: {
-        isActive: true,
-        tone: 'formal',
-        keywordMatchMode: 'any',
-        matchSubjectOnly: false,
-        ...data,
-      },
+    return this.doPost('/api/modules/email-client/auto-reply-templates', {
+      isActive: true,
+      tone: 'formal',
+      keywordMatchMode: 'any',
+      matchSubjectOnly: false,
+      ...data,
     });
-    return await response.json();
   }
 
-  /**
-   * Delete email auto-reply template via API
-   */
   async deleteAutoReplyTemplate(id: string): Promise<void> {
-    if (!this.apiContext) await this.init();
-    await this.apiContext!.delete(`/api/modules/email-client/auto-reply-templates/${id}`, {
-      headers: this.getAuthHeaders(),
-    });
+    return this.doDel(`/api/modules/email-client/auto-reply-templates/${id}`);
   }
 
-  /**
-   * Get company profile via API
-   */
-  async getCompanyProfile(): Promise<any> {
-    if (!this.apiContext) await this.init();
-    const response = await this.apiContext!.get('/api/company/profile', {
-      headers: this.getAuthHeaders(),
-    });
-    return await response.json();
+  // ─── AI Configuration ─────────────────────────────────────
+
+  async getAiConfiguration(): Promise<any> {
+    return this.doGet('/api/modules/ai-agent/config');
   }
 
-  /**
-   * Update company profile via API
-   */
-  async updateCompanyProfile(data: Record<string, string | undefined>): Promise<any> {
-    if (!this.apiContext) await this.init();
-    const response = await this.apiContext!.patch('/api/company/profile', {
-      headers: this.getAuthHeaders(),
-      data,
-    });
-    return await response.json();
+  async updateAiConfiguration(data: Record<string, unknown>): Promise<any> {
+    return this.doPatch('/api/modules/ai-agent/config', data);
   }
 
-  /**
-   * Get settlement settings via API
-   */
-  async getSettlementSettings(): Promise<any> {
-    if (!this.apiContext) await this.init();
-    const response = await this.apiContext!.get('/api/modules/settlements/settings', {
-      headers: this.getAuthHeaders(),
-    });
-    return await response.json();
-  }
+  // ─── Lifecycle ────────────────────────────────────────────
 
-  /**
-   * Update settlement settings via API
-   */
-  async updateSettlementSettings(data: Record<string, unknown>): Promise<any> {
-    if (!this.apiContext) await this.init();
-    const response = await this.apiContext!.patch('/api/modules/settlements/settings', {
-      headers: this.getAuthHeaders(),
-      data,
-    });
-    return await response.json();
-  }
-
-  /**
-   * Dispose API context
-   */
   async dispose(): Promise<void> {
     if (this.apiContext) {
       await this.apiContext.dispose();
