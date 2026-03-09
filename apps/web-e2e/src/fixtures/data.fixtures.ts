@@ -24,6 +24,14 @@ export class TestDataGenerator {
   }
 
   /**
+   * Generate collision-safe unique ID for factory data
+   */
+  static uniqueId(): string {
+    this.counter++;
+    return `${Date.now()}-${this.counter}`;
+  }
+
+  /**
    * Generate test password (meets requirements)
    */
   static generatePassword(): string {
@@ -78,7 +86,7 @@ export const TestDataFactory = {
       isActive: boolean;
     }>
   ) => ({
-    name: `Test Document Template ${Date.now()}`,
+    name: `Test Document Template ${TestDataGenerator.uniqueId()}`,
     description: 'Test template description',
     templateContent: 'Hello {{client_name}}, this is a test template.',
     placeholders: ['client_name'],
@@ -98,9 +106,109 @@ export const TestDataFactory = {
       recurrencePattern: object;
     }>
   ) => ({
-    title: `Test Task Template ${Date.now()}`,
+    title: `Test Task Template ${TestDataGenerator.uniqueId()}`,
     description: 'Test task template description',
     priority: 'MEDIUM',
+    ...overrides,
+  }),
+
+  /**
+   * Create task data
+   */
+  createTaskData: (
+    overrides?: Partial<{
+      title: string;
+      description: string;
+      status: string;
+      priority: string;
+    }>
+  ) => ({
+    title: `E2E Task ${TestDataGenerator.uniqueId()}`,
+    description: 'E2E test task description',
+    priority: 'MEDIUM',
+    ...overrides,
+  }),
+
+  /**
+   * Create client data
+   */
+  createClientData: (
+    overrides?: Partial<{
+      name: string;
+      nip: string;
+      email: string;
+      phone: string;
+      address: string;
+      vatStatus: string;
+    }>
+  ) => ({
+    name: `E2E Client ${TestDataGenerator.uniqueId()}`,
+    email: `client.${TestDataGenerator.uniqueId()}@e2e-test.com`,
+    nip: `${1000000000 + Math.floor(Math.random() * 9000000000)}`,
+    ...overrides,
+  }),
+
+  /**
+   * Create time entry data
+   */
+  createTimeEntryData: (
+    overrides?: Partial<{
+      description: string;
+      startTime: string;
+      endTime: string;
+      clientId: string;
+      taskId: string;
+    }>
+  ) => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0);
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 10, 0);
+    return {
+      description: `E2E Time Entry ${TestDataGenerator.uniqueId()}`,
+      startTime: start.toISOString(),
+      endTime: end.toISOString(),
+      ...overrides,
+    };
+  },
+
+  /**
+   * Create offer data
+   */
+  createOfferData: (
+    overrides?: Partial<{
+      title: string;
+      description: string;
+      clientId: string;
+      validUntil: string;
+    }>
+  ) => {
+    const validUntil = new Date();
+    validUntil.setMonth(validUntil.getMonth() + 1);
+    return {
+      title: `E2E Offer ${TestDataGenerator.uniqueId()}`,
+      description: 'E2E test offer description',
+      validUntil: validUntil.toISOString().split('T')[0],
+      ...overrides,
+    };
+  },
+
+  /**
+   * Create lead data
+   */
+  createLeadData: (
+    overrides?: Partial<{
+      companyName: string;
+      contactPerson: string;
+      email: string;
+      phone: string;
+      source: string;
+      status: string;
+    }>
+  ) => ({
+    companyName: `E2E Lead Company ${TestDataGenerator.uniqueId()}`,
+    contactPerson: 'Jan Testowy',
+    email: `lead.${TestDataGenerator.uniqueId()}@e2e-test.com`,
+    source: 'WEBSITE',
     ...overrides,
   }),
 
@@ -117,7 +225,7 @@ export const TestDataFactory = {
       tone: string;
     }>
   ) => ({
-    name: `Test Auto Reply ${Date.now()}`,
+    name: `Test Auto Reply ${TestDataGenerator.uniqueId()}`,
     triggerKeywords: ['test', 'example'],
     bodyTemplate: 'Thank you for your message. We will respond shortly.',
     isActive: true,
@@ -154,47 +262,3 @@ export const SEEDED_DATA = {
   },
   modules: [{ name: 'ai-agent', displayName: 'AI Agent' }],
 };
-
-/**
- * Test data cleanup helper
- */
-export class TestDataCleanup {
-  private static createdEmails: Set<string> = new Set();
-  private static createdCompanyNames: Set<string> = new Set();
-
-  /**
-   * Track created email for cleanup
-   */
-  static trackEmail(email: string): void {
-    this.createdEmails.add(email);
-  }
-
-  /**
-   * Track created company for cleanup
-   */
-  static trackCompany(name: string): void {
-    this.createdCompanyNames.add(name);
-  }
-
-  /**
-   * Get all tracked emails
-   */
-  static getTrackedEmails(): string[] {
-    return Array.from(this.createdEmails);
-  }
-
-  /**
-   * Get all tracked companies
-   */
-  static getTrackedCompanies(): string[] {
-    return Array.from(this.createdCompanyNames);
-  }
-
-  /**
-   * Clear tracking
-   */
-  static clear(): void {
-    this.createdEmails.clear();
-    this.createdCompanyNames.clear();
-  }
-}
