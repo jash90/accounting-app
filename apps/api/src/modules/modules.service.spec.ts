@@ -9,10 +9,16 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { type Repository } from 'typeorm';
 
-import { Module as ModuleEntity, PermissionTargetType, type User, UserRole } from '@accounting/common';
+import {
+  Module as ModuleEntity,
+  PermissionTargetType,
+  UserRole,
+  type User,
+} from '@accounting/common';
 import { ModuleDiscoveryService, RBACService } from '@accounting/rbac';
 
 import { ModulesService } from './modules.service';
+import { createMockRepository } from '../testing/mock-helpers';
 import { CompanyModuleAccessService } from './services/company-module-access.service';
 import { EmployeeModulePermissionsService } from './services/employee-module-permissions.service';
 
@@ -81,15 +87,8 @@ describe('ModulesService', () => {
     companyId: 'company-1',
   } as User;
 
-  beforeEach(async () => {
-    jest.clearAllMocks();
-
-    moduleRepository = {
-      find: jest.fn(),
-      findOne: jest.fn(),
-      create: jest.fn(),
-      save: jest.fn(),
-    } as unknown as jest.Mocked<Repository<ModuleEntity>>;
+  beforeAll(async () => {
+    moduleRepository = createMockRepository<ModuleEntity>();
 
     rbacService = {
       getAvailableModules: jest.fn(),
@@ -141,6 +140,10 @@ describe('ModulesService', () => {
     }).compile();
 
     service = module.get(ModulesService);
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('findAll', () => {

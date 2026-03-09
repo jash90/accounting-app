@@ -15,6 +15,7 @@ import {
 import { RBACService } from '@accounting/rbac';
 
 import { EmployeeModulePermissionsService } from './employee-module-permissions.service';
+import { createMockRepository } from '../../testing/mock-helpers';
 
 describe('EmployeeModulePermissionsService', () => {
   let service: EmployeeModulePermissionsService;
@@ -65,32 +66,17 @@ describe('EmployeeModulePermissionsService', () => {
     remove: jest.fn(),
   });
 
-  beforeEach(async () => {
-    jest.clearAllMocks();
+  beforeAll(async () => {
+    moduleRepository = createMockRepository<ModuleEntity>();
+    companyModuleAccessRepository = createMockRepository<CompanyModuleAccess>();
+    userRepository = createMockRepository<User>();
+    companyRepository = createMockRepository<Company>();
 
-    moduleRepository = {
-      findOne: jest.fn(),
-    } as unknown as jest.Mocked<Repository<ModuleEntity>>;
-
-    companyModuleAccessRepository = {
-      find: jest.fn(),
-    } as unknown as jest.Mocked<Repository<CompanyModuleAccess>>;
-
-    userModulePermissionRepository = {
-      find: jest.fn(),
-      findOne: jest.fn(),
+    userModulePermissionRepository = createMockRepository<UserModulePermission>({
       manager: {
         transaction: jest.fn(),
       },
-    } as unknown as jest.Mocked<Repository<UserModulePermission>>;
-
-    userRepository = {
-      findOne: jest.fn(),
-    } as unknown as jest.Mocked<Repository<User>>;
-
-    companyRepository = {
-      findOne: jest.fn(),
-    } as unknown as jest.Mocked<Repository<Company>>;
+    });
 
     rbacService = {
       companyHasModule: jest.fn(),
@@ -126,6 +112,10 @@ describe('EmployeeModulePermissionsService', () => {
     }).compile();
 
     service = module.get(EmployeeModulePermissionsService);
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('getEmployeeModules', () => {
