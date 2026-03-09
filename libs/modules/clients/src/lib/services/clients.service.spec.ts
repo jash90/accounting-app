@@ -42,7 +42,7 @@ describe('ClientsService', () => {
 
   const mockUser: Partial<User> = {
     id: mockUserId,
-    email: 'bartlomiej.zimny@onet.pl',
+    email: 'test@example.com',
     role: UserRole.COMPANY_OWNER,
     companyId: mockCompanyId,
   };
