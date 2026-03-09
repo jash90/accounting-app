@@ -1,21 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
-import * as bcrypt from 'bcrypt';
+
+import * as bcrypt from 'bcryptjs';
+import { DataSource, Repository } from 'typeorm';
+
 import {
-  User,
-  Company,
-  Module as ModuleEntity,
-  CompanyModuleAccess,
-  UserModulePermission,
-  UserRole,
   Client,
   ClientFieldDefinition,
-  EmploymentType,
-  VatStatus,
-  TaxScheme,
-  ZusStatus,
+  Company,
+  CompanyModuleAccess,
   CustomFieldType,
+  EmploymentType,
+  Module as ModuleEntity,
+  TaxScheme,
+  User,
+  UserModulePermission,
+  UserRole,
+  VatStatus,
+  ZusStatus,
 } from '@accounting/common';
 import { EmailConfigurationService } from '@accounting/email';
 import { ModuleDiscoveryService } from '@accounting/rbac';
@@ -42,13 +45,19 @@ export class SeederService {
     private dataSource: DataSource,
     private emailConfigService: EmailConfigurationService,
     private moduleDiscoveryService: ModuleDiscoveryService,
+    private configService: ConfigService
   ) {}
 
   async seed() {
-    console.log('Starting database seeding...');
+    this.logger.log('Starting database seeding...');
 
     // Clear existing data
     await this.clearDatabase();
+
+    // Re-sync modules after clearing database
+    // (ModuleDiscoveryService synced during app init, but clearDatabase() truncated the table)
+    this.logger.log('Re-syncing modules after database clear...');
+    await this.moduleDiscoveryService.reloadModules();
 
     // Seed data in correct order
     const admin = await this.seedAdmin();
@@ -57,37 +66,57 @@ export class SeederService {
     await this.seedEmailConfigurations(companyA, ownerA, employeesA);
 
     // Use file-based module discovery instead of manual seeding
-    // ModuleDiscoveryService already synced modules to DB during app initialization
-    // We just need to wait for it to complete and then fetch modules from DB
+    // Modules are now synced in the database after reloadModules()
     this.logger.log('Using file-based module discovery...');
     const modules = await this.getDiscoveredModulesFromDb();
 
     if (modules.length === 0) {
       this.logger.warn('No modules found! Make sure module.json files exist in libs/modules/*/');
     } else {
-      this.logger.log(`Found ${modules.length} modules from discovery: ${modules.map(m => m.slug).join(', ')}`);
+      this.logger.log(
+        `Found ${modules.length} modules from discovery: ${modules.map((m) => m.slug).join(', ')}`
+      );
     }
 
     await this.seedModuleAccess(companyA, modules);
     await this.seedEmployeePermissions(employeesA, modules);
     await this.seedClients(companyA, ownerA);
 
-    console.log('Database seeding completed!');
-    console.log('\nTest Users:');
-    console.log('Admin: admin@system.com / Admin123!');
-    console.log('Company A Owner: bartlomiej.zimny@onet.pl / Owner123!');
-    console.log('Company A Employee: bartlomiej.zimny@interia.pl / Employee123!');
+    this.logger.log('Database seeding completed!');
+    this.logger.log('Test Users (passwords configured in .env):');
+    this.logger.log(`  Admin: ${this.configService.get('SEED_ADMIN_EMAIL')}`);
+    this.logger.log(`  Company Owner: ${this.configService.get('SEED_OWNER_EMAIL')}`);
+    this.logger.log(`  Employee: ${this.configService.get('SEED_EMPLOYEE_EMAIL')}`);
   }
 
   /**
-   * Get modules from database that were discovered and synced by ModuleDiscoveryService
+   * Get modules from database that were discovered and synced by ModuleDiscoveryService.
+   * Includes timeout protection to prevent infinite waiting.
    */
   private async getDiscoveredModulesFromDb(): Promise<ModuleEntity[]> {
-    // Wait for discovery to complete if not already done
+    const startTime = Date.now();
+    const timeoutMs = 5000;
+    const maxRetries = 25;
+    const retryDelayMs = 200;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      if (this.moduleDiscoveryService.isDiscoveryComplete()) {
+        break;
+      }
+      if (Date.now() - startTime > timeoutMs) {
+        this.logger.warn('Module discovery timeout, proceeding with available modules');
+        break;
+      }
+      if (attempt === 0) {
+        this.logger.log('Waiting for module discovery to complete...');
+      }
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+    }
+
     if (!this.moduleDiscoveryService.isDiscoveryComplete()) {
-      this.logger.log('Waiting for module discovery to complete...');
-      // Give discovery time to complete (it happens asynchronously on app init)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      this.logger.warn(
+        'Module discovery did not complete in time, proceeding with available modules'
+      );
     }
 
     // Get all active modules from database
@@ -99,20 +128,65 @@ export class SeederService {
   private async clearDatabase() {
     // Use TRUNCATE with CASCADE to efficiently clear all tables
     // This handles foreign key constraints automatically
+    //
+    // IMPORTANT: Keep this list in sync with database schema!
+    // When adding new entities, update this list to include them.
+    // Order matters: tables with foreign key dependencies should come first.
+    //
+    // Last updated: 2026-02 (settlement tables added)
+    const tablesToTruncate = [
+      // Settlement module tables
+      'settlement_comments',
+      'monthly_settlements',
+      // AI module tables
+      'ai_messages',
+      'ai_conversations',
+      'ai_contexts',
+      'ai_configurations',
+      'token_usages',
+      'token_limits',
+      // Time tracking tables
+      'time_entries',
+      'time_settings',
+      // RBAC tables
+      'user_module_permissions',
+      'company_module_access',
+      'modules',
+      // Client module tables
+      'client_icon_assignments',
+      'client_icons',
+      'client_custom_field_values',
+      'client_field_definitions',
+      'notification_settings',
+      'change_logs',
+      'clients',
+      // Core tables (must be last due to FK dependencies)
+      'users',
+      'companies',
+    ];
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
 
     try {
-      await queryRunner.query('TRUNCATE TABLE ai_messages, ai_conversations, ai_contexts, ai_configurations, token_usages, token_limits, user_module_permissions, company_module_access, modules, client_icon_assignments, client_icons, client_custom_field_values, client_field_definitions, notification_settings, change_logs, clients, users, companies RESTART IDENTITY CASCADE');
+      const tableList = tablesToTruncate.join(', ');
+      this.logger.log(`Truncating ${tablesToTruncate.length} tables...`);
+      await queryRunner.query(`TRUNCATE TABLE ${tableList} RESTART IDENTITY CASCADE`);
+      this.logger.log('Database tables truncated successfully');
+    } catch (error) {
+      this.logger.error('Failed to truncate tables', (error as Error).message);
+      throw error;
     } finally {
       await queryRunner.release();
     }
   }
 
   private async seedAdmin() {
-    const hashedPassword = await bcrypt.hash('Admin123!', 10);
+    const adminEmail = this.configService.getOrThrow<string>('SEED_ADMIN_EMAIL');
+    const adminPassword = this.configService.getOrThrow<string>('SEED_ADMIN_PASSWORD');
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
     const admin = this.userRepository.create({
-      email: 'admin@system.com'.toLowerCase(),
+      email: adminEmail.toLowerCase(),
       password: hashedPassword,
       firstName: 'Admin',
       lastName: 'User',
@@ -124,7 +198,7 @@ export class SeederService {
   }
 
   private async seedSystemAdminCompany(admin: User) {
-    console.log('Creating System Admin company...');
+    this.logger.log('Creating System Admin company...');
     const systemCompany = this.companyRepository.create({
       name: 'System Admin',
       ownerId: admin.id,
@@ -132,14 +206,16 @@ export class SeederService {
       isActive: true,
     });
     const savedCompany = await this.companyRepository.save(systemCompany);
-    console.log('✅ System Admin company created');
+    this.logger.log('System Admin company created');
     return savedCompany;
   }
 
   private async seedCompanyA() {
-    const hashedPassword = await bcrypt.hash('Owner123!', 10);
+    const ownerEmail = this.configService.getOrThrow<string>('SEED_OWNER_EMAIL');
+    const ownerPassword = this.configService.getOrThrow<string>('SEED_OWNER_PASSWORD');
+    const hashedPassword = await bcrypt.hash(ownerPassword, 10);
     const ownerA = this.userRepository.create({
-      email: 'bartlomiej.zimny@onet.pl'.toLowerCase(),
+      email: ownerEmail.toLowerCase(),
       password: hashedPassword,
       firstName: 'Owner',
       lastName: 'A',
@@ -158,9 +234,11 @@ export class SeederService {
     savedOwnerA.companyId = savedCompanyA.id;
     await this.userRepository.save(savedOwnerA);
 
-    const employee1Password = await bcrypt.hash('Employee123!', 10);
+    const employeeEmail = this.configService.getOrThrow<string>('SEED_EMPLOYEE_EMAIL');
+    const employeePassword = this.configService.getOrThrow<string>('SEED_EMPLOYEE_PASSWORD');
+    const employee1Password = await bcrypt.hash(employeePassword, 10);
     const employee1 = this.userRepository.create({
-      email: 'bartlomiej.zimny@interia.pl'.toLowerCase(),
+      email: employeeEmail.toLowerCase(),
       password: employee1Password,
       firstName: 'Employee',
       lastName: '1A',
@@ -180,106 +258,63 @@ export class SeederService {
   // seedModules() method removed - using file-based module discovery via ModuleDiscoveryService
   // Modules are now auto-discovered from libs/modules/*/module.json files
 
-  private async seedModuleAccess(
-    companyA: Company,
-    modules: ModuleEntity[],
-  ) {
-    // Company A: ai-agent, clients, email-client
-    const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
-    const clientsModule = modules.find((m) => m.slug === 'clients');
-    const emailClientModule = modules.find((m) => m.slug === 'email-client');
-
-    if (aiAgentModule) {
+  private async seedModuleAccess(companyA: Company, modules: ModuleEntity[]) {
+    // Enable all discovered modules for Company A
+    // New modules are automatically included when added via module.json
+    for (const module of modules) {
       await this.companyModuleAccessRepository.save(
         this.companyModuleAccessRepository.create({
           companyId: companyA.id,
-          moduleId: aiAgentModule.id,
+          moduleId: module.id,
           isEnabled: true,
-        }),
+        })
       );
     }
 
-    if (clientsModule) {
-      await this.companyModuleAccessRepository.save(
-        this.companyModuleAccessRepository.create({
-          companyId: companyA.id,
-          moduleId: clientsModule.id,
-          isEnabled: true,
-        }),
-      );
-    }
-
-    if (emailClientModule) {
-      await this.companyModuleAccessRepository.save(
-        this.companyModuleAccessRepository.create({
-          companyId: companyA.id,
-          moduleId: emailClientModule.id,
-          isEnabled: true,
-        }),
-      );
-    }
+    this.logger.log(
+      `Enabled ${modules.length} modules for ${companyA.name}: ${modules.map((m) => m.slug).join(', ')}`
+    );
   }
 
-  private async seedEmployeePermissions(
-    employeesA: User[],
-    modules: ModuleEntity[],
-  ) {
-    const aiAgentModule = modules.find((m) => m.slug === 'ai-agent');
-    const clientsModule = modules.find((m) => m.slug === 'clients');
-    const emailClientModule = modules.find((m) => m.slug === 'email-client');
-
+  private async seedEmployeePermissions(employeesA: User[], modules: ModuleEntity[]) {
     // Employee 1A: read, write for all modules
     const employee = employeesA[0];
     if (!employee) return;
 
-    if (aiAgentModule) {
+    if (!employee.companyId) {
+      this.logger.warn('Employee has no companyId, skipping permissions');
+      return;
+    }
+    const company = await this.companyRepository.findOne({ where: { id: employee.companyId } });
+    if (!company?.ownerId) {
+      this.logger.warn('Company or owner not found, skipping permissions');
+      return;
+    }
+    const grantedById = company.ownerId;
+
+    // Grant read/write permissions for all modules using defaultPermissions from module.json
+    // New modules are automatically included when added via module.json
+    for (const module of modules) {
+      // Use defaultPermissions from module.json if available, otherwise use ['read', 'write']
+      const permissions = module.defaultPermissions ?? ['read', 'write'];
+
       await this.userModulePermissionRepository.save(
         this.userModulePermissionRepository.create({
           userId: employee.id,
-          moduleId: aiAgentModule.id,
-          permissions: ['read', 'write'],
-          grantedById: employee.companyId
-            ? (await this.companyRepository.findOne({ where: { id: employee.companyId } }))
-                ?.ownerId || ''
-            : '',
-        }),
+          moduleId: module.id,
+          permissions,
+          grantedById,
+        })
       );
     }
 
-    if (clientsModule) {
-      await this.userModulePermissionRepository.save(
-        this.userModulePermissionRepository.create({
-          userId: employee.id,
-          moduleId: clientsModule.id,
-          permissions: ['read', 'write'],
-          grantedById: employee.companyId
-            ? (await this.companyRepository.findOne({ where: { id: employee.companyId } }))
-                ?.ownerId || ''
-            : '',
-        }),
-      );
-    }
-
-    if (emailClientModule) {
-      await this.userModulePermissionRepository.save(
-        this.userModulePermissionRepository.create({
-          userId: employee.id,
-          moduleId: emailClientModule.id,
-          permissions: ['read', 'write'],
-          grantedById: employee.companyId
-            ? (await this.companyRepository.findOne({ where: { id: employee.companyId } }))
-                ?.ownerId || ''
-            : '',
-        }),
-      );
-    }
+    this.logger.log(
+      `Granted permissions for ${modules.length} modules to employee ${employee.email}`
+    );
   }
 
-  private async seedClients(
-    companyA: Company,
-    ownerA: User,
-  ) {
-    console.log('Seeding clients...');
+  private async seedClients(companyA: Company, ownerA: User) {
+    this.logger.log('Seeding clients...');
 
     // Create field definitions for Company A
     const fieldDefinitionsA = [
@@ -322,9 +357,7 @@ export class SeederService {
     ];
 
     for (const fieldDef of fieldDefinitionsA) {
-      await this.fieldDefinitionRepository.save(
-        this.fieldDefinitionRepository.create(fieldDef),
-      );
+      await this.fieldDefinitionRepository.save(this.fieldDefinitionRepository.create(fieldDef));
     }
 
     // Create clients for Company A
@@ -380,28 +413,25 @@ export class SeederService {
       await this.clientRepository.save(this.clientRepository.create(client));
     }
 
-    console.log('✅ Clients seeded successfully');
+    this.logger.log('Clients seeded successfully');
   }
 
-  private async seedEmailConfigurations(
-    companyA: Company,
-    _ownerA: User,
-    _employeesA: User[],
-  ) {
-    console.log('Seeding email configurations...');
+  private async seedEmailConfigurations(companyA: Company, _ownerA: User, _employeesA: User[]) {
+    this.logger.log('Seeding email configurations...');
 
     // Company-wide email configuration (used by Email Client module)
+    // Credentials are read from environment variables for security
     const companyEmailConfig = {
       smtpHost: 'smtp.poczta.onet.pl',
       smtpPort: 465,
       smtpSecure: true,
-      smtpUser: 'bartlomiej.zimny@onet.pl',
-      smtpPassword: '%UsDZp!26mCkVzFE#*a6',
+      smtpUser: this.configService.get<string>('SEED_OWNER_EMAIL', ''),
+      smtpPassword: this.configService.get<string>('SEED_OWNER_PASSWORD', ''),
       imapHost: 'imap.poczta.onet.pl',
       imapPort: 993,
       imapTls: true,
-      imapUser: 'bartlomiej.zimny@onet.pl',
-      imapPassword: '%UsDZp!26mCkVzFE#*a6',
+      imapUser: this.configService.get<string>('SEED_OWNER_EMAIL', ''),
+      imapPassword: this.configService.get<string>('SEED_OWNER_PASSWORD', ''),
       displayName: 'Tech Startup A - Company Email',
     };
 
@@ -409,12 +439,14 @@ export class SeederService {
       // Create COMPANY email configuration (used by Email Client module)
       // Email Client uses getDecryptedEmailConfigByCompanyId() which queries by companyId
       await this.emailConfigService.createCompanyConfig(companyA.id, companyEmailConfig, true);
-      console.log(`✅ Company Email Config created for Tech Startup A (Onet)`);
+      this.logger.log('Company Email Config created for Tech Startup A (Onet)');
 
-      console.log('✅ Email configurations seeded successfully');
-      console.log('⚠️  SMTP verification skipped for dev/test - verify credentials before sending emails');
+      this.logger.log('Email configurations seeded successfully');
+      this.logger.warn(
+        'SMTP verification skipped for dev/test - verify credentials before sending emails'
+      );
     } catch (error) {
-      console.error('❌ Error seeding email configurations:', error.message);
+      this.logger.error('Error seeding email configurations', (error as Error).message);
       // Continue seeding even if email config fails (email config is optional)
     }
   }

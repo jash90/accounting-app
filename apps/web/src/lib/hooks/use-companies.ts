@@ -1,8 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+
+import { type CreateCompanyDto, type UpdateCompanyDto } from '@/types/dtos';
+
+import { createMutationHook } from './create-mutation-hook';
 import { companiesApi } from '../api/endpoints/companies';
 import { queryKeys } from '../api/query-client';
-import { CreateCompanyDto, UpdateCompanyDto } from '@/types/dtos';
-import { useToast } from '@/components/ui/use-toast';
 
 export function useCompanies() {
   return useQuery({
@@ -19,135 +21,70 @@ export function useCompany(id: string) {
   });
 }
 
-export function useCreateCompany() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useCreateCompany = createMutationHook<void, CreateCompanyDto>({
+  mutationFn: (data) => companiesApi.create(data),
+  invalidateKeys: [queryKeys.companies.all],
+  onSuccess: (_, __, queryClient) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.companies.availableOwners });
+  },
+  successMessage: 'Firma została utworzona',
+  errorMessage: 'Nie udało się utworzyć firmy',
+});
 
-  return useMutation({
-    mutationFn: (companyData: CreateCompanyDto) => companiesApi.create(companyData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
-      // Invalidate available owners as the selected owner is now assigned
-      queryClient.invalidateQueries({ queryKey: ['available-owners'] });
-      toast({
-        title: 'Sukces',
-        description: 'Firma została utworzona',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się utworzyć firmy',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useUpdateCompany = createMutationHook<void, { id: string; data: UpdateCompanyDto }>({
+  mutationFn: ({ id, data }) => companiesApi.update(id, data),
+  invalidateKeys: [queryKeys.companies.all],
+  onSuccess: (_, variables, queryClient) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.companies.detail(variables.id) });
+  },
+  successMessage: 'Firma została zaktualizowana',
+  errorMessage: 'Nie udało się zaktualizować firmy',
+});
 
-export function useUpdateCompany() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateCompanyDto }) =>
-      companiesApi.update(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.companies.detail(variables.id) });
-      toast({
-        title: 'Sukces',
-        description: 'Firma została zaktualizowana',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować firmy',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useDeleteCompany() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => companiesApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
-      toast({
-        title: 'Sukces',
-        description: 'Firma została usunięta',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się usunąć firmy',
-        variant: 'destructive',
-      });
-    },
-  });
-}
+export const useDeleteCompany = createMutationHook<void, string>({
+  mutationFn: (id) => companiesApi.delete(id),
+  invalidateKeys: [queryKeys.companies.all],
+  successMessage: 'Firma została usunięta',
+  errorMessage: 'Nie udało się usunąć firmy',
+});
 
 // Company Module Access Hooks
-export function useCompanyModules(companyId: string) {
+export function useCompanyAssignedModules(companyId: string) {
   return useQuery({
-    queryKey: [...queryKeys.companies.detail(companyId), 'modules'],
+    queryKey: queryKeys.companies.modules(companyId),
     queryFn: () => companiesApi.getCompanyModules(companyId),
     enabled: !!companyId,
   });
 }
 
-export function useGrantModuleToCompany() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useGrantModuleToCompany = createMutationHook<
+  void,
+  { companyId: string; moduleSlug: string }
+>({
+  mutationFn: ({ companyId, moduleSlug }) =>
+    companiesApi.grantModuleToCompany(companyId, moduleSlug),
+  onSuccess: (_, variables, queryClient) => {
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.companies.modules(variables.companyId),
+    });
+  },
+  successMessage: 'Moduł został włączony',
+  errorMessage: 'Nie udało się włączyć modułu',
+});
 
-  return useMutation({
-    mutationFn: ({ companyId, moduleSlug }: { companyId: string; moduleSlug: string }) =>
-      companiesApi.grantModuleToCompany(companyId, moduleSlug),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.companies.detail(variables.companyId), 'modules'] });
-      toast({
-        title: 'Sukces',
-        description: 'Moduł został włączony',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się włączyć modułu',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useRevokeModuleFromCompany() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ companyId, moduleSlug }: { companyId: string; moduleSlug: string }) =>
-      companiesApi.revokeModuleFromCompany(companyId, moduleSlug),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [...queryKeys.companies.detail(variables.companyId), 'modules'] });
-      // Also invalidate employee permissions queries as they might have been cascaded
-      queryClient.invalidateQueries({ queryKey: ['company', 'employees'] });
-      toast({
-        title: 'Sukces',
-        description: 'Dostęp do modułu został cofnięty. Wszystkie uprawnienia pracowników dla tego modułu zostały usunięte.',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się wyłączyć modułu',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
+export const useRevokeModuleFromCompany = createMutationHook<
+  void,
+  { companyId: string; moduleSlug: string }
+>({
+  mutationFn: ({ companyId, moduleSlug }) =>
+    companiesApi.revokeModuleFromCompany(companyId, moduleSlug),
+  onSuccess: (_, variables, queryClient) => {
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.companies.modules(variables.companyId),
+    });
+    queryClient.invalidateQueries({ queryKey: queryKeys.companies.companyEmployees });
+  },
+  successMessage:
+    'Dostęp do modułu został cofnięty. Wszystkie uprawnienia pracowników dla tego modułu zostały usunięte.',
+  errorMessage: 'Nie udało się wyłączyć modułu',
+});

@@ -1,11 +1,20 @@
-import { Injectable, NotFoundException, ForbiddenException, InternalServerErrorException, Logger, Inject, forwardRef } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
+
 import { User } from '@accounting/common';
 import { EmailConfigurationService } from '@accounting/email';
-import { EmailDraft } from '../entities/email-draft.entity';
-import { CreateDraftDto, UpdateDraftDto } from '../dto/create-draft.dto';
+
 import { EmailDraftSyncService, SyncResult } from './email-draft-sync.service';
+import { CreateDraftDto, UpdateDraftDto } from '../dto/create-draft.dto';
+import { EmailDraft } from '../entities/email-draft.entity';
 
 /**
  * Service for managing email drafts
@@ -21,9 +30,8 @@ export class EmailDraftService {
   constructor(
     @InjectRepository(EmailDraft)
     private readonly draftRepository: Repository<EmailDraft>,
-    @Inject(forwardRef(() => EmailDraftSyncService))
     private readonly draftSyncService: EmailDraftSyncService,
-    private readonly emailConfigService: EmailConfigurationService,
+    private readonly emailConfigService: EmailConfigurationService
   ) {}
 
   /**
@@ -45,7 +53,9 @@ export class EmailDraftService {
 
     // Sync to IMAP if enabled
     if (syncToImap) {
-      const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(user.companyId);
+      const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
+        user.companyId
+      );
       if (emailConfig) {
         try {
           await this.draftSyncService.pushDraftToImap(savedDraft, emailConfig);
@@ -62,7 +72,7 @@ export class EmailDraftService {
   /**
    * Get all drafts for user's company
    */
-  async findAll(user: User): Promise<EmailDraft[]> {
+  findAll(user: User): Promise<EmailDraft[]> {
     if (!user.companyId) {
       throw new ForbiddenException('User must belong to a company');
     }
@@ -105,7 +115,10 @@ export class EmailDraftService {
       throw new ForbiddenException('You can only edit your own drafts');
     }
 
-    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(user.companyId!);
+    // companyId is validated in findOne() which throws if missing
+    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
+      user.companyId as string
+    );
 
     if (emailConfig && draft.syncStatus === 'synced' && draft.imapUid) {
       try {
@@ -132,7 +145,10 @@ export class EmailDraftService {
       throw new ForbiddenException('You can only delete your own drafts');
     }
 
-    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(user.companyId!);
+    // companyId is validated in findOne() which throws if missing
+    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
+      user.companyId as string
+    );
 
     if (emailConfig && draft.imapUid) {
       try {
@@ -150,7 +166,7 @@ export class EmailDraftService {
   /**
    * Get drafts created by current user
    */
-  async findMyDrafts(user: User): Promise<EmailDraft[]> {
+  findMyDrafts(user: User): Promise<EmailDraft[]> {
     if (!user.companyId) {
       throw new ForbiddenException('User must belong to a company');
     }
@@ -167,7 +183,7 @@ export class EmailDraftService {
   /**
    * Get AI-generated drafts only
    */
-  async findAiDrafts(user: User): Promise<EmailDraft[]> {
+  findAiDrafts(user: User): Promise<EmailDraft[]> {
     if (!user.companyId) {
       throw new ForbiddenException('User must belong to a company');
     }
@@ -184,24 +200,24 @@ export class EmailDraftService {
   /**
    * Sync all drafts with IMAP server
    */
-  async syncWithImap(user: User): Promise<SyncResult> {
+  syncWithImap(user: User): Promise<SyncResult> {
     return this.draftSyncService.syncDrafts(user);
   }
 
   /**
    * Get drafts with sync conflicts
    */
-  async findConflicts(user: User): Promise<EmailDraft[]> {
+  findConflicts(user: User): Promise<EmailDraft[]> {
     return this.draftSyncService.findConflicts(user);
   }
 
   /**
    * Resolve a sync conflict
    */
-  async resolveConflict(
+  resolveConflict(
     user: User,
     draftId: string,
-    resolution: 'keep_local' | 'keep_imap',
+    resolution: 'keep_local' | 'keep_imap'
   ): Promise<EmailDraft> {
     return this.draftSyncService.resolveConflict(draftId, resolution, user);
   }

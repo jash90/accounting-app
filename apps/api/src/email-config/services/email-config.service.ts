@@ -1,34 +1,20 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
-import { EmailConfiguration, Company } from '@accounting/common';
+
+import { EmailConfiguration } from '@accounting/common';
+import { EncryptionService, SystemCompanyService } from '@accounting/common/backend';
 import { CreateEmailConfigDto, UpdateEmailConfigDto } from '@accounting/email';
-import { EncryptionService } from './encryption.service';
 
 @Injectable()
 export class EmailConfigService {
   constructor(
     @InjectRepository(EmailConfiguration)
-    private emailConfigRepository: Repository<EmailConfiguration>,
-    @InjectRepository(Company)
-    private companyRepository: Repository<Company>,
-    private encryptionService: EncryptionService,
+    private readonly emailConfigRepository: Repository<EmailConfiguration>,
+    private readonly encryptionService: EncryptionService,
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
-
-  /**
-   * Get the System Admin company (isSystemCompany: true)
-   */
-  private async getSystemAdminCompany(): Promise<Company> {
-    const systemCompany = await this.companyRepository.findOne({
-      where: { isSystemCompany: true },
-    });
-
-    if (!systemCompany) {
-      throw new NotFoundException('System Admin company not found. Please run migrations.');
-    }
-
-    return systemCompany;
-  }
 
   /**
    * Get user's email configuration
@@ -102,7 +88,10 @@ export class EmailConfigService {
   /**
    * Create company email configuration
    */
-  async createCompanyConfig(companyId: string, dto: CreateEmailConfigDto): Promise<EmailConfiguration> {
+  async createCompanyConfig(
+    companyId: string,
+    dto: CreateEmailConfigDto
+  ): Promise<EmailConfiguration> {
     // Check if company already has a configuration
     const existing = await this.emailConfigRepository.findOne({
       where: { companyId },
@@ -160,7 +149,10 @@ export class EmailConfigService {
   /**
    * Update company email configuration
    */
-  async updateCompanyConfig(companyId: string, dto: UpdateEmailConfigDto): Promise<EmailConfiguration> {
+  async updateCompanyConfig(
+    companyId: string,
+    dto: UpdateEmailConfigDto
+  ): Promise<EmailConfiguration> {
     const config = await this.getCompanyConfig(companyId);
 
     // Create a copy to avoid mutating the input DTO
@@ -200,7 +192,7 @@ export class EmailConfigService {
    * Get System Admin email configuration (shared across all admins)
    */
   async getSystemAdminConfig(): Promise<EmailConfiguration> {
-    const systemCompany = await this.getSystemAdminCompany();
+    const systemCompany = await this.systemCompanyService.getSystemCompany();
 
     const config = await this.emailConfigRepository.findOne({
       where: { companyId: systemCompany.id },
@@ -218,7 +210,7 @@ export class EmailConfigService {
    * Create System Admin email configuration
    */
   async createSystemAdminConfig(dto: CreateEmailConfigDto): Promise<EmailConfiguration> {
-    const systemCompany = await this.getSystemAdminCompany();
+    const systemCompany = await this.systemCompanyService.getSystemCompany();
 
     // Check if System Admin already has a configuration
     const existing = await this.emailConfigRepository.findOne({
@@ -286,7 +278,7 @@ export class EmailConfigService {
    * Get System Admin company ID (for email service)
    */
   async getSystemAdminCompanyId(): Promise<string> {
-    const systemCompany = await this.getSystemAdminCompany();
+    const systemCompany = await this.systemCompanyService.getSystemCompany();
     return systemCompany.id;
   }
 }

@@ -1,8 +1,7 @@
-import {
-  IsEnum,
-  IsUUID,
-} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+
+import { IsEnum, IsUUID } from 'class-validator';
+
 import { TaskDependencyType } from '@accounting/common';
 
 export class CreateTaskDependencyDto {

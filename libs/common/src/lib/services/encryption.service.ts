@@ -1,13 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
-import {
-  createCipheriv,
-  createDecipheriv,
-  randomBytes,
-  scrypt,
-} from 'crypto';
-import { promisify } from 'util';
-import * as fs from 'fs';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+
+import { createCipheriv, createDecipheriv, randomBytes, scrypt } from 'crypto';
+import { promises as fsPromises } from 'fs';
 import * as path from 'path';
+import { promisify } from 'util';
+
 
 const scryptAsync = promisify(scrypt);
 
@@ -37,59 +34,60 @@ const ENCRYPTION_FORMAT_REGEX = /^[a-f0-9]{32}:[a-f0-9]{24}:[a-f0-9]{32}:[a-f0-9
  * ```
  */
 @Injectable()
-export class EncryptionService {
+export class EncryptionService implements OnModuleInit {
   private readonly logger = new Logger(EncryptionService.name);
   private readonly algorithm = 'aes-256-gcm';
   private secretKey: string | null = null;
 
   constructor() {
-    this.initializeKey();
-  }
-
-  private initializeKey(): void {
+    // Initialize from env var only — no file I/O in constructor
     const envKey = process.env['ENCRYPTION_SECRET'] || process.env['ENCRYPTION_KEY'];
 
     if (process.env['NODE_ENV'] === 'production') {
       if (!envKey) {
-        throw new Error(
-          'ENCRYPTION_SECRET environment variable is required in production'
-        );
+        throw new Error('ENCRYPTION_SECRET environment variable is required in production');
       }
       if (envKey.length < 32) {
         throw new Error('ENCRYPTION_SECRET must be at least 32 characters long');
       }
       this.secretKey = envKey;
-    } else {
-      // Development: use env var if available, otherwise use/create persistent file
-      if (envKey && envKey.length >= 32) {
-        this.secretKey = envKey;
-      } else {
-        this.secretKey = this.getOrCreateDevKey();
-      }
+    } else if (envKey && envKey.length >= 32) {
+      this.secretKey = envKey;
+    }
+    // Dev key (file-based) will be initialized async in onModuleInit
+  }
+
+  async onModuleInit(): Promise<void> {
+    if (!this.secretKey) {
+      this.secretKey = await this.getOrCreateDevKey();
+      this.logger.warn(
+        `Using development encryption key from ${DEV_KEY_FILE}. ` +
+          'Set ENCRYPTION_SECRET environment variable for production.'
+      );
     }
   }
 
   /**
-   * Get or create a persistent development encryption key
-   * Ensures encrypted data survives application restarts in development
+   * Get or create a persistent development encryption key using async I/O.
+   * Ensures encrypted data survives application restarts in development.
    */
-  private getOrCreateDevKey(): string {
+  private async getOrCreateDevKey(): Promise<string> {
+    // Try to read existing key
     try {
-      // Try to read existing key
-      if (fs.existsSync(DEV_KEY_FILE)) {
-        const existingKey = fs.readFileSync(DEV_KEY_FILE, 'utf-8').trim();
-        if (existingKey.length >= 64) {
-          this.logger.debug('Loaded existing development encryption key');
-          return existingKey;
-        }
+      const existingKey = (await fsPromises.readFile(DEV_KEY_FILE, 'utf-8')).trim();
+      if (existingKey.length >= 64) {
+        this.logger.debug('Loaded existing development encryption key');
+        return existingKey;
       }
+    } catch {
+      // File doesn't exist or can't be read — will create a new one below
+    }
 
-      // Generate new key and persist it
+    // Generate new key and persist it
+    try {
       const newKey = randomBytes(32).toString('hex');
-      fs.writeFileSync(DEV_KEY_FILE, newKey, { mode: 0o600 }); // Read/write only for owner
-      this.logger.log(
-        `Generated new development encryption key and saved to ${DEV_KEY_FILE}`
-      );
+      await fsPromises.writeFile(DEV_KEY_FILE, newKey, { mode: 0o600 }); // Read/write only for owner
+      this.logger.log(`Generated new development encryption key and saved to ${DEV_KEY_FILE}`);
       return newKey;
     } catch (error) {
       // Fallback: generate key without persistence (with loud warning)
@@ -105,10 +103,7 @@ export class EncryptionService {
 
   private getKey(): string {
     if (!this.secretKey) {
-      this.initializeKey();
-    }
-    if (!this.secretKey) {
-      throw new Error('Encryption key not initialized');
+      throw new Error('Encryption key not initialized. Ensure onModuleInit has completed.');
     }
     return this.secretKey;
   }
@@ -131,10 +126,7 @@ export class EncryptionService {
     const key = (await scryptAsync(this.getKey(), salt, 32)) as Buffer;
 
     const cipher = createCipheriv(this.algorithm, key, iv);
-    const encrypted = Buffer.concat([
-      cipher.update(text, 'utf8'),
-      cipher.final(),
-    ]);
+    const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
 
     // Get authentication tag (GCM provides this)
     const authTag = cipher.getAuthTag();
@@ -161,16 +153,12 @@ export class EncryptionService {
     }
 
     if (!ENCRYPTION_FORMAT_REGEX.test(encryptedText)) {
-      throw new Error(
-        'Invalid encrypted text format: expected salt:iv:authTag:encryptedData'
-      );
+      throw new Error('Invalid encrypted text format: expected salt:iv:authTag:encryptedData');
     }
 
     const parts = encryptedText.split(':');
     if (parts.length !== 4) {
-      throw new Error(
-        'Invalid encrypted text format: expected 4 parts separated by colons'
-      );
+      throw new Error('Invalid encrypted text format: expected 4 parts separated by colons');
     }
 
     const [saltHex, ivHex, authTagHex, encryptedDataHex] = parts;
@@ -187,10 +175,7 @@ export class EncryptionService {
       const decipher = createDecipheriv(this.algorithm, key, iv);
       decipher.setAuthTag(authTag);
 
-      const decrypted = Buffer.concat([
-        decipher.update(encryptedData),
-        decipher.final(),
-      ]);
+      const decrypted = Buffer.concat([decipher.update(encryptedData), decipher.final()]);
 
       return decrypted.toString('utf8');
     } catch {

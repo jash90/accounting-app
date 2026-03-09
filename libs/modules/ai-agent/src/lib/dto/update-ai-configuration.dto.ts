@@ -1,14 +1,16 @@
-import {
-  IsString,
-  IsEnum,
-  IsOptional,
-  IsNumber,
-  IsNotEmpty,
-  IsBoolean,
-  Min,
-  Max,
-} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+
+import {
+  IsBoolean,
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
+
 import { AIProvider } from '@accounting/common';
 
 export class UpdateAIConfigurationDto {
@@ -71,7 +73,8 @@ export class UpdateAIConfigurationDto {
 
   // Embedding configuration (for RAG/Knowledge Base)
   @ApiPropertyOptional({
-    description: 'AI provider to use for embeddings (defaults to OpenAI as OpenRouter does not support embeddings)',
+    description:
+      'AI provider to use for embeddings (defaults to OpenAI as OpenRouter does not support embeddings)',
     enum: AIProvider,
   })
   @IsOptional()
@@ -79,7 +82,8 @@ export class UpdateAIConfigurationDto {
   embeddingProvider?: AIProvider;
 
   @ApiPropertyOptional({
-    description: 'Separate API key for embeddings (optional, falls back to main API key if not provided)',
+    description:
+      'Separate API key for embeddings (optional, falls back to main API key if not provided)',
   })
   @IsOptional()
   @IsString()

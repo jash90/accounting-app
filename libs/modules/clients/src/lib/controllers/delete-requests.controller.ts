@@ -1,36 +1,28 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Delete,
   Body,
+  Controller,
+  Delete,
+  Get,
   Param,
+  ParseUUIDPipe,
+  Post,
   Query,
   UseGuards,
-  ParseUUIDPipe,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiQuery,
-} from '@nestjs/swagger';
-import { JwtAuthGuard, CurrentUser } from '@accounting/auth';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
+import { DeleteRequestStatus, User } from '@accounting/common';
 import {
   ModuleAccessGuard,
+  OwnerOrAdmin,
+  OwnerOrAdminGuard,
   PermissionGuard,
   RequireModule,
   RequirePermission,
-  OwnerOrAdminGuard,
-  OwnerOrAdmin,
 } from '@accounting/rbac';
-import { User, DeleteRequestStatus } from '@accounting/common';
-import {
-  DeleteRequestService,
-  CreateDeleteRequestDto,
-  ProcessDeleteRequestDto,
-} from '../services/delete-request.service';
+
+import { DeleteRequestService, ProcessDeleteRequestDto } from '../services/delete-request.service';
 
 @ApiTags('Client Delete Requests')
 @ApiBearerAuth()
@@ -47,10 +39,7 @@ export class DeleteRequestsController {
   @UseGuards(OwnerOrAdminGuard)
   @OwnerOrAdmin()
   @RequirePermission('clients', 'read')
-  async findAll(
-    @CurrentUser() user: User,
-    @Query('status') status?: DeleteRequestStatus,
-  ) {
+  async findAll(@CurrentUser() user: User, @Query('status') status?: DeleteRequestStatus) {
     return this.deleteRequestService.findAllRequests(user, status);
   }
 
@@ -77,10 +66,7 @@ export class DeleteRequestsController {
   @ApiResponse({ status: 200, description: 'Delete request details' })
   @ApiResponse({ status: 404, description: 'Delete request not found' })
   @RequirePermission('clients', 'read')
-  async findOne(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
-  ) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.deleteRequestService.findRequestById(id, user);
   }
 
@@ -92,10 +78,7 @@ export class DeleteRequestsController {
   @UseGuards(OwnerOrAdminGuard)
   @OwnerOrAdmin()
   @RequirePermission('clients', 'delete')
-  async approve(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
-  ) {
+  async approve(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.deleteRequestService.approveRequest(id, user);
   }
 
@@ -110,7 +93,7 @@ export class DeleteRequestsController {
   async reject(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ProcessDeleteRequestDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ) {
     return this.deleteRequestService.rejectRequest(id, dto, user);
   }
@@ -121,10 +104,7 @@ export class DeleteRequestsController {
   @ApiResponse({ status: 400, description: 'Invalid request status' })
   @ApiResponse({ status: 404, description: 'Delete request not found' })
   @RequirePermission('clients', 'write')
-  async cancel(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: User,
-  ) {
+  async cancel(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     await this.deleteRequestService.cancelRequest(id, user);
     return { message: 'Delete request cancelled successfully' };
   }

@@ -1,8 +1,11 @@
-import { useState, useCallback } from 'react';
-import { Upload, Loader2 } from 'lucide-react';
+import { useCallback, useState } from 'react';
+
+import { Loader2, Upload } from 'lucide-react';
+
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { AttachmentList, type Attachment, formatFileSize } from './AttachmentList';
+
+import { AttachmentList, formatFileSize, type Attachment } from './AttachmentList';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -87,12 +90,13 @@ export function AttachmentUpload({
     <div className="space-y-3">
       <Label>Załączniki</Label>
 
-      {/* Drag & Drop Zone */}
+      {/* Drag & Drop Zone - keyboard accessible via the file input inside */}
       <div
+        role="presentation"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+        className={`rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
           isDragging
             ? 'border-primary bg-primary/5'
             : 'border-muted-foreground/25 hover:border-muted-foreground/50'
@@ -105,32 +109,25 @@ export function AttachmentUpload({
           className="hidden"
           onChange={(e) => handleFileUpload(e.target.files)}
         />
-        <label
-          htmlFor="file-upload"
-          className="cursor-pointer flex flex-col items-center gap-2"
-        >
+        <label htmlFor="file-upload" className="flex cursor-pointer flex-col items-center gap-2">
           {isUploading ? (
-            <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
+            <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
           ) : (
-            <Upload className="h-8 w-8 text-muted-foreground" />
+            <Upload className="text-muted-foreground h-8 w-8" />
           )}
-          <span className="text-sm text-muted-foreground">
+          <span className="text-muted-foreground text-sm">
             {isUploading
               ? 'Przesyłanie...'
               : 'Przeciągnij i upuść pliki tutaj lub kliknij, aby przeglądać'}
           </span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-muted-foreground text-xs">
             Maksymalny rozmiar pliku: {formatFileSize(maxFileSize)}
           </span>
         </label>
       </div>
 
       {/* Uploaded Attachments List */}
-      <AttachmentList
-        attachments={attachments}
-        mode="compose"
-        onRemove={handleRemoveAttachment}
-      />
+      <AttachmentList attachments={attachments} mode="compose" onRemove={handleRemoveAttachment} />
     </div>
   );
 }

@@ -1,35 +1,37 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, DataSource, QueryRunner, EntityManager } from 'typeorm';
 import { HttpStatus } from '@nestjs/common';
-import { DeleteRequestService } from './delete-request.service';
-import { ClientsService } from './clients.service';
-import { ClientChangelogService } from './client-changelog.service';
+import { Test, type TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+
+import { DataSource, type EntityManager, type QueryRunner, type Repository } from 'typeorm';
+
 import {
-  ClientDeleteRequest,
   Client,
-  User,
-  UserRole,
+  ClientDeleteRequest,
   DeleteRequestStatus,
-  TenantService,
   EmploymentType,
-  VatStatus,
   TaxScheme,
+  UserRole,
+  VatStatus,
   ZusStatus,
+  type User,
 } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
+
 import {
-  ClientNotFoundException,
-  DeleteRequestNotFoundException,
-  DeleteRequestAlreadyProcessedException,
-  ClientException,
   ClientErrorCode,
+  ClientException,
+  ClientNotFoundException,
+  DeleteRequestAlreadyProcessedException,
+  DeleteRequestNotFoundException,
 } from '../exceptions';
+import { ClientChangelogService } from './client-changelog.service';
+import { ClientsService } from './clients.service';
+import { DeleteRequestService } from './delete-request.service';
 
 describe('DeleteRequestService', () => {
   let service: DeleteRequestService;
   let deleteRequestRepository: jest.Mocked<Repository<ClientDeleteRequest>>;
   let clientRepository: jest.Mocked<Repository<Client>>;
-  let clientsService: jest.Mocked<ClientsService>;
   let clientChangelogService: jest.Mocked<ClientChangelogService>;
   let tenantService: jest.Mocked<TenantService>;
   let dataSource: jest.Mocked<DataSource>;
@@ -41,47 +43,52 @@ describe('DeleteRequestService', () => {
   const mockUserId = 'user-789';
   const mockRequestId = 'request-abc';
 
-  const createMockUser = (overrides: Partial<User> = {}): User => ({
-    id: mockUserId,
-    email: 'test@example.com',
-    firstName: 'Test',
-    lastName: 'User',
-    role: UserRole.EMPLOYEE,
-    companyId: mockCompanyId,
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    ...overrides,
-  } as User);
+  const createMockUser = (overrides: Partial<User> = {}): User =>
+    ({
+      id: mockUserId,
+      email: 'test@example.com',
+      firstName: 'Test',
+      lastName: 'User',
+      role: UserRole.EMPLOYEE,
+      companyId: mockCompanyId,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...overrides,
+    }) as User;
 
-  const createMockClient = (overrides: Partial<Client> = {}): Client => ({
-    id: mockClientId,
-    companyId: mockCompanyId,
-    name: 'Test Client',
-    nip: '1234567890',
-    email: 'client@example.com',
-    employmentType: EmploymentType.DG,
-    vatStatus: VatStatus.VAT_MONTHLY,
-    taxScheme: TaxScheme.GENERAL,
-    zusStatus: ZusStatus.FULL,
-    isActive: true,
-    receiveEmailCopy: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    ...overrides,
-  } as Client);
+  const createMockClient = (overrides: Partial<Client> = {}): Client =>
+    ({
+      id: mockClientId,
+      companyId: mockCompanyId,
+      name: 'Test Client',
+      nip: '1234567890',
+      email: 'client@example.com',
+      employmentType: EmploymentType.DG,
+      vatStatus: VatStatus.VAT_MONTHLY,
+      taxScheme: TaxScheme.GENERAL,
+      zusStatus: ZusStatus.FULL,
+      isActive: true,
+      receiveEmailCopy: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...overrides,
+    }) as Client;
 
-  const createMockDeleteRequest = (overrides: Partial<ClientDeleteRequest> = {}): ClientDeleteRequest => ({
-    id: mockRequestId,
-    clientId: mockClientId,
-    companyId: mockCompanyId,
-    requestedById: mockUserId,
-    reason: 'Test reason',
-    status: DeleteRequestStatus.PENDING,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    ...overrides,
-  } as ClientDeleteRequest);
+  const createMockDeleteRequest = (
+    overrides: Partial<ClientDeleteRequest> = {}
+  ): ClientDeleteRequest =>
+    ({
+      id: mockRequestId,
+      clientId: mockClientId,
+      companyId: mockCompanyId,
+      requestedById: mockUserId,
+      reason: 'Test reason',
+      status: DeleteRequestStatus.PENDING,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...overrides,
+    }) as ClientDeleteRequest;
 
   beforeEach(async () => {
     // Create mock entity manager
@@ -104,34 +111,60 @@ describe('DeleteRequestService', () => {
       createQueryRunner: jest.fn().mockReturnValue(queryRunner),
     } as unknown as jest.Mocked<DataSource>;
 
+    // Create mock repositories
+    const mockDeleteRequestRepository = {
+      find: jest.fn(),
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      remove: jest.fn(),
+    };
+
+    const mockClientRepository = {
+      findOne: jest.fn(),
+    };
+
+    const mockClientsService = {};
+
+    const mockClientChangelogService = {
+      notifyClientDeleted: jest.fn(),
+    };
+
+    const mockTenantService = {
+      getEffectiveCompanyId: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        DeleteRequestService,
+        // Use useFactory to manually wire dependencies (needed for Bun which doesn't emit decorator metadata)
+        {
+          provide: DeleteRequestService,
+          useFactory: () => {
+            return new DeleteRequestService(
+              mockDeleteRequestRepository as any,
+              mockClientRepository as any,
+              mockClientsService as any,
+              mockClientChangelogService as any,
+              dataSource as any,
+              mockTenantService as any
+            );
+          },
+        },
         {
           provide: getRepositoryToken(ClientDeleteRequest),
-          useValue: {
-            find: jest.fn(),
-            findOne: jest.fn(),
-            create: jest.fn(),
-            save: jest.fn(),
-            remove: jest.fn(),
-          },
+          useValue: mockDeleteRequestRepository,
         },
         {
           provide: getRepositoryToken(Client),
-          useValue: {
-            findOne: jest.fn(),
-          },
+          useValue: mockClientRepository,
         },
         {
           provide: ClientsService,
-          useValue: {},
+          useValue: mockClientsService,
         },
         {
           provide: ClientChangelogService,
-          useValue: {
-            notifyClientDeleted: jest.fn(),
-          },
+          useValue: mockClientChangelogService,
         },
         {
           provide: DataSource,
@@ -139,9 +172,7 @@ describe('DeleteRequestService', () => {
         },
         {
           provide: TenantService,
-          useValue: {
-            getEffectiveCompanyId: jest.fn(),
-          },
+          useValue: mockTenantService,
         },
       ],
     }).compile();
@@ -149,7 +180,6 @@ describe('DeleteRequestService', () => {
     service = module.get<DeleteRequestService>(DeleteRequestService);
     deleteRequestRepository = module.get(getRepositoryToken(ClientDeleteRequest));
     clientRepository = module.get(getRepositoryToken(Client));
-    clientsService = module.get(ClientsService);
     clientChangelogService = module.get(ClientChangelogService);
     tenantService = module.get(TenantService);
   });
@@ -195,8 +225,9 @@ describe('DeleteRequestService', () => {
       tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
       clientRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.createDeleteRequest(mockClientId, dto, user))
-        .rejects.toThrow(ClientNotFoundException);
+      await expect(service.createDeleteRequest(mockClientId, dto, user)).rejects.toBeInstanceOf(
+        ClientNotFoundException
+      );
     });
 
     it('should throw ClientNotFoundException when client is not active', async () => {
@@ -207,8 +238,9 @@ describe('DeleteRequestService', () => {
       // findOne returns null because isActive: true filter doesn't match
       clientRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.createDeleteRequest(mockClientId, dto, user))
-        .rejects.toThrow(ClientNotFoundException);
+      await expect(service.createDeleteRequest(mockClientId, dto, user)).rejects.toBeInstanceOf(
+        ClientNotFoundException
+      );
     });
 
     it('should throw DeleteRequestAlreadyProcessedException when pending request exists', async () => {
@@ -221,8 +253,9 @@ describe('DeleteRequestService', () => {
       clientRepository.findOne.mockResolvedValue(client);
       deleteRequestRepository.findOne.mockResolvedValue(existingRequest);
 
-      await expect(service.createDeleteRequest(mockClientId, dto, user))
-        .rejects.toThrow(DeleteRequestAlreadyProcessedException);
+      await expect(service.createDeleteRequest(mockClientId, dto, user)).rejects.toBeInstanceOf(
+        DeleteRequestAlreadyProcessedException
+      );
     });
 
     it('should create request without reason when not provided', async () => {
@@ -256,8 +289,9 @@ describe('DeleteRequestService', () => {
       tenantService.getEffectiveCompanyId.mockResolvedValue('different-company');
       clientRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.createDeleteRequest(mockClientId, dto, user))
-        .rejects.toThrow(ClientNotFoundException);
+      await expect(service.createDeleteRequest(mockClientId, dto, user)).rejects.toBeInstanceOf(
+        ClientNotFoundException
+      );
 
       expect(clientRepository.findOne).toHaveBeenCalledWith({
         where: { id: mockClientId, companyId: 'different-company', isActive: true },
@@ -325,9 +359,7 @@ describe('DeleteRequestService', () => {
 
     it('should filter by status when provided', async () => {
       const user = createMockUser();
-      const approvedRequests = [
-        createMockDeleteRequest({ status: DeleteRequestStatus.APPROVED }),
-      ];
+      const approvedRequests = [createMockDeleteRequest({ status: DeleteRequestStatus.APPROVED })];
 
       tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.find.mockResolvedValue(approvedRequests);
@@ -366,8 +398,9 @@ describe('DeleteRequestService', () => {
       tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.findRequestById(mockRequestId, user))
-        .rejects.toThrow(DeleteRequestNotFoundException);
+      await expect(service.findRequestById(mockRequestId, user)).rejects.toBeInstanceOf(
+        DeleteRequestNotFoundException
+      );
     });
 
     it('should enforce tenant isolation', async () => {
@@ -376,8 +409,9 @@ describe('DeleteRequestService', () => {
       tenantService.getEffectiveCompanyId.mockResolvedValue('different-company');
       deleteRequestRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.findRequestById(mockRequestId, user))
-        .rejects.toThrow(DeleteRequestNotFoundException);
+      await expect(service.findRequestById(mockRequestId, user)).rejects.toBeInstanceOf(
+        DeleteRequestNotFoundException
+      );
 
       expect(deleteRequestRepository.findOne).toHaveBeenCalledWith({
         where: { id: mockRequestId, companyId: 'different-company' },
@@ -442,8 +476,9 @@ describe('DeleteRequestService', () => {
       tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
 
-      await expect(service.approveRequest(mockRequestId, user))
-        .rejects.toThrow(DeleteRequestAlreadyProcessedException);
+      await expect(service.approveRequest(mockRequestId, user)).rejects.toBeInstanceOf(
+        DeleteRequestAlreadyProcessedException
+      );
     });
 
     it('should throw ClientNotFoundException when client not found', async () => {
@@ -454,8 +489,9 @@ describe('DeleteRequestService', () => {
       deleteRequestRepository.findOne.mockResolvedValue(request);
       clientRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.approveRequest(mockRequestId, user))
-        .rejects.toThrow(ClientNotFoundException);
+      await expect(service.approveRequest(mockRequestId, user)).rejects.toBeInstanceOf(
+        ClientNotFoundException
+      );
     });
 
     it('should rollback transaction on error', async () => {
@@ -586,8 +622,9 @@ describe('DeleteRequestService', () => {
       tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
 
-      await expect(service.rejectRequest(mockRequestId, dto, user))
-        .rejects.toThrow(DeleteRequestAlreadyProcessedException);
+      await expect(service.rejectRequest(mockRequestId, dto, user)).rejects.toBeInstanceOf(
+        DeleteRequestAlreadyProcessedException
+      );
     });
 
     it('should reject without reason when not provided', async () => {
@@ -672,8 +709,9 @@ describe('DeleteRequestService', () => {
       tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
 
-      await expect(service.cancelRequest(mockRequestId, user))
-        .rejects.toThrow(DeleteRequestAlreadyProcessedException);
+      await expect(service.cancelRequest(mockRequestId, user)).rejects.toBeInstanceOf(
+        DeleteRequestAlreadyProcessedException
+      );
     });
 
     it('should throw DeleteRequestNotFoundException when request not found', async () => {
@@ -682,8 +720,9 @@ describe('DeleteRequestService', () => {
       tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.cancelRequest(mockRequestId, user))
-        .rejects.toThrow(DeleteRequestNotFoundException);
+      await expect(service.cancelRequest(mockRequestId, user)).rejects.toBeInstanceOf(
+        DeleteRequestNotFoundException
+      );
     });
   });
 
@@ -746,8 +785,9 @@ describe('DeleteRequestService', () => {
       tenantService.getEffectiveCompanyId.mockResolvedValue('company-A');
       deleteRequestRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.findRequestById(mockRequestId, user))
-        .rejects.toThrow(DeleteRequestNotFoundException);
+      await expect(service.findRequestById(mockRequestId, user)).rejects.toBeInstanceOf(
+        DeleteRequestNotFoundException
+      );
     });
   });
 
@@ -764,8 +804,9 @@ describe('DeleteRequestService', () => {
         const request = createMockDeleteRequest({ status });
         deleteRequestRepository.findOne.mockResolvedValue(request);
 
-        await expect(service.approveRequest(mockRequestId, user))
-          .rejects.toThrow(DeleteRequestAlreadyProcessedException);
+        await expect(service.approveRequest(mockRequestId, user)).rejects.toBeInstanceOf(
+          DeleteRequestAlreadyProcessedException
+        );
       }
     });
 
@@ -778,8 +819,9 @@ describe('DeleteRequestService', () => {
         const request = createMockDeleteRequest({ status });
         deleteRequestRepository.findOne.mockResolvedValue(request);
 
-        await expect(service.rejectRequest(mockRequestId, {}, user))
-          .rejects.toThrow(DeleteRequestAlreadyProcessedException);
+        await expect(service.rejectRequest(mockRequestId, {}, user)).rejects.toBeInstanceOf(
+          DeleteRequestAlreadyProcessedException
+        );
       }
     });
 
@@ -792,8 +834,9 @@ describe('DeleteRequestService', () => {
         const request = createMockDeleteRequest({ status, requestedById: user.id });
         deleteRequestRepository.findOne.mockResolvedValue(request);
 
-        await expect(service.cancelRequest(mockRequestId, user))
-          .rejects.toThrow(DeleteRequestAlreadyProcessedException);
+        await expect(service.cancelRequest(mockRequestId, user)).rejects.toBeInstanceOf(
+          DeleteRequestAlreadyProcessedException
+        );
       }
     });
   });

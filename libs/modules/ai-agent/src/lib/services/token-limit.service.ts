@@ -1,34 +1,59 @@
 import {
-  Injectable,
-  ForbiddenException,
   BadRequestException,
+  ForbiddenException,
+  Injectable,
   NotFoundException,
-  Inject,
-  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { TokenLimit, User, UserRole } from '@accounting/common';
-import { SetTokenLimitDto } from '../dto/set-token-limit.dto';
+
+import { IsNull, Repository } from 'typeorm';
+
+import { Company, TokenLimit, User, UserRole } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
+
 import { TokenUsageService } from './token-usage.service';
-import { SystemCompanyService } from './system-company.service';
+import { SetTokenLimitDto } from '../dto/set-token-limit.dto';
+
+interface TokenLimitWithUsage {
+  id: string;
+  companyId: string | null;
+  userId: string | null;
+  monthlyLimit: number;
+  warningThresholdPercentage: number;
+  notifyOnWarning: boolean;
+  notifyOnExceeded: boolean;
+  setById: string;
+  createdAt: Date;
+  updatedAt: Date;
+  user?: User | null;
+  company?: Company | null;
+  setBy?: User | null;
+  currentUsage: number;
+  usagePercentage: number;
+  isExceeded: boolean;
+  isWarning: boolean;
+}
+
+interface MyLimitResult {
+  userLimit: TokenLimitWithUsage | null;
+  companyLimit: TokenLimitWithUsage | null;
+}
 
 @Injectable()
 export class TokenLimitService {
   constructor(
     @InjectRepository(TokenLimit)
-    private limitRepository: Repository<TokenLimit>,
+    private readonly limitRepository: Repository<TokenLimit>,
     @InjectRepository(User)
-    private userRepository: Repository<User>,
-    @Inject(forwardRef(() => TokenUsageService))
-    private tokenUsageService: TokenUsageService,
-    private systemCompanyService: SystemCompanyService,
+    private readonly userRepository: Repository<User>,
+    private readonly tokenUsageService: TokenUsageService,
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   /**
    * Find user by ID
    */
-  async findUserById(userId: string): Promise<User | null> {
+  findUserById(userId: string): Promise<User | null> {
     return this.userRepository.findOne({ where: { id: userId } });
   }
 
@@ -38,14 +63,14 @@ export class TokenLimitService {
   async setCompanyLimit(
     companyId: string,
     setDto: SetTokenLimitDto,
-    user: User,
+    user: User
   ): Promise<TokenLimit> {
     if (user.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Only admins can set company limits');
     }
 
     let limit = await this.limitRepository.findOne({
-      where: { companyId, userId: null },
+      where: { companyId, userId: IsNull() },
     });
 
     if (limit) {
@@ -72,11 +97,7 @@ export class TokenLimitService {
   /**
    * Set user-specific limit (COMPANY_OWNER only)
    */
-  async setUserLimit(
-    userId: string,
-    setDto: SetTokenLimitDto,
-    user: User,
-  ): Promise<TokenLimit> {
+  async setUserLimit(userId: string, setDto: SetTokenLimitDto, user: User): Promise<TokenLimit> {
     if (user.role !== UserRole.COMPANY_OWNER) {
       throw new ForbiddenException('Only company owners can set user limits');
     }
@@ -123,63 +144,110 @@ export class TokenLimitService {
   /**
    * Check if user can send message (not exceeded limit)
    */
-  async checkLimit(user: User): Promise<void> {
-    let companyId: string | null;
-
-    if (user.role === UserRole.ADMIN) {
-      companyId = await this.systemCompanyService.getSystemCompanyId();
-    } else {
-      companyId = user.companyId;
-    }
+  async enforceTokenLimit(user: User): Promise<void> {
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Check user-specific limit first
     const userLimit = await this.limitRepository.findOne({
-      where: { companyId, userId: user.id },
+      where: { companyId: companyId ?? IsNull(), userId: user.id },
     });
 
     if (userLimit) {
       const userUsage = await this.tokenUsageService.getUserMonthlyTotal(user);
       if (userUsage >= userLimit.monthlyLimit) {
         throw new BadRequestException(
-          `Monthly token limit exceeded (${userUsage}/${userLimit.monthlyLimit}). Please contact your administrator.`,
+          `Monthly token limit exceeded (${userUsage}/${userLimit.monthlyLimit}). Please contact your administrator.`
         );
       }
     }
 
     // Check company-wide limit
     const companyLimit = await this.limitRepository.findOne({
-      where: { companyId, userId: null },
+      where: { companyId: companyId ?? IsNull(), userId: IsNull() },
     });
 
     if (companyLimit && companyId) {
       const companyUsage = await this.tokenUsageService.getCompanyMonthlyTotal(companyId);
       if (companyUsage >= companyLimit.monthlyLimit) {
         throw new BadRequestException(
-          `Company monthly token limit exceeded (${companyUsage}/${companyLimit.monthlyLimit}). Please contact your administrator.`,
+          `Company monthly token limit exceeded (${companyUsage}/${companyLimit.monthlyLimit}). Please contact your administrator.`
         );
       }
     }
   }
 
   /**
+   * Set company limit and return enriched response with current usage stats
+   */
+  async setCompanyLimitWithUsage(
+    companyId: string,
+    setDto: SetTokenLimitDto,
+    user: User
+  ): Promise<
+    TokenLimit & {
+      currentUsage: number;
+      usagePercentage: number;
+      isExceeded: boolean;
+      isWarning: boolean;
+    }
+  > {
+    const limit = await this.setCompanyLimit(companyId, setDto, user);
+    const currentUsage = await this.tokenUsageService.getCompanyMonthlyTotal(companyId);
+    const usagePercentage = (currentUsage / limit.monthlyLimit) * 100;
+    return {
+      ...limit,
+      currentUsage,
+      usagePercentage,
+      isExceeded: currentUsage >= limit.monthlyLimit,
+      isWarning: currentUsage >= (limit.monthlyLimit * limit.warningThresholdPercentage) / 100,
+    };
+  }
+
+  /**
+   * Set user limit and return enriched response with current usage stats
+   */
+  async setUserLimitWithUsage(
+    userId: string,
+    setDto: SetTokenLimitDto,
+    user: User
+  ): Promise<
+    | (TokenLimit & {
+        currentUsage: number;
+        usagePercentage: number;
+        isExceeded: boolean;
+        isWarning: boolean;
+      })
+    | TokenLimit
+  > {
+    const limit = await this.setUserLimit(userId, setDto, user);
+    const userEntity = await this.findUserById(userId);
+    if (userEntity) {
+      const currentUsage = await this.tokenUsageService.getUserMonthlyTotal(userEntity);
+      const usagePercentage = (currentUsage / limit.monthlyLimit) * 100;
+      return {
+        ...limit,
+        currentUsage,
+        usagePercentage,
+        isExceeded: currentUsage >= limit.monthlyLimit,
+        isWarning: currentUsage >= (limit.monthlyLimit * limit.warningThresholdPercentage) / 100,
+      };
+    }
+    return limit;
+  }
+
+  /**
    * Get user's limit with current usage
    */
-  async getMyLimit(user: User): Promise<any> {
-    let companyId: string | null;
-
-    if (user.role === UserRole.ADMIN) {
-      companyId = await this.systemCompanyService.getSystemCompanyId();
-    } else {
-      companyId = user.companyId;
-    }
+  async getMyLimit(user: User): Promise<MyLimitResult> {
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const userLimit = await this.limitRepository.findOne({
-      where: { companyId, userId: user.id },
+      where: { companyId: companyId ?? IsNull(), userId: user.id },
       relations: ['user', 'company', 'setBy'],
     });
 
     const companyLimit = await this.limitRepository.findOne({
-      where: { companyId, userId: null },
+      where: { companyId: companyId ?? IsNull(), userId: IsNull() },
       relations: ['company', 'setBy'],
     });
 
@@ -195,7 +263,8 @@ export class TokenLimitService {
             currentUsage: userUsage,
             usagePercentage: (userUsage / userLimit.monthlyLimit) * 100,
             isExceeded: userUsage >= userLimit.monthlyLimit,
-            isWarning: userUsage >= (userLimit.monthlyLimit * userLimit.warningThresholdPercentage) / 100,
+            isWarning:
+              userUsage >= (userLimit.monthlyLimit * userLimit.warningThresholdPercentage) / 100,
           }
         : null,
       companyLimit: companyLimit
@@ -204,7 +273,9 @@ export class TokenLimitService {
             currentUsage: companyUsage,
             usagePercentage: (companyUsage / companyLimit.monthlyLimit) * 100,
             isExceeded: companyUsage >= companyLimit.monthlyLimit,
-            isWarning: companyUsage >= (companyLimit.monthlyLimit * companyLimit.warningThresholdPercentage) / 100,
+            isWarning:
+              companyUsage >=
+              (companyLimit.monthlyLimit * companyLimit.warningThresholdPercentage) / 100,
           }
         : null,
     };

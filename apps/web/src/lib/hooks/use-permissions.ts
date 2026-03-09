@@ -1,11 +1,17 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { permissionsApi } from '../api/endpoints/permissions';
-import { queryKeys } from '../api/query-client';
-import { GrantModuleAccessDto, UpdateModulePermissionDto } from '@/types/dtos';
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthContext } from '@/contexts/auth-context';
+import { type ApiErrorResponse } from '@/types/api';
+import { type GrantModuleAccessDto, type UpdateModulePermissionDto } from '@/types/dtos';
 import { UserRole } from '@/types/enums';
+
+
+import { createMutationHook } from './create-mutation-hook';
+import { permissionsApi } from '../api/endpoints/permissions';
+import { queryKeys } from '../api/query-client';
 
 /**
  * Permission constants matching backend RBAC system
@@ -16,7 +22,7 @@ export const ModulePermission = {
   DELETE: 'DELETE',
 } as const;
 
-export type ModulePermissionType = typeof ModulePermission[keyof typeof ModulePermission];
+export type ModulePermissionType = (typeof ModulePermission)[keyof typeof ModulePermission];
 
 /**
  * Hook to check current user's permissions for a specific module.
@@ -27,9 +33,10 @@ export type ModulePermissionType = typeof ModulePermission[keyof typeof ModulePe
  * - EMPLOYEE: Limited access (READ, WRITE - DELETE requires owner approval)
  *
  * @param moduleSlug - The module identifier (e.g., 'clients')
+ *   Note: Currently unused but kept for API consistency and future per-module permissions.
+ *   The underscore prefix indicates intentional non-use.
  * @returns Object with permission flags and helper functions
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- moduleSlug reserved for future per-module permission queries
 export function useModulePermissions(_moduleSlug: string) {
   const { user, isAuthenticated } = useAuthContext();
 
@@ -40,9 +47,11 @@ export function useModulePermissions(_moduleSlug: string) {
         hasReadPermission: false,
         hasWritePermission: false,
         hasDeletePermission: false,
+        hasManagePermission: false,
         canRead: false,
         canWrite: false,
         canDelete: false,
+        canManage: false,
         isAdmin: false,
         isOwner: false,
         isEmployee: false,
@@ -55,10 +64,11 @@ export function useModulePermissions(_moduleSlug: string) {
     const isEmployee = user.role === UserRole.EMPLOYEE;
 
     // ADMIN and COMPANY_OWNER have full permissions
-    // EMPLOYEE has READ and WRITE but NOT DELETE (per module specification)
+    // EMPLOYEE has READ and WRITE but NOT DELETE or MANAGE (per module specification)
     const hasReadPermission = isAdmin || isOwner || isEmployee;
     const hasWritePermission = isAdmin || isOwner || isEmployee;
     const hasDeletePermission = isAdmin || isOwner; // Employees cannot delete
+    const hasManagePermission = isAdmin || isOwner; // Only admin/owner can manage
 
     const checkPermission = (permission: ModulePermissionType): boolean => {
       switch (permission) {
@@ -78,10 +88,12 @@ export function useModulePermissions(_moduleSlug: string) {
       hasReadPermission,
       hasWritePermission,
       hasDeletePermission,
+      hasManagePermission,
       // Aliases for semantic clarity
       canRead: hasReadPermission,
       canWrite: hasWritePermission,
       canDelete: hasDeletePermission,
+      canManage: hasManagePermission,
       // Role flags for edge cases
       isAdmin,
       isOwner,
@@ -89,17 +101,17 @@ export function useModulePermissions(_moduleSlug: string) {
       // Helper function for dynamic permission checks
       checkPermission,
     };
-  }, [user, isAuthenticated, _moduleSlug]);
+  }, [user, isAuthenticated]);
 }
 
-export function useCompanyModules() {
+export function useCompanyPermissionModules() {
   return useQuery({
-    queryKey: ['company', 'modules'],
+    queryKey: queryKeys.permissions.companyModules,
     queryFn: permissionsApi.getCompanyModules,
   });
 }
 
-export function useEmployeeModules(employeeId: string) {
+export function useEmployeeModulePermissions(employeeId: string) {
   return useQuery({
     queryKey: queryKeys.permissions.byEmployee(employeeId),
     queryFn: () => permissionsApi.getEmployeeModules(employeeId),
@@ -112,28 +124,34 @@ export function useGrantModuleAccess() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ employeeId, moduleSlug, permissions }: { employeeId: string; moduleSlug: string; permissions: GrantModuleAccessDto }) =>
-      permissionsApi.grantModuleAccess(employeeId, moduleSlug, permissions),
+    mutationFn: ({
+      employeeId,
+      moduleSlug,
+      permissions,
+    }: {
+      employeeId: string;
+      moduleSlug: string;
+      permissions: GrantModuleAccessDto;
+    }) => permissionsApi.grantModuleAccess(employeeId, moduleSlug, permissions),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.permissions.byEmployee(variables.employeeId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.permissions.byEmployee(variables.employeeId),
+      });
       toast({
         title: 'Sukces',
         description: 'Dostęp do modułu został przyznany',
       });
     },
-    onError: (error: any) => {
-      let errorMessage = 'Nie udało się przyznać dostępu do modułu';
+    onError: (error: ApiErrorResponse) => {
+      const rawMessage = error.response?.data?.message ?? '';
+      let errorMessage = rawMessage || 'Nie udało się przyznać dostępu do modułu';
 
-      // Provide specific error messages based on the error
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-
-        // Check for specific error patterns
-        if (errorMessage.includes('does not have access to this module')) {
-          errorMessage = 'Twoja firma nie ma dostępu do tego modułu. Skontaktuj się z administratorem, aby najpierw włączyć ten moduł dla firmy.';
-        } else if (errorMessage.includes('Module not found')) {
-          errorMessage = 'Wybrany moduł nie istnieje lub jest nieaktywny.';
-        }
+      // Check for specific error patterns
+      if (rawMessage.includes('does not have access to this module')) {
+        errorMessage =
+          'Twoja firma nie ma dostępu do tego modułu. Skontaktuj się z administratorem, aby najpierw włączyć ten moduł dla firmy.';
+      } else if (rawMessage.includes('Module not found')) {
+        errorMessage = 'Wybrany moduł nie istnieje lub jest nieaktywny.';
       }
 
       toast({
@@ -145,51 +163,32 @@ export function useGrantModuleAccess() {
   });
 }
 
-export function useUpdateModulePermission() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export const useUpdateModulePermission = createMutationHook<
+  void,
+  { employeeId: string; moduleSlug: string; permissions: UpdateModulePermissionDto }
+>({
+  mutationFn: ({ employeeId, moduleSlug, permissions }) =>
+    permissionsApi.updateModulePermission(employeeId, moduleSlug, permissions),
+  onSuccess: (_, variables, queryClient) => {
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.permissions.byEmployee(variables.employeeId),
+    });
+  },
+  successMessage: 'Uprawnienia zostały zaktualizowane',
+  errorMessage: 'Nie udało się zaktualizować uprawnień',
+});
 
-  return useMutation({
-    mutationFn: ({ employeeId, moduleSlug, permissions }: { employeeId: string; moduleSlug: string; permissions: UpdateModulePermissionDto }) =>
-      permissionsApi.updateModulePermission(employeeId, moduleSlug, permissions),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.permissions.byEmployee(variables.employeeId) });
-      toast({
-        title: 'Sukces',
-        description: 'Uprawnienia zostały zaktualizowane',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się zaktualizować uprawnień',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
-export function useRevokeModuleAccess() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ employeeId, moduleSlug }: { employeeId: string; moduleSlug: string }) =>
-      permissionsApi.revokeModuleAccess(employeeId, moduleSlug),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.permissions.byEmployee(variables.employeeId) });
-      toast({
-        title: 'Sukces',
-        description: 'Dostęp do modułu został cofnięty',
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Błąd',
-        description: error.response?.data?.message || 'Nie udało się cofnąć dostępu do modułu',
-        variant: 'destructive',
-      });
-    },
-  });
-}
-
+export const useRevokeModuleAccess = createMutationHook<
+  void,
+  { employeeId: string; moduleSlug: string }
+>({
+  mutationFn: ({ employeeId, moduleSlug }) =>
+    permissionsApi.revokeModuleAccess(employeeId, moduleSlug),
+  onSuccess: (_, variables, queryClient) => {
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.permissions.byEmployee(variables.employeeId),
+    });
+  },
+  successMessage: 'Dostęp do modułu został cofnięty',
+  errorMessage: 'Nie udało się cofnąć dostępu do modułu',
+});

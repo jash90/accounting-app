@@ -1,6 +1,7 @@
-import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsInt, Min, Max } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
 import { Type } from 'class-transformer';
+import { IsInt, IsOptional, Max, Min } from 'class-validator';
 
 /**
  * Pagination query parameters DTO
@@ -80,16 +81,4 @@ export class PaginatedResponseDto<T> {
       hasPrev: page > 1,
     };
   }
-}
-
-/**
- * Helper function to create paginated response
- */
-export function createPaginatedResponse<T>(
-  data: T[],
-  total: number,
-  page: number,
-  limit: number,
-): PaginatedResponseDto<T> {
-  return new PaginatedResponseDto(data, total, page, limit);
 }

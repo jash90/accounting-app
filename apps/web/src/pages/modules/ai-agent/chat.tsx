@@ -1,46 +1,291 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Send, Plus, Trash2, Bot, User, Sparkles, MessageSquare, Zap, AlertCircle } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+import {
+  AlertCircle,
+  Bot,
+  MessageSquare,
+  Plus,
+  Send,
+  Sparkles,
+  Trash2,
+  User,
+  Zap,
+} from 'lucide-react';
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import {
-  useConversations,
-  useConversation,
-  useCreateConversation,
-  useSendMessage,
-  useSendMessageStream,
-  useDeleteConversation,
   useAIConfiguration,
+  useAiConversation,
+  useAiConversations,
+  useCreateAiConversation,
+  useDeleteAiConversation,
+  useSendAiMessage,
+  useSendAiMessageStream,
 } from '@/lib/hooks/use-ai-agent';
 import { cn } from '@/lib/utils/cn';
+import { formatDate } from '@/lib/utils/format-date';
 import { MessageRole } from '@/types/dtos';
 
+interface ConversationItem {
+  id: string;
+  title: string;
+  createdAt: string | Date;
+}
+
+interface ConversationsSidebarProps {
+  conversations: ConversationItem[] | undefined;
+  selectedConversationId: string | null;
+  createPending: boolean;
+  onSelect: (id: string) => void;
+  onCreate: () => void;
+  onDelete: (id: string) => void;
+}
+
+function ConversationsSidebar({
+  conversations,
+  selectedConversationId,
+  createPending,
+  onSelect,
+  onCreate,
+  onDelete,
+}: ConversationsSidebarProps) {
+  return (
+    <Card className="flex w-80 flex-col" data-testid="conversations-sidebar">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2" data-testid="conversations-title">
+            Rozmowy
+            <div className="bg-accent ai-glow h-2 w-2 rounded-full" />
+          </CardTitle>
+          <Button
+            onClick={onCreate}
+            size="sm"
+            variant="teal"
+            disabled={createPending}
+            data-testid="new-chat-button"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+        <CardDescription>Historia Twoich rozmów z AI</CardDescription>
+      </CardHeader>
+      <CardContent className="flex-1 overflow-hidden p-0">
+        <ScrollArea className="h-full px-4">
+          <div className="space-y-2 pb-4">
+            {conversations?.map((conv) => (
+              <div
+                key={conv.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => onSelect(conv.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelect(conv.id);
+                  }
+                }}
+                className={cn(
+                  'group w-full cursor-pointer rounded-lg p-3 text-left transition-all duration-200',
+                  selectedConversationId === conv.id
+                    ? 'bg-primary shadow-sm text-white'
+                    : 'hover:bg-accent/10'
+                )}
+                data-testid="conversation-item"
+              >
+                <div className="flex items-center justify-between">
+                  <span
+                    className="flex-1 truncate font-medium"
+                    data-testid="conversation-title"
+                  >
+                    {conv.title}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(conv.id);
+                    }}
+                    className={cn(
+                      'h-7 w-7 p-0 opacity-0 group-hover:opacity-100',
+                      selectedConversationId === conv.id
+                        ? 'hover:bg-white/20'
+                        : 'hover:bg-destructive/10'
+                    )}
+                    data-testid="delete-conversation-button"
+                  >
+                    <Trash2
+                      className={cn(
+                        'h-4 w-4',
+                        selectedConversationId === conv.id ? 'text-white' : 'text-destructive'
+                      )}
+                    />
+                  </Button>
+                </div>
+                <p
+                  className={cn(
+                    'mt-1 text-xs',
+                    selectedConversationId === conv.id
+                      ? 'text-white/70'
+                      : 'text-muted-foreground'
+                  )}
+                >
+                  {formatDate(conv.createdAt)}
+                </p>
+              </div>
+            ))}
+            {conversations?.length === 0 && (
+              <p
+                className="text-muted-foreground py-8 text-center text-sm"
+                data-testid="no-conversations"
+              >
+                Brak rozmów. Utwórz nową, aby rozpocząć!
+              </p>
+            )}
+          </div>
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DeleteConversationDialog({
+  open,
+  onClose,
+  onConfirm,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Usuń rozmowę</AlertDialogTitle>
+          <AlertDialogDescription>
+            Czy na pewno chcesz usunąć tę rozmowę? Ta operacja jest nieodwracalna.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Anuluj</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Usuń
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+interface ChatInputFormProps {
+  message: string;
+  setMessage: (m: string) => void;
+  selectedConversationId: string | null;
+  isSending: boolean;
+  sendMessageIfReady: () => Promise<void>;
+  onSubmit: (e: React.FormEvent) => Promise<void>;
+}
+
+function ChatInputForm({
+  message,
+  setMessage,
+  selectedConversationId,
+  isSending,
+  sendMessageIfReady,
+  onSubmit,
+}: ChatInputFormProps) {
+  return (
+    <div className="bg-muted/50 border-t p-4" data-testid="message-input-area">
+      <form onSubmit={onSubmit} className="flex gap-3">
+        <Input
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              void sendMessageIfReady();
+            }
+          }}
+          placeholder="Wpisz wiadomość..."
+          disabled={!selectedConversationId || isSending}
+          className="flex-1"
+          data-testid="message-input"
+        />
+        <Button
+          type="submit"
+          variant="teal"
+          disabled={!message.trim() || !selectedConversationId || isSending}
+          data-testid="send-button"
+        >
+          <Send className="h-4 w-4" />
+        </Button>
+      </form>
+    </div>
+  );
+}
+
 export default function AIAgentChatPage() {
-  const navigate = useNavigate();
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [userSelectedConversationId, setUserSelectedConversationId] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [rateLimitHit, setRateLimitHit] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const { data: conversations, isLoading: conversationsLoading } = useConversations();
-  const { data: currentConversation } = useConversation(selectedConversationId || '');
+  const { data: conversations, isLoading: conversationsLoading } = useAiConversations();
+
+  // Derive active conversation ID - auto-select first if user hasn't selected one
+  const selectedConversationId = useMemo(() => {
+    // If user explicitly selected a conversation, verify it still exists
+    if (userSelectedConversationId !== null) {
+      if (conversations?.some((c) => c.id === userSelectedConversationId)) {
+        return userSelectedConversationId;
+      }
+    }
+    // Default to first conversation if available
+    return conversations?.[0]?.id ?? null;
+  }, [userSelectedConversationId, conversations]);
+  const { data: currentConversation } = useAiConversation(selectedConversationId || '');
   const { data: aiConfig } = useAIConfiguration();
-  const createConversation = useCreateConversation();
-  const sendMessageMutation = useSendMessage(selectedConversationId || '');
+  const createConversation = useCreateAiConversation();
+  const sendMessageMutation = useSendAiMessage(selectedConversationId || '');
   const {
     sendMessage: sendMessageStream,
     streamingContent,
     isStreaming,
     resetStream,
-  } = useSendMessageStream(selectedConversationId || '');
-  const deleteConversation = useDeleteConversation();
+  } = useSendAiMessageStream(selectedConversationId || '');
+  const deleteConversation = useDeleteAiConversation();
 
   // Check if streaming is enabled in config
   const isStreamingEnabled = aiConfig?.enableStreaming ?? false;
   const isSending = isStreamingEnabled ? isStreaming : sendMessageMutation.isPending;
+
+  const sortedMessages = useMemo(
+    () =>
+      [...(currentConversation?.messages ?? [])].sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      ),
+    [currentConversation?.messages]
+  );
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -51,17 +296,11 @@ export default function AIAgentChatPage() {
     }
   }, [currentConversation?.messages, streamingContent, isSending]);
 
-  useEffect(() => {
-    if (conversations && conversations.length > 0 && !selectedConversationId) {
-      setSelectedConversationId(conversations[0].id);
-    }
-  }, [conversations, selectedConversationId]);
-
   const handleNewConversation = async () => {
     const result = await createConversation.mutateAsync({
       title: `Nowy czat ${new Date().toLocaleString('pl-PL')}`,
     });
-    setSelectedConversationId(result.id);
+    setUserSelectedConversationId(result.id);
   };
 
   const sendMessageIfReady = async () => {
@@ -86,7 +325,11 @@ export default function AIAgentChatPage() {
       // Check for rate limit error (429)
       const errorMessage = error instanceof Error ? error.message : '';
       const axiosStatus = (error as { response?: { status?: number } })?.response?.status;
-      if (axiosStatus === 429 || errorMessage.includes('overloaded') || errorMessage.includes('rate limit')) {
+      if (
+        axiosStatus === 429 ||
+        errorMessage.includes('overloaded') ||
+        errorMessage.includes('rate limit')
+      ) {
         setRateLimitHit(true);
       }
     }
@@ -97,20 +340,29 @@ export default function AIAgentChatPage() {
     await sendMessageIfReady();
   };
 
-  const handleDeleteConversation = async (id: string) => {
-    if (confirm('Czy na pewno chcesz usunąć tę rozmowę?')) {
-      await deleteConversation.mutateAsync(id);
-      if (selectedConversationId === id) {
-        setSelectedConversationId(null);
+  const handleDeleteConversation = (id: string) => {
+    setConversationToDelete(id);
+  };
+
+  const confirmDeleteConversation = async () => {
+    if (conversationToDelete) {
+      try {
+        await deleteConversation.mutateAsync(conversationToDelete);
+        if (selectedConversationId === conversationToDelete) {
+          setUserSelectedConversationId(null);
+        }
+      } catch {
+        // Error is handled by the mutation's error state
       }
     }
+    setConversationToDelete(null);
   };
 
   if (conversationsLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="flex items-center gap-3 text-apptax-navy">
-          <div className="w-3 h-3 rounded-full bg-apptax-teal ai-glow animate-pulse" />
+      <div className="flex h-full items-center justify-center">
+        <div className="text-foreground flex items-center gap-3">
+          <div className="bg-accent ai-glow h-3 w-3 animate-pulse rounded-full" />
           Ładowanie...
         </div>
       </div>
@@ -119,85 +371,22 @@ export default function AIAgentChatPage() {
 
   return (
     <div className="container mx-auto p-6" data-testid="ai-agent-chat-page">
-      <div className="flex gap-6 h-[calc(100vh-12rem)]">
+      <div className="flex h-[calc(100vh-12rem)] gap-6">
         {/* Conversations Sidebar */}
-        <Card className="w-80 flex flex-col" data-testid="conversations-sidebar">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2" data-testid="conversations-title">
-                Rozmowy
-                <div className="w-2 h-2 rounded-full bg-apptax-teal ai-glow" />
-              </CardTitle>
-              <Button onClick={handleNewConversation} size="sm" variant="teal" disabled={createConversation.isPending} data-testid="new-chat-button">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <CardDescription>Historia Twoich rozmów z AI</CardDescription>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-hidden p-0">
-            <ScrollArea className="h-full px-4">
-              <div className="space-y-2 pb-4">
-                {conversations?.map((conv) => (
-                  <div
-                    key={conv.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setSelectedConversationId(conv.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setSelectedConversationId(conv.id);
-                      }
-                    }}
-                    className={cn(
-                      'w-full text-left p-3 rounded-lg transition-all duration-200 group cursor-pointer',
-                      selectedConversationId === conv.id
-                        ? 'bg-apptax-blue text-white shadow-apptax-sm'
-                        : 'hover:bg-apptax-soft-teal'
-                    )}
-                    data-testid="conversation-item"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium truncate flex-1" data-testid="conversation-title">{conv.title}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteConversation(conv.id);
-                        }}
-                        className={cn(
-                          'opacity-0 group-hover:opacity-100 h-7 w-7 p-0',
-                          selectedConversationId === conv.id ? 'hover:bg-white/20' : 'hover:bg-destructive/10'
-                        )}
-                        data-testid="delete-conversation-button"
-                      >
-                        <Trash2 className={cn('h-4 w-4', selectedConversationId === conv.id ? 'text-white' : 'text-destructive')} />
-                      </Button>
-                    </div>
-                    <p className={cn(
-                      'text-xs mt-1',
-                      selectedConversationId === conv.id ? 'text-white/70' : 'text-muted-foreground'
-                    )}>
-                      {new Date(conv.createdAt).toLocaleDateString('pl-PL')}
-                    </p>
-                  </div>
-                ))}
-                {conversations?.length === 0 && (
-                  <p className="text-muted-foreground text-sm text-center py-8" data-testid="no-conversations">
-                    Brak rozmów. Utwórz nową, aby rozpocząć!
-                  </p>
-                )}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+        <ConversationsSidebar
+          conversations={conversations}
+          selectedConversationId={selectedConversationId}
+          createPending={createConversation.isPending}
+          onSelect={setUserSelectedConversationId}
+          onCreate={handleNewConversation}
+          onDelete={handleDeleteConversation}
+        />
 
         {/* Chat Area */}
-        <Card className="flex-1 flex flex-col" data-testid="chat-area">
+        <Card className="flex flex-1 flex-col" data-testid="chat-area">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2" data-testid="ai-assistant-title">
-              <Sparkles className="h-5 w-5 text-apptax-teal" />
+              <Sparkles className="text-accent h-5 w-5" />
               Asystent AI
             </CardTitle>
             <CardDescription>
@@ -205,70 +394,81 @@ export default function AIAgentChatPage() {
             </CardDescription>
           </CardHeader>
           <Separator />
-          <CardContent className="flex-1 overflow-hidden p-0 flex flex-col">
+          <CardContent className="flex flex-1 flex-col overflow-hidden p-0">
             {/* Messages */}
             <ScrollArea className="flex-1 p-4" ref={scrollRef}>
               {currentConversation?.messages.length === 0 && (
-                <div className="flex items-center justify-center h-full text-muted-foreground" data-testid="empty-chat">
+                <div
+                  className="text-muted-foreground flex h-full items-center justify-center"
+                  data-testid="empty-chat"
+                >
                   <div className="text-center">
-                    <div className="w-16 h-16 rounded-full bg-apptax-ai-gradient flex items-center justify-center mx-auto mb-4">
+                    <div className="bg-accent mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
                       <Bot className="h-8 w-8 text-white" />
                     </div>
-                    <p className="text-lg font-medium text-apptax-navy">Rozpocznij rozmowę</p>
-                    <p className="text-sm text-muted-foreground mt-1">Zapytaj asystenta AI o cokolwiek</p>
+                    <p className="text-foreground text-lg font-medium">Rozpocznij rozmowę</p>
+                    <p className="text-muted-foreground mt-1 text-sm">
+                      Zapytaj asystenta AI o cokolwiek
+                    </p>
                   </div>
                 </div>
               )}
               <div className="space-y-4" data-testid="messages-container">
-                {[...(currentConversation?.messages ?? [])].sort(
-                  (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-                ).map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={cn(
-                      'flex gap-3',
-                      msg.role === MessageRole.USER ? 'justify-end' : 'justify-start'
-                    )}
-                    data-testid={msg.role === MessageRole.USER ? 'user-message' : 'assistant-message'}
-                  >
-                    {msg.role === MessageRole.ASSISTANT && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-apptax-ai-gradient flex items-center justify-center ai-glow">
-                        <Bot className="h-4 w-4 text-white" />
-                      </div>
-                    )}
+                {sortedMessages.map((msg) => (
                     <div
+                      key={msg.id}
                       className={cn(
-                        'rounded-xl px-4 py-3 max-w-[70%]',
-                        msg.role === MessageRole.USER
-                          ? 'bg-apptax-blue text-white'
-                          : 'bg-apptax-soft-teal text-apptax-navy'
+                        'flex gap-3',
+                        msg.role === MessageRole.USER ? 'justify-end' : 'justify-start'
                       )}
+                      data-testid={
+                        msg.role === MessageRole.USER ? 'user-message' : 'assistant-message'
+                      }
                     >
-                      <p className="whitespace-pre-wrap" data-testid="message-content">{msg.content}</p>
-                      <p className={cn(
-                        'text-xs mt-2',
-                        msg.role === MessageRole.USER ? 'text-white/70' : 'text-apptax-navy/50'
-                      )} data-testid="token-count">
-                        {new Date(msg.createdAt).toLocaleTimeString('pl-PL')} • {msg.totalTokens ?? 0} tokenów
-                      </p>
-                    </div>
-                    {msg.role === MessageRole.USER && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-apptax-navy flex items-center justify-center">
-                        <User className="h-4 w-4 text-white" />
+                      {msg.role === MessageRole.ASSISTANT && (
+                        <div className="bg-accent ai-glow flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
+                          <Bot className="h-4 w-4 text-white" />
+                        </div>
+                      )}
+                      <div
+                        className={cn(
+                          'max-w-[70%] rounded-xl px-4 py-3',
+                          msg.role === MessageRole.USER
+                            ? 'bg-primary text-white'
+                            : 'bg-accent/10 text-foreground'
+                        )}
+                      >
+                        <p className="whitespace-pre-wrap" data-testid="message-content">
+                          {msg.content}
+                        </p>
+                        <p
+                          className={cn(
+                            'mt-2 text-xs',
+                            msg.role === MessageRole.USER ? 'text-white/70' : 'text-foreground/50'
+                          )}
+                          data-testid="token-count"
+                        >
+                          {new Date(msg.createdAt).toLocaleTimeString('pl-PL')} •{' '}
+                          {msg.totalTokens ?? 0} tokenów
+                        </p>
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {msg.role === MessageRole.USER && (
+                        <div className="bg-primary flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
+                          <User className="h-4 w-4 text-white" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 {/* Streaming content or thinking indicator */}
                 {isStreaming && streamingContent && (
                   <div className="flex gap-3" data-testid="streaming-message">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-apptax-ai-gradient flex items-center justify-center ai-glow">
+                    <div className="bg-accent ai-glow flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
                       <Bot className="h-4 w-4 text-white" />
                     </div>
-                    <div className="bg-apptax-soft-teal rounded-xl px-4 py-3 max-w-[70%]">
-                      <p className="whitespace-pre-wrap text-apptax-navy">{streamingContent}</p>
-                      <p className="text-xs mt-2 text-apptax-navy/50 flex items-center gap-2">
-                        <span className="inline-block w-2 h-2 rounded-full bg-apptax-teal animate-pulse" />
+                    <div className="bg-accent/10 max-w-[70%] rounded-xl px-4 py-3">
+                      <p className="text-foreground whitespace-pre-wrap">{streamingContent}</p>
+                      <p className="text-foreground/50 mt-2 flex items-center gap-2 text-xs">
+                        <span className="bg-accent inline-block h-2 w-2 animate-pulse rounded-full" />
                         Przesyłanie...
                       </p>
                     </div>
@@ -276,12 +476,12 @@ export default function AIAgentChatPage() {
                 )}
                 {isSending && !streamingContent && (
                   <div className="flex gap-3" data-testid="thinking-indicator">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-apptax-ai-gradient flex items-center justify-center ai-glow">
-                      <Bot className="h-4 w-4 text-white animate-pulse" />
+                    <div className="bg-accent ai-glow flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full">
+                      <Bot className="h-4 w-4 animate-pulse text-white" />
                     </div>
-                    <div className="bg-apptax-soft-teal rounded-xl px-4 py-3">
-                      <p className="text-apptax-navy flex items-center gap-2">
-                        <span className="inline-block w-2 h-2 rounded-full bg-apptax-teal animate-pulse" />
+                    <div className="bg-accent/10 rounded-xl px-4 py-3">
+                      <p className="text-foreground flex items-center gap-2">
+                        <span className="bg-accent inline-block h-2 w-2 animate-pulse rounded-full" />
                         Myślę...
                       </p>
                     </div>
@@ -292,7 +492,7 @@ export default function AIAgentChatPage() {
 
             {/* Token/Message Info Bar */}
             {currentConversation && (
-              <div className="px-4 py-2 bg-apptax-warm-gray/30 border-t text-xs text-muted-foreground flex items-center justify-between">
+              <div className="bg-muted/30 text-muted-foreground flex items-center justify-between border-t px-4 py-2 text-xs">
                 <div className="flex items-center gap-4">
                   <span className="flex items-center gap-1">
                     <MessageSquare className="h-3 w-3" />
@@ -300,11 +500,14 @@ export default function AIAgentChatPage() {
                   </span>
                   <span className="flex items-center gap-1">
                     <Zap className="h-3 w-3" />
-                    {currentConversation.messages.reduce((sum, m) => sum + (m.totalTokens ?? 0), 0).toLocaleString()} tokenów
+                    {currentConversation.messages
+                      .reduce((sum, m) => sum + (m.totalTokens ?? 0), 0)
+                      .toLocaleString()}{' '}
+                    tokenów
                   </span>
                 </div>
                 {rateLimitHit && (
-                  <span className="text-amber-600 flex items-center gap-1">
+                  <span className="flex items-center gap-1 text-amber-600">
                     <AlertCircle className="h-3 w-3" />
                     Osiągnięto limit - poczekaj przed wysłaniem kolejnych wiadomości
                   </span>
@@ -313,36 +516,23 @@ export default function AIAgentChatPage() {
             )}
 
             {/* Input Form */}
-            <div className="p-4 border-t bg-apptax-warm-gray/50" data-testid="message-input-area">
-              <form onSubmit={handleSendMessage} className="flex gap-3">
-                <Input
-                  type="text"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      void sendMessageIfReady();
-                    }
-                  }}
-                  placeholder="Wpisz wiadomość..."
-                  disabled={!selectedConversationId || isSending}
-                  className="flex-1"
-                  data-testid="message-input"
-                />
-                <Button
-                  type="submit"
-                  variant="teal"
-                  disabled={!message.trim() || !selectedConversationId || isSending}
-                  data-testid="send-button"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </form>
-            </div>
+            <ChatInputForm
+              message={message}
+              setMessage={setMessage}
+              selectedConversationId={selectedConversationId}
+              isSending={isSending}
+              sendMessageIfReady={sendMessageIfReady}
+              onSubmit={handleSendMessage}
+            />
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConversationDialog
+        open={conversationToDelete !== null}
+        onClose={() => setConversationToDelete(null)}
+        onConfirm={confirmDeleteConversation}
+      />
     </div>
   );
 }

@@ -1,21 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThanOrEqual } from 'typeorm';
+
+import { MoreThanOrEqual, Repository } from 'typeorm';
+
 import {
-  Client,
-  User,
   ChangeLog,
+  Client,
   EmploymentType,
-  VatStatus,
+  Task,
+  TaskStatus,
   TaxScheme,
+  TimeEntry,
+  User,
+  VatStatus,
   ZusStatus,
-  TenantService,
 } from '@accounting/common';
+import { TenantService } from '@accounting/common/backend';
+
 import {
   ClientStatisticsDto,
   ClientStatisticsWithRecentDto,
-  RecentClientDto,
+  ClientTaskTimeStatsDto,
   RecentActivityDto,
+  RecentClientDto,
 } from '../dto/statistics.dto';
 
 @Injectable()
@@ -25,7 +32,11 @@ export class ClientStatisticsService {
     private readonly clientRepository: Repository<Client>,
     @InjectRepository(ChangeLog)
     private readonly changeLogRepository: Repository<ChangeLog>,
-    private readonly tenantService: TenantService,
+    @InjectRepository(Task)
+    private readonly taskRepository: Repository<Task>,
+    @InjectRepository(TimeEntry)
+    private readonly timeEntryRepository: Repository<TimeEntry>,
+    private readonly tenantService: TenantService
   ) {}
 
   /**
@@ -180,12 +191,13 @@ export class ClientStatisticsService {
 
     // Get client names for the changelog entries
     const clientIds = [...new Set(recentLogs.map((log) => log.entityId))];
-    const clients = clientIds.length > 0
-      ? await this.clientRepository.find({
-          where: clientIds.map((id) => ({ id, companyId })),
-          select: ['id', 'name'],
-        })
-      : [];
+    const clients =
+      clientIds.length > 0
+        ? await this.clientRepository.find({
+            where: clientIds.map((id) => ({ id, companyId })),
+            select: ['id', 'name'],
+          })
+        : [];
     const clientNameMap = new Map(clients.map((c) => [c.id, c.name]));
 
     const recentActivity: RecentActivityDto[] = recentLogs.map((log) => ({
@@ -194,7 +206,8 @@ export class ClientStatisticsService {
       action: log.action,
       entityName: clientNameMap.get(log.entityId) || 'Nieznany klient',
       changedByName: log.changedBy
-        ? `${log.changedBy.firstName ?? ''} ${log.changedBy.lastName ?? ''}`.trim() || log.changedBy.email
+        ? `${log.changedBy.firstName ?? ''} ${log.changedBy.lastName ?? ''}`.trim() ||
+          log.changedBy.email
         : undefined,
       createdAt: log.createdAt,
     }));
@@ -204,6 +217,63 @@ export class ClientStatisticsService {
       recentlyAdded,
       recentActivity,
     };
+  }
+
+  /**
+   * Get per-client aggregate task and time-tracking statistics.
+   */
+  async getClientTaskAndTimeStats(user: User): Promise<ClientTaskTimeStatsDto[]> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+
+    // Get task counts per client
+    const taskStats = await this.taskRepository
+      .createQueryBuilder('task')
+      .select('task.clientId', 'clientId')
+      .addSelect('COUNT(*)', 'totalTasks')
+      .addSelect('COUNT(CASE WHEN task.status = :done THEN 1 END)', 'completedTasks')
+      .where('task.companyId = :companyId', { companyId })
+      .andWhere('task.clientId IS NOT NULL')
+      .andWhere('task.isTemplate = :isTemplate', { isTemplate: false })
+      .groupBy('task.clientId')
+      .setParameter('done', TaskStatus.DONE)
+      .getRawMany<{ clientId: string; totalTasks: string; completedTasks: string }>();
+
+    // Get time spent per client
+    const timeStats = await this.timeEntryRepository
+      .createQueryBuilder('te')
+      .select('te.clientId', 'clientId')
+      .addSelect('SUM(te.durationMinutes)', 'totalMinutes')
+      .where('te.companyId = :companyId', { companyId })
+      .andWhere('te.clientId IS NOT NULL')
+      .andWhere('te.durationMinutes IS NOT NULL')
+      .groupBy('te.clientId')
+      .getRawMany<{ clientId: string; totalMinutes: string }>();
+
+    // Get client names
+    const clients = await this.clientRepository.find({
+      where: { companyId },
+      select: ['id', 'name'],
+    });
+
+    // Build lookup maps
+    const taskMap = new Map(taskStats.map((t) => [t.clientId, t]));
+    const timeMap = new Map(timeStats.map((t) => [t.clientId, parseInt(t.totalMinutes, 10)]));
+
+    return clients
+      .map((client) => {
+        const tasks = taskMap.get(client.id);
+        const totalMinutes = timeMap.get(client.id) ?? 0;
+        return {
+          clientId: client.id,
+          clientName: client.name,
+          totalTasks: parseInt(tasks?.totalTasks ?? '0', 10),
+          completedTasks: parseInt(tasks?.completedTasks ?? '0', 10),
+          totalMinutes,
+          totalHours: Math.round(totalMinutes / 6) / 10,
+        };
+      })
+      .filter((c) => c.totalTasks > 0 || c.totalMinutes > 0)
+      .sort((a, b) => b.totalMinutes - a.totalMinutes);
   }
 
   private initializeEnumCounts<T extends string>(enumObj: Record<string, T>): Record<T, number> {

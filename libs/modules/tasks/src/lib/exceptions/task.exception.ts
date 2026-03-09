@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
+
 import { TaskErrorCode } from './error-codes.enum';
 
 export interface TaskExceptionContext {
@@ -20,7 +21,7 @@ export class TaskException extends HttpException {
     public readonly errorCode: TaskErrorCode,
     message: string,
     public readonly context?: TaskExceptionContext,
-    statusCode: HttpStatus = HttpStatus.BAD_REQUEST,
+    statusCode: HttpStatus = HttpStatus.BAD_REQUEST
   ) {
     super(
       {
@@ -30,7 +31,7 @@ export class TaskException extends HttpException {
         context,
         timestamp: new Date().toISOString(),
       },
-      statusCode,
+      statusCode
     );
   }
 }
@@ -41,7 +42,7 @@ export class TaskNotFoundException extends TaskException {
       TaskErrorCode.TASK_NOT_FOUND,
       `Zadanie o ID ${taskId} nie zostało znalezione`,
       { taskId, companyId },
-      HttpStatus.NOT_FOUND,
+      HttpStatus.NOT_FOUND
     );
   }
 }
@@ -52,7 +53,7 @@ export class TaskLabelNotFoundException extends TaskException {
       TaskErrorCode.TASK_LABEL_NOT_FOUND,
       `Etykieta o ID ${labelId} nie została znaleziona`,
       { labelId, companyId },
-      HttpStatus.NOT_FOUND,
+      HttpStatus.NOT_FOUND
     );
   }
 }
@@ -63,7 +64,7 @@ export class TaskLabelAlreadyExistsException extends TaskException {
       TaskErrorCode.TASK_LABEL_ALREADY_EXISTS,
       `Etykieta o nazwie "${name}" już istnieje`,
       { companyId, additionalInfo: { name } },
-      HttpStatus.CONFLICT,
+      HttpStatus.CONFLICT
     );
   }
 }
@@ -74,7 +75,7 @@ export class TaskCommentNotFoundException extends TaskException {
       TaskErrorCode.TASK_COMMENT_NOT_FOUND,
       `Komentarz o ID ${commentId} nie został znaleziony`,
       { commentId, taskId },
-      HttpStatus.NOT_FOUND,
+      HttpStatus.NOT_FOUND
     );
   }
 }
@@ -85,7 +86,7 @@ export class TaskDependencyNotFoundException extends TaskException {
       TaskErrorCode.TASK_DEPENDENCY_NOT_FOUND,
       `Zależność o ID ${dependencyId} nie została znaleziona`,
       { dependencyId },
-      HttpStatus.NOT_FOUND,
+      HttpStatus.NOT_FOUND
     );
   }
 }
@@ -96,7 +97,7 @@ export class TaskDependencyCycleException extends TaskException {
       TaskErrorCode.TASK_DEPENDENCY_CYCLE_DETECTED,
       `Dodanie zależności utworzyłoby cykl między zadaniami`,
       { taskId, additionalInfo: { dependsOnTaskId } },
-      HttpStatus.BAD_REQUEST,
+      HttpStatus.BAD_REQUEST
     );
   }
 }
@@ -107,7 +108,7 @@ export class TaskSelfDependencyException extends TaskException {
       TaskErrorCode.TASK_SELF_DEPENDENCY_NOT_ALLOWED,
       `Zadanie nie może być zależne od siebie`,
       { taskId },
-      HttpStatus.BAD_REQUEST,
+      HttpStatus.BAD_REQUEST
     );
   }
 }
@@ -118,7 +119,7 @@ export class TaskDependencyAlreadyExistsException extends TaskException {
       TaskErrorCode.TASK_DEPENDENCY_ALREADY_EXISTS,
       `Zależność między tymi zadaniami już istnieje`,
       { taskId, additionalInfo: { dependsOnTaskId } },
-      HttpStatus.CONFLICT,
+      HttpStatus.CONFLICT
     );
   }
 }
@@ -129,7 +130,7 @@ export class TaskInvalidParentException extends TaskException {
       TaskErrorCode.TASK_INVALID_PARENT,
       `Nieprawidłowe zadanie nadrzędne`,
       { taskId, additionalInfo: { parentTaskId } },
-      HttpStatus.BAD_REQUEST,
+      HttpStatus.BAD_REQUEST
     );
   }
 }

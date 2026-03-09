@@ -1,4 +1,9 @@
-import { EmailConfig, EmailConfigOptions, SmtpConfig, ImapConfig } from '../interfaces/email-config.interface';
+import {
+  type EmailConfig,
+  type EmailConfigOptions,
+  type ImapConfig,
+  type SmtpConfig,
+} from '../interfaces/email-config.interface';
 
 // TLS validation - secure by default, configurable via env
 const REJECT_UNAUTHORIZED = process.env['EMAIL_REJECT_UNAUTHORIZED'] !== 'false';
@@ -24,18 +29,8 @@ export class EmailConfigHelper {
     const host = `mail-server${options.serverNumber}.lh.pl`;
 
     return {
-      smtp: this.createSmtpConfig(
-        host,
-        options.emailAddress,
-        options.password,
-        options.smtpPort
-      ),
-      imap: this.createImapConfig(
-        host,
-        options.emailAddress,
-        options.password,
-        options.imapPort
-      ),
+      smtp: this.createSmtpConfig(host, options.emailAddress, options.password, options.smtpPort),
+      imap: this.createImapConfig(host, options.emailAddress, options.password, options.imapPort),
       defaults: {
         from: options.emailAddress,
       },

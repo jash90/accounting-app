@@ -1,11 +1,14 @@
-import { Injectable, Logger, HttpStatus } from '@nestjs/common';
-import axios, { AxiosError } from 'axios';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+
+import axios from 'axios';
 import { Observable } from 'rxjs';
+
 import {
-  AIProviderService,
   AIProviderError,
-  ChatMessage,
+  AIProviderService,
   ChatCompletionResponse,
+  ChatMessage,
   ChatStreamChunk,
   EmbeddingResponse,
 } from './ai-provider.interface';
@@ -20,15 +23,22 @@ export class OpenRouterProviderService extends AIProviderService {
   private readonly MAX_RETRIES = 3;
   private readonly TIMEOUT_MS = 180000; // 3 minutes - generous timeout for complex AI responses
   private readonly BASE_RETRY_DELAY_MS = 1000; // 1 second base delay
-  private readonly httpReferer = process.env.OPENROUTER_REFERER || 'http://localhost:3000';
-  private readonly xTitle = process.env.OPENROUTER_X_TITLE || 'Accounting App';
+  private readonly httpReferer: string;
+  private readonly xTitle: string;
+
+  constructor(private readonly configService: ConfigService) {
+    super();
+    this.httpReferer =
+      this.configService.get<string>('OPENROUTER_REFERER') || 'http://localhost:3000';
+    this.xTitle = this.configService.get<string>('OPENROUTER_X_TITLE') || 'Accounting App';
+  }
 
   /**
    * Model prefixes that don't support system role (developer instructions).
    * These models require system messages to be merged into user messages.
    */
   private readonly MODELS_WITHOUT_SYSTEM_ROLE = [
-    'google/gemma',  // All Gemma models (gemma-2, gemma-3, etc.)
+    'google/gemma', // All Gemma models (gemma-2, gemma-3, etc.)
   ];
 
   /**
@@ -40,10 +50,7 @@ export class OpenRouterProviderService extends AIProviderService {
   /**
    * Execute an operation with retry logic and exponential backoff.
    */
-  private async withRetry<T>(
-    operation: () => Promise<T>,
-    operationName: string,
-  ): Promise<T> {
+  private async withRetry<T>(operation: () => Promise<T>, operationName: string): Promise<T> {
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
@@ -55,20 +62,18 @@ export class OpenRouterProviderService extends AIProviderService {
 
         if (!isRetryable || attempt === this.MAX_RETRIES) {
           this.logger.error(
-            `${operationName} failed after ${attempt} attempt(s): ${lastError.message}`,
+            `${operationName} failed after ${attempt} attempt(s): ${lastError.message}`
           );
           // Log the actual API response for debugging
           if (axios.isAxiosError(error) && error.response?.data) {
-            this.logger.error(
-              `API Response: ${this.safeStringify(error.response.data)}`,
-            );
+            this.logger.error(`API Response: ${this.safeStringify(error.response.data)}`);
           }
           throw this.mapToUserFriendlyError(error, operationName);
         }
 
         const delay = this.BASE_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
         this.logger.warn(
-          `${operationName} attempt ${attempt}/${this.MAX_RETRIES} failed, retrying in ${delay}ms: ${lastError.message}`,
+          `${operationName} attempt ${attempt}/${this.MAX_RETRIES} failed, retrying in ${delay}ms: ${lastError.message}`
         );
         await this.sleep(delay);
       }
@@ -99,7 +104,7 @@ export class OpenRouterProviderService extends AIProviderService {
   /**
    * Map errors to user-friendly messages.
    */
-  private mapToUserFriendlyError(error: unknown, operationName: string): AIProviderError {
+  private mapToUserFriendlyError(error: unknown, _operationName: string): AIProviderError {
     let technicalDetails = error instanceof Error ? error.message : String(error);
 
     // Include API response data in technical details for better debugging
@@ -122,36 +127,32 @@ export class OpenRouterProviderService extends AIProviderService {
           return new AIProviderError(
             'Invalid API key. Please check your OpenRouter configuration.',
             technicalDetails,
-            HttpStatus.BAD_REQUEST, // Changed from UNAUTHORIZED to prevent frontend from interpreting as JWT auth failure
+            HttpStatus.BAD_REQUEST // Changed from UNAUTHORIZED to prevent frontend from interpreting as JWT auth failure
           );
         case 402:
           return new AIProviderError(
             'Insufficient credits on OpenRouter. Please add credits to your account.',
             technicalDetails,
-            HttpStatus.PAYMENT_REQUIRED,
+            HttpStatus.PAYMENT_REQUIRED
           );
         case 403:
           return new AIProviderError(
             'Access denied. The selected model may require special access permissions.',
             technicalDetails,
-            HttpStatus.FORBIDDEN,
+            HttpStatus.FORBIDDEN
           );
         case 429:
           return new AIProviderError(
             'AI service is temporarily overloaded. Please try again in a moment.',
             technicalDetails,
-            HttpStatus.TOO_MANY_REQUESTS,
+            HttpStatus.TOO_MANY_REQUESTS
           );
         case 400: {
           // Include specific API error message if available
           const badRequestMessage = apiError?.message
             ? `Invalid request: ${apiError.message}`
             : 'Invalid request to AI service. Please try a different message.';
-          return new AIProviderError(
-            badRequestMessage,
-            technicalDetails,
-            HttpStatus.BAD_REQUEST,
-          );
+          return new AIProviderError(badRequestMessage, technicalDetails, HttpStatus.BAD_REQUEST);
         }
         case 500:
         case 502:
@@ -160,14 +161,14 @@ export class OpenRouterProviderService extends AIProviderService {
           return new AIProviderError(
             'AI service is temporarily unavailable. Please try again later.',
             technicalDetails,
-            HttpStatus.SERVICE_UNAVAILABLE,
+            HttpStatus.SERVICE_UNAVAILABLE
           );
         default:
           if (error.code === 'ECONNABORTED') {
             return new AIProviderError(
               'Request timed out. Please try a shorter message or try again later.',
               technicalDetails,
-              HttpStatus.GATEWAY_TIMEOUT,
+              HttpStatus.GATEWAY_TIMEOUT
             );
           }
           // Log unexpected status codes for debugging
@@ -175,7 +176,7 @@ export class OpenRouterProviderService extends AIProviderService {
           return new AIProviderError(
             `AI service returned an unexpected error (status: ${status || 'unknown'}). Please try again.`,
             technicalDetails,
-            HttpStatus.INTERNAL_SERVER_ERROR,
+            HttpStatus.INTERNAL_SERVER_ERROR
           );
       }
     }
@@ -183,7 +184,7 @@ export class OpenRouterProviderService extends AIProviderService {
     return new AIProviderError(
       'An unexpected error occurred. Please try again.',
       technicalDetails,
-      HttpStatus.INTERNAL_SERVER_ERROR,
+      HttpStatus.INTERNAL_SERVER_ERROR
     );
   }
 
@@ -191,7 +192,7 @@ export class OpenRouterProviderService extends AIProviderService {
    * Sleep helper for retry delays.
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -220,9 +221,7 @@ export class OpenRouterProviderService extends AIProviderService {
    */
   private modelSupportsSystemRole(model: string): boolean {
     const modelLower = model.toLowerCase();
-    return !this.MODELS_WITHOUT_SYSTEM_ROLE.some(prefix =>
-      modelLower.startsWith(prefix)
-    );
+    return !this.MODELS_WITHOUT_SYSTEM_ROLE.some((prefix) => modelLower.startsWith(prefix));
   }
 
   /**
@@ -231,40 +230,35 @@ export class OpenRouterProviderService extends AIProviderService {
    */
   private isReasoningModel(model: string): boolean {
     const modelLower = model.toLowerCase();
-    return this.REASONING_MODEL_PREFIXES.some(
-      (prefix) => modelLower.startsWith(prefix),
-    );
+    return this.REASONING_MODEL_PREFIXES.some((prefix) => modelLower.startsWith(prefix));
   }
 
   /**
    * Transform messages for models that don't support system role.
    * Merges system messages into the first user message.
    */
-  private transformMessagesForModel(
-    messages: ChatMessage[],
-    model: string,
-  ): ChatMessage[] {
+  private transformMessagesForModel(messages: ChatMessage[], model: string): ChatMessage[] {
     if (this.modelSupportsSystemRole(model)) {
       return messages;
     }
 
     // Extract system and non-system messages
-    const systemMessages = messages.filter(m => m.role === 'system');
-    const nonSystemMessages = messages.filter(m => m.role !== 'system');
+    const systemMessages = messages.filter((m) => m.role === 'system');
+    const nonSystemMessages = messages.filter((m) => m.role !== 'system');
 
     if (systemMessages.length === 0) {
       return nonSystemMessages;
     }
 
     this.logger.debug(
-      `Model ${model} doesn't support system role, merging ${systemMessages.length} system message(s) into user message`,
+      `Model ${model} doesn't support system role, merging ${systemMessages.length} system message(s) into user message`
     );
 
     // Combine all system message content
-    const systemContent = systemMessages.map(m => m.content).join('\n\n');
+    const systemContent = systemMessages.map((m) => m.content).join('\n\n');
 
     // Find first user message and prepend system content
-    const firstUserIndex = nonSystemMessages.findIndex(m => m.role === 'user');
+    const firstUserIndex = nonSystemMessages.findIndex((m) => m.role === 'user');
     if (firstUserIndex >= 0) {
       const originalUserContent = nonSystemMessages[firstUserIndex].content;
       nonSystemMessages[firstUserIndex] = {
@@ -282,12 +276,12 @@ export class OpenRouterProviderService extends AIProviderService {
     return nonSystemMessages;
   }
 
-  async chat(
+  chat(
     messages: ChatMessage[],
     model: string,
     temperature: number,
     maxTokens: number,
-    apiKey: string,
+    apiKey: string
   ): Promise<ChatCompletionResponse> {
     // Transform messages for models that don't support system role
     const transformedMessages = this.transformMessagesForModel(messages, model);
@@ -295,11 +289,13 @@ export class OpenRouterProviderService extends AIProviderService {
 
     if (isReasoning) {
       this.logger.debug(
-        `Using reasoning model parameters for ${model} (max_completion_tokens, no temperature)`,
+        `Using reasoning model parameters for ${model} (max_completion_tokens, no temperature)`
       );
     }
 
-    this.logger.debug(`Sending chat request to OpenRouter: model=${model}, messages=${transformedMessages.length}, temp=${temperature}, maxTokens=${maxTokens}`);
+    this.logger.debug(
+      `Sending chat request to OpenRouter: model=${model}, messages=${transformedMessages.length}, temp=${temperature}, maxTokens=${maxTokens}`
+    );
 
     return this.withRetry(async () => {
       // o1/o3 models use max_completion_tokens and don't support temperature
@@ -311,25 +307,21 @@ export class OpenRouterProviderService extends AIProviderService {
           : { temperature, max_tokens: maxTokens }),
       };
 
-      const response = await axios.post(
-        `${this.baseURL}/chat/completions`,
-        requestBody,
-        {
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'HTTP-Referer': this.httpReferer,
-            'X-Title': this.xTitle,
-          },
-          timeout: this.TIMEOUT_MS,
+      const response = await axios.post(`${this.baseURL}/chat/completions`, requestBody, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'HTTP-Referer': this.httpReferer,
+          'X-Title': this.xTitle,
         },
-      );
+        timeout: this.TIMEOUT_MS,
+      });
 
       // Validate response structure
       if (!response?.data?.choices?.length) {
         throw new AIProviderError(
           'Invalid response from AI service',
           'Response missing choices array',
-          HttpStatus.BAD_GATEWAY,
+          HttpStatus.BAD_GATEWAY
         );
       }
 
@@ -338,7 +330,7 @@ export class OpenRouterProviderService extends AIProviderService {
         throw new AIProviderError(
           'Invalid response from AI service',
           'Response missing message content',
-          HttpStatus.BAD_GATEWAY,
+          HttpStatus.BAD_GATEWAY
         );
       }
 
@@ -365,13 +357,11 @@ export class OpenRouterProviderService extends AIProviderService {
     model: string,
     temperature: number,
     maxTokens: number,
-    apiKey: string,
+    apiKey: string
   ): Observable<ChatStreamChunk> {
     // o1/o3 models don't support streaming - fall back to non-streaming
     if (this.isReasoningModel(model)) {
-      this.logger.debug(
-        `Model ${model} doesn't support streaming, using non-streaming fallback`,
-      );
+      this.logger.debug(`Model ${model} doesn't support streaming, using non-streaming fallback`);
       return this.chatWithFallback(messages, model, temperature, maxTokens, apiKey);
     }
 
@@ -379,7 +369,7 @@ export class OpenRouterProviderService extends AIProviderService {
       const transformedMessages = this.transformMessagesForModel(messages, model);
 
       this.logger.debug(
-        `Starting streaming chat request to OpenRouter: model=${model}, messages=${transformedMessages.length}`,
+        `Starting streaming chat request to OpenRouter: model=${model}, messages=${transformedMessages.length}`
       );
 
       axios
@@ -400,7 +390,7 @@ export class OpenRouterProviderService extends AIProviderService {
             },
             responseType: 'stream',
             timeout: this.TIMEOUT_MS,
-          },
+          }
         )
         .then((response) => {
           let buffer = '';
@@ -426,7 +416,7 @@ export class OpenRouterProviderService extends AIProviderService {
                 // Check for stream end
                 if (data === '[DONE]') {
                   this.logger.debug(
-                    `Streaming complete: totalContent=${totalContent.length} chars`,
+                    `Streaming complete: totalContent=${totalContent.length} chars`
                   );
                   subscriber.next({
                     type: 'done',
@@ -444,10 +434,11 @@ export class OpenRouterProviderService extends AIProviderService {
                   // Check for error in stream
                   if (parsed.error) {
                     const errorCode = parsed.error.code || 'UNKNOWN';
-                    const errorMessage =
-                      parsed.error.message || this.safeStringify(parsed.error);
+                    const errorMessage = parsed.error.message || this.safeStringify(parsed.error);
                     const fullError = this.safeStringify(parsed.error);
-                    this.logger.error(`Stream error from OpenRouter: [${errorCode}] ${errorMessage}`);
+                    this.logger.error(
+                      `Stream error from OpenRouter: [${errorCode}] ${errorMessage}`
+                    );
                     this.logger.error(`Full error payload: ${fullError}`);
                     subscriber.next({
                       type: 'error',
@@ -473,7 +464,7 @@ export class OpenRouterProviderService extends AIProviderService {
                     inputTokens = parsed.usage.prompt_tokens ?? inputTokens;
                     outputTokens = parsed.usage.completion_tokens ?? outputTokens;
                   }
-                } catch (parseError) {
+                } catch {
                   // Skip non-JSON lines (like comments or empty data)
                   this.logger.debug(`Skipping non-JSON SSE data: ${data}`);
                 }
@@ -514,7 +505,7 @@ export class OpenRouterProviderService extends AIProviderService {
             this.logger.error(`Streaming request error status: ${error.response?.status}`);
             if (error.response?.data) {
               this.logger.error(
-                `Streaming API Response: ${this.safeStringify(error.response.data)}`,
+                `Streaming API Response: ${this.safeStringify(error.response.data)}`
               );
             }
           }
@@ -542,7 +533,7 @@ export class OpenRouterProviderService extends AIProviderService {
     model: string,
     temperature: number,
     maxTokens: number,
-    apiKey: string,
+    apiKey: string
   ): Observable<ChatStreamChunk> {
     return new Observable((subscriber) => {
       this.chat(messages, model, temperature, maxTokens, apiKey)
@@ -577,16 +568,12 @@ export class OpenRouterProviderService extends AIProviderService {
     });
   }
 
-  async generateEmbedding(
-    text: string,
-    apiKey: string,
-    model?: string,
-  ): Promise<EmbeddingResponse> {
+  generateEmbedding(_text: string, _apiKey: string, _model?: string): Promise<EmbeddingResponse> {
     // OpenRouter doesn't natively support embeddings
     throw new AIProviderError(
       'OpenRouter does not support embeddings. Please use OpenAI provider for RAG features.',
       'Embeddings not supported by OpenRouter',
-      HttpStatus.NOT_IMPLEMENTED,
+      HttpStatus.NOT_IMPLEMENTED
     );
   }
 

@@ -1,15 +1,16 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
-import { User } from './user.entity';
+
 import { Client } from './client.entity';
 import { Company } from './company.entity';
+import { User } from './user.entity';
 import { DeleteRequestStatus } from '../enums/delete-request-status.enum';
 
 @Entity('client_delete_requests')
@@ -20,21 +21,21 @@ export class ClientDeleteRequest {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   clientId!: string;
 
   @ManyToOne(() => Client, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'clientId' })
   client!: Client;
 
-  @Column()
+  @Column({ type: 'uuid' })
   companyId!: string;
 
   @ManyToOne(() => Company, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'companyId' })
   company!: Company;
 
-  @Column()
+  @Column({ type: 'uuid' })
   requestedById!: string;
 
   @ManyToOne(() => User)
@@ -51,7 +52,7 @@ export class ClientDeleteRequest {
   @Column({ type: 'text', nullable: true })
   reason?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   processedById?: string;
 
   @ManyToOne(() => User)

@@ -1,0 +1,16 @@
+{
+  "$schema": "../../../schemas/module.schema.json",
+  "slug": "documents",
+  "name": "Dokumenty",
+  "description": "Szablony dokumentów i generowanie plików DOCX na podstawie danych klientów",
+  "version": "1.0.0",
+  "isActive": true,
+  "permissions": ["read", "write", "delete", "manage"],
+  "defaultPermissions": ["read", "write"],
+  "icon": "file-text",
+  "category": "productivity",
+  "config": {
+    "enableTemplates": true,
+    "enableGeneration": true
+  }
+}

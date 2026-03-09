@@ -1,0 +1,30 @@
+# Docker Compose for Integration Tests
+# Spins up a PostgreSQL container for integration testing
+#
+# Usage:
+#   docker-compose -f test/integration/docker-compose.yml up -d
+#   npm run test:integration
+#   docker-compose -f test/integration/docker-compose.yml down
+
+version: '3.8'
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: accounting_test_db
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: accounting_test
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U test_user -d accounting_test']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_test_data:

@@ -1,4 +1,4 @@
-import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 
 export interface FileValidationOptions {
   maxSize?: number; // in bytes
@@ -39,7 +39,7 @@ export class FileValidationPipe implements PipeTransform {
 
     if (!this.allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException(
-        `Nieprawidłowy typ pliku. Dozwolone typy: ${this.allowedMimeTypes.join(', ')}`,
+        `Nieprawidłowy typ pliku. Dozwolone typy: ${this.allowedMimeTypes.join(', ')}`
       );
     }
 

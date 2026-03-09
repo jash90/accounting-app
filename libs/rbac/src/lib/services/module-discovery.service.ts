@@ -1,13 +1,11 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Module, ModuleSource } from '@accounting/common';
-import * as fs from 'fs';
+
+import * as fs from 'fs/promises';
 import * as path from 'path';
+import { Repository } from 'typeorm';
+
+import { Module, ModuleSource } from '@accounting/common';
 
 /**
  * Interface for the module.json configuration file
@@ -57,12 +55,12 @@ export class ModuleDiscoveryService implements OnModuleInit {
 
   constructor(
     @InjectRepository(Module)
-    private moduleRepository: Repository<Module>,
+    private readonly moduleRepository: Repository<Module>
   ) {
     // Default to libs/modules relative to project root
     // In production, this might be configured differently
-    this.modulesBasePath = process.env['MODULES_PATH'] ||
-      path.resolve(process.cwd(), 'libs', 'modules');
+    this.modulesBasePath =
+      process.env['MODULES_PATH'] || path.resolve(process.cwd(), 'libs', 'modules');
   }
 
   /**
@@ -92,27 +90,35 @@ export class ModuleDiscoveryService implements OnModuleInit {
     const discovered: DiscoveredModule[] = [];
 
     // Check if modules directory exists
-    if (!fs.existsSync(this.modulesBasePath)) {
+    const dirExists = await fs
+      .access(this.modulesBasePath)
+      .then(() => true)
+      .catch(() => false);
+    if (!dirExists) {
       this.logger.warn(`Modules directory not found: ${this.modulesBasePath}`);
       return discovered;
     }
 
     // Get all directories in the modules folder
-    const entries = fs.readdirSync(this.modulesBasePath, { withFileTypes: true });
-    const directories = entries.filter(entry => entry.isDirectory());
+    const entries = await fs.readdir(this.modulesBasePath, { withFileTypes: true });
+    const directories = entries.filter((entry) => entry.isDirectory());
 
     for (const dir of directories) {
       const modulePath = path.join(this.modulesBasePath, dir.name);
       const configPath = path.join(modulePath, 'module.json');
 
       // Check if module.json exists
-      if (!fs.existsSync(configPath)) {
+      const configExists = await fs
+        .access(configPath)
+        .then(() => true)
+        .catch(() => false);
+      if (!configExists) {
         this.logger.debug(`No module.json found in ${dir.name}, skipping`);
         continue;
       }
 
       try {
-        const configContent = fs.readFileSync(configPath, 'utf-8');
+        const configContent = await fs.readFile(configPath, 'utf-8');
         const config: ModuleConfig = JSON.parse(configContent);
 
         // Validate required fields
@@ -155,7 +161,9 @@ export class ModuleDiscoveryService implements OnModuleInit {
     if (!config.slug) {
       errors.push('slug is required');
     } else if (!/^[a-z][a-z0-9-]*$/.test(config.slug)) {
-      errors.push('slug must start with lowercase letter and contain only lowercase letters, numbers, and hyphens');
+      errors.push(
+        'slug must start with lowercase letter and contain only lowercase letters, numbers, and hyphens'
+      );
     }
 
     if (!config.name) {
@@ -168,7 +176,11 @@ export class ModuleDiscoveryService implements OnModuleInit {
       errors.push('version must be in semver format (x.y.z)');
     }
 
-    if (!config.permissions || !Array.isArray(config.permissions) || config.permissions.length === 0) {
+    if (
+      !config.permissions ||
+      !Array.isArray(config.permissions) ||
+      config.permissions.length === 0
+    ) {
       errors.push('permissions array is required and must not be empty');
     }
 
@@ -182,12 +194,16 @@ export class ModuleDiscoveryService implements OnModuleInit {
 
   /**
    * Sync discovered modules with database
-   * Creates new modules, updates existing ones
+   * Creates new modules, updates existing ones, removes stale ones
    */
   async syncWithDatabase(): Promise<void> {
+    // First, remove modules that no longer exist on file system
+    await this.removeStaleModules();
+
+    // Then, create/update discovered modules
     for (const [slug, discoveredModule] of this.moduleCache) {
       try {
-        let existingModule = await this.moduleRepository.findOne({
+        const existingModule = await this.moduleRepository.findOne({
           where: { slug },
         });
 
@@ -232,6 +248,33 @@ export class ModuleDiscoveryService implements OnModuleInit {
       } catch (error) {
         this.logger.error(`Failed to sync module ${slug} with database:`, error);
       }
+    }
+  }
+
+  /**
+   * Remove modules from database that no longer exist on file system
+   * Only removes FILE-sourced modules (not DATABASE-sourced ones)
+   */
+  private async removeStaleModules(): Promise<void> {
+    try {
+      // Get all FILE-sourced modules from database
+      const dbModules = await this.moduleRepository.find({
+        where: { source: ModuleSource.FILE },
+      });
+
+      const discoveredSlugs = new Set(this.moduleCache.keys());
+
+      for (const dbModule of dbModules) {
+        if (!discoveredSlugs.has(dbModule.slug)) {
+          this.logger.warn(
+            `Module "${dbModule.slug}" no longer exists on file system. Removing from database.`
+          );
+          await this.moduleRepository.remove(dbModule);
+          this.logger.log(`Removed stale module from database: ${dbModule.slug}`);
+        }
+      }
+    } catch (error) {
+      this.logger.error('Failed to remove stale modules:', error);
     }
   }
 

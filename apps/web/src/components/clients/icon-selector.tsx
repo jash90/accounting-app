@@ -1,42 +1,124 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
-import { cn } from '@/lib/utils/cn';
-import { IconType } from '@/types/enums';
-import { IconTypeLabels } from '@/lib/constants/polish-labels';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import * as LucideIcons from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-// Popular Lucide icons for quick selection
+import { Circle, Image, Palette, Shapes, Upload } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { IconTypeLabels } from '@/lib/constants/polish-labels';
+import { cn } from '@/lib/utils/cn';
+import { ICON_REGISTRY, type LucideIconComponent } from '@/lib/utils/lucide-icon-registry';
+import { IconType } from '@/types/enums';
+
+// Popular Lucide icons for quick selection - these must match keys in ICON_REGISTRY
 const POPULAR_LUCIDE_ICONS = [
-  'Star', 'Heart', 'Check', 'AlertCircle', 'Info', 'User', 'Users',
-  'Building', 'Briefcase', 'Calendar', 'Clock', 'Mail', 'Phone',
-  'FileText', 'Folder', 'Tag', 'Flag', 'Bell', 'Shield', 'Lock',
-  'Unlock', 'Eye', 'Settings', 'Zap', 'Target', 'Award', 'Gift',
-  'TrendingUp', 'TrendingDown', 'BarChart', 'PieChart', 'DollarSign',
-  'CreditCard', 'Wallet', 'Calculator', 'Receipt', 'Package',
+  'Star',
+  'Heart',
+  'Check',
+  'AlertCircle',
+  'Info',
+  'User',
+  'Users',
+  'Building',
+  'Briefcase',
+  'Calendar',
+  'Clock',
+  'Mail',
+  'Phone',
+  'FileText',
+  'Folder',
+  'Tag',
+  'Flag',
+  'Bell',
+  'Shield',
+  'Lock',
+  'Unlock',
+  'Eye',
+  'Settings',
+  'Zap',
+  'Target',
+  'Award',
+  'Gift',
+  'TrendingUp',
+  'TrendingDown',
+  'BarChart',
+  'PieChart',
+  'DollarSign',
+  'CreditCard',
+  'Wallet',
+  'Calculator',
+  'Receipt',
+  'Package',
 ];
 
 // Popular emojis for quick selection
 const POPULAR_EMOJIS = [
-  '⭐', '💰', '📊', '📈', '📉', '💵', '💳', '🏦', '🏢', '👤',
-  '👥', '📁', '📋', '📝', '✅', '❌', '⚠️', '❗', '❓', '🔔',
-  '🔒', '🔓', '🎯', '🏆', '🎁', '📅', '⏰', '📧', '📞', '🏷️',
-  '🚀', '💡', '🔧', '⚙️', '🛡️', '✨', '💎', '🌟', '🔥', '💪',
+  '⭐',
+  '💰',
+  '📊',
+  '📈',
+  '📉',
+  '💵',
+  '💳',
+  '🏦',
+  '🏢',
+  '👤',
+  '👥',
+  '📁',
+  '📋',
+  '📝',
+  '✅',
+  '❌',
+  '⚠️',
+  '❗',
+  '❓',
+  '🔔',
+  '🔒',
+  '🔓',
+  '🎯',
+  '🏆',
+  '🎁',
+  '📅',
+  '⏰',
+  '📧',
+  '📞',
+  '🏷️',
+  '🚀',
+  '💡',
+  '🔧',
+  '⚙️',
+  '🛡️',
+  '✨',
+  '💎',
+  '🌟',
+  '🔥',
+  '💪',
 ];
 
 // Common colors
 const PRESET_COLORS = [
-  '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16',
-  '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9',
-  '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
-  '#ec4899', '#f43f5e', '#64748b', '#000000', '#ffffff',
+  '#ef4444',
+  '#f97316',
+  '#f59e0b',
+  '#eab308',
+  '#84cc16',
+  '#22c55e',
+  '#10b981',
+  '#14b8a6',
+  '#06b6d4',
+  '#0ea5e9',
+  '#3b82f6',
+  '#6366f1',
+  '#8b5cf6',
+  '#a855f7',
+  '#d946ef',
+  '#ec4899',
+  '#f43f5e',
+  '#64748b',
+  '#000000',
+  '#ffffff',
 ];
 
 interface IconSelectorProps {
@@ -56,6 +138,38 @@ interface IconSelectorProps {
 }
 
 const MAX_FILE_SIZE = 1024 * 1024; // 1MB
+
+// Extracted preview component for proper React reconciliation
+function IconSelectorPreview({
+  value,
+  filePreviewUrl,
+}: {
+  value: { iconType: IconType; iconValue?: string; color?: string };
+  filePreviewUrl: string | null;
+}) {
+  switch (value.iconType) {
+    case IconType.LUCIDE: {
+      const IconComponent: LucideIconComponent | undefined = value.iconValue
+        ? ICON_REGISTRY[value.iconValue]
+        : undefined;
+      return IconComponent ? (
+        <IconComponent size={32} style={value.color ? { color: value.color } : undefined} />
+      ) : (
+        <Circle size={32} className="text-muted-foreground" />
+      );
+    }
+    case IconType.EMOJI:
+      return <span className="text-3xl">{value.iconValue || '⭐'}</span>;
+    case IconType.CUSTOM:
+      return filePreviewUrl ? (
+        <img src={filePreviewUrl} alt="Podgląd ikony" className="h-8 w-8 object-contain" />
+      ) : (
+        <Image size={32} className="text-muted-foreground" />
+      );
+    default:
+      return <Circle size={32} className="text-muted-foreground" />;
+  }
+}
 
 export function IconSelector({ value, onChange, className }: IconSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -139,59 +253,34 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
     [value, onChange]
   );
 
-  const filteredLucideIcons = searchTerm
-    ? POPULAR_LUCIDE_ICONS.filter((icon) =>
-        icon.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : POPULAR_LUCIDE_ICONS;
-
-  const renderIconPreview = () => {
-    switch (value.iconType) {
-      case IconType.LUCIDE: {
-        const IconComponent = value.iconValue
-          ? (LucideIcons as Record<string, React.ComponentType<{ size?: number; className?: string }>>)[value.iconValue]
-          : null;
-        return IconComponent ? (
-          <IconComponent
-            size={32}
-            style={value.color ? { color: value.color } : undefined}
-          />
-        ) : (
-          <LucideIcons.Circle size={32} className="text-muted-foreground" />
-        );
-      }
-      case IconType.EMOJI:
-        return (
-          <span className="text-3xl">{value.iconValue || '⭐'}</span>
-        );
-      case IconType.CUSTOM:
-        return filePreviewUrl ? (
-          <img
-            src={filePreviewUrl}
-            alt="Podgląd ikony"
-            className="w-8 h-8 object-contain"
-          />
-        ) : (
-          <LucideIcons.Image size={32} className="text-muted-foreground" />
-        );
-      default:
-        return <LucideIcons.Circle size={32} className="text-muted-foreground" />;
-    }
-  };
+  // Memoize filtered icons to avoid recalculating on every render
+  const filteredLucideIcons = useMemo(
+    () =>
+      searchTerm
+        ? POPULAR_LUCIDE_ICONS.filter((icon) =>
+            icon.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        : POPULAR_LUCIDE_ICONS,
+    [searchTerm]
+  );
 
   return (
     <div className={cn('space-y-4', className)}>
       {/* Preview */}
       <div className="flex items-center gap-4">
         <div
-          className="w-16 h-16 rounded-lg border-2 border-dashed flex items-center justify-center bg-muted/50"
-          style={value.color && value.iconType !== IconType.EMOJI ? { borderColor: value.color } : undefined}
+          className="bg-muted/50 flex h-16 w-16 items-center justify-center rounded-lg border-2 border-dashed"
+          style={
+            value.color && value.iconType !== IconType.EMOJI
+              ? { borderColor: value.color }
+              : undefined
+          }
         >
-          {renderIconPreview()}
+          <IconSelectorPreview value={value} filePreviewUrl={filePreviewUrl} />
         </div>
         <div className="flex-1">
           <p className="text-sm font-medium">Podgląd ikony</p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             {value.iconType === IconType.LUCIDE && value.iconValue && `Lucide: ${value.iconValue}`}
             {value.iconType === IconType.EMOJI && value.iconValue && `Emoji: ${value.iconValue}`}
             {value.iconType === IconType.CUSTOM && value.file && `Plik: ${value.file.name}`}
@@ -204,7 +293,7 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
       <Tabs value={value.iconType} onValueChange={handleIconTypeChange}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value={IconType.LUCIDE}>
-            <LucideIcons.Shapes className="w-4 h-4 mr-2" />
+            <Shapes className="mr-2 h-4 w-4" />
             {IconTypeLabels[IconType.LUCIDE]}
           </TabsTrigger>
           <TabsTrigger value={IconType.EMOJI}>
@@ -212,7 +301,7 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
             {IconTypeLabels[IconType.EMOJI]}
           </TabsTrigger>
           <TabsTrigger value={IconType.CUSTOM}>
-            <LucideIcons.Upload className="w-4 h-4 mr-2" />
+            <Upload className="mr-2 h-4 w-4" />
             {IconTypeLabels[IconType.CUSTOM]}
           </TabsTrigger>
         </TabsList>
@@ -224,9 +313,9 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <div className="grid grid-cols-8 gap-2 max-h-48 overflow-y-auto p-1">
+          <div className="grid max-h-48 grid-cols-8 gap-2 overflow-y-auto p-1">
             {filteredLucideIcons.map((iconName) => {
-              const IconComponent = (LucideIcons as Record<string, React.ComponentType<{ size?: number; className?: string }>>)[iconName];
+              const IconComponent = ICON_REGISTRY[iconName];
               // Only render button if IconComponent exists to avoid empty buttons
               if (!IconComponent) return null;
               return (
@@ -235,7 +324,7 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
                   type="button"
                   variant={value.iconValue === iconName ? 'default' : 'outline'}
                   size="icon"
-                  className="w-9 h-9"
+                  className="h-9 w-9"
                   onClick={() => handleLucideIconSelect(iconName)}
                   title={iconName}
                 >
@@ -269,14 +358,14 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
               Dodaj
             </Button>
           </div>
-          <div className="grid grid-cols-10 gap-2 max-h-48 overflow-y-auto p-1">
+          <div className="grid max-h-48 grid-cols-10 gap-2 overflow-y-auto p-1">
             {POPULAR_EMOJIS.map((emoji) => (
               <Button
                 key={emoji}
                 type="button"
                 variant={value.iconValue === emoji ? 'default' : 'outline'}
                 size="icon"
-                className="w-9 h-9 text-lg"
+                className="h-9 w-9 text-lg"
                 onClick={() => handleEmojiSelect(emoji)}
               >
                 {emoji}
@@ -294,7 +383,7 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
               accept="image/png,image/jpeg,image/svg+xml,image/webp"
               onChange={handleFileSelect}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Obsługiwane formaty: PNG, JPEG, SVG, WebP. Maksymalny rozmiar: 1MB
             </p>
           </div>
@@ -311,10 +400,10 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-10 h-10 p-0"
+                  className="h-10 w-10 p-0"
                   style={{ backgroundColor: value.color || 'transparent' }}
                 >
-                  {!value.color && <LucideIcons.Palette className="w-5 h-5" />}
+                  {!value.color && <Palette className="h-5 w-5" />}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-3">
@@ -326,8 +415,8 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
                       variant="outline"
                       size="icon"
                       className={cn(
-                        'w-8 h-8 rounded-full p-0',
-                        value.color === color && 'ring-2 ring-primary ring-offset-2'
+                        'h-8 w-8 rounded-full p-0',
+                        value.color === color && 'ring-primary ring-2 ring-offset-2'
                       )}
                       style={{ backgroundColor: color }}
                       onClick={() => handleColorSelect(color)}
@@ -339,7 +428,7 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
                     type="color"
                     value={value.color || '#000000'}
                     onChange={(e) => handleColorSelect(e.target.value)}
-                    className="w-10 h-10 p-1 cursor-pointer"
+                    className="h-10 w-10 cursor-pointer p-1"
                   />
                   <Input
                     type="text"
@@ -352,12 +441,7 @@ export function IconSelector({ value, onChange, className }: IconSelectorProps) 
               </PopoverContent>
             </Popover>
             {value.color && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => handleColorSelect('')}
-              >
+              <Button type="button" variant="ghost" size="sm" onClick={() => handleColorSelect('')}>
                 Usuń kolor
               </Button>
             )}

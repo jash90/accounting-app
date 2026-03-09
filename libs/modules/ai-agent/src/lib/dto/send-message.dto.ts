@@ -1,5 +1,6 @@
-import { IsString, MinLength, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+
+import { IsString, MaxLength, MinLength } from 'class-validator';
 
 export class SendMessageDto {
   @ApiProperty({

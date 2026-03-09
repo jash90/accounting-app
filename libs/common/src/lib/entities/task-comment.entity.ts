@@ -1,13 +1,14 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
-  ManyToOne,
-  JoinColumn,
+  Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
+
 import { Task } from './task.entity';
 import { User } from './user.entity';
 
@@ -21,21 +22,21 @@ export class TaskComment {
   @Column({ type: 'text' })
   content!: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   taskId!: string;
 
   @ManyToOne(() => Task, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'taskId' })
   task!: Task;
 
-  @Column()
+  @Column({ type: 'uuid' })
   authorId!: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'authorId' })
   author!: User;
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   isEdited!: boolean;
 
   @CreateDateColumn()

@@ -1,5 +1,6 @@
-import { IsString, IsOptional } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+import { IsOptional, IsString } from 'class-validator';
 
 export class CreateModuleDto {
   @ApiProperty()
@@ -15,4 +16,3 @@ export class CreateModuleDto {
   @IsString()
   description?: string;
 }
-

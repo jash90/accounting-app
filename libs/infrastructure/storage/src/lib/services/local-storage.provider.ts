@@ -1,31 +1,25 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as fs from 'fs';
+
 import { promises as fsPromises } from 'fs';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import {
-  StorageProvider,
-  StorageResult,
-} from '../interfaces/storage-provider.interface';
+
+import { StorageProvider, StorageResult } from '../interfaces/storage-provider.interface';
 
 @Injectable()
-export class LocalStorageProvider implements StorageProvider {
+export class LocalStorageProvider implements StorageProvider, OnModuleInit {
   private readonly logger = new Logger(LocalStorageProvider.name);
   private readonly basePath: string;
   private readonly urlPrefix: string;
 
-  constructor(private configService: ConfigService) {
-    this.basePath = path.resolve(
-      this.configService.get<string>('STORAGE_LOCAL_PATH', './uploads')
-    );
-    this.urlPrefix = this.configService.get<string>(
-      'STORAGE_LOCAL_URL',
-      '/uploads'
-    );
+  constructor(private readonly configService: ConfigService) {
+    this.basePath = path.resolve(this.configService.get<string>('STORAGE_LOCAL_PATH', './uploads'));
+    this.urlPrefix = this.configService.get<string>('STORAGE_LOCAL_URL', '/uploads');
+  }
 
-    // Ensure base directory exists (sync ok during startup)
-    this.ensureDirectoryExistsSync(this.basePath);
+  async onModuleInit(): Promise<void> {
+    await this.ensureDirectoryExistsAsync(this.basePath);
   }
 
   /**
@@ -43,9 +37,7 @@ export class LocalStorageProvider implements StorageProvider {
 
     // Ensure the resolved path is within basePath
     if (!fullPath.startsWith(this.basePath + path.sep) && fullPath !== this.basePath) {
-      this.logger.warn(
-        `Path traversal attempt detected: ${userPath} -> ${fullPath}`
-      );
+      this.logger.warn(`Path traversal attempt detected: ${userPath} -> ${fullPath}`);
       throw new BadRequestException('Invalid file path');
     }
 
@@ -53,17 +45,7 @@ export class LocalStorageProvider implements StorageProvider {
   }
 
   /**
-   * Synchronous directory creation - used only during constructor initialization
-   */
-  private ensureDirectoryExistsSync(dirPath: string): void {
-    if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
-      this.logger.log(`Created storage directory: ${dirPath}`);
-    }
-  }
-
-  /**
-   * Async directory creation - used for runtime operations
+   * Async directory creation - used for startup and runtime operations
    */
   private async ensureDirectoryExistsAsync(dirPath: string): Promise<void> {
     try {
@@ -74,10 +56,7 @@ export class LocalStorageProvider implements StorageProvider {
     }
   }
 
-  async upload(
-    file: Express.Multer.File,
-    subPath: string
-  ): Promise<StorageResult> {
+  async upload(file: Express.Multer.File, subPath: string): Promise<StorageResult> {
     // Sanitize the subPath to prevent directory traversal
     const sanitizedDir = this.sanitizePath(subPath);
 
@@ -136,14 +115,14 @@ export class LocalStorageProvider implements StorageProvider {
     }
   }
 
-  async getUrl(filePath: string): Promise<string> {
+  getUrl(filePath: string): Promise<string> {
     // Validate and sanitize path - use sanitized path for security
     const fullPath = this.sanitizePath(filePath);
     const relativePath = path.relative(this.basePath, fullPath);
-    return `${this.urlPrefix}/${relativePath.replace(/\\/g, '/')}`;
+    return Promise.resolve(`${this.urlPrefix}/${relativePath.replace(/\\/g, '/')}`);
   }
 
-  async getSignedUrl(filePath: string, _expiresIn?: number): Promise<string> {
+  getSignedUrl(filePath: string, _expiresIn?: number): Promise<string> {
     // Local storage doesn't support signed URLs, return regular URL
     return this.getUrl(filePath);
   }

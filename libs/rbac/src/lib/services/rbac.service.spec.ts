@@ -1,14 +1,17 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { RBACService } from './rbac.service';
-import { Repository } from 'typeorm';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+
+import { Repository } from 'typeorm';
+
 import {
-  User,
   Company,
-  Module,
   CompanyModuleAccess,
+  Module,
+  User,
   UserModulePermission,
 } from '@accounting/common';
+
+import { RBACService } from './rbac.service';
 
 describe('RBACService - companyHasModule helpers', () => {
   let service: RBACService;
@@ -53,7 +56,7 @@ describe('RBACService - companyHasModule helpers', () => {
     service = module.get<RBACService>(RBACService);
     moduleRepository = module.get<Repository<Module>>(getRepositoryToken(Module));
     companyModuleAccessRepository = module.get<Repository<CompanyModuleAccess>>(
-      getRepositoryToken(CompanyModuleAccess),
+      getRepositoryToken(CompanyModuleAccess)
     );
   });
 
