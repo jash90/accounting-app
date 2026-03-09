@@ -6,13 +6,11 @@ import { authHeader, bootstrapApp, loginAs } from '../support/api-test-helper';
 describe('Tasks CRUD E2E', () => {
   let app: INestApplication;
   let ownerToken: string;
-  let _employeeToken: string;
   let createdTaskId: string;
 
   beforeAll(async () => {
     app = await bootstrapApp();
     ownerToken = await loginAs(app, 'owner');
-    _employeeToken = await loginAs(app, 'employee');
   });
 
   afterAll(async () => {
