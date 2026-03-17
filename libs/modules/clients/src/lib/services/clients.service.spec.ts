@@ -622,13 +622,13 @@ describe('ClientsService', () => {
     });
   });
 
-  describe('remove', () => {
+  describe('softDeleteClient', () => {
     it('should soft delete client by setting isActive to false', async () => {
       const existingClient = { ...mockClient, isActive: true };
       clientRepository.findOne = jest.fn().mockResolvedValue(existingClient);
       clientRepository.save = jest.fn().mockResolvedValue({ ...existingClient, isActive: false });
 
-      await service.remove('client-123', mockUser as User);
+      await service.softDeleteClient('client-123', mockUser as User);
 
       expect(clientRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({ isActive: false, updatedById: mockUserId })
@@ -640,7 +640,7 @@ describe('ClientsService', () => {
       clientRepository.findOne = jest.fn().mockResolvedValue(existingClient);
       clientRepository.save = jest.fn().mockResolvedValue({ ...existingClient, isActive: false });
 
-      await service.remove('client-123', mockUser as User);
+      await service.softDeleteClient('client-123', mockUser as User);
 
       expect(changeLogService.logDelete).toHaveBeenCalledWith(
         'Client',
@@ -655,7 +655,7 @@ describe('ClientsService', () => {
       clientRepository.findOne = jest.fn().mockResolvedValue(existingClient);
       clientRepository.save = jest.fn().mockResolvedValue({ ...existingClient, isActive: false });
 
-      await service.remove('client-123', mockUser as User);
+      await service.softDeleteClient('client-123', mockUser as User);
 
       expect(clientChangelogService.notifyClientDeleted).toHaveBeenCalled();
     });
@@ -663,7 +663,7 @@ describe('ClientsService', () => {
     it('should throw ClientNotFoundException if client not found', async () => {
       clientRepository.findOne = jest.fn().mockResolvedValue(null);
 
-      await expect(service.remove('non-existent', mockUser as User)).rejects.toThrow(
+      await expect(service.softDeleteClient('non-existent', mockUser as User)).rejects.toThrow(
         ClientNotFoundException
       );
     });

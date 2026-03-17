@@ -1,13 +1,14 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
-import * as request from 'supertest';
-
-import { AppModule } from '../../../api/src/app/app.module';
+import request from 'supertest';
 
 /**
  * Reusable API E2E test helper.
- * Extracts the repeated bootstrapApp / login / authHeader pattern from specs.
+ *
+ * Connects to an already-running API server (default: http://localhost:3000).
+ * Bun doesn't support NestJS in-process bootstrap (no emitDecoratorMetadata),
+ * so E2E tests hit the external API via HTTP.
  */
+
+const API_BASE_URL = process.env['API_BASE_URL'] || 'http://localhost:3000/api';
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -19,25 +20,14 @@ function requireEnv(name: string): string {
   return value;
 }
 
-export async function bootstrapApp(): Promise<INestApplication> {
-  const moduleFixture: TestingModule = await Test.createTestingModule({
-    imports: [AppModule],
-  }).compile();
-
-  const app = moduleFixture.createNestApplication();
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-    })
-  );
-  await app.init();
-  return app;
+/**
+ * Returns a supertest agent bound to the running API.
+ */
+export function getApiAgent() {
+  return request(API_BASE_URL);
 }
 
 export async function loginAs(
-  app: INestApplication,
   role: 'admin' | 'owner' | 'employee' | 'ownerB' | 'employeeB'
 ): Promise<string> {
   const credentials: Record<string, { email: string; password: string }> = {
@@ -64,7 +54,7 @@ export async function loginAs(
   };
 
   const cred = credentials[role];
-  const response = await request(app.getHttpServer())
+  const response = await getApiAgent()
     .post('/auth/login')
     .send({ email: cred.email, password: cred.password })
     .expect(200);
@@ -80,13 +70,9 @@ export function authHeader(token: string): [string, string] {
  * Attempt to DELETE a resource, silently ignoring errors.
  * Use in afterAll for test cleanup.
  */
-export async function cleanupResource(
-  app: INestApplication,
-  path: string,
-  token: string
-): Promise<void> {
+export async function cleanupResource(path: string, token: string): Promise<void> {
   try {
-    await request(app.getHttpServer())
+    await getApiAgent()
       .delete(path)
       .set(...authHeader(token));
   } catch {

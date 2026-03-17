@@ -1,41 +1,34 @@
-import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
-
-import { authHeader, bootstrapApp, loginAs } from '../support/api-test-helper';
+import { authHeader, getApiAgent, loginAs } from '../support/api-test-helper';
 
 describe('Tasks CRUD E2E', () => {
-  let app: INestApplication;
+  const agent = getApiAgent();
   let ownerToken: string;
   let createdTaskId: string;
 
   beforeAll(async () => {
-    app = await bootstrapApp();
-    ownerToken = await loginAs(app, 'owner');
+    ownerToken = await loginAs('owner');
   });
 
   afterAll(async () => {
     if (createdTaskId) {
       try {
-        await request(app.getHttpServer())
-          .delete(`/modules/tasks/${createdTaskId}`)
-          .set(...authHeader(ownerToken));
+        await agent.delete(`/modules/tasks/${createdTaskId}`).set(...authHeader(ownerToken));
       } catch {
         /* ignore cleanup errors */
       }
     }
-    await app.close();
   });
 
   describe('POST /modules/tasks', () => {
     it('should create a task', async () => {
-      const res = await request(app.getHttpServer())
+      const res = await agent
         .post('/modules/tasks')
         .set(...authHeader(ownerToken))
         .send({
           title: `E2E Task ${Date.now()}`,
           description: 'Created by E2E test',
-          status: 'TODO',
-          priority: 'MEDIUM',
+          status: 'todo',
+          priority: 'medium',
         })
         .expect(201);
 
@@ -44,7 +37,7 @@ describe('Tasks CRUD E2E', () => {
     });
 
     it('should return validation error without title', async () => {
-      await request(app.getHttpServer())
+      await agent
         .post('/modules/tasks')
         .set(...authHeader(ownerToken))
         .send({ description: 'No title' })
@@ -54,7 +47,7 @@ describe('Tasks CRUD E2E', () => {
 
   describe('GET /modules/tasks', () => {
     it('should list tasks with pagination', async () => {
-      const res = await request(app.getHttpServer())
+      const res = await agent
         .get('/modules/tasks')
         .set(...authHeader(ownerToken))
         .query({ page: 1, limit: 10 })
@@ -67,19 +60,19 @@ describe('Tasks CRUD E2E', () => {
 
   describe('PATCH /modules/tasks/:id', () => {
     it('should update task status', async () => {
-      const res = await request(app.getHttpServer())
+      const res = await agent
         .patch(`/modules/tasks/${createdTaskId}`)
         .set(...authHeader(ownerToken))
-        .send({ status: 'IN_PROGRESS' })
+        .send({ status: 'in_progress' })
         .expect(200);
 
-      expect(res.body.status).toBe('IN_PROGRESS');
+      expect(res.body.status).toBe('in_progress');
     });
   });
 
   describe('DELETE /modules/tasks/:id', () => {
     it('should soft-delete task', async () => {
-      await request(app.getHttpServer())
+      await agent
         .delete(`/modules/tasks/${createdTaskId}`)
         .set(...authHeader(ownerToken))
         .expect(200);
