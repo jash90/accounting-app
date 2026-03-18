@@ -13,10 +13,20 @@ declare global {
 }
 
 /**
- * Get API base URL with runtime config support for Railway deployment.
- * Priority: Runtime config (Railway) > Build-time env var (DEV only) > empty string (relative paths)
+ * Get API base URL.
+ * Priority: VITE_API_URL (build-time) > runtime config > empty (dev proxy / Vercel rewrite)
+ *
+ * On Vercel deployments, VITE_API_URL must point directly to the Railway API
+ * because Vercel rewrites forward the browser Origin header, which causes
+ * CORS/500 errors on the backend.
  */
 const getApiBaseUrl = (): string => {
+  // Build-time env var — set in Vercel dashboard as VITE_API_URL
+  const buildTimeUrl = import.meta.env.VITE_API_URL as string | undefined;
+  if (buildTimeUrl) {
+    return buildTimeUrl;
+  }
+
   // Runtime config (injected by Railway at deploy time via sed)
   if (typeof window !== 'undefined' && window.__APP_CONFIG__?.API_BASE_URL) {
     const url = window.__APP_CONFIG__.API_BASE_URL;
@@ -26,12 +36,7 @@ const getApiBaseUrl = (): string => {
     }
   }
 
-  // In development, always use relative paths so requests go through the Vite proxy
-  if (import.meta.env.DEV) {
-    return '';
-  }
-
-  // Production without runtime config - use relative paths (assumes same domain or proxy)
+  // DEV mode or fallback: empty string → Vite proxy / relative paths
   return '';
 };
 
