@@ -15,43 +15,12 @@ import type { io as ioType, Socket } from 'socket.io-client';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthContext } from '@/contexts/auth-context';
 import { queryKeys } from '@/lib/api/query-client';
+import { getWsBaseUrl } from '@/lib/api/ws-url';
 import { tokenStorage } from '@/lib/auth/token-storage';
 import type { NotificationResponseDto } from '@/types/notifications';
 
 
 const loadSocketIo = () => import('socket.io-client');
-
-// Window.__APP_CONFIG__ is declared in lib/api/client.ts
-
-/**
- * Get WebSocket base URL with runtime config support for Railway deployment.
- * Priority: Runtime config (Railway) > Build-time env var (DEV only) > API URL fallback > localhost
- */
-const getWsBaseUrl = (): string => {
-  // Runtime config (injected by Railway at deploy time)
-  if (typeof window !== 'undefined' && window.__APP_CONFIG__?.WS_URL) {
-    const url = window.__APP_CONFIG__.WS_URL;
-    if (url && url !== '__WS_URL__') {
-      return url;
-    }
-  }
-
-  // Runtime API URL - WebSocket usually runs on same server
-  if (typeof window !== 'undefined' && window.__APP_CONFIG__?.API_BASE_URL) {
-    const url = window.__APP_CONFIG__.API_BASE_URL;
-    if (url && url !== '__API_BASE_URL__') {
-      return url;
-    }
-  }
-
-  // DEV mode: always use empty string so requests go through Vite proxy
-  if (import.meta.env.DEV) {
-    return '';
-  }
-
-  // Production fallback - use relative URL (same origin)
-  return '';
-};
 
 interface NotificationSocketContextValue {
   isConnected: boolean;

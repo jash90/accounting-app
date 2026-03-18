@@ -14,25 +14,10 @@ import type { io as ioType, Socket } from 'socket.io-client';
 
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthContext } from '@/contexts/auth-context';
+import { getWsBaseUrl } from '@/lib/api/ws-url';
 import { tokenStorage } from '@/lib/auth/token-storage';
 
 const loadSocketIo = () => import('socket.io-client');
-
-const getWsBaseUrl = (): string => {
-  if (typeof window !== 'undefined' && window.__APP_CONFIG__?.WS_URL) {
-    const url = window.__APP_CONFIG__.WS_URL;
-    if (url && url !== '__WS_URL__') return url;
-  }
-  if (typeof window !== 'undefined' && window.__APP_CONFIG__?.API_BASE_URL) {
-    const url = window.__APP_CONFIG__.API_BASE_URL;
-    if (url && url !== '__API_BASE_URL__') return url;
-  }
-  // DEV mode: always use empty string so requests go through Vite proxy
-  if (import.meta.env.DEV) {
-    return '';
-  }
-  return '';
-};
 
 const isEmailInboxQuery = (query: { queryKey: unknown }): boolean => {
   const key = query.queryKey;
