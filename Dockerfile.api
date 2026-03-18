@@ -41,6 +41,9 @@ COPY --from=builder /app/dist ./dist
 # Copy module configuration files for ModuleDiscoveryService
 COPY --from=builder /app/libs/modules ./libs/modules
 
+# Create upload directories for multer
+RUN mkdir -p /app/uploads/ai-context
+
 EXPOSE 3000
 
 CMD ["node", "dist/apps/api/main.js"]
