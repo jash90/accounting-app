@@ -17,6 +17,7 @@ import { DataSource } from 'typeorm';
 
 import { AppModule } from './app/app.module';
 import { AllExceptionsFilter } from './common';
+import { DemoDataSeederService } from './seeders/demo-data-seeder.service';
 import { SeederService } from './seeders/seeder.service';
 import { SeedersModule } from './seeders/seeders.module';
 
@@ -40,6 +41,9 @@ async function bootstrap() {
       const seedersModule = app.select(SeedersModule);
       const seeder = seedersModule.get(SeederService);
       await seeder.seed();
+      logger.log('Base seeding completed, running demo data seeder...');
+      const demoSeeder = app.get(DemoDataSeederService);
+      await demoSeeder.seed();
       logger.log('Seeding completed successfully');
     } catch (error) {
       logger.error('Seeding failed:', error);
