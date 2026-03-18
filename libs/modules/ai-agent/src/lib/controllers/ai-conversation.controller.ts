@@ -35,6 +35,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
+import * as fs from 'fs';
 import { diskStorage } from 'multer';
 import * as path from 'path';
 import { Observable } from 'rxjs';
@@ -57,6 +58,11 @@ import { SendMessageDto } from '../dto/send-message.dto';
 import { AIConfigurationService } from '../services/ai-configuration.service';
 import { AIConversationService } from '../services/ai-conversation.service';
 import { RAGService } from '../services/rag.service';
+
+const AI_CONTEXT_UPLOAD_DIR = './uploads/ai-context';
+if (!fs.existsSync(AI_CONTEXT_UPLOAD_DIR)) {
+  fs.mkdirSync(AI_CONTEXT_UPLOAD_DIR, { recursive: true });
+}
 
 @ApiTags('ai-agent')
 @ApiBearerAuth('JWT-auth')
@@ -303,7 +309,7 @@ export class AIConversationController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: './uploads/ai-context',
+        destination: AI_CONTEXT_UPLOAD_DIR,
         filename: (req, file, cb) => {
           const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
           // Sanitize file extension - lowercase and validate against allowed extensions
