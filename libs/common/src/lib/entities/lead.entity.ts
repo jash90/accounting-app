@@ -21,6 +21,7 @@ import { LeadStatus } from '../enums/lead-status.enum';
 @Index(['companyId', 'status'])
 @Index(['nip'])
 @Index(['email'])
+@Index(['companyId', 'email'], { unique: true, where: '"email" IS NOT NULL' })
 export class Lead {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

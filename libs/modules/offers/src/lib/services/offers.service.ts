@@ -520,7 +520,7 @@ export class OffersService {
     let template: OfferTemplate | null = null;
     if (offer.templateId) {
       template = await this.templateRepository.findOne({
-        where: { id: offer.templateId },
+        where: { id: offer.templateId, companyId: offer.companyId },
       });
     }
 

@@ -168,7 +168,7 @@ export class AIConfigurationService {
     const saved = await this.configRepository.save(config);
 
     return this.configRepository.findOne({
-      where: { id: saved.id },
+      where: { id: saved.id, companyId: systemCompanyId },
       relations: ['createdBy', 'updatedBy', 'company'],
     }) as Promise<AIConfiguration>;
   }
@@ -218,7 +218,7 @@ export class AIConfigurationService {
     const saved = await this.configRepository.save(config);
 
     return this.configRepository.findOne({
-      where: { id: saved.id },
+      where: { id: saved.id, ...(config.companyId && { companyId: config.companyId }) },
       relations: ['createdBy', 'updatedBy', 'company'],
     }) as Promise<AIConfiguration>;
   }
@@ -293,7 +293,7 @@ export class AIConfigurationService {
     const saved = await this.configRepository.save(config);
 
     return this.configRepository.findOne({
-      where: { id: saved.id },
+      where: { id: saved.id, ...(config.companyId && { companyId: config.companyId }) },
       relations: ['createdBy', 'updatedBy', 'company'],
     }) as Promise<AIConfiguration>;
   }

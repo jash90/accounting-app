@@ -121,6 +121,7 @@ export class TaskRecurrenceService {
     const existingToday = await this.taskRepository.findOne({
       where: {
         templateId: template.id,
+        companyId: template.companyId,
         isTemplate: false,
       },
       order: { createdAt: 'DESC' },

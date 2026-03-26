@@ -88,30 +88,14 @@ export class AIConversationService {
   }
 
   async findOne(id: string, user: User): Promise<AIConversation> {
+    const targetCompanyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const conversation = await this.conversationRepository.findOne({
-      where: { id },
+      where: { id, createdById: user.id, companyId: targetCompanyId },
       relations: ['createdBy', 'company', 'messages', 'messages.user'],
     });
 
     if (!conversation) {
       throw new NotFoundException(`Conversation with ID ${id} not found`);
-    }
-
-    // Verify user can only access their own conversation
-    if (conversation.createdById !== user.id) {
-      throw new ForbiddenException('Access denied');
-    }
-
-    // Additional company check for security
-    if (user.role === UserRole.ADMIN) {
-      const systemCompanyId = await this.systemCompanyService.getSystemCompanyId();
-      if (conversation.companyId !== systemCompanyId) {
-        throw new NotFoundException(`Conversation with ID ${id} not found`);
-      }
-    } else {
-      if (user.companyId !== conversation.companyId) {
-        throw new ForbiddenException('Access denied');
-      }
     }
 
     // Sort messages by createdAt ASC (oldest first)
@@ -139,7 +123,7 @@ export class AIConversationService {
     const saved = await this.conversationRepository.save(conversation);
 
     return this.conversationRepository.findOne({
-      where: { id: saved.id },
+      where: { id: saved.id, companyId: targetCompanyId },
       relations: ['createdBy', 'company', 'messages'],
     }) as Promise<AIConversation>;
   }

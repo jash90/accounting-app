@@ -209,33 +209,57 @@ export class TasksService {
 
   async getKanbanBoard(user: User, filters?: TaskFiltersDto): Promise<KanbanBoardResponseDto> {
     const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const kanbanLimit = filters?.kanbanLimit ?? 50;
 
-    const queryBuilder = this.taskRepository
-      .createQueryBuilder('task')
-      .leftJoinAndSelect('task.assignee', 'assignee')
-      .leftJoinAndSelect('task.client', 'client')
-      .where('task.companyId = :companyId', { companyId })
-      .andWhere('task.isActive = :isActive', { isActive: true })
-      .andWhere('task.parentTaskId IS NULL'); // Only root tasks on kanban
+    const statusOrder: TaskStatus[] = [
+      TaskStatus.BACKLOG,
+      TaskStatus.TODO,
+      TaskStatus.IN_PROGRESS,
+      TaskStatus.IN_REVIEW,
+      TaskStatus.DONE,
+      TaskStatus.BLOCKED,
+      TaskStatus.CANCELLED,
+    ];
 
-    // Apply filters
-    if (filters?.assigneeId) {
-      queryBuilder.andWhere('task.assigneeId = :assigneeId', { assigneeId: filters.assigneeId });
-    }
-    if (filters?.clientId) {
-      queryBuilder.andWhere('task.clientId = :clientId', { clientId: filters.clientId });
-    }
-    if (filters?.priority) {
-      queryBuilder.andWhere('task.priority = :priority', { priority: filters.priority });
-    }
+    const buildBaseQuery = () => {
+      const qb = this.taskRepository
+        .createQueryBuilder('task')
+        .leftJoinAndSelect('task.assignee', 'assignee')
+        .leftJoinAndSelect('task.client', 'client')
+        .where('task.companyId = :companyId', { companyId })
+        .andWhere('task.isActive = :isActive', { isActive: true })
+        .andWhere('task.parentTaskId IS NULL');
 
-    queryBuilder.orderBy('task.sortOrder', 'ASC');
+      if (filters?.assigneeId) {
+        qb.andWhere('task.assigneeId = :assigneeId', { assigneeId: filters.assigneeId });
+      }
+      if (filters?.clientId) {
+        qb.andWhere('task.clientId = :clientId', { clientId: filters.clientId });
+      }
+      if (filters?.priority) {
+        qb.andWhere('task.priority = :priority', { priority: filters.priority });
+      }
 
-    const tasks = await queryBuilder.getMany();
+      return qb;
+    };
 
-    // Load labels for all tasks
-    if (tasks.length > 0) {
-      const taskIds = tasks.map((t) => t.id);
+    // Query each column in parallel with per-column limit
+    const columnResults = await Promise.all(
+      statusOrder.map(async (status) => {
+        const qb = buildBaseQuery()
+          .andWhere('task.status = :status', { status })
+          .orderBy('task.sortOrder', 'ASC')
+          .take(kanbanLimit);
+
+        const [tasks, totalCount] = await qb.getManyAndCount();
+        return { status, tasks, totalCount };
+      })
+    );
+
+    // Load labels for all fetched tasks
+    const allTasks = columnResults.flatMap((c) => c.tasks);
+    if (allTasks.length > 0) {
+      const taskIds = allTasks.map((t) => t.id);
       const labelAssignments = await this.labelAssignmentRepository.find({
         where: { taskId: In(taskIds) },
         relations: ['label'],
@@ -251,32 +275,18 @@ export class TasksService {
         }
       }
 
-      for (const task of tasks) {
+      for (const task of allTasks) {
         (task as Task & { labels?: TaskLabel[] }).labels = labelsByTaskId.get(task.id) || [];
       }
     }
 
-    // Group by status
-    const statusOrder: TaskStatus[] = [
-      TaskStatus.BACKLOG,
-      TaskStatus.TODO,
-      TaskStatus.IN_PROGRESS,
-      TaskStatus.IN_REVIEW,
-      TaskStatus.DONE,
-      TaskStatus.BLOCKED,
-      TaskStatus.CANCELLED,
-    ];
-
-    const columns: KanbanColumnDto[] = statusOrder.map((status) => {
-      const columnTasks = tasks.filter((t) => t.status === status);
-      return {
-        status,
-        label: TaskStatusLabels[status],
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        tasks: columnTasks as any[],
-        count: columnTasks.length,
-      };
-    });
+    const columns: KanbanColumnDto[] = columnResults.map(({ status, tasks, totalCount }) => ({
+      status,
+      label: TaskStatusLabels[status],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tasks: tasks as any[],
+      count: totalCount,
+    }));
 
     return { columns };
   }

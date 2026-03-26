@@ -63,6 +63,7 @@ export class DeleteRequestService {
     const existingRequest = await this.deleteRequestRepository.findOne({
       where: {
         clientId,
+        companyId,
         status: DeleteRequestStatus.PENDING,
       },
     });
@@ -155,7 +156,7 @@ export class DeleteRequestService {
 
     // Get the client before deletion
     const client = await this.clientRepository.findOne({
-      where: { id: request.clientId },
+      where: { id: request.clientId, companyId: request.companyId },
     });
 
     if (!client) {
