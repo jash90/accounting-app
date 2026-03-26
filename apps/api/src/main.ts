@@ -167,9 +167,12 @@ async function seedAdminIfNotExists(app: INestApplication) {
   try {
     const dataSource = app.get(DataSource);
 
+    const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@system.com';
+
     // Check if admin exists
     const adminExists = await dataSource.query(
-      `SELECT COUNT(*) as count FROM users WHERE email = 'admin@system.com'`
+      `SELECT COUNT(*) as count FROM users WHERE email = $1`,
+      [adminEmail]
     );
 
     if (parseInt(adminExists[0].count) === 0) {
@@ -195,11 +198,11 @@ async function seedAdminIfNotExists(app: INestApplication) {
       const hashedPassword = await bcrypt.hash(adminPassword, 10);
       await dataSource.query(
         `INSERT INTO users (id, email, password, "firstName", "lastName", role, "companyId", "isActive", "createdAt", "updatedAt")
-         VALUES (gen_random_uuid(), 'admin@system.com', $1, 'Admin', 'User', 'ADMIN', NULL, true, NOW(), NOW())`,
-        [hashedPassword]
+         VALUES (gen_random_uuid(), $1, $2, 'Admin', 'User', 'ADMIN', NULL, true, NOW(), NOW())`,
+        [adminEmail, hashedPassword]
       );
 
-      logger.log('Admin user created: admin@system.com');
+      logger.log(`Admin user created: ${adminEmail}`);
       if (passwordGenerated) {
         logger.warn('A random password was generated.');
         logger.log('Set ADMIN_SEED_PASSWORD env var to use a specific password.');

@@ -208,6 +208,19 @@ export class TaskFiltersDto {
   @Min(1)
   @Max(100)
   limit?: number = 20;
+
+  @ApiPropertyOptional({
+    description: 'Max tasks per kanban column',
+    minimum: 1,
+    maximum: 200,
+    default: 50,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  kanbanLimit?: number = 50;
 }
 
 export class ReorderTasksDto {

@@ -129,18 +129,13 @@ export class TaskDependenciesService {
   }
 
   async remove(dependencyId: string, user: User): Promise<void> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
     const dependency = await this.dependencyRepository.findOne({
-      where: { id: dependencyId },
+      where: { id: dependencyId, task: { companyId } },
       relations: ['task'],
     });
 
     if (!dependency) {
-      throw new TaskDependencyNotFoundException(dependencyId);
-    }
-
-    // Verify user has access to the task's company
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
-    if (dependency.task?.companyId !== companyId) {
       throw new TaskDependencyNotFoundException(dependencyId);
     }
 

@@ -64,18 +64,13 @@ export class TaskCommentsService {
   }
 
   async update(commentId: string, dto: UpdateTaskCommentDto, user: User): Promise<TaskComment> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
     const comment = await this.commentRepository.findOne({
-      where: { id: commentId },
+      where: { id: commentId, task: { companyId } },
       relations: ['task', 'author'],
     });
 
     if (!comment) {
-      throw new TaskCommentNotFoundException(commentId);
-    }
-
-    // Verify user owns the comment or is admin
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
-    if (comment.task?.companyId !== companyId) {
       throw new TaskCommentNotFoundException(commentId);
     }
 
@@ -96,18 +91,13 @@ export class TaskCommentsService {
   }
 
   async remove(commentId: string, user: User): Promise<void> {
+    const companyId = await this.tenantService.getEffectiveCompanyId(user);
     const comment = await this.commentRepository.findOne({
-      where: { id: commentId },
+      where: { id: commentId, task: { companyId } },
       relations: ['task'],
     });
 
     if (!comment) {
-      throw new TaskCommentNotFoundException(commentId);
-    }
-
-    // Verify user has access
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
-    if (comment.task?.companyId !== companyId) {
       throw new TaskCommentNotFoundException(commentId);
     }
 

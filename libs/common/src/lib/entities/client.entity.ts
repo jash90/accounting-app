@@ -26,6 +26,7 @@ import { ZusStatus } from '../enums/zus-status.enum';
 @Index(['companyId'])
 @Index(['nip'])
 @Index(['name'])
+@Index(['companyId', 'nip'], { unique: true, where: '"nip" IS NOT NULL' })
 @Index(['companyId', 'isActive']) // For filtering active clients per company
 @Index(['companyId', 'name']) // For search and ordering within company
 @Index(['employmentType']) // For employment type filtering

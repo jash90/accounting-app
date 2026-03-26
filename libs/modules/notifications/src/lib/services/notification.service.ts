@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { In, Repository } from 'typeorm';
@@ -121,18 +115,14 @@ export class NotificationService {
   }
 
   async findOne(id: string, user: User): Promise<NotificationResponseDto> {
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const notification = await this.notificationRepository.findOne({
-      where: { id },
+      where: { id, recipientId: user.id, companyId },
       relations: ['actor'],
     });
 
     if (!notification) {
       throw new NotFoundException(`Notification with ID ${id} not found`);
-    }
-
-    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
-    if (notification.recipientId !== user.id || notification.companyId !== companyId) {
-      throw new ForbiddenException('Access denied to this notification');
     }
 
     return this.mapToResponseDto(notification);
@@ -251,17 +241,13 @@ export class NotificationService {
   }
 
   private async findOneEntity(id: string, user: User): Promise<Notification> {
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const notification = await this.notificationRepository.findOne({
-      where: { id },
+      where: { id, recipientId: user.id, companyId },
     });
 
     if (!notification) {
       throw new NotFoundException(`Notification with ID ${id} not found`);
-    }
-
-    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
-    if (notification.recipientId !== user.id || notification.companyId !== companyId) {
-      throw new ForbiddenException('Access denied to this notification');
     }
 
     return notification;
