@@ -11,7 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
 import { Repository } from 'typeorm';
 
-import { Company, User, UserRole } from '@accounting/common';
+import { Company, ErrorMessages, User, UserRole } from '@accounting/common';
 
 import { ACCESS_JWT_SERVICE, REFRESH_JWT_SERVICE } from '../constants/jwt.constants';
 import { AuthResponseDto, UserDto } from '../dto/auth-response.dto';
@@ -33,31 +33,17 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
+    // FIX-03: Self-registration always creates COMPANY_OWNER.
+    // EMPLOYEE accounts are created by company owners via CompanyService.
+    // ADMIN accounts are created by system administrators via AdminService.
+
     const existingUser = await this.userRepository
       .createQueryBuilder('user')
       .where('LOWER(user.email) = LOWER(:email)', { email: registerDto.email })
       .getOne();
 
     if (existingUser) {
-      throw new ConflictException('User with this email already exists');
-    }
-
-    // Validate companyId for COMPANY_OWNER and EMPLOYEE
-    if (
-      (registerDto.role === UserRole.COMPANY_OWNER || registerDto.role === UserRole.EMPLOYEE) &&
-      !registerDto.companyId
-    ) {
-      throw new BadRequestException('companyId is required for COMPANY_OWNER and EMPLOYEE roles');
-    }
-
-    // Validate company exists if companyId is provided
-    if (registerDto.companyId) {
-      const company = await this.companyRepository.findOne({
-        where: { id: registerDto.companyId },
-      });
-      if (!company) {
-        throw new BadRequestException('Company not found');
-      }
+      throw new ConflictException(ErrorMessages.AUTH.EMAIL_EXISTS);
     }
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
@@ -67,8 +53,8 @@ export class AuthService {
       password: hashedPassword,
       firstName: registerDto.firstName,
       lastName: registerDto.lastName,
-      role: registerDto.role,
-      companyId: registerDto.companyId || null,
+      role: UserRole.COMPANY_OWNER,
+      companyId: null,
       isActive: true,
     });
 
@@ -80,11 +66,11 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
     const user = await this.validateUser(loginDto.email, loginDto.password);
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException(ErrorMessages.AUTH.INVALID_CREDENTIALS);
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedException('User account is inactive');
+      throw new UnauthorizedException(ErrorMessages.AUTH.ACCOUNT_INACTIVE);
     }
 
     return this.generateTokens(user);
@@ -118,12 +104,21 @@ export class AuthService {
       });
 
       if (!user || !user.isActive) {
-        throw new UnauthorizedException('Invalid or expired refresh token');
+        throw new UnauthorizedException(ErrorMessages.AUTH.INVALID_REFRESH_TOKEN);
+      }
+
+      // FIX-04: Reject tokens issued before logout/password change
+      if (payload.tokenVersion !== undefined && payload.tokenVersion !== user.tokenVersion) {
+        throw new UnauthorizedException(ErrorMessages.AUTH.INVALID_REFRESH_TOKEN);
       }
 
       return this.generateTokens(user);
-    } catch {
-      throw new UnauthorizedException('Invalid or expired refresh token');
+    } catch (error) {
+      // Re-throw UnauthorizedException as-is, wrap others
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException(ErrorMessages.AUTH.INVALID_REFRESH_TOKEN);
     }
   }
 
@@ -131,25 +126,34 @@ export class AuthService {
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException(ErrorMessages.AUTH.USER_NOT_FOUND);
     }
 
     const isCurrentPasswordValid = await bcrypt.compare(dto.currentPassword, user.password);
 
     if (!isCurrentPasswordValid) {
-      throw new BadRequestException('Current password is incorrect');
+      throw new BadRequestException(ErrorMessages.AUTH.CURRENT_PASSWORD_INCORRECT);
     }
 
     user.password = await bcrypt.hash(dto.newPassword, 10);
     await this.userRepository.save(user);
   }
 
+  /**
+   * Invalidate all existing tokens for a user by incrementing tokenVersion.
+   * Tokens issued before this increment will be rejected by JwtStrategy.validate().
+   */
+  async invalidateTokens(userId: string): Promise<void> {
+    await this.userRepository.increment({ id: userId }, 'tokenVersion', 1);
+  }
+
   private generateTokens(user: User): AuthResponseDto {
-    const payload: Record<string, string | null> = {
+    const payload: Record<string, string | number | null> = {
       sub: user.id,
       email: user.email,
       role: user.role,
       companyId: user.companyId,
+      tokenVersion: user.tokenVersion,
     };
 
     // Generate access token with shorter expiration (15m)

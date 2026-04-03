@@ -15,7 +15,11 @@ import {
   User,
   type PkdCodeOption,
 } from '@accounting/common';
-import { calculatePagination, sanitizeForLog, TenantService } from '@accounting/common/backend';
+import {
+  calculatePagination,
+  sanitizeForLog,
+  SystemCompanyService,
+} from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import { CLIENT_VALIDATION_MESSAGES } from '../constants';
@@ -47,7 +51,7 @@ export class ClientsService {
     private readonly changeLogService: ChangeLogService,
     private readonly clientChangelogService: ClientChangelogService,
     private readonly autoAssignService: AutoAssignService,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   /**
@@ -99,7 +103,7 @@ export class ClientsService {
   }
 
   async findAll(user: User, filters?: ClientFiltersDto): Promise<PaginatedResponseDto<Client>> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const { page, limit, skip } = calculatePagination(filters);
 
     const queryBuilder = this.clientRepository
@@ -211,7 +215,7 @@ export class ClientsService {
   }
 
   async findOne(id: string, user: User): Promise<Client> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const client = await this.clientRepository.findOne({
       where: { id, companyId },
@@ -231,7 +235,7 @@ export class ClientsService {
   }
 
   async create(dto: CreateClientDto, user: User): Promise<Client> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Normalize and validate PKD code if provided
     let normalizedPkdCode = dto.pkdCode?.trim();
@@ -368,7 +372,7 @@ export class ClientsService {
   }
 
   async restore(id: string, user: User): Promise<Client> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const client = await this.clientRepository.findOne({
       where: { id, companyId, isActive: false },
@@ -403,7 +407,7 @@ export class ClientsService {
    * Includes bulk operation ID for audit trail correlation.
    */
   async bulkDelete(dto: BulkDeleteClientsDto, user: User): Promise<BulkOperationResultDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const bulkOperationId = randomUUID();
 
     return this.dataSource.transaction(async (manager) => {
@@ -461,7 +465,7 @@ export class ClientsService {
    * Includes bulk operation ID for audit trail correlation.
    */
   async bulkRestore(dto: BulkRestoreClientsDto, user: User): Promise<BulkOperationResultDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const bulkOperationId = randomUUID();
 
     return this.dataSource.transaction(async (manager) => {
@@ -528,7 +532,7 @@ export class ClientsService {
    * Includes bulk operation ID for audit trail correlation.
    */
   async bulkEdit(dto: BulkEditClientsDto, user: User): Promise<BulkOperationResultDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const bulkOperationId = randomUUID();
 
     // Normalize and validate PKD code if provided (before building payload)

@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Between, DataSource, Repository } from 'typeorm';
 
 import { isOwnerOrAdmin, TimeEntry, User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { TIME_TRACKING_ERROR_MESSAGES, TIME_TRACKING_LABELS } from '../constants';
 import { TimeCalculationService } from './time-calculation.service';
@@ -74,7 +74,7 @@ export class TimesheetService {
     private readonly entryRepository: Repository<TimeEntry>,
     private readonly calculationService: TimeCalculationService,
     private readonly settingsService: TimeSettingsService,
-    private readonly tenantService: TenantService,
+    private readonly systemCompanyService: SystemCompanyService,
     private readonly dataSource: DataSource
   ) {}
 
@@ -92,7 +92,7 @@ export class TimesheetService {
   }
 
   async getDailyTimesheet(dto: DailyTimesheetDto, user: User): Promise<DailyTimesheetResponse> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const date = new Date(dto.date);
     const { startOfDay, endOfDay } = this.calculationService.getDayBounds(date);
 
@@ -125,7 +125,7 @@ export class TimesheetService {
   }
 
   async getWeeklyTimesheet(dto: WeeklyTimesheetDto, user: User): Promise<WeeklyTimesheetResponse> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const settings = await this.settingsService.getSettings(user);
     const date = new Date(dto.weekStart);
     const { startOfWeek, endOfWeek } = this.calculationService.getWeekBounds(
@@ -190,7 +190,7 @@ export class TimesheetService {
   }
 
   async getReportSummary(dto: ReportFiltersDto, user: User): Promise<ReportSummary> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     // Note: Date handling assumes server timezone. For multi-timezone deployments,
     // consider using a date library like date-fns with timezone support.
     const startDate = new Date(dto.startDate);

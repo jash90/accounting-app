@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { TimeRoundingMethod, TimeSettings, User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { UpdateTimeSettingsDto } from '../dto/time-settings.dto';
 
@@ -35,7 +35,7 @@ export class TimeSettingsService {
   constructor(
     @InjectRepository(TimeSettings)
     private readonly settingsRepository: Repository<TimeSettings>,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   /**
@@ -46,7 +46,7 @@ export class TimeSettingsService {
    * requests try to create settings simultaneously for the same company.
    */
   async getSettings(user: User): Promise<TimeSettings> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Check cache first
     const cached = this.cache.get(companyId);

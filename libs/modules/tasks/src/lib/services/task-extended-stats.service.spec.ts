@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { type Repository } from 'typeorm';
 
 import { Task, TaskStatus, type User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { TaskExtendedStatsService } from './task-extended-stats.service';
 
@@ -33,7 +33,7 @@ function createMockQueryBuilder() {
 describe('TaskExtendedStatsService', () => {
   let service: TaskExtendedStatsService;
   let taskRepository: jest.Mocked<Repository<Task>>;
-  let tenantService: jest.Mocked<Pick<TenantService, 'getEffectiveCompanyId'>>;
+  let systemCompanyService: jest.Mocked<Pick<SystemCompanyService, 'getCompanyIdForUser'>>;
 
   const companyId = 'company-1';
   const mockUser = { id: 'user-1', companyId, role: 'EMPLOYEE' } as User;
@@ -49,8 +49,8 @@ describe('TaskExtendedStatsService', () => {
       createQueryBuilder: jest.fn().mockReturnValue(mockQb),
     } as unknown as jest.Mocked<Repository<Task>>;
 
-    tenantService = {
-      getEffectiveCompanyId: jest.fn().mockResolvedValue(companyId),
+    systemCompanyService = {
+      getCompanyIdForUser: jest.fn().mockResolvedValue(companyId),
     };
 
     const module = await Test.createTestingModule({
@@ -58,10 +58,10 @@ describe('TaskExtendedStatsService', () => {
         {
           provide: TaskExtendedStatsService,
           useFactory: () =>
-            new TaskExtendedStatsService(taskRepository as any, tenantService as any),
+            new TaskExtendedStatsService(taskRepository as any, systemCompanyService as any),
         },
         { provide: getRepositoryToken(Task), useValue: taskRepository },
-        { provide: TenantService, useValue: tenantService },
+        { provide: SystemCompanyService, useValue: systemCompanyService },
       ],
     }).compile();
 
@@ -182,14 +182,12 @@ describe('TaskExtendedStatsService', () => {
         status: TaskStatus.CANCELLED,
       });
       // applyDateRangeFilter adds andWhere calls for start/end dates
-      expect(mockQb['andWhere']).toHaveBeenCalledWith(
-        'task.updatedAt >= :startDate',
-        { startDate: '2026-01-01' }
-      );
-      expect(mockQb['andWhere']).toHaveBeenCalledWith(
-        'task.updatedAt <= :endDate',
-        { endDate: '2026-03-01' }
-      );
+      expect(mockQb['andWhere']).toHaveBeenCalledWith('task.updatedAt >= :startDate', {
+        startDate: '2026-01-01',
+      });
+      expect(mockQb['andWhere']).toHaveBeenCalledWith('task.updatedAt <= :endDate', {
+        endDate: '2026-03-01',
+      });
     });
 
     it('should return empty ranking when no tasks match', async () => {

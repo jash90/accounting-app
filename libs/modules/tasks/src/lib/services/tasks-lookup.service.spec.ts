@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { type Repository } from 'typeorm';
 
 import { Client, User, UserRole } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { TasksLookupService } from './tasks-lookup.service';
 
@@ -12,7 +12,7 @@ describe('TasksLookupService', () => {
   let service: TasksLookupService;
   let userRepository: jest.Mocked<Repository<User>>;
   let clientRepository: jest.Mocked<Repository<Client>>;
-  let tenantService: jest.Mocked<Pick<TenantService, 'getEffectiveCompanyId'>>;
+  let systemCompanyService: jest.Mocked<Pick<SystemCompanyService, 'getCompanyIdForUser'>>;
 
   const companyId = 'company-1';
   const mockUser = { id: 'user-1', companyId, role: UserRole.EMPLOYEE } as User;
@@ -29,8 +29,8 @@ describe('TasksLookupService', () => {
       find: jest.fn().mockResolvedValue([]),
     } as unknown as jest.Mocked<Repository<Client>>;
 
-    tenantService = {
-      getEffectiveCompanyId: jest.fn().mockResolvedValue(companyId),
+    systemCompanyService = {
+      getCompanyIdForUser: jest.fn().mockResolvedValue(companyId),
     };
 
     const module = await Test.createTestingModule({
@@ -41,12 +41,12 @@ describe('TasksLookupService', () => {
             new TasksLookupService(
               userRepository as any,
               clientRepository as any,
-              tenantService as any
+              systemCompanyService as any
             ),
         },
         { provide: getRepositoryToken(User), useValue: userRepository },
         { provide: getRepositoryToken(Client), useValue: clientRepository },
-        { provide: TenantService, useValue: tenantService },
+        { provide: SystemCompanyService, useValue: systemCompanyService },
       ],
     }).compile();
 
@@ -134,12 +134,12 @@ describe('TasksLookupService', () => {
       });
     });
 
-    it('should use tenantService to get effective companyId', async () => {
+    it('should use systemCompanyService to get effective companyId', async () => {
       clientRepository.find.mockResolvedValue([]);
 
       await service.getClients(mockUser);
 
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
     });
 
     it('should return empty array when no clients exist', async () => {

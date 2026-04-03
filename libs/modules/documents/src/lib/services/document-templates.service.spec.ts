@@ -1,7 +1,7 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-
 import { type Repository } from 'typeorm';
 
 import {
@@ -11,7 +11,6 @@ import {
   type ContentBlock,
   type User,
 } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import { DocumentTemplatesService } from './document-templates.service';
 
@@ -48,8 +47,8 @@ describe('DocumentTemplatesService', () => {
     createdAt: new Date('2024-05-01'),
   };
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   const mockTemplateRepo = {
@@ -62,17 +61,17 @@ describe('DocumentTemplatesService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         {
           provide: DocumentTemplatesService,
           useFactory: () =>
-            new DocumentTemplatesService(mockTemplateRepo as any, mockTenantService as any),
+            new DocumentTemplatesService(mockTemplateRepo as any, mockSystemCompanyService as any),
         },
         { provide: getRepositoryToken(DocumentTemplate), useValue: mockTemplateRepo },
-        { provide: TenantService, useValue: mockTenantService },
+        { provide: SystemCompanyService, useValue: mockSystemCompanyService },
       ],
     }).compile();
 

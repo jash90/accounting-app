@@ -54,6 +54,14 @@ export class User {
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
+  /**
+   * Token version for JWT revocation.
+   * Incremented on logout/password change to invalidate all existing tokens.
+   * JwtStrategy.validate() compares this with the tokenVersion in the JWT payload.
+   */
+  @Column({ type: 'int', default: 0 })
+  tokenVersion!: number;
+
   @OneToMany(() => UserModulePermission, (permission) => permission.user)
   modulePermissions!: UserModulePermission[];
 

@@ -1,10 +1,9 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { Repository } from 'typeorm';
 
 import { EmailAutoReplyTemplate, User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import {
   CreateEmailAutoReplyTemplateDto,
@@ -16,11 +15,11 @@ export class EmailAutoReplyTemplateService {
   constructor(
     @InjectRepository(EmailAutoReplyTemplate)
     private readonly templateRepository: Repository<EmailAutoReplyTemplate>,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   async findAll(user: User): Promise<EmailAutoReplyTemplate[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     return this.templateRepository.find({
       where: { companyId },
       order: { createdAt: 'DESC' },
@@ -28,14 +27,14 @@ export class EmailAutoReplyTemplateService {
   }
 
   async findOne(id: string, user: User): Promise<EmailAutoReplyTemplate> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const template = await this.templateRepository.findOne({ where: { id, companyId } });
     if (!template) throw new NotFoundException('Auto-reply template not found');
     return template;
   }
 
   async create(dto: CreateEmailAutoReplyTemplateDto, user: User): Promise<EmailAutoReplyTemplate> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const template = this.templateRepository.create({
       ...dto,
       companyId,

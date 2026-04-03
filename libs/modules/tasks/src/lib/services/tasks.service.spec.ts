@@ -1,8 +1,7 @@
-import { TenantService } from '@accounting/common/backend';
-import { ChangeLogService } from '@accounting/infrastructure/change-log';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+
 import { type Repository } from 'typeorm';
 
 import {
@@ -15,6 +14,8 @@ import {
   UserRole,
   type User,
 } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
+import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import { TaskInvalidParentException, TaskNotFoundException } from '../exceptions';
 import { TaskNotificationService } from './task-notification.service';
@@ -26,7 +27,7 @@ describe('TasksService', () => {
   let _labelRepository: jest.Mocked<Repository<TaskLabel>>;
   let _labelAssignmentRepository: jest.Mocked<Repository<TaskLabelAssignment>>;
   let changeLogService: jest.Mocked<ChangeLogService>;
-  let tenantService: jest.Mocked<TenantService>;
+  let systemCompanyService: jest.Mocked<SystemCompanyService>;
 
   // Mock data
   const mockCompanyId = 'company-123';
@@ -82,8 +83,8 @@ describe('TasksService', () => {
     logDelete: jest.fn(),
   };
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   const mockTaskNotificationService = {
@@ -107,7 +108,7 @@ describe('TasksService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     const mockQueryBuilder = createMockQueryBuilder();
 
@@ -144,7 +145,7 @@ describe('TasksService', () => {
               mockLabelRepository as any,
               mockLabelAssignmentRepository as any,
               mockChangeLogService as any,
-              mockTenantService as any,
+              mockSystemCompanyService as any,
               mockTaskNotificationService as any,
               mockDataSource as any
             );
@@ -157,7 +158,7 @@ describe('TasksService', () => {
           useValue: mockLabelAssignmentRepository,
         },
         { provide: ChangeLogService, useValue: mockChangeLogService },
-        { provide: TenantService, useValue: mockTenantService },
+        { provide: SystemCompanyService, useValue: mockSystemCompanyService },
         { provide: TaskNotificationService, useValue: mockTaskNotificationService },
       ],
     }).compile();
@@ -167,7 +168,7 @@ describe('TasksService', () => {
     _labelRepository = module.get(getRepositoryToken(TaskLabel));
     _labelAssignmentRepository = module.get(getRepositoryToken(TaskLabelAssignment));
     changeLogService = module.get(ChangeLogService);
-    tenantService = module.get(TenantService);
+    systemCompanyService = module.get(SystemCompanyService);
   });
 
   // ────────────────────────────────────────────
@@ -180,7 +181,7 @@ describe('TasksService', () => {
       expect(result).toBeInstanceOf(PaginatedResponseDto);
       expect(result.data).toHaveLength(1);
       expect(result.meta.total).toBe(1);
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
     });
 
     it('should apply search filter with ILIKE escaping for percent', async () => {
@@ -340,7 +341,7 @@ describe('TasksService', () => {
 
       await service.findOne('task-123', mockUser as User);
 
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
     });
   });
 
@@ -507,7 +508,7 @@ describe('TasksService', () => {
                 mockLabelRepository as any,
                 mockLabelAssignmentRepository as any,
                 mockChangeLogService as any,
-                mockTenantService as any,
+                mockSystemCompanyService as any,
                 mockTaskNotificationService as any,
                 mockDataSource as any
               );
@@ -830,7 +831,7 @@ describe('TasksService', () => {
 
       await service.findAll(mockUser as User);
 
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
       expect(qb.where).toHaveBeenCalledWith('task.companyId = :companyId', {
         companyId: mockCompanyId,
       });

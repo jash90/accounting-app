@@ -1,10 +1,9 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-
 import { type Repository } from 'typeorm';
 
 import { Task, TaskComment, type User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import { TaskCommentNotFoundException, TaskNotFoundException } from '../exceptions';
 import { TaskCommentsService } from './task-comments.service';
@@ -13,7 +12,7 @@ describe('TaskCommentsService', () => {
   let service: TaskCommentsService;
   let taskRepository: jest.Mocked<Repository<Task>>;
   let commentRepository: jest.Mocked<Repository<TaskComment>>;
-  let tenantService: jest.Mocked<Pick<TenantService, 'getEffectiveCompanyId'>>;
+  let systemCompanyService: jest.Mocked<Pick<SystemCompanyService, 'getCompanyIdForUser'>>;
 
   const companyId = 'company-1';
   const userId = 'user-1';
@@ -52,8 +51,8 @@ describe('TaskCommentsService', () => {
       remove: jest.fn(),
     } as unknown as jest.Mocked<Repository<TaskComment>>;
 
-    tenantService = {
-      getEffectiveCompanyId: jest.fn().mockResolvedValue(companyId),
+    systemCompanyService = {
+      getCompanyIdForUser: jest.fn().mockResolvedValue(companyId),
     };
 
     const module = await Test.createTestingModule({
@@ -64,12 +63,12 @@ describe('TaskCommentsService', () => {
             new TaskCommentsService(
               taskRepository as any,
               commentRepository as any,
-              tenantService as any
+              systemCompanyService as any
             ),
         },
         { provide: getRepositoryToken(Task), useValue: taskRepository },
         { provide: getRepositoryToken(TaskComment), useValue: commentRepository },
-        { provide: TenantService, useValue: tenantService },
+        { provide: SystemCompanyService, useValue: systemCompanyService },
       ],
     }).compile();
 
@@ -85,7 +84,7 @@ describe('TaskCommentsService', () => {
       const result = await service.findAllForTask(taskId, mockUser);
 
       expect(result).toEqual(comments);
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
       expect(taskRepository.findOne).toHaveBeenCalledWith({
         where: { id: taskId, companyId },
       });
@@ -128,16 +127,20 @@ describe('TaskCommentsService', () => {
     it('should throw TaskNotFoundException when task does not exist', async () => {
       taskRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.create('nonexistent', { content: 'x' } as any, mockUser)).rejects.toThrow(
-        TaskNotFoundException
-      );
+      await expect(
+        service.create('nonexistent', { content: 'x' } as any, mockUser)
+      ).rejects.toThrow(TaskNotFoundException);
     });
   });
 
   describe('update', () => {
     it('should update comment content and set isEdited to true', async () => {
       const dto = { content: 'Updated content' };
-      const updatedComment = { ...mockComment, content: 'Updated content', isEdited: true } as unknown as TaskComment;
+      const updatedComment = {
+        ...mockComment,
+        content: 'Updated content',
+        isEdited: true,
+      } as unknown as TaskComment;
 
       commentRepository.findOne.mockResolvedValueOnce(mockComment);
       commentRepository.save.mockResolvedValue(updatedComment);
@@ -155,9 +158,9 @@ describe('TaskCommentsService', () => {
       const commentByOther = { ...mockComment, authorId: 'other-1' } as unknown as TaskComment;
       commentRepository.findOne.mockResolvedValue(commentByOther);
 
-      await expect(
-        service.update(commentId, { content: 'hack' } as any, mockUser)
-      ).rejects.toThrow(TaskCommentNotFoundException);
+      await expect(service.update(commentId, { content: 'hack' } as any, mockUser)).rejects.toThrow(
+        TaskCommentNotFoundException
+      );
     });
 
     it('should throw TaskCommentNotFoundException when comment not found', async () => {

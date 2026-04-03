@@ -52,7 +52,9 @@ export const conversationApi = {
     const { data } = await apiClient.post<{
       userMessage: { content: string };
       assistantMessage: AIMessageDto;
-    }>(`/api/modules/ai-agent/conversations/${conversationId}/messages`, messageData);
+    }>(`/api/modules/ai-agent/conversations/${conversationId}/messages`, messageData, {
+      timeout: 180000, // 3 minutes for AI responses
+    });
     return data;
   },
 

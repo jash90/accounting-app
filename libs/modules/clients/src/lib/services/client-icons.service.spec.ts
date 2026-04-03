@@ -2,12 +2,12 @@ import { BadRequestException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 
 import {
-  type Client,
-  type ClientIcon,
   ClientIconAssignment,
   IconType,
   PaginatedResponseDto,
   UserRole,
+  type Client,
+  type ClientIcon,
   type User,
 } from '@accounting/common';
 
@@ -55,8 +55,8 @@ describe('ClientIconsService', () => {
     isAutoAssigned: false,
   };
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   const mockStorageService = {
@@ -110,7 +110,7 @@ describe('ClientIconsService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -123,7 +123,7 @@ describe('ClientIconsService', () => {
               mockClientRepo as any,
               mockStorageService as any,
               mockAutoAssignService as any,
-              mockTenantService as any,
+              mockSystemCompanyService as any,
               mockDataSource as any
             );
           },

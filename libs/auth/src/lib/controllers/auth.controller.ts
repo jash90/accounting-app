@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, Req, Res } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -10,7 +10,9 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 
-import { User, UserResponseDto } from '@accounting/common';
+import { Request, Response } from 'express';
+
+import { ErrorMessages, User, UserResponseDto } from '@accounting/common';
 
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { Public } from '../decorators/public.decorator';
@@ -20,6 +22,12 @@ import { LoginDto } from '../dto/login.dto';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { AuthService } from '../services/auth.service';
+import {
+  COOKIE_NAMES,
+  getAccessTokenCookieOptions,
+  getClearCookieOptions,
+  getRefreshTokenCookieOptions,
+} from '../utils/cookie-options';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -38,8 +46,13 @@ export class AuthController {
     status: 429,
     description: 'Too many registration attempts. Please try again later.',
   })
-  async register(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {
-    return this.authService.register(registerDto);
+  async register(
+    @Body() registerDto: RegisterDto,
+    @Res({ passthrough: true }) res: Response
+  ): Promise<AuthResponseDto> {
+    const result = await this.authService.register(registerDto);
+    this.setAuthCookies(res, result.access_token, result.refresh_token);
+    return result;
   }
 
   @Public()
@@ -50,8 +63,13 @@ export class AuthController {
   @ApiResponse({ status: 200, type: AuthResponseDto })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @ApiResponse({ status: 429, description: 'Too many login attempts. Please try again later.' })
-  async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
-    return this.authService.login(loginDto);
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) res: Response
+  ): Promise<AuthResponseDto> {
+    const result = await this.authService.login(loginDto);
+    this.setAuthCookies(res, result.access_token, result.refresh_token);
+    return result;
   }
 
   @Public()
@@ -62,8 +80,16 @@ export class AuthController {
   @ApiResponse({ status: 200, type: AuthResponseDto })
   @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
   @ApiResponse({ status: 429, description: 'Too many refresh attempts. Please try again later.' })
-  async refresh(@Body() refreshTokenDto: RefreshTokenDto): Promise<AuthResponseDto> {
-    return this.authService.refreshToken(refreshTokenDto.refresh_token);
+  async refresh(
+    @Body() refreshTokenDto: RefreshTokenDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response
+  ): Promise<AuthResponseDto> {
+    // Dual-mode: prefer cookie refresh token, fall back to body
+    const refreshToken = req.cookies?.[COOKIE_NAMES.REFRESH_TOKEN] || refreshTokenDto.refresh_token;
+    const result = await this.authService.refreshToken(refreshToken);
+    this.setAuthCookies(res, result.access_token, result.refresh_token);
+    return result;
   }
 
   @Get('me')
@@ -96,6 +122,43 @@ export class AuthController {
     @Body() changePasswordDto: ChangePasswordDto
   ): Promise<{ message: string }> {
     await this.authService.changePassword(user.id, changePasswordDto);
-    return { message: 'Password changed successfully' };
+    return { message: ErrorMessages.AUTH.PASSWORD_CHANGED };
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Logout user',
+    description:
+      'Invalidates all existing tokens by incrementing tokenVersion and clears httpOnly auth cookies.',
+  })
+  @ApiOkResponse({ description: 'Logged out successfully' })
+  async logout(
+    @CurrentUser() user: User,
+    @Res({ passthrough: true }) res: Response
+  ): Promise<{ message: string }> {
+    // Invalidate all existing tokens (access + refresh) for this user
+    await this.authService.invalidateTokens(user.id);
+
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.clearCookie(COOKIE_NAMES.ACCESS_TOKEN, getClearCookieOptions(isProduction));
+    res.clearCookie(COOKIE_NAMES.REFRESH_TOKEN, getClearCookieOptions(isProduction));
+    return { message: 'Wylogowano pomyślnie' };
+  }
+
+  /**
+   * Sets httpOnly cookies for access and refresh tokens.
+   * Cookies are sent alongside the JSON response body for dual-mode support
+   * (frontend can use either cookies or Authorization header during migration).
+   */
+  private setAuthCookies(res: Response, accessToken: string, refreshToken: string): void {
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.cookie(COOKIE_NAMES.ACCESS_TOKEN, accessToken, getAccessTokenCookieOptions(isProduction));
+    res.cookie(
+      COOKIE_NAMES.REFRESH_TOKEN,
+      refreshToken,
+      getRefreshTokenCookieOptions(isProduction)
+    );
   }
 }

@@ -43,13 +43,15 @@ export const changePasswordSchema = z
 
 export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 
+/**
+ * FIX-03: Self-registration DTO — role and companyId removed.
+ * Self-registration always creates COMPANY_OWNER.
+ */
 export const registerSchema = z.object({
   email: z.string().email('Nieprawidłowy adres email'),
   password: passwordSchema,
   firstName: z.string().min(1, 'Imię jest wymagane'),
   lastName: z.string().min(1, 'Nazwisko jest wymagane'),
-  role: z.nativeEnum(UserRole),
-  companyId: z.string().uuid().optional(),
 });
 
 export type RegisterFormData = z.infer<typeof registerSchema>;

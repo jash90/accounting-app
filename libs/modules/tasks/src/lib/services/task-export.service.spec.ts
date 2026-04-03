@@ -4,19 +4,13 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { type Repository } from 'typeorm';
 
 import { Task, type User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { TaskExportService } from './task-export.service';
 
 function createMockQueryBuilder() {
   const qb: Record<string, jest.Mock> = {};
-  const chainable = [
-    'createQueryBuilder',
-    'leftJoinAndSelect',
-    'where',
-    'andWhere',
-    'orderBy',
-  ];
+  const chainable = ['createQueryBuilder', 'leftJoinAndSelect', 'where', 'andWhere', 'orderBy'];
   chainable.forEach((method) => {
     qb[method] = jest.fn().mockReturnValue(qb);
   });
@@ -27,7 +21,7 @@ function createMockQueryBuilder() {
 describe('TaskExportService', () => {
   let service: TaskExportService;
   let taskRepository: jest.Mocked<Repository<Task>>;
-  let tenantService: jest.Mocked<Pick<TenantService, 'getEffectiveCompanyId'>>;
+  let systemCompanyService: jest.Mocked<Pick<SystemCompanyService, 'getCompanyIdForUser'>>;
 
   const companyId = 'company-1';
   const mockUser = { id: 'user-1', companyId, role: 'EMPLOYEE' } as User;
@@ -43,18 +37,19 @@ describe('TaskExportService', () => {
       createQueryBuilder: jest.fn().mockReturnValue(mockQb),
     } as unknown as jest.Mocked<Repository<Task>>;
 
-    tenantService = {
-      getEffectiveCompanyId: jest.fn().mockResolvedValue(companyId),
+    systemCompanyService = {
+      getCompanyIdForUser: jest.fn().mockResolvedValue(companyId),
     };
 
     const module = await Test.createTestingModule({
       providers: [
         {
           provide: TaskExportService,
-          useFactory: () => new TaskExportService(taskRepository as any, tenantService as any),
+          useFactory: () =>
+            new TaskExportService(taskRepository as any, systemCompanyService as any),
         },
         { provide: getRepositoryToken(Task), useValue: taskRepository },
-        { provide: TenantService, useValue: tenantService },
+        { provide: SystemCompanyService, useValue: systemCompanyService },
       ],
     }).compile();
 

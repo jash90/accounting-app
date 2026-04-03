@@ -1,10 +1,9 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { Repository } from 'typeorm';
 
 import { isOwnerOrAdmin, MonthlySettlement, SettlementStatus, User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import { EmployeeStatsDto, EmployeeStatsListDto, MyStatsDto, SettlementStatsDto } from '../dto';
 
@@ -23,11 +22,11 @@ export class SettlementStatsService {
     private readonly settlementRepository: Repository<MonthlySettlement>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   async getOverviewStats(month: number, year: number, user: User): Promise<SettlementStatsDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const qb = this.settlementRepository
       .createQueryBuilder('settlement')
@@ -93,7 +92,7 @@ export class SettlementStatsService {
   }
 
   async getEmployeeStats(month: number, year: number, user: User): Promise<EmployeeStatsListDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Get all employees in the company
     const employees = await this.userRepository.find({
@@ -187,7 +186,7 @@ export class SettlementStatsService {
   }
 
   async getMyStats(month: number, year: number, user: User): Promise<MyStatsDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Use SQL aggregation instead of loading all records into memory
     const stats = await this.settlementRepository

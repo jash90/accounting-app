@@ -44,4 +44,9 @@ export const authApi = {
     );
     return response;
   },
+
+  logout: async (): Promise<{ message: string }> => {
+    const { data } = await apiClient.post<{ message: string }>('/api/auth/logout');
+    return data;
+  },
 };

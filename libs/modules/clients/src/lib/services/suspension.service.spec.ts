@@ -1,7 +1,7 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-
 import { DataSource, type EntityManager, type QueryRunner, type Repository } from 'typeorm';
 
 import {
@@ -14,7 +14,6 @@ import {
   VatStatus,
   ZusStatus,
 } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import { ClientNotFoundException } from '../exceptions';
 import { SuspensionService } from './suspension.service';
@@ -24,7 +23,7 @@ describe('SuspensionService', () => {
   let suspensionRepository: jest.Mocked<Repository<ClientSuspension>>;
   let clientRepository: jest.Mocked<Repository<Client>>;
   let userRepository: jest.Mocked<Repository<User>>;
-  let tenantService: jest.Mocked<TenantService>;
+  let systemCompanyService: jest.Mocked<SystemCompanyService>;
   let dataSource: jest.Mocked<DataSource>;
   let queryRunner: jest.Mocked<QueryRunner>;
   let entityManager: jest.Mocked<EntityManager>;
@@ -136,8 +135,8 @@ describe('SuspensionService', () => {
       find: jest.fn(),
     };
 
-    const mockTenantService = {
-      getEffectiveCompanyId: jest.fn().mockResolvedValue(mockCompanyId),
+    const mockSystemCompanyService = {
+      getCompanyIdForUser: jest.fn().mockResolvedValue(mockCompanyId),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -149,14 +148,14 @@ describe('SuspensionService', () => {
               mockSuspensionRepo as any,
               mockClientRepo as any,
               mockUserRepo as any,
-              mockTenantService as any,
+              mockSystemCompanyService as any,
               dataSource as any
             ),
         },
         { provide: getRepositoryToken(ClientSuspension), useValue: mockSuspensionRepo },
         { provide: getRepositoryToken(Client), useValue: mockClientRepo },
         { provide: getRepositoryToken(User), useValue: mockUserRepo },
-        { provide: TenantService, useValue: mockTenantService },
+        { provide: SystemCompanyService, useValue: mockSystemCompanyService },
         { provide: DataSource, useValue: dataSource },
       ],
     }).compile();
@@ -165,11 +164,11 @@ describe('SuspensionService', () => {
     suspensionRepository = module.get(getRepositoryToken(ClientSuspension));
     clientRepository = module.get(getRepositoryToken(Client));
     userRepository = module.get(getRepositoryToken(User));
-    tenantService = module.get(TenantService);
+    systemCompanyService = module.get(SystemCompanyService);
 
     jest.clearAllMocks();
     // Re-set default after clearAllMocks
-    tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
   });
 
   it('should be defined', () => {
@@ -309,7 +308,7 @@ describe('SuspensionService', () => {
 
       await service.create(mockClientId, dto as any, user);
 
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(user);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(user);
     });
   });
 

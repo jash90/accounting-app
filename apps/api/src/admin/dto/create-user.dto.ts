@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+import { Transform } from 'class-transformer';
 import { IsBoolean, IsEmail, IsEnum, IsOptional, IsString } from 'class-validator';
 
 import { UserRole } from '@accounting/common';
@@ -7,6 +8,7 @@ import { UserRole } from '@accounting/common';
 export class CreateUserDto {
   @ApiProperty({ example: 'user@example.com', description: 'User email address' })
   @IsEmail()
+  @Transform(({ value }) => value?.toLowerCase().trim())
   email: string;
 
   @ApiProperty({ example: 'SecureP@ssw0rd!', description: 'User password (minimum 8 characters)' })

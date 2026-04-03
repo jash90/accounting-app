@@ -1,8 +1,10 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
+
+import { AppException, type AppExceptionContext } from '@accounting/common';
 
 import { ClientErrorCode } from './error-codes.enum';
 
-export interface ClientExceptionContext {
+export interface ClientExceptionContext extends AppExceptionContext {
   clientId?: string;
   companyId?: string;
   userId?: string;
@@ -11,26 +13,18 @@ export interface ClientExceptionContext {
 }
 
 /**
- * Base exception class for all client module errors
- * Provides structured error responses with error codes and context
+ * Base exception class for all client module errors.
+ * Extends AppException so the global AllExceptionsFilter can handle it
+ * via the common base class without depending on this module.
  */
-export class ClientException extends HttpException {
+export class ClientException extends AppException {
   constructor(
-    public readonly errorCode: ClientErrorCode,
+    public override readonly errorCode: ClientErrorCode,
     message: string,
-    public readonly context?: ClientExceptionContext,
+    public override readonly context?: ClientExceptionContext,
     statusCode: HttpStatus = HttpStatus.BAD_REQUEST
   ) {
-    super(
-      {
-        statusCode,
-        message,
-        errorCode,
-        context,
-        timestamp: new Date().toISOString(),
-      },
-      statusCode
-    );
+    super(errorCode, message, context, statusCode);
   }
 }
 

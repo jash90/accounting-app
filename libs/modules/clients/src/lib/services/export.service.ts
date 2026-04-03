@@ -1,6 +1,7 @@
+import { sanitizeForLog, SystemCompanyService } from '@accounting/common/backend';
+import { ChangeLogService } from '@accounting/infrastructure/change-log';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { DataSource, EntityManager, Repository } from 'typeorm';
 
 import {
@@ -15,8 +16,6 @@ import {
   VatStatus,
   ZusStatus,
 } from '@accounting/common';
-import { sanitizeForLog, TenantService } from '@accounting/common/backend';
-import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import { ClientFiltersDto } from '../dto/client.dto';
 
@@ -56,7 +55,7 @@ export class ClientExportService {
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
     private readonly changeLogService: ChangeLogService,
-    private readonly tenantService: TenantService,
+    private readonly systemCompanyService: SystemCompanyService,
     private readonly dataSource: DataSource
   ) {}
 
@@ -64,7 +63,7 @@ export class ClientExportService {
    * Export clients to CSV format.
    */
   async exportToCsv(filters: ClientFilters, user: User): Promise<Buffer> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Build query with filters
     const queryBuilder = this.clientRepository
@@ -158,7 +157,7 @@ export class ClientExportService {
    * Uses a database transaction to ensure atomicity - all rows succeed or none.
    */
   async importFromCsv(content: string, user: User): Promise<ImportResultDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Parse CSV
     const lines = content.split('\n').filter((line) => line.trim());

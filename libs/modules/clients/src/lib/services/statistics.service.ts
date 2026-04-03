@@ -1,6 +1,6 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { MoreThanOrEqual, Repository } from 'typeorm';
 
 import {
@@ -15,7 +15,6 @@ import {
   VatStatus,
   ZusStatus,
 } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import {
   ClientStatisticsDto,
@@ -36,14 +35,14 @@ export class ClientStatisticsService {
     private readonly taskRepository: Repository<Task>,
     @InjectRepository(TimeEntry)
     private readonly timeEntryRepository: Repository<TimeEntry>,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   /**
    * Get comprehensive statistics about clients for a company.
    */
   async getStatistics(user: User): Promise<ClientStatisticsDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Get basic counts
     const [total, active, inactive] = await Promise.all([
@@ -156,7 +155,7 @@ export class ClientStatisticsService {
    * Get statistics with recent clients and activity.
    */
   async getStatisticsWithRecent(user: User): Promise<ClientStatisticsWithRecentDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Get base statistics
     const baseStats = await this.getStatistics(user);
@@ -223,7 +222,7 @@ export class ClientStatisticsService {
    * Get per-client aggregate task and time-tracking statistics.
    */
   async getClientTaskAndTimeStats(user: User): Promise<ClientTaskTimeStatsDto[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Get task counts per client
     const taskStats = await this.taskRepository

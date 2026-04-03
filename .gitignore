@@ -51,3 +51,10 @@ test-results/
 coverage/
 playwright-report/
 apps/web-e2e/playwright-report/
+
+# Root-level artifacts (should never exist in root)
+/server.log
+/test-*.js
+/test-screenshots/
+/*.png
+!apps/**/*.png

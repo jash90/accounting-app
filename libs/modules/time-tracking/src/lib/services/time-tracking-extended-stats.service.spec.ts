@@ -1,22 +1,23 @@
-import { TenantService } from '@accounting/common/backend';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+
 import type { Repository } from 'typeorm';
 
 import { TimeEntry, UserRole, type User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { TimeTrackingExtendedStatsService } from './time-tracking-extended-stats.service';
 
 describe('TimeTrackingExtendedStatsService', () => {
   let service: TimeTrackingExtendedStatsService;
   let entryRepository: jest.Mocked<Repository<TimeEntry>>;
-  let tenantService: jest.Mocked<TenantService>;
+  let systemCompanyService: jest.Mocked<SystemCompanyService>;
 
   const mockCompanyId = 'company-123';
   const mockUserId = 'user-123';
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   const mockEmployee: Partial<User> = {
@@ -51,7 +52,7 @@ describe('TimeTrackingExtendedStatsService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     const mockQueryBuilder = createMockQueryBuilder();
 
@@ -66,7 +67,7 @@ describe('TimeTrackingExtendedStatsService', () => {
           useFactory: () => {
             return new TimeTrackingExtendedStatsService(
               mockEntryRepository as any,
-              mockTenantService as any
+              mockSystemCompanyService as any
             );
           },
         },
@@ -75,15 +76,15 @@ describe('TimeTrackingExtendedStatsService', () => {
           useValue: mockEntryRepository,
         },
         {
-          provide: TenantService,
-          useValue: mockTenantService,
+          provide: SystemCompanyService,
+          useValue: mockSystemCompanyService,
         },
       ],
     }).compile();
 
     service = module.get<TimeTrackingExtendedStatsService>(TimeTrackingExtendedStatsService);
     entryRepository = module.get(getRepositoryToken(TimeEntry));
-    tenantService = module.get(TenantService);
+    systemCompanyService = module.get(SystemCompanyService);
   });
 
   describe('getTopTasksByTime', () => {
@@ -241,13 +242,13 @@ describe('TimeTrackingExtendedStatsService', () => {
   });
 
   describe('tenant isolation', () => {
-    it('should always resolve companyId via tenantService', async () => {
+    it('should always resolve companyId via systemCompanyService', async () => {
       const mockQb = createMockQueryBuilder();
       entryRepository.createQueryBuilder = jest.fn(() => mockQb) as any;
 
       await service.getTopTasksByTime(mockEmployee as User);
 
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockEmployee);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockEmployee);
     });
 
     it('should filter all queries by companyId', async () => {

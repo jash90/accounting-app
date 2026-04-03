@@ -1,7 +1,7 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
-import { Client, type User, UserRole } from '@accounting/common';
+import { Client, UserRole, type User } from '@accounting/common';
 
 import { DuplicateDetectionService } from './duplicate-detection.service';
 
@@ -18,8 +18,8 @@ describe('DuplicateDetectionService', () => {
     companyId: mockCompanyId,
   };
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   const mockClientRepository = {
@@ -29,22 +29,25 @@ describe('DuplicateDetectionService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         {
           provide: DuplicateDetectionService,
           useFactory: () =>
-            new DuplicateDetectionService(mockClientRepository as any, mockTenantService as any),
+            new DuplicateDetectionService(
+              mockClientRepository as any,
+              mockSystemCompanyService as any
+            ),
         },
         {
           provide: getRepositoryToken(Client),
           useValue: mockClientRepository,
         },
         {
-          provide: TenantService,
-          useValue: mockTenantService,
+          provide: SystemCompanyService,
+          useValue: mockSystemCompanyService,
         },
       ],
     }).compile();

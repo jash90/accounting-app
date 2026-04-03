@@ -9,7 +9,6 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-
 import { Server, Socket } from 'socket.io';
 
 import { JwtPayload } from '@accounting/auth';
@@ -47,8 +46,9 @@ import { NotificationCreatedEvent } from '../services/notification-dispatcher.se
       } else {
         // In development, log the rejection for debugging
         if (process.env['NODE_ENV'] !== 'production') {
-          console.warn(
-            `WebSocket CORS rejected origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`
+          Logger.warn(
+            `WebSocket CORS rejected origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`,
+            'NotificationGateway'
           );
         }
         callback(new Error(`Origin ${origin} not allowed by CORS`));

@@ -1,3 +1,7 @@
+import { createLogger } from '@/lib/logging/logger';
+
+const logger = createLogger('PerformanceMonitor');
+
 export const performanceMonitor = {
   markFeature: (name: string) => {
     if (typeof window !== 'undefined' && window.performance) {
@@ -12,9 +16,7 @@ export const performanceMonitor = {
         const measure = performance.getEntriesByName(name)[0];
 
         if (measure) {
-          if (import.meta.env.DEV) {
-            console.log(`${name}: ${measure.duration.toFixed(2)}ms`);
-          }
+          logger.debug(`${name}: ${measure.duration.toFixed(2)}ms`);
 
           // Send to analytics in production
           if (import.meta.env.PROD) {
@@ -22,9 +24,7 @@ export const performanceMonitor = {
           }
         }
       } catch (error) {
-        if (import.meta.env.DEV) {
-          console.warn(`Performance measurement failed for ${name}:`, error);
-        }
+        logger.warn(`Performance measurement failed for ${name}:`, { error });
       }
     }
   },

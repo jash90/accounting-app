@@ -4,15 +4,15 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { type Repository } from 'typeorm';
 
 import {
-  type Client,
   ClientCustomFieldValue,
   ClientFieldDefinition,
   CustomFieldType,
   PaginatedResponseDto,
   UserRole,
+  type Client,
   type User,
 } from '@accounting/common';
-import { type TenantService } from '@accounting/common/backend';
+import { type SystemCompanyService } from '@accounting/common/backend';
 
 import { ClientException, ClientNotFoundException, FieldNotFoundException } from '../exceptions';
 import { CustomFieldsService, type CreateFieldDefinitionDto } from './custom-fields.service';
@@ -22,7 +22,7 @@ describe('CustomFieldsService', () => {
   let _fieldDefinitionRepository: jest.Mocked<Repository<ClientFieldDefinition>>;
   let _fieldValueRepository: jest.Mocked<Repository<ClientCustomFieldValue>>;
   let _clientRepository: jest.Mocked<Repository<Client>>;
-  let _tenantService: jest.Mocked<TenantService>;
+  let _systemCompanyService: jest.Mocked<SystemCompanyService>;
 
   const mockCompanyId = 'company-123';
   const mockUserId = 'user-123';
@@ -61,8 +61,8 @@ describe('CustomFieldsService', () => {
     companyId: mockCompanyId,
   };
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   const mockCustomFieldReminderService = {
@@ -112,7 +112,7 @@ describe('CustomFieldsService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -123,7 +123,7 @@ describe('CustomFieldsService', () => {
               mockFieldDefinitionRepo as any,
               mockFieldValueRepo as any,
               mockClientRepo as any,
-              mockTenantService as any,
+              mockSystemCompanyService as any,
               mockDataSource as any,
               mockCustomFieldReminderService as any
             );
@@ -136,7 +136,7 @@ describe('CustomFieldsService', () => {
     _fieldDefinitionRepository = mockFieldDefinitionRepo as any;
     _fieldValueRepository = mockFieldValueRepo as any;
     _clientRepository = mockClientRepo as any;
-    _tenantService = mockTenantService as any;
+    _systemCompanyService = mockSystemCompanyService as any;
   });
 
   describe('findAllDefinitions', () => {
@@ -161,7 +161,7 @@ describe('CustomFieldsService', () => {
 
       await service.findAllDefinitions(mockUser as User);
 
-      expect(mockTenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(mockSystemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
     });
 
     it('should support pagination params', async () => {

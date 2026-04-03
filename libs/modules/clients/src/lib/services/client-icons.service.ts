@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { DataSource, Repository } from 'typeorm';
@@ -11,7 +11,7 @@ import {
   PaginatedResponseDto,
   User,
 } from '@accounting/common';
-import { calculatePagination, TenantService } from '@accounting/common/backend';
+import { calculatePagination, SystemCompanyService } from '@accounting/common/backend';
 import { StorageService } from '@accounting/infrastructure/storage';
 
 import { AssignIconDto, CreateIconDto, IconQueryDto, UpdateIconDto } from '../dto/icon.dto';
@@ -24,6 +24,8 @@ import { AutoAssignService } from './auto-assign.service';
 
 @Injectable()
 export class ClientIconsService {
+  private readonly logger = new Logger(ClientIconsService.name);
+
   constructor(
     @InjectRepository(ClientIcon)
     private readonly iconRepository: Repository<ClientIcon>,
@@ -33,14 +35,14 @@ export class ClientIconsService {
     private readonly clientRepository: Repository<Client>,
     private readonly storageService: StorageService,
     private readonly autoAssignService: AutoAssignService,
-    private readonly tenantService: TenantService,
+    private readonly systemCompanyService: SystemCompanyService,
     private readonly dataSource: DataSource
   ) {}
 
   // Icon CRUD
 
   async findAllIcons(user: User, query?: IconQueryDto): Promise<PaginatedResponseDto<ClientIcon>> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const { page, limit, skip } = calculatePagination(query, 50);
 
     const [data, total] = await this.iconRepository.findAndCount({
@@ -54,7 +56,7 @@ export class ClientIconsService {
   }
 
   async findIconById(id: string, user: User): Promise<ClientIcon> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const icon = await this.iconRepository.findOne({
       where: { id, companyId },
@@ -72,7 +74,7 @@ export class ClientIconsService {
     file: Express.Multer.File | undefined,
     user: User
   ): Promise<ClientIcon> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const iconType = dto.iconType || IconType.CUSTOM;
 
     // Validate based on icon type
@@ -158,7 +160,7 @@ export class ClientIconsService {
     user: User
   ): Promise<ClientIcon> {
     const icon = await this.findIconById(id, user);
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Check for duplicate name if changing
     if (dto.name && dto.name !== icon.name) {
@@ -281,7 +283,7 @@ export class ClientIconsService {
         await this.storageService.deleteFile(filePath);
       } catch (error) {
         // Log but don't fail - orphaned files can be cleaned up via maintenance job
-        console.warn(`Failed to delete icon file ${filePath}: ${(error as Error).message}`);
+        this.logger.warn(`Failed to delete icon file ${filePath}: ${(error as Error).message}`);
       }
     }
   }
@@ -299,7 +301,7 @@ export class ClientIconsService {
   // Icon Assignments
 
   async getClientIcons(clientId: string, user: User): Promise<ClientIcon[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify client
     const client = await this.clientRepository.findOne({
@@ -319,7 +321,7 @@ export class ClientIconsService {
   }
 
   async assignIcon(dto: AssignIconDto, user: User): Promise<ClientIconAssignment> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify client
     const client = await this.clientRepository.findOne({
@@ -371,7 +373,7 @@ export class ClientIconsService {
   }
 
   async unassignIcon(clientId: string, iconId: string, user: User): Promise<void> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify client
     const client = await this.clientRepository.findOne({
@@ -386,7 +388,7 @@ export class ClientIconsService {
   }
 
   async setClientIcons(clientId: string, iconIds: string[], user: User): Promise<ClientIcon[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify client OUTSIDE transaction
     const client = await this.clientRepository.findOne({

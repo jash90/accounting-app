@@ -1,6 +1,6 @@
+import { applyDateRangeFilter, SystemCompanyService } from '@accounting/common/backend';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { Repository } from 'typeorm';
 
 import {
@@ -10,7 +10,6 @@ import {
   SettlementStatus,
   User,
 } from '@accounting/common';
-import { applyDateRangeFilter, TenantService } from '@accounting/common/backend';
 
 import {
   BlockedClientsStatsDto,
@@ -24,14 +23,14 @@ export class SettlementExtendedStatsService {
   constructor(
     @InjectRepository(MonthlySettlement)
     private readonly settlementRepository: Repository<MonthlySettlement>,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   async getCompletionDurationStats(
     user: User,
     filters?: SettlementStatsPeriodFilterDto
   ): Promise<SettlementCompletionDurationStatsDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const qb = this.settlementRepository
       .createQueryBuilder('s')
@@ -68,7 +67,7 @@ export class SettlementExtendedStatsService {
     user: User,
     filters?: SettlementStatsPeriodFilterDto
   ): Promise<SettlementEmployeeRankingDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const qb = this.settlementRepository
       .createQueryBuilder('s')
@@ -105,7 +104,7 @@ export class SettlementExtendedStatsService {
     user: User,
     filters?: SettlementStatsPeriodFilterDto
   ): Promise<BlockedClientsStatsDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Count settlements per client where status is one of the blocked statuses
     const qb = this.settlementRepository

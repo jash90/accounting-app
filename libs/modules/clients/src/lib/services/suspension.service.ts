@@ -1,6 +1,6 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import {
   Between,
   DataSource,
@@ -13,7 +13,6 @@ import {
 } from 'typeorm';
 
 import { Client, ClientSuspension, User, UserRole } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import {
   CreateSuspensionDto,
@@ -36,7 +35,7 @@ export class SuspensionService {
     private readonly clientRepository: Repository<Client>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly tenantService: TenantService,
+    private readonly systemCompanyService: SystemCompanyService,
     private readonly dataSource: DataSource
   ) {}
 
@@ -49,7 +48,7 @@ export class SuspensionService {
     dto: CreateSuspensionDto,
     user: User
   ): Promise<SuspensionResponseDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify client exists and belongs to company
     const client = await this.clientRepository.findOne({
@@ -123,7 +122,7 @@ export class SuspensionService {
     dto: UpdateSuspensionDto,
     user: User
   ): Promise<SuspensionResponseDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Use transaction to prevent race conditions between validation and save
     const queryRunner = this.dataSource.createQueryRunner();
@@ -204,7 +203,7 @@ export class SuspensionService {
    * Delete a suspension.
    */
   async remove(clientId: string, suspensionId: string, user: User): Promise<void> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const suspension = await this.suspensionRepository.findOne({
       where: { id: suspensionId, clientId, companyId },
@@ -230,7 +229,7 @@ export class SuspensionService {
    * Get all suspensions for a client.
    */
   async findAll(clientId: string, user: User): Promise<SuspensionResponseDto[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify client exists, belongs to company, and is active
     const client = await this.clientRepository.findOne({
@@ -244,6 +243,21 @@ export class SuspensionService {
     const suspensions = await this.suspensionRepository.find({
       where: { clientId, companyId },
       relations: ['createdBy'],
+      select: {
+        id: true,
+        clientId: true,
+        companyId: true,
+        startDate: true,
+        endDate: true,
+        reason: true,
+        startDate7DayReminderSent: true,
+        startDate1DayReminderSent: true,
+        endDate7DayReminderSent: true,
+        endDate1DayReminderSent: true,
+        resumptionNotificationSent: true,
+        createdAt: true,
+        createdBy: { id: true, firstName: true, lastName: true },
+      },
       order: { startDate: 'DESC' },
     });
 
@@ -258,7 +272,7 @@ export class SuspensionService {
     suspensionId: string,
     user: User
   ): Promise<SuspensionResponseDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const suspension = await this.suspensionRepository.findOne({
       where: { id: suspensionId, clientId, companyId },
@@ -356,6 +370,15 @@ export class SuspensionService {
         startDate7DayReminderSent: false,
       },
       relations: ['client'],
+      select: {
+        id: true,
+        clientId: true,
+        companyId: true,
+        startDate: true,
+        endDate: true,
+        startDate7DayReminderSent: true,
+        client: { id: true, name: true },
+      },
       order: { companyId: 'ASC', startDate: 'ASC' },
     });
   }
@@ -372,14 +395,21 @@ export class SuspensionService {
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Query includes companyId relation to ensure proper tenant context for notifications.
-    // Each suspension is processed with its own companyId context in the reminder service.
     return this.suspensionRepository.find({
       where: {
         startDate: Between(startOfDay, endOfDay),
         startDate1DayReminderSent: false,
       },
       relations: ['client'],
+      select: {
+        id: true,
+        clientId: true,
+        companyId: true,
+        startDate: true,
+        endDate: true,
+        startDate1DayReminderSent: true,
+        client: { id: true, name: true },
+      },
       order: { companyId: 'ASC', startDate: 'ASC' },
     });
   }
@@ -396,14 +426,21 @@ export class SuspensionService {
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Query includes companyId relation to ensure proper tenant context for notifications.
-    // Each suspension is processed with its own companyId context in the reminder service.
     return this.suspensionRepository.find({
       where: {
         endDate: Between(startOfDay, endOfDay),
         endDate7DayReminderSent: false,
       },
       relations: ['client'],
+      select: {
+        id: true,
+        clientId: true,
+        companyId: true,
+        startDate: true,
+        endDate: true,
+        endDate7DayReminderSent: true,
+        client: { id: true, name: true },
+      },
       order: { companyId: 'ASC', endDate: 'ASC' },
     });
   }
@@ -420,14 +457,21 @@ export class SuspensionService {
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Query includes companyId relation to ensure proper tenant context for notifications.
-    // Each suspension is processed with its own companyId context in the reminder service.
     return this.suspensionRepository.find({
       where: {
         endDate: Between(startOfDay, endOfDay),
         endDate1DayReminderSent: false,
       },
       relations: ['client'],
+      select: {
+        id: true,
+        clientId: true,
+        companyId: true,
+        startDate: true,
+        endDate: true,
+        endDate1DayReminderSent: true,
+        client: { id: true, name: true },
+      },
       order: { companyId: 'ASC', endDate: 'ASC' },
     });
   }
@@ -440,14 +484,21 @@ export class SuspensionService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Query includes companyId relation to ensure proper tenant context for notifications.
-    // Each suspension is processed with its own companyId context in the reminder service.
     return this.suspensionRepository.find({
       where: {
         endDate: LessThanOrEqual(today),
         resumptionNotificationSent: false,
       },
       relations: ['client'],
+      select: {
+        id: true,
+        clientId: true,
+        companyId: true,
+        startDate: true,
+        endDate: true,
+        resumptionNotificationSent: true,
+        client: { id: true, name: true },
+      },
       order: { companyId: 'ASC', endDate: 'ASC' },
     });
   }

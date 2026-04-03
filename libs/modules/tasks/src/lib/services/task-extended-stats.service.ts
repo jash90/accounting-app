@@ -10,7 +10,7 @@ import {
   TaskStatus,
   User,
 } from '@accounting/common';
-import { applyDateRangeFilter, TenantService } from '@accounting/common/backend';
+import { applyDateRangeFilter, SystemCompanyService } from '@accounting/common/backend';
 
 import {
   EmployeeTaskRankingDto,
@@ -25,14 +25,14 @@ export class TaskExtendedStatsService {
   constructor(
     @InjectRepository(Task)
     private readonly taskRepository: Repository<Task>,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   async getCompletionDurationStats(
     user: User,
     filters?: StatsPeriodFilterDto
   ): Promise<TaskCompletionDurationStatsDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const qb = this.taskRepository
       .createQueryBuilder('task')
@@ -81,7 +81,7 @@ export class TaskExtendedStatsService {
     user: User,
     query: StatusDurationQueryDto
   ): Promise<TaskStatusDurationStatsDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const status = query.status as TaskStatus;
 
     const qb = this.taskRepository
@@ -140,7 +140,7 @@ export class TaskExtendedStatsService {
     user: User,
     filters?: StatsPeriodFilterDto
   ): Promise<EmployeeTaskRankingDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const qb = this.taskRepository
       .createQueryBuilder('task')

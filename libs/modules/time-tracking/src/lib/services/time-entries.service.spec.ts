@@ -10,7 +10,7 @@ import {
   UserRole,
   type User,
 } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { SystemCompanyService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import { type CreateTimeEntryDto, type UpdateTimeEntryDto } from '../dto/time-entry.dto';
@@ -31,7 +31,7 @@ describe('TimeEntriesService', () => {
   let entryRepository: jest.Mocked<Repository<TimeEntry>>;
   let dataSource: jest.Mocked<DataSource>;
   let changeLogService: jest.Mocked<ChangeLogService>;
-  let tenantService: jest.Mocked<TenantService>;
+  let systemCompanyService: jest.Mocked<SystemCompanyService>;
   let _calculationService: TimeCalculationService;
   let settingsService: jest.Mocked<TimeSettingsService>;
   let mockEntityManager: ReturnType<typeof createMockEntityManager>;
@@ -124,8 +124,8 @@ describe('TimeEntriesService', () => {
     logDelete: jest.fn(),
   };
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   const mockSettingsService = {
@@ -137,7 +137,7 @@ describe('TimeEntriesService', () => {
   beforeEach(async () => {
     // Reset mocks before each test
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
     mockSettingsService.getSettings.mockResolvedValue(mockSettings);
     mockSettingsService.getRoundingConfig.mockResolvedValue({
       method: TimeRoundingMethod.NONE,
@@ -174,7 +174,7 @@ describe('TimeEntriesService', () => {
             return new TimeEntriesService(
               mockEntryRepository as any,
               mockChangeLogService as any,
-              mockTenantService as any,
+              mockSystemCompanyService as any,
               new TimeCalculationService(),
               mockSettingsService as any,
               mockDataSource as any
@@ -195,8 +195,8 @@ describe('TimeEntriesService', () => {
           useValue: mockChangeLogService,
         },
         {
-          provide: TenantService,
-          useValue: mockTenantService,
+          provide: SystemCompanyService,
+          useValue: mockSystemCompanyService,
         },
         {
           provide: TimeSettingsService,
@@ -209,7 +209,7 @@ describe('TimeEntriesService', () => {
     entryRepository = module.get(getRepositoryToken(TimeEntry));
     dataSource = module.get(DataSource);
     changeLogService = module.get(ChangeLogService);
-    tenantService = module.get(TenantService);
+    systemCompanyService = module.get(SystemCompanyService);
     _calculationService = module.get(TimeCalculationService);
     settingsService = module.get(TimeSettingsService);
   });
@@ -220,7 +220,7 @@ describe('TimeEntriesService', () => {
 
       expect(result.data).toHaveLength(1);
       expect(result.meta.total).toBe(1);
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
     });
 
     it('should filter by userId for non-managers', async () => {
@@ -907,7 +907,7 @@ describe('TimeEntriesService', () => {
 
       await service.findOne(mockEntryId, mockUser as User);
 
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
     });
 
     it('should filter by companyId in all queries', async () => {

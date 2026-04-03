@@ -1,10 +1,9 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { Repository } from 'typeorm';
 
 import { generateCsvBuffer, Lead, Offer, User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import { LeadFiltersDto } from '../dto/lead.dto';
 import { OfferFiltersDto } from '../dto/offer.dto';
@@ -16,11 +15,11 @@ export class OfferExportService {
     private readonly offerRepository: Repository<Offer>,
     @InjectRepository(Lead)
     private readonly leadRepository: Repository<Lead>,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   async exportOffersToCsv(filters: OfferFiltersDto, user: User): Promise<Buffer> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const queryBuilder = this.offerRepository
       .createQueryBuilder('offer')
@@ -42,7 +41,7 @@ export class OfferExportService {
   }
 
   async exportLeadsToCsv(filters: LeadFiltersDto, user: User): Promise<Buffer> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const queryBuilder = this.leadRepository
       .createQueryBuilder('lead')

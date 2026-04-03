@@ -1,6 +1,6 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-
 import { type Repository } from 'typeorm';
 
 import {
@@ -9,11 +9,10 @@ import {
   EmploymentType,
   Task,
   TimeEntry,
-  type User,
   UserRole,
   VatStatus,
+  type User,
 } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import { ClientStatisticsService } from './statistics.service';
 
@@ -31,8 +30,8 @@ describe('ClientStatisticsService', () => {
     companyId: mockCompanyId,
   };
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   const createMockQueryBuilder = (rawResult: any[] = []) => ({
@@ -65,7 +64,7 @@ describe('ClientStatisticsService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -77,7 +76,7 @@ describe('ClientStatisticsService', () => {
               mockChangeLogRepository as any,
               mockTaskRepository as any,
               mockTimeEntryRepository as any,
-              mockTenantService as any
+              mockSystemCompanyService as any
             ),
         },
         {
@@ -97,8 +96,8 @@ describe('ClientStatisticsService', () => {
           useValue: mockTimeEntryRepository,
         },
         {
-          provide: TenantService,
-          useValue: mockTenantService,
+          provide: SystemCompanyService,
+          useValue: mockSystemCompanyService,
         },
       ],
     }).compile();
@@ -189,7 +188,7 @@ describe('ClientStatisticsService', () => {
 
       await service.getStatistics(mockUser as User);
 
-      expect(mockTenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(mockSystemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
     });
   });
 

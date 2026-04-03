@@ -25,6 +25,10 @@ export * from './lib/enums/relief-type.enum';
 // Constants
 export * from './lib/constants';
 
+// Exceptions (base classes for all modules)
+export * from './lib/exceptions/app-error-code.enum';
+export * from './lib/exceptions/app.exception';
+
 // Utils
 export * from './lib/utils/database-errors';
 export * from './lib/utils/query.utils';
@@ -92,6 +96,7 @@ export * from './lib/entities/settlement-settings.entity';
 export * from './lib/entities/document-template.entity';
 export * from './lib/entities/generated-document.entity';
 export * from './lib/entities/email-auto-reply-template.entity';
+export { COMMON_ENTITIES } from './lib/entities/entity-registry';
 export { AIProvider } from './lib/entities/ai-configuration.entity';
 export { AIMessageRole } from './lib/entities/ai-message.entity';
 export * from './lib/dto/responses';
@@ -103,14 +108,11 @@ export * from './lib/dto/employee-ranking.dto';
 // Node.js-specific modules (crypto, fs, util.promisify) that don't work in browsers.
 // Import directly from './lib/services/encryption.service' in backend code where needed.
 
-// NOTE: TenantService and CommonModule are NOT exported from the barrel file because
+// NOTE: CommonModule and SystemCompanyService are NOT exported from the barrel file because
 // they use NestJS decorators and TypeORM which pull in Node.js dependencies at bundle time.
 // Import directly in backend code:
-//   import { TenantService } from '@accounting/common/lib/services/tenant.service';
-//   import { CommonModule } from '@accounting/common/lib/common.module';
-
-// Re-export TenantService type for type-only imports in frontend if needed
-export type { TenantService } from './lib/services/tenant.service';
+//   import { SystemCompanyService } from '@accounting/common/backend';
+//   import { CommonModule } from '@accounting/common/backend';
 
 // Re-export SystemCompanyService type for type-only imports in frontend if needed
 // NOTE: SystemCompanyService is NOT exported as a value to prevent Node.js dependencies in browser bundles.

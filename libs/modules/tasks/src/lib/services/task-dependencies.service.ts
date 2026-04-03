@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { Task, TaskDependency, User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { CreateTaskDependencyDto } from '../dto/task-dependency.dto';
 import {
@@ -24,11 +24,11 @@ export class TaskDependenciesService {
     private readonly taskRepository: Repository<Task>,
     @InjectRepository(TaskDependency)
     private readonly dependencyRepository: Repository<TaskDependency>,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   async findAllForTask(taskId: string, user: User): Promise<TaskDependency[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify task exists
     const task = await this.taskRepository.findOne({
@@ -46,7 +46,7 @@ export class TaskDependenciesService {
   }
 
   async findBlockedBy(taskId: string, user: User): Promise<TaskDependency[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const task = await this.taskRepository.findOne({
       where: { id: taskId, companyId },
@@ -62,7 +62,7 @@ export class TaskDependenciesService {
   }
 
   async findBlocking(taskId: string, user: User): Promise<TaskDependency[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const task = await this.taskRepository.findOne({
       where: { id: taskId, companyId },
@@ -78,7 +78,7 @@ export class TaskDependenciesService {
   }
 
   async create(taskId: string, dto: CreateTaskDependencyDto, user: User): Promise<TaskDependency> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Prevent self-dependency
     if (taskId === dto.dependsOnTaskId) {
@@ -129,7 +129,7 @@ export class TaskDependenciesService {
   }
 
   async remove(dependencyId: string, user: User): Promise<void> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const dependency = await this.dependencyRepository.findOne({
       where: { id: dependencyId, task: { companyId } },
       relations: ['task'],

@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   UseGuards,
@@ -114,7 +115,7 @@ export class ModulesController {
   @ApiNotFoundResponse({ description: 'Module not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
-  update(@Param('id') id: string, @Body() updateModuleDto: UpdateModuleDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() updateModuleDto: UpdateModuleDto) {
     return this.modulesService.update(id, updateModuleDto);
   }
 
@@ -130,7 +131,7 @@ export class ModulesController {
   @ApiNotFoundResponse({ description: 'Module not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
-  delete(@Param('id') id: string) {
+  delete(@Param('id', ParseUUIDPipe) id: string) {
     return this.modulesService.softDeleteModule(id);
   }
 

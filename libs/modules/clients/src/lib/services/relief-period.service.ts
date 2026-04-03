@@ -1,6 +1,6 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { addMonths } from 'date-fns';
 import { Between, LessThanOrEqual, MoreThan, MoreThanOrEqual, Not, Repository } from 'typeorm';
 
@@ -12,7 +12,6 @@ import {
   User,
   UserRole,
 } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import {
   CreateReliefPeriodDto,
@@ -33,7 +32,7 @@ export class ReliefPeriodService {
     private readonly clientRepository: Repository<Client>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   /**
@@ -52,7 +51,7 @@ export class ReliefPeriodService {
     dto: CreateReliefPeriodDto,
     user: User
   ): Promise<ReliefPeriodResponseDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify client exists and belongs to company
     const client = await this.clientRepository.findOne({
@@ -125,7 +124,7 @@ export class ReliefPeriodService {
     dto: UpdateReliefPeriodDto,
     user: User
   ): Promise<ReliefPeriodResponseDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const relief = await this.reliefRepository.findOne({
       where: { id: reliefId, clientId, companyId },
@@ -190,7 +189,7 @@ export class ReliefPeriodService {
    * Delete a relief period.
    */
   async remove(clientId: string, reliefId: string, user: User): Promise<void> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const relief = await this.reliefRepository.findOne({
       where: { id: reliefId, clientId, companyId },
@@ -216,7 +215,7 @@ export class ReliefPeriodService {
    * Get all relief periods for a client.
    */
   async findAll(clientId: string, user: User): Promise<ReliefPeriodResponseDto[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify client exists, belongs to company, and is active
     const client = await this.clientRepository.findOne({
@@ -240,7 +239,7 @@ export class ReliefPeriodService {
    * Get a specific relief period.
    */
   async findOne(clientId: string, reliefId: string, user: User): Promise<ReliefPeriodResponseDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const relief = await this.reliefRepository.findOne({
       where: { id: reliefId, clientId, companyId },

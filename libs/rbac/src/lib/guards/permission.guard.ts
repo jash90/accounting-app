@@ -7,8 +7,11 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
+import { ErrorMessages } from '@accounting/common';
+
 import { REQUIRE_PERMISSION_KEY } from '../decorators/require-permission.decorator';
 import { RBACService } from '../services/rbac.service';
+import type { RbacRequest } from '../types/rbac-request.types';
 
 @Injectable()
 export class PermissionGuard implements CanActivate {
@@ -29,18 +32,36 @@ export class PermissionGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<RbacRequest>();
     const user = request.user;
 
     if (!user) {
-      throw new ForbiddenException('User not authenticated');
+      throw new ForbiddenException(ErrorMessages.FORBIDDEN.NOT_AUTHENTICATED);
     }
 
-    const hasPermission = await this.rbacService.hasPermission(
-      user.id,
-      permissionData.module,
-      permissionData.permission
-    );
+    // Use cached result from ModuleAccessGuard if available (avoids duplicate queries)
+    let hasPermission: boolean;
+    const cachedResult = request._rbacResult;
+
+    if (cachedResult?.hasPermission) {
+      // ADMIN/COMPANY_OWNER already resolved as having full permissions
+      hasPermission = true;
+    } else if (cachedResult && !cachedResult.hasPermission) {
+      // EMPLOYEE case — need granular permission check with specific permission
+      const result = await this.rbacService.checkModulePermission(
+        user,
+        permissionData.module,
+        permissionData.permission
+      );
+      hasPermission = result.hasPermission;
+    } else {
+      // Fallback — no cached result from ModuleAccessGuard
+      hasPermission = await this.rbacService.hasPermission(
+        user.id,
+        permissionData.module,
+        permissionData.permission
+      );
+    }
 
     if (!hasPermission) {
       // Log detailed information for debugging (only visible server-side)
@@ -48,7 +69,7 @@ export class PermissionGuard implements CanActivate {
         `Permission denied for user ${user.id}: ${permissionData.permission} on module ${permissionData.module}`
       );
       // Return generic message to client to prevent information disclosure
-      throw new ForbiddenException('Nie masz uprawnień do wykonania tej operacji');
+      throw new ForbiddenException(ErrorMessages.FORBIDDEN.NO_PERMISSION);
     }
 
     return true;
