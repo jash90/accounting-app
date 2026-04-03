@@ -12,6 +12,7 @@ import { Repository } from 'typeorm';
 import {
   Company,
   CompanyModuleAccess,
+  ErrorMessages,
   Module,
   User,
   UserModulePermission,
@@ -179,7 +180,7 @@ export class RBACService {
     });
 
     if (!granter) {
-      throw new NotFoundException('Granter user not found');
+      throw new NotFoundException(ErrorMessages.RBAC.GRANTER_NOT_FOUND);
     }
 
     const target = await this.userRepository.findOne({
@@ -187,7 +188,7 @@ export class RBACService {
     });
 
     if (!target) {
-      throw new NotFoundException('Target user not found');
+      throw new NotFoundException(ErrorMessages.RBAC.TARGET_NOT_FOUND);
     }
 
     // Find module
@@ -196,7 +197,7 @@ export class RBACService {
     });
 
     if (!module) {
-      throw new NotFoundException('Module not found');
+      throw new NotFoundException(ErrorMessages.RBAC.MODULE_NOT_FOUND);
     }
 
     // ADMIN can grant access to any company
@@ -228,7 +229,7 @@ export class RBACService {
     // COMPANY_OWNER can grant access to employees in their company
     if (granter.role === UserRole.COMPANY_OWNER) {
       if (!granter.companyId || granter.companyId !== target.companyId) {
-        throw new ForbiddenException('Cannot grant access to users outside your company');
+        throw new ForbiddenException(ErrorMessages.RBAC.CROSS_COMPANY_GRANT);
       }
 
       // Check if company has access to this module
@@ -241,7 +242,7 @@ export class RBACService {
       });
 
       if (!companyAccess) {
-        throw new ForbiddenException('Company does not have access to this module');
+        throw new ForbiddenException(ErrorMessages.RBAC.COMPANY_NO_MODULE_ACCESS);
       }
 
       // Grant permission to employee
@@ -268,7 +269,7 @@ export class RBACService {
       return;
     }
 
-    throw new ForbiddenException('Insufficient permissions to grant access');
+    throw new ForbiddenException(ErrorMessages.RBAC.INSUFFICIENT_PERMISSIONS);
   }
 
   async revokeModuleAccess(granterId: string, targetId: string, moduleSlug: string): Promise<void> {
@@ -277,7 +278,7 @@ export class RBACService {
     });
 
     if (!granter) {
-      throw new NotFoundException('Granter user not found');
+      throw new NotFoundException(ErrorMessages.RBAC.GRANTER_NOT_FOUND);
     }
 
     const target = await this.userRepository.findOne({
@@ -285,7 +286,7 @@ export class RBACService {
     });
 
     if (!target) {
-      throw new NotFoundException('Target user not found');
+      throw new NotFoundException(ErrorMessages.RBAC.TARGET_NOT_FOUND);
     }
 
     const module = await this.moduleRepository.findOne({
@@ -293,7 +294,7 @@ export class RBACService {
     });
 
     if (!module) {
-      throw new NotFoundException('Module not found');
+      throw new NotFoundException(ErrorMessages.RBAC.MODULE_NOT_FOUND);
     }
 
     // ADMIN can revoke company-level access
@@ -317,7 +318,7 @@ export class RBACService {
     // COMPANY_OWNER can revoke employee permissions
     if (granter.role === UserRole.COMPANY_OWNER) {
       if (!granter.companyId || granter.companyId !== target.companyId) {
-        throw new ForbiddenException('Cannot revoke access from users outside your company');
+        throw new ForbiddenException(ErrorMessages.RBAC.CROSS_COMPANY_REVOKE);
       }
 
       const userPermission = await this.userModulePermissionRepository.findOne({
@@ -333,7 +334,7 @@ export class RBACService {
       return;
     }
 
-    throw new ForbiddenException('Insufficient permissions to revoke access');
+    throw new ForbiddenException(ErrorMessages.RBAC.INSUFFICIENT_PERMISSIONS);
   }
 
   async getAvailableModules(userId: string): Promise<Module[]> {
@@ -452,6 +453,73 @@ export class RBACService {
     });
 
     return !!companyAccess;
+  }
+
+  // ==================== Optimized Guard Methods ====================
+
+  /**
+   * Combined module access + permission check in a single pass.
+   * Eliminates duplicate user/module lookups from the guard chain.
+   *
+   * The User object is passed directly from request.user (set by JwtAuthGuard),
+   * so no additional DB query is needed to load the user.
+   *
+   * Uses getModuleBySlug() with in-memory caching to avoid repeated module lookups.
+   */
+  async checkModulePermission(
+    user: User,
+    moduleSlug: string,
+    permission?: string
+  ): Promise<{ hasAccess: boolean; hasPermission: boolean }> {
+    // ADMIN — full access, no DB queries needed
+    if (user.role === UserRole.ADMIN) {
+      return { hasAccess: true, hasPermission: true };
+    }
+
+    // Get module with cache (single query or cache hit)
+    const module = await this.getModuleBySlug(moduleSlug);
+    if (!module || !module.isActive) {
+      return { hasAccess: false, hasPermission: false };
+    }
+
+    if (!user.companyId) {
+      return { hasAccess: false, hasPermission: false };
+    }
+
+    // Check company-level access (single query)
+    const companyAccess = await this.companyModuleAccessRepository.findOne({
+      where: {
+        companyId: user.companyId,
+        moduleId: module.id,
+        isEnabled: true,
+      },
+    });
+
+    if (!companyAccess) {
+      return { hasAccess: false, hasPermission: false };
+    }
+
+    // COMPANY_OWNER — full permissions on enabled modules
+    if (user.role === UserRole.COMPANY_OWNER) {
+      return { hasAccess: true, hasPermission: true };
+    }
+
+    // EMPLOYEE — needs explicit permission grant
+    if (user.role === UserRole.EMPLOYEE) {
+      const userPermission = await this.userModulePermissionRepository.findOne({
+        where: { userId: user.id, moduleId: module.id },
+      });
+
+      if (!userPermission) {
+        return { hasAccess: false, hasPermission: false };
+      }
+
+      const hasPerm = permission ? userPermission.permissions.includes(permission) : true;
+
+      return { hasAccess: true, hasPermission: hasPerm };
+    }
+
+    return { hasAccess: false, hasPermission: false };
   }
 
   // ==================== Module Discovery Integration ====================

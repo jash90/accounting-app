@@ -1,8 +1,7 @@
-import { TenantService } from '@accounting/common/backend';
-import { EmailConfigurationService, EmailSenderService } from '@accounting/email';
 import { InternalServerErrorException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+
 import { type Repository } from 'typeorm';
 
 import {
@@ -13,6 +12,8 @@ import {
   User,
   UserRole,
 } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
+import { EmailConfigurationService, EmailSenderService } from '@accounting/email';
 
 import { SETTLEMENT_MESSAGES } from '../constants/settlement-messages';
 import {
@@ -27,7 +28,7 @@ describe('SettlementsService', () => {
   let settlementRepository: jest.Mocked<Repository<MonthlySettlement>>;
   let clientRepository: jest.Mocked<Repository<Client>>;
   let userRepository: jest.Mocked<Repository<User>>;
-  let tenantService: jest.Mocked<TenantService>;
+  let systemCompanyService: jest.Mocked<SystemCompanyService>;
   let emailSenderService: jest.Mocked<EmailSenderService>;
   let emailConfigService: jest.Mocked<EmailConfigurationService>;
 
@@ -96,8 +97,8 @@ describe('SettlementsService', () => {
     execute: jest.fn().mockResolvedValue({ affected: 1 }),
   });
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   const mockEmailSenderService = {
@@ -110,7 +111,7 @@ describe('SettlementsService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     const mockQb = createMockQueryBuilder();
 
@@ -139,7 +140,7 @@ describe('SettlementsService', () => {
               mockSettlementRepository as any,
               mockClientRepository as any,
               mockUserRepository as any,
-              mockTenantService as any,
+              mockSystemCompanyService as any,
               mockEmailSenderService as any,
               mockEmailConfigService as any
             );
@@ -158,8 +159,8 @@ describe('SettlementsService', () => {
           useValue: mockUserRepository,
         },
         {
-          provide: TenantService,
-          useValue: mockTenantService,
+          provide: SystemCompanyService,
+          useValue: mockSystemCompanyService,
         },
         {
           provide: EmailSenderService,
@@ -176,7 +177,7 @@ describe('SettlementsService', () => {
     settlementRepository = module.get(getRepositoryToken(MonthlySettlement));
     clientRepository = module.get(getRepositoryToken(Client));
     userRepository = module.get(getRepositoryToken(User));
-    tenantService = module.get(TenantService);
+    systemCompanyService = module.get(SystemCompanyService);
     emailSenderService = module.get(EmailSenderService);
     emailConfigService = module.get(EmailConfigurationService);
   });
@@ -191,7 +192,7 @@ describe('SettlementsService', () => {
       const result = await service.findAll(baseQuery as any, mockCompanyOwner as User);
 
       expect(result).toBeInstanceOf(PaginatedResponseDto);
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockCompanyOwner);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockCompanyOwner);
       expect(mockQb.where).toHaveBeenCalledWith('settlement.companyId = :companyId', {
         companyId: mockCompanyId,
       });
@@ -703,14 +704,14 @@ describe('SettlementsService', () => {
   });
 
   describe('getAllAssignableUsers', () => {
-    it('should return ADMIN users for ADMIN role without calling tenantService', async () => {
+    it('should return ADMIN users for ADMIN role without calling systemCompanyService', async () => {
       const adminUsers = [{ id: 'admin-1' }];
       userRepository.find = jest.fn().mockResolvedValue(adminUsers);
 
       const result = await service.getAllAssignableUsers(mockAdmin as User);
 
       expect(result).toEqual(adminUsers);
-      expect(tenantService.getEffectiveCompanyId).not.toHaveBeenCalled();
+      expect(systemCompanyService.getCompanyIdForUser).not.toHaveBeenCalled();
     });
 
     it('should return company employees for non-ADMIN role', async () => {
@@ -718,7 +719,7 @@ describe('SettlementsService', () => {
 
       await service.getAllAssignableUsers(mockCompanyOwner as User);
 
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockCompanyOwner);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockCompanyOwner);
     });
   });
 
@@ -795,9 +796,9 @@ describe('SettlementsService', () => {
   });
 
   describe('Multi-tenancy isolation', () => {
-    it('should use TenantService to resolve companyId in findAll', async () => {
+    it('should use SystemCompanyService to resolve companyId in findAll', async () => {
       const differentCompanyId = 'other-company-789';
-      mockTenantService.getEffectiveCompanyId.mockResolvedValue(differentCompanyId);
+      mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(differentCompanyId);
       const mockQb = createMockQueryBuilder();
       settlementRepository.createQueryBuilder = jest.fn(() => mockQb) as any;
 
@@ -808,7 +809,7 @@ describe('SettlementsService', () => {
       });
     });
 
-    it('should filter findOne by companyId from TenantService', async () => {
+    it('should filter findOne by companyId from SystemCompanyService', async () => {
       settlementRepository.findOne = jest.fn().mockResolvedValue(null);
 
       await expect(service.findOne(mockSettlementId, mockCompanyOwner as User)).rejects.toThrow(
@@ -821,7 +822,7 @@ describe('SettlementsService', () => {
       });
     });
 
-    it('should use companyId from TenantService in createMonthlySettlements', async () => {
+    it('should use companyId from SystemCompanyService in createMonthlySettlements', async () => {
       clientRepository.find = jest.fn().mockResolvedValue([]);
       settlementRepository.find = jest.fn().mockResolvedValue([]);
 

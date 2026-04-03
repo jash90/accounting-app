@@ -1,10 +1,9 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { Repository } from 'typeorm';
 
 import { SettlementSettings, User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import {
   SettlementSettingsResponseDto,
@@ -16,11 +15,11 @@ export class SettlementSettingsService {
   constructor(
     @InjectRepository(SettlementSettings)
     private readonly settingsRepository: Repository<SettlementSettings>,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   async getSettings(user: User): Promise<SettlementSettingsResponseDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Upsert pattern: find or create default settings
     let settings = await this.settingsRepository.findOne({ where: { companyId } });
@@ -46,7 +45,7 @@ export class SettlementSettingsService {
     dto: UpdateSettlementSettingsDto,
     user: User
   ): Promise<SettlementSettingsResponseDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Find existing or create new
     let settings = await this.settingsRepository.findOne({ where: { companyId } });

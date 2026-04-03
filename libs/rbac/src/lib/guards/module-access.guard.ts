@@ -8,9 +8,12 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
+import { ErrorMessages } from '@accounting/common';
+
 import { REQUIRE_MODULE_KEY } from '../decorators/require-module.decorator';
 import { ModuleDiscoveryService } from '../services/module-discovery.service';
 import { RBACService } from '../services/rbac.service';
+import type { RbacRequest } from '../types/rbac-request.types';
 
 @Injectable()
 export class ModuleAccessGuard implements CanActivate {
@@ -33,11 +36,11 @@ export class ModuleAccessGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<RbacRequest>();
     const user = request.user;
 
     if (!user) {
-      throw new ForbiddenException('User not authenticated');
+      throw new ForbiddenException(ErrorMessages.FORBIDDEN.NOT_AUTHENTICATED);
     }
 
     // Fast check: verify module exists before doing full RBAC check
@@ -47,14 +50,16 @@ export class ModuleAccessGuard implements CanActivate {
       const moduleExists = await this.rbacService.moduleExists(requiredModule);
       if (!moduleExists) {
         this.logger.warn(`Module not found: ${requiredModule}`);
-        throw new ForbiddenException(`Module not found: ${requiredModule}`);
+        throw new ForbiddenException(ErrorMessages.FORBIDDEN.MODULE_NOT_FOUND(requiredModule));
       }
     }
 
-    const hasAccess = await this.rbacService.canAccessModule(user.id, requiredModule);
+    // Use optimized combined check and cache the result for PermissionGuard
+    const rbacResult = await this.rbacService.checkModulePermission(user, requiredModule);
+    request._rbacResult = rbacResult;
 
-    if (!hasAccess) {
-      throw new ForbiddenException(`Access denied to module: ${requiredModule}`);
+    if (!rbacResult.hasAccess) {
+      throw new ForbiddenException(ErrorMessages.FORBIDDEN.MODULE_ACCESS_DENIED(requiredModule));
     }
 
     return true;

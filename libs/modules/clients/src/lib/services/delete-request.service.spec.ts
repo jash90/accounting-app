@@ -1,7 +1,7 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { HttpStatus } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-
 import { DataSource, type EntityManager, type QueryRunner, type Repository } from 'typeorm';
 
 import {
@@ -15,7 +15,6 @@ import {
   ZusStatus,
   type User,
 } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import {
   ClientErrorCode,
@@ -33,7 +32,7 @@ describe('DeleteRequestService', () => {
   let deleteRequestRepository: jest.Mocked<Repository<ClientDeleteRequest>>;
   let clientRepository: jest.Mocked<Repository<Client>>;
   let clientChangelogService: jest.Mocked<ClientChangelogService>;
-  let tenantService: jest.Mocked<TenantService>;
+  let systemCompanyService: jest.Mocked<SystemCompanyService>;
   let dataSource: jest.Mocked<DataSource>;
   let queryRunner: jest.Mocked<QueryRunner>;
   let entityManager: jest.Mocked<EntityManager>;
@@ -130,8 +129,8 @@ describe('DeleteRequestService', () => {
       notifyClientDeleted: jest.fn(),
     };
 
-    const mockTenantService = {
-      getEffectiveCompanyId: jest.fn(),
+    const mockSystemCompanyService = {
+      getCompanyIdForUser: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -146,7 +145,7 @@ describe('DeleteRequestService', () => {
               mockClientsService as any,
               mockClientChangelogService as any,
               dataSource as any,
-              mockTenantService as any
+              mockSystemCompanyService as any
             );
           },
         },
@@ -171,8 +170,8 @@ describe('DeleteRequestService', () => {
           useValue: dataSource,
         },
         {
-          provide: TenantService,
-          useValue: mockTenantService,
+          provide: SystemCompanyService,
+          useValue: mockSystemCompanyService,
         },
       ],
     }).compile();
@@ -181,7 +180,7 @@ describe('DeleteRequestService', () => {
     deleteRequestRepository = module.get(getRepositoryToken(ClientDeleteRequest));
     clientRepository = module.get(getRepositoryToken(Client));
     clientChangelogService = module.get(ClientChangelogService);
-    tenantService = module.get(TenantService);
+    systemCompanyService = module.get(SystemCompanyService);
   });
 
   afterEach(() => {
@@ -194,7 +193,7 @@ describe('DeleteRequestService', () => {
       const client = createMockClient();
       const dto = { reason: 'Client requested account deletion' };
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       clientRepository.findOne.mockResolvedValue(client);
       deleteRequestRepository.findOne.mockResolvedValue(null);
 
@@ -205,7 +204,7 @@ describe('DeleteRequestService', () => {
       const result = await service.createDeleteRequest(mockClientId, dto, user);
 
       expect(result).toEqual(createdRequest);
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(user);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(user);
       expect(clientRepository.findOne).toHaveBeenCalledWith({
         where: { id: mockClientId, companyId: mockCompanyId, isActive: true },
       });
@@ -222,7 +221,7 @@ describe('DeleteRequestService', () => {
       const user = createMockUser();
       const dto = { reason: 'Test' };
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       clientRepository.findOne.mockResolvedValue(null);
 
       await expect(service.createDeleteRequest(mockClientId, dto, user)).rejects.toBeInstanceOf(
@@ -234,7 +233,7 @@ describe('DeleteRequestService', () => {
       const user = createMockUser();
       const dto = { reason: 'Test' };
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       // findOne returns null because isActive: true filter doesn't match
       clientRepository.findOne.mockResolvedValue(null);
 
@@ -249,7 +248,7 @@ describe('DeleteRequestService', () => {
       const dto = { reason: 'Test' };
       const existingRequest = createMockDeleteRequest();
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       clientRepository.findOne.mockResolvedValue(client);
       deleteRequestRepository.findOne.mockResolvedValue(existingRequest);
 
@@ -263,7 +262,7 @@ describe('DeleteRequestService', () => {
       const client = createMockClient();
       const dto = {};
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       clientRepository.findOne.mockResolvedValue(client);
       deleteRequestRepository.findOne.mockResolvedValue(null);
 
@@ -286,7 +285,7 @@ describe('DeleteRequestService', () => {
       const user = createMockUser({ companyId: 'different-company' });
       const dto = { reason: 'Test' };
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue('different-company');
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue('different-company');
       clientRepository.findOne.mockResolvedValue(null);
 
       await expect(service.createDeleteRequest(mockClientId, dto, user)).rejects.toBeInstanceOf(
@@ -307,7 +306,7 @@ describe('DeleteRequestService', () => {
         createMockDeleteRequest({ id: 'req-2' }),
       ];
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.find.mockResolvedValue(requests);
 
       const result = await service.findAllPendingRequests(user);
@@ -326,7 +325,7 @@ describe('DeleteRequestService', () => {
     it('should return empty array when no pending requests', async () => {
       const user = createMockUser();
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.find.mockResolvedValue([]);
 
       const result = await service.findAllPendingRequests(user);
@@ -344,7 +343,7 @@ describe('DeleteRequestService', () => {
         createMockDeleteRequest({ status: DeleteRequestStatus.REJECTED }),
       ];
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.find.mockResolvedValue(requests);
 
       const result = await service.findAllRequests(user);
@@ -361,7 +360,7 @@ describe('DeleteRequestService', () => {
       const user = createMockUser();
       const approvedRequests = [createMockDeleteRequest({ status: DeleteRequestStatus.APPROVED })];
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.find.mockResolvedValue(approvedRequests);
 
       const result = await service.findAllRequests(user, DeleteRequestStatus.APPROVED);
@@ -380,7 +379,7 @@ describe('DeleteRequestService', () => {
       const user = createMockUser();
       const request = createMockDeleteRequest();
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
 
       const result = await service.findRequestById(mockRequestId, user);
@@ -395,7 +394,7 @@ describe('DeleteRequestService', () => {
     it('should throw DeleteRequestNotFoundException when not found', async () => {
       const user = createMockUser();
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(null);
 
       await expect(service.findRequestById(mockRequestId, user)).rejects.toBeInstanceOf(
@@ -406,7 +405,7 @@ describe('DeleteRequestService', () => {
     it('should enforce tenant isolation', async () => {
       const user = createMockUser();
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue('different-company');
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue('different-company');
       deleteRequestRepository.findOne.mockResolvedValue(null);
 
       await expect(service.findRequestById(mockRequestId, user)).rejects.toBeInstanceOf(
@@ -426,7 +425,7 @@ describe('DeleteRequestService', () => {
       const request = createMockDeleteRequest();
       const client = createMockClient();
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
       clientRepository.findOne.mockResolvedValue(client);
       clientChangelogService.notifyClientDeleted.mockResolvedValue(undefined);
@@ -447,7 +446,7 @@ describe('DeleteRequestService', () => {
       const request = createMockDeleteRequest();
       const client = createMockClient();
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
       clientRepository.findOne.mockResolvedValue(client);
 
@@ -473,7 +472,7 @@ describe('DeleteRequestService', () => {
       const user = createMockUser({ role: UserRole.COMPANY_OWNER });
       const request = createMockDeleteRequest({ status: DeleteRequestStatus.APPROVED });
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
 
       await expect(service.approveRequest(mockRequestId, user)).rejects.toBeInstanceOf(
@@ -485,7 +484,7 @@ describe('DeleteRequestService', () => {
       const user = createMockUser({ role: UserRole.COMPANY_OWNER });
       const request = createMockDeleteRequest();
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
       clientRepository.findOne.mockResolvedValue(null);
 
@@ -499,7 +498,7 @@ describe('DeleteRequestService', () => {
       const request = createMockDeleteRequest();
       const client = createMockClient();
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
       clientRepository.findOne.mockResolvedValue(client);
       entityManager.save.mockRejectedValue(new Error('Database error'));
@@ -515,7 +514,7 @@ describe('DeleteRequestService', () => {
       const request = createMockDeleteRequest();
       const client = createMockClient();
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
       clientRepository.findOne.mockResolvedValue(client);
 
@@ -544,7 +543,7 @@ describe('DeleteRequestService', () => {
       const request = createMockDeleteRequest();
       const client = createMockClient();
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
       clientRepository.findOne.mockResolvedValue(client);
       clientChangelogService.notifyClientDeleted.mockRejectedValue(new Error('Notification error'));
@@ -563,7 +562,7 @@ describe('DeleteRequestService', () => {
       const request = createMockDeleteRequest();
       const dto = { rejectionReason: 'Client is still active' };
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
       deleteRequestRepository.save.mockResolvedValue({
         ...request,
@@ -589,7 +588,7 @@ describe('DeleteRequestService', () => {
       const request = createMockDeleteRequest();
       const dto = { rejectionReason: 'Not authorized' };
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
       deleteRequestRepository.save.mockResolvedValue({
         ...request,
@@ -619,7 +618,7 @@ describe('DeleteRequestService', () => {
       const request = createMockDeleteRequest({ status: DeleteRequestStatus.REJECTED });
       const dto = {};
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
 
       await expect(service.rejectRequest(mockRequestId, dto, user)).rejects.toBeInstanceOf(
@@ -632,7 +631,7 @@ describe('DeleteRequestService', () => {
       const request = createMockDeleteRequest();
       const dto = {};
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
       deleteRequestRepository.save.mockResolvedValue(request);
 
@@ -651,7 +650,7 @@ describe('DeleteRequestService', () => {
       const user = createMockUser();
       const request = createMockDeleteRequest({ requestedById: user.id });
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
 
       await service.cancelRequest(mockRequestId, user);
@@ -663,7 +662,7 @@ describe('DeleteRequestService', () => {
       const owner = createMockUser({ id: 'owner-id', role: UserRole.COMPANY_OWNER });
       const request = createMockDeleteRequest({ requestedById: 'other-user-id' });
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
 
       await service.cancelRequest(mockRequestId, owner);
@@ -675,7 +674,7 @@ describe('DeleteRequestService', () => {
       const admin = createMockUser({ id: 'admin-id', role: UserRole.ADMIN });
       const request = createMockDeleteRequest({ requestedById: 'other-user-id' });
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
 
       await service.cancelRequest(mockRequestId, admin);
@@ -687,7 +686,7 @@ describe('DeleteRequestService', () => {
       const user = createMockUser({ id: 'user-id', role: UserRole.EMPLOYEE });
       const request = createMockDeleteRequest({ requestedById: 'other-user-id' });
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
 
       try {
@@ -706,7 +705,7 @@ describe('DeleteRequestService', () => {
         status: DeleteRequestStatus.APPROVED,
       });
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(request);
 
       await expect(service.cancelRequest(mockRequestId, user)).rejects.toBeInstanceOf(
@@ -717,7 +716,7 @@ describe('DeleteRequestService', () => {
     it('should throw DeleteRequestNotFoundException when request not found', async () => {
       const user = createMockUser();
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.findOne.mockResolvedValue(null);
 
       await expect(service.cancelRequest(mockRequestId, user)).rejects.toBeInstanceOf(
@@ -734,7 +733,7 @@ describe('DeleteRequestService', () => {
         createMockDeleteRequest({ id: 'req-2', requestedById: user.id }),
       ];
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.find.mockResolvedValue(requests);
 
       const result = await service.getMyRequests(user);
@@ -753,7 +752,7 @@ describe('DeleteRequestService', () => {
     it('should return empty array when user has no requests', async () => {
       const user = createMockUser();
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.find.mockResolvedValue([]);
 
       const result = await service.getMyRequests(user);
@@ -763,11 +762,11 @@ describe('DeleteRequestService', () => {
   });
 
   describe('tenant isolation', () => {
-    it('should use TenantService for all operations', async () => {
+    it('should use SystemCompanyService for all operations', async () => {
       const user = createMockUser();
       const request = createMockDeleteRequest();
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       deleteRequestRepository.find.mockResolvedValue([request]);
       deleteRequestRepository.findOne.mockResolvedValue(request);
 
@@ -776,13 +775,13 @@ describe('DeleteRequestService', () => {
       await service.findRequestById(mockRequestId, user);
       await service.getMyRequests(user);
 
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledTimes(4);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledTimes(4);
     });
 
     it('should prevent cross-company data access', async () => {
       const user = createMockUser({ companyId: 'company-A' });
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue('company-A');
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue('company-A');
       deleteRequestRepository.findOne.mockResolvedValue(null);
 
       await expect(service.findRequestById(mockRequestId, user)).rejects.toBeInstanceOf(
@@ -796,7 +795,7 @@ describe('DeleteRequestService', () => {
       const user = createMockUser({ role: UserRole.COMPANY_OWNER });
       const client = createMockClient();
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       clientRepository.findOne.mockResolvedValue(client);
 
       // Test all non-pending statuses
@@ -813,7 +812,7 @@ describe('DeleteRequestService', () => {
     it('should only allow PENDING -> REJECTED transition', async () => {
       const user = createMockUser({ role: UserRole.COMPANY_OWNER });
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
       for (const status of [DeleteRequestStatus.APPROVED, DeleteRequestStatus.REJECTED]) {
         const request = createMockDeleteRequest({ status });
@@ -828,7 +827,7 @@ describe('DeleteRequestService', () => {
     it('should only allow cancellation of PENDING requests', async () => {
       const user = createMockUser();
 
-      tenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
       for (const status of [DeleteRequestStatus.APPROVED, DeleteRequestStatus.REJECTED]) {
         const request = createMockDeleteRequest({ status, requestedById: user.id });

@@ -14,7 +14,7 @@ import {
   ZusStatus,
   type User,
 } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { SystemCompanyService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import { CLIENT_VALIDATION_MESSAGES } from '../constants';
@@ -34,7 +34,7 @@ describe('ClientsService', () => {
   let changeLogService: jest.Mocked<ChangeLogService>;
   let clientChangelogService: jest.Mocked<ClientChangelogService>;
   let autoAssignService: jest.Mocked<AutoAssignService>;
-  let tenantService: jest.Mocked<TenantService>;
+  let systemCompanyService: jest.Mocked<SystemCompanyService>;
 
   // Mock data
   const mockCompanyId = 'company-123';
@@ -94,14 +94,14 @@ describe('ClientsService', () => {
     evaluateAndAssign: jest.fn(),
   };
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   beforeEach(async () => {
     // Reset mocks before each test
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     const mockQueryBuilder = createMockQueryBuilder();
 
@@ -137,7 +137,7 @@ describe('ClientsService', () => {
               mockChangeLogService as any,
               mockClientChangelogService as any,
               mockAutoAssignService as any,
-              mockTenantService as any
+              mockSystemCompanyService as any
             );
           },
         },
@@ -158,8 +158,8 @@ describe('ClientsService', () => {
           useValue: mockAutoAssignService,
         },
         {
-          provide: TenantService,
-          useValue: mockTenantService,
+          provide: SystemCompanyService,
+          useValue: mockSystemCompanyService,
         },
       ],
     }).compile();
@@ -169,7 +169,7 @@ describe('ClientsService', () => {
     changeLogService = module.get(ChangeLogService);
     clientChangelogService = module.get(ClientChangelogService);
     autoAssignService = module.get(AutoAssignService);
-    tenantService = module.get(TenantService);
+    systemCompanyService = module.get(SystemCompanyService);
   });
 
   describe('findAll', () => {
@@ -179,7 +179,7 @@ describe('ClientsService', () => {
       expect(result).toBeInstanceOf(PaginatedResponseDto);
       expect(result.data).toHaveLength(1);
       expect(result.meta.total).toBe(1);
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
     });
 
     it('should apply search filter with LIKE escaping', async () => {
@@ -408,7 +408,7 @@ describe('ClientsService', () => {
 
       await service.findOne('client-123', mockUser as User);
 
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
     });
   });
 
@@ -780,7 +780,7 @@ describe('ClientsService', () => {
 
       await service.findOne('client-123', mockUser as User);
 
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
     });
 
     it('should filter by company in findAll query', async () => {

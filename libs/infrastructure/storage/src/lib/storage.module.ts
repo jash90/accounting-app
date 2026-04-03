@@ -1,4 +1,4 @@
-import { DynamicModule, Global, Module } from '@nestjs/common';
+import { DynamicModule, Global, Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { STORAGE_PROVIDER } from './interfaces/storage-provider.interface';
@@ -21,8 +21,9 @@ export class StorageModule {
             const validTypes = ['local', 's3'];
 
             if (!validTypes.includes(storageType)) {
-              console.warn(
-                `Invalid STORAGE_TYPE "${storageType}". Valid options: ${validTypes.join(', ')}. Defaulting to "local".`
+              Logger.warn(
+                `Invalid STORAGE_TYPE "${storageType}". Valid options: ${validTypes.join(', ')}. Defaulting to "local".`,
+                'StorageModule'
               );
             }
 

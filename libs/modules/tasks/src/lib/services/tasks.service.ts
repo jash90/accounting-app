@@ -13,7 +13,11 @@ import {
   TaskStatusLabels,
   User,
 } from '@accounting/common';
-import { calculatePagination, sanitizeForLog, TenantService } from '@accounting/common/backend';
+import {
+  calculatePagination,
+  sanitizeForLog,
+  SystemCompanyService,
+} from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import {
@@ -73,13 +77,13 @@ export class TasksService {
     @InjectRepository(TaskLabelAssignment)
     private readonly labelAssignmentRepository: Repository<TaskLabelAssignment>,
     private readonly changeLogService: ChangeLogService,
-    private readonly tenantService: TenantService,
+    private readonly systemCompanyService: SystemCompanyService,
     private readonly taskNotificationService: TaskNotificationService,
     private readonly dataSource: DataSource
   ) {}
 
   async findAll(user: User, filters?: TaskFiltersDto): Promise<PaginatedResponseDto<Task>> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const { page, limit, skip } = calculatePagination(filters);
 
     const queryBuilder = this.taskRepository
@@ -186,7 +190,7 @@ export class TasksService {
   }
 
   async findOne(id: string, user: User): Promise<Task & { labels?: TaskLabel[] }> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const task = await this.taskRepository.findOne({
       where: { id, companyId },
@@ -208,7 +212,7 @@ export class TasksService {
   }
 
   async getKanbanBoard(user: User, filters?: TaskFiltersDto): Promise<KanbanBoardResponseDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const kanbanLimit = filters?.kanbanLimit ?? 50;
 
     const statusOrder: TaskStatus[] = [
@@ -292,7 +296,7 @@ export class TasksService {
   }
 
   async getCalendarTasks(user: User, startDate: string, endDate: string): Promise<Task[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const tasks = await this.taskRepository
       .createQueryBuilder('task')
@@ -311,7 +315,7 @@ export class TasksService {
   }
 
   async getClientTaskStatistics(clientId: string, user: User): Promise<ClientTaskStatisticsDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify client belongs to the company (multi-tenant isolation)
     const clientExists = await this.taskRepository.manager.findOne('Client', {
@@ -369,7 +373,7 @@ export class TasksService {
   }
 
   async getGlobalStatistics(user: User): Promise<GlobalTaskStatisticsDto> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Get counts grouped by status
     const statusCounts = await this.taskRepository
@@ -446,7 +450,7 @@ export class TasksService {
   }
 
   async create(dto: CreateTaskDto, user: User): Promise<Task & { labels?: TaskLabel[] }> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Validate parent task if provided
     if (dto.parentTaskId) {
@@ -531,7 +535,7 @@ export class TasksService {
     const task = await this.findOne(id, user);
     const oldValues = this.sanitizeTaskForLog(task);
     const oldClientId = task.clientId;
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Validate status transition if status is being changed
     if (dto.status !== undefined && dto.status !== task.status) {
@@ -664,41 +668,64 @@ export class TasksService {
     }
   }
 
+  /**
+   * FIX-07: Wrapped in transaction with batch UPDATE via CASE WHEN.
+   * Replaces N sequential UPDATE queries with a single SQL statement.
+   */
   async reorderTasks(dto: ReorderTasksDto, user: User): Promise<void> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
-    // Validate all tasks belong to company
-    const tasks = await this.taskRepository.find({
-      where: { id: In(dto.taskIds), companyId },
-    });
+    await this.dataSource.transaction(async (manager) => {
+      const taskRepo = manager.getRepository(Task);
 
-    if (tasks.length !== dto.taskIds.length) {
-      this.logger.warn('Some tasks not found during reorder', {
-        requested: dto.taskIds.length,
-        found: tasks.length,
+      // Validate all tasks belong to company
+      const tasks = await taskRepo.find({
+        where: { id: In(dto.taskIds), companyId },
       });
-    }
 
-    // Validate status transitions if newStatus is provided
-    if (dto.newStatus) {
-      for (const task of tasks) {
-        if (task.status !== dto.newStatus) {
-          this.validateStatusTransition(task.status, dto.newStatus);
+      if (tasks.length !== dto.taskIds.length) {
+        this.logger.warn('Some tasks not found during reorder', {
+          requested: dto.taskIds.length,
+          found: tasks.length,
+        });
+      }
+
+      // Validate status transitions if newStatus is provided
+      if (dto.newStatus) {
+        for (const task of tasks) {
+          if (task.status !== dto.newStatus) {
+            this.validateStatusTransition(task.status, dto.newStatus);
+          }
         }
       }
-    }
 
-    // Update sort orders
-    for (let i = 0; i < dto.taskIds.length; i++) {
-      await this.taskRepository.update(
-        { id: dto.taskIds[i], companyId },
-        { sortOrder: i, ...(dto.newStatus ? { status: dto.newStatus } : {}) }
-      );
-    }
+      // Batch UPDATE via parameterized query
+      if (dto.taskIds.length > 0) {
+        const validIds = tasks.map((t) => t.id);
+        const caseClauses = validIds
+          .map((id) => {
+            const idx = dto.taskIds.indexOf(id);
+            return `WHEN id = '${id}' THEN ${idx}`;
+          })
+          .join(' ');
+
+        let query = `UPDATE task SET "sortOrder" = CASE ${caseClauses} ELSE "sortOrder" END`;
+
+        if (dto.newStatus) {
+          query += `, status = $2`;
+        }
+
+        query += ` WHERE id = ANY($1) AND "companyId" = $${dto.newStatus ? '3' : '2'}`;
+
+        const params = dto.newStatus ? [validIds, dto.newStatus, companyId] : [validIds, companyId];
+
+        await manager.query(query, params);
+      }
+    });
   }
 
   async bulkUpdateStatus(dto: BulkUpdateStatusDto, user: User): Promise<{ updated: number }> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Validate status transitions for all tasks
     const tasks = await this.taskRepository.find({
@@ -720,7 +747,7 @@ export class TasksService {
   }
 
   async getSubtasks(taskId: string, user: User): Promise<Task[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify parent task exists
     const parentTask = await this.taskRepository.findOne({
@@ -737,28 +764,27 @@ export class TasksService {
     });
   }
 
-  private async isDescendant(
-    potentialDescendantId: string,
-    ancestorId: string,
-    depth = 20
-  ): Promise<boolean> {
-    if (depth <= 0) return false;
-    // Check if potentialDescendantId is a descendant of ancestorId
-    const subtasks = await this.taskRepository.find({
-      where: { parentTaskId: ancestorId },
-      select: ['id'],
-    });
+  /**
+   * FIX-06: Replaced recursive N+1 queries with a single WITH RECURSIVE CTE.
+   * Checks if potentialDescendantId is a descendant of ancestorId in one DB query.
+   */
+  private async isDescendant(potentialDescendantId: string, ancestorId: string): Promise<boolean> {
+    const result = await this.taskRepository.query(
+      `
+      WITH RECURSIVE descendants AS (
+        SELECT id FROM task WHERE "parentTaskId" = $1
+        UNION ALL
+        SELECT t.id FROM task t
+          INNER JOIN descendants d ON t."parentTaskId" = d.id
+      )
+      SELECT EXISTS(
+        SELECT 1 FROM descendants WHERE id = $2
+      ) AS "isDescendant"
+      `,
+      [ancestorId, potentialDescendantId]
+    );
 
-    for (const subtask of subtasks) {
-      if (subtask.id === potentialDescendantId) {
-        return true;
-      }
-      if (await this.isDescendant(potentialDescendantId, subtask.id, depth - 1)) {
-        return true;
-      }
-    }
-
-    return false;
+    return result[0]?.isDescendant === true;
   }
 
   /**

@@ -11,7 +11,7 @@ import {
   type TimeSettings,
   type User,
 } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { TIME_TRACKING_LABELS } from '../constants';
 import { TimeCalculationService } from './time-calculation.service';
@@ -22,7 +22,7 @@ import { TimesheetGroupBy } from '../dto/timesheet.dto';
 describe('TimesheetService', () => {
   let service: TimesheetService;
   let entryRepository: jest.Mocked<Repository<TimeEntry>>;
-  let tenantService: jest.Mocked<TenantService>;
+  let systemCompanyService: jest.Mocked<SystemCompanyService>;
   let settingsService: jest.Mocked<TimeSettingsService>;
   let _calculationService: TimeCalculationService;
 
@@ -31,8 +31,8 @@ describe('TimesheetService', () => {
   const mockUserId = 'user-123';
 
   // Create mocks at module level for proper instantiation
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   const mockSettingsService = {
@@ -118,8 +118,8 @@ describe('TimesheetService', () => {
 
   beforeEach(async () => {
     // Reset mocks before each test
-    mockTenantService.getEffectiveCompanyId.mockReset();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockReset();
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
     mockSettingsService.getSettings.mockReset();
     mockSettingsService.getSettings.mockResolvedValue(mockSettings);
 
@@ -150,7 +150,7 @@ describe('TimesheetService', () => {
               mockEntryRepository as any,
               new TimeCalculationService(),
               mockSettingsService as any,
-              mockTenantService as any,
+              mockSystemCompanyService as any,
               mockDataSource as any
             );
           },
@@ -160,8 +160,8 @@ describe('TimesheetService', () => {
           useValue: mockEntryRepository,
         },
         {
-          provide: TenantService,
-          useValue: mockTenantService,
+          provide: SystemCompanyService,
+          useValue: mockSystemCompanyService,
         },
         {
           provide: TimeSettingsService,
@@ -176,7 +176,7 @@ describe('TimesheetService', () => {
 
     service = module.get<TimesheetService>(TimesheetService);
     entryRepository = module.get(getRepositoryToken(TimeEntry));
-    tenantService = module.get(TenantService);
+    systemCompanyService = module.get(SystemCompanyService);
     settingsService = module.get(TimeSettingsService);
     _calculationService = new TimeCalculationService();
   });
@@ -731,7 +731,7 @@ describe('TimesheetService', () => {
 
       await service.getDailyTimesheet({ date: '2024-01-15' }, mockEmployee as User);
 
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockEmployee);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockEmployee);
     });
 
     it('should filter by companyId in all queries', async () => {

@@ -1,3 +1,5 @@
+import { calculatePagination, SystemCompanyService } from '@accounting/common/backend';
+import { EmailConfigurationService, EmailSenderService } from '@accounting/email';
 import {
   Injectable,
   InternalServerErrorException,
@@ -5,7 +7,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { In, Repository } from 'typeorm';
 
 import {
@@ -19,8 +20,6 @@ import {
   UserRole,
   type SettlementStatusHistoryEntry,
 } from '@accounting/common';
-import { calculatePagination, TenantService } from '@accounting/common/backend';
-import { EmailConfigurationService, EmailSenderService } from '@accounting/email';
 
 import { SETTLEMENT_MESSAGES } from '../constants/settlement-messages';
 import {
@@ -48,7 +47,7 @@ export class SettlementsService {
     private readonly clientRepository: Repository<Client>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly tenantService: TenantService,
+    private readonly systemCompanyService: SystemCompanyService,
     private readonly emailSenderService: EmailSenderService,
     private readonly emailConfigService: EmailConfigurationService
   ) {}
@@ -57,7 +56,7 @@ export class SettlementsService {
     query: GetSettlementsQueryDto,
     user: User
   ): Promise<PaginatedResponseDto<MonthlySettlement>> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const { page, limit, skip } = calculatePagination(query);
 
     const qb = this.settlementRepository
@@ -124,7 +123,7 @@ export class SettlementsService {
   }
 
   async findOne(id: string, user: User): Promise<MonthlySettlement> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const settlement = await this.settlementRepository.findOne({
       where: { id, companyId },
@@ -147,7 +146,7 @@ export class SettlementsService {
     dto: InitializeMonthDto,
     user: User
   ): Promise<{ created: number; skipped: number }> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Get all active clients for the company
     const activeClients = await this.clientRepository.find({
@@ -291,7 +290,7 @@ export class SettlementsService {
     dto: AssignSettlementDto,
     user: User
   ): Promise<MonthlySettlement> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const settlement = await this.settlementRepository.findOne({
       where: { id, companyId },
@@ -328,7 +327,7 @@ export class SettlementsService {
     dto: BulkAssignDto,
     user: User
   ): Promise<{ assigned: number; requested: number; skippedIds: string[] }> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Validate assignee
     const assignee = await this.userRepository.findOne({
@@ -425,7 +424,7 @@ export class SettlementsService {
   }
 
   async sendMissingInvoiceEmail(id: string, user: User): Promise<{ message: string }> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const settlement = await this.settlementRepository.findOne({
       where: { id, companyId },
       relations: ['client'],
@@ -502,7 +501,7 @@ export class SettlementsService {
       });
     }
 
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // For non-ADMIN users, return employees and owners from their company
     return this.userRepository.find({

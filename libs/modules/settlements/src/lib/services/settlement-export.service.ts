@@ -1,10 +1,9 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { Repository } from 'typeorm';
 
 import { generateCsvBuffer, MonthlySettlement, User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import { GetSettlementsQueryDto } from '../dto/get-settlements-query.dto';
 
@@ -13,11 +12,11 @@ export class SettlementExportService {
   constructor(
     @InjectRepository(MonthlySettlement)
     private readonly settlementRepository: Repository<MonthlySettlement>,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   async exportToCsv(filters: GetSettlementsQueryDto, user: User): Promise<Buffer> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const queryBuilder = this.settlementRepository
       .createQueryBuilder('settlement')

@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { TaskLabel, User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { CreateTaskLabelDto, UpdateTaskLabelDto } from '../dto/task-label.dto';
 import { TaskLabelAlreadyExistsException, TaskLabelNotFoundException } from '../exceptions';
@@ -14,11 +14,11 @@ export class TaskLabelsService {
   constructor(
     @InjectRepository(TaskLabel)
     private readonly labelRepository: Repository<TaskLabel>,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   async findAll(user: User): Promise<TaskLabel[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     return this.labelRepository.find({
       where: { companyId, isActive: true },
@@ -27,7 +27,7 @@ export class TaskLabelsService {
   }
 
   async findOne(id: string, user: User): Promise<TaskLabel> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const label = await this.labelRepository.findOne({
       where: { id, companyId },
@@ -41,7 +41,7 @@ export class TaskLabelsService {
   }
 
   async create(dto: CreateTaskLabelDto, user: User): Promise<TaskLabel> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Check for duplicate name
     const existing = await this.labelRepository.findOne({
@@ -65,7 +65,7 @@ export class TaskLabelsService {
 
     // Check for duplicate name if changing
     if (dto.name && dto.name !== label.name) {
-      const companyId = await this.tenantService.getEffectiveCompanyId(user);
+      const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
       const existing = await this.labelRepository.findOne({
         where: { name: dto.name, companyId },
       });

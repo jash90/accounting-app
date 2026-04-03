@@ -45,6 +45,7 @@ class TokenRefreshManager {
   /**
    * Refreshes the token, ensuring only one refresh happens at a time.
    * Concurrent calls will share the same refresh promise.
+   * Refresh token is sent via httpOnly cookie automatically (withCredentials: true).
    */
   refresh(): Promise<string> {
     // If a refresh is already in progress, return the existing promise
@@ -52,19 +53,13 @@ class TokenRefreshManager {
       return this.refreshPromise;
     }
 
-    const refreshToken = tokenStorage.getRefreshToken();
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-
-    // Create a new refresh promise
+    // Refresh token is in httpOnly cookie — sent automatically.
+    // Empty body: backend reads refresh_token from cookie first, body as fallback.
     this.refreshPromise = axios
-      .post(`${getApiBaseUrl()}/api/auth/refresh`, {
-        refresh_token: refreshToken,
-      })
+      .post(`${getApiBaseUrl()}/api/auth/refresh`, {}, { withCredentials: true })
       .then(({ data }) => {
         tokenStorage.setAccessToken(data.access_token);
-        return data.access_token as string;
+        return '__cookie__';
       })
       .finally(() => {
         // Clear the promise so future refreshes can happen
@@ -90,18 +85,14 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 180000, // 3 minutes - matches backend for AI responses
+  timeout: 30000, // 30 seconds default. AI endpoints override with 180s per-request.
+  withCredentials: true, // Send httpOnly cookies with every request
 });
 
-// Request interceptor - auto-add JWT token
+// Request interceptor — cookies carry the JWT automatically.
+// Authorization header is no longer set (httpOnly cookie mode).
 apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = tokenStorage.getAccessToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
+  (config: InternalAxiosRequestConfig) => config,
   (error) => Promise.reject(error)
 );
 

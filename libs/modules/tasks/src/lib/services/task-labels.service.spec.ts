@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { type Repository } from 'typeorm';
 
 import { TaskLabel, type User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { TaskLabelAlreadyExistsException, TaskLabelNotFoundException } from '../exceptions';
 import { TaskLabelsService } from './task-labels.service';
@@ -12,7 +12,7 @@ import { TaskLabelsService } from './task-labels.service';
 describe('TaskLabelsService', () => {
   let service: TaskLabelsService;
   let labelRepository: jest.Mocked<Repository<TaskLabel>>;
-  let tenantService: jest.Mocked<Pick<TenantService, 'getEffectiveCompanyId'>>;
+  let systemCompanyService: jest.Mocked<Pick<SystemCompanyService, 'getCompanyIdForUser'>>;
 
   const companyId = 'company-1';
   const mockUser = { id: 'user-1', companyId, role: 'EMPLOYEE' } as User;
@@ -36,18 +36,19 @@ describe('TaskLabelsService', () => {
       save: jest.fn(),
     } as unknown as jest.Mocked<Repository<TaskLabel>>;
 
-    tenantService = {
-      getEffectiveCompanyId: jest.fn().mockResolvedValue(companyId),
+    systemCompanyService = {
+      getCompanyIdForUser: jest.fn().mockResolvedValue(companyId),
     };
 
     const module = await Test.createTestingModule({
       providers: [
         {
           provide: TaskLabelsService,
-          useFactory: () => new TaskLabelsService(labelRepository as any, tenantService as any),
+          useFactory: () =>
+            new TaskLabelsService(labelRepository as any, systemCompanyService as any),
         },
         { provide: getRepositoryToken(TaskLabel), useValue: labelRepository },
-        { provide: TenantService, useValue: tenantService },
+        { provide: SystemCompanyService, useValue: systemCompanyService },
       ],
     }).compile();
 
@@ -62,7 +63,7 @@ describe('TaskLabelsService', () => {
       const result = await service.findAll(mockUser);
 
       expect(result).toEqual(labels);
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
       expect(labelRepository.find).toHaveBeenCalledWith({
         where: { companyId, isActive: true },
         order: { name: 'ASC' },

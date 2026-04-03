@@ -1,16 +1,17 @@
-import { TenantService } from '@accounting/common/backend';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+
 import { type Repository } from 'typeorm';
 
 import { MonthlySettlement, SettlementStatus, UserRole, type User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { SettlementExportService } from './settlement-export.service';
 
 describe('SettlementExportService', () => {
   let service: SettlementExportService;
   let _settlementRepository: jest.Mocked<Repository<MonthlySettlement>>;
-  let tenantService: jest.Mocked<TenantService>;
+  let systemCompanyService: jest.Mocked<SystemCompanyService>;
 
   const mockCompanyId = 'company-123';
 
@@ -57,8 +58,8 @@ describe('SettlementExportService', () => {
     getMany: jest.fn().mockResolvedValue(mockSettlements),
   });
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   let mockQb: ReturnType<typeof createMockQueryBuilder>;
@@ -66,7 +67,7 @@ describe('SettlementExportService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     mockQb = createMockQueryBuilder();
 
@@ -81,7 +82,7 @@ describe('SettlementExportService', () => {
           useFactory: () => {
             return new SettlementExportService(
               mockSettlementRepository as any,
-              mockTenantService as any
+              mockSystemCompanyService as any
             );
           },
         },
@@ -90,15 +91,15 @@ describe('SettlementExportService', () => {
           useValue: mockSettlementRepository,
         },
         {
-          provide: TenantService,
-          useValue: mockTenantService,
+          provide: SystemCompanyService,
+          useValue: mockSystemCompanyService,
         },
       ],
     }).compile();
 
     service = module.get<SettlementExportService>(SettlementExportService);
     _settlementRepository = module.get(getRepositoryToken(MonthlySettlement));
-    tenantService = module.get(TenantService);
+    systemCompanyService = module.get(SystemCompanyService);
   });
 
   describe('exportToCsv', () => {
@@ -163,7 +164,7 @@ describe('SettlementExportService', () => {
     it('should use tenant service for companyId filtering', async () => {
       await service.exportToCsv({}, mockUser as User);
 
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
       expect(mockQb.where).toHaveBeenCalledWith('settlement.companyId = :companyId', {
         companyId: mockCompanyId,
       });

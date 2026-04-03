@@ -1,6 +1,6 @@
+import { calculatePagination, SystemCompanyService } from '@accounting/common/backend';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { DataSource, Repository } from 'typeorm';
 
 import {
@@ -11,7 +11,6 @@ import {
   PaginatedResponseDto,
   User,
 } from '@accounting/common';
-import { calculatePagination, TenantService } from '@accounting/common/backend';
 
 import {
   ClientErrorCode,
@@ -52,7 +51,7 @@ export class CustomFieldsService {
     private readonly fieldValueRepository: Repository<ClientCustomFieldValue>,
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
-    private readonly tenantService: TenantService,
+    private readonly systemCompanyService: SystemCompanyService,
     private readonly dataSource: DataSource,
     private readonly customFieldReminderService: CustomFieldReminderService
   ) {}
@@ -63,7 +62,7 @@ export class CustomFieldsService {
     user: User,
     query?: FieldDefinitionQueryDto
   ): Promise<PaginatedResponseDto<ClientFieldDefinition>> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const { page, limit, skip } = calculatePagination(query, 50);
 
     const [data, total] = await this.fieldDefinitionRepository.findAndCount({
@@ -77,7 +76,7 @@ export class CustomFieldsService {
   }
 
   async findDefinitionById(id: string, user: User): Promise<ClientFieldDefinition> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const definition = await this.fieldDefinitionRepository.findOne({
       where: { id, companyId, isActive: true },
@@ -94,7 +93,7 @@ export class CustomFieldsService {
     dto: CreateFieldDefinitionDto,
     user: User
   ): Promise<ClientFieldDefinition> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Validate enum options for ENUM and MULTISELECT types
     if (dto.fieldType === CustomFieldType.ENUM || dto.fieldType === CustomFieldType.MULTISELECT) {
@@ -127,7 +126,7 @@ export class CustomFieldsService {
     user: User
   ): Promise<ClientFieldDefinition> {
     const definition = await this.findDefinitionById(id, user);
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Check for duplicate name if changing
     if (dto.name && dto.name !== definition.name) {
@@ -187,7 +186,7 @@ export class CustomFieldsService {
    * @throws FieldNotFoundException if definition doesn't exist or doesn't belong to company
    */
   async hardDeleteDefinition(id: string, user: User): Promise<void> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify definition exists and belongs to company (including soft-deleted)
     const definition = await this.fieldDefinitionRepository.findOne({
@@ -238,7 +237,7 @@ export class CustomFieldsService {
   // Custom Field Values
 
   async getClientCustomFields(clientId: string, user: User): Promise<ClientCustomFieldValue[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify client belongs to company
     const client = await this.clientRepository.findOne({
@@ -260,7 +259,7 @@ export class CustomFieldsService {
     dto: SetCustomFieldValueDto,
     user: User
   ): Promise<ClientCustomFieldValue> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify client
     const client = await this.clientRepository.findOne({
@@ -344,7 +343,7 @@ export class CustomFieldsService {
     values: Record<string, string | null>,
     user: User
   ): Promise<ClientCustomFieldValue[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify client OUTSIDE transaction (read-only check)
     const client = await this.clientRepository.findOne({
@@ -438,7 +437,7 @@ export class CustomFieldsService {
     fieldDefinitionId: string,
     user: User
   ): Promise<void> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify client
     const client = await this.clientRepository.findOne({

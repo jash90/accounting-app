@@ -1,9 +1,10 @@
-import { TenantService } from '@accounting/common/backend';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+
 import { type Repository } from 'typeorm';
 
 import { Task, TaskDependency, TaskDependencyType, UserRole, type User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import {
   TaskDependencyAlreadyExistsException,
@@ -18,7 +19,7 @@ describe('TaskDependenciesService', () => {
   let service: TaskDependenciesService;
   let taskRepository: jest.Mocked<Repository<Task>>;
   let dependencyRepository: jest.Mocked<Repository<TaskDependency>>;
-  let tenantService: jest.Mocked<TenantService>;
+  let systemCompanyService: jest.Mocked<SystemCompanyService>;
 
   // Mock data
   const mockCompanyId = 'company-123';
@@ -56,13 +57,13 @@ describe('TaskDependenciesService', () => {
     createdAt: new Date('2024-01-15T10:00:00Z'),
   };
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     const mockTaskRepository = {
       findOne: jest.fn(),
@@ -84,7 +85,7 @@ describe('TaskDependenciesService', () => {
             return new TaskDependenciesService(
               mockTaskRepository as any,
               mockDependencyRepository as any,
-              mockTenantService as any
+              mockSystemCompanyService as any
             );
           },
         },
@@ -97,8 +98,8 @@ describe('TaskDependenciesService', () => {
           useValue: mockDependencyRepository,
         },
         {
-          provide: TenantService,
-          useValue: mockTenantService,
+          provide: SystemCompanyService,
+          useValue: mockSystemCompanyService,
         },
       ],
     }).compile();
@@ -106,7 +107,7 @@ describe('TaskDependenciesService', () => {
     service = module.get<TaskDependenciesService>(TaskDependenciesService);
     taskRepository = module.get(getRepositoryToken(Task));
     dependencyRepository = module.get(getRepositoryToken(TaskDependency));
-    tenantService = module.get(TenantService);
+    systemCompanyService = module.get(SystemCompanyService);
   });
 
   describe('findAllForTask', () => {
@@ -117,7 +118,7 @@ describe('TaskDependenciesService', () => {
       const result = await service.findAllForTask(mockTaskId, mockUser as User);
 
       expect(result).toEqual([mockDependency]);
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
       expect(taskRepository.findOne).toHaveBeenCalledWith({
         where: { id: mockTaskId, companyId: mockCompanyId },
       });
@@ -138,7 +139,7 @@ describe('TaskDependenciesService', () => {
 
     it('should enforce tenant isolation via companyId filter', async () => {
       const otherCompanyId = 'other-company-789';
-      mockTenantService.getEffectiveCompanyId.mockResolvedValue(otherCompanyId);
+      mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(otherCompanyId);
       taskRepository.findOne = jest.fn().mockResolvedValue(null);
 
       await expect(service.findAllForTask(mockTaskId, mockUser as User)).rejects.toThrow(

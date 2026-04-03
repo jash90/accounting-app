@@ -47,12 +47,32 @@ export const useAuth = () => {
       // Update auth query to update AuthContext
       queryClient.setQueryData(['auth', 'me'], data.user);
 
-      navigate('/admin');
+      // Self-registration always creates COMPANY_OWNER
+      // Navigate based on actual role (future-proof for admin-created accounts)
+      switch (data.user.role) {
+        case UserRole.ADMIN:
+          navigate('/admin');
+          break;
+        case UserRole.COMPANY_OWNER:
+          navigate('/company');
+          break;
+        case UserRole.EMPLOYEE:
+          navigate('/modules');
+          break;
+        default:
+          navigate('/company');
+      }
     },
   });
 
-  // Logout
-  const logout = () => {
+  // Logout — clear httpOnly cookies on server + local state
+  const logout = async () => {
+    try {
+      // Tell backend to clear httpOnly cookies
+      await authApi.logout();
+    } catch {
+      // Proceed with local cleanup even if server request fails
+    }
     tokenStorage.clearTokens();
     queryClient.clear(); // Clear all cached data
     navigate('/login');

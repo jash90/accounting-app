@@ -1,10 +1,9 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-
 import { type Repository } from 'typeorm';
 
 import { MonthlySettlement, SettlementComment, UserRole, type User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import { type CreateCommentDto } from '../dto';
 import { SettlementAccessDeniedException, SettlementNotFoundException } from '../exceptions';
@@ -14,7 +13,7 @@ describe('SettlementCommentsService', () => {
   let service: SettlementCommentsService;
   let commentRepository: jest.Mocked<Repository<SettlementComment>>;
   let settlementRepository: jest.Mocked<Repository<MonthlySettlement>>;
-  let tenantService: jest.Mocked<TenantService>;
+  let systemCompanyService: jest.Mocked<SystemCompanyService>;
 
   // Mock data
   const mockCompanyId = 'company-123';
@@ -71,13 +70,13 @@ describe('SettlementCommentsService', () => {
     getMany: jest.fn().mockResolvedValue([mockComment]),
   });
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     const mockQueryBuilder = createMockQueryBuilder();
 
@@ -101,7 +100,7 @@ describe('SettlementCommentsService', () => {
             return new SettlementCommentsService(
               mockCommentRepository as any,
               mockSettlementRepository as any,
-              mockTenantService as any
+              mockSystemCompanyService as any
             );
           },
         },
@@ -114,8 +113,8 @@ describe('SettlementCommentsService', () => {
           useValue: mockSettlementRepository,
         },
         {
-          provide: TenantService,
-          useValue: mockTenantService,
+          provide: SystemCompanyService,
+          useValue: mockSystemCompanyService,
         },
       ],
     }).compile();
@@ -123,7 +122,7 @@ describe('SettlementCommentsService', () => {
     service = module.get<SettlementCommentsService>(SettlementCommentsService);
     commentRepository = module.get(getRepositoryToken(SettlementComment));
     settlementRepository = module.get(getRepositoryToken(MonthlySettlement));
-    tenantService = module.get(TenantService);
+    systemCompanyService = module.get(SystemCompanyService);
   });
 
   describe('getComments', () => {
@@ -133,7 +132,7 @@ describe('SettlementCommentsService', () => {
       const result = await service.getComments(mockSettlementId, mockCompanyOwner as User);
 
       expect(result).toHaveLength(1);
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockCompanyOwner);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockCompanyOwner);
     });
 
     it('should return comments for ADMIN user', async () => {
@@ -142,7 +141,7 @@ describe('SettlementCommentsService', () => {
       const result = await service.getComments(mockSettlementId, mockAdmin as User);
 
       expect(result).toHaveLength(1);
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockAdmin);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockAdmin);
     });
 
     it('should return comments for EMPLOYEE on their own settlement', async () => {
@@ -235,7 +234,7 @@ describe('SettlementCommentsService', () => {
       );
 
       expect(result.content).toBe(createDto.content);
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockCompanyOwner);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockCompanyOwner);
     });
 
     it('should create comment for ADMIN user', async () => {
@@ -324,7 +323,7 @@ describe('SettlementCommentsService', () => {
 
       await service.addComment(mockSettlementId, createDto, mockCompanyOwner as User);
 
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockCompanyOwner);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockCompanyOwner);
       expect(commentRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({ companyId: mockCompanyId })
       );
@@ -345,9 +344,9 @@ describe('SettlementCommentsService', () => {
       });
     });
 
-    it('should use TenantService to get effective companyId', async () => {
+    it('should use SystemCompanyService to get effective companyId', async () => {
       const differentCompanyId = 'different-company-456';
-      mockTenantService.getEffectiveCompanyId.mockResolvedValue(differentCompanyId);
+      mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(differentCompanyId);
       settlementRepository.findOne = jest.fn().mockResolvedValue(null);
 
       await expect(service.getComments(mockSettlementId, mockCompanyOwner as User)).rejects.toThrow(

@@ -24,6 +24,11 @@ import { StorageModule } from '@accounting/infrastructure/storage';
 import { NotificationsModule } from '@accounting/modules/notifications';
 import { RBACModule } from '@accounting/rbac';
 
+import { ClientBulkController } from './controllers/client-bulk.controller';
+import { ClientChangelogController } from './controllers/client-changelog.controller';
+import { ClientCustomFieldsController } from './controllers/client-custom-fields.controller';
+import { ClientExportController } from './controllers/client-export.controller';
+import { ClientStatisticsController } from './controllers/client-statistics.controller';
 import { ClientsController } from './controllers/clients.controller';
 import { DeleteRequestsController } from './controllers/delete-requests.controller';
 import { FieldDefinitionsController } from './controllers/field-definitions.controller';
@@ -81,6 +86,13 @@ import { SuspensionService } from './services/suspension.service';
     DeleteRequestsController,
     SuspensionsController,
     ReliefPeriodsController,
+    // Sub-controllers with specific path prefixes (bulk/, statistics/, etc.)
+    ClientBulkController,
+    ClientStatisticsController,
+    ClientExportController,
+    ClientChangelogController,
+    ClientCustomFieldsController,
+    // Main CRUD controller last (has /:id catch-all routes)
     ClientsController,
   ],
   providers: [

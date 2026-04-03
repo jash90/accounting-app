@@ -9,7 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
 import { DataSource, Repository } from 'typeorm';
 
-import { Company, User, UserRole } from '@accounting/common';
+import { Company, ErrorMessages, User, UserRole } from '@accounting/common';
 import { SystemCompanyService } from '@accounting/common/backend';
 import { RBACService } from '@accounting/rbac';
 
@@ -46,19 +46,21 @@ export class AdminService {
     });
 
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new NotFoundException(ErrorMessages.NOT_FOUND.entity('Użytkownik', id));
     }
 
     return user;
   }
 
   async createUser(createUserDto: CreateUserDto) {
-    const existingUser = await this.userRepository.findOne({
-      where: { email: createUserDto.email },
-    });
+    // FIX-08: Case-insensitive email check (matches AuthService pattern)
+    const existingUser = await this.userRepository
+      .createQueryBuilder('user')
+      .where('LOWER(user.email) = LOWER(:email)', { email: createUserDto.email })
+      .getOne();
 
     if (existingUser) {
-      throw new ConflictException('User with this email already exists');
+      throw new ConflictException(ErrorMessages.AUTH.EMAIL_EXISTS);
     }
 
     // Auto-assign ADMIN users to System Admin company
@@ -69,12 +71,12 @@ export class AdminService {
 
     // EMPLOYEE requires companyId
     if (createUserDto.role === UserRole.EMPLOYEE && !createUserDto.companyId) {
-      throw new BadRequestException('companyId is required for EMPLOYEE role');
+      throw new BadRequestException('companyId jest wymagane dla roli EMPLOYEE');
     }
 
     // COMPANY_OWNER requires companyName (to auto-create company)
     if (createUserDto.role === UserRole.COMPANY_OWNER && !createUserDto.companyName) {
-      throw new BadRequestException('companyName is required for COMPANY_OWNER role');
+      throw new BadRequestException('companyName jest wymagane dla roli COMPANY_OWNER');
     }
 
     if (createUserDto.companyId) {
@@ -82,7 +84,7 @@ export class AdminService {
         where: { id: createUserDto.companyId },
       });
       if (!company) {
-        throw new NotFoundException('Company not found');
+        throw new NotFoundException(ErrorMessages.NOT_FOUND.entity('Firma'));
       }
     }
 
@@ -116,12 +118,14 @@ export class AdminService {
   async updateUser(id: string, updateUserDto: UpdateUserDto) {
     const user = await this.findUserById(id);
 
-    if (updateUserDto.email && updateUserDto.email !== user.email) {
-      const existingUser = await this.userRepository.findOne({
-        where: { email: updateUserDto.email },
-      });
+    if (updateUserDto.email && updateUserDto.email.toLowerCase() !== user.email.toLowerCase()) {
+      // FIX-08: Case-insensitive email check
+      const existingUser = await this.userRepository
+        .createQueryBuilder('user')
+        .where('LOWER(user.email) = LOWER(:email)', { email: updateUserDto.email })
+        .getOne();
       if (existingUser) {
-        throw new ConflictException('User with this email already exists');
+        throw new ConflictException(ErrorMessages.AUTH.EMAIL_EXISTS);
       }
     }
 
@@ -179,7 +183,7 @@ export class AdminService {
     });
 
     if (!company) {
-      throw new NotFoundException(`Company with ID ${id} not found`);
+      throw new NotFoundException(ErrorMessages.NOT_FOUND.entity('Firma', id));
     }
 
     return company;
@@ -192,11 +196,11 @@ export class AdminService {
     });
 
     if (!ownerCheck) {
-      throw new NotFoundException('Owner user not found');
+      throw new NotFoundException(ErrorMessages.NOT_FOUND.entity('Właściciel'));
     }
 
     if (ownerCheck.role !== UserRole.COMPANY_OWNER) {
-      throw new BadRequestException('Owner must have COMPANY_OWNER role');
+      throw new BadRequestException('Właściciel musi mieć rolę COMPANY_OWNER');
     }
 
     // Use transaction with pessimistic lock to prevent race conditions
@@ -208,12 +212,12 @@ export class AdminService {
       });
 
       if (!owner) {
-        throw new NotFoundException('Owner user not found');
+        throw new NotFoundException(ErrorMessages.NOT_FOUND.entity('Właściciel'));
       }
 
       // Re-check if owner already has a company assigned (within lock)
       if (owner.companyId) {
-        throw new BadRequestException('This owner is already assigned to another company');
+        throw new BadRequestException('Ten właściciel jest już przypisany do innej firmy');
       }
 
       // Create and save company within transaction
@@ -243,7 +247,7 @@ export class AdminService {
 
     // Prevent deletion of System Admin company
     if (company.isSystemCompany) {
-      throw new BadRequestException('Cannot delete System Admin company');
+      throw new BadRequestException('Nie można usunąć firmy System Admin');
     }
 
     company.isActive = false;
@@ -257,7 +261,7 @@ export class AdminService {
 
   async getCompanyProfileById(companyId: string): Promise<Company> {
     const company = await this.companyRepository.findOne({ where: { id: companyId } });
-    if (!company) throw new NotFoundException('Company not found');
+    if (!company) throw new NotFoundException(ErrorMessages.NOT_FOUND.entity('Firma'));
     return company;
   }
 
@@ -266,7 +270,7 @@ export class AdminService {
     dto: UpdateCompanyProfileDto
   ): Promise<Company> {
     const company = await this.companyRepository.findOne({ where: { id: companyId } });
-    if (!company) throw new NotFoundException('Company not found');
+    if (!company) throw new NotFoundException(ErrorMessages.NOT_FOUND.entity('Firma'));
     Object.assign(company, dto);
     return this.companyRepository.save(company);
   }

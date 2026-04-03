@@ -1,60 +1,15 @@
-
-import { Module, ValidationPipe } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD, APP_PIPE } from '@nestjs/core';
+import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ServeStaticModule } from '@nestjs/serve-static';
 import { TerminusModule } from '@nestjs/terminus';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { SentryModule } from '@sentry/nestjs/setup';
-import { join } from 'path';
 
 import { AuthModule, JwtAuthGuard } from '@accounting/auth';
-import {
-  AIConfiguration,
-  AIContext,
-  AIConversation,
-  AIMessage,
-  ChangeLog,
-  Client,
-  ClientCustomFieldValue,
-  ClientDeleteRequest,
-  ClientFieldDefinition,
-  ClientIcon,
-  ClientIconAssignment,
-  ClientReliefPeriod,
-  ClientSuspension,
-  Company,
-  CompanyModuleAccess,
-  CustomFieldReminder,
-  DocumentTemplate,
-  EmailAutoReplyTemplate,
-  EmailConfiguration,
-  GeneratedDocument,
-  Lead,
-  Module as ModuleEntity,
-  MonthlySettlement,
-  Notification,
-  NotificationSettings,
-  Offer,
-  OfferActivity,
-  OfferTemplate,
-  SettlementComment,
-  SettlementSettings,
-  Task,
-  TaskComment,
-  TaskDependency,
-  TaskLabel,
-  TaskLabelAssignment,
-  TimeEntry,
-  TimeSettings,
-  TokenLimit,
-  TokenUsage,
-  User,
-  UserModulePermission,
-} from '@accounting/common';
+import { COMMON_ENTITIES } from '@accounting/common';
 import { ChangeLogModule } from '@accounting/infrastructure/change-log';
 import { EmailModule } from '@accounting/infrastructure/email';
 import { StorageModule } from '@accounting/infrastructure/storage';
@@ -75,54 +30,28 @@ import { AdminModule } from '../admin/admin.module';
 import { CompanyModule } from '../company/company.module';
 import { EmailConfigModule } from '../email-config/email-config.module';
 import { ModulesModule } from '../modules/modules.module';
-import { DemoDataSeedersModule } from '../seeders/demo-data-seeders.module';
 import { SeedersModule } from '../seeders/seeders.module';
+import { UploadsModule } from '../uploads/uploads.module';
 
-// Shared entities array to avoid duplication between DATABASE_URL and local config
-const ENTITIES = [
-  User,
-  Company,
-  ModuleEntity,
-  CompanyModuleAccess,
-  UserModulePermission,
-  AIConfiguration,
-  AIConversation,
-  AIMessage,
-  AIContext,
-  TokenUsage,
-  TokenLimit,
-  ChangeLog,
-  Client,
-  ClientFieldDefinition,
-  ClientCustomFieldValue,
-  ClientIcon,
-  ClientIconAssignment,
-  ClientSuspension,
-  ClientReliefPeriod,
-  CustomFieldReminder,
-  NotificationSettings,
-  Notification,
-  ClientDeleteRequest,
-  EmailConfiguration,
+/**
+ * All entities for TypeORM runtime configuration.
+ * Uses COMMON_ENTITIES from entity-registry.ts (single source of truth)
+ * plus module-specific entities that live outside @accounting/common.
+ */
+const ALL_ENTITIES = [
+  ...COMMON_ENTITIES,
+  // Module-specific entities not in @accounting/common
   EmailDraft,
-  EmailAutoReplyTemplate,
-  Task,
-  TaskLabel,
-  TaskLabelAssignment,
-  TaskDependency,
-  TaskComment,
-  TimeEntry,
-  TimeSettings,
-  Lead,
-  OfferTemplate,
-  Offer,
-  OfferActivity,
-  MonthlySettlement,
-  SettlementComment,
-  SettlementSettings,
-  DocumentTemplate,
-  GeneratedDocument,
 ];
+
+// Conditionally load demo seeder module (never in production unless explicitly enabled)
+const optionalModules: Array<new (...args: unknown[]) => unknown> = [];
+if (process.env.ENABLE_DEMO_SEEDER === 'true' && process.env.NODE_ENV !== 'production') {
+  // Dynamic require to avoid loading demo data in production bundles
+   
+  const { DemoDataSeedersModule } = require('../seeders/demo-data-seeders.module');
+  optionalModules.push(DemoDataSeedersModule);
+}
 
 @Module({
   imports: [
@@ -153,7 +82,7 @@ const ENTITIES = [
           return {
             type: 'postgres',
             url: databaseUrl,
-            entities: ENTITIES,
+            entities: ALL_ENTITIES,
             synchronize: false, // Disabled - use migrations for schema changes
             logging: !isProduction,
             migrations: ['dist/migrations/*.js'],
@@ -172,7 +101,7 @@ const ENTITIES = [
           username: process.env.DB_USERNAME || 'postgres',
           password: process.env.DB_PASSWORD || 'postgres',
           database: process.env.DB_DATABASE || 'accounting_db',
-          entities: ENTITIES,
+          entities: ALL_ENTITIES,
           synchronize: false, // Disabled - always use migrations
           logging: !isProduction,
           migrations: ['dist/migrations/*.js'],
@@ -194,32 +123,20 @@ const ENTITIES = [
     NotificationsModule,
     ModulesModule,
     SeedersModule,
-    DemoDataSeedersModule,
+    ...optionalModules,
     EmailModule,
     StorageModule.forRoot(),
     ChangeLogModule,
     EmailConfigModule,
+    UploadsModule,
     TerminusModule,
-    ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'uploads'),
-      serveRoot: '/uploads',
-      serveStaticOptions: {
-        index: false,
-        fallthrough: false,
-      },
-    }),
+    // NOTE: ServeStaticModule for /uploads removed — replaced by UploadsController with JWT auth
   ],
   controllers: [AppController, HealthController],
   providers: [
     AppService,
-    {
-      provide: APP_PIPE,
-      useValue: new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    },
+    // NOTE: Global ValidationPipe is set in main.ts (not here) to avoid duplication.
+    // main.ts pipe uses forbidNonWhitelisted: true globally.
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

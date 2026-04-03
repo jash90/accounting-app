@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, type Repository } from 'typeorm';
 
 import { TimeEntry, TimeEntryStatus, UserRole, type Company, type User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { SystemCompanyService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import { TimerAlreadyRunningException, TimerNotRunningException } from '../exceptions';
@@ -22,7 +22,7 @@ describe('TimeEntriesService - Concurrent Operations', () => {
   let dataSource: jest.Mocked<DataSource>;
   // These variables are assigned by the testing module but not directly used in tests
 
-  let _tenantService: jest.Mocked<TenantService>;
+  let _systemCompanyService: jest.Mocked<SystemCompanyService>;
 
   let _changeLogService: jest.Mocked<ChangeLogService>;
 
@@ -78,8 +78,8 @@ describe('TimeEntriesService - Concurrent Operations', () => {
     transaction: jest.fn(),
   };
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn().mockResolvedValue(mockCompanyId),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn().mockResolvedValue(mockCompanyId),
   };
 
   const mockChangeLogService = {
@@ -102,7 +102,7 @@ describe('TimeEntriesService - Concurrent Operations', () => {
   beforeEach(async () => {
     // Reset mocks before each test
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -113,7 +113,7 @@ describe('TimeEntriesService - Concurrent Operations', () => {
             return new TimeEntriesService(
               mockEntryRepository as any,
               mockChangeLogService as any,
-              mockTenantService as any,
+              mockSystemCompanyService as any,
               mockCalculationService as any,
               mockSettingsService as any,
               mockDataSource as any
@@ -129,8 +129,8 @@ describe('TimeEntriesService - Concurrent Operations', () => {
           useValue: mockDataSource,
         },
         {
-          provide: TenantService,
-          useValue: mockTenantService,
+          provide: SystemCompanyService,
+          useValue: mockSystemCompanyService,
         },
         {
           provide: ChangeLogService,
@@ -150,7 +150,7 @@ describe('TimeEntriesService - Concurrent Operations', () => {
     service = module.get<TimeEntriesService>(TimeEntriesService);
     entryRepository = module.get(getRepositoryToken(TimeEntry));
     dataSource = module.get(DataSource);
-    _tenantService = module.get(TenantService);
+    _systemCompanyService = module.get(SystemCompanyService);
     _changeLogService = module.get(ChangeLogService);
     _calculationService = module.get(TimeCalculationService);
     _settingsService = module.get(TimeSettingsService);

@@ -45,13 +45,15 @@ export interface LoginDto {
   password: string;
 }
 
+/**
+ * FIX-03: Self-registration DTO — role and companyId removed.
+ * Self-registration always creates COMPANY_OWNER.
+ */
 export interface RegisterDto {
   email: string;
   password: string;
   firstName: string;
   lastName: string;
-  role: UserRole;
-  companyId?: string;
 }
 
 export interface AuthResponseDto {

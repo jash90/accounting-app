@@ -1,6 +1,16 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-
 import { Response } from 'express';
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
@@ -76,7 +86,7 @@ export class EmailDraftsController {
   @RequirePermission('email-client', 'write')
   async resolveConflict(
     @CurrentUser() user: User,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: { resolution: 'keep_local' | 'keep_imap' }
   ) {
     return this.draftService.resolveConflict(user, id, dto.resolution);
@@ -157,7 +167,7 @@ export class EmailDraftsController {
   @ApiOperation({ summary: 'Get draft by ID' })
   @ApiResponse({ status: 200, description: 'Draft details' })
   @RequirePermission('email-client', 'read')
-  async findOne(@CurrentUser() user: User, @Param('id') id: string) {
+  async findOne(@CurrentUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
     return this.draftService.findOne(user, id);
   }
 
@@ -173,7 +183,11 @@ export class EmailDraftsController {
   @ApiOperation({ summary: 'Update draft' })
   @ApiResponse({ status: 200, description: 'Draft updated' })
   @RequirePermission('email-client', 'write')
-  async update(@CurrentUser() user: User, @Param('id') id: string, @Body() dto: UpdateDraftDto) {
+  async update(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateDraftDto
+  ) {
     return this.draftService.update(user, id, dto);
   }
 
@@ -181,7 +195,7 @@ export class EmailDraftsController {
   @ApiOperation({ summary: 'Delete draft' })
   @ApiResponse({ status: 200, description: 'Draft deleted' })
   @RequirePermission('email-client', 'write')
-  async remove(@CurrentUser() user: User, @Param('id') id: string) {
+  async remove(@CurrentUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
     await this.draftService.remove(user, id);
     return { success: true };
   }
@@ -190,7 +204,7 @@ export class EmailDraftsController {
   @ApiOperation({ summary: 'Send draft as email' })
   @ApiResponse({ status: 200, description: 'Draft sent as email' })
   @RequirePermission('email-client', 'write')
-  async sendDraft(@CurrentUser() user: User, @Param('id') id: string) {
+  async sendDraft(@CurrentUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
     const draft = await this.draftService.findOne(user, id);
 
     await this.emailClientService.sendEmail(user, {

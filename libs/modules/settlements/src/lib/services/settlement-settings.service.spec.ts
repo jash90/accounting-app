@@ -1,16 +1,17 @@
-import { TenantService } from '@accounting/common/backend';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+
 import { type Repository } from 'typeorm';
 
 import { SettlementSettings, UserRole, type User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { SettlementSettingsService } from './settlement-settings.service';
 
 describe('SettlementSettingsService', () => {
   let service: SettlementSettingsService;
   let _settingsRepository: jest.Mocked<Repository<SettlementSettings>>;
-  let tenantService: jest.Mocked<TenantService>;
+  let systemCompanyService: jest.Mocked<SystemCompanyService>;
 
   const mockCompanyId = 'company-123';
 
@@ -35,15 +36,15 @@ describe('SettlementSettingsService', () => {
     updatedAt: new Date('2024-01-01T00:00:00Z'),
   };
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   let mockSettingsRepository: Record<string, jest.Mock>;
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     mockSettingsRepository = {
       findOne: jest.fn(),
@@ -58,7 +59,7 @@ describe('SettlementSettingsService', () => {
           useFactory: () => {
             return new SettlementSettingsService(
               mockSettingsRepository as any,
-              mockTenantService as any
+              mockSystemCompanyService as any
             );
           },
         },
@@ -67,15 +68,15 @@ describe('SettlementSettingsService', () => {
           useValue: mockSettingsRepository,
         },
         {
-          provide: TenantService,
-          useValue: mockTenantService,
+          provide: SystemCompanyService,
+          useValue: mockSystemCompanyService,
         },
       ],
     }).compile();
 
     service = module.get<SettlementSettingsService>(SettlementSettingsService);
     _settingsRepository = module.get(getRepositoryToken(SettlementSettings));
-    tenantService = module.get(TenantService);
+    systemCompanyService = module.get(SystemCompanyService);
   });
 
   describe('getSettings', () => {
@@ -119,7 +120,7 @@ describe('SettlementSettingsService', () => {
 
       await service.getSettings(mockUser as User);
 
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
       expect(mockSettingsRepository.findOne).toHaveBeenCalledWith({
         where: { companyId: mockCompanyId },
       });

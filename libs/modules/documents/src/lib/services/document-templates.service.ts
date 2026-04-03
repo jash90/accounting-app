@@ -1,10 +1,9 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { Repository } from 'typeorm';
 
 import { DocumentTemplate, User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import { UpdateDocumentContentBlocksDto } from '../dto/content-blocks.dto';
 import { CreateDocumentTemplateDto, UpdateDocumentTemplateDto } from '../dto/document-template.dto';
@@ -14,11 +13,11 @@ export class DocumentTemplatesService {
   constructor(
     @InjectRepository(DocumentTemplate)
     private readonly templateRepository: Repository<DocumentTemplate>,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   async findAll(user: User): Promise<DocumentTemplate[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     return this.templateRepository.find({
       where: { companyId },
       order: { createdAt: 'DESC' },
@@ -26,14 +25,14 @@ export class DocumentTemplatesService {
   }
 
   async findOne(id: string, user: User): Promise<DocumentTemplate> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const template = await this.templateRepository.findOne({ where: { id, companyId } });
     if (!template) throw new NotFoundException('Document template not found');
     return template;
   }
 
   async create(dto: CreateDocumentTemplateDto, user: User): Promise<DocumentTemplate> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const template = this.templateRepository.create({
       ...dto,
       companyId,

@@ -1,6 +1,6 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { DataSource, Repository } from 'typeorm';
 
 import {
@@ -10,7 +10,6 @@ import {
   User,
   UserRole,
 } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import {
   ClientErrorCode,
@@ -40,7 +39,7 @@ export class DeleteRequestService {
     private readonly clientsService: ClientsService,
     private readonly clientChangelogService: ClientChangelogService,
     private readonly dataSource: DataSource,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   async createDeleteRequest(
@@ -48,7 +47,7 @@ export class DeleteRequestService {
     dto: CreateDeleteRequestDto,
     user: User
   ): Promise<ClientDeleteRequest> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify client exists and belongs to company
     const client = await this.clientRepository.findOne({
@@ -87,7 +86,7 @@ export class DeleteRequestService {
   }
 
   async findAllPendingRequests(user: User): Promise<ClientDeleteRequest[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     return this.deleteRequestRepository.find({
       where: {
@@ -100,7 +99,7 @@ export class DeleteRequestService {
   }
 
   async findAllRequests(user: User, status?: DeleteRequestStatus): Promise<ClientDeleteRequest[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const whereClause: Record<string, unknown> = { companyId };
     if (status) {
@@ -115,7 +114,7 @@ export class DeleteRequestService {
   }
 
   async findRequestById(id: string, user: User): Promise<ClientDeleteRequest> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const request = await this.deleteRequestRepository.findOne({
       where: { id, companyId },
@@ -264,7 +263,7 @@ export class DeleteRequestService {
   }
 
   async getMyRequests(user: User): Promise<ClientDeleteRequest[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     return this.deleteRequestRepository.find({
       where: {

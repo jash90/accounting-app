@@ -1,18 +1,17 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-
 import { type Repository } from 'typeorm';
 
-import { EmailAutoReplyTemplate, type User, UserRole } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { EmailAutoReplyTemplate, UserRole, type User } from '@accounting/common';
 
 import { EmailAutoReplyTemplateService } from './email-auto-reply-template.service';
 
 describe('EmailAutoReplyTemplateService', () => {
   let service: EmailAutoReplyTemplateService;
   let templateRepository: jest.Mocked<Repository<EmailAutoReplyTemplate>>;
-  let tenantService: jest.Mocked<Pick<TenantService, 'getEffectiveCompanyId'>>;
+  let systemCompanyService: jest.Mocked<Pick<SystemCompanyService, 'getCompanyIdForUser'>>;
 
   const companyId = 'company-1';
   const mockUser = { id: 'user-1', companyId, role: UserRole.EMPLOYEE } as User;
@@ -49,8 +48,8 @@ describe('EmailAutoReplyTemplateService', () => {
       update: jest.fn(),
     } as unknown as jest.Mocked<Repository<EmailAutoReplyTemplate>>;
 
-    tenantService = {
-      getEffectiveCompanyId: jest.fn().mockResolvedValue(companyId),
+    systemCompanyService = {
+      getCompanyIdForUser: jest.fn().mockResolvedValue(companyId),
     };
 
     const module = await Test.createTestingModule({
@@ -58,10 +57,13 @@ describe('EmailAutoReplyTemplateService', () => {
         {
           provide: EmailAutoReplyTemplateService,
           useFactory: () =>
-            new EmailAutoReplyTemplateService(templateRepository as any, tenantService as any),
+            new EmailAutoReplyTemplateService(
+              templateRepository as any,
+              systemCompanyService as any
+            ),
         },
         { provide: getRepositoryToken(EmailAutoReplyTemplate), useValue: templateRepository },
-        { provide: TenantService, useValue: tenantService },
+        { provide: SystemCompanyService, useValue: systemCompanyService },
       ],
     }).compile();
 
@@ -75,7 +77,7 @@ describe('EmailAutoReplyTemplateService', () => {
       const result = await service.findAll(mockUser);
 
       expect(result).toEqual([mockTemplate]);
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
       expect(templateRepository.find).toHaveBeenCalledWith({
         where: { companyId },
         order: { createdAt: 'DESC' },

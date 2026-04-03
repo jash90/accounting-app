@@ -1,11 +1,10 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-
 import { type Repository } from 'typeorm';
 
 import { Client, ClientReliefPeriod, ReliefType, User, UserRole } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import { ClientNotFoundException } from '../exceptions';
 import { ReliefPeriodService } from './relief-period.service';
@@ -50,8 +49,8 @@ describe('ReliefPeriodService', () => {
     updatedAt: new Date(),
   };
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   const mockReliefRepository = {
@@ -73,7 +72,7 @@ describe('ReliefPeriodService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -84,7 +83,7 @@ describe('ReliefPeriodService', () => {
               mockReliefRepository as any,
               mockClientRepository as any,
               mockUserRepository as any,
-              mockTenantService as any
+              mockSystemCompanyService as any
             ),
         },
         {
@@ -100,8 +99,8 @@ describe('ReliefPeriodService', () => {
           useValue: mockUserRepository,
         },
         {
-          provide: TenantService,
-          useValue: mockTenantService,
+          provide: SystemCompanyService,
+          useValue: mockSystemCompanyService,
         },
       ],
     }).compile();

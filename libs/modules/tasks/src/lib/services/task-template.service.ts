@@ -10,7 +10,7 @@ import {
   TaskStatus,
   User,
 } from '@accounting/common';
-import { calculatePagination, TenantService } from '@accounting/common/backend';
+import { calculatePagination, SystemCompanyService } from '@accounting/common/backend';
 
 import {
   CreateTaskTemplateDto,
@@ -23,11 +23,11 @@ export class TaskTemplateService {
   constructor(
     @InjectRepository(Task)
     private readonly taskRepository: Repository<Task>,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   async findAll(user: User, filters?: TaskTemplateFiltersDto): Promise<PaginatedResponseDto<Task>> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const { page, limit, skip } = calculatePagination(filters);
 
     const where: Record<string, unknown> = {
@@ -53,7 +53,7 @@ export class TaskTemplateService {
   }
 
   async findOne(id: string, user: User): Promise<Task> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const template = await this.taskRepository.findOne({
       where: { id, companyId, isTemplate: true },
       relations: ['assignee', 'client'],
@@ -67,7 +67,7 @@ export class TaskTemplateService {
   }
 
   async create(dto: CreateTaskTemplateDto, user: User): Promise<Task> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const template = this.taskRepository.create({
       title: dto.title,
@@ -116,7 +116,7 @@ export class TaskTemplateService {
    */
   async createTaskFromTemplate(templateId: string, user: User): Promise<Task> {
     const template = await this.findOne(templateId, user);
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const task = this.taskRepository.create({
       title: template.title,

@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { Client, User, UserRole } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 export interface AssigneeDto {
   id: string;
@@ -25,7 +25,7 @@ export class TasksLookupService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   async getAssignees(user: User): Promise<AssigneeDto[]> {
@@ -56,7 +56,7 @@ export class TasksLookupService {
   }
 
   async getClients(user: User): Promise<ClientLookupDto[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const clients = await this.clientRepository.find({
       where: { companyId, isActive: true },

@@ -1,9 +1,10 @@
-import { TenantService } from '@accounting/common/backend';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+
 import { type Repository } from 'typeorm';
 
 import { MonthlySettlement, User, UserRole } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { SettlementStatsService } from './settlement-stats.service';
 
@@ -11,7 +12,7 @@ describe('SettlementStatsService', () => {
   let service: SettlementStatsService;
   let _settlementRepository: jest.Mocked<Repository<MonthlySettlement>>;
   let _userRepository: jest.Mocked<Repository<User>>;
-  let tenantService: jest.Mocked<TenantService>;
+  let systemCompanyService: jest.Mocked<SystemCompanyService>;
 
   const mockCompanyId = 'company-123';
   const mockUserId = 'user-123';
@@ -47,8 +48,8 @@ describe('SettlementStatsService', () => {
     getRawMany: jest.fn().mockResolvedValue([]),
   });
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   let mockSettlementQb: ReturnType<typeof createMockQueryBuilder>;
@@ -57,7 +58,7 @@ describe('SettlementStatsService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     mockSettlementQb = createMockQueryBuilder();
 
@@ -77,7 +78,7 @@ describe('SettlementStatsService', () => {
             return new SettlementStatsService(
               mockSettlementRepository as any,
               mockUserRepository as any,
-              mockTenantService as any
+              mockSystemCompanyService as any
             );
           },
         },
@@ -90,8 +91,8 @@ describe('SettlementStatsService', () => {
           useValue: mockUserRepository,
         },
         {
-          provide: TenantService,
-          useValue: mockTenantService,
+          provide: SystemCompanyService,
+          useValue: mockSystemCompanyService,
         },
       ],
     }).compile();
@@ -99,7 +100,7 @@ describe('SettlementStatsService', () => {
     service = module.get<SettlementStatsService>(SettlementStatsService);
     _settlementRepository = module.get(getRepositoryToken(MonthlySettlement));
     _userRepository = module.get(getRepositoryToken(User));
-    tenantService = module.get(TenantService);
+    systemCompanyService = module.get(SystemCompanyService);
   });
 
   describe('getOverviewStats', () => {
@@ -212,7 +213,7 @@ describe('SettlementStatsService', () => {
 
       await service.getOverviewStats(3, 2024, mockCompanyOwner as User);
 
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockCompanyOwner);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockCompanyOwner);
       expect(mockSettlementQb.where).toHaveBeenCalledWith('settlement.companyId = :companyId', {
         companyId: mockCompanyId,
       });
@@ -384,9 +385,9 @@ describe('SettlementStatsService', () => {
   });
 
   describe('Multi-tenancy isolation', () => {
-    it('should always use TenantService to resolve companyId', async () => {
+    it('should always use SystemCompanyService to resolve companyId', async () => {
       const differentCompanyId = 'other-company-999';
-      mockTenantService.getEffectiveCompanyId.mockResolvedValue(differentCompanyId);
+      mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(differentCompanyId);
       mockSettlementQb.getRawOne.mockResolvedValue(null);
 
       await service.getOverviewStats(1, 2024, mockCompanyOwner as User);

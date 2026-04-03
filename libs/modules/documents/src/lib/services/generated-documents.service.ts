@@ -1,6 +1,6 @@
+import { resolveBlockPlaceholders, SystemCompanyService } from '@accounting/common/backend';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import * as Handlebars from 'handlebars';
 import { Repository } from 'typeorm';
 
@@ -11,10 +11,9 @@ import {
   User,
   type ContentBlock,
 } from '@accounting/common';
-import { resolveBlockPlaceholders, TenantService } from '@accounting/common/backend';
 
-import { DocumentPdfService } from './document-pdf.service';
 import { GenerateDocumentDto } from '../dto/generated-document.dto';
+import { DocumentPdfService } from './document-pdf.service';
 
 @Injectable()
 export class GeneratedDocumentsService {
@@ -23,12 +22,12 @@ export class GeneratedDocumentsService {
     private readonly generatedDocRepository: Repository<GeneratedDocument>,
     @InjectRepository(DocumentTemplate)
     private readonly templateRepository: Repository<DocumentTemplate>,
-    private readonly tenantService: TenantService,
+    private readonly systemCompanyService: SystemCompanyService,
     private readonly pdfService: DocumentPdfService
   ) {}
 
   async findAll(user: User): Promise<GeneratedDocument[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     return this.generatedDocRepository.find({
       where: { companyId },
       relations: ['template'],
@@ -37,7 +36,7 @@ export class GeneratedDocumentsService {
   }
 
   async findOne(id: string, user: User): Promise<GeneratedDocument> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const doc = await this.generatedDocRepository.findOne({
       where: { id, companyId },
       relations: ['template'],
@@ -47,7 +46,7 @@ export class GeneratedDocumentsService {
   }
 
   async generate(dto: GenerateDocumentDto, user: User): Promise<GeneratedDocument> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const template = await this.templateRepository.findOne({
       where: { id: dto.templateId, companyId },

@@ -11,7 +11,7 @@ import { SentryExceptionCaptured } from '@sentry/nestjs';
 import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 
-import { ClientErrorCode, ClientException } from '@accounting/modules/clients';
+import { AppErrorCode, AppException } from '@accounting/common';
 
 import { ErrorResponseDto } from '../dto/error-response.dto';
 
@@ -123,7 +123,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const errorResponse: ErrorResponseDto = {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Internal server error',
-      errorCode: ClientErrorCode.INTERNAL_ERROR,
+      errorCode: AppErrorCode.INTERNAL_ERROR,
       timestamp: new Date().toISOString(),
       path: request.url,
       method: request.method,
@@ -131,9 +131,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
     };
 
     // Handle different exception types with specific logic
-    if (exception instanceof ClientException) {
-      // Custom exceptions - pass through with normalization
-      this.handleClientException(exception, errorResponse, request, requestId);
+    if (exception instanceof AppException) {
+      // Structured exceptions (AppException subclasses) - pass through with normalization
+      this.handleAppException(exception, errorResponse, request, requestId);
     } else if (exception instanceof HttpException) {
       // NestJS built-in exceptions - map to error codes
       this.handleHttpException(exception, errorResponse, request, requestId);
@@ -147,11 +147,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
   }
 
   /**
-   * Handle custom ClientException instances
-   * These already have proper structure, just normalize and log
+   * Handle structured AppException instances (and all subclasses).
+   * These already have proper structure, just normalize and log.
    */
-  private handleClientException(
-    exception: ClientException,
+  private handleAppException(
+    exception: AppException,
     errorResponse: ErrorResponseDto,
     request: AuthenticatedRequest,
     requestId: string
@@ -163,8 +163,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       exception.context as Record<string, unknown> | undefined
     );
 
-    // Log custom exceptions at warn level (business logic errors)
-    this.logger.warn(`ClientException: ${exception.errorCode} - ${exception.message}`, {
+    // Log structured exceptions at warn level (business logic errors)
+    this.logger.warn(`AppException: ${exception.errorCode} - ${exception.message}`, {
       requestId,
       path: request.url,
       method: request.method,
@@ -200,7 +200,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
       // Handle validation errors specially
       if (Array.isArray(responseObj.message)) {
-        errorResponse.errorCode = ClientErrorCode.VALIDATION_ERROR;
+        errorResponse.errorCode = AppErrorCode.VALIDATION_ERROR;
         errorResponse.context = {
           validationErrors: responseObj.message,
         };
@@ -210,7 +210,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     // Map HTTP status to error code if not already set
-    if (!errorResponse.errorCode || errorResponse.errorCode === ClientErrorCode.INTERNAL_ERROR) {
+    if (!errorResponse.errorCode || errorResponse.errorCode === AppErrorCode.INTERNAL_ERROR) {
       errorResponse.errorCode = this.mapStatusToErrorCode(status);
     }
 
@@ -238,7 +238,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     // Use safe, generic message for clients
     errorResponse.message = 'An unexpected error occurred';
-    errorResponse.errorCode = ClientErrorCode.UNKNOWN_ERROR;
+    errorResponse.errorCode = AppErrorCode.UNKNOWN_ERROR;
 
     // Log unexpected errors at error level with full details for debugging
     this.logger.error(`Unexpected error: ${error?.message || 'Unknown error'}`, {
@@ -261,21 +261,21 @@ export class AllExceptionsFilter implements ExceptionFilter {
   private mapStatusToErrorCode(status: number): string {
     switch (status) {
       case HttpStatus.UNAUTHORIZED:
-        return ClientErrorCode.UNAUTHORIZED;
+        return AppErrorCode.UNAUTHORIZED;
       case HttpStatus.FORBIDDEN:
-        return ClientErrorCode.PERMISSION_DENIED;
+        return AppErrorCode.PERMISSION_DENIED;
       case HttpStatus.BAD_REQUEST:
-        return ClientErrorCode.VALIDATION_ERROR;
+        return AppErrorCode.VALIDATION_ERROR;
       case HttpStatus.NOT_FOUND:
         // Generic not found - specific entities use their own codes
-        return ClientErrorCode.UNKNOWN_ERROR;
+        return AppErrorCode.UNKNOWN_ERROR;
       case HttpStatus.CONFLICT:
         // Conflict errors - specific cases use their own codes
-        return ClientErrorCode.UNKNOWN_ERROR;
+        return AppErrorCode.UNKNOWN_ERROR;
       case HttpStatus.INTERNAL_SERVER_ERROR:
-        return ClientErrorCode.INTERNAL_ERROR;
+        return AppErrorCode.INTERNAL_ERROR;
       default:
-        return ClientErrorCode.UNKNOWN_ERROR;
+        return AppErrorCode.UNKNOWN_ERROR;
     }
   }
 }

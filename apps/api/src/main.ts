@@ -11,12 +11,14 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import * as bcrypt from 'bcryptjs';
+import cookieParser from 'cookie-parser';
 import * as crypto from 'crypto';
 import helmet from 'helmet';
 import { DataSource } from 'typeorm';
 
 import { AppModule } from './app/app.module';
 import { AllExceptionsFilter } from './common';
+import { validateEnvironment } from './common/validators/env.validator';
 import { DemoDataSeederService } from './seeders/demo-data-seeder.service';
 import { SeederService } from './seeders/seeder.service';
 import { SeedersModule } from './seeders/seeders.module';
@@ -33,6 +35,9 @@ const allowedOrigins = new Set(
 const logger = new Logger('Bootstrap');
 
 async function bootstrap() {
+  // Validate critical environment variables before starting
+  validateEnvironment();
+
   // One-time seed mode: Run full seeder and exit
   if (process.env.RUN_SEED === 'true') {
     logger.log('Running one-time database seed...');
@@ -58,6 +63,7 @@ async function bootstrap() {
 
   // Security
   app.use(helmet());
+  app.use(cookieParser());
   // CSRF mitigation: This API uses Bearer tokens (Authorization header), which cannot be
   // set by cross-origin forms. This provides strong CSRF protection without CSRF tokens.
   // See: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
@@ -67,7 +73,11 @@ async function bootstrap() {
       callback: (err: Error | null, allow?: boolean) => void
     ) => {
       // Allow requests with no origin (like mobile apps, curl, Postman)
+      // In production, block no-origin requests to prevent CORS bypass
       if (!origin) {
+        if (process.env.NODE_ENV === 'production') {
+          return callback(new Error('Origin header required in production'));
+        }
         return callback(null, true);
       }
 
@@ -100,12 +110,13 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Global validation pipe
-  // Note: forbidNonWhitelisted is set to false to allow dynamic query params
-  // like customField_* filters in the clients module
+  // forbidNonWhitelisted is true globally for security.
+  // Endpoints that need dynamic query params (e.g., customField_*) override locally
+  // with @UsePipes(new ValidationPipe({ forbidNonWhitelisted: false }))
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: false,
+      forbidNonWhitelisted: true,
       transform: true,
     })
   );

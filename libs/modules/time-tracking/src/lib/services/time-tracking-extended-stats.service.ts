@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { TimeEntry, User, UserRole } from '@accounting/common';
-import { resolvePresetDateRange, TenantService } from '@accounting/common/backend';
+import { resolvePresetDateRange, SystemCompanyService } from '@accounting/common/backend';
 
 export interface TopTaskByTimeDto {
   taskId: string;
@@ -44,14 +44,14 @@ export class TimeTrackingExtendedStatsService {
   constructor(
     @InjectRepository(TimeEntry)
     private readonly timeEntryRepository: Repository<TimeEntry>,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   async getTopTasksByTime(
     user: User,
     filter: ExtendedTimeStatsFilterDto = {}
   ): Promise<TopTaskByTimeDto[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const { start, end } = resolvePresetDateRange(filter);
     const isEmployee = user.role === UserRole.EMPLOYEE;
 
@@ -90,7 +90,7 @@ export class TimeTrackingExtendedStatsService {
     user: User,
     filter: ExtendedTimeStatsFilterDto = {}
   ): Promise<TopSettlementByTimeDto[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const { start, end } = resolvePresetDateRange(filter);
     const isEmployee = user.role === UserRole.EMPLOYEE;
 
@@ -143,7 +143,7 @@ export class TimeTrackingExtendedStatsService {
     user: User,
     filter: ExtendedTimeStatsFilterDto = {}
   ): Promise<EmployeeTimeBreakdownItemDto[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const { start, end } = resolvePresetDateRange(filter);
     const isEmployee = user.role === UserRole.EMPLOYEE;
 

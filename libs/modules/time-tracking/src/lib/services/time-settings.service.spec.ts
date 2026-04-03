@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { type Repository } from 'typeorm';
 
 import { TimeRoundingMethod, TimeSettings, UserRole, type User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { TimeSettingsService } from './time-settings.service';
 import { type UpdateTimeSettingsDto } from '../dto/time-settings.dto';
@@ -12,15 +12,15 @@ import { type UpdateTimeSettingsDto } from '../dto/time-settings.dto';
 describe('TimeSettingsService', () => {
   let service: TimeSettingsService;
   let settingsRepository: jest.Mocked<Repository<TimeSettings>>;
-  let tenantService: jest.Mocked<TenantService>;
+  let systemCompanyService: jest.Mocked<SystemCompanyService>;
 
   // Mock data
   const mockCompanyId = 'company-123';
   const mockUserId = 'user-123';
 
   // Create mocks at module level for proper instantiation
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   const mockUser: Partial<User> = {
@@ -59,8 +59,8 @@ describe('TimeSettingsService', () => {
 
   beforeEach(async () => {
     // Reset mocks before each test
-    mockTenantService.getEffectiveCompanyId.mockReset();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockReset();
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     // Create mock QueryBuilder for insert operations
     const mockQueryBuilder = {
@@ -84,7 +84,10 @@ describe('TimeSettingsService', () => {
         {
           provide: TimeSettingsService,
           useFactory: () => {
-            return new TimeSettingsService(mockSettingsRepository as any, mockTenantService as any);
+            return new TimeSettingsService(
+              mockSettingsRepository as any,
+              mockSystemCompanyService as any
+            );
           },
         },
         {
@@ -92,15 +95,15 @@ describe('TimeSettingsService', () => {
           useValue: mockSettingsRepository,
         },
         {
-          provide: TenantService,
-          useValue: mockTenantService,
+          provide: SystemCompanyService,
+          useValue: mockSystemCompanyService,
         },
       ],
     }).compile();
 
     service = module.get<TimeSettingsService>(TimeSettingsService);
     settingsRepository = module.get(getRepositoryToken(TimeSettings));
-    tenantService = module.get(TenantService);
+    systemCompanyService = module.get(SystemCompanyService);
   });
 
   describe('getSettings', () => {
@@ -186,7 +189,7 @@ describe('TimeSettingsService', () => {
 
       await service.getSettings(mockUser as User);
 
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
       expect(settingsRepository.findOne).toHaveBeenCalledWith({
         where: { companyId: mockCompanyId },
       });
@@ -360,12 +363,12 @@ describe('TimeSettingsService', () => {
 
       await service.getSettings(mockUser as User);
 
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
     });
 
     it('should use company ID from tenant service', async () => {
       const differentCompanyId = 'different-company-456';
-      mockTenantService.getEffectiveCompanyId.mockResolvedValue(differentCompanyId);
+      mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(differentCompanyId);
 
       // Track the values passed to the insert
       let insertedValues: any = null;

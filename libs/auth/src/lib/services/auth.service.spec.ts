@@ -16,6 +16,7 @@ describe('AuthService', () => {
     findOne: mock(() => {}),
     create: mock(() => {}),
     save: mock(() => {}),
+    increment: mock(() => Promise.resolve()),
     createQueryBuilder: mock(() => ({
       where: mock(() => ({ getOne: mock(() => {}) })),
       getOne: mock(() => {}),
@@ -134,6 +135,93 @@ describe('AuthService', () => {
           password: 'wrong-password',
         })
       ).rejects.toThrow('Invalid credentials');
+    });
+  });
+
+  describe('register', () => {
+    it('should always create user with COMPANY_OWNER role (FIX-03)', async () => {
+      const mockGetOne = mock(() => Promise.resolve(null));
+      const mockWhere = mock(() => ({ getOne: mockGetOne }));
+      (
+        mockUserRepository.createQueryBuilder as Mock<typeof mockUserRepository.createQueryBuilder>
+      ).mockImplementation(() => ({
+        where: mockWhere,
+        getOne: mockGetOne,
+      }));
+
+      const savedUser = {
+        id: '2',
+        email: 'owner@test.com',
+        firstName: 'Owner',
+        lastName: 'User',
+        role: UserRole.COMPANY_OWNER,
+        companyId: null,
+        isActive: true,
+        tokenVersion: 0,
+      };
+      (mockUserRepository.create as Mock<typeof mockUserRepository.create>).mockReturnValue(
+        savedUser
+      );
+      (mockUserRepository.save as Mock<typeof mockUserRepository.save>).mockResolvedValue(
+        savedUser
+      );
+      (mockAccessJwtService.sign as Mock<typeof mockAccessJwtService.sign>).mockReturnValue(
+        'access'
+      );
+      (mockRefreshJwtService.sign as Mock<typeof mockRefreshJwtService.sign>).mockReturnValue(
+        'refresh'
+      );
+
+      const result = await service.register({
+        email: 'owner@test.com',
+        password: 'SecurePass123!',
+        firstName: 'Owner',
+        lastName: 'User',
+      });
+
+      expect(result).toHaveProperty('access_token');
+      expect(result).toHaveProperty('refresh_token');
+      // Verify user was created with COMPANY_OWNER role
+      expect(mockUserRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ role: UserRole.COMPANY_OWNER, companyId: null })
+      );
+    });
+
+    it('should reject registration if email already exists', async () => {
+      const existingUser = { id: '1', email: 'existing@test.com' };
+      const mockGetOne = mock(() => Promise.resolve(existingUser));
+      const mockWhere = mock(() => ({ getOne: mockGetOne }));
+      (
+        mockUserRepository.createQueryBuilder as Mock<typeof mockUserRepository.createQueryBuilder>
+      ).mockImplementation(() => ({
+        where: mockWhere,
+        getOne: mockGetOne,
+      }));
+
+      await expect(
+        service.register({
+          email: 'existing@test.com',
+          password: 'SecurePass123!',
+          firstName: 'Test',
+          lastName: 'User',
+        })
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('invalidateTokens', () => {
+    it('should increment tokenVersion for the given user', async () => {
+      (mockUserRepository.increment as Mock<typeof mockUserRepository.increment>).mockResolvedValue(
+        undefined
+      );
+
+      await service.invalidateTokens('user-123');
+
+      expect(mockUserRepository.increment).toHaveBeenCalledWith(
+        { id: 'user-123' },
+        'tokenVersion',
+        1
+      );
     });
   });
 });

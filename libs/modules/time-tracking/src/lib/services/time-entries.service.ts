@@ -21,7 +21,11 @@ import {
   TimeRoundingMethod,
   User,
 } from '@accounting/common';
-import { calculatePagination, sanitizeForLog, TenantService } from '@accounting/common/backend';
+import {
+  calculatePagination,
+  sanitizeForLog,
+  SystemCompanyService,
+} from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import { CreateTimeEntryDto, TimeEntryFiltersDto, UpdateTimeEntryDto } from '../dto/time-entry.dto';
@@ -54,7 +58,7 @@ export class TimeEntriesService {
     @InjectRepository(TimeEntry)
     private readonly entryRepository: Repository<TimeEntry>,
     private readonly changeLogService: ChangeLogService,
-    private readonly tenantService: TenantService,
+    private readonly systemCompanyService: SystemCompanyService,
     private readonly calculationService: TimeCalculationService,
     private readonly settingsService: TimeSettingsService,
     private readonly dataSource: DataSource
@@ -75,7 +79,7 @@ export class TimeEntriesService {
     user: User,
     filters?: TimeEntryFiltersDto
   ): Promise<PaginatedResponseDto<TimeEntry>> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const { page, limit, skip } = calculatePagination(filters);
 
     const queryBuilder = this.entryRepository
@@ -158,7 +162,7 @@ export class TimeEntriesService {
   }
 
   async findOne(id: string, user: User): Promise<TimeEntry> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const entry = await this.entryRepository.findOne({
       where: { id, companyId },
@@ -186,7 +190,7 @@ export class TimeEntriesService {
   }
 
   async create(dto: CreateTimeEntryDto, user: User): Promise<TimeEntry> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     if (dto.taskId && dto.settlementId) {
       throw new BadRequestException(
@@ -289,7 +293,7 @@ export class TimeEntriesService {
   async update(id: string, dto: UpdateTimeEntryDto, user: User): Promise<TimeEntry> {
     // First fetch entry without lock for validation checks
     const entry = await this.findOne(id, user);
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Validate client/task/settlement ownership if being changed
     if (dto.clientId && dto.clientId !== entry.clientId) {
@@ -437,7 +441,7 @@ export class TimeEntriesService {
   // ==================== Timer Operations ====================
 
   async startTimer(dto: StartTimerDto, user: User): Promise<TimeEntry> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     if (dto.taskId && dto.settlementId) {
       throw new BadRequestException(
@@ -505,7 +509,7 @@ export class TimeEntriesService {
   }
 
   async stopTimer(dto: StopTimerDto, user: User): Promise<TimeEntry> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Use transaction with pessimistic locking to prevent race conditions
     // (e.g., user clicking stop twice rapidly)
@@ -570,7 +574,7 @@ export class TimeEntriesService {
   }
 
   async getActiveTimer(user: User): Promise<TimeEntry | null> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const runningEntry = await this.entryRepository.findOne({
       where: {
@@ -586,7 +590,7 @@ export class TimeEntriesService {
   }
 
   async discardTimer(user: User): Promise<void> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Use transaction with pessimistic locking to prevent race conditions
     // (e.g., user clicking discard twice rapidly)
@@ -614,7 +618,7 @@ export class TimeEntriesService {
   }
 
   async updateTimer(dto: UpdateTimerDto, user: User): Promise<TimeEntry> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Validate client/task/settlement ownership if being changed
     if (dto.clientId) {
@@ -663,7 +667,7 @@ export class TimeEntriesService {
   // ==================== Approval Workflow ====================
 
   async submitEntry(id: string, user: User): Promise<TimeEntry> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Use transaction with pessimistic locking to prevent race conditions
     // (e.g., user submitting the same entry from multiple tabs)
@@ -700,7 +704,7 @@ export class TimeEntriesService {
     // Defense-in-depth: validate authorization at service level
     this.ensureCanManageEntries(user);
 
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Use transaction with pessimistic locking to prevent race conditions
     // (e.g., concurrent approve/reject calls for the same entry)
@@ -741,7 +745,7 @@ export class TimeEntriesService {
     // Defense-in-depth: validate authorization at service level
     this.ensureCanManageEntries(user);
 
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Use transaction with pessimistic locking to prevent race conditions
     // (e.g., concurrent approve/reject calls for the same entry)
@@ -782,7 +786,7 @@ export class TimeEntriesService {
     // Defense-in-depth: validate authorization at service level
     this.ensureCanManageEntries(user);
 
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // First, count valid entries to report how many were not found
     const validCount = await this.entryRepository.count({
@@ -823,7 +827,7 @@ export class TimeEntriesService {
     // Defense-in-depth: validate authorization at service level
     this.ensureCanManageEntries(user);
 
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // First, count valid entries to report how many were not found
     const validCount = await this.entryRepository.count({

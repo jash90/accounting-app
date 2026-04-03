@@ -1,4 +1,5 @@
 export * from './lib/rbac.module';
+export type { RbacResult, RbacRequest } from './lib/types/rbac-request.types';
 export * from './lib/services/rbac.service';
 export * from './lib/services/module-discovery.service';
 export * from './lib/guards/module-access.guard';

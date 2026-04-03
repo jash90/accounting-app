@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
 import { Repository } from 'typeorm';
 
-import { Company, User, UserRole } from '@accounting/common';
+import { Company, ErrorMessages, User, UserRole } from '@accounting/common';
 import { EmailConfigurationService, EmailSenderService } from '@accounting/email';
 import { EmailService } from '@accounting/infrastructure/email';
 
@@ -49,7 +49,7 @@ export class CompanyService {
     });
 
     if (!employee) {
-      throw new NotFoundException('Employee not found');
+      throw new NotFoundException(ErrorMessages.NOT_FOUND.entity('Pracownik'));
     }
 
     return employee;
@@ -60,12 +60,14 @@ export class CompanyService {
     createEmployeeDto: CreateEmployeeDto,
     creatorName?: string
   ) {
-    const existingUser = await this.userRepository.findOne({
-      where: { email: createEmployeeDto.email },
-    });
+    // FIX-08: Case-insensitive email check
+    const existingUser = await this.userRepository
+      .createQueryBuilder('user')
+      .where('LOWER(user.email) = LOWER(:email)', { email: createEmployeeDto.email })
+      .getOne();
 
     if (existingUser) {
-      throw new ConflictException('User with this email already exists');
+      throw new ConflictException(ErrorMessages.AUTH.EMAIL_EXISTS);
     }
 
     const hashedPassword = await bcrypt.hash(createEmployeeDto.password, 10);
@@ -171,12 +173,17 @@ export class CompanyService {
   ) {
     const employee = await this.getEmployeeById(companyId, employeeId);
 
-    if (updateEmployeeDto.email && updateEmployeeDto.email !== employee.email) {
-      const existingUser = await this.userRepository.findOne({
-        where: { email: updateEmployeeDto.email },
-      });
+    if (
+      updateEmployeeDto.email &&
+      updateEmployeeDto.email.toLowerCase() !== employee.email.toLowerCase()
+    ) {
+      // FIX-08: Case-insensitive email check
+      const existingUser = await this.userRepository
+        .createQueryBuilder('user')
+        .where('LOWER(user.email) = LOWER(:email)', { email: updateEmployeeDto.email })
+        .getOne();
       if (existingUser) {
-        throw new ConflictException('User with this email already exists');
+        throw new ConflictException(ErrorMessages.AUTH.EMAIL_EXISTS);
       }
     }
 
@@ -200,7 +207,7 @@ export class CompanyService {
     });
 
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException(ErrorMessages.NOT_FOUND.entity('Firma'));
     }
 
     return company;
@@ -208,17 +215,17 @@ export class CompanyService {
 
   async getProfile(user: User): Promise<Company> {
     const companyId = user.companyId;
-    if (!companyId) throw new NotFoundException('Company not found');
+    if (!companyId) throw new NotFoundException(ErrorMessages.NOT_FOUND.entity('Firma'));
     const company = await this.companyRepository.findOne({ where: { id: companyId } });
-    if (!company) throw new NotFoundException('Company not found');
+    if (!company) throw new NotFoundException(ErrorMessages.NOT_FOUND.entity('Firma'));
     return company;
   }
 
   async updateProfile(user: User, dto: UpdateCompanyProfileDto): Promise<Company> {
     const companyId = user.companyId;
-    if (!companyId) throw new NotFoundException('Company not found');
+    if (!companyId) throw new NotFoundException(ErrorMessages.NOT_FOUND.entity('Firma'));
     const company = await this.companyRepository.findOne({ where: { id: companyId } });
-    if (!company) throw new NotFoundException('Company not found');
+    if (!company) throw new NotFoundException(ErrorMessages.NOT_FOUND.entity('Firma'));
     Object.assign(company, dto);
     return this.companyRepository.save(company);
   }

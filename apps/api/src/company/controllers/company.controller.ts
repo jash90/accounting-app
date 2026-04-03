@@ -7,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   UseGuards,
@@ -102,7 +103,7 @@ export class CompanyController {
   @ApiForbiddenResponse({
     description: 'Forbidden - Company owner role required and must belong to a company',
   })
-  getEmployeeById(@CurrentUser() user: User, @Param('id') id: string) {
+  getEmployeeById(@CurrentUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
     if (!user.companyId) {
       throw new BadRequestException('User is not associated with a company');
     }
@@ -157,7 +158,7 @@ export class CompanyController {
   })
   updateEmployee(
     @CurrentUser() user: User,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateEmployeeDto: UpdateEmployeeDto
   ) {
     if (!user.companyId) {
@@ -184,7 +185,7 @@ export class CompanyController {
   @ApiForbiddenResponse({
     description: 'Forbidden - Company owner role required and must belong to a company',
   })
-  deleteEmployee(@CurrentUser() user: User, @Param('id') id: string) {
+  deleteEmployee(@CurrentUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
     if (!user.companyId) {
       throw new BadRequestException('User is not associated with a company');
     }

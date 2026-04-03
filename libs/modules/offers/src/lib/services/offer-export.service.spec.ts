@@ -1,22 +1,15 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-
 import { type Repository } from 'typeorm';
 
 import { Lead, Offer, type User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import { OfferExportService } from './offer-export.service';
 
 function createMockQueryBuilder() {
   const qb: Record<string, jest.Mock> = {};
-  const chainable = [
-    'createQueryBuilder',
-    'leftJoinAndSelect',
-    'where',
-    'andWhere',
-    'orderBy',
-  ];
+  const chainable = ['createQueryBuilder', 'leftJoinAndSelect', 'where', 'andWhere', 'orderBy'];
   chainable.forEach((method) => {
     qb[method] = jest.fn().mockReturnValue(qb);
   });
@@ -28,7 +21,7 @@ describe('OfferExportService', () => {
   let service: OfferExportService;
   let offerRepository: jest.Mocked<Repository<Offer>>;
   let leadRepository: jest.Mocked<Repository<Lead>>;
-  let tenantService: jest.Mocked<Pick<TenantService, 'getEffectiveCompanyId'>>;
+  let systemCompanyService: jest.Mocked<Pick<SystemCompanyService, 'getCompanyIdForUser'>>;
 
   const companyId = 'company-1';
   const mockUser = { id: 'user-1', companyId, role: 'EMPLOYEE' } as User;
@@ -50,8 +43,8 @@ describe('OfferExportService', () => {
       createQueryBuilder: jest.fn().mockReturnValue(leadQb),
     } as unknown as jest.Mocked<Repository<Lead>>;
 
-    tenantService = {
-      getEffectiveCompanyId: jest.fn().mockResolvedValue(companyId),
+    systemCompanyService = {
+      getCompanyIdForUser: jest.fn().mockResolvedValue(companyId),
     };
 
     const module = await Test.createTestingModule({
@@ -62,12 +55,12 @@ describe('OfferExportService', () => {
             new OfferExportService(
               offerRepository as any,
               leadRepository as any,
-              tenantService as any
+              systemCompanyService as any
             ),
         },
         { provide: getRepositoryToken(Offer), useValue: offerRepository },
         { provide: getRepositoryToken(Lead), useValue: leadRepository },
-        { provide: TenantService, useValue: tenantService },
+        { provide: SystemCompanyService, useValue: systemCompanyService },
       ],
     }).compile();
 
@@ -119,10 +112,7 @@ describe('OfferExportService', () => {
     it('should apply status and clientId filters', async () => {
       offerQb['getMany'].mockResolvedValue([]);
 
-      await service.exportOffersToCsv(
-        { status: 'SENT', clientId: 'client-1' } as any,
-        mockUser
-      );
+      await service.exportOffersToCsv({ status: 'SENT', clientId: 'client-1' } as any, mockUser);
 
       expect(offerQb['andWhere']).toHaveBeenCalledWith('offer.status = :status', {
         status: 'SENT',

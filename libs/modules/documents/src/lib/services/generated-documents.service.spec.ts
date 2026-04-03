@@ -1,7 +1,7 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-
 import { type Repository } from 'typeorm';
 
 import {
@@ -12,7 +12,6 @@ import {
   type ContentBlock,
   type User,
 } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import { DocumentPdfService } from './document-pdf.service';
 import { GeneratedDocumentsService } from './generated-documents.service';
@@ -78,8 +77,8 @@ describe('GeneratedDocumentsService', () => {
     createdAt: new Date('2024-06-01'),
   };
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   const mockPdfService = {
@@ -101,7 +100,7 @@ describe('GeneratedDocumentsService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -111,13 +110,13 @@ describe('GeneratedDocumentsService', () => {
             new GeneratedDocumentsService(
               mockGeneratedDocRepo as any,
               mockTemplateRepo as any,
-              mockTenantService as any,
+              mockSystemCompanyService as any,
               mockPdfService as any
             ),
         },
         { provide: getRepositoryToken(GeneratedDocument), useValue: mockGeneratedDocRepo },
         { provide: getRepositoryToken(DocumentTemplate), useValue: mockTemplateRepo },
-        { provide: TenantService, useValue: mockTenantService },
+        { provide: SystemCompanyService, useValue: mockSystemCompanyService },
         { provide: DocumentPdfService, useValue: mockPdfService },
       ],
     }).compile();

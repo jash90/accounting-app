@@ -1,266 +1,96 @@
-import { lazy, memo, Suspense } from 'react';
+import { Navigate, Route, Routes as RouterRoutes } from 'react-router-dom';
 
-import {
-  Navigate,
-  Route,
-  Routes as RouterRoutes,
-  useLocation,
-  useNavigate,
-} from 'react-router-dom';
-
-import { AlertTriangle, RefreshCw, ShieldAlert } from 'lucide-react';
-
-import { ErrorBoundary } from '@/components/common/error-boundary';
 import AdminLayout from '@/components/layouts/admin-layout';
 import CompanyLayout from '@/components/layouts/company-layout';
 import EmployeeLayout from '@/components/layouts/employee-layout';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useAuthContext } from '@/contexts/auth-context';
-import { UserRole } from '@/types/enums';
 
-
-// Lazy load pages for code splitting
-const LoginPage = lazy(() => import('@/pages/public/login-page'));
-const AdminDashboard = lazy(() => import('@/pages/admin/dashboard'));
-const UsersListPage = lazy(() => import('@/pages/admin/users/users-list'));
-const CompaniesListPage = lazy(() => import('@/pages/admin/companies/companies-list'));
-const CompanyModulesPage = lazy(() => import('@/pages/admin/companies/company-modules'));
-const ModulesListPage = lazy(() => import('@/pages/admin/modules/modules-list'));
-const CompanyDashboard = lazy(() => import('@/pages/company/dashboard'));
-const CompanyProfilePage = lazy(() => import('@/pages/company/company-profile'));
-const EmployeesListPage = lazy(() => import('@/pages/company/employees/employees-list'));
-const EmployeePermissionsPage = lazy(
-  () => import('@/pages/company/employees/employee-permissions')
-);
-const CompanyModulesListPage = lazy(() => import('@/pages/company/modules/modules-list'));
-const EmployeeDashboard = lazy(() => import('@/pages/employee/dashboard'));
-
-// AI Agent Pages
-const AIAgentChatPage = lazy(() => import('@/pages/modules/ai-agent/chat'));
-const AIAgentTokenUsagePage = lazy(() => import('@/pages/modules/ai-agent/token-usage'));
-const AIAgentAdminTokenUsagePage = lazy(() => import('@/pages/modules/ai-agent/admin-token-usage'));
-const AIAgentContextFilesPage = lazy(() => import('@/pages/modules/ai-agent/context-files'));
-const AIAgentAdminConfigPage = lazy(() => import('@/pages/modules/ai-agent/admin-configuration'));
-const AdminAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/admin-index'));
-const CompanyAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/company-index'));
-const EmployeeAIAgentDashboard = lazy(() => import('@/pages/modules/ai-agent/employee-index'));
-
-// Settings Pages
-const UserEmailConfigPage = lazy(() => import('@/pages/settings/email-config'));
-const AccountSettingsPage = lazy(() => import('@/pages/settings/account'));
-const AppearanceSettingsPage = lazy(() => import('@/pages/settings/appearance'));
-const CompanyEmailConfigPage = lazy(() => import('@/pages/company/email-config'));
-const AdminEmailConfigPage = lazy(() => import('@/pages/admin/email-config'));
-
-// Clients Pages
-const ClientsDashboardPage = lazy(() => import('@/pages/modules/clients/clients-dashboard'));
-const ClientsListPage = lazy(() => import('@/pages/modules/clients/clients-list'));
-const ClientDetailPage = lazy(() => import('@/pages/modules/clients/client-detail'));
-const ClientsSettingsPage = lazy(() => import('@/pages/modules/clients/clients-settings'));
-const ClientCreatePage = lazy(() => import('@/pages/modules/clients/client-create'));
-
-// Email Client Pages
-const EmailClientIndex = lazy(() => import('@/pages/modules/email-client/index'));
-const EmailInboxPage = lazy(() => import('@/pages/modules/email-client/inbox'));
-const EmailComposePage = lazy(() => import('@/pages/modules/email-client/compose'));
-const EmailDraftsPage = lazy(() => import('@/pages/modules/email-client/drafts'));
-const EmailMessagePage = lazy(() => import('@/pages/modules/email-client/message'));
-const EmailSentPage = lazy(() => import('@/pages/modules/email-client/sent'));
-const EmailTrashPage = lazy(() => import('@/pages/modules/email-client/trash'));
-const EmailFolderPage = lazy(() => import('@/pages/modules/email-client/folder'));
-const EmailAutoReplyTemplatesPage = lazy(
-  () => import('@/pages/modules/email-client/auto-reply-templates')
-);
-
-// Tasks Pages
-const TasksDashboardPage = lazy(() => import('@/pages/modules/tasks/tasks-dashboard'));
-const TasksListPage = lazy(() => import('@/pages/modules/tasks/tasks-list'));
-const TasksKanbanPage = lazy(() => import('@/pages/modules/tasks/tasks-kanban'));
-const TasksCalendarPage = lazy(() => import('@/pages/modules/tasks/tasks-calendar'));
-const TasksTimelinePage = lazy(() => import('@/pages/modules/tasks/tasks-timeline'));
-const TasksSettingsPage = lazy(() => import('@/pages/modules/tasks/tasks-settings'));
-const TaskCreatePage = lazy(() => import('@/pages/modules/tasks/task-create'));
-const TaskTemplatesListPage = lazy(() => import('@/pages/modules/tasks/task-templates-list'));
-const TasksStatisticsPage = lazy(() => import('@/pages/modules/tasks/tasks-statistics'));
-
-// Time Tracking Pages
-const TimeTrackingDashboardPage = lazy(
-  () => import('@/pages/modules/time-tracking/time-tracking-dashboard')
-);
-const TimeTrackingEntriesPage = lazy(
-  () => import('@/pages/modules/time-tracking/time-tracking-entries')
-);
-const TimeTrackingTimesheetDailyPage = lazy(
-  () => import('@/pages/modules/time-tracking/time-tracking-timesheet-daily')
-);
-const TimeTrackingTimesheetWeeklyPage = lazy(
-  () => import('@/pages/modules/time-tracking/time-tracking-timesheet-weekly')
-);
-const TimeTrackingReportsPage = lazy(
-  () => import('@/pages/modules/time-tracking/time-tracking-reports')
-);
-const TimeTrackingSettingsPage = lazy(
-  () => import('@/pages/modules/time-tracking/time-tracking-settings')
-);
-const TimeTrackingStatisticsPage = lazy(
-  () => import('@/pages/modules/time-tracking/time-tracking-statistics')
-);
-
-// Offers Pages
-const OffersDashboardPage = lazy(() => import('@/pages/modules/offers/offers-dashboard'));
-const OffersListPage = lazy(() => import('@/pages/modules/offers/offers-list'));
-const OfferDetailPage = lazy(() => import('@/pages/modules/offers/offer-detail'));
-const LeadsListPage = lazy(() => import('@/pages/modules/offers/leads-list'));
-const LeadDetailPage = lazy(() => import('@/pages/modules/offers/lead-detail'));
-const TemplatesListPage = lazy(() => import('@/pages/modules/offers/templates-list'));
-const TemplateEditorPage = lazy(() => import('@/pages/modules/offers/template-editor'));
-
-// Settlements Pages
-const SettlementsDashboardPage = lazy(
-  () => import('@/pages/modules/settlements/settlements-dashboard')
-);
-const SettlementsListPage = lazy(() => import('@/pages/modules/settlements/settlements-list'));
-const SettlementCommentsPage = lazy(
-  () => import('@/pages/modules/settlements/settlement-comments')
-);
-const SettlementAssignPage = lazy(() => import('@/pages/modules/settlements/settlement-assign'));
-const SettlementsTeamPage = lazy(() => import('@/pages/modules/settlements/settlements-team'));
-const SettlementsSettingsPage = lazy(
-  () => import('@/pages/modules/settlements/settlements-settings')
-);
-
-// Documents Pages
-const DocumentsDashboardPage = lazy(() => import('@/pages/modules/documents/documents-dashboard'));
-const DocumentsTemplatesListPage = lazy(() => import('@/pages/modules/documents/templates-list'));
-const GeneratedDocumentsListPage = lazy(() => import('@/pages/modules/documents/generated-list'));
-const DocumentTemplateEditorPage = lazy(() => import('@/pages/modules/documents/template-editor'));
-
-// Notifications Pages
-const NotificationsInboxPage = lazy(() => import('@/pages/notifications/notifications-inbox'));
-const NotificationsArchivePage = lazy(() => import('@/pages/notifications/notifications-archive'));
-const NotificationSettingsPage = lazy(() => import('@/pages/notifications/notifications-settings'));
-
-function PageLoader() {
-  return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="w-full max-w-md space-y-4 p-6">
-        <Skeleton className="h-8 w-3/4" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-5/6" />
-      </div>
-    </div>
-  );
-}
-
-/**
- * Error fallback for lazy-loaded route chunks that fail to load.
- * Shows a retry UI when chunk loading fails (network issues, deployment, etc.)
- */
-function LazyRouteErrorFallback() {
-  return (
-    <div className="flex h-screen flex-col items-center justify-center gap-4 p-6">
-      <AlertTriangle className="text-destructive h-12 w-12" />
-      <h2 className="text-xl font-semibold">Nie udało się załadować strony</h2>
-      <p className="text-muted-foreground max-w-md text-center">
-        Wystąpił problem z ładowaniem strony. Może to być spowodowane problemami z siecią lub
-        aktualizacją aplikacji.
-      </p>
-      <Button onClick={() => window.location.reload()}>
-        <RefreshCw className="mr-2 h-4 w-4" />
-        Odśwież stronę
-      </Button>
-    </div>
-  );
-}
-
-/**
- * Wrapper component that adds error boundary around lazy-loaded routes.
- * Catches chunk load failures and shows a retry UI.
- * Auto-resets when navigating to a different route via resetKeys.
- */
-function LazyRoute({ children }: { children: React.ReactNode }) {
-  const location = useLocation();
-
-  return (
-    <ErrorBoundary fallback={<LazyRouteErrorFallback />} resetKeys={[location.pathname]}>
-      <Suspense fallback={<PageLoader />}>{children}</Suspense>
-    </ErrorBoundary>
-  );
-}
-
-function NotFound() {
-  return <div className="flex h-screen items-center justify-center">404 - Not Found</div>;
-}
-
-function Unauthorized() {
-  return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="text-center">
-        <h1 className="mb-4 text-2xl font-bold">Unauthorized</h1>
-        <p className="text-muted-foreground">You don&apos;t have permission to access this page.</p>
-      </div>
-    </div>
-  );
-}
-
-function ModuleAccessDenied() {
-  const navigate = useNavigate();
-  const { user } = useAuthContext();
-
-  const dashboardPath =
-    user?.role === UserRole.ADMIN
-      ? '/admin'
-      : user?.role === UserRole.COMPANY_OWNER
-        ? '/company'
-        : '/modules';
-
-  return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="mx-auto max-w-md text-center">
-        <ShieldAlert className="text-destructive mx-auto h-16 w-16" />
-        <h1 className="mt-6 text-2xl font-bold">Brak dostępu do modułu</h1>
-        <p className="text-muted-foreground mt-2">
-          Twoja firma nie ma dostępu do tego modułu. Skontaktuj się z administratorem systemu, aby
-          go aktywować.
-        </p>
-        <Button className="mt-6" onClick={() => navigate(dashboardPath)}>
-          Wróć do dashboardu
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// Protected Route Component - memoized to prevent unnecessary re-renders
-// when auth context updates (e.g., token refresh) but auth state hasn't changed
-const ProtectedRoute = memo(function ProtectedRoute({
-  children,
-  allowedRoles,
-}: {
-  children: React.ReactNode;
-  allowedRoles?: UserRole[];
-}) {
-  const { isAuthenticated, user, isLoading } = useAuthContext();
-
-  if (isLoading) {
-    return <PageLoader />;
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/unauthorized" replace />;
-  }
-
-  return <>{children}</>;
-});
-
-const ADMIN_ROLES = [UserRole.ADMIN];
-const OWNER_ROLES = [UserRole.COMPANY_OWNER];
-const EMPLOYEE_OWNER_ROLES = [UserRole.EMPLOYEE, UserRole.COMPANY_OWNER];
+import {
+  AccountSettingsPage,
+  AdminAIAgentDashboard,
+  AdminDashboard,
+  AdminEmailConfigPage,
+  AIAgentAdminConfigPage,
+  AIAgentAdminTokenUsagePage,
+  AIAgentChatPage,
+  AIAgentContextFilesPage,
+  AIAgentTokenUsagePage,
+  AppearanceSettingsPage,
+  ClientCreatePage,
+  ClientDetailPage,
+  ClientsDashboardPage,
+  ClientsListPage,
+  ClientsSettingsPage,
+  CompaniesListPage,
+  CompanyAIAgentDashboard,
+  CompanyDashboard,
+  CompanyEmailConfigPage,
+  CompanyModulesListPage,
+  CompanyModulesPage,
+  CompanyProfilePage,
+  DocumentsDashboardPage,
+  DocumentsTemplatesListPage,
+  DocumentTemplateEditorPage,
+  EmailAutoReplyTemplatesPage,
+  EmailClientIndex,
+  EmailComposePage,
+  EmailDraftsPage,
+  EmailFolderPage,
+  EmailInboxPage,
+  EmailMessagePage,
+  EmailSentPage,
+  EmailTrashPage,
+  EmployeeAIAgentDashboard,
+  EmployeeDashboard,
+  EmployeePermissionsPage,
+  EmployeesListPage,
+  GeneratedDocumentsListPage,
+  LeadDetailPage,
+  LeadsListPage,
+  LoginPage,
+  ModulesListPage,
+  NotificationsArchivePage,
+  NotificationSettingsPage,
+  NotificationsInboxPage,
+  OfferDetailPage,
+  OffersDashboardPage,
+  OffersListPage,
+  SettlementAssignPage,
+  SettlementCommentsPage,
+  SettlementsDashboardPage,
+  SettlementsListPage,
+  SettlementsSettingsPage,
+  SettlementsTeamPage,
+  TaskCreatePage,
+  TasksCalendarPage,
+  TasksDashboardPage,
+  TasksKanbanPage,
+  TasksListPage,
+  TasksSettingsPage,
+  TasksStatisticsPage,
+  TasksTimelinePage,
+  TaskTemplatesListPage,
+  TemplateEditorPage,
+  TemplatesListPage,
+  TimeTrackingDashboardPage,
+  TimeTrackingEntriesPage,
+  TimeTrackingReportsPage,
+  TimeTrackingSettingsPage,
+  TimeTrackingStatisticsPage,
+  TimeTrackingTimesheetDailyPage,
+  TimeTrackingTimesheetWeeklyPage,
+  UserEmailConfigPage,
+  UsersListPage,
+} from './routes/lazy-imports';
+import {
+  ADMIN_ROLES,
+  EMPLOYEE_OWNER_ROLES,
+  LazyRoute,
+  ModuleAccessDenied,
+  NotFound,
+  OWNER_ROLES,
+  ProtectedRoute,
+  Unauthorized,
+} from './routes/route-utils';
 
 function adminRouteGroup() {
   return (

@@ -1,16 +1,17 @@
-import { TenantService } from '@accounting/common/backend';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+
 import { type Repository } from 'typeorm';
 
 import { MonthlySettlement, SettlementStatus, UserRole, type User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { SettlementExtendedStatsService } from './settlement-extended-stats.service';
 
 describe('SettlementExtendedStatsService', () => {
   let service: SettlementExtendedStatsService;
   let _settlementRepository: jest.Mocked<Repository<MonthlySettlement>>;
-  let tenantService: jest.Mocked<TenantService>;
+  let systemCompanyService: jest.Mocked<SystemCompanyService>;
 
   const mockCompanyId = 'company-123';
 
@@ -35,8 +36,8 @@ describe('SettlementExtendedStatsService', () => {
     getRawMany: jest.fn().mockResolvedValue([]),
   });
 
-  const mockTenantService = {
-    getEffectiveCompanyId: jest.fn(),
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn(),
   };
 
   let mockQb: ReturnType<typeof createMockQueryBuilder>;
@@ -44,7 +45,7 @@ describe('SettlementExtendedStatsService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockTenantService.getEffectiveCompanyId.mockResolvedValue(mockCompanyId);
+    mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
 
     mockQb = createMockQueryBuilder();
 
@@ -59,7 +60,7 @@ describe('SettlementExtendedStatsService', () => {
           useFactory: () => {
             return new SettlementExtendedStatsService(
               mockSettlementRepository as any,
-              mockTenantService as any
+              mockSystemCompanyService as any
             );
           },
         },
@@ -68,15 +69,15 @@ describe('SettlementExtendedStatsService', () => {
           useValue: mockSettlementRepository,
         },
         {
-          provide: TenantService,
-          useValue: mockTenantService,
+          provide: SystemCompanyService,
+          useValue: mockSystemCompanyService,
         },
       ],
     }).compile();
 
     service = module.get<SettlementExtendedStatsService>(SettlementExtendedStatsService);
     _settlementRepository = module.get(getRepositoryToken(MonthlySettlement));
-    tenantService = module.get(TenantService);
+    systemCompanyService = module.get(SystemCompanyService);
   });
 
   describe('getCompletionDurationStats', () => {
@@ -140,7 +141,7 @@ describe('SettlementExtendedStatsService', () => {
 
       await service.getCompletionDurationStats(mockUser as User);
 
-      expect(tenantService.getEffectiveCompanyId).toHaveBeenCalledWith(mockUser);
+      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
       expect(mockQb.where).toHaveBeenCalledWith('s.companyId = :companyId', {
         companyId: mockCompanyId,
       });

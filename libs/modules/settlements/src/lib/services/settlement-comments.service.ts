@@ -1,10 +1,9 @@
+import { SystemCompanyService } from '@accounting/common/backend';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { Repository } from 'typeorm';
 
 import { isOwnerOrAdmin, MonthlySettlement, SettlementComment, User } from '@accounting/common';
-import { TenantService } from '@accounting/common/backend';
 
 import { CreateCommentDto } from '../dto';
 import { SettlementAccessDeniedException, SettlementNotFoundException } from '../exceptions';
@@ -16,11 +15,11 @@ export class SettlementCommentsService {
     private readonly commentRepository: Repository<SettlementComment>,
     @InjectRepository(MonthlySettlement)
     private readonly settlementRepository: Repository<MonthlySettlement>,
-    private readonly tenantService: TenantService
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   async getComments(settlementId: string, user: User): Promise<SettlementComment[]> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify settlement exists and user has access
     const settlement = await this.settlementRepository.findOne({
@@ -51,7 +50,7 @@ export class SettlementCommentsService {
     dto: CreateCommentDto,
     user: User
   ): Promise<SettlementComment> {
-    const companyId = await this.tenantService.getEffectiveCompanyId(user);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Verify settlement exists and user has access
     const settlement = await this.settlementRepository.findOne({

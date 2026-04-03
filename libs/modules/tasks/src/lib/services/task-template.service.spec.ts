@@ -9,10 +9,10 @@ import {
   Task,
   TaskPriority,
   TaskStatus,
-  type User,
   UserRole,
+  type User,
 } from '@accounting/common';
-import { type TenantService } from '@accounting/common/backend';
+import { type SystemCompanyService } from '@accounting/common/backend';
 
 import { TaskTemplateService } from './task-template.service';
 
@@ -21,7 +21,7 @@ describe('TaskTemplateService', () => {
   let taskRepository: jest.Mocked<
     Pick<Repository<Task>, 'findAndCount' | 'findOne' | 'create' | 'save'>
   >;
-  let tenantService: jest.Mocked<Pick<TenantService, 'getEffectiveCompanyId'>>;
+  let systemCompanyService: jest.Mocked<Pick<SystemCompanyService, 'getCompanyIdForUser'>>;
 
   const companyId = 'company-uuid-1';
   const userId = 'user-uuid-1';
@@ -58,8 +58,8 @@ describe('TaskTemplateService', () => {
       save: jest.fn(),
     };
 
-    tenantService = {
-      getEffectiveCompanyId: jest.fn().mockResolvedValue(companyId),
+    systemCompanyService = {
+      getCompanyIdForUser: jest.fn().mockResolvedValue(companyId),
     };
 
     const module = await Test.createTestingModule({
@@ -69,7 +69,7 @@ describe('TaskTemplateService', () => {
           useFactory: () =>
             new TaskTemplateService(
               taskRepository as unknown as Repository<Task>,
-              tenantService as unknown as TenantService,
+              systemCompanyService as unknown as SystemCompanyService
             ),
         },
         {
@@ -101,7 +101,7 @@ describe('TaskTemplateService', () => {
           }),
           relations: ['assignee', 'client'],
           order: { createdAt: 'DESC' },
-        }),
+        })
       );
     });
 
@@ -118,7 +118,7 @@ describe('TaskTemplateService', () => {
               _value: '%100\\%\\_done%',
             }),
           }),
-        }),
+        })
       );
     });
   });
@@ -139,9 +139,7 @@ describe('TaskTemplateService', () => {
     it('should throw NotFoundException when template not found', async () => {
       taskRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.findOne('nonexistent', mockUser)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne('nonexistent', mockUser)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -171,7 +169,7 @@ describe('TaskTemplateService', () => {
           isTemplate: true,
           status: TaskStatus.TODO,
           sortOrder: 0,
-        }),
+        })
       );
       expect(taskRepository.save).toHaveBeenCalledWith(created);
     });
@@ -183,11 +181,7 @@ describe('TaskTemplateService', () => {
       taskRepository.findOne.mockResolvedValue(template);
       taskRepository.save.mockResolvedValue({ ...template, title: 'Updated' } as Task);
 
-      const result = await service.update(
-        'template-uuid-1',
-        { title: 'Updated' },
-        mockUser,
-      );
+      const result = await service.update('template-uuid-1', { title: 'Updated' }, mockUser);
 
       expect(result.title).toBe('Updated');
       expect(taskRepository.save).toHaveBeenCalled();
@@ -196,9 +190,9 @@ describe('TaskTemplateService', () => {
     it('should throw NotFoundException when template not found', async () => {
       taskRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.update('nonexistent', { title: 'X' }, mockUser),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.update('nonexistent', { title: 'X' }, mockUser)).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 
@@ -212,7 +206,7 @@ describe('TaskTemplateService', () => {
 
       expect(template.isActive).toBe(false);
       expect(taskRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ isActive: false }),
+        expect.objectContaining({ isActive: false })
       );
     });
   });
@@ -249,7 +243,7 @@ describe('TaskTemplateService', () => {
           status: TaskStatus.TODO,
           sortOrder: 0,
           templateId: 'template-uuid-1',
-        }),
+        })
       );
     });
   });

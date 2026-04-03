@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
@@ -84,12 +90,21 @@ export class SystemCompanyService implements OnModuleInit {
   /**
    * Get the company ID for a user, resolving to system company for ADMIN users.
    * This is the preferred method to get companyId for multi-tenant queries.
+   * @throws InternalServerErrorException if non-ADMIN user has no companyId (data integrity issue)
    */
   getCompanyIdForUser(user: User): Promise<string> {
     if (user.role === UserRole.ADMIN) {
       return this.getSystemCompanyId();
     }
-    return Promise.resolve(user.companyId!);
+    if (!user.companyId) {
+      this.logger.error(
+        `User ${user.id} (role=${user.role}) has no companyId — data integrity issue`
+      );
+      throw new InternalServerErrorException(
+        'Użytkownik nie jest przypisany do żadnej firmy. Skontaktuj się z administratorem.'
+      );
+    }
+    return Promise.resolve(user.companyId);
   }
 
   /**

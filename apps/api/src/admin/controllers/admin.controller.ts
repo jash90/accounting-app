@@ -1,17 +1,16 @@
 import {
   Body,
-  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -46,7 +45,6 @@ import { AdminService } from '../services/admin.service';
 @Controller('admin')
 @UseGuards(RolesGuard)
 @Roles(UserRole.ADMIN)
-@UseInterceptors(ClassSerializerInterceptor)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
@@ -73,7 +71,7 @@ export class AdminController {
   @ApiNotFoundResponse({ description: 'User not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
-  findUserById(@Param('id') id: string) {
+  findUserById(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminService.findUserById(id);
   }
 
@@ -106,7 +104,7 @@ export class AdminController {
   @ApiNotFoundResponse({ description: 'User not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
-  updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  updateUser(@Param('id', ParseUUIDPipe) id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.adminService.updateUser(id, updateUserDto);
   }
 
@@ -122,7 +120,7 @@ export class AdminController {
   @ApiNotFoundResponse({ description: 'User not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
-  deleteUser(@Param('id') id: string) {
+  deleteUser(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminService.softDeleteUser(id);
   }
 
@@ -145,7 +143,7 @@ export class AdminController {
   @ApiNotFoundResponse({ description: 'User not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
-  activateUser(@Param('id') id: string, @Query('isActive') isActive: string) {
+  activateUser(@Param('id', ParseUUIDPipe) id: string, @Query('isActive') isActive: string) {
     return this.adminService.setUserActiveStatus(id, isActive === 'true');
   }
 
@@ -190,7 +188,7 @@ export class AdminController {
   @ApiNotFoundResponse({ description: 'Company not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
-  findCompanyById(@Param('id') id: string) {
+  findCompanyById(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminService.findCompanyById(id);
   }
 
@@ -230,7 +228,10 @@ export class AdminController {
   @ApiNotFoundResponse({ description: 'Company not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
-  updateCompany(@Param('id') id: string, @Body() updateCompanyDto: UpdateCompanyDto) {
+  updateCompany(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateCompanyDto: UpdateCompanyDto
+  ) {
     return this.adminService.updateCompany(id, updateCompanyDto);
   }
 
@@ -250,7 +251,7 @@ export class AdminController {
   @ApiNotFoundResponse({ description: 'Company not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
-  deleteCompany(@Param('id') id: string) {
+  deleteCompany(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminService.softDeleteCompany(id);
   }
 
@@ -267,7 +268,7 @@ export class AdminController {
   })
   @ApiOkResponse({ description: 'Company profile' })
   @ApiNotFoundResponse({ description: 'Company not found' })
-  getCompanyProfile(@Param('id') id: string) {
+  getCompanyProfile(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminService.getCompanyProfileById(id);
   }
 
@@ -284,7 +285,10 @@ export class AdminController {
   })
   @ApiOkResponse({ description: 'Updated company profile' })
   @ApiNotFoundResponse({ description: 'Company not found' })
-  updateCompanyProfile(@Param('id') id: string, @Body() dto: UpdateCompanyProfileDto) {
+  updateCompanyProfile(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateCompanyProfileDto
+  ) {
     return this.adminService.updateCompanyProfileById(id, dto);
   }
 
@@ -303,7 +307,7 @@ export class AdminController {
   @ApiNotFoundResponse({ description: 'Company not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
-  getCompanyEmployees(@Param('id') id: string) {
+  getCompanyEmployees(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminService.getCompanyEmployees(id);
   }
 }
