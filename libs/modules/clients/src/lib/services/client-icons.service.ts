@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
 import {
+  applyUpdate,
   Client,
   ClientIcon,
   ClientIconAssignment,
@@ -232,15 +233,18 @@ export class ClientIconsService {
       JSON.stringify(dto.autoAssignCondition) !== JSON.stringify(icon.autoAssignCondition);
 
     // Apply updates
-    Object.assign(icon, {
-      name: dto.name ?? icon.name,
-      color: dto.color ?? icon.color,
-      iconType: dto.iconType ?? icon.iconType,
-      iconValue: dto.iconValue ?? icon.iconValue,
-      tooltip: dto.tooltip ?? icon.tooltip,
-      autoAssignCondition:
-        dto.autoAssignCondition !== undefined ? dto.autoAssignCondition : icon.autoAssignCondition,
-    });
+    applyUpdate(
+      icon,
+      {
+        name: dto.name,
+        color: dto.color,
+        iconType: dto.iconType,
+        iconValue: dto.iconValue,
+        tooltip: dto.tooltip,
+        autoAssignCondition: dto.autoAssignCondition,
+      },
+      ['id', 'companyId', 'createdAt', 'updatedAt']
+    );
 
     const savedIcon = await this.iconRepository.save(icon);
 

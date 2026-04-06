@@ -37,7 +37,7 @@ import { StartTimerDto, StopTimerDto, UpdateTimerDto } from '../dto/timer.dto';
 import { TimeEntriesService } from '../services/time-entries.service';
 
 @ApiTags('Time Tracking - Entries')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/time-tracking/entries')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @UseInterceptors(NotificationInterceptor)

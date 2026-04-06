@@ -56,7 +56,7 @@ import {
 import { OfferTemplatesService } from '../services/offer-templates.service';
 
 @ApiTags('Offers - Templates')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @ApiExtraModels(
   OfferTemplateResponseDto,
   PaginatedOfferTemplatesResponseDto,

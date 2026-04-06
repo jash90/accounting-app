@@ -13,7 +13,7 @@ import {
 import { AssigneeDto, ClientLookupDto, TasksLookupService } from '../services/tasks-lookup.service';
 
 @ApiTags('Tasks Lookup')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/tasks/lookup')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('tasks')

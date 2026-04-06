@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { NotificationSettings, User } from '@accounting/common';
+import { applyUpdate, NotificationSettings, User } from '@accounting/common';
 
 export interface UpdateNotificationSettingsDto {
   receiveOnCreate?: boolean;
@@ -85,7 +85,7 @@ export class NotificationSettingsService {
   ): Promise<NotificationSettings> {
     const settings = await this.getSettings(user);
 
-    Object.assign(settings, dto);
+    applyUpdate(settings, dto, ['id', 'companyId', 'createdAt', 'updatedAt']);
     return this.settingsRepository.save(settings);
   }
 

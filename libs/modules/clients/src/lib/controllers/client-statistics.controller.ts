@@ -16,7 +16,7 @@ import { ClientStatisticsWithRecentDto, ClientTaskTimeStatsDto } from '../dto/st
 import { ClientStatisticsService } from '../services/statistics.service';
 
 @ApiTags('Clients')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/clients/statistics')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('clients')

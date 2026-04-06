@@ -9,7 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { User } from '@accounting/common';
+import { applyUpdate, User } from '@accounting/common';
 import { EmailConfigurationService } from '@accounting/email';
 
 import { EmailDraftSyncService, SyncResult } from './email-draft-sync.service';
@@ -130,7 +130,7 @@ export class EmailDraftService {
     }
 
     // Local update only
-    Object.assign(draft, dto);
+    applyUpdate(draft, dto, ['id', 'userId', 'companyId', 'createdAt']);
     return this.draftRepository.save(draft);
   }
 

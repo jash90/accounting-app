@@ -32,7 +32,7 @@ import { ClientFiltersDto } from '../dto/client.dto';
 import { ClientExportService } from '../services/export.service';
 
 @ApiTags('Clients')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/clients')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('clients')

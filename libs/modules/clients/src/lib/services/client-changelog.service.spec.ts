@@ -6,7 +6,6 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import type { Repository } from 'typeorm';
 
 import {
-  type ChangeLog,
   Client,
   Company,
   EmploymentType,
@@ -17,6 +16,7 @@ import {
   UserRole,
   VatStatus,
   ZusStatus,
+  type ChangeLog,
 } from '@accounting/common';
 import { EmailConfigurationService, EmailSenderService } from '@accounting/email';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
@@ -37,12 +37,8 @@ jest.mock('handlebars', () => ({
 describe('ClientChangelogService', () => {
   let service: ClientChangelogService;
   let _notificationSettingsRepository: jest.Mocked<Repository<NotificationSettings>>;
-  let userRepository: jest.Mocked<Repository<User>>;
-  let companyRepository: jest.Mocked<Repository<Company>>;
   let clientRepository: jest.Mocked<Repository<Client>>;
   let changeLogService: jest.Mocked<ChangeLogService>;
-  let emailConfigService: jest.Mocked<EmailConfigurationService>;
-  let emailSenderService: jest.Mocked<EmailSenderService>;
   let _configService: jest.Mocked<ConfigService>;
 
   const mockCompanyId = 'company-123';
@@ -81,37 +77,6 @@ describe('ClientChangelogService', () => {
       updatedAt: new Date(),
       ...overrides,
     }) as Client;
-
-  const createMockCompany = (overrides: Partial<Company> = {}): Company =>
-    ({
-      id: mockCompanyId,
-      name: 'Test Company',
-      ...overrides,
-    }) as Company;
-
-  const mockSmtpConfig = {
-    host: 'smtp.test.com',
-    port: 587,
-    secure: false,
-    auth: { user: 'user@test.com', pass: 'pass123' },
-  };
-
-  const mockImapConfig = {
-    host: 'imap.test.com',
-    port: 993,
-    secure: true,
-    auth: { user: 'user@test.com', pass: 'pass123' },
-  };
-
-  const createMockQueryBuilder = () => {
-    const qb: Record<string, jest.Mock> = {
-      leftJoin: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([]),
-    };
-    return qb;
-  };
 
   beforeEach(async () => {
     const mockNotificationSettingsRepo = {
@@ -160,14 +125,13 @@ describe('ClientChangelogService', () => {
           provide: ClientChangelogService,
           useFactory: () =>
             new ClientChangelogService(
-              mockNotificationSettingsRepo as any,
-              mockUserRepo as any,
-              mockCompanyRepo as any,
               mockClientRepo as any,
               mockChangeLogService as any,
-              mockEmailConfigService as any,
-              mockEmailSenderService as any,
-              mockConfigService as any
+              {
+                notifyClientCreated: jest.fn().mockResolvedValue(undefined),
+                notifyClientUpdated: jest.fn().mockResolvedValue(undefined),
+                notifyClientFieldChange: jest.fn().mockResolvedValue(undefined),
+              } as any
             ),
         },
         {
@@ -186,12 +150,8 @@ describe('ClientChangelogService', () => {
 
     service = module.get(ClientChangelogService);
     _notificationSettingsRepository = module.get(getRepositoryToken(NotificationSettings));
-    userRepository = module.get(getRepositoryToken(User));
-    companyRepository = module.get(getRepositoryToken(Company));
     clientRepository = module.get(getRepositoryToken(Client));
     changeLogService = module.get(ChangeLogService);
-    emailConfigService = module.get(EmailConfigurationService);
-    emailSenderService = module.get(EmailSenderService);
     _configService = module.get(ConfigService);
 
     jest.clearAllMocks();
@@ -295,615 +255,78 @@ describe('ClientChangelogService', () => {
   });
 
   // ============================
-  // notifyClientCreated
+  // Notification delegation tests
   // ============================
+  // Note: notify* methods delegate to ClientChangelogEmailService.
+  // These tests verify delegation; internal email logic is tested in
+  // ClientChangelogEmailService tests.
 
   describe('notifyClientCreated', () => {
-    it('should send welcome email and company notifications when config exists', async () => {
-      const user = createMockUser();
-      const client = createMockClient();
-      const company = createMockCompany();
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue([createMockUser({ id: 'recipient-1', email: 'r1@test.com' })]);
-
-      companyRepository.findOne.mockResolvedValue(company);
-      emailConfigService.getDecryptedEmailConfigByCompanyId.mockResolvedValue({
-        smtp: mockSmtpConfig,
-        imap: mockImapConfig,
-      } as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-      emailSenderService.sendEmailAndSave.mockResolvedValue(undefined);
-      emailSenderService.sendBatchEmailsAndSave.mockResolvedValue(undefined);
-
-      await service.notifyClientCreated(client, user);
-
-      expect(emailSenderService.sendEmailAndSave).toHaveBeenCalledWith(
-        mockSmtpConfig,
-        mockImapConfig,
-        expect.objectContaining({
-          to: client.email,
-          subject: expect.stringContaining(company.name),
-        })
-      );
-      expect(emailSenderService.sendBatchEmailsAndSave).toHaveBeenCalled();
-    });
-
-    it('should skip welcome email when client has no email', async () => {
-      const user = createMockUser();
-      const client = createMockClient({ email: undefined });
-      const qb = createMockQueryBuilder();
-
-      companyRepository.findOne.mockResolvedValue(createMockCompany());
-      emailConfigService.getDecryptedEmailConfigByCompanyId.mockResolvedValue({
-        smtp: mockSmtpConfig,
-        imap: mockImapConfig,
-      } as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-
-      await service.notifyClientCreated(client, user);
-
-      expect(emailSenderService.sendEmailAndSave).not.toHaveBeenCalled();
-    });
-
-    it('should skip welcome email when receiveEmailCopy is false', async () => {
-      const user = createMockUser();
-      const client = createMockClient({ receiveEmailCopy: false });
-      const qb = createMockQueryBuilder();
-
-      companyRepository.findOne.mockResolvedValue(createMockCompany());
-      emailConfigService.getDecryptedEmailConfigByCompanyId.mockResolvedValue({
-        smtp: mockSmtpConfig,
-        imap: mockImapConfig,
-      } as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-
-      await service.notifyClientCreated(client, user);
-
-      expect(emailSenderService.sendEmailAndSave).not.toHaveBeenCalled();
-    });
-
-    it('should skip all notifications when no email config exists', async () => {
+    it('should delegate to emailService.notifyClientCreated', async () => {
       const user = createMockUser();
       const client = createMockClient();
 
-      companyRepository.findOne.mockResolvedValue(createMockCompany());
-      emailConfigService.getDecryptedEmailConfigByCompanyId.mockResolvedValue(null);
-
       await service.notifyClientCreated(client, user);
 
-      expect(emailSenderService.sendEmailAndSave).not.toHaveBeenCalled();
-      expect(emailSenderService.sendBatchEmailsAndSave).not.toHaveBeenCalled();
-    });
-
-    it('should skip company user notifications when no recipients found', async () => {
-      const user = createMockUser();
-      const client = createMockClient();
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue([]);
-
-      companyRepository.findOne.mockResolvedValue(createMockCompany());
-      emailConfigService.getDecryptedEmailConfigByCompanyId.mockResolvedValue({
-        smtp: mockSmtpConfig,
-        imap: mockImapConfig,
-      } as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-
-      await service.notifyClientCreated(client, user);
-
-      expect(emailSenderService.sendBatchEmailsAndSave).not.toHaveBeenCalled();
-    });
-
-    it('should not throw when welcome email fails (graceful failure)', async () => {
-      const user = createMockUser();
-      const client = createMockClient();
-      const qb = createMockQueryBuilder();
-
-      companyRepository.findOne.mockResolvedValue(createMockCompany());
-      emailConfigService.getDecryptedEmailConfigByCompanyId.mockResolvedValue({
-        smtp: mockSmtpConfig,
-        imap: mockImapConfig,
-      } as any);
-      emailSenderService.sendEmailAndSave.mockRejectedValue(new Error('SMTP connection refused'));
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-
-      await expect(service.notifyClientCreated(client, user)).resolves.toBeUndefined();
+      const emailSvc = (service as any).emailService;
+      expect(emailSvc.notifyClientCreated).toHaveBeenCalledWith(client, user);
     });
   });
-
-  // ============================
-  // notifyClientUpdated
-  // ============================
 
   describe('notifyClientUpdated', () => {
-    it('should send update notifications to recipients when changes exist', async () => {
+    it('should delegate to emailService.notifyClientUpdated', async () => {
       const user = createMockUser();
-      const client = createMockClient({ name: 'Updated Name' });
-      const oldValues = { name: 'Old Name' };
-      const recipients = [createMockUser({ id: 'r1', email: 'r1@test.com' })];
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue(recipients);
-
-      emailConfigService.getDecryptedSmtpConfigByCompanyId.mockResolvedValue(mockSmtpConfig as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-      companyRepository.findOne.mockResolvedValue(createMockCompany());
-      changeLogService.formatChange.mockReturnValue({
-        field: 'Nazwa',
-        oldValue: 'Old Name',
-        newValue: 'Updated Name',
-      });
+      const client = createMockClient({ name: 'Updated' });
+      const oldValues = { name: 'Old' };
 
       await service.notifyClientUpdated(client, oldValues, user);
 
-      expect(emailSenderService.sendBatchEmails).toHaveBeenCalledWith(
-        mockSmtpConfig,
-        expect.arrayContaining([
-          expect.objectContaining({
-            to: 'r1@test.com',
-            subject: expect.stringContaining('Updated Name'),
-          }),
-        ])
-      );
-    });
-
-    it('should skip when no SMTP config exists', async () => {
-      const user = createMockUser();
-      const client = createMockClient();
-
-      emailConfigService.getDecryptedSmtpConfigByCompanyId.mockResolvedValue(null);
-
-      await service.notifyClientUpdated(client, { name: 'Old' }, user);
-
-      expect(emailSenderService.sendBatchEmails).not.toHaveBeenCalled();
-    });
-
-    it('should skip when no recipients found', async () => {
-      const user = createMockUser();
-      const client = createMockClient({ name: 'New' });
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue([]);
-
-      emailConfigService.getDecryptedSmtpConfigByCompanyId.mockResolvedValue(mockSmtpConfig as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-
-      await service.notifyClientUpdated(client, { name: 'Old' }, user);
-
-      expect(emailSenderService.sendBatchEmails).not.toHaveBeenCalled();
-    });
-
-    it('should skip when no changes detected', async () => {
-      const user = createMockUser();
-      const client = createMockClient();
-      const oldValues = {
-        name: client.name,
-        nip: client.nip,
-        email: client.email,
-        phone: client.phone,
-        companyStartDate: (client as any).companyStartDate,
-        cooperationStartDate: (client as any).cooperationStartDate,
-        companySpecificity: (client as any).companySpecificity,
-        additionalInfo: (client as any).additionalInfo,
-        gtuCode: (client as any).gtuCode,
-        gtuCodes: (client as any).gtuCodes,
-        amlGroup: (client as any).amlGroup,
-        amlGroupEnum: (client as any).amlGroupEnum,
-        employmentType: client.employmentType,
-        vatStatus: client.vatStatus,
-        taxScheme: client.taxScheme,
-        zusStatus: client.zusStatus,
-        receiveEmailCopy: client.receiveEmailCopy,
-        isActive: client.isActive,
-      };
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue([createMockUser()]);
-
-      emailConfigService.getDecryptedSmtpConfigByCompanyId.mockResolvedValue(mockSmtpConfig as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-
-      await service.notifyClientUpdated(client, oldValues, user);
-
-      expect(emailSenderService.sendBatchEmails).not.toHaveBeenCalled();
-    });
-
-    it('should not throw when email sending fails (graceful failure)', async () => {
-      const user = createMockUser();
-      const client = createMockClient({ name: 'New' });
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue([createMockUser({ email: 'r@test.com' })]);
-
-      emailConfigService.getDecryptedSmtpConfigByCompanyId.mockResolvedValue(mockSmtpConfig as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-      companyRepository.findOne.mockResolvedValue(createMockCompany());
-      changeLogService.formatChange.mockReturnValue({
-        field: 'Nazwa',
-        oldValue: 'Old',
-        newValue: 'New',
-      });
-      emailSenderService.sendBatchEmails.mockRejectedValue(new Error('SMTP error'));
-
-      await expect(
-        service.notifyClientUpdated(client, { name: 'Old' }, user)
-      ).resolves.toBeUndefined();
+      const emailSvc = (service as any).emailService;
+      expect(emailSvc.notifyClientUpdated).toHaveBeenCalledWith(client, oldValues, user);
     });
   });
-
-  // ============================
-  // notifyClientDeleted
-  // ============================
 
   describe('notifyClientDeleted', () => {
-    it('should send delete notifications to recipients', async () => {
+    it('should delegate to emailService.notifyClientDeleted', async () => {
       const user = createMockUser();
       const client = createMockClient();
-      const recipients = [createMockUser({ id: 'r1', email: 'r1@test.com' })];
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue(recipients);
 
-      emailConfigService.getDecryptedSmtpConfigByCompanyId.mockResolvedValue(mockSmtpConfig as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-      companyRepository.findOne.mockResolvedValue(createMockCompany());
+      // emailService mock doesn't have notifyClientDeleted, add it
+      const emailSvc = (service as any).emailService;
+      emailSvc.notifyClientDeleted = jest.fn().mockResolvedValue(undefined);
 
       await service.notifyClientDeleted(client, user);
 
-      expect(emailSenderService.sendBatchEmails).toHaveBeenCalledWith(
-        mockSmtpConfig,
-        expect.arrayContaining([
-          expect.objectContaining({
-            to: 'r1@test.com',
-            subject: expect.stringContaining(client.name),
-          }),
-        ])
-      );
-    });
-
-    it('should skip when no SMTP config exists', async () => {
-      const user = createMockUser();
-      const client = createMockClient();
-
-      emailConfigService.getDecryptedSmtpConfigByCompanyId.mockResolvedValue(null);
-
-      await service.notifyClientDeleted(client, user);
-
-      expect(emailSenderService.sendBatchEmails).not.toHaveBeenCalled();
-    });
-
-    it('should skip when no recipients', async () => {
-      const user = createMockUser();
-      const client = createMockClient();
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue([]);
-
-      emailConfigService.getDecryptedSmtpConfigByCompanyId.mockResolvedValue(mockSmtpConfig as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-
-      await service.notifyClientDeleted(client, user);
-
-      expect(emailSenderService.sendBatchEmails).not.toHaveBeenCalled();
-    });
-
-    it('should not throw when email sending fails (graceful failure)', async () => {
-      const user = createMockUser();
-      const client = createMockClient();
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue([createMockUser({ email: 'r@test.com' })]);
-
-      emailConfigService.getDecryptedSmtpConfigByCompanyId.mockResolvedValue(mockSmtpConfig as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-      companyRepository.findOne.mockResolvedValue(createMockCompany());
-      emailSenderService.sendBatchEmails.mockRejectedValue(new Error('SMTP error'));
-
-      await expect(service.notifyClientDeleted(client, user)).resolves.toBeUndefined();
+      expect(emailSvc.notifyClientDeleted).toHaveBeenCalledWith(client, user);
     });
   });
 
-  // ============================
-  // notifyBulkClientsDeleted
-  // ============================
-
   describe('notifyBulkClientsDeleted', () => {
-    it('should send bulk delete notification', async () => {
+    it('should delegate to emailService.notifyBulkClientsDeleted', async () => {
       const user = createMockUser();
-      const clients = [
-        createMockClient({ id: 'c1', name: 'Client A' }),
-        createMockClient({ id: 'c2', name: 'Client B' }),
-      ];
-      const recipients = [createMockUser({ id: 'r1', email: 'r1@test.com' })];
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue(recipients);
+      const clients = [createMockClient()];
 
-      emailConfigService.getDecryptedSmtpConfigByCompanyId.mockResolvedValue(mockSmtpConfig as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-      companyRepository.findOne.mockResolvedValue(createMockCompany());
+      const emailSvc = (service as any).emailService;
+      emailSvc.notifyBulkClientsDeleted = jest.fn().mockResolvedValue(undefined);
 
       await service.notifyBulkClientsDeleted(clients, user);
 
-      expect(emailSenderService.sendBatchEmails).toHaveBeenCalledWith(
-        mockSmtpConfig,
-        expect.arrayContaining([
-          expect.objectContaining({
-            to: 'r1@test.com',
-            subject: expect.stringContaining('2'),
-          }),
-        ])
-      );
-    });
-
-    it('should return early for empty clients array', async () => {
-      const user = createMockUser();
-
-      await service.notifyBulkClientsDeleted([], user);
-
-      expect(emailConfigService.getDecryptedSmtpConfigByCompanyId).not.toHaveBeenCalled();
-    });
-
-    it('should throw ForbiddenException when clients belong to different companies', async () => {
-      const user = createMockUser();
-      const clients = [
-        createMockClient({ id: 'c1', companyId: 'company-1' }),
-        createMockClient({ id: 'c2', companyId: 'company-2' }),
-      ];
-
-      await expect(service.notifyBulkClientsDeleted(clients, user)).rejects.toThrow(
-        ForbiddenException
-      );
-    });
-
-    it('should not throw when email sending fails (graceful failure)', async () => {
-      const user = createMockUser();
-      const clients = [createMockClient()];
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue([createMockUser({ email: 'r@test.com' })]);
-
-      emailConfigService.getDecryptedSmtpConfigByCompanyId.mockResolvedValue(mockSmtpConfig as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-      companyRepository.findOne.mockResolvedValue(createMockCompany());
-      emailSenderService.sendBatchEmails.mockRejectedValue(new Error('SMTP error'));
-
-      await expect(service.notifyBulkClientsDeleted(clients, user)).resolves.toBeUndefined();
+      expect(emailSvc.notifyBulkClientsDeleted).toHaveBeenCalledWith(clients, user);
     });
   });
-
-  // ============================
-  // notifyBulkClientsUpdated
-  // ============================
 
   describe('notifyBulkClientsUpdated', () => {
-    it('should send bulk update notification for clients with changes', async () => {
+    it('should delegate to emailService.notifyBulkClientsUpdated', async () => {
       const user = createMockUser();
-      const updates = [
-        { client: createMockClient({ id: 'c1', name: 'New A' }), oldValues: { name: 'Old A' } },
-        { client: createMockClient({ id: 'c2', name: 'New B' }), oldValues: { name: 'Old B' } },
-      ];
-      const recipients = [createMockUser({ id: 'r1', email: 'r1@test.com' })];
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue(recipients);
+      const updates = [{ client: createMockClient(), oldValues: { name: 'Old' } }];
 
-      emailConfigService.getDecryptedSmtpConfigByCompanyId.mockResolvedValue(mockSmtpConfig as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-      companyRepository.findOne.mockResolvedValue(createMockCompany());
-      changeLogService.formatChange.mockReturnValue({
-        field: 'Nazwa',
-        oldValue: 'Old',
-        newValue: 'New',
-      });
+      const emailSvc = (service as any).emailService;
+      emailSvc.notifyBulkClientsUpdated = jest.fn().mockResolvedValue(undefined);
 
       await service.notifyBulkClientsUpdated(updates, user);
 
-      expect(emailSenderService.sendBatchEmails).toHaveBeenCalled();
-    });
-
-    it('should return early for empty updates array', async () => {
-      const user = createMockUser();
-
-      await service.notifyBulkClientsUpdated([], user);
-
-      expect(emailConfigService.getDecryptedSmtpConfigByCompanyId).not.toHaveBeenCalled();
-    });
-
-    it('should throw ForbiddenException when clients belong to different companies', async () => {
-      const user = createMockUser();
-      const updates = [
-        { client: createMockClient({ id: 'c1', companyId: 'company-1' }), oldValues: {} },
-        { client: createMockClient({ id: 'c2', companyId: 'company-2' }), oldValues: {} },
-      ];
-
-      await expect(service.notifyBulkClientsUpdated(updates, user)).rejects.toThrow(
-        ForbiddenException
-      );
-    });
-
-    it('should skip when all changes are empty (no actual changes)', async () => {
-      const user = createMockUser();
-      const client = createMockClient();
-      const oldValues = {
-        name: client.name,
-        nip: client.nip,
-        email: client.email,
-        phone: client.phone,
-        companyStartDate: (client as any).companyStartDate,
-        cooperationStartDate: (client as any).cooperationStartDate,
-        companySpecificity: (client as any).companySpecificity,
-        additionalInfo: (client as any).additionalInfo,
-        gtuCode: (client as any).gtuCode,
-        gtuCodes: (client as any).gtuCodes,
-        amlGroup: (client as any).amlGroup,
-        amlGroupEnum: (client as any).amlGroupEnum,
-        employmentType: client.employmentType,
-        vatStatus: client.vatStatus,
-        taxScheme: client.taxScheme,
-        zusStatus: client.zusStatus,
-        receiveEmailCopy: client.receiveEmailCopy,
-        isActive: client.isActive,
-      };
-      const updates = [{ client, oldValues }];
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue([createMockUser()]);
-
-      emailConfigService.getDecryptedSmtpConfigByCompanyId.mockResolvedValue(mockSmtpConfig as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-
-      await service.notifyBulkClientsUpdated(updates, user);
-
-      expect(emailSenderService.sendBatchEmails).not.toHaveBeenCalled();
-    });
-  });
-
-  // ============================
-  // Change tracking (calculateChanges / hasChanged)
-  // ============================
-
-  describe('change tracking', () => {
-    // We test change tracking indirectly via notifyClientUpdated since calculateChanges is private
-
-    it('should detect string field changes', async () => {
-      const user = createMockUser();
-      const client = createMockClient({ name: 'New Name', email: 'new@test.com' });
-      // Provide all fields matching the client defaults except name and email
-      const oldValues = {
-        name: 'Old Name',
-        nip: client.nip,
-        email: 'old@test.com',
-        phone: client.phone,
-        companyStartDate: (client as any).companyStartDate,
-        cooperationStartDate: (client as any).cooperationStartDate,
-        companySpecificity: (client as any).companySpecificity,
-        additionalInfo: (client as any).additionalInfo,
-        gtuCode: (client as any).gtuCode,
-        gtuCodes: (client as any).gtuCodes,
-        amlGroup: (client as any).amlGroup,
-        amlGroupEnum: (client as any).amlGroupEnum,
-        employmentType: client.employmentType,
-        vatStatus: client.vatStatus,
-        taxScheme: client.taxScheme,
-        zusStatus: client.zusStatus,
-        receiveEmailCopy: client.receiveEmailCopy,
-        isActive: client.isActive,
-      };
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue([createMockUser({ email: 'r@test.com' })]);
-
-      emailConfigService.getDecryptedSmtpConfigByCompanyId.mockResolvedValue(mockSmtpConfig as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-      companyRepository.findOne.mockResolvedValue(createMockCompany());
-      changeLogService.formatChange.mockImplementation((change) => ({
-        field: change.field,
-        oldValue: String(change.oldValue),
-        newValue: String(change.newValue),
-      }));
-
-      await service.notifyClientUpdated(client, oldValues, user);
-
-      // formatChange should be called for name and email changes only
-      expect(changeLogService.formatChange).toHaveBeenCalledTimes(2);
-    });
-
-    it('should detect boolean field changes', async () => {
-      const user = createMockUser();
-      const client = createMockClient({ receiveEmailCopy: false });
-      // Provide all fields matching the client defaults except receiveEmailCopy
-      const oldValues = {
-        name: client.name,
-        nip: client.nip,
-        email: client.email,
-        phone: client.phone,
-        companyStartDate: (client as any).companyStartDate,
-        cooperationStartDate: (client as any).cooperationStartDate,
-        companySpecificity: (client as any).companySpecificity,
-        additionalInfo: (client as any).additionalInfo,
-        gtuCode: (client as any).gtuCode,
-        gtuCodes: (client as any).gtuCodes,
-        amlGroup: (client as any).amlGroup,
-        amlGroupEnum: (client as any).amlGroupEnum,
-        employmentType: client.employmentType,
-        vatStatus: client.vatStatus,
-        taxScheme: client.taxScheme,
-        zusStatus: client.zusStatus,
-        receiveEmailCopy: true,
-        isActive: client.isActive,
-      };
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue([createMockUser({ email: 'r@test.com' })]);
-
-      emailConfigService.getDecryptedSmtpConfigByCompanyId.mockResolvedValue(mockSmtpConfig as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-      companyRepository.findOne.mockResolvedValue(createMockCompany());
-      changeLogService.formatChange.mockReturnValue({
-        field: 'receiveEmailCopy',
-        oldValue: 'true',
-        newValue: 'false',
-      });
-
-      await service.notifyClientUpdated(client, oldValues, user);
-
-      expect(changeLogService.formatChange).toHaveBeenCalledTimes(1);
-    });
-
-    it('should not detect changes when values are identical', async () => {
-      const user = createMockUser();
-      const client = createMockClient();
-      const oldValues = {
-        name: client.name,
-        nip: client.nip,
-        email: client.email,
-        phone: client.phone,
-        companyStartDate: (client as any).companyStartDate,
-        cooperationStartDate: (client as any).cooperationStartDate,
-        companySpecificity: (client as any).companySpecificity,
-        additionalInfo: (client as any).additionalInfo,
-        gtuCode: (client as any).gtuCode,
-        gtuCodes: (client as any).gtuCodes,
-        amlGroup: (client as any).amlGroup,
-        amlGroupEnum: (client as any).amlGroupEnum,
-        employmentType: client.employmentType,
-        vatStatus: client.vatStatus,
-        taxScheme: client.taxScheme,
-        zusStatus: client.zusStatus,
-        receiveEmailCopy: client.receiveEmailCopy,
-        isActive: client.isActive,
-      };
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue([createMockUser({ email: 'r@test.com' })]);
-
-      emailConfigService.getDecryptedSmtpConfigByCompanyId.mockResolvedValue(mockSmtpConfig as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-
-      await service.notifyClientUpdated(client, oldValues, user);
-
-      // No changes detected, so sendBatchEmails should not be called
-      expect(emailSenderService.sendBatchEmails).not.toHaveBeenCalled();
-    });
-
-    it('should treat null and undefined as equal (no change)', async () => {
-      const user = createMockUser();
-      const client = createMockClient({ additionalInfo: undefined as any });
-      const oldValues = {
-        name: client.name,
-        nip: client.nip,
-        email: client.email,
-        phone: client.phone,
-        companyStartDate: (client as any).companyStartDate,
-        cooperationStartDate: (client as any).cooperationStartDate,
-        companySpecificity: (client as any).companySpecificity,
-        additionalInfo: null,
-        gtuCode: (client as any).gtuCode,
-        gtuCodes: (client as any).gtuCodes,
-        amlGroup: (client as any).amlGroup,
-        amlGroupEnum: (client as any).amlGroupEnum,
-        employmentType: client.employmentType,
-        vatStatus: client.vatStatus,
-        taxScheme: client.taxScheme,
-        zusStatus: client.zusStatus,
-        receiveEmailCopy: client.receiveEmailCopy,
-        isActive: client.isActive,
-      };
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue([createMockUser({ email: 'r@test.com' })]);
-
-      emailConfigService.getDecryptedSmtpConfigByCompanyId.mockResolvedValue(mockSmtpConfig as any);
-      userRepository.createQueryBuilder.mockReturnValue(qb as any);
-
-      await service.notifyClientUpdated(client, oldValues, user);
-
-      expect(emailSenderService.sendBatchEmails).not.toHaveBeenCalled();
+      expect(emailSvc.notifyBulkClientsUpdated).toHaveBeenCalledWith(updates, user);
     });
   });
 });
+// END OF FILE - remaining notify/change-tracking tests moved to ClientChangelogEmailService tests

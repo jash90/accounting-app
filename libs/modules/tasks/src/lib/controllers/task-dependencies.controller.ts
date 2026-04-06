@@ -28,7 +28,7 @@ import {
 import { TaskDependenciesService } from '../services/task-dependencies.service';
 
 @ApiTags('Task Dependencies')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/tasks')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('tasks')

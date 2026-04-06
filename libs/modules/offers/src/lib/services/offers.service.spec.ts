@@ -91,9 +91,7 @@ describe('OffersService', () => {
     vatRate: 23,
     totalGrossAmount: 1230,
     serviceTerms: {
-      items: [
-        { name: 'Usługa A', unitPrice: 500, quantity: 2, netAmount: 1000 },
-      ],
+      items: [{ name: 'Usługa A', unitPrice: 500, quantity: 2, netAmount: 1000 }],
     },
     offerDate: new Date('2026-03-01'),
     validUntil: new Date('2026-03-31'),
@@ -165,9 +163,9 @@ describe('OffersService', () => {
   };
 
   const mockDataSource = {
-    transaction: jest.fn().mockImplementation((_isolation: string, callback: any) =>
-      callback(mockTransactionManager)
-    ),
+    transaction: jest
+      .fn()
+      .mockImplementation((_isolation: string, callback: any) => callback(mockTransactionManager)),
   };
 
   let mockOfferRepository: any;
@@ -220,7 +218,11 @@ describe('OffersService', () => {
               mockLeadsService as any,
               mockStorageService as any,
               mockEventEmitter as any,
-              mockDataSource as any
+              mockDataSource as any,
+              {
+                getStatistics: jest.fn().mockResolvedValue({ total: 0, byStatus: {} }),
+                getMonthlyStats: jest.fn().mockResolvedValue([]),
+              } as any
             );
           },
         },
@@ -301,9 +303,12 @@ describe('OffersService', () => {
       const mockQb = createMockQueryBuilder();
       mockOfferRepository.createQueryBuilder = jest.fn(() => mockQb);
 
-      await service.findAll(mockUser as User, {
-        statuses: [OfferStatus.DRAFT, OfferStatus.SENT],
-      } as any);
+      await service.findAll(
+        mockUser as User,
+        {
+          statuses: [OfferStatus.DRAFT, OfferStatus.SENT],
+        } as any
+      );
 
       expect(mockQb.andWhere).toHaveBeenCalledWith('offer.status IN (:...statuses)', {
         statuses: [OfferStatus.DRAFT, OfferStatus.SENT],
@@ -325,10 +330,13 @@ describe('OffersService', () => {
       const mockQb = createMockQueryBuilder();
       mockOfferRepository.createQueryBuilder = jest.fn(() => mockQb);
 
-      await service.findAll(mockUser as User, {
-        offerDateFrom: '2026-01-01',
-        offerDateTo: '2026-12-31',
-      } as any);
+      await service.findAll(
+        mockUser as User,
+        {
+          offerDateFrom: '2026-01-01',
+          offerDateTo: '2026-12-31',
+        } as any
+      );
 
       expect(mockQb.andWhere).toHaveBeenCalledWith('offer.offerDate >= :offerDateFrom', {
         offerDateFrom: '2026-01-01',
@@ -561,9 +569,9 @@ describe('OffersService', () => {
     beforeEach(() => {
       // findOne returns DRAFT offer
       mockOfferRepository.findOne = jest.fn().mockResolvedValue({ ...mockOffer });
-      mockOfferRepository.save = jest.fn().mockImplementation((offer) =>
-        Promise.resolve({ ...offer, id: 'offer-123' })
-      );
+      mockOfferRepository.save = jest
+        .fn()
+        .mockImplementation((offer) => Promise.resolve({ ...offer, id: 'offer-123' }));
     });
 
     it('should update title and emit event', async () => {
@@ -662,9 +670,9 @@ describe('OffersService', () => {
   describe('updateStatus', () => {
     beforeEach(() => {
       mockOfferRepository.findOne = jest.fn().mockResolvedValue({ ...mockOffer });
-      mockOfferRepository.save = jest.fn().mockImplementation((offer) =>
-        Promise.resolve({ ...offer })
-      );
+      mockOfferRepository.save = jest
+        .fn()
+        .mockImplementation((offer) => Promise.resolve({ ...offer }));
     });
 
     it('should transition DRAFT -> READY', async () => {
@@ -700,11 +708,7 @@ describe('OffersService', () => {
 
     it('should reject invalid transition DRAFT -> ACCEPTED', async () => {
       await expect(
-        service.updateStatus(
-          'offer-123',
-          { status: OfferStatus.ACCEPTED } as any,
-          mockUser as User
-        )
+        service.updateStatus('offer-123', { status: OfferStatus.ACCEPTED } as any, mockUser as User)
       ).rejects.toThrow(OfferInvalidStatusTransitionException);
     });
 
@@ -715,11 +719,7 @@ describe('OffersService', () => {
       });
 
       await expect(
-        service.updateStatus(
-          'offer-123',
-          { status: OfferStatus.DRAFT } as any,
-          mockUser as User
-        )
+        service.updateStatus('offer-123', { status: OfferStatus.DRAFT } as any, mockUser as User)
       ).rejects.toThrow(OfferInvalidStatusTransitionException);
     });
 
@@ -811,7 +811,8 @@ describe('OffersService', () => {
       mockOfferRepository.remove = jest.fn().mockResolvedValue(mockOffer);
       mockStorageService.deleteFile.mockRejectedValue(new Error('Storage error'));
 
-      await expect(service.remove('offer-123', mockUser as User)).resolves.not.toThrow();
+      // Just verify it completes without throwing
+      await service.remove('offer-123', mockUser as User);
     });
 
     it('should throw OfferNotFoundException when offer does not exist', async () => {
@@ -834,9 +835,9 @@ describe('OffersService', () => {
 
     beforeEach(() => {
       mockOfferRepository.findOne = jest.fn().mockResolvedValue({ ...mockOffer });
-      mockOfferRepository.save = jest.fn().mockImplementation((offer) =>
-        Promise.resolve({ ...offer })
-      );
+      mockOfferRepository.save = jest
+        .fn()
+        .mockImplementation((offer) => Promise.resolve({ ...offer }));
       mockOfferEmailService.sendOffer.mockResolvedValue({ sentAt: new Date('2026-03-09') });
     });
 
@@ -855,12 +856,12 @@ describe('OffersService', () => {
       );
     });
 
-    it('should emit EMAIL_SENT event', async () => {
+    it('should emit offer.emailSent event', async () => {
       await service.sendOffer('offer-123', sendDto as any, mockUser as User);
 
       expect(mockEventEmitter.emit).toHaveBeenCalledWith(
         'offer.emailSent',
-        expect.objectContaining({ recipientEmail: 'recipient@test.com' })
+        expect.objectContaining({ emailRecipient: 'recipient@test.com' })
       );
     });
 
@@ -929,11 +930,7 @@ describe('OffersService', () => {
     });
 
     it('should use custom title when provided', async () => {
-      await service.duplicate(
-        'offer-123',
-        { title: 'Kopia oferty' } as any,
-        mockUser as User
-      );
+      await service.duplicate('offer-123', { title: 'Kopia oferty' } as any, mockUser as User);
 
       expect(mockTransactionManager.create).toHaveBeenCalledWith(
         Offer,
@@ -945,11 +942,7 @@ describe('OffersService', () => {
       const newClient = { ...mockClient, id: 'client-456', name: 'Inny Klient' };
       mockClientRepository.findOne = jest.fn().mockResolvedValue(newClient);
 
-      await service.duplicate(
-        'offer-123',
-        { clientId: 'client-456' } as any,
-        mockUser as User
-      );
+      await service.duplicate('offer-123', { clientId: 'client-456' } as any, mockUser as User);
 
       expect(mockTransactionManager.create).toHaveBeenCalledWith(
         Offer,
@@ -999,47 +992,24 @@ describe('OffersService', () => {
         generatedDocumentPath: null,
       });
 
-      await expect(
-        service.downloadDocument('offer-123', mockUser as User)
-      ).rejects.toThrow(OfferDocumentNotGeneratedException);
+      await expect(service.downloadDocument('offer-123', mockUser as User)).rejects.toThrow(
+        OfferDocumentNotGeneratedException
+      );
     });
   });
 
   // ─── getStatistics ────────────────────────────────────────────────────────────
 
   describe('getStatistics', () => {
-    it('should return aggregated statistics', async () => {
-      const mockQb = createMockQueryBuilder();
-      mockQb.getRawMany.mockResolvedValue([
-        { status: 'DRAFT', count: '5', totalValue: '10000' },
-        { status: 'SENT', count: '3', totalValue: '7500' },
-        { status: 'ACCEPTED', count: '2', totalValue: '5000' },
-        { status: 'REJECTED', count: '1', totalValue: '2000' },
-      ]);
-      mockOfferRepository.createQueryBuilder = jest.fn(() => mockQb);
+    it('should delegate to offerStatisticsService.getStatistics', async () => {
+      const statsSvc = (service as any).offerStatisticsService;
+      const mockStats = { totalOffers: 11, draftCount: 5, conversionRate: 66.67 };
+      statsSvc.getStatistics = jest.fn().mockResolvedValue(mockStats);
 
       const result = await service.getStatistics(mockUser as User);
 
-      expect(result.totalOffers).toBe(11);
-      expect(result.draftCount).toBe(5);
-      expect(result.sentCount).toBe(3);
-      expect(result.acceptedCount).toBe(2);
-      expect(result.rejectedCount).toBe(1);
-      expect(result.totalValue).toBe(24500);
-      expect(result.acceptedValue).toBe(5000);
-      // conversionRate = 2 / (2+1) * 100 = 66.67
-      expect(result.conversionRate).toBe(66.67);
-    });
-
-    it('should handle zero offers gracefully', async () => {
-      const mockQb = createMockQueryBuilder();
-      mockQb.getRawMany.mockResolvedValue([]);
-      mockOfferRepository.createQueryBuilder = jest.fn(() => mockQb);
-
-      const result = await service.getStatistics(mockUser as User);
-
-      expect(result.totalOffers).toBe(0);
-      expect(result.conversionRate).toBe(0);
+      expect(statsSvc.getStatistics).toHaveBeenCalledWith(mockUser);
+      expect(result).toEqual(mockStats);
     });
   });
 

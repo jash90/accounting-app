@@ -1,5 +1,3 @@
-import { calculatePagination, SystemCompanyService } from '@accounting/common/backend';
-import { EmailConfigurationService, EmailSenderService } from '@accounting/email';
 import {
   Injectable,
   InternalServerErrorException,
@@ -7,10 +5,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { In, Repository } from 'typeorm';
 
 import {
   Client,
+  ErrorMessages,
   escapeLikePattern,
   isOwnerOrAdmin,
   MonthlySettlement,
@@ -20,6 +20,8 @@ import {
   UserRole,
   type SettlementStatusHistoryEntry,
 } from '@accounting/common';
+import { calculatePagination, SystemCompanyService } from '@accounting/common/backend';
+import { EmailConfigurationService, EmailSenderService } from '@accounting/email';
 
 import { SETTLEMENT_MESSAGES } from '../constants/settlement-messages';
 import {
@@ -434,13 +436,13 @@ export class SettlementsService {
     const client = settlement.client;
     if (!client?.email) {
       this.logger.warn(`Client ${client?.id} has no email, cannot send missing invoice email`);
-      return { message: 'Klient nie ma adresu email' };
+      return { message: ErrorMessages.SETTLEMENTS.CLIENT_NO_EMAIL };
     }
 
     const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(companyId);
     if (!emailConfig) {
       this.logger.warn(`No email configuration for company ${companyId}`);
-      return { message: 'Brak konfiguracji email dla firmy' };
+      return { message: ErrorMessages.SETTLEMENTS.COMPANY_EMAIL_CONFIG_MISSING };
     }
 
     const monthNames = [
@@ -477,7 +479,7 @@ export class SettlementsService {
     } catch (error) {
       const err = error as Error;
       this.logger.error(`Failed to send missing invoice email: ${err.message}`, err.stack);
-      throw new InternalServerErrorException('Nie udało się wysłać emaila');
+      throw new InternalServerErrorException(ErrorMessages.EMAIL.SEND_FAILED);
     }
   }
 

@@ -13,3 +13,5 @@ export * from './lib/decorators/notify-on.decorator';
 export * from './lib/interceptors/notification.interceptor';
 
 export * from './lib/gateways/notification.gateway';
+
+export * from './lib/constants/notification-templates';

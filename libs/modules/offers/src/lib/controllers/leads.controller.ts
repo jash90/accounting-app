@@ -53,7 +53,7 @@ import { LeadsService } from '../services/leads.service';
 import { OfferExportService } from '../services/offer-export.service';
 
 @ApiTags('Offers - Leads')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @ApiExtraModels(
   LeadResponseDto,
   PaginatedLeadsResponseDto,

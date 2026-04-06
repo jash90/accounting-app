@@ -2,10 +2,28 @@ import { Injectable } from '@nestjs/common';
 
 import { escapeCsvField } from '@accounting/common';
 
+interface ReportGroupData {
+  groupName: string;
+  totalMinutes: number;
+  billableMinutes: number;
+  totalAmount: number;
+  entriesCount: number;
+}
+
+interface TimeTrackingReportData {
+  startDate: string;
+  endDate: string;
+  totalMinutes: number;
+  billableMinutes: number;
+  nonBillableMinutes: number;
+  totalAmount: number;
+  entriesCount: number;
+  groupedData?: ReportGroupData[];
+}
+
 @Injectable()
 export class TimeTrackingExportService {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  generateCsv(reportData: any): string {
+  generateCsv(reportData: TimeTrackingReportData): string {
     const escape = (v: string | number | null | undefined) => escapeCsvField(v);
     const lines: string[] = [];
 

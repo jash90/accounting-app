@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { In, Repository } from 'typeorm';
 
-import { NotificationSettings, NotificationType, User } from '@accounting/common';
+import { applyUpdate, NotificationSettings, NotificationType, User } from '@accounting/common';
 import { SystemCompanyService } from '@accounting/common/backend';
 
 import {
@@ -64,7 +64,7 @@ export class NotificationSettingsService {
   ): Promise<NotificationSettings> {
     const settings = await this.getSettingsForModule(user, moduleSlug);
 
-    Object.assign(settings, dto);
+    applyUpdate(settings, dto, ['id', 'userId', 'companyId', 'createdAt', 'updatedAt']);
 
     return this.settingsRepository.save(settings);
   }

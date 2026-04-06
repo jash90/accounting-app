@@ -28,6 +28,7 @@ import { OfferActivityService } from './services/offer-activity.service';
 import { OfferEmailService } from './services/offer-email.service';
 import { OfferExportService } from './services/offer-export.service';
 import { OfferNumberingService } from './services/offer-numbering.service';
+import { OfferStatisticsService } from './services/offer-statistics.service';
 import { OfferTemplatesService } from './services/offer-templates.service';
 import { OffersService } from './services/offers.service';
 
@@ -62,6 +63,7 @@ import { OffersService } from './services/offers.service';
     LeadsService,
     OfferTemplatesService,
     OffersService,
+    OfferStatisticsService,
     OfferNumberingService,
     OfferActivityService,
     OfferEmailService,

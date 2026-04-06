@@ -1,9 +1,10 @@
-import { calculatePagination, SystemCompanyService } from '@accounting/common/backend';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { DataSource, Repository } from 'typeorm';
 
 import {
+  applyUpdate,
   Client,
   ClientCustomFieldValue,
   ClientFieldDefinition,
@@ -11,6 +12,7 @@ import {
   PaginatedResponseDto,
   User,
 } from '@accounting/common';
+import { calculatePagination, SystemCompanyService } from '@accounting/common/backend';
 
 import {
   ClientErrorCode,
@@ -162,7 +164,7 @@ export class CustomFieldsService {
       }
     }
 
-    Object.assign(definition, dto);
+    applyUpdate(definition, dto, ['id', 'companyId', 'createdAt', 'updatedAt']);
     return this.fieldDefinitionRepository.save(definition);
   }
 

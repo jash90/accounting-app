@@ -15,7 +15,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-import { Sanitize } from '@accounting/common';
+import { PaginationQueryDto, Sanitize } from '@accounting/common';
 
 export class OfferPlaceholderDto {
   @ApiProperty({ description: 'Placeholder key (e.g., "nazwa", "nip")' })
@@ -133,7 +133,7 @@ export class UpdateOfferTemplateDto extends PartialType(CreateOfferTemplateDto) 
   isActive?: boolean;
 }
 
-export class OfferTemplateFiltersDto {
+export class OfferTemplateFiltersDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: 'Search query', maxLength: 100 })
   @IsOptional()
   @Sanitize()
@@ -150,28 +150,4 @@ export class OfferTemplateFiltersDto {
   })
   @IsBoolean()
   isActive?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Page number (1-based)',
-    minimum: 1,
-    default: 1,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({
-    description: 'Number of items per page',
-    minimum: 1,
-    maximum: 100,
-    default: 20,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number = 20;
 }

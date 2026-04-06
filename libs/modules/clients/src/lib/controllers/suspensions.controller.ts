@@ -34,7 +34,7 @@ import { SuspensionService } from '../services/suspension.service';
  * Provides CRUD operations for suspension periods with start/end dates.
  */
 @ApiTags('Client Suspensions')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/clients/:clientId/suspensions')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @UseInterceptors(NotificationInterceptor)

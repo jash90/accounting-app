@@ -316,7 +316,7 @@ describe('TaskDependenciesService', () => {
       await service.remove('dep-123', mockUser as User);
 
       expect(dependencyRepository.findOne).toHaveBeenCalledWith({
-        where: { id: 'dep-123' },
+        where: { id: 'dep-123', task: { companyId: mockUser.companyId } },
         relations: ['task'],
       });
       expect(dependencyRepository.remove).toHaveBeenCalledWith(depWithTask);
@@ -331,11 +331,9 @@ describe('TaskDependenciesService', () => {
     });
 
     it('should throw TaskDependencyNotFoundException for tenant isolation violation', async () => {
-      const depFromOtherCompany = {
-        ...mockDependency,
-        task: { ...mockTask, companyId: 'other-company-789' },
-      };
-      dependencyRepository.findOne = jest.fn().mockResolvedValue(depFromOtherCompany);
+      // Service queries with task.companyId filter, so a dependency from another company
+      // simply won't be found — returns null → throws NotFoundException
+      dependencyRepository.findOne = jest.fn().mockResolvedValue(null);
 
       await expect(service.remove('dep-123', mockUser as User)).rejects.toThrow(
         TaskDependencyNotFoundException

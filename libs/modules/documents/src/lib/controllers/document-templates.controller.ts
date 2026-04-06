@@ -27,7 +27,7 @@ import { CreateDocumentTemplateDto, UpdateDocumentTemplateDto } from '../dto/doc
 import { DocumentTemplatesService } from '../services/document-templates.service';
 
 @ApiTags('Documents')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/documents/templates')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('documents')

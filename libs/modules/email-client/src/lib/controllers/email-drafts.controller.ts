@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
 import { Response } from 'express';
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
@@ -29,7 +30,7 @@ import { EmailClientService } from '../services/email-client.service';
 import { EmailDraftService } from '../services/email-draft.service';
 
 @ApiTags('Email Client - Drafts')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/email-client/drafts')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('email-client')

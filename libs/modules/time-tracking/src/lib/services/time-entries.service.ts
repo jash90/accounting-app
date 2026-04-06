@@ -1,16 +1,17 @@
 import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+  calculatePagination,
+  sanitizeForLog,
+  SystemCompanyService,
+} from '@accounting/common/backend';
+import { ChangeLogService } from '@accounting/infrastructure/change-log';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
-import { DataSource, EntityManager, In, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 import {
+  applyUpdate,
   Client,
+  ErrorMessages,
   escapeLikePattern,
   isOwnerOrAdmin,
   MonthlySettlement,
@@ -21,34 +22,16 @@ import {
   TimeRoundingMethod,
   User,
 } from '@accounting/common';
-import {
-  calculatePagination,
-  sanitizeForLog,
-  SystemCompanyService,
-} from '@accounting/common/backend';
-import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import { CreateTimeEntryDto, TimeEntryFiltersDto, UpdateTimeEntryDto } from '../dto/time-entry.dto';
 import { StartTimerDto, StopTimerDto, UpdateTimerDto } from '../dto/timer.dto';
-import {
-  TimeEntryInvalidStatusException,
-  TimeEntryLockedException,
-  TimeEntryNotFoundException,
-  TimeEntryOverlapException,
-  TimeEntryUnlockNotAuthorizedException,
-  TimerAlreadyRunningException,
-  TimerNotRunningException,
-} from '../exceptions';
+import { TimeEntryNotFoundException } from '../exceptions';
 import { TimeCalculationService } from './time-calculation.service';
+import { TimeEntryApprovalService } from './time-entry-approval.service';
+import { TimeEntryLockingService } from './time-entry-locking.service';
+import { TimeEntryOverlapService } from './time-entry-overlap.service';
 import { TimeSettingsService } from './time-settings.service';
-
-/**
- * Far future date used for overlap detection with running timers.
- * Running timers have no endTime (null), but SQL range overlap queries
- * require a date for comparison: (start1 < end2) AND (end1 > start2).
- * Using '9999-12-31' allows detecting overlaps with open-ended entries.
- */
-const FAR_FUTURE_DATE = '9999-12-31';
+import { TimerService } from './timer.service';
 
 @Injectable()
 export class TimeEntriesService {
@@ -61,19 +44,14 @@ export class TimeEntriesService {
     private readonly systemCompanyService: SystemCompanyService,
     private readonly calculationService: TimeCalculationService,
     private readonly settingsService: TimeSettingsService,
-    private readonly dataSource: DataSource
+    private readonly dataSource: DataSource,
+    private readonly timerService: TimerService,
+    private readonly approvalService: TimeEntryApprovalService,
+    private readonly lockingService: TimeEntryLockingService,
+    private readonly overlapService: TimeEntryOverlapService
   ) {}
 
-  /**
-   * Ensures user has permission to manage (approve/reject) time entries.
-   * Defense-in-depth: validates authorization at service level in addition to guards.
-   * @throws ForbiddenException if user is not ADMIN or COMPANY_OWNER
-   */
-  private ensureCanManageEntries(user: User): void {
-    if (!isOwnerOrAdmin(user)) {
-      throw new ForbiddenException('Nie masz uprawnień do zarządzania wpisami czasu');
-    }
-  }
+  // ==================== CRUD Operations ====================
 
   async findAll(
     user: User,
@@ -193,9 +171,7 @@ export class TimeEntriesService {
     const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     if (dto.taskId && dto.settlementId) {
-      throw new BadRequestException(
-        'Wpis czasu nie może być jednocześnie przypisany do zadania i rozliczenia.'
-      );
+      throw new BadRequestException(ErrorMessages.TIME_TRACKING.TASK_AND_SETTLEMENT_EXCLUSIVE);
     }
 
     // Validate client/task ownership to prevent cross-tenant data access
@@ -249,12 +225,10 @@ export class TimeEntriesService {
     }
 
     // Use transaction with pessimistic locking to prevent race conditions
-    // where two concurrent requests could both pass the overlap check
-    // before either saves, resulting in overlapping entries
     const savedEntry = await this.dataSource.transaction(async (manager) => {
       // Check for overlapping entries with lock if not allowed
       if (!settings.allowOverlappingEntries) {
-        await this.enforceNoTimeOverlapWithLock(
+        await this.overlapService.enforceNoTimeOverlapWithLock(
           manager,
           user.id,
           companyId,
@@ -311,13 +285,11 @@ export class TimeEntriesService {
     const effectiveSettlementId =
       dto.settlementId !== undefined ? dto.settlementId : entry.settlementId;
     if (effectiveTaskId && effectiveSettlementId) {
-      throw new BadRequestException(
-        'Wpis czasu nie może być jednocześnie przypisany do zadania i rozliczenia.'
-      );
+      throw new BadRequestException(ErrorMessages.TIME_TRACKING.TASK_AND_SETTLEMENT_EXCLUSIVE);
     }
 
     // Check if entry is locked
-    await this.enforceEntryNotLocked(entry, user);
+    await this.lockingService.enforceEntryNotLocked(entry, user);
 
     // Non-managers can only edit their own entries
     if (!isOwnerOrAdmin(user) && entry.userId !== user.id) {
@@ -340,8 +312,6 @@ export class TimeEntriesService {
     }
 
     // Use transaction with pessimistic locking to prevent race conditions
-    // where two concurrent updates could both pass the overlap check
-    // before either saves, resulting in overlapping entries
     const savedEntry = await this.dataSource.transaction(async (manager) => {
       // Fetch entry with pessimistic write lock to prevent concurrent modifications
       const lockedEntry = await manager
@@ -361,7 +331,7 @@ export class TimeEntriesService {
 
       // Check for overlapping entries with lock if times are being changed
       if (needsOverlapCheck) {
-        await this.enforceNoTimeOverlapWithLock(
+        await this.overlapService.enforceNoTimeOverlapWithLock(
           manager,
           lockedEntry.userId,
           companyId,
@@ -372,11 +342,6 @@ export class TimeEntriesService {
       }
 
       // Recalculate duration if times changed
-      // Note: Rounding is intentionally applied when times change, even if the entry
-      // was already rounded during creation. This ensures the rounded duration always
-      // reflects the current time range according to current rounding settings.
-      // If rounding settings change, updating times will apply the new rounding rules.
-      // Direct durationMinutes updates bypass rounding to allow manual overrides.
       let durationMinutes = dto.durationMinutes ?? lockedEntry.durationMinutes;
       if (timesChanged && endTime && roundingConfig) {
         durationMinutes = this.calculationService.calculateDuration(startTime, endTime);
@@ -395,14 +360,18 @@ export class TimeEntriesService {
         totalAmount = this.calculationService.calculateTotalAmount(durationMinutes, hourlyRate);
       }
 
-      Object.assign(lockedEntry, {
-        ...dto,
-        startTime,
-        endTime,
-        durationMinutes,
-        hourlyRate,
-        totalAmount,
-      });
+      applyUpdate(
+        lockedEntry,
+        {
+          ...dto,
+          startTime,
+          endTime,
+          durationMinutes,
+          hourlyRate,
+          totalAmount,
+        },
+        ['id', 'companyId', 'userId', 'createdAt']
+      );
 
       return manager.save(lockedEntry);
     });
@@ -422,7 +391,7 @@ export class TimeEntriesService {
     const entry = await this.findOne(id, user);
 
     // Check if entry is locked
-    await this.enforceEntryNotLocked(entry, user);
+    await this.lockingService.enforceEntryNotLocked(entry, user);
 
     // Non-managers can only delete their own entries
     if (!isOwnerOrAdmin(user) && entry.userId !== user.id) {
@@ -438,385 +407,53 @@ export class TimeEntriesService {
     await this.changeLogService.logDelete('TimeEntry', entry.id, oldValues, user);
   }
 
-  // ==================== Timer Operations ====================
+  // ==================== Timer Operations (delegated) ====================
 
   async startTimer(dto: StartTimerDto, user: User): Promise<TimeEntry> {
-    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
-
-    if (dto.taskId && dto.settlementId) {
-      throw new BadRequestException(
-        'Wpis czasu nie może być jednocześnie przypisany do zadania i rozliczenia.'
-      );
-    }
-
-    // Validate client/task/settlement ownership to prevent cross-tenant data access
-    if (dto.clientId) {
-      await this.validateClientOwnership(dto.clientId, companyId);
-    }
-    if (dto.taskId) {
-      await this.validateTaskOwnership(dto.taskId, companyId);
-    }
-    if (dto.settlementId) {
-      await this.validateSettlementOwnership(dto.settlementId, companyId);
-    }
-
-    try {
-      // Use transaction with pessimistic locking to prevent race conditions
-      const savedEntry = await this.dataSource.transaction(async (manager) => {
-        // Check if timer is already running with pessimistic write lock
-        const runningEntry = await manager
-          .createQueryBuilder(TimeEntry, 'entry')
-          .setLock('pessimistic_write')
-          .where('entry.userId = :userId', { userId: user.id })
-          .andWhere('entry.companyId = :companyId', { companyId })
-          .andWhere('entry.isRunning = :isRunning', { isRunning: true })
-          .andWhere('entry.isActive = :isActive', { isActive: true })
-          .getOne();
-
-        if (runningEntry) {
-          throw new TimerAlreadyRunningException();
-        }
-
-        const entry = manager.create(TimeEntry, {
-          ...dto,
-          startTime: new Date(),
-          companyId,
-          userId: user.id,
-          createdById: user.id,
-          status: TimeEntryStatus.DRAFT,
-          isRunning: true,
-          isBillable: dto.isBillable ?? true,
-        });
-
-        return manager.save(entry);
-      });
-
-      this.logger.log(`Timer started for user ${user.id} (entry ${savedEntry.id})`);
-
-      return this.findOne(savedEntry.id, user);
-    } catch (error) {
-      // Handle unique constraint violation from the partial index (PostgreSQL error 23505)
-      if (
-        error instanceof Error &&
-        'code' in error &&
-        (error as { code: string }).code === '23505'
-      ) {
-        this.logger.warn(`Concurrent timer start detected for user ${user.id}`);
-        throw new TimerAlreadyRunningException();
-      }
-      throw error;
-    }
+    const entry = await this.timerService.startTimer(dto, user);
+    return this.findOne(entry.id, user);
   }
 
   async stopTimer(dto: StopTimerDto, user: User): Promise<TimeEntry> {
-    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
-
-    // Use transaction with pessimistic locking to prevent race conditions
-    // (e.g., user clicking stop twice rapidly)
-    const savedEntry = await this.dataSource.transaction(async (manager) => {
-      const runningEntry = await manager
-        .createQueryBuilder(TimeEntry, 'entry')
-        .setLock('pessimistic_write')
-        .where('entry.userId = :userId', { userId: user.id })
-        .andWhere('entry.companyId = :companyId', { companyId })
-        .andWhere('entry.isRunning = :isRunning', { isRunning: true })
-        .andWhere('entry.isActive = :isActive', { isActive: true })
-        .getOne();
-
-      if (!runningEntry) {
-        throw new TimerNotRunningException();
-      }
-
-      const endTime = new Date();
-      let durationMinutes = this.calculationService.calculateDuration(
-        runningEntry.startTime,
-        endTime
-      );
-
-      // Apply rounding
-      const { method, interval } = await this.settingsService.getRoundingConfig(user);
-      durationMinutes = this.calculationService.roundDuration(durationMinutes, method, interval);
-
-      // Get effective hourly rate
-      let hourlyRate = runningEntry.hourlyRate;
-      if (!hourlyRate) {
-        const settings = await this.settingsService.getSettings(user);
-        hourlyRate = settings.defaultHourlyRate ?? undefined;
-      }
-
-      // Calculate total amount
-      let totalAmount: number | undefined;
-      if (durationMinutes && hourlyRate && runningEntry.isBillable) {
-        totalAmount = this.calculationService.calculateTotalAmount(durationMinutes, hourlyRate);
-      }
-
-      // Update entry
-      runningEntry.endTime = endTime;
-      runningEntry.durationMinutes = durationMinutes;
-      runningEntry.hourlyRate = hourlyRate;
-      runningEntry.totalAmount = totalAmount;
-      runningEntry.isRunning = false;
-
-      if (dto.description) {
-        runningEntry.description = runningEntry.description
-          ? `${runningEntry.description} ${dto.description}`
-          : dto.description;
-      }
-
-      return manager.save(runningEntry);
-    });
-
-    this.logger.log(
-      `Timer stopped for user ${user.id} (entry ${savedEntry.id}, duration: ${savedEntry.durationMinutes}m)`
-    );
-
-    return this.findOne(savedEntry.id, user);
+    const entry = await this.timerService.stopTimer(dto, user);
+    return this.findOne(entry.id, user);
   }
 
   async getActiveTimer(user: User): Promise<TimeEntry | null> {
-    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
-
-    const runningEntry = await this.entryRepository.findOne({
-      where: {
-        userId: user.id,
-        companyId,
-        isRunning: true,
-        isActive: true,
-      },
-      relations: ['client', 'task', 'settlement', 'settlement.client'],
-    });
-
-    return runningEntry;
+    return this.timerService.getActiveTimer(user);
   }
 
   async discardTimer(user: User): Promise<void> {
-    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
-
-    // Use transaction with pessimistic locking to prevent race conditions
-    // (e.g., user clicking discard twice rapidly)
-    await this.dataSource.transaction(async (manager) => {
-      const runningEntry = await manager
-        .createQueryBuilder(TimeEntry, 'entry')
-        .setLock('pessimistic_write')
-        .where('entry.userId = :userId', { userId: user.id })
-        .andWhere('entry.companyId = :companyId', { companyId })
-        .andWhere('entry.isRunning = :isRunning', { isRunning: true })
-        .andWhere('entry.isActive = :isActive', { isActive: true })
-        .getOne();
-
-      if (!runningEntry) {
-        throw new TimerNotRunningException();
-      }
-
-      // Soft delete for consistency with other time entry operations
-      runningEntry.isActive = false;
-      runningEntry.isRunning = false;
-      await manager.save(runningEntry);
-    });
-
-    this.logger.log(`Timer discarded for user ${user.id}`);
+    return this.timerService.discardTimer(user);
   }
 
   async updateTimer(dto: UpdateTimerDto, user: User): Promise<TimeEntry> {
-    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
-
-    // Validate client/task/settlement ownership if being changed
-    if (dto.clientId) {
-      await this.validateClientOwnership(dto.clientId, companyId);
-    }
-    if (dto.taskId) {
-      await this.validateTaskOwnership(dto.taskId, companyId);
-    }
-    if (dto.settlementId) {
-      await this.validateSettlementOwnership(dto.settlementId, companyId);
-    }
-
-    // Use transaction with pessimistic locking to prevent race conditions
-    // (e.g., user updating timer from multiple tabs simultaneously)
-    const savedEntry = await this.dataSource.transaction(async (manager) => {
-      const runningEntry = await manager
-        .createQueryBuilder(TimeEntry, 'entry')
-        .setLock('pessimistic_write')
-        .where('entry.userId = :userId', { userId: user.id })
-        .andWhere('entry.companyId = :companyId', { companyId })
-        .andWhere('entry.isRunning = :isRunning', { isRunning: true })
-        .andWhere('entry.isActive = :isActive', { isActive: true })
-        .getOne();
-
-      if (!runningEntry) {
-        throw new TimerNotRunningException();
-      }
-
-      // Check mutual exclusivity with effective values
-      const effectiveTaskId = dto.taskId !== undefined ? dto.taskId : runningEntry.taskId;
-      const effectiveSettlementId =
-        dto.settlementId !== undefined ? dto.settlementId : runningEntry.settlementId;
-      if (effectiveTaskId && effectiveSettlementId) {
-        throw new BadRequestException(
-          'Wpis czasu nie może być jednocześnie przypisany do zadania i rozliczenia.'
-        );
-      }
-
-      Object.assign(runningEntry, dto);
-      return manager.save(runningEntry);
-    });
-
-    return this.findOne(savedEntry.id, user);
+    const entry = await this.timerService.updateTimer(dto, user);
+    return this.findOne(entry.id, user);
   }
 
-  // ==================== Approval Workflow ====================
+  // ==================== Approval Workflow (delegated) ====================
 
   async submitEntry(id: string, user: User): Promise<TimeEntry> {
-    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
-
-    // Use transaction with pessimistic locking to prevent race conditions
-    // (e.g., user submitting the same entry from multiple tabs)
-    const savedEntry = await this.dataSource.transaction(async (manager) => {
-      const entry = await manager
-        .createQueryBuilder(TimeEntry, 'entry')
-        .setLock('pessimistic_write')
-        .where('entry.id = :id', { id })
-        .andWhere('entry.companyId = :companyId', { companyId })
-        .andWhere('entry.userId = :userId', { userId: user.id })
-        .andWhere('entry.isActive = :isActive', { isActive: true })
-        .getOne();
-
-      if (!entry) {
-        throw new TimeEntryNotFoundException();
-      }
-
-      if (entry.status !== TimeEntryStatus.DRAFT) {
-        throw new TimeEntryInvalidStatusException(entry.status, TimeEntryStatus.SUBMITTED);
-      }
-
-      entry.status = TimeEntryStatus.SUBMITTED;
-      entry.submittedAt = new Date();
-
-      return manager.save(entry);
-    });
-
-    this.logger.log(`Time entry ${id} submitted for approval`);
-
-    return this.findOne(savedEntry.id, user);
+    const entry = await this.approvalService.submitEntry(id, user);
+    return this.findOne(entry.id, user);
   }
 
   async approveEntry(id: string, user: User): Promise<TimeEntry> {
-    // Defense-in-depth: validate authorization at service level
-    this.ensureCanManageEntries(user);
-
-    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
-
-    // Use transaction with pessimistic locking to prevent race conditions
-    // (e.g., concurrent approve/reject calls for the same entry)
-    const savedEntry = await this.dataSource.transaction(async (manager) => {
-      const entry = await manager
-        .createQueryBuilder(TimeEntry, 'entry')
-        .setLock('pessimistic_write')
-        .where('entry.id = :id', { id })
-        .andWhere('entry.companyId = :companyId', { companyId })
-        .andWhere('entry.isActive = :isActive', { isActive: true })
-        .getOne();
-
-      if (!entry) {
-        throw new TimeEntryNotFoundException();
-      }
-
-      if (entry.status !== TimeEntryStatus.SUBMITTED) {
-        throw new TimeEntryInvalidStatusException(entry.status, TimeEntryStatus.APPROVED);
-      }
-
-      entry.status = TimeEntryStatus.APPROVED;
-      entry.approvedById = user.id;
-      entry.approvedAt = new Date();
-      // Auto-lock entry on approval to prevent further modifications
-      entry.isLocked = true;
-      entry.lockedAt = new Date();
-      entry.lockedById = user.id;
-
-      return manager.save(entry);
-    });
-
-    this.logger.log(`Time entry ${id} approved and locked by ${user.id}`);
-
-    return this.findOne(savedEntry.id, user);
+    const entry = await this.approvalService.approveEntry(id, user);
+    return this.findOne(entry.id, user);
   }
 
   async rejectEntry(id: string, rejectionNote: string, user: User): Promise<TimeEntry> {
-    // Defense-in-depth: validate authorization at service level
-    this.ensureCanManageEntries(user);
-
-    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
-
-    // Use transaction with pessimistic locking to prevent race conditions
-    // (e.g., concurrent approve/reject calls for the same entry)
-    const savedEntry = await this.dataSource.transaction(async (manager) => {
-      const entry = await manager
-        .createQueryBuilder(TimeEntry, 'entry')
-        .setLock('pessimistic_write')
-        .where('entry.id = :id', { id })
-        .andWhere('entry.companyId = :companyId', { companyId })
-        .andWhere('entry.isActive = :isActive', { isActive: true })
-        .getOne();
-
-      if (!entry) {
-        throw new TimeEntryNotFoundException();
-      }
-
-      if (entry.status !== TimeEntryStatus.SUBMITTED) {
-        throw new TimeEntryInvalidStatusException(entry.status, TimeEntryStatus.REJECTED);
-      }
-
-      entry.status = TimeEntryStatus.REJECTED;
-      entry.rejectionNote = rejectionNote;
-      entry.approvedById = user.id;
-      entry.approvedAt = new Date();
-
-      return manager.save(entry);
-    });
-
-    this.logger.log(`Time entry ${id} rejected by ${user.id}`);
-
-    return this.findOne(savedEntry.id, user);
+    const entry = await this.approvalService.rejectEntry(id, rejectionNote, user);
+    return this.findOne(entry.id, user);
   }
 
   async bulkApprove(
     entryIds: string[],
     user: User
   ): Promise<{ approved: number; notFound: number }> {
-    // Defense-in-depth: validate authorization at service level
-    this.ensureCanManageEntries(user);
-
-    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
-
-    // First, count valid entries to report how many were not found
-    const validCount = await this.entryRepository.count({
-      where: {
-        id: In(entryIds),
-        companyId,
-        status: TimeEntryStatus.SUBMITTED,
-      },
-    });
-
-    const result = await this.entryRepository.update(
-      {
-        id: In(entryIds),
-        companyId,
-        status: TimeEntryStatus.SUBMITTED,
-      },
-      {
-        status: TimeEntryStatus.APPROVED,
-        approvedById: user.id,
-        approvedAt: new Date(),
-        isLocked: true,
-        lockedAt: new Date(),
-        lockedById: user.id,
-      }
-    );
-
-    return {
-      approved: result.affected ?? 0,
-      notFound: entryIds.length - validCount,
-    };
+    return this.approvalService.bulkApprove(entryIds, user);
   }
 
   async bulkReject(
@@ -824,129 +461,34 @@ export class TimeEntriesService {
     rejectionNote: string,
     user: User
   ): Promise<{ rejected: number; notFound: number }> {
-    // Defense-in-depth: validate authorization at service level
-    this.ensureCanManageEntries(user);
-
-    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
-
-    // First, count valid entries to report how many were not found
-    const validCount = await this.entryRepository.count({
-      where: {
-        id: In(entryIds),
-        companyId,
-        status: TimeEntryStatus.SUBMITTED,
-      },
-    });
-
-    const result = await this.entryRepository.update(
-      {
-        id: In(entryIds),
-        companyId,
-        status: TimeEntryStatus.SUBMITTED,
-      },
-      {
-        status: TimeEntryStatus.REJECTED,
-        rejectionNote,
-        approvedById: user.id,
-        approvedAt: new Date(),
-      }
-    );
-
-    return {
-      rejected: result.affected ?? 0,
-      notFound: entryIds.length - validCount,
-    };
+    return this.approvalService.bulkReject(entryIds, rejectionNote, user);
   }
 
-  // ==================== Locking Operations ====================
+  // ==================== Locking Operations (delegated) ====================
 
   async lockEntry(id: string, user: User, reason?: string): Promise<TimeEntry> {
     const entry = await this.findOne(id, user);
-
-    // Only managers can lock entries
-    if (!isOwnerOrAdmin(user)) {
-      throw new TimeEntryUnlockNotAuthorizedException();
-    }
-
-    if (entry.isLocked) {
-      // Already locked, return as-is
-      return entry;
-    }
-
-    const oldValues = this.sanitizeTimeEntryForLog(entry);
-
-    entry.isLocked = true;
-    entry.lockedAt = new Date();
-    entry.lockedById = user.id;
-
-    const savedEntry = await this.entryRepository.save(entry);
-
-    await this.changeLogService.logUpdate(
-      'TimeEntry',
-      savedEntry.id,
-      oldValues,
-      this.sanitizeTimeEntryForLog(savedEntry),
-      user
-    );
-
-    this.logger.log(`Time entry ${id} locked by ${user.id}${reason ? `: ${reason}` : ''}`);
-
+    await this.lockingService.lockEntry(entry, user, reason);
     return this.findOne(id, user);
   }
 
   async unlockEntry(id: string, user: User, reason?: string): Promise<TimeEntry> {
-    // Only ADMIN/COMPANY_OWNER can unlock
-    if (!isOwnerOrAdmin(user)) {
-      throw new TimeEntryUnlockNotAuthorizedException();
-    }
-
     const entry = await this.findOne(id, user);
-
-    if (!entry.isLocked) {
-      // Already unlocked, return as-is
-      return entry;
-    }
-
-    const oldValues = this.sanitizeTimeEntryForLog(entry);
-
-    entry.isLocked = false;
-    entry.lockedAt = null as unknown as undefined;
-    entry.lockedById = null as unknown as undefined;
-
-    const savedEntry = await this.entryRepository.save(entry);
-
-    await this.changeLogService.logUpdate(
-      'TimeEntry',
-      savedEntry.id,
-      oldValues,
-      this.sanitizeTimeEntryForLog(savedEntry),
-      user
-    );
-
-    this.logger.log(`Time entry ${id} unlocked by ${user.id}${reason ? `: ${reason}` : ''}`);
-
+    await this.lockingService.unlockEntry(entry, user, reason);
     return this.findOne(id, user);
   }
 
-  // ==================== Helper Methods ====================
+  // ==================== Validation Helpers ====================
 
-  /**
-   * Validates that a client belongs to the specified company.
-   * Throws NotFoundException if client doesn't exist or doesn't belong to company.
-   */
   private async validateClientOwnership(clientId: string, companyId: string): Promise<void> {
     const client = await this.dataSource.getRepository(Client).findOne({
       where: { id: clientId, companyId, isActive: true },
     });
     if (!client) {
-      throw new NotFoundException('Klient nie należy do tej firmy lub nie istnieje');
+      throw new NotFoundException(ErrorMessages.TIME_TRACKING.CLIENT_NOT_IN_COMPANY);
     }
   }
 
-  /**
-   * Validates that a settlement belongs to the specified company.
-   * Throws NotFoundException if settlement doesn't exist or doesn't belong to company.
-   */
   private async validateSettlementOwnership(
     settlementId: string,
     companyId: string
@@ -955,113 +497,16 @@ export class TimeEntriesService {
       where: { id: settlementId, companyId },
     });
     if (!settlement) {
-      throw new NotFoundException('Rozliczenie nie należy do tej firmy lub nie istnieje');
+      throw new NotFoundException(ErrorMessages.TIME_TRACKING.SETTLEMENT_NOT_IN_COMPANY);
     }
   }
 
-  /**
-   * Validates that a task belongs to the specified company.
-   * Throws NotFoundException if task doesn't exist or doesn't belong to company.
-   */
   private async validateTaskOwnership(taskId: string, companyId: string): Promise<void> {
     const task = await this.dataSource.getRepository(Task).findOne({
       where: { id: taskId, companyId, isActive: true },
     });
     if (!task) {
-      throw new NotFoundException('Zadanie nie należy do tej firmy lub nie istnieje');
-    }
-  }
-
-  private async enforceNoTimeOverlap(
-    userId: string,
-    companyId: string,
-    startTime: Date,
-    endTime: Date | null,
-    excludeEntryId?: string
-  ): Promise<void> {
-    // SQL-based range overlap detection: (start1 < end2) AND (end1 > start2)
-    // This is much more efficient than fetching all entries and checking in JS
-    const queryBuilder = this.entryRepository
-      .createQueryBuilder('entry')
-      .where('entry.userId = :userId', { userId })
-      .andWhere('entry.companyId = :companyId', { companyId })
-      .andWhere('entry.isActive = true')
-      // Check overlap: new entry starts before existing entry ends
-      // Using far future date constant for entries without end time
-      .andWhere('entry.startTime < :endTime', {
-        endTime: endTime ?? new Date(FAR_FUTURE_DATE),
-      })
-      // Check overlap: existing entry ends after new entry starts (or is still running)
-      .andWhere('(entry.endTime IS NULL OR entry.endTime > :startTime)', {
-        startTime,
-      });
-
-    if (excludeEntryId) {
-      queryBuilder.andWhere('entry.id != :excludeId', { excludeId: excludeEntryId });
-    }
-
-    const count = await queryBuilder.getCount();
-
-    if (count > 0) {
-      throw new TimeEntryOverlapException();
-    }
-  }
-
-  /**
-   * Check for overlapping entries within a transaction using pessimistic locking.
-   * This prevents race conditions where two concurrent requests could both pass
-   * the overlap check before either saves, resulting in overlapping entries.
-   *
-   * Uses pessimistic_read lock to prevent other transactions from modifying
-   * the entries being checked until the current transaction completes.
-   */
-  private async enforceNoTimeOverlapWithLock(
-    manager: EntityManager,
-    userId: string,
-    companyId: string,
-    startTime: Date,
-    endTime: Date | null,
-    excludeEntryId?: string
-  ): Promise<void> {
-    const queryBuilder = manager
-      .createQueryBuilder(TimeEntry, 'entry')
-      .setLock('pessimistic_read')
-      .where('entry.userId = :userId', { userId })
-      .andWhere('entry.companyId = :companyId', { companyId })
-      .andWhere('entry.isActive = true')
-      .andWhere('entry.startTime < :endTime', {
-        endTime: endTime ?? new Date(FAR_FUTURE_DATE),
-      })
-      .andWhere('(entry.endTime IS NULL OR entry.endTime > :startTime)', {
-        startTime,
-      });
-
-    if (excludeEntryId) {
-      queryBuilder.andWhere('entry.id != :excludeId', { excludeId: excludeEntryId });
-    }
-
-    const count = await queryBuilder.getCount();
-
-    if (count > 0) {
-      throw new TimeEntryOverlapException();
-    }
-  }
-
-  private async enforceEntryNotLocked(entry: TimeEntry, user: User): Promise<void> {
-    // Check 1: Explicit lock flag (takes precedence)
-    if (entry.isLocked) {
-      throw new TimeEntryLockedException();
-    }
-
-    // Check 2: Age-based locking
-    const settings = await this.settingsService.getSettings(user);
-    if (settings.lockEntriesAfterDays > 0) {
-      const lockDate = new Date();
-      lockDate.setDate(lockDate.getDate() - settings.lockEntriesAfterDays);
-
-      if (entry.startTime < lockDate) {
-        throw new TimeEntryLockedException();
-      }
+      throw new NotFoundException(ErrorMessages.TIME_TRACKING.TASK_NOT_IN_COMPANY);
     }
   }
 

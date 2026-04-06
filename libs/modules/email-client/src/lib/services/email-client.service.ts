@@ -6,7 +6,7 @@ import {
   RequestTimeoutException,
 } from '@nestjs/common';
 
-import { User, UserRole } from '@accounting/common';
+import { ErrorMessages, User, UserRole } from '@accounting/common';
 import {
   EmailConfigurationService,
   EmailReaderService,
@@ -121,7 +121,7 @@ export class EmailClientService {
 
     // For non-ADMIN users, use company email configuration
     if (!user.companyId) {
-      throw new BadRequestException('Użytkownik musi należeć do firmy');
+      throw new BadRequestException(ErrorMessages.EMAIL.USER_MUST_BELONG_TO_COMPANY);
     }
 
     const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
@@ -129,7 +129,7 @@ export class EmailClientService {
     );
 
     if (!emailConfig) {
-      throw new BadRequestException('Brak konfiguracji email dla firmy. Skonfiguruj email firmy.');
+      throw new BadRequestException(ErrorMessages.EMAIL.COMPANY_CONFIG_MISSING);
     }
 
     return emailConfig;

@@ -29,7 +29,7 @@ import {
 import { TaskCommentsService } from '../services/task-comments.service';
 
 @ApiTags('Task Comments')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/tasks')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('tasks')

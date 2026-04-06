@@ -66,7 +66,7 @@ import { SettlementStatsService } from '../services/settlement-stats.service';
 import { SettlementsService } from '../services/settlements.service';
 
 @ApiTags('Settlements')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @ApiExtraModels(
   SettlementResponseDto,
   SettlementStatsDto,

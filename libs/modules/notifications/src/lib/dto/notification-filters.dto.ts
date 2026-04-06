@@ -1,22 +1,19 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
   IsBoolean,
   IsEnum,
-  IsInt,
   IsOptional,
   IsString,
   IsUUID,
-  Max,
-  Min,
 } from 'class-validator';
 
-import { NotificationType } from '@accounting/common';
+import { NotificationType, PaginationQueryDto } from '@accounting/common';
 
-export class NotificationFiltersDto {
+export class NotificationFiltersDto extends PaginationQueryDto {
   @ApiPropertyOptional({ enum: NotificationType, description: 'Filter by type' })
   @IsOptional()
   @IsEnum(NotificationType)
@@ -38,21 +35,6 @@ export class NotificationFiltersDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   isArchived?: boolean;
-
-  @ApiPropertyOptional({ description: 'Page number', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({ description: 'Items per page', default: 20 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number = 20;
 }
 
 export class MarkMultipleDto {

@@ -25,7 +25,7 @@ import {
 import { DeleteRequestService, ProcessDeleteRequestDto } from '../services/delete-request.service';
 
 @ApiTags('Client Delete Requests')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/clients/delete-requests')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('clients')
