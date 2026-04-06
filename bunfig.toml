@@ -1,6 +1,6 @@
 [test]
 root = "."
-preload = ["./test/bun-setup.ts"]
+preload = ["./test/bun-decorator-plugin.ts", "./test/bun-setup.ts"]
 coverage = true
 coverageReporter = ["text", "lcov"]
 
