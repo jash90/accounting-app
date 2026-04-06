@@ -1,37 +1,47 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 
 import { EncryptionService } from './encryption.service';
 
 describe('EncryptionService', () => {
   let service: EncryptionService;
   let module: TestingModule;
-  const originalEnv = process.env;
 
-  beforeAll(() => {
-    // Set up test encryption key
-    process.env = {
-      ...originalEnv,
-      ENCRYPTION_KEY: 'test-encryption-key-min-16-chars',
-    };
-  });
-
-  afterAll(() => {
-    // Restore original environment
-    process.env = originalEnv;
-  });
+  // Save the original env vars once at the start
+  const savedEncryptionKey = process.env.ENCRYPTION_KEY;
+  const savedEncryptionSecret = process.env.ENCRYPTION_SECRET;
+  const savedNodeEnv = process.env.NODE_ENV;
 
   beforeEach(async () => {
+    // Set up a valid encryption key for standard tests
+    process.env.ENCRYPTION_KEY = 'test-encryption-key-min-32-chars!!';
+    delete process.env.ENCRYPTION_SECRET;
+
     module = await Test.createTestingModule({
       providers: [EncryptionService],
     }).compile();
+
+    // Trigger onModuleInit to initialize dev key fallback if needed
+    await module.init();
 
     service = module.get<EncryptionService>(EncryptionService);
   });
 
   afterEach(async () => {
     await module.close();
+    // Restore env vars after each test
+    if (savedEncryptionKey !== undefined) {
+      process.env.ENCRYPTION_KEY = savedEncryptionKey;
+    } else {
+      delete process.env.ENCRYPTION_KEY;
+    }
+    if (savedEncryptionSecret !== undefined) {
+      process.env.ENCRYPTION_SECRET = savedEncryptionSecret;
+    } else {
+      delete process.env.ENCRYPTION_SECRET;
+    }
+    process.env.NODE_ENV = savedNodeEnv || 'test';
   });
 
   it('should be defined', () => {
@@ -108,67 +118,57 @@ describe('EncryptionService', () => {
       );
     });
 
-    it('should throw error when ENCRYPTION_KEY is not set', async () => {
-      const originalKey = process.env.ENCRYPTION_KEY;
-      const originalSecret = process.env.ENCRYPTION_SECRET;
+    it('should throw in production when ENCRYPTION_KEY is not set', () => {
+      process.env.NODE_ENV = 'production';
       delete process.env.ENCRYPTION_KEY;
       delete process.env.ENCRYPTION_SECRET;
 
-      // In dev mode, it auto-generates a key, so this won't throw
-      // The test expectation doesn't match actual behavior
-      const testService = new EncryptionService();
-      expect(testService.isConfigured()).toBe(true); // Dev mode auto-generates key
-
-      process.env.ENCRYPTION_KEY = originalKey;
-      if (originalSecret) process.env.ENCRYPTION_SECRET = originalSecret;
+      expect(() => new EncryptionService()).toThrow(
+        'ENCRYPTION_SECRET environment variable is required'
+      );
     });
 
-    it('should throw error when ENCRYPTION_KEY is too short', async () => {
-      const originalKey = process.env.ENCRYPTION_KEY;
-      const originalSecret = process.env.ENCRYPTION_SECRET;
+    it('should throw in production when ENCRYPTION_KEY is too short', () => {
+      process.env.NODE_ENV = 'production';
       process.env.ENCRYPTION_KEY = 'short';
       delete process.env.ENCRYPTION_SECRET;
 
-      // In dev mode, it falls back to auto-generated key if env var is too short
-      const testService = new EncryptionService();
-      expect(testService.isConfigured()).toBe(true); // Dev mode auto-generates key
-
-      process.env.ENCRYPTION_KEY = originalKey;
-      if (originalSecret) process.env.ENCRYPTION_SECRET = originalSecret;
+      expect(() => new EncryptionService()).toThrow('at least 32 characters');
     });
   });
 
   describe('isConfigured', () => {
     it('should return true when ENCRYPTION_KEY is properly set', () => {
+      // service was created with a valid key in beforeEach
       expect(service.isConfigured()).toBe(true);
     });
 
-    it('should return true in dev mode even when ENCRYPTION_KEY is not set (auto-generates)', () => {
-      const originalKey = process.env.ENCRYPTION_KEY;
-      const originalSecret = process.env.ENCRYPTION_SECRET;
+    it('should return false before onModuleInit when no env key in dev mode', () => {
       delete process.env.ENCRYPTION_KEY;
       delete process.env.ENCRYPTION_SECRET;
+      process.env.NODE_ENV = 'test';
 
-      // In dev mode, service auto-generates a key
+      // Constructor alone won't set secretKey in dev mode without valid env var
       const testService = new EncryptionService();
-      expect(testService.isConfigured()).toBe(true);
-
-      process.env.ENCRYPTION_KEY = originalKey;
-      if (originalSecret) process.env.ENCRYPTION_SECRET = originalSecret;
+      // Before onModuleInit, secretKey is null (no env var, no dev file loaded yet)
+      expect(testService.isConfigured()).toBe(false);
     });
 
-    it('should return true in dev mode even when ENCRYPTION_KEY is too short (auto-generates)', () => {
-      const originalKey = process.env.ENCRYPTION_KEY;
-      const originalSecret = process.env.ENCRYPTION_SECRET;
-      process.env.ENCRYPTION_KEY = 'short';
+    it('should return true after onModuleInit in dev mode even without env key', async () => {
+      delete process.env.ENCRYPTION_KEY;
       delete process.env.ENCRYPTION_SECRET;
+      process.env.NODE_ENV = 'test';
 
-      // In dev mode, service auto-generates a key when env var is invalid
-      const testService = new EncryptionService();
+      const testModule = await Test.createTestingModule({
+        providers: [EncryptionService],
+      }).compile();
+      await testModule.init();
+
+      const testService = testModule.get<EncryptionService>(EncryptionService);
+      // After onModuleInit, dev key is auto-generated
       expect(testService.isConfigured()).toBe(true);
 
-      process.env.ENCRYPTION_KEY = originalKey;
-      if (originalSecret) process.env.ENCRYPTION_SECRET = originalSecret;
+      await testModule.close();
     });
   });
 });

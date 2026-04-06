@@ -26,15 +26,32 @@ export class RBACService {
   private readonly logger = new Logger(RBACService.name);
 
   /**
-   * In-memory cache for module lookups
+   * In-memory cache for module lookups (bounded LRU).
    * Key: slug, Value: { module, timestamp }
    */
   private moduleCache = new Map<string, { module: Module; timestamp: number }>();
 
   /**
-   * Cache TTL in milliseconds (5 minutes)
+   * Short-lived cache for company module access checks (bounded LRU).
+   * Key: 'companyId:moduleId', Value: { hasAccess, timestamp }
+   * Prevents duplicate DB queries within the same request cycle.
    */
+  private companyAccessCache = new Map<string, { hasAccess: boolean; timestamp: number }>();
+
+  /** Cache TTL in milliseconds (5 minutes for modules) */
   private readonly cacheTTL = 5 * 60 * 1000;
+
+  /** Cache TTL for company access checks (30 seconds — short to reflect permission changes quickly) */
+  private readonly companyAccessCacheTTL = 30_000;
+
+  /** Maximum entries in module cache to prevent unbounded memory growth */
+  private readonly MAX_MODULE_CACHE_SIZE = 200;
+
+  /** Maximum entries in company access cache to prevent unbounded memory growth */
+  private readonly MAX_ACCESS_CACHE_SIZE = 1_000;
+
+  /** Interval handle for periodic cache cleanup */
+  private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     @InjectRepository(User)
@@ -49,124 +66,74 @@ export class RBACService {
     private readonly userModulePermissionRepository: Repository<UserModulePermission>,
     @Optional()
     private readonly moduleDiscoveryService?: ModuleDiscoveryService
-  ) {}
-
-  async canAccessModule(userId: string, moduleSlug: string): Promise<boolean> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      return false;
+  ) {
+    // Periodic cleanup every 10 minutes to evict expired entries
+    this.cleanupInterval = setInterval(() => this.evictExpiredEntries(), 10 * 60 * 1000);
+    // Ensure interval doesn't keep process alive
+    if (this.cleanupInterval?.unref) {
+      this.cleanupInterval.unref();
     }
-
-    // ADMIN has access to everything (but not to business data)
-    if (user.role === UserRole.ADMIN) {
-      return true;
-    }
-
-    // Find module
-    const module = await this.moduleRepository.findOne({
-      where: { slug: moduleSlug },
-    });
-
-    if (!module || !module.isActive) {
-      return false;
-    }
-
-    // COMPANY_OWNER has access if module is enabled for their company
-    if (user.role === UserRole.COMPANY_OWNER && user.companyId) {
-      const companyAccess = await this.companyModuleAccessRepository.findOne({
-        where: {
-          companyId: user.companyId,
-          moduleId: module.id,
-          isEnabled: true,
-        },
-      });
-      return !!companyAccess;
-    }
-
-    // EMPLOYEE has access if they have explicit permission
-    if (user.role === UserRole.EMPLOYEE && user.companyId) {
-      // First check if company has access
-      const companyAccess = await this.companyModuleAccessRepository.findOne({
-        where: {
-          companyId: user.companyId,
-          moduleId: module.id,
-          isEnabled: true,
-        },
-      });
-
-      if (!companyAccess) {
-        return false;
-      }
-
-      // Then check if user has explicit permission
-      const userPermission = await this.userModulePermissionRepository.findOne({
-        where: {
-          userId: user.id,
-          moduleId: module.id,
-        },
-      });
-
-      return !!userPermission;
-    }
-
-    return false;
   }
 
-  async hasPermission(userId: string, moduleSlug: string, permission: string): Promise<boolean> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      return false;
+  /**
+   * Cleanup on module destroy (NestJS lifecycle hook).
+   */
+  onModuleDestroy(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
     }
+  }
 
-    // ADMIN has all permissions (but not to business data)
-    if (user.role === UserRole.ADMIN) {
-      return true;
-    }
+  /**
+   * Evict expired entries from both caches.
+   * Called periodically to prevent memory leaks.
+   */
+  private evictExpiredEntries(): void {
+    const now = Date.now();
+    let modulePurged = 0;
+    let accessPurged = 0;
 
-    // Find module
-    const module = await this.moduleRepository.findOne({
-      where: { slug: moduleSlug },
-    });
-
-    if (!module || !module.isActive) {
-      return false;
-    }
-
-    // COMPANY_OWNER has full permissions to enabled modules
-    if (user.role === UserRole.COMPANY_OWNER && user.companyId) {
-      const companyAccess = await this.companyModuleAccessRepository.findOne({
-        where: {
-          companyId: user.companyId,
-          moduleId: module.id,
-          isEnabled: true,
-        },
-      });
-      return !!companyAccess;
-    }
-
-    // EMPLOYEE permissions are based on explicit grants
-    if (user.role === UserRole.EMPLOYEE && user.companyId) {
-      const userPermission = await this.userModulePermissionRepository.findOne({
-        where: {
-          userId: user.id,
-          moduleId: module.id,
-        },
-      });
-
-      if (!userPermission) {
-        return false;
+    for (const [key, value] of this.moduleCache) {
+      if (now - value.timestamp >= this.cacheTTL) {
+        this.moduleCache.delete(key);
+        modulePurged++;
       }
-
-      return userPermission.permissions.includes(permission);
     }
 
-    return false;
+    for (const [key, value] of this.companyAccessCache) {
+      if (now - value.timestamp >= this.companyAccessCacheTTL) {
+        this.companyAccessCache.delete(key);
+        accessPurged++;
+      }
+    }
+
+    if (modulePurged > 0 || accessPurged > 0) {
+      this.logger.debug(
+        `Cache cleanup: purged ${modulePurged} module entries, ${accessPurged} access entries`
+      );
+    }
+  }
+
+  /**
+   * Set a value in a bounded Map cache with LRU eviction.
+   * When the cache exceeds maxSize, the oldest entry (first inserted) is removed.
+   */
+  private setCacheEntry<T>(cache: Map<string, T>, key: string, value: T, maxSize: number): void {
+    // Delete first so re-insertion moves key to end (LRU behavior)
+    cache.delete(key);
+
+    // Evict oldest entries if at capacity
+    while (cache.size >= maxSize) {
+      const oldestKey = cache.keys().next().value;
+      if (oldestKey !== undefined) {
+        cache.delete(oldestKey);
+      } else {
+        break;
+      }
+    }
+
+    cache.set(key, value);
   }
 
   async grantModuleAccess(
@@ -486,16 +453,10 @@ export class RBACService {
       return { hasAccess: false, hasPermission: false };
     }
 
-    // Check company-level access (single query)
-    const companyAccess = await this.companyModuleAccessRepository.findOne({
-      where: {
-        companyId: user.companyId,
-        moduleId: module.id,
-        isEnabled: true,
-      },
-    });
+    // Check company-level access (with cache)
+    const hasCompanyAccess = await this.checkCompanyAccess(user.companyId, module.id);
 
-    if (!companyAccess) {
+    if (!hasCompanyAccess) {
       return { hasAccess: false, hasPermission: false };
     }
 
@@ -545,7 +506,12 @@ export class RBACService {
       });
 
       if (module) {
-        this.moduleCache.set(moduleSlug, { module, timestamp: now });
+        this.setCacheEntry(
+          this.moduleCache,
+          moduleSlug,
+          { module, timestamp: now },
+          this.MAX_MODULE_CACHE_SIZE
+        );
         return module;
       }
     }
@@ -556,10 +522,41 @@ export class RBACService {
     });
 
     if (module) {
-      this.moduleCache.set(moduleSlug, { module, timestamp: now });
+      this.setCacheEntry(
+        this.moduleCache,
+        moduleSlug,
+        { module, timestamp: now },
+        this.MAX_MODULE_CACHE_SIZE
+      );
     }
 
     return module;
+  }
+
+  /**
+   * Check if a company has access to a module, using short-lived cache.
+   */
+  private async checkCompanyAccess(companyId: string, moduleId: string): Promise<boolean> {
+    const cacheKey = `${companyId}:${moduleId}`;
+    const now = Date.now();
+    const cached = this.companyAccessCache.get(cacheKey);
+
+    if (cached && now - cached.timestamp < this.companyAccessCacheTTL) {
+      return cached.hasAccess;
+    }
+
+    const companyAccess = await this.companyModuleAccessRepository.findOne({
+      where: { companyId, moduleId, isEnabled: true },
+    });
+
+    const hasAccess = !!companyAccess;
+    this.setCacheEntry(
+      this.companyAccessCache,
+      cacheKey,
+      { hasAccess, timestamp: now },
+      this.MAX_ACCESS_CACHE_SIZE
+    );
+    return hasAccess;
   }
 
   /**
@@ -568,6 +565,7 @@ export class RBACService {
    */
   clearModuleCache(): void {
     this.moduleCache.clear();
+    this.companyAccessCache.clear();
     this.logger.debug('Module cache cleared');
   }
 
@@ -645,6 +643,9 @@ export class RBACService {
     discoveredCount: number;
     modulesList: string[];
     cacheSize: number;
+    accessCacheSize: number;
+    maxModuleCacheSize: number;
+    maxAccessCacheSize: number;
   } | null {
     if (!this.moduleDiscoveryService) {
       return null;
@@ -654,6 +655,9 @@ export class RBACService {
     return {
       ...stats,
       cacheSize: this.moduleCache.size,
+      accessCacheSize: this.companyAccessCache.size,
+      maxModuleCacheSize: this.MAX_MODULE_CACHE_SIZE,
+      maxAccessCacheSize: this.MAX_ACCESS_CACHE_SIZE,
     };
   }
 }

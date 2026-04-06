@@ -57,6 +57,6 @@ function getRequiredSecret(configService: ConfigService, key: string): string {
       inject: [ConfigService],
     },
   ],
-  exports: [AuthService, ACCESS_JWT_SERVICE, REFRESH_JWT_SERVICE],
+  exports: [AuthService, JwtStrategy, ACCESS_JWT_SERVICE, REFRESH_JWT_SERVICE],
 })
 export class AuthModule {}
