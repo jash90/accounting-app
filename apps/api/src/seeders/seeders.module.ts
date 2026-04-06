@@ -13,6 +13,7 @@ import {
 import { EmailModule } from '@accounting/email';
 import { RBACModule } from '@accounting/rbac';
 
+import { AdminSeedService } from './admin-seed.service';
 import { SeederService } from './seeder.service';
 
 @Module({
@@ -29,7 +30,7 @@ import { SeederService } from './seeder.service';
     EmailModule,
     RBACModule,
   ],
-  providers: [SeederService],
-  exports: [SeederService],
+  providers: [SeederService, AdminSeedService],
+  exports: [SeederService, AdminSeedService],
 })
 export class SeedersModule {}

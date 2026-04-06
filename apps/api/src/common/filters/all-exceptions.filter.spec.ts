@@ -1,10 +1,17 @@
 import { HttpException, HttpStatus, Logger, type ArgumentsHost } from '@nestjs/common';
 
+import { mock } from 'bun:test';
 import { type Request, type Response } from 'express';
 
 import { ClientErrorCode, ClientException } from '@accounting/modules/clients';
 
 import { AllExceptionsFilter } from './all-exceptions.filter';
+
+// Mock @sentry/nestjs before any import that triggers SentryExceptionCaptured decorator
+mock.module('@sentry/nestjs', () => ({
+  SentryExceptionCaptured: () => (_target: any, _key: string, descriptor: PropertyDescriptor) =>
+    descriptor,
+}));
 
 describe('AllExceptionsFilter', () => {
   let filter: AllExceptionsFilter;

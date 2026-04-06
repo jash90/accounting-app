@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import * as bcrypt from 'bcryptjs';
+import { hash } from 'bcryptjs';
 import * as Handlebars from 'handlebars';
 import { Repository } from 'typeorm';
 
@@ -196,7 +196,7 @@ export class DemoDataSeederService {
   }
 
   private async seedCompanyB(): Promise<{ companyB: Company; ownerB: User; employeesB: User[] }> {
-    const password = await bcrypt.hash('Demo12345678!', 10);
+    const password = await hash('Demo12345678!', 10);
 
     // Find-or-create: company and users may already exist from the base seed
     let companyB = await this.companyRepo.findOne({ where: { name: 'Biuro Rachunkowe Nowak' } });

@@ -1,22 +1,32 @@
-
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
-import { afterEach, beforeEach, describe, expect, it, mock, spyOn, type Mock } from 'bun:test';
-import * as fs from 'fs';
+import { afterEach, beforeEach, describe, expect, it, mock, type Mock } from 'bun:test';
 
 import { Module, ModuleSource } from '@accounting/common';
 import { ModuleDiscoveryService, type ModuleConfig } from '@accounting/rbac';
 
+// Mock fs/promises at module level so the SWC-transpiled service picks it up
+const mockAccess = mock(() => Promise.resolve());
+const mockReaddir = mock(() => Promise.resolve([]));
+const mockReadFile = mock(() => Promise.resolve('{}'));
+
+mock.module('fs/promises', () => ({
+  access: mockAccess,
+  readdir: mockReaddir,
+  readFile: mockReadFile,
+}));
+
 describe('ModuleDiscoveryService', () => {
   let service: ModuleDiscoveryService;
-  let module: TestingModule;
+  let testModule: TestingModule;
 
   const mockModuleRepository = {
     findOne: mock(() => {}),
-    find: mock(() => {}),
+    find: mock(() => Promise.resolve([])),
     create: mock(() => {}),
     save: mock(() => {}),
+    remove: mock(() => {}),
   };
 
   const mockModuleConfig: ModuleConfig = {
@@ -31,24 +41,24 @@ describe('ModuleDiscoveryService', () => {
     category: 'utilities',
   };
 
-  // Spies for fs module
-  let existsSyncSpy: ReturnType<typeof spyOn>;
-  let readdirSyncSpy: ReturnType<typeof spyOn>;
-  let readFileSyncSpy: ReturnType<typeof spyOn>;
-
   beforeEach(async () => {
-    // Reset mocks
+    // Reset all mocks
+    mockAccess.mockReset();
+    mockReaddir.mockReset();
+    mockReadFile.mockReset();
     (mockModuleRepository.findOne as Mock<typeof mockModuleRepository.findOne>).mockReset();
-    (mockModuleRepository.find as Mock<typeof mockModuleRepository.find>).mockReset();
+    (mockModuleRepository.find as Mock<typeof mockModuleRepository.find>)
+      .mockReset()
+      .mockResolvedValue([]);
     (mockModuleRepository.create as Mock<typeof mockModuleRepository.create>).mockReset();
     (mockModuleRepository.save as Mock<typeof mockModuleRepository.save>).mockReset();
+    (mockModuleRepository.remove as Mock<typeof mockModuleRepository.remove>).mockReset();
 
-    // Create spies for fs module
-    existsSyncSpy = spyOn(fs, 'existsSync');
-    readdirSyncSpy = spyOn(fs, 'readdirSync');
-    readFileSyncSpy = spyOn(fs, 'readFileSync');
+    // Default: modules directory doesn't exist (prevents onModuleInit from reading disk)
+    mockAccess.mockRejectedValue(new Error('ENOENT'));
+    mockReaddir.mockResolvedValue([]);
 
-    module = await Test.createTestingModule({
+    testModule = await Test.createTestingModule({
       providers: [
         ModuleDiscoveryService,
         {
@@ -58,16 +68,19 @@ describe('ModuleDiscoveryService', () => {
       ],
     }).compile();
 
-    service = module.get<ModuleDiscoveryService>(ModuleDiscoveryService);
+    // Initialize (triggers onModuleInit which calls discoverModules - mocked to find nothing)
+    await testModule.init();
+
+    service = testModule.get<ModuleDiscoveryService>(ModuleDiscoveryService);
   });
 
   afterEach(async () => {
-    await module.close();
+    await testModule.close();
   });
 
   describe('discoverModules', () => {
     it('should return empty array when modules directory does not exist', async () => {
-      existsSyncSpy.mockReturnValue(false);
+      mockAccess.mockRejectedValue(new Error('ENOENT'));
 
       const result = await service.discoverModules();
 
@@ -75,9 +88,10 @@ describe('ModuleDiscoveryService', () => {
     });
 
     it('should discover modules from valid module.json files', async () => {
-      existsSyncSpy.mockReturnValue(true);
-      readdirSyncSpy.mockReturnValue([{ name: 'test-module', isDirectory: () => true }] as any);
-      readFileSyncSpy.mockReturnValue(JSON.stringify(mockModuleConfig));
+      // First call: check directory exists; second call: check module.json exists
+      mockAccess.mockResolvedValue(undefined);
+      mockReaddir.mockResolvedValue([{ name: 'test-module', isDirectory: () => true }] as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(mockModuleConfig));
 
       const result = await service.discoverModules();
 
@@ -88,13 +102,15 @@ describe('ModuleDiscoveryService', () => {
     });
 
     it('should skip directories without module.json', async () => {
-      existsSyncSpy.mockImplementation((filePath: unknown) => {
-        if (typeof filePath === 'string' && filePath.endsWith('module.json')) {
-          return false;
-        }
-        return true;
+      // Directory exists but module.json doesn't
+      let callCount = 0;
+      mockAccess.mockImplementation(() => {
+        callCount++;
+        // First call: base dir exists; second call: module.json doesn't
+        if (callCount === 1) return Promise.resolve(undefined);
+        return Promise.reject(new Error('ENOENT'));
       });
-      readdirSyncSpy.mockReturnValue([{ name: 'empty-module', isDirectory: () => true }] as any);
+      mockReaddir.mockResolvedValue([{ name: 'empty-module', isDirectory: () => true }] as any);
 
       const result = await service.discoverModules();
 
@@ -103,9 +119,9 @@ describe('ModuleDiscoveryService', () => {
 
     it('should skip modules with invalid configuration', async () => {
       const invalidConfig = { ...mockModuleConfig, slug: '' };
-      existsSyncSpy.mockReturnValue(true);
-      readdirSyncSpy.mockReturnValue([{ name: 'invalid-module', isDirectory: () => true }] as any);
-      readFileSyncSpy.mockReturnValue(JSON.stringify(invalidConfig));
+      mockAccess.mockResolvedValue(undefined);
+      mockReaddir.mockResolvedValue([{ name: 'invalid-module', isDirectory: () => true }] as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(invalidConfig));
 
       const result = await service.discoverModules();
 
@@ -113,9 +129,9 @@ describe('ModuleDiscoveryService', () => {
     });
 
     it('should handle JSON parse errors gracefully', async () => {
-      existsSyncSpy.mockReturnValue(true);
-      readdirSyncSpy.mockReturnValue([{ name: 'bad-json', isDirectory: () => true }] as any);
-      readFileSyncSpy.mockReturnValue('{ invalid json }');
+      mockAccess.mockResolvedValue(undefined);
+      mockReaddir.mockResolvedValue([{ name: 'bad-json', isDirectory: () => true }] as any);
+      mockReadFile.mockResolvedValue('{ invalid json }');
 
       const result = await service.discoverModules();
 
@@ -125,10 +141,9 @@ describe('ModuleDiscoveryService', () => {
 
   describe('getModuleBySlug', () => {
     beforeEach(async () => {
-      // Simulate discovery
-      existsSyncSpy.mockReturnValue(true);
-      readdirSyncSpy.mockReturnValue([{ name: 'test-module', isDirectory: () => true }] as any);
-      readFileSyncSpy.mockReturnValue(JSON.stringify(mockModuleConfig));
+      mockAccess.mockResolvedValue(undefined);
+      mockReaddir.mockResolvedValue([{ name: 'test-module', isDirectory: () => true }] as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(mockModuleConfig));
 
       await service.discoverModules();
     });
@@ -149,9 +164,9 @@ describe('ModuleDiscoveryService', () => {
 
   describe('moduleExists', () => {
     beforeEach(async () => {
-      existsSyncSpy.mockReturnValue(true);
-      readdirSyncSpy.mockReturnValue([{ name: 'test-module', isDirectory: () => true }] as any);
-      readFileSyncSpy.mockReturnValue(JSON.stringify(mockModuleConfig));
+      mockAccess.mockResolvedValue(undefined);
+      mockReaddir.mockResolvedValue([{ name: 'test-module', isDirectory: () => true }] as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(mockModuleConfig));
 
       await service.discoverModules();
     });
@@ -167,9 +182,9 @@ describe('ModuleDiscoveryService', () => {
 
   describe('getModulePermissions', () => {
     beforeEach(async () => {
-      existsSyncSpy.mockReturnValue(true);
-      readdirSyncSpy.mockReturnValue([{ name: 'test-module', isDirectory: () => true }] as any);
-      readFileSyncSpy.mockReturnValue(JSON.stringify(mockModuleConfig));
+      mockAccess.mockResolvedValue(undefined);
+      mockReaddir.mockResolvedValue([{ name: 'test-module', isDirectory: () => true }] as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(mockModuleConfig));
 
       await service.discoverModules();
     });
@@ -189,9 +204,9 @@ describe('ModuleDiscoveryService', () => {
 
   describe('getDefaultPermissions', () => {
     beforeEach(async () => {
-      existsSyncSpy.mockReturnValue(true);
-      readdirSyncSpy.mockReturnValue([{ name: 'test-module', isDirectory: () => true }] as any);
-      readFileSyncSpy.mockReturnValue(JSON.stringify(mockModuleConfig));
+      mockAccess.mockResolvedValue(undefined);
+      mockReaddir.mockResolvedValue([{ name: 'test-module', isDirectory: () => true }] as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(mockModuleConfig));
 
       await service.discoverModules();
     });
@@ -211,9 +226,9 @@ describe('ModuleDiscoveryService', () => {
 
   describe('syncWithDatabase', () => {
     beforeEach(async () => {
-      existsSyncSpy.mockReturnValue(true);
-      readdirSyncSpy.mockReturnValue([{ name: 'test-module', isDirectory: () => true }] as any);
-      readFileSyncSpy.mockReturnValue(JSON.stringify(mockModuleConfig));
+      mockAccess.mockResolvedValue(undefined);
+      mockReaddir.mockResolvedValue([{ name: 'test-module', isDirectory: () => true }] as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(mockModuleConfig));
 
       await service.discoverModules();
     });
@@ -222,6 +237,7 @@ describe('ModuleDiscoveryService', () => {
       (mockModuleRepository.findOne as Mock<typeof mockModuleRepository.findOne>).mockResolvedValue(
         null
       );
+      (mockModuleRepository.find as Mock<typeof mockModuleRepository.find>).mockResolvedValue([]);
       (mockModuleRepository.create as Mock<typeof mockModuleRepository.create>).mockReturnValue({
         ...mockModuleConfig,
         source: ModuleSource.FILE,
@@ -248,6 +264,7 @@ describe('ModuleDiscoveryService', () => {
       (mockModuleRepository.findOne as Mock<typeof mockModuleRepository.findOne>).mockResolvedValue(
         existingModule
       );
+      (mockModuleRepository.find as Mock<typeof mockModuleRepository.find>).mockResolvedValue([]);
       (mockModuleRepository.save as Mock<typeof mockModuleRepository.save>).mockResolvedValue({
         ...existingModule,
         name: 'Test Module',
@@ -267,16 +284,20 @@ describe('ModuleDiscoveryService', () => {
 
   describe('getAllModules', () => {
     it('should return all discovered modules', async () => {
-      existsSyncSpy.mockReturnValue(true);
-      readdirSyncSpy.mockReturnValue([
+      mockAccess.mockResolvedValue(undefined);
+      mockReaddir.mockResolvedValue([
         { name: 'module-a', isDirectory: () => true },
         { name: 'module-b', isDirectory: () => true },
       ] as any);
-      readFileSyncSpy.mockImplementation((filePath: unknown) => {
+      mockReadFile.mockImplementation((filePath: unknown) => {
         if (typeof filePath === 'string' && filePath.includes('module-a')) {
-          return JSON.stringify({ ...mockModuleConfig, slug: 'module-a', name: 'Module A' });
+          return Promise.resolve(
+            JSON.stringify({ ...mockModuleConfig, slug: 'module-a', name: 'Module A' })
+          );
         }
-        return JSON.stringify({ ...mockModuleConfig, slug: 'module-b', name: 'Module B' });
+        return Promise.resolve(
+          JSON.stringify({ ...mockModuleConfig, slug: 'module-b', name: 'Module B' })
+        );
       });
 
       await service.discoverModules();
@@ -288,9 +309,9 @@ describe('ModuleDiscoveryService', () => {
 
   describe('getDiscoveryStats', () => {
     it('should return correct statistics', async () => {
-      existsSyncSpy.mockReturnValue(true);
-      readdirSyncSpy.mockReturnValue([{ name: 'test-module', isDirectory: () => true }] as any);
-      readFileSyncSpy.mockReturnValue(JSON.stringify(mockModuleConfig));
+      mockAccess.mockResolvedValue(undefined);
+      mockReaddir.mockResolvedValue([{ name: 'test-module', isDirectory: () => true }] as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(mockModuleConfig));
 
       await service.discoverModules();
       const stats = service.getDiscoveryStats();
@@ -303,27 +324,30 @@ describe('ModuleDiscoveryService', () => {
   describe('reloadModules', () => {
     it('should clear cache and rediscover modules', async () => {
       // Initial discovery
-      existsSyncSpy.mockReturnValue(true);
-      readdirSyncSpy.mockReturnValue([{ name: 'test-module', isDirectory: () => true }] as any);
-      readFileSyncSpy.mockReturnValue(JSON.stringify(mockModuleConfig));
+      mockAccess.mockResolvedValue(undefined);
+      mockReaddir.mockResolvedValue([{ name: 'test-module', isDirectory: () => true }] as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(mockModuleConfig));
 
       await service.discoverModules();
       expect(service.getAllModules().length).toBe(1);
 
       // Add new module and reload
-      readdirSyncSpy.mockReturnValue([
+      mockReaddir.mockResolvedValue([
         { name: 'test-module', isDirectory: () => true },
         { name: 'new-module', isDirectory: () => true },
       ] as any);
-      readFileSyncSpy.mockImplementation((filePath: unknown) => {
+      mockReadFile.mockImplementation((filePath: unknown) => {
         if (typeof filePath === 'string' && filePath.includes('new-module')) {
-          return JSON.stringify({ ...mockModuleConfig, slug: 'new-module', name: 'New Module' });
+          return Promise.resolve(
+            JSON.stringify({ ...mockModuleConfig, slug: 'new-module', name: 'New Module' })
+          );
         }
-        return JSON.stringify(mockModuleConfig);
+        return Promise.resolve(JSON.stringify(mockModuleConfig));
       });
       (mockModuleRepository.findOne as Mock<typeof mockModuleRepository.findOne>).mockResolvedValue(
         null
       );
+      (mockModuleRepository.find as Mock<typeof mockModuleRepository.find>).mockResolvedValue([]);
       (mockModuleRepository.create as Mock<typeof mockModuleRepository.create>).mockImplementation(
         (dto: unknown) => dto
       );
@@ -338,42 +362,44 @@ describe('ModuleDiscoveryService', () => {
 
   describe('concurrent discoverModules', () => {
     it('should handle concurrent discovery calls without race conditions', async () => {
-      existsSyncSpy.mockReturnValue(true);
-      readdirSyncSpy.mockReturnValue([
+      mockAccess.mockResolvedValue(undefined);
+      mockReaddir.mockResolvedValue([
         { name: 'module-a', isDirectory: () => true },
         { name: 'module-b', isDirectory: () => true },
       ] as any);
-      readFileSyncSpy.mockImplementation((filePath: unknown) => {
+      mockReadFile.mockImplementation((filePath: unknown) => {
         if (typeof filePath === 'string' && filePath.includes('module-a')) {
-          return JSON.stringify({ ...mockModuleConfig, slug: 'module-a', name: 'Module A' });
+          return Promise.resolve(
+            JSON.stringify({ ...mockModuleConfig, slug: 'module-a', name: 'Module A' })
+          );
         }
-        return JSON.stringify({ ...mockModuleConfig, slug: 'module-b', name: 'Module B' });
+        return Promise.resolve(
+          JSON.stringify({ ...mockModuleConfig, slug: 'module-b', name: 'Module B' })
+        );
       });
 
-      // Call discoverModules multiple times concurrently
       const results = await Promise.all([
         service.discoverModules(),
         service.discoverModules(),
         service.discoverModules(),
       ]);
 
-      // All calls should return the same result
       expect(results[0]).toEqual(results[1]);
       expect(results[1]).toEqual(results[2]);
       expect(results[0].length).toBe(2);
 
-      // Cache should be consistent
       const modules = service.getAllModules();
       expect(modules.length).toBe(2);
     });
 
     it('should handle concurrent sync operations gracefully', async () => {
-      existsSyncSpy.mockReturnValue(true);
-      readdirSyncSpy.mockReturnValue([{ name: 'test-module', isDirectory: () => true }] as any);
-      readFileSyncSpy.mockReturnValue(JSON.stringify(mockModuleConfig));
+      mockAccess.mockResolvedValue(undefined);
+      mockReaddir.mockResolvedValue([{ name: 'test-module', isDirectory: () => true }] as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(mockModuleConfig));
       (mockModuleRepository.findOne as Mock<typeof mockModuleRepository.findOne>).mockResolvedValue(
         null
       );
+      (mockModuleRepository.find as Mock<typeof mockModuleRepository.find>).mockResolvedValue([]);
       (mockModuleRepository.create as Mock<typeof mockModuleRepository.create>).mockReturnValue({
         ...mockModuleConfig,
         source: ModuleSource.FILE,
@@ -386,14 +412,12 @@ describe('ModuleDiscoveryService', () => {
 
       await service.discoverModules();
 
-      // Call syncWithDatabase multiple times concurrently
       await Promise.all([
         service.syncWithDatabase(),
         service.syncWithDatabase(),
         service.syncWithDatabase(),
       ]);
 
-      // Should complete without errors
       expect(service.getAllModules().length).toBe(1);
     });
   });
@@ -401,9 +425,9 @@ describe('ModuleDiscoveryService', () => {
   describe('validation', () => {
     it('should reject invalid slug format', async () => {
       const invalidSlug = { ...mockModuleConfig, slug: 'Invalid_Slug!' };
-      existsSyncSpy.mockReturnValue(true);
-      readdirSyncSpy.mockReturnValue([{ name: 'invalid-module', isDirectory: () => true }] as any);
-      readFileSyncSpy.mockReturnValue(JSON.stringify(invalidSlug));
+      mockAccess.mockResolvedValue(undefined);
+      mockReaddir.mockResolvedValue([{ name: 'invalid-module', isDirectory: () => true }] as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(invalidSlug));
 
       const result = await service.discoverModules();
 
@@ -412,9 +436,9 @@ describe('ModuleDiscoveryService', () => {
 
     it('should reject invalid version format', async () => {
       const invalidVersion = { ...mockModuleConfig, version: '1.0' };
-      existsSyncSpy.mockReturnValue(true);
-      readdirSyncSpy.mockReturnValue([{ name: 'invalid-module', isDirectory: () => true }] as any);
-      readFileSyncSpy.mockReturnValue(JSON.stringify(invalidVersion));
+      mockAccess.mockResolvedValue(undefined);
+      mockReaddir.mockResolvedValue([{ name: 'invalid-module', isDirectory: () => true }] as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(invalidVersion));
 
       const result = await service.discoverModules();
 
@@ -423,9 +447,9 @@ describe('ModuleDiscoveryService', () => {
 
     it('should reject empty permissions array', async () => {
       const noPermissions = { ...mockModuleConfig, permissions: [] };
-      existsSyncSpy.mockReturnValue(true);
-      readdirSyncSpy.mockReturnValue([{ name: 'invalid-module', isDirectory: () => true }] as any);
-      readFileSyncSpy.mockReturnValue(JSON.stringify(noPermissions));
+      mockAccess.mockResolvedValue(undefined);
+      mockReaddir.mockResolvedValue([{ name: 'invalid-module', isDirectory: () => true }] as any);
+      mockReadFile.mockResolvedValue(JSON.stringify(noPermissions));
 
       const result = await service.discoverModules();
 

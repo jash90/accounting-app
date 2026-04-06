@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { DataSource, type Repository } from 'typeorm';
@@ -17,6 +17,7 @@ describe('AdminService', () => {
   let companyRepository: jest.Mocked<Repository<Company>>;
   let rbacService: jest.Mocked<Pick<RBACService, never>>;
   let dataSource: jest.Mocked<Pick<DataSource, 'transaction'>>;
+  let testingModule: TestingModule;
   let systemCompanyService: jest.Mocked<Pick<SystemCompanyService, 'getSystemCompany'>>;
 
   const systemCompany = { id: 'system-company-id', name: 'System Admin', isSystemCompany: true };
@@ -59,7 +60,7 @@ describe('AdminService', () => {
       getSystemCompany: jest.fn().mockResolvedValue(systemCompany),
     };
 
-    const module = await Test.createTestingModule({
+    testingModule = await Test.createTestingModule({
       providers: [
         {
           provide: AdminService,
@@ -69,7 +70,9 @@ describe('AdminService', () => {
               companyRepository as any,
               rbacService as any,
               dataSource as any,
-              systemCompanyService as any
+              systemCompanyService as any,
+              { invalidateTokens: jest.fn().mockResolvedValue(undefined) } as any,
+              { invalidateUserCache: jest.fn() } as any
             ),
         },
         { provide: getRepositoryToken(User), useValue: userRepository },
@@ -80,24 +83,34 @@ describe('AdminService', () => {
       ],
     }).compile();
 
-    service = module.get(AdminService);
+    service = testingModule.get(AdminService);
+  });
+
+  afterAll(async () => {
+    await testingModule?.close();
   });
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset queryBuilder getOne to return null (no duplicate) by default
+    const userQb = userRepository.createQueryBuilder();
+    (userQb.getOne as jest.Mock).mockResolvedValue(null);
+    (userQb.getManyAndCount as jest.Mock).mockResolvedValue([[], 0]);
+    const companyQb = companyRepository.createQueryBuilder();
+    (companyQb.getOne as jest.Mock).mockResolvedValue(null);
+    (companyQb.getManyAndCount as jest.Mock).mockResolvedValue([[], 0]);
   });
 
   describe('findAllUsers', () => {
-    it('should return all users with company relations', async () => {
-      userRepository.find.mockResolvedValue([mockUser]);
+    it('should return paginated users with company relations', async () => {
+      const mockQb = userRepository.createQueryBuilder();
+      (mockQb.getManyAndCount as jest.Mock).mockResolvedValue([[mockUser], 1]);
 
       const result = await service.findAllUsers();
 
-      expect(result).toEqual([mockUser]);
-      expect(userRepository.find).toHaveBeenCalledWith({
-        relations: ['company'],
-        order: { createdAt: 'DESC' },
-      });
+      expect(result.data).toEqual([mockUser]);
+      expect(result.meta.total).toBe(1);
+      expect(userRepository.createQueryBuilder).toHaveBeenCalledWith('user');
     });
   });
 
@@ -150,7 +163,9 @@ describe('AdminService', () => {
         role: UserRole.EMPLOYEE,
         companyId: 'company-1',
       };
-      userRepository.findOne.mockResolvedValue(mockUser);
+      // Service uses createQueryBuilder for case-insensitive email check
+      const mockQb = userRepository.createQueryBuilder();
+      (mockQb.getOne as jest.Mock).mockResolvedValue(mockUser);
 
       await expect(service.createUser(dto as any)).rejects.toThrow(ConflictException);
     });
@@ -203,12 +218,40 @@ describe('AdminService', () => {
       expect(result).toEqual(updated);
     });
 
+    it('should invalidate tokens and cache when deactivating via update', async () => {
+      const dto = { isActive: false };
+      const deactivated = { ...mockUser, isActive: false } as User;
+      userRepository.findOne.mockResolvedValue({ ...mockUser });
+      userRepository.save.mockResolvedValue(deactivated);
+
+      const result = await service.updateUser('user-1', dto as any);
+
+      expect(result.isActive).toBe(false);
+      // FIX-01: Verify token invalidation happens on deactivation via updateUser
+      expect((service as any).authService.invalidateTokens).toHaveBeenCalledWith('user-1');
+      expect((service as any).jwtStrategy.invalidateUserCache).toHaveBeenCalledWith('user-1');
+    });
+
+    it('should not invalidate tokens when updating non-active fields', async () => {
+      const dto = { firstName: 'Updated' };
+      const updated = { ...mockUser, firstName: 'Updated' } as User;
+      userRepository.findOne.mockResolvedValue({ ...mockUser });
+      userRepository.save.mockResolvedValue(updated);
+
+      await service.updateUser('user-1', dto as any);
+
+      expect((service as any).authService.invalidateTokens).not.toHaveBeenCalled();
+      expect((service as any).jwtStrategy.invalidateUserCache).not.toHaveBeenCalled();
+    });
+
     it('should throw ConflictException when updating to existing email', async () => {
       const dto = { email: 'existing@example.com' };
       const existingUser = { ...mockUser, id: 'other-user', email: 'existing@example.com' } as User;
 
       userRepository.findOne.mockResolvedValueOnce(mockUser); // findUserById
-      userRepository.findOne.mockResolvedValueOnce(existingUser); // email check
+      // Service uses createQueryBuilder for case-insensitive email check
+      const mockQb = userRepository.createQueryBuilder();
+      (mockQb.getOne as jest.Mock).mockResolvedValue(existingUser);
 
       await expect(service.updateUser('user-1', dto as any)).rejects.toThrow(ConflictException);
     });
@@ -226,17 +269,14 @@ describe('AdminService', () => {
   });
 
   describe('findAllCompanies', () => {
-    it('should return all non-system companies', async () => {
-      companyRepository.find.mockResolvedValue([mockCompany]);
+    it('should return paginated non-system companies', async () => {
+      const mockQb = companyRepository.createQueryBuilder();
+      (mockQb.getManyAndCount as jest.Mock).mockResolvedValue([[mockCompany], 1]);
 
       const result = await service.findAllCompanies();
 
-      expect(result).toEqual([mockCompany]);
-      expect(companyRepository.find).toHaveBeenCalledWith({
-        where: { isSystemCompany: false },
-        relations: ['owner', 'employees'],
-        order: { createdAt: 'DESC' },
-      });
+      expect(result.data).toEqual([mockCompany]);
+      expect(result.meta.total).toBe(1);
     });
   });
 

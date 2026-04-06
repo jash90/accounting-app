@@ -1,24 +1,16 @@
 import './instrument';
 
-
-import {
-  ClassSerializerInterceptor,
-  Logger,
-  ValidationPipe,
-  type INestApplication,
-} from '@nestjs/common';
+import { ClassSerializerInterceptor, Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
-import * as bcrypt from 'bcryptjs';
 import cookieParser from 'cookie-parser';
-import * as crypto from 'crypto';
 import helmet from 'helmet';
-import { DataSource } from 'typeorm';
 
 import { AppModule } from './app/app.module';
 import { AllExceptionsFilter } from './common';
 import { validateEnvironment } from './common/validators/env.validator';
+import { AdminSeedService } from './seeders/admin-seed.service';
 import { DemoDataSeederService } from './seeders/demo-data-seeder.service';
 import { SeederService } from './seeders/seeder.service';
 import { SeedersModule } from './seeders/seeders.module';
@@ -165,71 +157,14 @@ async function bootstrap() {
 
   // Auto-seed admin user if not exists (for Railway deployment)
   if (process.env.NODE_ENV === 'production') {
-    await seedAdminIfNotExists(app);
+    const adminSeedService = app.get(AdminSeedService);
+    await adminSeedService.seedIfNotExists();
   }
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
   logger.log(`Application is running on: http://localhost:${port}`);
   logger.log(`Swagger documentation: http://localhost:${port}/docs`);
-}
-
-async function seedAdminIfNotExists(app: INestApplication) {
-  try {
-    const dataSource = app.get(DataSource);
-
-    const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@system.com';
-
-    // Check if admin exists
-    const adminExists = await dataSource.query(
-      `SELECT COUNT(*) as count FROM users WHERE email = $1`,
-      [adminEmail]
-    );
-
-    if (parseInt(adminExists[0].count) === 0) {
-      logger.log('Creating admin user...');
-
-      // Get password from environment variable or generate a secure random one
-      let adminPassword = process.env.ADMIN_SEED_PASSWORD;
-      let passwordGenerated = false;
-
-      if (!adminPassword) {
-        // In production, require ADMIN_SEED_PASSWORD to be set for security
-        if (process.env.NODE_ENV === 'production') {
-          logger.error('ADMIN_SEED_PASSWORD environment variable is required in production');
-          logger.error('Set ADMIN_SEED_PASSWORD to a secure password before deploying');
-          process.exit(1);
-        }
-        // Generate cryptographically secure random password (24 chars) for non-production
-        adminPassword = crypto.randomBytes(18).toString('base64url');
-        passwordGenerated = true;
-      }
-
-      // Create admin user
-      const hashedPassword = await bcrypt.hash(adminPassword, 10);
-      await dataSource.query(
-        `INSERT INTO users (id, email, password, "firstName", "lastName", role, "companyId", "isActive", "createdAt", "updatedAt")
-         VALUES (gen_random_uuid(), $1, $2, 'Admin', 'User', 'ADMIN', NULL, true, NOW(), NOW())`,
-        [adminEmail, hashedPassword]
-      );
-
-      logger.log(`Admin user created: ${adminEmail}`);
-      if (passwordGenerated) {
-        logger.warn('A random password was generated.');
-        logger.log('Set ADMIN_SEED_PASSWORD env var to use a specific password.');
-        logger.log('Re-deploy with ADMIN_SEED_PASSWORD set to access admin account.');
-        // Security: Password intentionally not logged to prevent exposure in log aggregation
-      } else {
-        logger.log('Password set from ADMIN_SEED_PASSWORD environment variable.');
-      }
-    } else {
-      logger.log('Admin user already exists, skipping seed.');
-    }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    logger.error(`Auto-seed failed (non-critical): ${errorMessage}`);
-    // Don't throw - allow app to start even if seed fails
-  }
 }
 
 bootstrap();

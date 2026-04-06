@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import * as bcrypt from 'bcryptjs';
+import { hash } from 'bcryptjs';
 import { DataSource, Repository } from 'typeorm';
 
 import {
@@ -184,7 +184,7 @@ export class SeederService {
   private async seedAdmin() {
     const adminEmail = this.configService.getOrThrow<string>('SEED_ADMIN_EMAIL');
     const adminPassword = this.configService.getOrThrow<string>('SEED_ADMIN_PASSWORD');
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    const hashedPassword = await hash(adminPassword, 10);
     const admin = this.userRepository.create({
       email: adminEmail.toLowerCase(),
       password: hashedPassword,
@@ -213,7 +213,7 @@ export class SeederService {
   private async seedCompanyA() {
     const ownerEmail = this.configService.getOrThrow<string>('SEED_OWNER_EMAIL');
     const ownerPassword = this.configService.getOrThrow<string>('SEED_OWNER_PASSWORD');
-    const hashedPassword = await bcrypt.hash(ownerPassword, 10);
+    const hashedPassword = await hash(ownerPassword, 10);
     const ownerA = this.userRepository.create({
       email: ownerEmail.toLowerCase(),
       password: hashedPassword,
@@ -236,7 +236,7 @@ export class SeederService {
 
     const employeeEmail = this.configService.getOrThrow<string>('SEED_EMPLOYEE_EMAIL');
     const employeePassword = this.configService.getOrThrow<string>('SEED_EMPLOYEE_PASSWORD');
-    const employee1Password = await bcrypt.hash(employeePassword, 10);
+    const employee1Password = await hash(employeePassword, 10);
     const employee1 = this.userRepository.create({
       email: employeeEmail.toLowerCase(),
       password: employee1Password,

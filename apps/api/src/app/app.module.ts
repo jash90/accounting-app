@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TerminusModule } from '@nestjs/terminus';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -23,13 +23,14 @@ import { SettlementsModule } from '@accounting/modules/settlements';
 import { TasksModule } from '@accounting/modules/tasks';
 import { TimeTrackingModule } from '@accounting/modules/time-tracking';
 
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { HealthController } from './health.controller';
 import { AdminModule } from '../admin/admin.module';
+import { TimeoutInterceptor } from '../common';
+import { AppController } from './app.controller';
+import { HealthController } from './health.controller';
 import { CompanyModule } from '../company/company.module';
 import { EmailConfigModule } from '../email-config/email-config.module';
 import { ModulesModule } from '../modules/modules.module';
+import { DemoDataSeedersModule } from '../seeders/demo-data-seeders.module';
 import { SeedersModule } from '../seeders/seeders.module';
 import { UploadsModule } from '../uploads/uploads.module';
 
@@ -44,14 +45,10 @@ const ALL_ENTITIES = [
   EmailDraft,
 ];
 
-// Conditionally load demo seeder module (never in production unless explicitly enabled)
-const optionalModules: Array<new (...args: unknown[]) => unknown> = [];
-if (process.env.ENABLE_DEMO_SEEDER === 'true' && process.env.NODE_ENV !== 'production') {
-  // Dynamic require to avoid loading demo data in production bundles
-   
-  const { DemoDataSeedersModule } = require('../seeders/demo-data-seeders.module');
-  optionalModules.push(DemoDataSeedersModule);
-}
+const optionalModules =
+  process.env.ENABLE_DEMO_SEEDER === 'true' && process.env.NODE_ENV !== 'production'
+    ? [DemoDataSeedersModule]
+    : [];
 
 @Module({
   imports: [
@@ -77,6 +74,14 @@ if (process.env.ENABLE_DEMO_SEEDER === 'true' && process.env.NODE_ENV !== 'produ
         const isProduction = process.env.NODE_ENV === 'production';
         const databaseUrl = process.env.DATABASE_URL;
 
+        // Connection pool configuration (pg driver options)
+        const poolConfig = {
+          max: parseInt(process.env.DB_POOL_MAX || '20', 10),
+          min: parseInt(process.env.DB_POOL_MIN || '5', 10),
+          idleTimeoutMillis: 30_000,
+          connectionTimeoutMillis: 5_000,
+        };
+
         // Railway provides DATABASE_URL, use it if available
         if (databaseUrl) {
           return {
@@ -90,6 +95,7 @@ if (process.env.ENABLE_DEMO_SEEDER === 'true' && process.env.NODE_ENV !== 'produ
             ssl: isProduction
               ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true' }
               : false,
+            extra: poolConfig,
           };
         }
 
@@ -106,6 +112,7 @@ if (process.env.ENABLE_DEMO_SEEDER === 'true' && process.env.NODE_ENV !== 'produ
           logging: !isProduction,
           migrations: ['dist/migrations/*.js'],
           migrationsRun: false, // Migrations run manually or via buildCommand
+          extra: poolConfig,
         };
       },
     }),
@@ -134,7 +141,6 @@ if (process.env.ENABLE_DEMO_SEEDER === 'true' && process.env.NODE_ENV !== 'produ
   ],
   controllers: [AppController, HealthController],
   providers: [
-    AppService,
     // NOTE: Global ValidationPipe is set in main.ts (not here) to avoid duplication.
     // main.ts pipe uses forbidNonWhitelisted: true globally.
     {
@@ -144,6 +150,10 @@ if (process.env.ENABLE_DEMO_SEEDER === 'true' && process.env.NODE_ENV !== 'produ
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TimeoutInterceptor,
     },
   ],
 })

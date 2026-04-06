@@ -8,6 +8,8 @@ import {
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
 
+import { Public } from '@accounting/auth';
+
 @ApiTags('Health')
 @Controller('health')
 export class HealthController {
@@ -19,6 +21,7 @@ export class HealthController {
   ) {}
 
   @Get()
+  @Public()
   @HealthCheck()
   @ApiOperation({ summary: 'Check application health status' })
   @ApiResponse({

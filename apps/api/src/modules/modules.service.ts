@@ -11,6 +11,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import {
+  applyUpdate,
+  ErrorMessages,
   ManageModulePermissionDto,
   Module as ModuleEntity,
   PermissionTargetType,
@@ -28,6 +30,8 @@ export class ModulesService {
   constructor(
     @InjectRepository(ModuleEntity)
     private readonly moduleRepository: Repository<ModuleEntity>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly rbacService: RBACService,
     private readonly companyModuleAccessService: CompanyModuleAccessService,
     private readonly employeePermissionsService: EmployeeModulePermissionsService,
@@ -96,7 +100,7 @@ export class ModulesService {
       // Then verify access
       const hasAccess = await this.canUserAccess(user.id, module.slug);
       if (!hasAccess) {
-        throw new ForbiddenException('You do not have access to this module');
+        throw new ForbiddenException(ErrorMessages.MODULES.NO_ACCESS);
       }
       return module;
     } else {
@@ -111,7 +115,7 @@ export class ModulesService {
     });
 
     if (existingModule) {
-      throw new ConflictException('Module with this slug already exists');
+      throw new ConflictException(ErrorMessages.MODULES.SLUG_EXISTS);
     }
 
     const module = this.moduleRepository.create(createModuleDto);
@@ -120,7 +124,7 @@ export class ModulesService {
 
   async update(id: string, updateModuleDto: UpdateModuleDto) {
     const module = await this.findById(id);
-    Object.assign(module, updateModuleDto);
+    applyUpdate(module, updateModuleDto, ['id', 'slug', 'createdAt', 'updatedAt']);
     return this.moduleRepository.save(module);
   }
 
@@ -144,14 +148,17 @@ export class ModulesService {
     const module = modules.find((m) => m.slug === slug);
 
     if (!module) {
-      throw new NotFoundException('Module not found or not available for your company');
+      throw new NotFoundException(ErrorMessages.MODULES.NOT_AVAILABLE);
     }
 
     return module;
   }
 
-  canUserAccess(userId: string, moduleSlug: string): Promise<boolean> {
-    return this.rbacService.canAccessModule(userId, moduleSlug);
+  async canUserAccess(userId: string, moduleSlug: string): Promise<boolean> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) return false;
+    const result = await this.rbacService.checkModulePermission(user, moduleSlug);
+    return result.hasAccess;
   }
 
   // ==================== Company Module Access Management ====================
@@ -231,7 +238,7 @@ export class ModulesService {
     if (dto.targetType === PermissionTargetType.COMPANY) {
       // Only ADMIN can manage company permissions
       if (user.role !== UserRole.ADMIN) {
-        throw new ForbiddenException('Only administrators can manage company module access');
+        throw new ForbiddenException(ErrorMessages.MODULES.ADMIN_ONLY);
       }
 
       // NOTE: permissions field is not used for company-level access
@@ -246,16 +253,16 @@ export class ModulesService {
     } else {
       // COMPANY_OWNER can manage employee permissions
       if (user.role !== UserRole.COMPANY_OWNER) {
-        throw new ForbiddenException('Only company owners can manage employee permissions');
+        throw new ForbiddenException(ErrorMessages.MODULES.OWNER_ONLY);
       }
 
       if (!dto.permissions || dto.permissions.length === 0) {
-        throw new BadRequestException('Permissions array is required for employee access');
+        throw new BadRequestException(ErrorMessages.MODULES.PERMISSIONS_REQUIRED);
       }
 
       // Verify employee belongs to owner's company
       if (!user.companyId) {
-        throw new ForbiddenException('Company owner must belong to a company');
+        throw new ForbiddenException(ErrorMessages.MODULES.OWNER_MUST_BELONG_TO_COMPANY);
       }
 
       const grantDto: GrantModuleAccessDto = {
@@ -274,7 +281,7 @@ export class ModulesService {
     if (dto.targetType === PermissionTargetType.COMPANY) {
       // Only ADMIN can revoke company permissions
       if (user.role !== UserRole.ADMIN) {
-        throw new ForbiddenException('Only administrators can revoke company module access');
+        throw new ForbiddenException(ErrorMessages.MODULES.ADMIN_ONLY);
       }
 
       // Find module by slug
@@ -284,12 +291,12 @@ export class ModulesService {
     } else {
       // COMPANY_OWNER can revoke employee permissions
       if (user.role !== UserRole.COMPANY_OWNER) {
-        throw new ForbiddenException('Only company owners can revoke employee permissions');
+        throw new ForbiddenException(ErrorMessages.MODULES.OWNER_ONLY);
       }
 
       // Verify employee belongs to owner's company
       if (!user.companyId) {
-        throw new ForbiddenException('Company owner must belong to a company');
+        throw new ForbiddenException(ErrorMessages.MODULES.OWNER_MUST_BELONG_TO_COMPANY);
       }
 
       return this.revokeModuleFromEmployee(user.companyId, dto.targetId, dto.moduleSlug);
@@ -308,7 +315,7 @@ export class ModulesService {
     });
 
     if (!module) {
-      throw new NotFoundException(`Module '${moduleSlug}' not found or is not active`);
+      throw new NotFoundException(ErrorMessages.MODULES.NOT_FOUND_BY_SLUG(moduleSlug));
     }
 
     return module;
@@ -353,7 +360,7 @@ export class ModulesService {
    */
   reloadModules(): Promise<DiscoveredModule[]> {
     if (!this.moduleDiscoveryService) {
-      throw new BadRequestException('Module discovery service is not available');
+      throw new BadRequestException(ErrorMessages.MODULES.DISCOVERY_NOT_AVAILABLE);
     }
     return this.moduleDiscoveryService.reloadModules();
   }

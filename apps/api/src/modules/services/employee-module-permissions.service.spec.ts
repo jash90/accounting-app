@@ -1,5 +1,5 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { type Repository } from 'typeorm';
@@ -18,6 +18,7 @@ import { EmployeeModulePermissionsService } from './employee-module-permissions.
 import { createMockRepository } from '../../testing/mock-helpers';
 
 describe('EmployeeModulePermissionsService', () => {
+  let testingModule: TestingModule;
   let service: EmployeeModulePermissionsService;
   let moduleRepository: jest.Mocked<Repository<ModuleEntity>>;
   let companyModuleAccessRepository: jest.Mocked<Repository<CompanyModuleAccess>>;
@@ -82,7 +83,7 @@ describe('EmployeeModulePermissionsService', () => {
       companyHasModule: jest.fn(),
     };
 
-    const module = await Test.createTestingModule({
+    testingModule = await Test.createTestingModule({
       providers: [
         {
           provide: EmployeeModulePermissionsService,
@@ -111,7 +112,11 @@ describe('EmployeeModulePermissionsService', () => {
       ],
     }).compile();
 
-    service = module.get(EmployeeModulePermissionsService);
+    service = testingModule.get(EmployeeModulePermissionsService);
+  });
+
+  afterAll(async () => {
+    await testingModule?.close();
   });
 
   beforeEach(() => {

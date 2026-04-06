@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { EmailConfiguration } from '@accounting/common';
+import { applyUpdate, EmailConfiguration, ErrorMessages } from '@accounting/common';
 import { EncryptionService, SystemCompanyService } from '@accounting/common/backend';
 import { CreateEmailConfigDto, UpdateEmailConfigDto } from '@accounting/email';
 
@@ -26,7 +26,7 @@ export class EmailConfigService {
     });
 
     if (!config) {
-      throw new NotFoundException('Email configuration not found');
+      throw new NotFoundException(ErrorMessages.EMAIL_CONFIG.NOT_FOUND);
     }
 
     return config;
@@ -42,7 +42,7 @@ export class EmailConfigService {
     });
 
     if (!config) {
-      throw new NotFoundException('Company email configuration not found');
+      throw new NotFoundException(ErrorMessages.EMAIL_CONFIG.COMPANY_NOT_FOUND);
     }
 
     return config;
@@ -58,7 +58,7 @@ export class EmailConfigService {
     });
 
     if (existing) {
-      throw new ConflictException('User already has an email configuration');
+      throw new ConflictException(ErrorMessages.EMAIL_CONFIG.USER_ALREADY_EXISTS);
     }
 
     // Encrypt passwords
@@ -98,7 +98,7 @@ export class EmailConfigService {
     });
 
     if (existing) {
-      throw new ConflictException('Company already has an email configuration');
+      throw new ConflictException(ErrorMessages.EMAIL_CONFIG.COMPANY_ALREADY_EXISTS);
     }
 
     // Encrypt passwords
@@ -142,7 +142,7 @@ export class EmailConfigService {
       updateData.imapPassword = await this.encryptionService.encrypt(updateData.imapPassword);
     }
 
-    Object.assign(config, updateData);
+    applyUpdate(config, updateData, ['id', 'userId', 'companyId', 'createdAt', 'updatedAt']);
     return this.emailConfigRepository.save(config);
   }
 
@@ -166,7 +166,7 @@ export class EmailConfigService {
       updateData.imapPassword = await this.encryptionService.encrypt(updateData.imapPassword);
     }
 
-    Object.assign(config, updateData);
+    applyUpdate(config, updateData, ['id', 'userId', 'companyId', 'createdAt', 'updatedAt']);
     return this.emailConfigRepository.save(config);
   }
 
@@ -200,7 +200,7 @@ export class EmailConfigService {
     });
 
     if (!config) {
-      throw new NotFoundException('System Admin email configuration not found');
+      throw new NotFoundException(ErrorMessages.EMAIL_CONFIG.SYSTEM_NOT_FOUND);
     }
 
     return config;
@@ -218,7 +218,7 @@ export class EmailConfigService {
     });
 
     if (existing) {
-      throw new ConflictException('System Admin already has an email configuration');
+      throw new ConflictException(ErrorMessages.EMAIL_CONFIG.SYSTEM_ALREADY_EXISTS);
     }
 
     // Encrypt passwords
@@ -262,7 +262,7 @@ export class EmailConfigService {
       updateData.imapPassword = await this.encryptionService.encrypt(updateData.imapPassword);
     }
 
-    Object.assign(config, updateData);
+    applyUpdate(config, updateData, ['id', 'userId', 'companyId', 'createdAt', 'updatedAt']);
     return this.emailConfigRepository.save(config);
   }
 

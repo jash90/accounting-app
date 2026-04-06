@@ -4,17 +4,12 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { type Repository } from 'typeorm';
 
-import {
-  Module as ModuleEntity,
-  PermissionTargetType,
-  UserRole,
-  type User,
-} from '@accounting/common';
+import { Module as ModuleEntity, PermissionTargetType, User, UserRole } from '@accounting/common';
 import { ModuleDiscoveryService, RBACService } from '@accounting/rbac';
 
 import { ModulesService } from './modules.service';
@@ -23,6 +18,7 @@ import { CompanyModuleAccessService } from './services/company-module-access.ser
 import { EmployeeModulePermissionsService } from './services/employee-module-permissions.service';
 
 describe('ModulesService', () => {
+  let testingModule: TestingModule;
   let service: ModulesService;
   let moduleRepository: jest.Mocked<Repository<ModuleEntity>>;
   let rbacService: jest.Mocked<
@@ -90,6 +86,11 @@ describe('ModulesService', () => {
   beforeAll(async () => {
     moduleRepository = createMockRepository<ModuleEntity>();
 
+    const mockUserRepository = {
+      find: jest.fn().mockResolvedValue([]),
+      findOne: jest.fn(),
+    };
+
     rbacService = {
       getAvailableModules: jest.fn(),
       canAccessModule: jest.fn(),
@@ -118,13 +119,14 @@ describe('ModulesService', () => {
       reloadModules: jest.fn(),
     };
 
-    const module = await Test.createTestingModule({
+    testingModule = await Test.createTestingModule({
       providers: [
         {
           provide: ModulesService,
           useFactory: () =>
             new ModulesService(
               moduleRepository as any,
+              mockUserRepository as any,
               rbacService as any,
               companyModuleAccessService as any,
               employeePermissionsService as any,
@@ -132,6 +134,7 @@ describe('ModulesService', () => {
             ),
         },
         { provide: getRepositoryToken(ModuleEntity), useValue: moduleRepository },
+        { provide: getRepositoryToken(User), useValue: mockUserRepository },
         { provide: RBACService, useValue: rbacService },
         { provide: CompanyModuleAccessService, useValue: companyModuleAccessService },
         { provide: EmployeeModulePermissionsService, useValue: employeePermissionsService },
@@ -139,7 +142,11 @@ describe('ModulesService', () => {
       ],
     }).compile();
 
-    service = module.get(ModulesService);
+    service = testingModule.get(ModulesService);
+  });
+
+  afterAll(async () => {
+    await testingModule?.close();
   });
 
   beforeEach(() => {
