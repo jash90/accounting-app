@@ -8,10 +8,13 @@ import {
   type ReactNode,
 } from 'react';
 
+import { useNavigate } from 'react-router-dom';
+
 import { useQuery } from '@tanstack/react-query';
 
 import { authApi } from '@/lib/api/endpoints/auth';
 import { tokenStorage } from '@/lib/auth/token-storage';
+import { AUTH_EVENTS, authEventBus } from '@/lib/events/auth-events';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { type RegisterFormData } from '@/lib/validation/schemas';
 import { type UserDto } from '@/types/dtos';
@@ -83,6 +86,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const { login: loginMutation, register: registerMutation, logout: logoutMutation } = useAuth();
+  const navigate = useNavigate();
+
+  // Listen for auth events from API client (SPA-friendly navigation)
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      dispatch({ type: 'CLEAR_AUTH' });
+      navigate('/login', { replace: true });
+    };
+    const handleModuleAccessDenied = () => {
+      navigate('/module-access-denied', { replace: true });
+    };
+
+    authEventBus.addEventListener(AUTH_EVENTS.SESSION_EXPIRED, handleSessionExpired);
+    authEventBus.addEventListener(AUTH_EVENTS.MODULE_ACCESS_DENIED, handleModuleAccessDenied);
+
+    return () => {
+      authEventBus.removeEventListener(AUTH_EVENTS.SESSION_EXPIRED, handleSessionExpired);
+      authEventBus.removeEventListener(AUTH_EVENTS.MODULE_ACCESS_DENIED, handleModuleAccessDenied);
+    };
+  }, [navigate]);
 
   // Monitor token changes using event-based system (no polling)
   useEffect(() => {
