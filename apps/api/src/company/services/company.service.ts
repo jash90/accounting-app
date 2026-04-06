@@ -2,10 +2,10 @@ import { ConflictException, Injectable, Logger, NotFoundException } from '@nestj
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import * as bcrypt from 'bcryptjs';
+import { hash } from 'bcryptjs';
 import { Repository } from 'typeorm';
 
-import { Company, ErrorMessages, User, UserRole } from '@accounting/common';
+import { applyUpdate, Company, ErrorMessages, User, UserRole } from '@accounting/common';
 import { EmailConfigurationService, EmailSenderService } from '@accounting/email';
 import { EmailService } from '@accounting/infrastructure/email';
 
@@ -70,7 +70,7 @@ export class CompanyService {
       throw new ConflictException(ErrorMessages.AUTH.EMAIL_EXISTS);
     }
 
-    const hashedPassword = await bcrypt.hash(createEmployeeDto.password, 10);
+    const hashedPassword = await hash(createEmployeeDto.password, 10);
 
     const employee = this.userRepository.create({
       ...createEmployeeDto,
@@ -188,10 +188,17 @@ export class CompanyService {
     }
 
     if (updateEmployeeDto.password) {
-      updateEmployeeDto.password = await bcrypt.hash(updateEmployeeDto.password, 10);
+      updateEmployeeDto.password = await hash(updateEmployeeDto.password, 10);
     }
 
-    Object.assign(employee, updateEmployeeDto);
+    applyUpdate(employee, updateEmployeeDto, [
+      'id',
+      'role',
+      'companyId',
+      'createdAt',
+      'updatedAt',
+      'tokenVersion',
+    ]);
     return this.userRepository.save(employee);
   }
 
@@ -226,7 +233,7 @@ export class CompanyService {
     if (!companyId) throw new NotFoundException(ErrorMessages.NOT_FOUND.entity('Firma'));
     const company = await this.companyRepository.findOne({ where: { id: companyId } });
     if (!company) throw new NotFoundException(ErrorMessages.NOT_FOUND.entity('Firma'));
-    Object.assign(company, dto);
+    applyUpdate(company, dto, ['id', 'ownerId', 'isSystemCompany', 'createdAt', 'updatedAt']);
     return this.companyRepository.save(company);
   }
 }

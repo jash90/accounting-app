@@ -6,14 +6,24 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import * as bcrypt from 'bcryptjs';
+import { hash } from 'bcryptjs';
 import { DataSource, Repository } from 'typeorm';
 
-import { Company, ErrorMessages, User, UserRole } from '@accounting/common';
-import { SystemCompanyService } from '@accounting/common/backend';
+import { AuthService, JwtStrategy } from '@accounting/auth';
+import {
+  applyUpdate,
+  Company,
+  ErrorMessages,
+  escapeLikePattern,
+  PaginatedResponseDto,
+  User,
+  UserRole,
+} from '@accounting/common';
+import { calculatePagination, SystemCompanyService } from '@accounting/common/backend';
 import { RBACService } from '@accounting/rbac';
 
 import { UpdateCompanyProfileDto } from '../../company/dto/update-company-profile.dto';
+import { AdminCompaniesQueryDto, AdminUsersQueryDto } from '../dto/admin-query.dto';
 import { CreateCompanyDto } from '../dto/create-company.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateCompanyDto } from '../dto/update-company.dto';
@@ -28,15 +38,38 @@ export class AdminService {
     private readonly companyRepository: Repository<Company>,
     private readonly rbacService: RBACService,
     private readonly dataSource: DataSource,
-    private readonly systemCompanyService: SystemCompanyService
+    private readonly systemCompanyService: SystemCompanyService,
+    private readonly authService: AuthService,
+    private readonly jwtStrategy: JwtStrategy
   ) {}
 
   // User Management
-  findAllUsers() {
-    return this.userRepository.find({
-      relations: ['company'],
-      order: { createdAt: 'DESC' },
-    });
+  async findAllUsers(query?: AdminUsersQueryDto): Promise<PaginatedResponseDto<User>> {
+    const { page, limit, skip } = calculatePagination(query);
+
+    const qb = this.userRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.company', 'company')
+      .orderBy('user.createdAt', 'DESC');
+
+    if (query?.search) {
+      const escaped = escapeLikePattern(query.search);
+      qb.andWhere(
+        "(user.email ILIKE :search ESCAPE '\\' OR user.firstName ILIKE :search ESCAPE '\\' OR user.lastName ILIKE :search ESCAPE '\\')",
+        { search: `%${escaped}%` }
+      );
+    }
+
+    if (query?.role) {
+      qb.andWhere('user.role = :role', { role: query.role });
+    }
+
+    if (query?.isActive !== undefined) {
+      qb.andWhere('user.isActive = :isActive', { isActive: query.isActive });
+    }
+
+    const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
+    return new PaginatedResponseDto(data, total, page, limit);
   }
 
   async findUserById(id: string) {
@@ -71,12 +104,12 @@ export class AdminService {
 
     // EMPLOYEE requires companyId
     if (createUserDto.role === UserRole.EMPLOYEE && !createUserDto.companyId) {
-      throw new BadRequestException('companyId jest wymagane dla roli EMPLOYEE');
+      throw new BadRequestException(ErrorMessages.ADMIN.COMPANY_ID_REQUIRED_FOR_EMPLOYEE);
     }
 
     // COMPANY_OWNER requires companyName (to auto-create company)
     if (createUserDto.role === UserRole.COMPANY_OWNER && !createUserDto.companyName) {
-      throw new BadRequestException('companyName jest wymagane dla roli COMPANY_OWNER');
+      throw new BadRequestException(ErrorMessages.ADMIN.COMPANY_NAME_REQUIRED_FOR_OWNER);
     }
 
     if (createUserDto.companyId) {
@@ -88,7 +121,7 @@ export class AdminService {
       }
     }
 
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    const hashedPassword = await hash(createUserDto.password, 10);
 
     // Use transaction to ensure atomic creation of user and company for COMPANY_OWNER
     return this.dataSource.transaction(async (manager) => {
@@ -115,8 +148,18 @@ export class AdminService {
     });
   }
 
-  async updateUser(id: string, updateUserDto: UpdateUserDto) {
+  async updateUser(id: string, updateUserDto: UpdateUserDto, currentUserId?: string) {
     const user = await this.findUserById(id);
+
+    // FIX-03: Prevent admin from demoting or deactivating themselves
+    if (currentUserId && id === currentUserId) {
+      if (updateUserDto.role && updateUserDto.role !== UserRole.ADMIN) {
+        throw new BadRequestException(ErrorMessages.ADMIN.CANNOT_SELF_DEMOTE);
+      }
+      if (updateUserDto.isActive === false) {
+        throw new BadRequestException(ErrorMessages.ADMIN.CANNOT_SELF_DEACTIVATE);
+      }
+    }
 
     if (updateUserDto.email && updateUserDto.email.toLowerCase() !== user.email.toLowerCase()) {
       // FIX-08: Case-insensitive email check
@@ -130,7 +173,7 @@ export class AdminService {
     }
 
     if (updateUserDto.password) {
-      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+      updateUserDto.password = await hash(updateUserDto.password, 10);
     }
 
     // Auto-assign to System Admin company when promoting to ADMIN role
@@ -139,20 +182,43 @@ export class AdminService {
       updateUserDto.companyId = systemCompany.id;
     }
 
-    Object.assign(user, updateUserDto);
-    return this.userRepository.save(user);
+    applyUpdate(user, updateUserDto, ['id', 'createdAt', 'updatedAt', 'tokenVersion']);
+    const savedUser = await this.userRepository.save(user);
+
+    // FIX-01: Invalidate tokens/cache when deactivating via general update
+    // (softDeleteUser and setUserActiveStatus already handle this for their flows)
+    if (updateUserDto.isActive === false) {
+      await this.authService.invalidateTokens(id);
+      this.jwtStrategy.invalidateUserCache(id);
+    }
+
+    return savedUser;
   }
 
   async softDeleteUser(id: string) {
     const user = await this.findUserById(id);
     user.isActive = false;
-    return this.userRepository.save(user);
+    const savedUser = await this.userRepository.save(user);
+
+    // Invalidate all tokens so the deactivated user is immediately logged out
+    await this.authService.invalidateTokens(id);
+    this.jwtStrategy.invalidateUserCache(id);
+
+    return savedUser;
   }
 
   async setUserActiveStatus(id: string, isActive: boolean) {
     const user = await this.findUserById(id);
     user.isActive = isActive;
-    return this.userRepository.save(user);
+    const savedUser = await this.userRepository.save(user);
+
+    // When deactivating, invalidate tokens and cache for immediate effect
+    if (!isActive) {
+      await this.authService.invalidateTokens(id);
+      this.jwtStrategy.invalidateUserCache(id);
+    }
+
+    return savedUser;
   }
 
   // Get available owners (COMPANY_OWNER without assigned company)
@@ -168,12 +234,31 @@ export class AdminService {
   }
 
   // Company Management
-  findAllCompanies() {
-    return this.companyRepository.find({
-      where: { isSystemCompany: false }, // Hide System Admin company from list
-      relations: ['owner', 'employees'],
-      order: { createdAt: 'DESC' },
-    });
+  async findAllCompanies(query?: AdminCompaniesQueryDto): Promise<PaginatedResponseDto<Company>> {
+    const { page, limit, skip } = calculatePagination(query);
+
+    const qb = this.companyRepository
+      .createQueryBuilder('company')
+      .leftJoinAndSelect('company.owner', 'owner')
+      .leftJoinAndSelect('company.employees', 'employees')
+      .where('company.isSystemCompany = false')
+      .orderBy('company.createdAt', 'DESC');
+
+    if (query?.search) {
+      const escaped = escapeLikePattern(query.search);
+      qb.andWhere("company.name ILIKE :search ESCAPE '\\'", {
+        search: `%${escaped}%`,
+      });
+    }
+
+    if (query?.isActive !== undefined) {
+      qb.andWhere('company.isActive = :isActive', {
+        isActive: query.isActive,
+      });
+    }
+
+    const [data, total] = await qb.skip(skip).take(limit).getManyAndCount();
+    return new PaginatedResponseDto(data, total, page, limit);
   }
 
   async findCompanyById(id: string) {
@@ -200,7 +285,7 @@ export class AdminService {
     }
 
     if (ownerCheck.role !== UserRole.COMPANY_OWNER) {
-      throw new BadRequestException('Właściciel musi mieć rolę COMPANY_OWNER');
+      throw new BadRequestException(ErrorMessages.ADMIN.OWNER_MUST_BE_COMPANY_OWNER);
     }
 
     // Use transaction with pessimistic lock to prevent race conditions
@@ -217,7 +302,7 @@ export class AdminService {
 
       // Re-check if owner already has a company assigned (within lock)
       if (owner.companyId) {
-        throw new BadRequestException('Ten właściciel jest już przypisany do innej firmy');
+        throw new BadRequestException(ErrorMessages.ADMIN.OWNER_ALREADY_ASSIGNED);
       }
 
       // Create and save company within transaction
@@ -238,7 +323,13 @@ export class AdminService {
 
   async updateCompany(id: string, updateCompanyDto: UpdateCompanyDto) {
     const company = await this.findCompanyById(id);
-    Object.assign(company, updateCompanyDto);
+    applyUpdate(company, updateCompanyDto, [
+      'id',
+      'ownerId',
+      'isSystemCompany',
+      'createdAt',
+      'updatedAt',
+    ]);
     return this.companyRepository.save(company);
   }
 
@@ -247,7 +338,7 @@ export class AdminService {
 
     // Prevent deletion of System Admin company
     if (company.isSystemCompany) {
-      throw new BadRequestException('Nie można usunąć firmy System Admin');
+      throw new BadRequestException(ErrorMessages.ADMIN.CANNOT_DELETE_SYSTEM_COMPANY);
     }
 
     company.isActive = false;
@@ -271,7 +362,7 @@ export class AdminService {
   ): Promise<Company> {
     const company = await this.companyRepository.findOne({ where: { id: companyId } });
     if (!company) throw new NotFoundException(ErrorMessages.NOT_FOUND.entity('Firma'));
-    Object.assign(company, dto);
+    applyUpdate(company, dto, ['id', 'ownerId', 'isSystemCompany', 'createdAt', 'updatedAt']);
     return this.companyRepository.save(company);
   }
 }

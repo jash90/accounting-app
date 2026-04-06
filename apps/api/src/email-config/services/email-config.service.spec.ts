@@ -1,5 +1,5 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { type Repository } from 'typeorm';
@@ -10,6 +10,7 @@ import { EncryptionService, SystemCompanyService } from '@accounting/common/back
 import { EmailConfigService } from './email-config.service';
 
 describe('EmailConfigService', () => {
+  let testingModule: TestingModule;
   let service: EmailConfigService;
   let emailConfigRepository: jest.Mocked<Repository<EmailConfiguration>>;
   let encryptionService: jest.Mocked<Pick<EncryptionService, 'encrypt'>>;
@@ -70,7 +71,7 @@ describe('EmailConfigService', () => {
       getSystemCompany: jest.fn().mockResolvedValue({ id: systemCompanyId, name: 'System Admin' }),
     };
 
-    const module = await Test.createTestingModule({
+    testingModule = await Test.createTestingModule({
       providers: [
         {
           provide: EmailConfigService,
@@ -87,7 +88,11 @@ describe('EmailConfigService', () => {
       ],
     }).compile();
 
-    service = module.get(EmailConfigService);
+    service = testingModule.get(EmailConfigService);
+  });
+
+  afterEach(async () => {
+    await testingModule?.close();
   });
 
   describe('getUserConfig', () => {

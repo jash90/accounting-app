@@ -30,10 +30,18 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 
-import { Roles, RolesGuard } from '@accounting/auth';
-import { CompanyResponseDto, UserResponseDto, UserRole } from '@accounting/common';
+import { CurrentUser, Roles, RolesGuard } from '@accounting/auth';
+import {
+  Company,
+  CompanyResponseDto,
+  PaginatedResponseDto,
+  User,
+  UserResponseDto,
+  UserRole,
+} from '@accounting/common';
 
 import { UpdateCompanyProfileDto } from '../../company/dto/update-company-profile.dto';
+import { AdminCompaniesQueryDto, AdminUsersQueryDto } from '../dto/admin-query.dto';
 import { CreateCompanyDto } from '../dto/create-company.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateCompanyDto } from '../dto/update-company.dto';
@@ -51,14 +59,14 @@ export class AdminController {
   // User Management
   @Get('users')
   @ApiOperation({
-    summary: 'Get all users',
-    description: 'Retrieve a complete list of all users in the system',
+    summary: 'Get all users (paginated)',
+    description: 'Retrieve a paginated list of users with optional search and filters',
   })
-  @ApiOkResponse({ description: 'List of all users', type: [UserResponseDto] })
+  @ApiOkResponse({ description: 'Paginated list of users' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
-  findAllUsers() {
-    return this.adminService.findAllUsers();
+  findAllUsers(@Query() query: AdminUsersQueryDto): Promise<PaginatedResponseDto<User>> {
+    return this.adminService.findAllUsers(query);
   }
 
   @Get('users/:id')
@@ -104,8 +112,12 @@ export class AdminController {
   @ApiNotFoundResponse({ description: 'User not found' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
-  updateUser(@Param('id', ParseUUIDPipe) id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.adminService.updateUser(id, updateUserDto);
+  updateUser(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateUserDto: UpdateUserDto,
+    @CurrentUser() currentUser: User
+  ) {
+    return this.adminService.updateUser(id, updateUserDto, currentUser.id);
   }
 
   @Delete('users/:id')
@@ -163,14 +175,14 @@ export class AdminController {
   // Company Management
   @Get('companies')
   @ApiOperation({
-    summary: 'Get all companies',
-    description: 'Retrieve a complete list of all companies in the system',
+    summary: 'Get all companies (paginated)',
+    description: 'Retrieve a paginated list of companies with optional search and filters',
   })
-  @ApiOkResponse({ description: 'List of all companies', type: [CompanyResponseDto] })
+  @ApiOkResponse({ description: 'Paginated list of companies' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
   @ApiForbiddenResponse({ description: 'Forbidden - Admin role required' })
-  findAllCompanies() {
-    return this.adminService.findAllCompanies();
+  findAllCompanies(@Query() query: AdminCompaniesQueryDto): Promise<PaginatedResponseDto<Company>> {
+    return this.adminService.findAllCompanies(query);
   }
 
   @Get('companies/:id')

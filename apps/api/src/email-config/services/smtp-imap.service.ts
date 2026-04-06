@@ -1,4 +1,4 @@
-import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable, Logger } from '@nestjs/common';
 
 import { ImapFlow } from 'imapflow';
 import { simpleParser, type Source } from 'mailparser';
@@ -22,6 +22,7 @@ if (process.env.NODE_ENV === 'production' && !REJECT_UNAUTHORIZED) {
 
 // Security warning when TLS validation is disabled (non-production only)
 if (!REJECT_UNAUTHORIZED) {
+  // Logger not available at module load time; this is a static init warning
   console.warn(
     '⚠️  EMAIL_REJECT_UNAUTHORIZED is disabled. TLS certificate validation is OFF. This should only be used in development/testing environments.'
   );
@@ -106,6 +107,7 @@ interface ImapCheckConfig {
  */
 @Injectable()
 export class SmtpImapService {
+  private readonly logger = new Logger(SmtpImapService.name);
   constructor(
     private readonly emailConfigService: EmailConfigService,
     private readonly encryptionService: EncryptionService
@@ -173,7 +175,7 @@ export class SmtpImapService {
               });
             }
           } catch (parseError) {
-            console.error('Error parsing email:', parseError);
+            this.logger.error('Error parsing email:', parseError);
           }
         }
 
@@ -216,7 +218,7 @@ export class SmtpImapService {
 
     // For unknown errors, return generic message without exposing internals
     // Log the actual error for debugging (but don't expose to user)
-    console.error(`[SmtpImapService] ${operation} error:`, error.message);
+    this.logger.error(`${operation} error: ${error.message}`);
 
     return `Błąd ${operation}: Spróbuj ponownie później`;
   }

@@ -1,6 +1,6 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Test } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { type Repository } from 'typeorm';
@@ -13,6 +13,7 @@ import { CompanyService } from './company.service';
 import { createMockRepository } from '../../testing/mock-helpers';
 
 describe('CompanyService', () => {
+  let testingModule: TestingModule;
   let service: CompanyService;
   let userRepository: jest.Mocked<Repository<User>>;
   let companyRepository: jest.Mocked<Repository<Company>>;
@@ -69,7 +70,7 @@ describe('CompanyService', () => {
       get: jest.fn().mockReturnValue('http://localhost:4200'),
     };
 
-    const module = await Test.createTestingModule({
+    testingModule = await Test.createTestingModule({
       providers: [
         {
           provide: CompanyService,
@@ -92,11 +93,18 @@ describe('CompanyService', () => {
       ],
     }).compile();
 
-    service = module.get(CompanyService);
+    service = testingModule.get(CompanyService);
+  });
+
+  afterAll(async () => {
+    await testingModule?.close();
   });
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset queryBuilder getOne to return null by default
+    const userQb = userRepository.createQueryBuilder();
+    (userQb.getOne as jest.Mock).mockResolvedValue(null);
   });
 
   describe('getEmployees', () => {
@@ -160,7 +168,9 @@ describe('CompanyService', () => {
 
     it('should throw ConflictException when email already exists', async () => {
       const dto = { email: 'employee@test.com', password: 'Password123' };
-      userRepository.findOne.mockResolvedValue(mockEmployee);
+      // Service uses createQueryBuilder for case-insensitive email check
+      const mockQb = userRepository.createQueryBuilder();
+      (mockQb.getOne as jest.Mock).mockResolvedValue(mockEmployee);
 
       await expect(service.createEmployee(companyId, dto as any)).rejects.toThrow(
         ConflictException
@@ -206,7 +216,9 @@ describe('CompanyService', () => {
     it('should throw ConflictException when updating to existing email', async () => {
       const dto = { email: 'existing@test.com' };
       userRepository.findOne.mockResolvedValueOnce(mockEmployee); // getEmployeeById
-      userRepository.findOne.mockResolvedValueOnce({ id: 'other' } as User); // email check
+      // Service uses createQueryBuilder for case-insensitive email check
+      const mockQb = userRepository.createQueryBuilder();
+      (mockQb.getOne as jest.Mock).mockResolvedValue({ id: 'other' } as User);
 
       await expect(service.updateEmployee(companyId, employeeId, dto as any)).rejects.toThrow(
         ConflictException

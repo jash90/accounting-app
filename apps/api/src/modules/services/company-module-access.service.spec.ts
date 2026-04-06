@@ -1,5 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { type Repository } from 'typeorm';
@@ -10,6 +10,7 @@ import { CompanyModuleAccessService } from './company-module-access.service';
 import { createMockRepository } from '../../testing/mock-helpers';
 
 describe('CompanyModuleAccessService', () => {
+  let testingModule: TestingModule;
   let service: CompanyModuleAccessService;
   let moduleRepository: jest.Mocked<Repository<ModuleEntity>>;
   let companyModuleAccessRepository: jest.Mocked<Repository<CompanyModuleAccess>>;
@@ -48,7 +49,7 @@ describe('CompanyModuleAccessService', () => {
 
     companyRepository = createMockRepository<Company>();
 
-    const module = await Test.createTestingModule({
+    testingModule = await Test.createTestingModule({
       providers: [
         {
           provide: CompanyModuleAccessService,
@@ -68,7 +69,11 @@ describe('CompanyModuleAccessService', () => {
       ],
     }).compile();
 
-    service = module.get(CompanyModuleAccessService);
+    service = testingModule.get(CompanyModuleAccessService);
+  });
+
+  afterAll(async () => {
+    await testingModule?.close();
   });
 
   beforeEach(() => {
