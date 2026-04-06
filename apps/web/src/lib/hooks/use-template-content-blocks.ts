@@ -1,7 +1,7 @@
-import { type UpdateContentBlocksDto } from '@/types/dtos';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
+import { type UpdateContentBlocksDto } from '@/types/dtos';
 
 import { offerTemplatesApi } from '../api/endpoints/offers';
 import { queryKeys } from '../api/query-client';

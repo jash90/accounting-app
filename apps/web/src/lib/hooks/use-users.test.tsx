@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useToast } from '@/components/ui/use-toast';
 
-import { usersApi } from '../api/endpoints/users';
 import {
   useAvailableCompanyOwners,
   useCreateUser,
@@ -12,6 +11,7 @@ import {
   useUser,
   useUsers,
 } from './use-users';
+import { usersApi } from '../api/endpoints/users';
 
 vi.mock('../api/endpoints/users');
 vi.mock('@/components/ui/use-toast');

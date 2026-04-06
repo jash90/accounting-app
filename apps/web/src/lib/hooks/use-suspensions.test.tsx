@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useToast } from '@/components/ui/use-toast';
 
-import { suspensionsApi } from '../api/endpoints/suspensions';
 import {
   useClientSuspensions,
   useCreateSuspension,
@@ -12,6 +11,7 @@ import {
   useSuspension,
   useUpdateSuspension,
 } from './use-suspensions';
+import { suspensionsApi } from '../api/endpoints/suspensions';
 
 // Mock the API modules
 vi.mock('../api/endpoints/suspensions');

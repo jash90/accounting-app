@@ -1,4 +1,4 @@
-/* eslint_disable no-console */
+/* eslint-disable no-console */
 import * as Sentry from '@sentry/react';
 
 /**

@@ -1,333 +1,306 @@
-# 🔍 Code Review — Accounting SaaS Platform
+# 🔍 Code Review — RBAC Multi-tenant SaaS Platform (Accounting)
 
-**Data:** 2026-04-03
-**Reviewer:** Claude Code (automated)
+**Data**: 2026-04-03
+**Reviewer**: Claude Code (automated deep analysis)
 
 ## Przegląd projektu
 
-| Metryka              | Wartość                                                                                                  |
-| -------------------- | -------------------------------------------------------------------------------------------------------- |
-| **Backend**          | NestJS 11 + TypeORM + PostgreSQL                                                                         |
-| **Frontend**         | React 19 + Vite + TanStack Query + shadcn/ui                                                             |
-| **Monorepo**         | Nx 22                                                                                                    |
-| **Moduły biznesowe** | 9 (clients, tasks, time-tracking, settlements, offers, documents, email-client, ai-agent, notifications) |
-| **Linie kodu (TS)**  | ~101K (bez testów)                                                                                       |
-| **Pliki testowe**    | 173                                                                                                      |
-| **Migracje**         | 60+                                                                                                      |
+| Metryka          | Wartość                                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------------------------------- |
+| **Typ**          | NestJS 11 + React 19 Monorepo (Nx 22)                                                                    |
+| **Rozmiar kodu** | ~140k linii TS/TSX (bez testów)                                                                          |
+| **Moduły**       | 9 (AI Agent, Clients, Tasks, Time Tracking, Settlements, Documents, Offers, Email Client, Notifications) |
+| **Testy**        | 217 plików spec/test (~62k linii)                                                                        |
+| **Entities**     | ~45 TypeORM entities                                                                                     |
 
 ---
 
-## 🚨 KRYTYCZNE (wymagają natychmiastowej naprawy)
+## ✅ MOCNE STRONY
 
-### 1. WYCIEK SEKRETÓW W `.env` — Severity: CRITICAL 🔴
+### 1. Architektura i organizacja
 
-Plik `.env` zawiera **prawdziwe hasła email, klucze szyfrowania i credentiale**:
+- **Doskonała modularność** — clean separation na `libs/modules/*`, `libs/auth`, `libs/rbac`, `libs/common`, `libs/infrastructure/*`. Każdy moduł ma jasną odpowiedzialność.
+- **Entity registry** (`entity-registry.ts`) — Single Source of Truth dla encji TypeORM, współdzielony między `typeorm.config.ts` a `app.module.ts`.
+- **SystemCompanyService** z cachowaniem — eliminuje N+1 lookupów system company, lazy init z fallbackiem.
+- **Dobrze przemyślany RBAC** — Guard chain (`JwtAuthGuard → ModuleAccessGuard → PermissionGuard`) z cachowanym wynikiem `_rbacResult` unikającym duplikacji queries.
 
-```
-SMTP_PASS=jN%450ve*E0^aU7!Pk%9          # Prawdziwe hasło Onet
-SMTP_PASS=ZnJaTbDJbJA2hFQyHPG!          # Prawdziwe hasło Interia
-ENCRYPTION_KEY=ec99b04bdbe713db...        # Klucz szyfrowania
-ENCRYPTION_SECRET=b71fe976782b57b3...     # Secret szyfrowania
-SENTRY_DSN=https://208be0e4f03b...       # DSN Sentry
-```
+### 2. Bezpieczeństwo (bardzo solidne)
 
-Plik `.env` jest w `.gitignore`, ale jest wersjonowany na dysku z prawdziwymi danymi. **Jeśli kiedykolwiek został commitowany — wymaga natychmiastowej rotacji wszystkich sekretów.**
+- **httpOnly cookies** dla JWT — tokeny nigdy nie trafiają do `localStorage`. Doskonała implementacja `token-storage.ts` z migracją legacy tokens.
+- **Token versioning** — `tokenVersion` w User entity do invalidacji po logout/password change.
+- **Timing-attack mitigation** — `bcrypt.compare` zawsze wykonywany, nawet gdy user nie istnieje (dummy hash).
+- **AES-256-GCM** encryption z random salt — mocne szyfrowanie wrażliwych danych.
+- **Environment validation** — startup validation z strict mode w produkcji (`env.validator.ts`).
+- **Helmet + CORS + Rate Limiting** — ThrottlerModule z per-endpoint overrides na auth endpoints.
+- **Sensitive data redaction** w error filter — `SENSITIVE_KEYS` set zapobiega wyciekom.
+- **CSRF protection** przez Bearer token pattern + `sameSite: strict` w produkcji.
 
-**Rekomendacja:**
+### 3. Frontend
 
-- Rotuj WSZYSTKIE sekrety (SMTP, encryption keys, JWT secrets)
-- Użyj `git log --all -- .env` do sprawdzenia historii
-- Rozważ użycie secret manager (Vault, AWS Secrets Manager)
+- **Dualny AuthContext** — oddzielny `AuthLoadingContext` zapobiega re-renderom komponentów zależnych tylko od user data. Mądra optymalizacja.
+- **TokenRefreshManager** — singleton promise pattern zapobiega race conditions przy równoczesnych 401.
+- **Lazy loading routes** z `React.lazy()` i `Suspense` — dobry code-splitting.
 
-### 2. Słaby JWT_SECRET — Severity: CRITICAL 🔴
+### 4. Error Handling
 
-```
-JWT_SECRET=jshdlfhalsdhflhjaslkdhfjklasjdlf
-```
+- **AllExceptionsFilter** — trzy warstwy (AppException, HttpException, Unexpected) z `requestId` correlation. Sanityzacja kontekstu do max depth 2.
+- **Generic error messages** w odpowiedziach dla unexpected errors — nie ujawniają internali.
 
-Walidator w `env.validator.ts` wykrywa ten secret jako słaby, ale **tylko loguje warning w dev** zamiast blokować start. W połączeniu z `JWT_EXPIRES_IN=1h` (za długo), stwarza poważne ryzyko.
+### 5. Database
 
-**Rekomendacja:** Zmień na kryptograficznie bezpieczny secret: `openssl rand -base64 64`
-
-### 3. Otwarty endpoint rejestracji z przypisywaniem ról — Severity: HIGH 🔴
-
-```typescript
-// libs/auth/src/lib/dto/register.dto.ts
-@IsEnum(UserRole)
-role!: UserRole;
-```
-
-Publiczny endpoint `/auth/register` pozwala wybrać rolę `COMPANY_OWNER` lub `EMPLOYEE`. Jedyny blok to `ADMIN`. **Atakujący może zarejestrować się jako `COMPANY_OWNER`**, potencjalnie uzyskując dostęp do modułów.
-
-**Rekomendacja:**
-
-- Ogranicz self-registration do jednej domyślnej roli
-- `COMPANY_OWNER` powinien być tworzony wyłącznie przez ADMIN
+- **`synchronize: false`** WSZĘDZIE (produkcja i dev) — prawidłowe użycie migrations.
+- **Przemyślane indeksy** — composite indexes na entities (np. `['companyId', 'isActive']`, `['companyId', 'nip']` unique where null).
+- **Pessimistic locking** w `createCompany` — race condition prevention przy przypisywaniu ownera.
 
 ---
 
-## ⚠️ WYSOKIE (powinny być naprawione wkrótce)
+## ⚠️ PROBLEMY DO POPRAWY
 
-### 4. Brak walidacji UUID w parametrach URL
+### 🔴 KRYTYCZNE (Security / Data Integrity)
 
-Kontrolery przyjmują `@Param('id') id: string` bez walidacji UUID:
+#### 1. `.env` z sekretami — weryfikacja historii git
 
-```typescript
-// apps/api/src/admin/controllers/admin.controller.ts
-@Get('users/:id')
-findUserById(@Param('id') id: string) { ... }
+```
+# .env JEST w .gitignore, ALE:
+ENCRYPTION_KEY=ec99b04bdbe713db04751cb50272a3d6a8d26314afb6c4c747f5e75c1bb27fbc
+ENCRYPTION_SECRET=b71fe976782b57b39b4969f1bad352291e601f60b33ac7b7e82a21f5a3d2d11d
+SEED_ADMIN_PASSWORD=Admin123456!
 ```
 
-Brak `@IsUUID()` lub `ParseUUIDPipe` pozwala na injection niestandardowych stringów do zapytań DB.
+**Problem**: `.env` jest w `.gitignore`, ale plik `.encryption-key.dev` jest poza nim — sprawdź czy nie wyciekł w historii gita. Seed passwordy w `.env` to lokalne dev, ale `ENCRYPTION_KEY` i `ENCRYPTION_SECRET` to realne klucze kryptograficzne — jeśli kiedykolwiek były commitnięte, wymagają rotacji.
 
-**Rekomendacja:** Dodaj globalnie `ParseUUIDPipe` lub `@Param('id', ParseUUIDPipe)`
+**Dotyczy plików**:
 
-### 5. Refresh token nie waliduje `tokenVersion`
+- `.env`
+- `.encryption-key.dev`
+- `.env.example` (sprawdzić czy nie zawiera prawdziwych kluczy)
+
+#### 2. `Object.assign(entity, dto)` — mass assignment vulnerability
 
 ```typescript
-// libs/auth/src/lib/services/auth.service.ts
-async refreshToken(refreshToken: string): Promise<AuthResponseDto> {
-  const payload = this.refreshJwtService.verify(refreshToken);
-  const user = await this.userRepository.findOne({ where: { id: payload.sub } });
-  // ❌ Brak sprawdzenia payload.tokenVersion vs user.tokenVersion!
-  return this.generateTokens(user);
+// admin.service.ts:142
+Object.assign(user, updateUserDto);
+return this.userRepository.save(user);
+
+// company.service.ts:194
+Object.assign(employee, updateEmployeeDto);
+```
+
+**Problem**: Mimo że `ValidationPipe` z `whitelist: true` ogranicza DTO, `Object.assign` nie rozróżnia między polami które mogą być aktualizowane a polami chronionymi. Jeśli DTO kiedykolwiek rozszerzy się o pole z tym samym kluczem co chronione pole entity (np. `role`, `companyId`), dojdzie do eskalacji uprawnień.
+
+**Rekomendacja**: Używaj explicit field mapping zamiast `Object.assign`:
+
+```typescript
+user.firstName = dto.firstName ?? user.firstName;
+user.lastName = dto.lastName ?? user.lastName;
+```
+
+**Dotyczy plików (25+ wystąpień)**:
+
+- `apps/api/src/admin/services/admin.service.ts` (×3)
+- `apps/api/src/company/services/company.service.ts` (×2)
+- `apps/api/src/email-config/services/email-config.service.ts` (×3)
+- `apps/api/src/modules/modules.service.ts`
+- `libs/modules/clients/src/lib/services/clients.service.ts` (×2)
+- `libs/modules/clients/src/lib/services/client-icons.service.ts`
+- `libs/modules/clients/src/lib/services/custom-fields.service.ts`
+- `libs/modules/clients/src/lib/services/export.service.ts`
+- `libs/modules/clients/src/lib/services/notification-settings.service.ts`
+- `libs/modules/tasks/src/lib/services/tasks.service.ts`
+- `libs/modules/tasks/src/lib/services/task-labels.service.ts`
+- `libs/modules/documents/src/lib/services/document-templates.service.ts`
+- `libs/modules/time-tracking/src/lib/services/time-entries.service.ts` (×2)
+- `libs/modules/email-client/src/lib/services/email-auto-reply-template.service.ts`
+- `libs/modules/email-client/src/lib/services/email-draft.service.ts`
+- `libs/modules/email-client/src/lib/services/email-draft-sync.service.ts`
+- `libs/modules/notifications/src/lib/services/notification-settings.service.ts`
+- `libs/modules/offers/src/lib/services/docx-generation.service.ts`
+
+#### 3. Admin `updateUser` — brak ochrony przed self-demotion
+
+```typescript
+// admin.service.ts
+async updateUser(id: string, updateUserDto: UpdateUserDto) {
+  const user = await this.findUserById(id);
+  // ... no check if admin is modifying themselves
+  Object.assign(user, updateUserDto);
+  return this.userRepository.save(user);
 }
 ```
 
-Po `logout` (który inkrementuje `tokenVersion`), stary refresh token **nadal działa**, bo nie sprawdza wersji.
+**Problem**: Admin może zdegradować sam siebie lub zmienić swoją `companyId`, co może zablokować dostęp do systemu.
 
-**Rekomendacja:** Dodaj walidację:
-
-```typescript
-if (payload.tokenVersion !== undefined && payload.tokenVersion !== user.tokenVersion) {
-  throw new UnauthorizedException(ErrorMessages.AUTH.INVALID_REFRESH_TOKEN);
-}
-```
-
-### 6. N+1 problem w `isDescendant`
-
-```typescript
-// libs/modules/tasks/src/lib/services/tasks.service.ts
-private async isDescendant(potentialDescendantId, ancestorId, depth = 20) {
-  const subtasks = await this.taskRepository.find({ where: { parentTaskId: ancestorId } });
-  for (const subtask of subtasks) {
-    if (await this.isDescendant(potentialDescendantId, subtask.id, depth - 1)) { ... }
-  }
-}
-```
-
-Rekurencyjne zapytania DB — przy 20 poziomach zagnieżdżenia może to wygenerować setki zapytań.
-
-**Rekomendacja:** Użyj CTE (`WITH RECURSIVE`) w jednym zapytaniu SQL.
-
-### 7. Brak limitu na `reorderTasks` — sequential UPDATE
-
-```typescript
-// libs/modules/tasks/src/lib/services/tasks.service.ts
-for (let i = 0; i < dto.taskIds.length; i++) {
-  await this.taskRepository.update({ id: dto.taskIds[i], companyId }, { sortOrder: i });
-}
-```
-
-Bez limitu i bez transakcji — 100+ zadań = 100+ UPDATE queries. Podatne na race conditions.
-
-**Rekomendacja:**
-
-- Dodaj limit na `dto.taskIds.length` (np. max 200)
-- Owiń w transakcję
-- Rozważ batch UPDATE za pomocą `CASE WHEN`
+**Dotyczy pliku**: `apps/api/src/admin/services/admin.service.ts`
 
 ---
 
-## ⚡ ŚREDNIE (quality & maintainability)
+### 🟡 WAŻNE (Code Quality / Maintainability)
 
-### 8. Ogromna duplikacja routingu — ~1540 linii
-
-**Plik:** `apps/web/src/app/routes.tsx`
-
-Duplikuje **te same route'y 3 razy** (admin, company, employee) z drobnymi zmianami layoutu. To **ponad 1500 linii** prawie identycznego JSX.
-
-**Rekomendacja:** Wydziel konfigurację route'ów do tablicy i generuj dynamicznie:
+#### 4. Masywna duplikacja route definitions (~700 linii × 3)
 
 ```typescript
-const moduleRoutes = [
-  { path: 'clients', component: ClientsDashboardPage },
-  { path: 'clients/list', component: ClientsListPage },
-  // ...
+// routes.tsx — 850+ linii
+function adminRouteGroup() { ... }          // ~250 linii routów
+function companyOwnerRouteGroup() { ... }   // ~250 linii (prawie identyczne!)
+function moduleRouteGroup() { ... }         // ~200 linii (subset powyższych)
+```
+
+**Problem**: Routes dla admin, company owner i employee są niemal identyczne. Zmiana w jednym module wymaga edycji w 3 miejscach. Każde z nich to ~250 linii JSX.
+
+**Rekomendacja**: Wyciągnij definicję routów modułowych do wspólnej konfiguracji:
+
+```typescript
+const MODULE_ROUTES = [
+  { path: 'tasks', dashboard: TasksDashboardPage, list: TasksListPage, ... },
+  { path: 'clients', ... },
 ];
+// Generuj route groups dynamicznie per rola
+```
 
-function renderModuleRoutes(routes: typeof moduleRoutes) {
-  return routes.map(({ path, component: Component }) => (
-    <Route key={path} path={path} element={<LazyRoute><Component /></LazyRoute>} />
-  ));
+**Dotyczy pliku**: `apps/web/src/app/routes.tsx`
+
+#### 5. Brak DTOs na return types w wielu service methods
+
+```typescript
+// admin.service.ts
+findAllUsers() { return this.userRepository.find({ ... }); } // Returns User[] z hashem hasła!
+findAllCompanies() { return this.companyRepository.find({ ... }); }
+```
+
+**Problem**: Metody serwisowe zwracają surowe entities bezpośrednio. Choć `ClassSerializerInterceptor` + `@Exclude()` na `password` chroni przed wyciekiem hasła, brakuje dedykowanych response DTOs. To polega na dekoratorze `@Exclude()` jako jedynej warstwie ochrony — kruchej i łatwej do pominięcia przy nowych polach.
+
+**Dotyczy plików**:
+
+- `apps/api/src/admin/services/admin.service.ts`
+- `apps/api/src/company/services/company.service.ts`
+
+#### 6. Inconsistent error messages (PL/EN mix)
+
+```typescript
+// admin.service.ts (PL)
+throw new BadRequestException('companyId jest wymagane dla roli EMPLOYEE');
+throw new BadRequestException('Nie można usunąć firmy System Admin');
+
+// clients.controller.ts (EN)
+return { message: 'Client deleted successfully' };
+
+// auth.controller.ts (PL)
+return { message: 'Wylogowano pomyślnie' };
+```
+
+**Rekomendacja**: Scentralizuj wszystkie komunikaty w `ErrorMessages` const (który już istnieje w `libs/common/src/lib/constants/error-messages.ts`, ale nie jest używany konsekwentnie).
+
+**Dotyczy plików**: rozproszony problem w wielu serwisach i kontrolerach
+
+#### 7. RBACService — duplikacja DB queries bez bulk optimization
+
+```typescript
+// rbac.service.ts — canAccessModule() robi 3 osobne queries:
+const user = await this.userRepository.findOne(...);
+const module = await this.moduleRepository.findOne(...);
+const companyAccess = await this.companyModuleAccessRepository.findOne(...);
+```
+
+**Problem**: Moduł cache ma TTL 5min, ale user i company access nie są cachowane. Dla każdego requestu z guardem RBAC robi 2-3 DB queries.
+
+**Rekomendacja**: Użyj single JOIN query lub rozszerz caching.
+
+**Dotyczy pliku**: `libs/rbac/src/lib/services/rbac.service.ts`
+
+#### 8. Company entity — zbyt wiele odpowiedzialności
+
+```typescript
+export class Company {
+  // Core fields (OK)
+  name, ownerId, isSystemCompany, isActive
+
+  // Address fields (should be value object)
+  street, city, postalCode, country, buildingNumber, apartmentNumber
+
+  // Owner details (duplicated from User?)
+  ownerName, ownerFirstName, ownerLastName, ownerEmail, ownerPhone
+
+  // AI relations (10 relations!)
+  aiConfigurations, aiConversations, aiContexts, tokenUsages, tokenLimits
+
+  // Email & Documents
+  defaultEmailSignature, defaultDocumentFooter
+  emailConfig
 }
 ```
 
-### 9. Duże pliki komponentów (>500 linii)
+**Problem**: Company entity ma ~30+ kolumn i 10+ relacji. Dane adresowe i owner details powinny być value objects lub osobnymi tabelami.
 
-| Plik                                                                  | Linie |
-| --------------------------------------------------------------------- | ----- |
-| `apps/web/src/app/routes.tsx`                                         | 1540  |
-| `apps/web/src/components/forms/client-form-dialog.tsx`                | 1118  |
-| `apps/web/src/pages/modules/clients/clients-list.tsx`                 | 1094  |
-| `apps/web/src/pages/modules/ai-agent/admin-configuration.tsx`         | 862   |
-| `libs/modules/time-tracking/src/lib/services/time-entries.service.ts` | 1084  |
-| `libs/modules/tasks/src/lib/services/tasks.service.ts`                | 817   |
-| `libs/modules/clients/src/lib/services/clients.service.ts`            | 770   |
+**Dotyczy pliku**: `libs/common/src/lib/entities/company.entity.ts`
 
-Narusza zasadę z `AGENTS.md` — "Modular Design: Files under 500 lines".
+---
 
-**Rekomendacja:** Rozbij duże serwisy na mniejsze (np. `TaskQueryService`, `TaskMutationService`, `TaskValidationService`).
+### 🔵 DROBNE (Best Practices)
 
-### 10. Brakujący case-insensitive email w admin service
+#### 9. Dynamic `require()` w TypeScript module
 
 ```typescript
-// apps/api/src/admin/services/admin.service.ts
-const existingUser = await this.userRepository.findOne({
-  where: { email: createUserDto.email }, // ❌ case-sensitive!
+// app.module.ts
+const { DemoDataSeedersModule } = require('../seeders/demo-data-seeders.module');
+```
+
+**Problem**: Dynamic `require` w TypeScript module — działa, ale przerywa tree-shaking i type checking.
+
+**Dotyczy pliku**: `apps/api/src/app/app.module.ts`
+
+#### 10. Frontend API client — hardkodowany timeout
+
+```typescript
+const apiClient = axios.create({
+  timeout: 30000, // comment says AI endpoints override
 });
 ```
 
-Podczas gdy `auth.service.ts` poprawnie używa `LOWER(user.email) = LOWER(:email)`, admin service nie — można stworzyć duplikaty `User@Test.com` vs `user@test.com`.
+**Rekomendacja**: Wyciągnij do konfiguracji lub per-module client.
 
-**Rekomendacja:** Użyj `createQueryBuilder` z `LOWER()` lub znormalizuj email w DTO (`@Transform`).
+**Dotyczy pliku**: `apps/web/src/lib/api/client.ts`
 
-### 11. `Object.assign` na entity bez filtrowania pól
-
-```typescript
-// apps/api/src/admin/services/admin.service.ts
-Object.assign(user, updateUserDto);
-return this.userRepository.save(user);
-```
+#### 11. Missing pagination max limit guard
 
 ```typescript
-// apps/api/src/admin/services/admin.service.ts
-Object.assign(company, updateCompanyDto);
-return this.companyRepository.save(company);
+// clients.service.ts
+const { page, limit, skip } = calculatePagination(filters);
 ```
 
-Jeśli DTO zawiera niespodziewane pola (np. `id`, `createdAt`), mogą nadpisać wartości entity. `ValidationPipe` z `whitelist: true` pomaga, ale to nie pełna ochrona.
+**Rekomendacja**: Sprawdź czy `calculatePagination` ma max limit (np. 1000) żeby zapobiec `?limit=999999`.
 
-**Rekomendacja:** Mapuj ręcznie tylko dozwolone pola lub użyj `pick`/`omit` utility.
+**Dotyczy pliku**: `libs/modules/clients/src/lib/services/clients.service.ts` (i inne serwisy z paginacją)
 
-### 12. Inconsistent error messages (PL/EN mix)
+#### 12. Test coverage — brak mierzenia
 
-Projekt miesza komunikaty po polsku i angielsku:
-
-```typescript
-// EN
-throw new BadRequestException('companyId is required for EMPLOYEE role');
-throw new NotFoundException('Owner user not found');
-
-// PL
-throw new BadRequestException('Rejestracja z rolą ADMIN nie jest dozwolona');
-throw new ForbiddenException('Nie masz uprawnień do wykonania tej operacji');
-throw new BadRequestException('Powód blokady jest wymagany przy zmianie statusu na Zablokowane');
-```
-
-**Rekomendacja:** Zdecyduj się na jeden język i zrefaktoruj do stałych w `ErrorMessages`.
-
-### 13. Brak indeksu na case-insensitive email
-
-Migracja `AddCaseInsensitiveEmailIndex` istnieje, ale `User` entity ma:
-
-```typescript
-@Column({ type: 'varchar', unique: true })
-email!: string;
-```
-
-Standard unique constraint — nie `LOWER()` unique. Zapytania z `LOWER()` nie będą korzystać z tego indeksu optymalnie.
-
-**Rekomendacja:** Dodaj unique index na `LOWER(email)` i usuń standard unique constraint z kolumny.
+- 217 plików testowych vs ~140k linii kodu = solidna baza, ale brak widocznego `coverage` reportu w CI.
+- Warto dodać coverage threshold w konfiguracji testów.
 
 ---
 
-## ✅ CO JEST DOBRZE ZROBIONE
+## 📊 PODSUMOWANIE OCEN
 
-### Architektura
+| Obszar             | Ocena      | Komentarz                                                         |
+| ------------------ | ---------- | ----------------------------------------------------------------- |
+| **Architektura**   | ⭐⭐⭐⭐⭐ | Doskonała modularność Nx, clean boundaries, RBAC                  |
+| **Bezpieczeństwo** | ⭐⭐⭐⭐   | Solidne fundamenty, ale `Object.assign` mass assignment to ryzyko |
+| **Code Quality**   | ⭐⭐⭐⭐   | Czytelny, dobrze udokumentowany, ale route duplikacja i PL/EN mix |
+| **Database**       | ⭐⭐⭐⭐⭐ | Migrations, indexy, pessimistic locking, no synchronize           |
+| **Frontend**       | ⭐⭐⭐⭐   | Dobrze zoptymalizowany auth, ale massive route file               |
+| **Testing**        | ⭐⭐⭐     | 217 plików to OK, ale warto zmierzyć faktyczny coverage           |
+| **DevOps**         | ⭐⭐⭐⭐   | Railway deploy, Dockerfile, env validation, Sentry                |
 
-- ✅ **Czysta separacja modułów** — `libs/modules/*` z barrel exports
-- ✅ **Multi-tenant isolation** — konsekwentny `companyId` filter przez `SystemCompanyService`
-- ✅ **Entity registry** — single source of truth (`COMMON_ENTITIES`)
-- ✅ **RBAC z cache** — `RBACService` z 5-minutowym in-memory cache na moduły
-- ✅ **Guard chain** — `JwtAuthGuard → ModuleAccessGuard → PermissionGuard` z `_rbacResult` cache
-- ✅ **Audit trail** — `ChangeLogService` z sanitizacją danych
-- ✅ **Transakcje w operacjach bulk** — atomiczność w `bulkDelete`, `bulkRestore`, `bulkEdit`
-- ✅ **Pessimistic locking** — przy tworzeniu company (zapobiega race conditions)
-- ✅ **Status transition validation** — `VALID_STATUS_TRANSITIONS` w tasks
-- ✅ **SystemCompanyService z cache** — eliminuje powtarzające się zapytania DB
-
-### Bezpieczeństwo
-
-- ✅ **Timing attack prevention** — bcrypt z dummy hash w `validateUser()`
-- ✅ **AES-256-GCM** encryption z random salt/IV per operacja
-- ✅ **httpOnly cookies** dla tokenów + dual-mode (header + cookie)
-- ✅ **Token revocation** via `tokenVersion` (w JwtStrategy)
-- ✅ **Helmet** + **CORS** z whitelist + **throttling** per endpoint
-- ✅ **ValidationPipe** z `whitelist: true` + `forbidNonWhitelisted: true`
-- ✅ **Sensitive data redaction** w `AllExceptionsFilter` (SENSITIVE_KEYS set)
-- ✅ **SQL injection prevention** — parameterized queries + `escapeLikePattern()`
-- ✅ **Password policy** — min 12 znaków, uppercase, lowercase, digit, special char
-- ✅ **Swagger UI disabled in production**
-- ✅ **Environment validator** na starcie aplikacji
-
-### Frontend
-
-- ✅ **Split auth context** (AuthContext + AuthLoadingContext) — minimalizacja re-renderów
-- ✅ **Token refresh manager** — deduplication concurrent 401s via shared promise
-- ✅ **Lazy loading** — wszystkie pages jako lazy imports
-- ✅ **React 19** z `use()` hook
-- ✅ **Zod validation** na froncie (773 linii schematów)
-- ✅ **React Compiler** (babel plugin enabled)
-- ✅ **Event-based token monitoring** zamiast polling
-
-### DevOps & DX
-
-- ✅ **Migracje** zamiast `synchronize: true`
-- ✅ **Sentry integration** (backend + frontend)
-- ✅ **lint-staged + husky** pre-commit hooks
-- ✅ **ESLint** z NestJS-typed, security, React Query plugins
-- ✅ **Prettier** z import sorting
-- ✅ **Railway deployment** ready (Dockerfile, vercel.json, runtime config)
+**Ogólna ocena: 4/5** — Bardzo solidny, produkcyjnie gotowy projekt z kilkoma istotnymi punktami do poprawy (głównie `Object.assign` mass assignment i route duplikacja).
 
 ---
 
-## 📊 Podsumowanie priorytetów
+## 🎯 PRIORYTET NAPRAW
 
-| Priorytet       | Ilość | Issues                                                                                                   |
-| --------------- | ----- | -------------------------------------------------------------------------------------------------------- |
-| 🔴 **CRITICAL** | 3     | #1 Wyciek sekretów, #2 Słaby JWT, #3 Otwarta rejestracja z rolami                                        |
-| 🟠 **HIGH**     | 4     | #4 UUID validation, #5 Refresh token bypass, #6 N+1 queries, #7 Reorder bez limitu                       |
-| 🟡 **MEDIUM**   | 6     | #8 Duplikacja routingu, #9 Duże pliki, #10 Email case, #11 Object.assign, #12 PL/EN mix, #13 Email index |
-| 🟢 **GOOD**     | 15+   | Architektura, RBAC, encryption, guards, lazy loading, audit trail                                        |
-
----
-
-## 🎯 Rekomendowane action items
-
-### Natychmiast (tydzień 1)
-
-1. Rotacja wszystkich sekretów z `.env`
-2. Wygeneruj kryptograficznie bezpieczny `JWT_SECRET`
-3. Ogranicz self-registration (usuń wybór roli lub ogranicz do `EMPLOYEE`)
-4. Dodaj `tokenVersion` check w `refreshToken()`
-
-### Krótkoterminowo (tydzień 2-3)
-
-5. Dodaj `ParseUUIDPipe` globalnie lub per-controller
-6. Zamień `isDescendant` na `WITH RECURSIVE` CTE
-7. Dodaj transakcję i limit w `reorderTasks`
-8. Ujednolić case-insensitive email w admin service
-
-### Średnioterminowo (miesiąc 1-2)
-
-9. Refaktor `routes.tsx` — dynamiczne generowanie z konfiguracji
-10. Rozbij pliki >500 linii na mniejsze moduły
-11. Ujednolić język komunikatów błędów
-12. Dodaj `LOWER()` unique index na email
-
----
-
-## Ogólna ocena
-
-**7/10** — Solidna architektura i dobre wzorce bezpieczeństwa (timing-safe bcrypt, AES-256-GCM, RBAC z cache, token revocation). Krytyczne luki w zarządzaniu sekretami i kilka istotnych bugów w auth flow wymagają natychmiastowej uwagi.
+1. 🔴 **Object.assign → explicit mapping** (25+ miejsc) — najwyższy priorytet security
+2. 🔴 **Audyt historii git** pod kątem wycieków sekretów
+3. 🔴 **Self-demotion guard** w admin updateUser
+4. 🟡 **Route refactor** — DRY principle, ~700 linii do usunięcia
+5. 🟡 **Centralizacja error messages** — spójność PL/EN
+6. 🟡 **Response DTOs** dla admin/company service methods
+7. 🔵 **RBAC query optimization** — single JOIN lub extended cache
+8. 🔵 **Coverage reporting** — dodać do CI

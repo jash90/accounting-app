@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 
 import { useForm } from 'react-hook-form';
 
@@ -132,8 +132,8 @@ export const TimeEntryFormDialog = memo(function TimeEntryFormDialog({
     limit: 100,
   });
 
-  const tasks = tasksData?.data ?? [];
-  const settlements = settlementsData?.data ?? [];
+  const tasks = useMemo(() => tasksData?.data ?? [], [tasksData?.data]);
+  const settlements = useMemo(() => settlementsData?.data ?? [], [settlementsData?.data]);
 
   const { reset } = form;
 

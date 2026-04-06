@@ -16,7 +16,8 @@ import { reliefPeriodsApi } from '../api/endpoints/relief-periods';
 
 // Mock the API modules - preserve enums/constants, only mock API functions
 vi.mock('../api/endpoints/relief-periods', async (importOriginal) => {
-  const actual: typeof import('../api/endpoints/relief-periods') = await importOriginal();
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+  const actual = await importOriginal<typeof import('../api/endpoints/relief-periods')>();
   return {
     ...actual,
     reliefPeriodsApi: {
