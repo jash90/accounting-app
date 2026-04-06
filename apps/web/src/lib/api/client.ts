@@ -1,6 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
 import { tokenStorage } from '../auth/token-storage';
+import { AUTH_EVENTS, authEventBus } from '../events/auth-events';
 
 // Extend Window interface for runtime config
 declare global {
@@ -40,14 +41,14 @@ const getApiBaseUrl = (): string => {
  * Uses a single promise for all concurrent refresh attempts to prevent race conditions.
  */
 class TokenRefreshManager {
-  private refreshPromise: Promise<string> | null = null;
+  private refreshPromise: Promise<void> | null = null;
 
   /**
    * Refreshes the token, ensuring only one refresh happens at a time.
    * Concurrent calls will share the same refresh promise.
    * Refresh token is sent via httpOnly cookie automatically (withCredentials: true).
    */
-  refresh(): Promise<string> {
+  refresh(): Promise<void> {
     // If a refresh is already in progress, return the existing promise
     if (this.refreshPromise) {
       return this.refreshPromise;
@@ -59,7 +60,6 @@ class TokenRefreshManager {
       .post(`${getApiBaseUrl()}/api/auth/refresh`, {}, { withCredentials: true })
       .then(({ data }) => {
         tokenStorage.setAccessToken(data.access_token);
-        return '__cookie__';
       })
       .finally(() => {
         // Clear the promise so future refreshes can happen
@@ -70,22 +70,80 @@ class TokenRefreshManager {
   }
 
   /**
-   * Handles token refresh failure by clearing tokens and redirecting to login.
+   * Handles token refresh failure by clearing tokens and dispatching session expired event.
+   * The AuthProvider listens for this event and performs SPA-friendly navigation.
    */
   handleRefreshFailure(): void {
     tokenStorage.clearTokens();
-    window.location.href = '/login';
+    authEventBus.dispatchEvent(new CustomEvent(AUTH_EVENTS.SESSION_EXPIRED));
   }
 }
 
 const tokenRefreshManager = new TokenRefreshManager();
+
+// ==================== Retry Logic for Transient Errors ====================
+
+/** HTTP status codes that are safe to retry (server-side transient errors) */
+const RETRYABLE_STATUS_CODES = new Set([502, 503, 504]);
+
+/** HTTP methods that are safe to retry (idempotent / read-only) */
+const RETRYABLE_METHODS = new Set(['get', 'head', 'options']);
+
+/** Maximum number of retry attempts for transient errors */
+const MAX_RETRIES = 2;
+
+/** Base delay in ms for exponential backoff (delay * 2^attempt) */
+const RETRY_BASE_DELAY_MS = 1_000;
+
+/**
+ * Determines if an error is retryable (transient network or server error).
+ */
+function isRetryableError(error: AxiosError): boolean {
+  // Network errors (no response received)
+  if (!error.response && error.code !== 'ERR_CANCELED') {
+    return true;
+  }
+  // Server errors that are typically transient
+  if (error.response && RETRYABLE_STATUS_CODES.has(error.response.status)) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Determines if the request method is safe to retry.
+ */
+function isRetryableMethod(config: InternalAxiosRequestConfig): boolean {
+  return RETRYABLE_METHODS.has((config.method || '').toLowerCase());
+}
+
+/**
+ * Sleeps for specified ms. Uses exponential backoff: baseDelay * 2^attempt.
+ */
+function retryDelay(attempt: number): Promise<void> {
+  const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
+  return new Promise((resolve) => setTimeout(resolve, delay));
+}
+
+/**
+ * API timeout configuration by request category.
+ * AI endpoints override with per-request timeout in their API functions.
+ */
+export const API_TIMEOUTS = {
+  /** Standard API requests */
+  default: 30_000,
+  /** File upload operations */
+  upload: 120_000,
+  /** AI agent chat/streaming operations */
+  ai: 180_000,
+} as const;
 
 const apiClient = axios.create({
   baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // 30 seconds default. AI endpoints override with 180s per-request.
+  timeout: API_TIMEOUTS.default,
   withCredentials: true, // Send httpOnly cookies with every request
 });
 
@@ -96,13 +154,27 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor - auto-refresh on 401 using TokenRefreshManager
+// Response interceptor — retry transient errors, then handle auth errors
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
+      _retryCount?: number;
     };
+
+    // --- Retry logic for transient errors (GET/HEAD only) ---
+    if (
+      isRetryableError(error) &&
+      isRetryableMethod(originalRequest) &&
+      (originalRequest._retryCount ?? 0) < MAX_RETRIES
+    ) {
+      originalRequest._retryCount = (originalRequest._retryCount ?? 0) + 1;
+      await retryDelay(originalRequest._retryCount - 1);
+      // Add observability header
+      originalRequest.headers['x-retry-count'] = String(originalRequest._retryCount);
+      return apiClient(originalRequest);
+    }
 
     if (error.response?.status === 403) {
       const data = error.response?.data;
@@ -111,7 +183,7 @@ apiClient.interceptors.response.use(
           ? String((data as { message: string }).message)
           : '';
       if (msg.includes('Access denied to module')) {
-        window.location.href = '/module-access-denied';
+        authEventBus.dispatchEvent(new CustomEvent(AUTH_EVENTS.MODULE_ACCESS_DENIED));
         return new Promise(() => {});
       }
     }
@@ -148,8 +220,8 @@ apiClient.interceptors.response.use(
 
       try {
         // TokenRefreshManager handles concurrent requests - all share the same refresh promise
-        const newToken = await tokenRefreshManager.refresh();
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        // After refresh, cookies are updated automatically (withCredentials: true)
+        await tokenRefreshManager.refresh();
         return apiClient(originalRequest);
       } catch (refreshError) {
         tokenRefreshManager.handleRefreshFailure();

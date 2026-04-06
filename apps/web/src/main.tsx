@@ -10,14 +10,6 @@ import App from './app/app';
 
 import './styles.css';
 
-async function enableMocking() {
-  const { worker } = await import('./lib/api/mocks/browser');
-
-  return worker.start({
-    onUnhandledRequest: 'bypass',
-  });
-}
-
 function renderApp() {
   const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement, {
     onUncaughtError: Sentry.reactErrorHandler((error, errorInfo) => {
@@ -35,11 +27,11 @@ function renderApp() {
 }
 
 // Only block initial render for MSW when explicitly enabled
-// This prevents 100-500ms delay in production where MSW is disabled
-const shouldEnableMocking = import.meta.env.VITE_ENABLE_MSW === 'true';
-
-if (shouldEnableMocking) {
-  enableMocking().then(renderApp);
+// Dynamic import is fully inside the conditional so Vite tree-shakes it in production
+if (import.meta.env.VITE_ENABLE_MSW === 'true') {
+  import('./lib/api/mocks/browser')
+    .then(({ worker }) => worker.start({ onUnhandledRequest: 'bypass' }))
+    .then(renderApp);
 } else {
   renderApp();
 }
