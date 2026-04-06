@@ -5,13 +5,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useToast } from '@/components/ui/use-toast';
 
 import {
-  taskCommentsApi,
-  taskDependenciesApi,
-  taskLabelsApi,
-  tasksApi,
-  taskTemplatesApi,
-} from '../api/endpoints/tasks';
-import {
   useAssignTaskLabel,
   useBulkUpdateTaskStatus,
   useCalendarTasks,
@@ -53,6 +46,13 @@ import {
   useUpdateTaskLabel,
   useUpdateTaskTemplate,
 } from './use-tasks';
+import {
+  taskCommentsApi,
+  taskDependenciesApi,
+  taskLabelsApi,
+  tasksApi,
+  taskTemplatesApi,
+} from '../api/endpoints/tasks';
 
 // Mock the API modules
 vi.mock('../api/endpoints/tasks');

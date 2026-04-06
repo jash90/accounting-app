@@ -8,6 +8,9 @@ import { UserRole } from '@/types/enums';
 import { authApi } from '../api/endpoints/auth';
 import { tokenStorage } from '../auth/token-storage';
 
+// NOTE: Refresh tokens are stored in httpOnly cookies by the backend.
+// tokenStorage.setRefreshToken() is intentionally a no-op — see token-storage.ts.
+
 export const useAuth = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -17,7 +20,6 @@ export const useAuth = () => {
     mutationFn: (credentials: LoginDto) => authApi.login(credentials),
     onSuccess: (data) => {
       tokenStorage.setAccessToken(data.access_token);
-      tokenStorage.setRefreshToken(data.refresh_token);
 
       // Invalidate auth query to update AuthContext
       queryClient.setQueryData(['auth', 'me'], data.user);
@@ -42,7 +44,6 @@ export const useAuth = () => {
     mutationFn: (userData: RegisterDto) => authApi.register(userData),
     onSuccess: (data) => {
       tokenStorage.setAccessToken(data.access_token);
-      tokenStorage.setRefreshToken(data.refresh_token);
 
       // Update auth query to update AuthContext
       queryClient.setQueryData(['auth', 'me'], data.user);

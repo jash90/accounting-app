@@ -99,6 +99,7 @@ export default defineConfig({
     commonjsOptions: {
       transformMixedEsModules: true,
     },
+    chunkSizeWarningLimit: 1200, // vendor-misc contains react/react-dom core (~1.2MB)
     rollupOptions: {
       external: [
         '@nestjs/mapped-types',
@@ -121,7 +122,13 @@ export default defineConfig({
           if (id.includes('date-fns') || id.includes('react-day-picker')) return 'vendor-date';
           if (id.includes('lucide-react')) return 'vendor-icons';
           if (id.includes('@sentry')) return 'vendor-sentry';
-          if (id.includes('socket.io-client')) return 'vendor-realtime';
+          if (
+            id.includes('socket.io') ||
+            id.includes('engine.io') ||
+            id.includes('socket.io-parser')
+          )
+            return 'vendor-realtime';
+          if (id.includes('es-toolkit')) return 'vendor-utils';
           return 'vendor-misc';
         },
       },

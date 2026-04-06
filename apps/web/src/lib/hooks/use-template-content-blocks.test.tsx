@@ -4,11 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useToast } from '@/components/ui/use-toast';
 
-import { offerTemplatesApi } from '../api/endpoints/offers';
 import {
   useOfferTemplateContentBlocks,
   useUpdateOfferTemplateContentBlocks,
 } from './use-template-content-blocks';
+import { offerTemplatesApi } from '../api/endpoints/offers';
 
 vi.mock('../api/endpoints/offers');
 vi.mock('@/components/ui/use-toast');

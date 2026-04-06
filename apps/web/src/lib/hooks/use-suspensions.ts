@@ -1,7 +1,7 @@
-import { type ApiErrorResponse } from '@/types/api';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useToast } from '@/components/ui/use-toast';
+import { type ApiErrorResponse } from '@/types/api';
 
 import {
   suspensionsApi,

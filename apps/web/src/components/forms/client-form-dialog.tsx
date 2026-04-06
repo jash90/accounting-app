@@ -10,7 +10,7 @@ import { AlertCircle, Maximize2 } from 'lucide-react';
 import { CustomFieldRenderer } from '@/components/clients/custom-field-renderer';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
-import { DatePicker } from '@/components/ui/date-picker';
+// DatePicker used within extracted DatesSection
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
@@ -53,6 +53,8 @@ import {
   VatStatusLabels,
   ZusStatusLabels,
 } from '@/types/enums';
+
+import { BasicInfoSection, DatesSection } from './client-sections';
 
 export interface ReliefPeriodFormData {
   reliefType: ReliefType;
@@ -508,154 +510,10 @@ export function ClientFormDialog({
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
               {/* Basic Information */}
-              <div className="space-y-4">
-                <h3 className="text-foreground text-sm font-semibold">Dane podstawowe</h3>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem className="col-span-2">
-                        <FormLabel>Nazwa klienta *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Nazwa firmy lub imię i nazwisko" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="nip"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>NIP</FormLabel>
-                        <FormControl>
-                          <Input placeholder="1234567890" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="email@example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Telefon</FormLabel>
-                        <FormControl>
-                          <Input placeholder="+48 123 456 789" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="receiveEmailCopy"
-                    render={({ field }) => (
-                      <FormItem className="col-span-2 flex items-center justify-between rounded-lg border p-3">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            Wyślij email powitalny do klienta
-                          </FormLabel>
-                          <p className="text-muted-foreground text-sm">
-                            Klient otrzyma email z podsumowaniem wprowadzonych danych
-                          </p>
-                        </div>
-                        <FormControl>
-                          <Switch checked={field.value ?? true} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
+              <BasicInfoSection form={form} />
 
               {/* Dates */}
-              <div className="space-y-4">
-                <h3 className="text-foreground text-sm font-semibold">Daty</h3>
-
-                <div className="grid grid-cols-2 items-end gap-4">
-                  <FormField
-                    control={form.control}
-                    name="companyStartDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex min-h-[40px] items-end">
-                          Data rozpoczęcia firmy
-                        </FormLabel>
-                        <FormControl>
-                          <DatePicker
-                            value={
-                              field.value instanceof Date
-                                ? field.value.toISOString().split('T')[0]
-                                : undefined
-                            }
-                            onChange={(value) => {
-                              if (!value) {
-                                field.onChange(undefined);
-                                return;
-                              }
-                              const [year, month, day] = value.split('-').map(Number);
-                              field.onChange(new Date(year, month - 1, day));
-                            }}
-                            placeholder="Wybierz datę"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="cooperationStartDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Data rozpoczęcia współpracy</FormLabel>
-                        <FormControl>
-                          <DatePicker
-                            value={
-                              field.value instanceof Date
-                                ? field.value.toISOString().split('T')[0]
-                                : undefined
-                            }
-                            onChange={(value) => {
-                              if (!value) {
-                                field.onChange(undefined);
-                                return;
-                              }
-                              const [year, month, day] = value.split('-').map(Number);
-                              field.onChange(new Date(year, month - 1, day));
-                            }}
-                            placeholder="Wybierz datę"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
+              <DatesSection form={form} />
 
               {/* Tax and Employment */}
               <div className="space-y-4">

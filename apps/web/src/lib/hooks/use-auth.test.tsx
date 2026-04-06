@@ -49,7 +49,6 @@ describe('useAuth', () => {
 
     vi.mocked(authApi.login).mockResolvedValue(mockResponse);
     vi.mocked(tokenStorage.setAccessToken).mockImplementation(() => {});
-    vi.mocked(tokenStorage.setRefreshToken).mockImplementation(() => {});
 
     const { result } = renderHook(() => useAuth(), {
       wrapper: createWrapper(),
@@ -63,7 +62,6 @@ describe('useAuth', () => {
         password: 'password123',
       });
       expect(tokenStorage.setAccessToken).toHaveBeenCalledWith('token');
-      expect(tokenStorage.setRefreshToken).toHaveBeenCalledWith('refresh');
     });
   });
 
@@ -94,7 +92,6 @@ describe('useAuth', () => {
         expect(authApi.login).toHaveBeenCalled();
         // Tokens should not be stored on failure
         expect(tokenStorage.setAccessToken).not.toHaveBeenCalled();
-        expect(tokenStorage.setRefreshToken).not.toHaveBeenCalled();
       });
     });
 
@@ -146,7 +143,6 @@ describe('useAuth', () => {
 
       vi.mocked(authApi.login).mockResolvedValue(mockResponse);
       vi.mocked(tokenStorage.setAccessToken).mockImplementation(() => {});
-      vi.mocked(tokenStorage.setRefreshToken).mockImplementation(() => {});
 
       const { result } = renderHook(() => useAuth(), {
         wrapper: createWrapper(),

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * Route utility components: ProtectedRoute, LazyRoute, error pages.
  * Extracted from routes.tsx to keep the main router file focused on route definitions.

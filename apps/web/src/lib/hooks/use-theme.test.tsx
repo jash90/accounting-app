@@ -1,6 +1,7 @@
-import { useThemeContext } from '@/contexts/theme-context';
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { useThemeContext } from '@/contexts/theme-context';
 
 import { useTheme } from './use-theme';
 

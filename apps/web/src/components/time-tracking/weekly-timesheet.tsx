@@ -1,8 +1,5 @@
 import { useMemo, useState } from 'react';
 
-import { cn } from '@/lib/utils/cn';
-import { formatDuration } from '@/lib/utils/time';
-import { type TimesheetDayDto } from '@/types/dtos';
 import {
   addWeeks,
   eachDayOfInterval,
@@ -16,11 +13,14 @@ import {
 import { pl } from 'date-fns/locale/pl';
 import { Calendar, ChevronLeft, ChevronRight, Clock, DollarSign } from 'lucide-react';
 
-import { useWeeklyTimesheet } from '@/lib/hooks/use-time-tracking';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useWeeklyTimesheet } from '@/lib/hooks/use-time-tracking';
+import { cn } from '@/lib/utils/cn';
+import { formatDuration } from '@/lib/utils/time';
+import { type TimesheetDayDto } from '@/types/dtos';
 
 /**
  * Polish pluralization for "wpis" (entry).
