@@ -144,7 +144,7 @@ export class AuthController {
     const isProduction = process.env.NODE_ENV === 'production';
     res.clearCookie(COOKIE_NAMES.ACCESS_TOKEN, getClearCookieOptions(isProduction));
     res.clearCookie(COOKIE_NAMES.REFRESH_TOKEN, getClearCookieOptions(isProduction));
-    return { message: 'Wylogowano pomyślnie' };
+    return { message: ErrorMessages.SUCCESS.LOGOUT };
   }
 
   /**

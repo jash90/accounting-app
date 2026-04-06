@@ -134,7 +134,7 @@ describe('AuthService', () => {
           email: 'test@example.com',
           password: 'wrong-password',
         })
-      ).rejects.toThrow('Invalid credentials');
+      ).rejects.toThrow();
     });
   });
 

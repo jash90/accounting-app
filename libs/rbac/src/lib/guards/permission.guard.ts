@@ -56,11 +56,12 @@ export class PermissionGuard implements CanActivate {
       hasPermission = result.hasPermission;
     } else {
       // Fallback — no cached result from ModuleAccessGuard
-      hasPermission = await this.rbacService.hasPermission(
-        user.id,
+      const result = await this.rbacService.checkModulePermission(
+        user,
         permissionData.module,
         permissionData.permission
       );
+      hasPermission = result.hasPermission;
     }
 
     if (!hasPermission) {

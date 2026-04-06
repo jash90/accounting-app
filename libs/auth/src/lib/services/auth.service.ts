@@ -8,7 +8,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import * as bcrypt from 'bcryptjs';
+import { compare, hash } from 'bcryptjs';
 import { Repository } from 'typeorm';
 
 import { Company, ErrorMessages, User, UserRole } from '@accounting/common';
@@ -46,7 +46,7 @@ export class AuthService {
       throw new ConflictException(ErrorMessages.AUTH.EMAIL_EXISTS);
     }
 
-    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    const hashedPassword = await hash(registerDto.password, 10);
 
     const user = this.userRepository.create({
       email: registerDto.email,
@@ -85,7 +85,7 @@ export class AuthService {
     // Constant-time: always perform bcrypt comparison to prevent timing attacks
     // Uses dummy hash when user doesn't exist to maintain consistent response time
     const hashToCompare = user?.password || '$2b$10$dummyhashtopreventtimingattacks';
-    const isPasswordValid = await bcrypt.compare(password, hashToCompare);
+    const isPasswordValid = await compare(password, hashToCompare);
 
     if (!user || !isPasswordValid) {
       return null;
@@ -129,13 +129,13 @@ export class AuthService {
       throw new UnauthorizedException(ErrorMessages.AUTH.USER_NOT_FOUND);
     }
 
-    const isCurrentPasswordValid = await bcrypt.compare(dto.currentPassword, user.password);
+    const isCurrentPasswordValid = await compare(dto.currentPassword, user.password);
 
     if (!isCurrentPasswordValid) {
       throw new BadRequestException(ErrorMessages.AUTH.CURRENT_PASSWORD_INCORRECT);
     }
 
-    user.password = await bcrypt.hash(dto.newPassword, 10);
+    user.password = await hash(dto.newPassword, 10);
     await this.userRepository.save(user);
   }
 
