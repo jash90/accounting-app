@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -20,7 +20,7 @@ import {
   Min,
 } from 'class-validator';
 
-import { Sanitize, TimeEntryStatus } from '@accounting/common';
+import { PaginationQueryDto, Sanitize, TimeEntryStatus } from '@accounting/common';
 
 export class CreateTimeEntryDto {
   @ApiPropertyOptional({ description: 'Description of the time entry', maxLength: 255 })
@@ -97,7 +97,7 @@ export class CreateTimeEntryDto {
 
 export class UpdateTimeEntryDto extends PartialType(CreateTimeEntryDto) {}
 
-export class TimeEntryFiltersDto {
+export class TimeEntryFiltersDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: 'Search in description', maxLength: 100 })
   @IsOptional()
   @Sanitize()
@@ -162,21 +162,6 @@ export class TimeEntryFiltersDto {
   @IsBoolean()
   @Transform(({ value }) => value === 'true' || value === true)
   isActive?: boolean;
-
-  @ApiPropertyOptional({ description: 'Page number', minimum: 1, default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({ description: 'Items per page', minimum: 1, maximum: 100, default: 20 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number = 20;
 }
 
 // SubmitTimeEntryDto and ApproveTimeEntryDto are intentionally empty classes.

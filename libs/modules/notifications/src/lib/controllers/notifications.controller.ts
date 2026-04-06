@@ -21,7 +21,7 @@ import { NotificationGateway } from '../gateways/notification.gateway';
 import { NotificationService } from '../services/notification.service';
 
 @ApiTags('Notifications')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('notifications')
 /**
  * NotificationsController intentionally uses only JwtAuthGuard without ModuleAccessGuard/PermissionGuard.

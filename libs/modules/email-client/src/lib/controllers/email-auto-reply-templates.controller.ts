@@ -31,7 +31,7 @@ import {
 import { EmailAutoReplyTemplateService } from '../services/email-auto-reply-template.service';
 
 @ApiTags('Email Auto-Reply Templates')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/email-client/auto-reply-templates')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('email-client')

@@ -35,7 +35,7 @@ import { EmailClientService } from '../services/email-client.service';
  * Handles email operations: fetch inbox, send emails, manage messages
  */
 @ApiTags('Email Client - Messages')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/email-client/messages')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('email-client')

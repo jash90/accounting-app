@@ -56,7 +56,7 @@ import { OfferExportService } from '../services/offer-export.service';
 import { OffersService } from '../services/offers.service';
 
 @ApiTags('Offers')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @ApiExtraModels(
   OfferResponseDto,
   PaginatedOffersResponseDto,

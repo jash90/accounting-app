@@ -41,7 +41,7 @@ import { TimeTrackingPdfService } from '../services/time-tracking-pdf.service';
 import { TimesheetService } from '../services/timesheet.service';
 
 @ApiTags('Time Tracking - Reports')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/time-tracking')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('time-tracking')

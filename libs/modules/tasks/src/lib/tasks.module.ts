@@ -30,7 +30,9 @@ import { TaskExtendedStatsService } from './services/task-extended-stats.service
 import { TaskLabelsService } from './services/task-labels.service';
 import { TaskNotificationService } from './services/task-notification.service';
 import { TaskRecurrenceService } from './services/task-recurrence.service';
+import { TaskStatisticsService } from './services/task-statistics.service';
 import { TaskTemplateService } from './services/task-template.service';
+import { TaskViewsService } from './services/task-views.service';
 import { TasksLookupService } from './services/tasks-lookup.service';
 import { TasksService } from './services/tasks.service';
 
@@ -62,6 +64,8 @@ import { TasksService } from './services/tasks.service';
   ],
   providers: [
     TasksService,
+    TaskStatisticsService,
+    TaskViewsService,
     TasksLookupService,
     TaskExportService,
     TaskExtendedStatsService,

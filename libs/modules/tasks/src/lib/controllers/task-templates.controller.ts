@@ -33,7 +33,7 @@ import {
 import { TaskTemplateService } from '../services/task-template.service';
 
 @ApiTags('Task Templates')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/tasks/templates')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('tasks')

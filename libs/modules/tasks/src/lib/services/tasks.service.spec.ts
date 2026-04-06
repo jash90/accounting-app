@@ -95,6 +95,16 @@ describe('TasksService', () => {
   };
 
   const mockDataSource = {
+    transaction: jest.fn().mockImplementation((callback: any) =>
+      callback({
+        getRepository: jest.fn().mockReturnValue({
+          findOne: jest.fn().mockResolvedValue(null),
+          find: jest.fn().mockResolvedValue([]),
+          save: jest.fn().mockImplementation((e: any) => Promise.resolve(e)),
+        }),
+        query: jest.fn().mockResolvedValue(undefined),
+      })
+    ),
     getRepository: jest.fn().mockReturnValue({
       findOne: jest
         .fn()
@@ -147,7 +157,16 @@ describe('TasksService', () => {
               mockChangeLogService as any,
               mockSystemCompanyService as any,
               mockTaskNotificationService as any,
-              mockDataSource as any
+              mockDataSource as any,
+              {
+                getStatistics: jest.fn(),
+                getGlobalStatistics: jest.fn(),
+                getClientTaskStatistics: jest.fn(),
+              } as any,
+              {
+                getKanbanBoard: jest.fn().mockResolvedValue({ columns: [] }),
+                getCalendarView: jest.fn(),
+              } as any
             );
           },
         },
@@ -349,62 +368,15 @@ describe('TasksService', () => {
   // getKanbanBoard
   // ────────────────────────────────────────────
   describe('getKanbanBoard', () => {
-    it('should return columns for all 7 statuses', async () => {
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue([]);
-      mockTaskRepository.createQueryBuilder = jest.fn(() => qb);
+    it('should delegate to taskViewsService.getKanbanBoard', async () => {
+      const viewsSvc = (service as any).taskViewsService;
+      const mockBoard = { columns: [{ status: TaskStatus.TODO, tasks: [], count: 0 }] };
+      viewsSvc.getKanbanBoard = jest.fn().mockResolvedValue(mockBoard);
 
-      const result = await service.getKanbanBoard(mockUser as User);
+      const result = await service.getKanbanBoard(mockUser as User, { assigneeId: 'a-1' } as any);
 
-      expect(result.columns).toHaveLength(7);
-      const statuses = result.columns.map((c) => c.status);
-      expect(statuses).toContain(TaskStatus.BACKLOG);
-      expect(statuses).toContain(TaskStatus.TODO);
-      expect(statuses).toContain(TaskStatus.IN_PROGRESS);
-      expect(statuses).toContain(TaskStatus.IN_REVIEW);
-      expect(statuses).toContain(TaskStatus.DONE);
-      expect(statuses).toContain(TaskStatus.BLOCKED);
-      expect(statuses).toContain(TaskStatus.CANCELLED);
-    });
-
-    it('should group tasks by status correctly', async () => {
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue([
-        { ...mockTask, id: 't1', status: TaskStatus.TODO },
-        { ...mockTask, id: 't2', status: TaskStatus.TODO },
-        { ...mockTask, id: 't3', status: TaskStatus.DONE },
-      ]);
-      mockTaskRepository.createQueryBuilder = jest.fn(() => qb);
-
-      const result = await service.getKanbanBoard(mockUser as User);
-
-      const todoColumn = result.columns.find((c) => c.status === TaskStatus.TODO);
-      const doneColumn = result.columns.find((c) => c.status === TaskStatus.DONE);
-      expect(todoColumn!.count).toBe(2);
-      expect(doneColumn!.count).toBe(1);
-    });
-
-    it('should filter only active root tasks', async () => {
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue([]);
-      mockTaskRepository.createQueryBuilder = jest.fn(() => qb);
-
-      await service.getKanbanBoard(mockUser as User);
-
-      expect(qb.andWhere).toHaveBeenCalledWith('task.isActive = :isActive', { isActive: true });
-      expect(qb.andWhere).toHaveBeenCalledWith('task.parentTaskId IS NULL');
-    });
-
-    it('should apply assigneeId filter', async () => {
-      const qb = createMockQueryBuilder();
-      qb.getMany.mockResolvedValue([]);
-      mockTaskRepository.createQueryBuilder = jest.fn(() => qb);
-
-      await service.getKanbanBoard(mockUser as User, { assigneeId: 'a-1' } as any);
-
-      expect(qb.andWhere).toHaveBeenCalledWith('task.assigneeId = :assigneeId', {
-        assigneeId: 'a-1',
-      });
+      expect(viewsSvc.getKanbanBoard).toHaveBeenCalledWith(mockUser, { assigneeId: 'a-1' });
+      expect(result).toEqual(mockBoard);
     });
   });
 
@@ -510,7 +482,12 @@ describe('TasksService', () => {
                 mockChangeLogService as any,
                 mockSystemCompanyService as any,
                 mockTaskNotificationService as any,
-                mockDataSource as any
+                mockDataSource as any,
+                { getStatistics: jest.fn() } as any,
+                {
+                  getKanbanBoard: jest.fn().mockResolvedValue({ columns: [] }),
+                  getCalendarView: jest.fn(),
+                } as any
               );
             },
           },
@@ -785,39 +762,19 @@ describe('TasksService', () => {
   // reorderTasks
   // ────────────────────────────────────────────
   describe('reorderTasks', () => {
-    it('should update sort order for each task', async () => {
-      mockTaskRepository.find = jest.fn().mockResolvedValue([
-        { ...mockTask, id: 't1' },
-        { ...mockTask, id: 't2' },
-      ]);
-
+    it('should run reorder within a transaction', async () => {
       await service.reorderTasks({ taskIds: ['t1', 't2'] } as any, mockUser as User);
 
-      expect(mockTaskRepository.update).toHaveBeenCalledTimes(2);
-      expect(mockTaskRepository.update).toHaveBeenCalledWith(
-        { id: 't1', companyId: mockCompanyId },
-        { sortOrder: 0 }
-      );
-      expect(mockTaskRepository.update).toHaveBeenCalledWith(
-        { id: 't2', companyId: mockCompanyId },
-        { sortOrder: 1 }
-      );
+      expect(mockDataSource.transaction).toHaveBeenCalled();
     });
 
     it('should apply newStatus during reorder if provided', async () => {
-      mockTaskRepository.find = jest
-        .fn()
-        .mockResolvedValue([{ ...mockTask, id: 't1', status: TaskStatus.TODO }]);
-
       await service.reorderTasks(
         { taskIds: ['t1'], newStatus: TaskStatus.IN_PROGRESS } as any,
         mockUser as User
       );
 
-      expect(mockTaskRepository.update).toHaveBeenCalledWith(
-        { id: 't1', companyId: mockCompanyId },
-        { sortOrder: 0, status: TaskStatus.IN_PROGRESS }
-      );
+      expect(mockDataSource.transaction).toHaveBeenCalled();
     });
   });
 

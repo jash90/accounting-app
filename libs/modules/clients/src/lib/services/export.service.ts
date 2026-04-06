@@ -1,10 +1,10 @@
-import { sanitizeForLog, SystemCompanyService } from '@accounting/common/backend';
-import { ChangeLogService } from '@accounting/infrastructure/change-log';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { DataSource, EntityManager, Repository } from 'typeorm';
 
 import {
+  applyUpdate,
   Client,
   EmploymentType,
   escapeCsvField,
@@ -16,6 +16,8 @@ import {
   VatStatus,
   ZusStatus,
 } from '@accounting/common';
+import { sanitizeForLog, SystemCompanyService } from '@accounting/common/backend';
+import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import { ClientFiltersDto } from '../dto/client.dto';
 
@@ -240,7 +242,12 @@ export class ClientExportService {
           if (existingClient) {
             // Update existing client
             const oldValues = this.sanitizeClientForLog(existingClient);
-            Object.assign(existingClient, this.mapRowToClient(row));
+            applyUpdate(existingClient, this.mapRowToClient(row), [
+              'id',
+              'companyId',
+              'createdById',
+              'createdAt',
+            ]);
             existingClient.updatedById = user.id;
             await clientRepo.save(existingClient);
 

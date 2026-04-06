@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { TaskLabel, User } from '@accounting/common';
+import { applyUpdate, TaskLabel, User } from '@accounting/common';
 import { SystemCompanyService } from '@accounting/common/backend';
 
 import { CreateTaskLabelDto, UpdateTaskLabelDto } from '../dto/task-label.dto';
@@ -74,7 +74,7 @@ export class TaskLabelsService {
       }
     }
 
-    Object.assign(label, dto);
+    applyUpdate(label, dto, ['id', 'companyId', 'createdAt', 'updatedAt']);
     return this.labelRepository.save(label);
   }
 

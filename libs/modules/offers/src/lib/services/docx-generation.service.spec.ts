@@ -8,6 +8,7 @@ import {
 } from '@accounting/common';
 import { StorageService } from '@accounting/infrastructure/storage';
 
+import { DocxBlockRendererService } from './docx-block-renderer.service';
 import { DocxGenerationService } from './docx-generation.service';
 import {
   DocumentGenerationFailedException,
@@ -17,6 +18,7 @@ import {
 describe('DocxGenerationService - Security Tests', () => {
   let service: DocxGenerationService;
   let mockStorageService: jest.Mocked<StorageService>;
+  let mockBlockRendererService: jest.Mocked<DocxBlockRendererService>;
   let module: TestingModule;
 
   const createMockOffer = (overrides: Partial<Offer> = {}): Offer => {
@@ -76,12 +78,21 @@ describe('DocxGenerationService - Security Tests', () => {
       getSignedUrl: jest.fn(),
     } as unknown as jest.Mocked<StorageService>;
 
+    mockBlockRendererService = {
+      renderBlocks: jest.fn().mockReturnValue(''),
+      renderBlock: jest.fn().mockReturnValue(''),
+    } as unknown as jest.Mocked<DocxBlockRendererService>;
+
     module = await Test.createTestingModule({
       providers: [
         DocxGenerationService,
         {
           provide: StorageService,
           useValue: mockStorageService,
+        },
+        {
+          provide: DocxBlockRendererService,
+          useValue: mockBlockRendererService,
         },
       ],
     }).compile();
@@ -287,28 +298,32 @@ describe('DocxGenerationService - Security Tests', () => {
   });
 
   describe('Template Size Limit Validation', () => {
-    it('should reject templates larger than 50MB', async () => {
+    it('should reject templates larger than 10MB', async () => {
       const offer = createMockOffer();
       const template = createMockTemplate();
 
-      // Create a buffer larger than 50MB
-      const largeBuffer = Buffer.alloc(51 * 1024 * 1024); // 51MB
+      // Create a buffer larger than 10MB
+      const largeBuffer = Buffer.alloc(11 * 1024 * 1024); // 11MB
       mockStorageService.downloadFile.mockResolvedValue(largeBuffer);
 
-      await expect(service.generateFromTemplate(template, offer)).rejects.toThrow(
-        DocumentTemplateInvalidException
-      );
-
-      await expect(service.generateFromTemplate(template, offer)).rejects.toThrow(/rozmiar/i); // Polish for "size"
+      try {
+        await service.generateFromTemplate(template, offer);
+        // Should not reach here
+        expect(true).toBe(false);
+      } catch (error: any) {
+        // Should throw DocumentTemplateInvalidException about size
+        expect(error.getStatus()).toBe(400);
+        expect(error.message).toMatch(/rozmiar/i); // Polish for "size"
+      }
     });
 
-    it('should accept templates at exactly 50MB', async () => {
+    it('should accept templates at exactly 10MB', async () => {
       const offer = createMockOffer();
       const template = createMockTemplate();
 
-      // Create a buffer at exactly 50MB (this should still fail due to invalid DOCX format,
+      // Create a buffer at exactly 10MB (this should still fail due to invalid DOCX format,
       // but should NOT fail due to size limit)
-      const maxSizeBuffer = Buffer.alloc(50 * 1024 * 1024);
+      const maxSizeBuffer = Buffer.alloc(10 * 1024 * 1024);
       mockStorageService.downloadFile.mockResolvedValue(maxSizeBuffer);
 
       // This will throw due to invalid DOCX format, not size
@@ -342,8 +357,11 @@ describe('DocxGenerationService - Security Tests', () => {
       const result = service.generatePlainTextFallback(offer);
       const content = result.toString('utf-8');
 
-      // Plain text shouldn't escape, but let's verify it doesn't break
-      expect(content).toContain('Test <script>');
+      // Plain text fallback sanitizes values (escapes XML special chars)
+      // Verify that the dangerous content is escaped, not passed through raw
+      expect(content).not.toContain('<script>');
+      expect(content).toContain('Test');
+      expect(content).toContain('&lt;Company');
     });
 
     it('should generate valid DOCX structure with escaped content', async () => {

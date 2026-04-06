@@ -15,7 +15,7 @@ import { SetCustomFieldValuesDto } from '../dto/client.dto';
 import { CustomFieldsService } from '../services/custom-fields.service';
 
 @ApiTags('Clients')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/clients')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('clients')

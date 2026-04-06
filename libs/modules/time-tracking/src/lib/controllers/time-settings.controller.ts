@@ -14,7 +14,7 @@ import { UpdateTimeSettingsDto } from '../dto/time-settings.dto';
 import { TimeSettingsService } from '../services/time-settings.service';
 
 @ApiTags('Time Tracking - Settings')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/time-tracking/settings')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('time-tracking')

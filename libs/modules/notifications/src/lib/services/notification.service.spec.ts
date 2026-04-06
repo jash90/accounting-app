@@ -1,9 +1,9 @@
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 
 import { type Repository } from 'typeorm';
 
-import { type Notification, NotificationType, type User, UserRole } from '@accounting/common';
+import { NotificationType, UserRole, type Notification, type User } from '@accounting/common';
 import { type SystemCompanyService } from '@accounting/common/backend';
 
 import { NotificationService } from './notification.service';
@@ -270,20 +270,20 @@ describe('NotificationService', () => {
       await expect(service.findOne('nonexistent', user)).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw ForbiddenException when notification belongs to another user', async () => {
+    it('should throw NotFoundException when notification belongs to another user', async () => {
+      // Service queries by recipientId: user.id, so a mismatched user won't find the notification
       const user = createMockUser({ id: 'other-user' });
-      const notification = createMockNotification({ recipientId: 'user-123' });
-      mockNotificationRepository.findOne.mockResolvedValue(notification);
+      mockNotificationRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.findOne('notif-1', user)).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne('notif-1', user)).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw ForbiddenException when notification belongs to another company', async () => {
+    it('should throw NotFoundException when notification belongs to another company', async () => {
+      // Service queries by companyId, so a mismatched company won't find the notification
       const user = createMockUser();
-      const notification = createMockNotification({ companyId: 'other-company' });
-      mockNotificationRepository.findOne.mockResolvedValue(notification);
+      mockNotificationRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.findOne('notif-1', user)).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne('notif-1', user)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -388,12 +388,12 @@ describe('NotificationService', () => {
       expect(mockNotificationRepository.remove).toHaveBeenCalledWith(notification);
     });
 
-    it('should throw ForbiddenException for another user notification', async () => {
+    it('should throw NotFoundException for another user notification', async () => {
+      // Service queries by recipientId: user.id, so another user's notification won't be found
       const user = createMockUser({ id: 'other-user' });
-      const notification = createMockNotification({ recipientId: 'user-123' });
-      mockNotificationRepository.findOne.mockResolvedValue(notification);
+      mockNotificationRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.delete('notif-1', user)).rejects.toThrow(ForbiddenException);
+      await expect(service.delete('notif-1', user)).rejects.toThrow(NotFoundException);
     });
   });
 

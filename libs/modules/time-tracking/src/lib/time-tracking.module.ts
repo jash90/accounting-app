@@ -18,10 +18,14 @@ import { TimeReportsController } from './controllers/time-reports.controller';
 import { TimeSettingsController } from './controllers/time-settings.controller';
 import { TimeCalculationService } from './services/time-calculation.service';
 import { TimeEntriesService } from './services/time-entries.service';
+import { TimeEntryApprovalService } from './services/time-entry-approval.service';
+import { TimeEntryLockingService } from './services/time-entry-locking.service';
+import { TimeEntryOverlapService } from './services/time-entry-overlap.service';
 import { TimeSettingsService } from './services/time-settings.service';
 import { TimeTrackingExportService } from './services/time-tracking-export.service';
 import { TimeTrackingExtendedStatsService } from './services/time-tracking-extended-stats.service';
 import { TimeTrackingPdfService } from './services/time-tracking-pdf.service';
+import { TimerService } from './services/timer.service';
 import { TimesheetService } from './services/timesheet.service';
 
 @Module({
@@ -46,6 +50,10 @@ import { TimesheetService } from './services/timesheet.service';
   ],
   providers: [
     TimeEntriesService,
+    TimerService,
+    TimeEntryApprovalService,
+    TimeEntryLockingService,
+    TimeEntryOverlapService,
     TimeSettingsService,
     TimeCalculationService,
     TimesheetService,
@@ -55,6 +63,10 @@ import { TimesheetService } from './services/timesheet.service';
   ],
   exports: [
     TimeEntriesService,
+    TimerService,
+    TimeEntryApprovalService,
+    TimeEntryLockingService,
+    TimeEntryOverlapService,
     TimeSettingsService,
     TimeCalculationService,
     TimesheetService,

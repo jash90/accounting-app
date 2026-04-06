@@ -18,7 +18,7 @@ import {
 import { ClientChangelogService } from '../services/client-changelog.service';
 
 @ApiTags('Clients')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/clients')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('clients')

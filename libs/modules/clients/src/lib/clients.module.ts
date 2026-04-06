@@ -37,8 +37,11 @@ import { NotificationSettingsController } from './controllers/notification-setti
 import { ReliefPeriodsController } from './controllers/relief-periods.controller';
 import { SuspensionsController } from './controllers/suspensions.controller';
 import { AutoAssignService } from './services/auto-assign.service';
+import { ClientBulkService } from './services/client-bulk.service';
+import { ClientChangelogEmailService } from './services/client-changelog-email.service';
 import { ClientChangelogService } from './services/client-changelog.service';
 import { ClientIconsService } from './services/client-icons.service';
+import { ClientPkdService } from './services/client-pkd.service';
 import { ClientsService } from './services/clients.service';
 import { ConditionEvaluatorService } from './services/condition-evaluator.service';
 import { CustomFieldReminderService } from './services/custom-field-reminder.service';
@@ -97,9 +100,12 @@ import { SuspensionService } from './services/suspension.service';
   ],
   providers: [
     ClientsService,
+    ClientBulkService,
+    ClientPkdService,
     CustomFieldsService,
     ClientIconsService,
     ClientChangelogService,
+    ClientChangelogEmailService,
     NotificationSettingsService,
     ConditionEvaluatorService,
     AutoAssignService,

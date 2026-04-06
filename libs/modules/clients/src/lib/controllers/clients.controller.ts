@@ -27,7 +27,11 @@ import { Request } from 'express';
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { NotificationType, User } from '@accounting/common';
-import { NotificationInterceptor, NotifyOn } from '@accounting/modules/notifications';
+import {
+  NOTIFICATION_TEMPLATES,
+  NotificationInterceptor,
+  NotifyOn,
+} from '@accounting/modules/notifications';
 import {
   ModuleAccessGuard,
   OwnerOrAdmin,
@@ -61,7 +65,7 @@ import { DuplicateDetectionService } from '../services/duplicate-detection.servi
  * Sub-controllers handle: bulk operations, export/import, statistics, changelog, custom fields.
  */
 @ApiTags('Clients')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @ApiExtraModels(
   ClientResponseDto,
   PaginatedClientsResponseDto,
@@ -150,8 +154,7 @@ export class ClientsController {
   @RequirePermission('clients', 'write')
   @NotifyOn({
     type: NotificationType.CLIENT_CREATED,
-    titleTemplate: '{{actor.firstName}} utworzył(a) klienta "{{name}}"',
-    actionUrlTemplate: '/modules/clients/{{id}}',
+    ...NOTIFICATION_TEMPLATES.CLIENT.CREATED,
     recipientResolver: 'companyUsersExceptActor',
   })
   async create(@Body() dto: CreateClientDto, @CurrentUser() user: User) {
@@ -166,8 +169,7 @@ export class ClientsController {
   @RequirePermission('clients', 'write')
   @NotifyOn({
     type: NotificationType.CLIENT_UPDATED,
-    titleTemplate: '{{actor.firstName}} zaktualizował(a) klienta "{{name}}"',
-    actionUrlTemplate: '/modules/clients/{{id}}',
+    ...NOTIFICATION_TEMPLATES.CLIENT.UPDATED,
     recipientResolver: 'companyUsersExceptActor',
   })
   async update(
@@ -188,7 +190,7 @@ export class ClientsController {
   @RequirePermission('clients', 'delete')
   @NotifyOn({
     type: NotificationType.CLIENT_DELETED,
-    titleTemplate: '{{actor.firstName}} usunął/usunęła klienta',
+    ...NOTIFICATION_TEMPLATES.CLIENT.DELETED,
     recipientResolver: 'companyUsersExceptActor',
   })
   async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
@@ -218,8 +220,7 @@ export class ClientsController {
   @RequirePermission('clients', 'write')
   @NotifyOn({
     type: NotificationType.CLIENT_RESTORED,
-    titleTemplate: '{{actor.firstName}} przywrócił(a) klienta "{{name}}"',
-    actionUrlTemplate: '/modules/clients/{{id}}',
+    ...NOTIFICATION_TEMPLATES.CLIENT.RESTORED,
     recipientResolver: 'companyUsersExceptActor',
   })
   async restore(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {

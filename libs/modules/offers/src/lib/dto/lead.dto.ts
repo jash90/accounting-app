@@ -5,19 +5,17 @@ import {
   IsDateString,
   IsEmail,
   IsEnum,
-  IsInt,
   IsNumber,
   IsOptional,
   IsString,
   IsUUID,
   Matches,
-  Max,
   MaxLength,
   Min,
   MinLength,
 } from 'class-validator';
 
-import { LeadSource, LeadStatus, Sanitize } from '@accounting/common';
+import { LeadSource, LeadStatus, PaginationQueryDto, Sanitize } from '@accounting/common';
 
 export class CreateLeadDto {
   @ApiProperty({ description: 'Company name', minLength: 2, maxLength: 255 })
@@ -130,7 +128,7 @@ export class UpdateLeadDto extends PartialType(CreateLeadDto) {
   status?: LeadStatus;
 }
 
-export class LeadFiltersDto {
+export class LeadFiltersDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: 'Search query', maxLength: 100 })
   @IsOptional()
   @Sanitize()
@@ -162,30 +160,6 @@ export class LeadFiltersDto {
   @IsOptional()
   @IsDateString()
   createdTo?: string;
-
-  @ApiPropertyOptional({
-    description: 'Page number (1-based)',
-    minimum: 1,
-    default: 1,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({
-    description: 'Number of items per page',
-    minimum: 1,
-    maximum: 100,
-    default: 20,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number = 20;
 }
 
 export class ConvertLeadToClientDto {

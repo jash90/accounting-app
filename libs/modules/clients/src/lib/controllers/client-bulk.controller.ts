@@ -20,16 +20,16 @@ import {
   BulkRestoreClientsDto,
 } from '../dto/bulk-operations.dto';
 import { ClientErrorResponseDto } from '../dto/client-response.dto';
-import { ClientsService } from '../services/clients.service';
+import { ClientBulkService } from '../services/client-bulk.service';
 
 @ApiTags('Clients')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/clients/bulk')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @UseInterceptors(NotificationInterceptor)
 @RequireModule('clients')
 export class ClientBulkController {
-  constructor(private readonly clientsService: ClientsService) {}
+  constructor(private readonly clientBulkService: ClientBulkService) {}
 
   @Patch('delete')
   @ApiOperation({
@@ -44,7 +44,7 @@ export class ClientBulkController {
   @OwnerOrAdmin()
   @RequirePermission('clients', 'delete')
   async bulkDelete(@Body() dto: BulkDeleteClientsDto, @CurrentUser() user: User) {
-    return this.clientsService.bulkDelete(dto, user);
+    return this.clientBulkService.bulkDelete(dto, user);
   }
 
   @Patch('restore')
@@ -58,7 +58,7 @@ export class ClientBulkController {
   @ApiResponse({ status: 403, description: 'Forbidden', type: ClientErrorResponseDto })
   @RequirePermission('clients', 'write')
   async bulkRestore(@Body() dto: BulkRestoreClientsDto, @CurrentUser() user: User) {
-    return this.clientsService.bulkRestore(dto, user);
+    return this.clientBulkService.bulkRestore(dto, user);
   }
 
   @Patch('edit')
@@ -72,6 +72,6 @@ export class ClientBulkController {
   @ApiResponse({ status: 403, description: 'Forbidden', type: ClientErrorResponseDto })
   @RequirePermission('clients', 'write')
   async bulkEdit(@Body() dto: BulkEditClientsDto, @CurrentUser() user: User) {
-    return this.clientsService.bulkEdit(dto, user);
+    return this.clientBulkService.bulkEdit(dto, user);
   }
 }

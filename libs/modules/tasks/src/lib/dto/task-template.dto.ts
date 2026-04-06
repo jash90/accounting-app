@@ -16,7 +16,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-import { TaskPriority } from '@accounting/common';
+import { PaginationQueryDto, TaskPriority } from '@accounting/common';
 
 export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly';
 
@@ -153,22 +153,9 @@ export class UpdateTaskTemplateDto {
   estimatedMinutes?: number;
 }
 
-export class TaskTemplateFiltersDto {
+export class TaskTemplateFiltersDto extends PaginationQueryDto {
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()
   search?: string;
-
-  @ApiPropertyOptional()
-  @IsInt()
-  @Min(1)
-  @IsOptional()
-  page?: number;
-
-  @ApiPropertyOptional()
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  @IsOptional()
-  limit?: number;
 }

@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+
 import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -17,7 +18,13 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-import { Sanitize, SanitizeWithFormatting, TaskPriority, TaskStatus } from '@accounting/common';
+import {
+  PaginationQueryDto,
+  Sanitize,
+  SanitizeWithFormatting,
+  TaskPriority,
+  TaskStatus,
+} from '@accounting/common';
 
 export class AcceptanceCriterionDto {
   @ApiProperty({ description: 'Unique ID of the criterion' })
@@ -128,7 +135,7 @@ export class CreateTaskDto {
 
 export class UpdateTaskDto extends PartialType(CreateTaskDto) {}
 
-export class TaskFiltersDto {
+export class TaskFiltersDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: 'Search in title and description', maxLength: 100 })
   @IsOptional()
   @Sanitize()
@@ -193,21 +200,6 @@ export class TaskFiltersDto {
   @IsBoolean()
   @Transform(({ value }) => value === 'true' || value === true)
   isActive?: boolean;
-
-  @ApiPropertyOptional({ description: 'Page number', minimum: 1, default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({ description: 'Items per page', minimum: 1, maximum: 100, default: 20 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number = 20;
 
   @ApiPropertyOptional({
     description: 'Max tasks per kanban column',

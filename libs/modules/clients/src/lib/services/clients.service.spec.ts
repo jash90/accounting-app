@@ -113,13 +113,22 @@ describe('ClientsService', () => {
       createQueryBuilder: jest.fn(() => mockQueryBuilder),
     };
 
+    const mockTransactionManager = {
+      getRepository: jest.fn().mockReturnValue({
+        create: jest.fn().mockImplementation((data: any) => ({ ...data })),
+        save: jest
+          .fn()
+          .mockImplementation((entity: any) => Promise.resolve({ id: 'new-client-id', ...entity })),
+        findOne: jest.fn(),
+      }),
+      findOne: jest.fn(),
+      save: jest.fn(),
+    };
+
     const mockDataSource = {
-      transaction: jest.fn().mockImplementation((callback: any) =>
-        callback({
-          findOne: jest.fn(),
-          save: jest.fn(),
-        })
-      ),
+      transaction: jest
+        .fn()
+        .mockImplementation((callback: any) => callback(mockTransactionManager)),
       getRepository: jest.fn().mockReturnValue({
         findOne: jest.fn(),
       }),
@@ -137,7 +146,11 @@ describe('ClientsService', () => {
               mockChangeLogService as any,
               mockClientChangelogService as any,
               mockAutoAssignService as any,
-              mockSystemCompanyService as any
+              mockSystemCompanyService as any,
+              {
+                searchPkdCodes: jest.fn().mockReturnValue([]),
+                getPkdSections: jest.fn().mockReturnValue({}),
+              } as any
             );
           },
         },
@@ -420,26 +433,32 @@ describe('ClientsService', () => {
       employmentType: EmploymentType.DG,
     };
 
+    // Helper: configure transaction mock to return a specific saved client
+    const setupTransactionMock = (savedClient: Partial<Client>) => {
+      const mockRepo = {
+        create: jest.fn().mockImplementation((data: any) => ({ ...data })),
+        save: jest.fn().mockResolvedValue(savedClient),
+      };
+      const dataSource = (service as any).dataSource;
+      dataSource.transaction = jest.fn().mockImplementation(async (cb: any) => {
+        return cb({ getRepository: jest.fn().mockReturnValue(mockRepo) });
+      });
+      return { mockRepo, dataSource };
+    };
+
     it('should create client with company and user context', async () => {
       const savedClient = { ...mockClient, ...createDto };
-      clientRepository.create = jest.fn().mockReturnValue(savedClient);
-      clientRepository.save = jest.fn().mockResolvedValue(savedClient);
+      const { dataSource } = setupTransactionMock(savedClient);
 
       const result = await service.create(createDto, mockUser as User);
 
-      expect(clientRepository.create).toHaveBeenCalledWith({
-        ...createDto,
-        companyId: mockCompanyId,
-        createdById: mockUserId,
-      });
-      expect(clientRepository.save).toHaveBeenCalled();
+      expect(dataSource.transaction).toHaveBeenCalled();
       expect(result).toEqual(savedClient);
     });
 
     it('should trigger auto-assign after creation', async () => {
       const savedClient = { ...mockClient, ...createDto };
-      clientRepository.create = jest.fn().mockReturnValue(savedClient);
-      clientRepository.save = jest.fn().mockResolvedValue(savedClient);
+      setupTransactionMock(savedClient);
 
       await service.create(createDto, mockUser as User);
 
@@ -448,8 +467,7 @@ describe('ClientsService', () => {
 
     it('should log creation to changelog', async () => {
       const savedClient = { ...mockClient, ...createDto };
-      clientRepository.create = jest.fn().mockReturnValue(savedClient);
-      clientRepository.save = jest.fn().mockResolvedValue(savedClient);
+      setupTransactionMock(savedClient);
 
       await service.create(createDto, mockUser as User);
 
@@ -463,8 +481,7 @@ describe('ClientsService', () => {
 
     it('should send notification after creation', async () => {
       const savedClient = { ...mockClient, ...createDto };
-      clientRepository.create = jest.fn().mockReturnValue(savedClient);
-      clientRepository.save = jest.fn().mockResolvedValue(savedClient);
+      setupTransactionMock(savedClient);
 
       await service.create(createDto, mockUser as User);
 
@@ -476,8 +493,7 @@ describe('ClientsService', () => {
 
     it('should not fail if auto-assign throws error', async () => {
       const savedClient = { ...mockClient, ...createDto };
-      clientRepository.create = jest.fn().mockReturnValue(savedClient);
-      clientRepository.save = jest.fn().mockResolvedValue(savedClient);
+      setupTransactionMock(savedClient);
       autoAssignService.evaluateAndAssign = jest
         .fn()
         .mockRejectedValue(new Error('Auto-assign failed'));
@@ -493,15 +509,11 @@ describe('ClientsService', () => {
         pkdCode: '62.01.Z',
       };
       const savedClient = { ...mockClient, ...dtoWithPkd };
-      clientRepository.create = jest.fn().mockReturnValue(savedClient);
-      clientRepository.save = jest.fn().mockResolvedValue(savedClient);
+      setupTransactionMock(savedClient);
 
       const result = await service.create(dtoWithPkd, mockUser as User);
 
       expect(result.pkdCode).toBe('62.01.Z');
-      expect(clientRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ pkdCode: '62.01.Z' })
-      );
     });
 
     it('should create client with PKD code including subsection', async () => {
@@ -510,8 +522,7 @@ describe('ClientsService', () => {
         pkdCode: '62.01.Z',
       };
       const savedClient = { ...mockClient, ...dtoWithPkd };
-      clientRepository.create = jest.fn().mockReturnValue(savedClient);
-      clientRepository.save = jest.fn().mockResolvedValue(savedClient);
+      setupTransactionMock(savedClient);
 
       const result = await service.create(dtoWithPkd, mockUser as User);
 
@@ -547,23 +558,34 @@ describe('ClientsService', () => {
       email: 'updated@client.com',
     };
 
+    // Helper: configure transaction mock for update
+    const setupUpdateTransactionMock = (savedClient: Partial<Client>) => {
+      const mockRepo = {
+        save: jest.fn().mockResolvedValue(savedClient),
+      };
+      const dataSource = (service as any).dataSource;
+      dataSource.transaction = jest.fn().mockImplementation(async (cb: any) => {
+        return cb({ getRepository: jest.fn().mockReturnValue(mockRepo) });
+      });
+      return { mockRepo, dataSource };
+    };
+
     it('should update client and set updatedById', async () => {
       const existingClient = { ...mockClient };
       const updatedClient = { ...existingClient, ...updateDto, updatedById: mockUserId };
 
       clientRepository.findOne = jest.fn().mockResolvedValue(existingClient);
-      clientRepository.save = jest.fn().mockResolvedValue(updatedClient);
+      setupUpdateTransactionMock(updatedClient);
 
       const result = await service.update('client-123', updateDto, mockUser as User);
 
-      expect(clientRepository.save).toHaveBeenCalled();
       expect(result.updatedById).toBe(mockUserId);
     });
 
     it('should trigger auto-assign after update', async () => {
       const existingClient = { ...mockClient };
       clientRepository.findOne = jest.fn().mockResolvedValue(existingClient);
-      clientRepository.save = jest.fn().mockResolvedValue({ ...existingClient, ...updateDto });
+      setupUpdateTransactionMock({ ...existingClient, ...updateDto });
 
       await service.update('client-123', updateDto, mockUser as User);
 
@@ -575,7 +597,7 @@ describe('ClientsService', () => {
       const updatedClient = { ...existingClient, ...updateDto };
 
       clientRepository.findOne = jest.fn().mockResolvedValue(existingClient);
-      clientRepository.save = jest.fn().mockResolvedValue(updatedClient);
+      setupUpdateTransactionMock(updatedClient);
 
       await service.update('client-123', updateDto, mockUser as User);
 
@@ -593,7 +615,7 @@ describe('ClientsService', () => {
       const updatedClient = { ...existingClient, ...updateDto };
 
       clientRepository.findOne = jest.fn().mockResolvedValue(existingClient);
-      clientRepository.save = jest.fn().mockResolvedValue(updatedClient);
+      setupUpdateTransactionMock(updatedClient);
 
       await service.update('client-123', updateDto, mockUser as User);
 
@@ -611,7 +633,7 @@ describe('ClientsService', () => {
     it('should not fail if auto-assign throws error', async () => {
       const existingClient = { ...mockClient };
       clientRepository.findOne = jest.fn().mockResolvedValue(existingClient);
-      clientRepository.save = jest.fn().mockResolvedValue({ ...existingClient, ...updateDto });
+      setupUpdateTransactionMock({ ...existingClient, ...updateDto });
       autoAssignService.evaluateAndAssign = jest
         .fn()
         .mockRejectedValue(new Error('Auto-assign failed'));

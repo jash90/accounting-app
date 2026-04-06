@@ -1,7 +1,7 @@
-import { SystemCompanyService } from '@accounting/common/backend';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+
 import { DataSource, type EntityManager, type QueryRunner, type Repository } from 'typeorm';
 
 import {
@@ -14,6 +14,7 @@ import {
   VatStatus,
   ZusStatus,
 } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { ClientNotFoundException } from '../exceptions';
 import { SuspensionService } from './suspension.service';
@@ -471,11 +472,13 @@ describe('SuspensionService', () => {
       const result = await service.findAll(mockClientId, user);
 
       expect(result).toHaveLength(2);
-      expect(suspensionRepository.find).toHaveBeenCalledWith({
-        where: { clientId: mockClientId, companyId: mockCompanyId },
-        relations: ['createdBy'],
-        order: { startDate: 'DESC' },
-      });
+      expect(suspensionRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { clientId: mockClientId, companyId: mockCompanyId },
+          relations: ['createdBy'],
+          order: { startDate: 'DESC' },
+        })
+      );
     });
 
     it('should throw ClientNotFoundException when client does not exist', async () => {

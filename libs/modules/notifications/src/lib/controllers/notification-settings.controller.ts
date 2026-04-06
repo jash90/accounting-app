@@ -38,7 +38,7 @@ function validateModuleSlug(moduleSlug: string): asserts moduleSlug is ValidModu
 }
 
 @ApiTags('Notification Settings')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('notifications/settings')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('notifications')

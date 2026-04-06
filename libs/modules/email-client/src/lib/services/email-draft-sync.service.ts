@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { User } from '@accounting/common';
+import { applyUpdate, User } from '@accounting/common';
 import {
   EmailConfig,
   EmailConfigurationService,
@@ -224,7 +224,7 @@ export class EmailDraftSyncService {
     emailConfig: EmailConfig
   ): Promise<EmailDraft> {
     // Update database
-    Object.assign(draft, updates);
+    applyUpdate(draft, updates, ['id', 'userId', 'companyId', 'createdAt']);
 
     // If already synced to IMAP, update there too
     if (draft.imapUid && draft.syncStatus === 'synced') {

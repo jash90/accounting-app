@@ -37,7 +37,7 @@ import { EmailAttachmentService } from '../services/email-attachment.service';
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 @ApiTags('Email Client - Attachments')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/email-client/attachments')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('email-client')

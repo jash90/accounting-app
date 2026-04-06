@@ -2,6 +2,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { Client, UserRole, type User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { DuplicateDetectionService } from './duplicate-detection.service';
 

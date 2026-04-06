@@ -24,7 +24,7 @@ import { UpdateNotificationSettingsDto } from '../dto/notification-settings.dto'
 import { NotificationSettingsService } from '../services/notification-settings.service';
 
 @ApiTags('Client Notification Settings')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/clients/notification-settings')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('clients')

@@ -88,7 +88,7 @@ const multerOptions = {
  * @module clients - Module access required for company
  */
 @ApiTags('Client Icons')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @ApiExtraModels(
   IconResponseDto,
   PaginatedIconsResponseDto,

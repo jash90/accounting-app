@@ -29,7 +29,11 @@ import { Response } from 'express';
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { ApiCsvResponse, NotificationType, User } from '@accounting/common';
 import { sendCsvResponse } from '@accounting/common/backend';
-import { NotificationInterceptor, NotifyOn } from '@accounting/modules/notifications';
+import {
+  NOTIFICATION_TEMPLATES,
+  NotificationInterceptor,
+  NotifyOn,
+} from '@accounting/modules/notifications';
 import {
   ModuleAccessGuard,
   PermissionGuard,
@@ -59,7 +63,7 @@ import { TaskExtendedStatsService } from '../services/task-extended-stats.servic
 import { TasksService } from '../services/tasks.service';
 
 @ApiTags('Tasks')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @ApiExtraModels(
   TaskResponseDto,
   PaginatedTasksResponseDto,
@@ -250,9 +254,8 @@ export class TasksController {
   @RequirePermission('tasks', 'write')
   @NotifyOn({
     type: NotificationType.TASK_CREATED,
-    titleTemplate: '{{actor.firstName}} utworzył(a) zadanie "{{title}}"',
+    ...NOTIFICATION_TEMPLATES.TASK.CREATED,
     messageTemplate: 'Nowe zadanie zostało utworzone',
-    actionUrlTemplate: '/modules/tasks/list?taskId={{id}}',
     recipientResolver: 'assignee',
   })
   async create(@Body() dto: CreateTaskDto, @CurrentUser() user: User) {
@@ -290,8 +293,7 @@ export class TasksController {
   @RequirePermission('tasks', 'write')
   @NotifyOn({
     type: NotificationType.TASK_UPDATED,
-    titleTemplate: '{{actor.firstName}} zaktualizował(a) zadanie "{{title}}"',
-    actionUrlTemplate: '/modules/tasks/list?taskId={{id}}',
+    ...NOTIFICATION_TEMPLATES.TASK.UPDATED,
     recipientResolver: 'assignee',
   })
   async update(
@@ -310,7 +312,7 @@ export class TasksController {
   @RequirePermission('tasks', 'delete')
   @NotifyOn({
     type: NotificationType.TASK_DELETED,
-    titleTemplate: '{{actor.firstName}} usunął/usunęła zadanie',
+    ...NOTIFICATION_TEMPLATES.TASK.DELETED,
     recipientResolver: 'companyUsersExceptActor',
   })
   async remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {

@@ -7,8 +7,8 @@ import { type Repository } from 'typeorm';
 import { NotificationType, User, UserRole } from '@accounting/common';
 
 import {
-  type DispatchNotificationPayload,
   NotificationDispatcherService,
+  type DispatchNotificationPayload,
 } from './notification-dispatcher.service';
 import { NotificationSettingsService } from './notification-settings.service';
 import { NotificationService } from './notification.service';
@@ -63,6 +63,9 @@ describe('NotificationDispatcherService - Security Tests', () => {
       shouldSendInApp: jest.fn().mockResolvedValue(true),
       shouldSendEmail: jest.fn().mockResolvedValue(false),
       getRecipientsForNotification: jest.fn().mockResolvedValue(['user-123']),
+      batchCheckChannels: jest
+        .fn()
+        .mockResolvedValue(new Map([['user-123', { inApp: true, email: false }]])),
     } as unknown as jest.Mocked<NotificationSettingsService>;
 
     mockEventEmitter = {
@@ -194,8 +197,9 @@ describe('NotificationDispatcherService - Security Tests', () => {
     it('should respect in-app notification settings', async () => {
       const payload = createPayload();
 
-      mockSettingsService.shouldSendInApp.mockResolvedValue(true);
-      mockSettingsService.shouldSendEmail.mockResolvedValue(false);
+      mockSettingsService.batchCheckChannels.mockResolvedValue(
+        new Map([['user-123', { inApp: true, email: false }]])
+      );
 
       await service.dispatch(payload);
 
@@ -210,8 +214,9 @@ describe('NotificationDispatcherService - Security Tests', () => {
     it('should respect email notification settings', async () => {
       const payload = createPayload();
 
-      mockSettingsService.shouldSendInApp.mockResolvedValue(false);
-      mockSettingsService.shouldSendEmail.mockResolvedValue(true);
+      mockSettingsService.batchCheckChannels.mockResolvedValue(
+        new Map([['user-123', { inApp: false, email: true }]])
+      );
 
       await service.dispatch(payload);
 
@@ -231,8 +236,9 @@ describe('NotificationDispatcherService - Security Tests', () => {
     it('should send both in-app and email when both enabled', async () => {
       const payload = createPayload();
 
-      mockSettingsService.shouldSendInApp.mockResolvedValue(true);
-      mockSettingsService.shouldSendEmail.mockResolvedValue(true);
+      mockSettingsService.batchCheckChannels.mockResolvedValue(
+        new Map([['user-123', { inApp: true, email: true }]])
+      );
 
       await service.dispatch(payload);
 
@@ -246,8 +252,9 @@ describe('NotificationDispatcherService - Security Tests', () => {
     it('should not send any notification when all channels disabled', async () => {
       const payload = createPayload();
 
-      mockSettingsService.shouldSendInApp.mockResolvedValue(false);
-      mockSettingsService.shouldSendEmail.mockResolvedValue(false);
+      mockSettingsService.batchCheckChannels.mockResolvedValue(
+        new Map([['user-123', { inApp: false, email: false }]])
+      );
 
       await service.dispatch(payload);
 
@@ -272,34 +279,51 @@ describe('NotificationDispatcherService - Security Tests', () => {
         createMockUser({ id: 'user-3' }),
       ]);
 
-      // Fail on second recipient
-      mockSettingsService.shouldSendInApp
-        .mockResolvedValueOnce(true) // user-1 succeeds
-        .mockRejectedValueOnce(new Error('Settings error')) // user-2 fails
-        .mockResolvedValueOnce(true); // user-3 succeeds
+      // All users have in-app enabled, but notification creation fails for user-2
+      mockSettingsService.batchCheckChannels.mockResolvedValue(
+        new Map([
+          ['user-1', { inApp: true, email: false }],
+          ['user-2', { inApp: true, email: false }],
+          ['user-3', { inApp: true, email: false }],
+        ])
+      );
+
+      mockNotificationService.create
+        .mockResolvedValueOnce({
+          id: 'n-1',
+          recipientId: 'user-1',
+          type: NotificationType.TASK_ASSIGNED,
+        } as any)
+        .mockRejectedValueOnce(new Error('DB error')) // user-2 fails
+        .mockResolvedValueOnce({
+          id: 'n-3',
+          recipientId: 'user-3',
+          type: NotificationType.TASK_ASSIGNED,
+        } as any);
 
       await service.dispatch(payload);
 
-      // Should still process user-3 after user-2 fails
-      expect(mockNotificationService.create).toHaveBeenCalledTimes(2);
+      // All 3 attempts should be made (Promise.allSettled doesn't short-circuit)
+      expect(mockNotificationService.create).toHaveBeenCalledTimes(3);
     });
 
-    it('should not throw when notification creation fails', async () => {
+    it('should not throw when notification creation fails for individual recipient', async () => {
       const payload = createPayload();
 
       mockNotificationService.create.mockRejectedValue(new Error('DB error'));
 
-      // Should not throw
-      await expect(service.dispatch(payload)).resolves.not.toThrow();
+      // dispatch uses Promise.allSettled, so individual failures don't propagate
+      // Just verify it completes without throwing
+      await service.dispatch(payload);
     });
 
-    it('should handle repository errors gracefully', async () => {
+    it('should propagate repository errors from recipient validation', async () => {
       const payload = createPayload();
 
       mockUserRepository.find.mockRejectedValue(new Error('DB connection failed'));
 
-      // Should not propagate error
-      await expect(service.dispatch(payload)).resolves.not.toThrow();
+      // validateRecipients error propagates because it's not in a try-catch
+      await expect(service.dispatch(payload)).rejects.toThrow('DB connection failed');
     });
   });
 
@@ -324,9 +348,9 @@ describe('NotificationDispatcherService - Security Tests', () => {
 
       await service.dispatch(taskPayload);
 
-      // Should call settings service with correct module
-      expect(mockSettingsService.shouldSendInApp).toHaveBeenCalledWith(
-        'user-123',
+      // Should call batchCheckChannels with correct module
+      expect(mockSettingsService.batchCheckChannels).toHaveBeenCalledWith(
+        ['user-123'],
         'company-123',
         expect.stringMatching(/tasks|system/),
         NotificationType.TASK_ASSIGNED
@@ -358,7 +382,9 @@ describe('NotificationDispatcherService - Security Tests', () => {
         },
       });
 
-      mockSettingsService.shouldSendEmail.mockResolvedValue(true);
+      mockSettingsService.batchCheckChannels.mockResolvedValue(
+        new Map([['user-123', { inApp: true, email: true }]])
+      );
 
       await service.dispatch(payload);
 

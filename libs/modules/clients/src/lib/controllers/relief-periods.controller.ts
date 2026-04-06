@@ -34,7 +34,7 @@ import { ReliefPeriodService } from '../services/relief-period.service';
  * Provides CRUD operations for relief periods with start/end dates.
  */
 @ApiTags('Client Relief Periods')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/clients/:clientId/relief-periods')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @UseInterceptors(NotificationInterceptor)

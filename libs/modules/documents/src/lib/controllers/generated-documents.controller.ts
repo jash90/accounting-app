@@ -29,7 +29,7 @@ import { GenerateDocumentDto } from '../dto/generated-document.dto';
 import { GeneratedDocumentsService } from '../services/generated-documents.service';
 
 @ApiTags('Documents')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/documents/generated')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('documents')

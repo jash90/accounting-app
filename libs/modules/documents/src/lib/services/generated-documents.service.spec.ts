@@ -1,7 +1,7 @@
-import { SystemCompanyService } from '@accounting/common/backend';
 import { NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+
 import { type Repository } from 'typeorm';
 
 import {
@@ -12,6 +12,7 @@ import {
   type ContentBlock,
   type User,
 } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { DocumentPdfService } from './document-pdf.service';
 import { GeneratedDocumentsService } from './generated-documents.service';
@@ -199,6 +200,9 @@ describe('GeneratedDocumentsService', () => {
     });
 
     it('should generate a document from text-based template', async () => {
+      mockTemplateRepo.findOne.mockReset();
+      mockGeneratedDocRepo.create.mockReset();
+      mockGeneratedDocRepo.save.mockReset();
       mockTemplateRepo.findOne.mockResolvedValue(mockTextTemplate);
       const created = { id: 'doc-2', name: 'Tekst doc' } as any;
       mockGeneratedDocRepo.create.mockReturnValue(created);

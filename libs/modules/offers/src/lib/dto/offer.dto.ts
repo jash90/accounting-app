@@ -24,7 +24,12 @@ import {
   type ValidatorConstraintInterface,
 } from 'class-validator';
 
-import { OfferStatus, Sanitize, SanitizeWithFormatting } from '@accounting/common';
+import {
+  OfferStatus,
+  PaginationQueryDto,
+  Sanitize,
+  SanitizeWithFormatting,
+} from '@accounting/common';
 
 import { OfferServiceItemDto } from './offer-template.dto';
 
@@ -184,7 +189,7 @@ export class SendOfferDto {
   cc?: string[];
 }
 
-export class OfferFiltersDto {
+export class OfferFiltersDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: 'Search query', maxLength: 100 })
   @IsOptional()
   @Sanitize()
@@ -250,30 +255,6 @@ export class OfferFiltersDto {
   @Min(0)
   @Type(() => Number)
   maxAmount?: number;
-
-  @ApiPropertyOptional({
-    description: 'Page number (1-based)',
-    minimum: 1,
-    default: 1,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({
-    description: 'Number of items per page',
-    minimum: 1,
-    maximum: 100,
-    default: 20,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number = 20;
 }
 
 export class DuplicateOfferDto {

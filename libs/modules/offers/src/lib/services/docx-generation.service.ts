@@ -1,6 +1,12 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
-import { Offer, OfferTemplate, RecipientSnapshot, type ContentBlock } from '@accounting/common';
+import {
+  ErrorMessages,
+  Offer,
+  OfferTemplate,
+  RecipientSnapshot,
+  type ContentBlock,
+} from '@accounting/common';
 import { StorageService } from '@accounting/infrastructure/storage';
 
 import { DocxBlockRendererService } from './docx-block-renderer.service';
@@ -317,12 +323,12 @@ export class DocxGenerationService implements OnModuleInit {
     }
 
     if (!template.templateFilePath) {
-      throw new DocumentTemplateInvalidException('Szablon nie ma przypisanego pliku');
+      throw new DocumentTemplateInvalidException(ErrorMessages.DOCUMENTS.TEMPLATE_NO_FILE);
     }
 
     // Security: Validate file extension
     if (!template.templateFilePath.toLowerCase().endsWith('.docx')) {
-      throw new DocumentTemplateInvalidException('Szablon musi być plikiem .docx');
+      throw new DocumentTemplateInvalidException(ErrorMessages.DOCUMENTS.TEMPLATE_MUST_BE_DOCX);
     }
 
     try {

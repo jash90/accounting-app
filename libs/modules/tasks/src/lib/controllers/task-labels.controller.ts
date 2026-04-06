@@ -29,7 +29,7 @@ import {
 import { TaskLabelsService } from '../services/task-labels.service';
 
 @ApiTags('Task Labels')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('modules/tasks/labels')
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('tasks')

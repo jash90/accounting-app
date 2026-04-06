@@ -49,7 +49,7 @@ import { CustomFieldsService } from '../services/custom-fields.service';
  * @module clients - Module access required for company
  */
 @ApiTags('Client Field Definitions')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @ApiExtraModels(
   FieldDefinitionResponseDto,
   PaginatedFieldDefinitionsResponseDto,

@@ -8,15 +8,12 @@ import {
   IsDateString,
   IsEmail,
   IsEnum,
-  IsInt,
   IsObject,
   IsOptional,
   IsString,
   IsUUID,
   Matches,
-  Max,
   MaxLength,
-  Min,
   MinLength,
   registerDecorator,
   ValidateNested,
@@ -27,6 +24,7 @@ import {
 import {
   AmlGroup,
   EmploymentType,
+  PaginationQueryDto,
   PKD_CODE_REGEX,
   PKD_CODE_VALIDATION_MESSAGE,
   Sanitize,
@@ -243,7 +241,7 @@ export class CustomFieldFilterDto {
  */
 export type CustomFieldFilter = CustomFieldFilterDto;
 
-export class ClientFiltersDto {
+export class ClientFiltersDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: 'Search query', maxLength: 100 })
   @IsOptional()
   @Sanitize()
@@ -341,32 +339,6 @@ export class ClientFiltersDto {
   @ValidateNested({ each: true })
   @Type(() => CustomFieldFilterDto)
   customFieldFilters?: CustomFieldFilterDto[];
-
-  @ApiPropertyOptional({
-    description: 'Page number (1-based)',
-    minimum: 1,
-    default: 1,
-    example: 1,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({
-    description: 'Number of items per page',
-    minimum: 1,
-    maximum: 100,
-    default: 20,
-    example: 20,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number = 20;
 }
 
 /**

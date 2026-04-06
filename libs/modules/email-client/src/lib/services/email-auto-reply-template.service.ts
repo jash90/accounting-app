@@ -1,9 +1,10 @@
-import { SystemCompanyService } from '@accounting/common/backend';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
 
-import { EmailAutoReplyTemplate, User } from '@accounting/common';
+import { applyUpdate, EmailAutoReplyTemplate, User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import {
   CreateEmailAutoReplyTemplateDto,
@@ -53,7 +54,7 @@ export class EmailAutoReplyTemplateService {
     user: User
   ): Promise<EmailAutoReplyTemplate> {
     const template = await this.findOne(id, user);
-    Object.assign(template, dto);
+    applyUpdate(template, dto, ['id', 'companyId', 'createdAt', 'updatedAt']);
     return this.templateRepository.save(template);
   }
 
