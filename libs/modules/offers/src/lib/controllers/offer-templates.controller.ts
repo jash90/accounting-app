@@ -33,7 +33,11 @@ import { Response } from 'express';
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { User } from '@accounting/common';
-import { TiptapDocxService, type TiptapJSONContent } from '@accounting/modules/documents';
+import {
+  DocumentAiService,
+  TiptapDocxService,
+  type TiptapJSONContent,
+} from '@accounting/modules/documents';
 import {
   ModuleAccessGuard,
   PermissionGuard,
@@ -43,6 +47,7 @@ import {
 
 import {
   ExportOfferTiptapDocxDto,
+  GenerateOfferAiDto,
   UpdateContentBlocksDto,
   UpdateOfferTiptapContentDto,
 } from '../dto/content-blocks.dto';
@@ -75,7 +80,8 @@ import { OfferTemplatesService } from '../services/offer-templates.service';
 export class OfferTemplatesController {
   constructor(
     private readonly templatesService: OfferTemplatesService,
-    private readonly tiptapDocx: TiptapDocxService
+    private readonly tiptapDocx: TiptapDocxService,
+    private readonly documentAi: DocumentAiService
   ) {}
 
   @Get()
@@ -161,6 +167,24 @@ export class OfferTemplatesController {
     @CurrentUser() user: User
   ) {
     return this.templatesService.updateTiptapContent(id, dto, user);
+  }
+
+  @Post(':id/ai-generate')
+  @ApiOperation({ summary: 'Generate offer template HTML content from a free-form prompt via AI' })
+  @RequirePermission('offers', 'write')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async aiGenerate(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: GenerateOfferAiDto,
+    @CurrentUser() user: User
+  ) {
+    const template = await this.templatesService.findOne(id, user);
+    const placeholderKeys = (template.availablePlaceholders ?? []).map((p) => p.key);
+    return this.documentAi.generate(user, {
+      prompt: dto.prompt,
+      templateName: template.name,
+      placeholders: placeholderKeys,
+    });
   }
 
   @Post(':id/export-docx')

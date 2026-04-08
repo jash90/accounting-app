@@ -10,6 +10,7 @@ import {
   IsOptional,
   IsString,
   MaxLength,
+  MinLength,
 } from 'class-validator';
 
 import { DocumentCategory } from '@accounting/common';
@@ -104,4 +105,31 @@ export class ExportTiptapDocxDto {
   @IsOptional()
   @IsObject()
   context?: Record<string, unknown>;
+}
+
+export class GenerateDocumentAiDto {
+  @ApiProperty({
+    description: 'Free-form prompt describing the document to generate',
+    minLength: 3,
+    maxLength: 2000,
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(3)
+  @MaxLength(2000)
+  prompt!: string;
+}
+
+export class GenerateDocumentAiResponseDto {
+  @ApiProperty({ description: 'Generated HTML content ready to drop into the editor' })
+  html!: string;
+
+  @ApiProperty({ description: 'Number of input (prompt) tokens consumed' })
+  inputTokens!: number;
+
+  @ApiProperty({ description: 'Number of output (completion) tokens consumed' })
+  outputTokens!: number;
+
+  @ApiProperty({ description: 'Total tokens consumed (input + output)' })
+  totalTokens!: number;
 }

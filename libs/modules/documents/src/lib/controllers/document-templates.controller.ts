@@ -29,9 +29,11 @@ import { UpdateDocumentContentBlocksDto } from '../dto/content-blocks.dto';
 import {
   CreateDocumentTemplateDto,
   ExportTiptapDocxDto,
+  GenerateDocumentAiDto,
   UpdateDocumentTemplateDto,
   UpdateTiptapContentDto,
 } from '../dto/document-template.dto';
+import { DocumentAiService } from '../services/document-ai.service';
 import { DocumentTemplatesService } from '../services/document-templates.service';
 import { TiptapDocxService, type TiptapJSONContent } from '../services/tiptap-docx.service';
 
@@ -43,7 +45,8 @@ import { TiptapDocxService, type TiptapJSONContent } from '../services/tiptap-do
 export class DocumentTemplatesController {
   constructor(
     private readonly service: DocumentTemplatesService,
-    private readonly tiptapDocx: TiptapDocxService
+    private readonly tiptapDocx: TiptapDocxService,
+    private readonly documentAi: DocumentAiService
   ) {}
 
   @Get()
@@ -89,6 +92,23 @@ export class DocumentTemplatesController {
     @CurrentUser() user: User
   ) {
     return this.service.updateTiptapContent(id, dto, user);
+  }
+
+  @Post(':id/ai-generate')
+  @ApiOperation({ summary: 'Generate document HTML content from a free-form prompt via AI' })
+  @RequirePermission('documents', 'write')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async aiGenerate(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: GenerateDocumentAiDto,
+    @CurrentUser() user: User
+  ) {
+    const template = await this.service.findOne(id, user);
+    return this.documentAi.generate(user, {
+      prompt: dto.prompt,
+      templateName: template.name,
+      placeholders: template.placeholders ?? [],
+    });
   }
 
   @Post(':id/export-docx')

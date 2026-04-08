@@ -1,6 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { IsArray, IsIn, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsIn,
+  IsNotEmpty,
+  IsObject,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
 
 import { type ContentBlock } from '@accounting/common';
 
@@ -61,4 +71,17 @@ export class ExportOfferTiptapDocxDto {
   @IsOptional()
   @IsObject()
   context?: Record<string, unknown>;
+}
+
+export class GenerateOfferAiDto {
+  @ApiProperty({
+    description: 'Free-form prompt describing the offer/template body to generate',
+    minLength: 3,
+    maxLength: 2000,
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(3)
+  @MaxLength(2000)
+  prompt!: string;
 }
