@@ -105,6 +105,9 @@ export * from './lib/dto/requests';
 export * from './lib/dto/pagination.dto';
 export * from './lib/dto/period-filter.dto';
 export * from './lib/dto/employee-ranking.dto';
+
+// TipTap shared config (safe for both FE and BE — pure @tiptap/* deps)
+export * from './lib/tiptap';
 // NOTE: EncryptionService is NOT exported from the barrel file because it uses
 // Node.js-specific modules (crypto, fs, util.promisify) that don't work in browsers.
 // Import directly from './lib/services/encryption.service' in backend code where needed.
