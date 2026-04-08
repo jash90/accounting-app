@@ -1,13 +1,26 @@
+
 import { Injectable, Logger } from '@nestjs/common';
 
-import { generateHTML } from '@tiptap/html';
 import Handlebars from 'handlebars';
 // html-to-docx ships no types
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import HTMLtoDOCX from 'html-to-docx';
+import { createRequire } from 'node:module';
 
 import { tiptapExtensions } from '@accounting/common';
+
+// @tiptap/html v3.22 splits its entry into browser and server bundles. The
+// "@tiptap/html/server" subpath export isn't picked up by webpack's
+// moduleResolution=node, and the package's exports map blocks deep imports.
+// We resolve the package, rewrite the path to the server bundle, and load
+// it via createRequire so webpack treats it as a runtime require.
+const requireFromNode = createRequire(__filename);
+const mainCjsPath = requireFromNode.resolve('@tiptap/html');
+const serverCjsPath = mainCjsPath.replace(/\/dist\/index\.cjs$/, '/dist/server/index.cjs');
+const { generateHTML } = requireFromNode(serverCjsPath) as {
+  generateHTML: (doc: unknown, extensions: unknown[]) => string;
+};
 
 export interface TiptapJSONContent {
   type: string;
