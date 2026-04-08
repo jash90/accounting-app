@@ -1,0 +1,19 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="404 - AppTax">
+  <div class="flex min-h-screen flex-col items-center justify-center px-4 text-center">
+    <div class="text-8xl font-bold text-muted-foreground/30">404</div>
+    <h1 class="mt-4 text-2xl font-bold sm:text-3xl">Strona nie znaleziona</h1>
+    <p class="mt-2 text-muted-foreground">
+      Przepraszamy, strona której szukasz nie istnieje.
+    </p>
+    <a
+      href="/"
+      class="mt-8 inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+    >
+      Wróć na stronę główną
+    </a>
+  </div>
+</BaseLayout>
