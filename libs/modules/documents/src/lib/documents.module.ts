@@ -10,6 +10,7 @@ import { GeneratedDocumentsController } from './controllers/generated-documents.
 import { DocumentPdfService } from './services/document-pdf.service';
 import { DocumentTemplatesService } from './services/document-templates.service';
 import { GeneratedDocumentsService } from './services/generated-documents.service';
+import { TiptapDocxService } from './services/tiptap-docx.service';
 
 @Module({
   imports: [
@@ -18,7 +19,17 @@ import { GeneratedDocumentsService } from './services/generated-documents.servic
     RBACModule,
   ],
   controllers: [DocumentTemplatesController, GeneratedDocumentsController],
-  providers: [DocumentTemplatesService, GeneratedDocumentsService, DocumentPdfService],
-  exports: [DocumentTemplatesService, GeneratedDocumentsService, DocumentPdfService],
+  providers: [
+    DocumentTemplatesService,
+    GeneratedDocumentsService,
+    DocumentPdfService,
+    TiptapDocxService,
+  ],
+  exports: [
+    DocumentTemplatesService,
+    GeneratedDocumentsService,
+    DocumentPdfService,
+    TiptapDocxService,
+  ],
 })
 export class DocumentsModule {}

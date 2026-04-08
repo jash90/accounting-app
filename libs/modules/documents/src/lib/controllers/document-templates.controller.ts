@@ -7,11 +7,14 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Res,
   UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+
+import { type Response } from 'express';
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { User } from '@accounting/common';
@@ -23,8 +26,14 @@ import {
 } from '@accounting/rbac';
 
 import { UpdateDocumentContentBlocksDto } from '../dto/content-blocks.dto';
-import { CreateDocumentTemplateDto, UpdateDocumentTemplateDto } from '../dto/document-template.dto';
+import {
+  CreateDocumentTemplateDto,
+  ExportTiptapDocxDto,
+  UpdateDocumentTemplateDto,
+  UpdateTiptapContentDto,
+} from '../dto/document-template.dto';
 import { DocumentTemplatesService } from '../services/document-templates.service';
+import { TiptapDocxService, type TiptapJSONContent } from '../services/tiptap-docx.service';
 
 @ApiTags('Documents')
 @ApiBearerAuth('JWT-auth')
@@ -32,7 +41,10 @@ import { DocumentTemplatesService } from '../services/document-templates.service
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('documents')
 export class DocumentTemplatesController {
-  constructor(private readonly service: DocumentTemplatesService) {}
+  constructor(
+    private readonly service: DocumentTemplatesService,
+    private readonly tiptapDocx: TiptapDocxService
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all document templates' })
@@ -58,6 +70,51 @@ export class DocumentTemplatesController {
     @CurrentUser() user: User
   ) {
     return this.service.updateContentBlocks(id, dto, user);
+  }
+
+  @Get(':id/tiptap-content')
+  @ApiOperation({ summary: 'Get TipTap JSON content for a document template' })
+  @RequirePermission('documents', 'read')
+  getTiptapContent(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return this.service.getTiptapContent(id, user);
+  }
+
+  @Patch(':id/tiptap-content')
+  @ApiOperation({ summary: 'Update TipTap JSON content for a document template' })
+  @RequirePermission('documents', 'write')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  updateTiptapContent(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateTiptapContentDto,
+    @CurrentUser() user: User
+  ) {
+    return this.service.updateTiptapContent(id, dto, user);
+  }
+
+  @Post(':id/export-docx')
+  @ApiOperation({ summary: 'Render TipTap content to a downloadable .docx' })
+  @RequirePermission('documents', 'read')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async exportDocx(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ExportTiptapDocxDto,
+    @CurrentUser() user: User,
+    @Res({ passthrough: false }) res: Response
+  ) {
+    const template = await this.service.findOne(id, user);
+    const buffer = await this.tiptapDocx.render(
+      dto.tiptapContent as unknown as TiptapJSONContent,
+      dto.context ?? {}
+    );
+    const safeName = (template.name || 'document').replace(/[^\w\-. ]+/g, '_');
+    res
+      .status(200)
+      .setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      )
+      .setHeader('Content-Disposition', `attachment; filename="${safeName}.docx"`)
+      .send(buffer);
   }
 
   @Get(':id')

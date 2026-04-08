@@ -7,7 +7,12 @@ import { applyUpdate, DocumentTemplate, User } from '@accounting/common';
 import { SystemCompanyService } from '@accounting/common/backend';
 
 import { UpdateDocumentContentBlocksDto } from '../dto/content-blocks.dto';
-import { CreateDocumentTemplateDto, UpdateDocumentTemplateDto } from '../dto/document-template.dto';
+import {
+  CreateDocumentTemplateDto,
+  UpdateDocumentTemplateDto,
+  UpdateTiptapContentDto,
+  type TiptapContentResponseDto,
+} from '../dto/document-template.dto';
 
 @Injectable()
 export class DocumentTemplatesService {
@@ -87,5 +92,25 @@ export class DocumentTemplatesService {
     }
 
     return this.templateRepository.save(template);
+  }
+
+  async getTiptapContent(id: string, user: User): Promise<TiptapContentResponseDto> {
+    const template = await this.findOne(id, user);
+    return {
+      name: template.name,
+      tiptapContent: template.tiptapContent ?? null,
+      placeholders: template.placeholders ?? null,
+    };
+  }
+
+  async updateTiptapContent(
+    id: string,
+    dto: UpdateTiptapContentDto,
+    user: User
+  ): Promise<TiptapContentResponseDto> {
+    const template = await this.findOne(id, user);
+    template.tiptapContent = dto.tiptapContent;
+    await this.templateRepository.save(template);
+    return this.getTiptapContent(id, user);
   }
 }

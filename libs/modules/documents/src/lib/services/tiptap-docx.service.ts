@@ -2,6 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { generateHTML } from '@tiptap/html';
 import Handlebars from 'handlebars';
+// html-to-docx ships no types
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 import HTMLtoDOCX from 'html-to-docx';
 
 import { tiptapExtensions } from '@accounting/common';
