@@ -90,4 +90,35 @@ describe('DocumentAiService', () => {
       service.generate(user, { prompt: 'jakis prompt do testu' })
     ).rejects.toBeInstanceOf(BadRequestException);
   });
+
+  it('embeds category-specific guidance into the system prompt', async () => {
+    const { service, chat } = build();
+    await service.generate(user, {
+      prompt: 'Faktura za uslugi ksiegowe za marzec 2026',
+      templateName: 'Faktura miesieczna',
+      category: 'invoice',
+    });
+    const messages = chat.mock.calls[0][0] as Array<{ role: string; content: string }>;
+    const systemMsg = messages.find((m) => m.role === 'system')?.content ?? '';
+    expect(systemMsg).toContain('FAKTURA');
+    expect(systemMsg).toContain('Sprzedawca');
+    expect(systemMsg).toContain('Nabywca');
+    expect(systemMsg).toContain('NIP');
+    expect(systemMsg).toContain('Kategoria szablonu: invoice');
+  });
+
+  it('passes existing HTML so the AI knows to extend instead of duplicate', async () => {
+    const { service, chat } = build();
+    await service.generate(user, {
+      prompt: 'Dodaj sekcje o terminach platnosci',
+      templateName: 'Umowa',
+      category: 'contract',
+      currentHtml: '<h1>Umowa nr 1/2026</h1><p>Strony zawieraja umowe.</p>',
+    });
+    const messages = chat.mock.calls[0][0] as Array<{ role: string; content: string }>;
+    const systemMsg = messages.find((m) => m.role === 'system')?.content ?? '';
+    expect(systemMsg).toContain('ISTNIEJACA TRESC');
+    expect(systemMsg).toContain('NIE powtarzaj');
+    expect(systemMsg).toContain('<h1>Umowa nr 1/2026</h1>');
+  });
 });

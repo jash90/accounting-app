@@ -113,11 +113,11 @@ export const documentsApi = {
       )
       .then((r) => r.data),
 
-  aiGenerate: (id: string, prompt: string) =>
+  aiGenerate: (id: string, prompt: string, currentHtml?: string) =>
     apiClient
       .post<DocumentAiGenerateResponseDto>(
         `/api/modules/documents/templates/${id}/ai-generate`,
-        { prompt },
+        { prompt, currentHtml },
         { timeout: 180000 }
       )
       .then((r) => r.data),

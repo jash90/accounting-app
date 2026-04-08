@@ -108,6 +108,8 @@ export class DocumentTemplatesController {
       prompt: dto.prompt,
       templateName: template.name,
       placeholders: template.placeholders ?? [],
+      category: template.category,
+      currentHtml: dto.currentHtml,
     });
   }
 

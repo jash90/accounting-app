@@ -119,6 +119,16 @@ export class GenerateDocumentAiDto {
   @MinLength(3)
   @MaxLength(2000)
   prompt!: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Optional snapshot of the editor current HTML — when supplied, the AI extends the document instead of generating from scratch (used for "insert at cursor" mode).',
+    maxLength: 50000,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50000)
+  currentHtml?: string;
 }
 
 export class GenerateDocumentAiResponseDto {

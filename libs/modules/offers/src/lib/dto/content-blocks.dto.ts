@@ -84,4 +84,14 @@ export class GenerateOfferAiDto {
   @MinLength(3)
   @MaxLength(2000)
   prompt!: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Optional snapshot of the editor current HTML — when supplied, the AI extends the document instead of generating from scratch.',
+    maxLength: 50000,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50000)
+  currentHtml?: string;
 }

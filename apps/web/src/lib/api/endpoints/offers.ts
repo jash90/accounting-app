@@ -231,10 +231,14 @@ export const offerTemplatesApi = {
     return data;
   },
 
-  aiGenerate: async (id: string, prompt: string): Promise<OfferAiGenerateResponseDto> => {
+  aiGenerate: async (
+    id: string,
+    prompt: string,
+    currentHtml?: string
+  ): Promise<OfferAiGenerateResponseDto> => {
     const { data } = await apiClient.post<OfferAiGenerateResponseDto>(
       `${TEMPLATES_URL}/${id}/ai-generate`,
-      { prompt },
+      { prompt, currentHtml },
       { timeout: 180000 }
     );
     return data;

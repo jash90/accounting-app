@@ -54,12 +54,17 @@ export function AiGenerateDialog({
       return;
     }
 
+    // In extend (insert) mode, hand the AI the current HTML so it knows
+    // what's already there and only emits a new fragment to append. In
+    // replace mode we want a fresh document, so we omit it.
+    const currentHtml = replaceMode ? undefined : editor.getHTML();
+
     setLoading(true);
     try {
       const result =
         endpoint === 'documents'
-          ? await documentsApi.aiGenerate(templateId, trimmed)
-          : await offerTemplatesApi.aiGenerate(templateId, trimmed);
+          ? await documentsApi.aiGenerate(templateId, trimmed, currentHtml)
+          : await offerTemplatesApi.aiGenerate(templateId, trimmed, currentHtml);
 
       if (replaceMode) {
         editor.commands.setContent(result.html, { emitUpdate: true });

@@ -184,6 +184,8 @@ export class OfferTemplatesController {
       prompt: dto.prompt,
       templateName: template.name,
       placeholders: placeholderKeys,
+      category: 'offer',
+      currentHtml: dto.currentHtml,
     });
   }
 
