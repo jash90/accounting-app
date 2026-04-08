@@ -647,20 +647,24 @@ export function RichDocEditorToolbar({ editor, disabled = false }: Props) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Contextual table-edit buttons */}
+        {/* Contextual table-edit buttons (icons only — labels in tooltips) */}
         {state.insideTable && (
           <>
             <Separator orientation="vertical" className="mx-0.5 h-6" />
             {withTooltip(
               <Button
                 type="button"
-                size="sm"
+                size="icon"
                 variant="ghost"
                 disabled={disabled}
                 onClick={() => editor.chain().focus().addRowAfter().run()}
-                className="h-8 gap-1 px-2 text-xs"
+                aria-label="Dodaj wiersz poniżej"
+                className="relative h-8 w-8"
               >
-                <Rows3 className="h-3.5 w-3.5" />+ wiersz
+                <Rows3 className="h-4 w-4" />
+                <span className="absolute right-0.5 bottom-0.5 text-[0.6rem] leading-none font-bold">
+                  +
+                </span>
               </Button>,
               'Dodaj wiersz poniżej',
               disabled
@@ -668,13 +672,17 @@ export function RichDocEditorToolbar({ editor, disabled = false }: Props) {
             {withTooltip(
               <Button
                 type="button"
-                size="sm"
+                size="icon"
                 variant="ghost"
                 disabled={disabled}
                 onClick={() => editor.chain().focus().addColumnAfter().run()}
-                className="h-8 gap-1 px-2 text-xs"
+                aria-label="Dodaj kolumnę po prawej"
+                className="relative h-8 w-8"
               >
-                <Columns3 className="h-3.5 w-3.5" />+ kolumna
+                <Columns3 className="h-4 w-4" />
+                <span className="absolute right-0.5 bottom-0.5 text-[0.6rem] leading-none font-bold">
+                  +
+                </span>
               </Button>,
               'Dodaj kolumnę po prawej',
               disabled
@@ -682,13 +690,17 @@ export function RichDocEditorToolbar({ editor, disabled = false }: Props) {
             {withTooltip(
               <Button
                 type="button"
-                size="sm"
+                size="icon"
                 variant="ghost"
                 disabled={disabled}
                 onClick={() => editor.chain().focus().deleteRow().run()}
-                className="h-8 gap-1 px-2 text-xs"
+                aria-label="Usuń wiersz"
+                className="relative h-8 w-8"
               >
-                <Rows3 className="h-3.5 w-3.5" />− wiersz
+                <Rows3 className="h-4 w-4" />
+                <span className="absolute right-0.5 bottom-0.5 text-[0.6rem] leading-none font-bold">
+                  −
+                </span>
               </Button>,
               'Usuń wiersz',
               disabled
@@ -696,13 +708,17 @@ export function RichDocEditorToolbar({ editor, disabled = false }: Props) {
             {withTooltip(
               <Button
                 type="button"
-                size="sm"
+                size="icon"
                 variant="ghost"
                 disabled={disabled}
                 onClick={() => editor.chain().focus().deleteColumn().run()}
-                className="h-8 gap-1 px-2 text-xs"
+                aria-label="Usuń kolumnę"
+                className="relative h-8 w-8"
               >
-                <Columns3 className="h-3.5 w-3.5" />− kolumna
+                <Columns3 className="h-4 w-4" />
+                <span className="absolute right-0.5 bottom-0.5 text-[0.6rem] leading-none font-bold">
+                  −
+                </span>
               </Button>,
               'Usuń kolumnę',
               disabled
