@@ -43,3 +43,32 @@ export function useUpdateOfferTemplateContentBlocks() {
     },
   });
 }
+
+export function useOfferTemplateTiptapContent(id: string) {
+  return useQuery({
+    queryKey: ['offerTemplate', id, 'tiptap-content'],
+    queryFn: () => offerTemplatesApi.getTiptapContent(id),
+    enabled: !!id,
+  });
+}
+
+export function useUpdateOfferTemplateTiptapContent() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, tiptapContent }: { id: string; tiptapContent: Record<string, unknown> }) =>
+      offerTemplatesApi.updateTiptapContent(id, tiptapContent),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['offerTemplate', variables.id] });
+      toast({ title: 'Zapisano', description: 'Szablon oferty został zapisany' });
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: 'Błąd',
+        description: getApiErrorMessage(error, 'Nie udało się zapisać szablonu'),
+        variant: 'destructive',
+      });
+    },
+  });
+}

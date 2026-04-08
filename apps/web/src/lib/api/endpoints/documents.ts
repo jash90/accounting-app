@@ -27,6 +27,12 @@ export interface UpdateDocumentContentBlocksDto {
   documentSourceType?: 'text' | 'blocks';
 }
 
+export interface DocumentTiptapContentResponseDto {
+  name: string;
+  tiptapContent?: Record<string, unknown> | null;
+  placeholders?: string[] | null;
+}
+
 export interface GeneratedDocumentDto {
   id: string;
   name: string;
@@ -71,6 +77,32 @@ export const documentsApi = {
       .patch<DocumentContentBlocksResponseDto>(
         `/api/modules/documents/templates/${id}/content-blocks`,
         data
+      )
+      .then((r) => r.data),
+
+  getTiptapContent: (id: string) =>
+    apiClient
+      .get<DocumentTiptapContentResponseDto>(
+        `/api/modules/documents/templates/${id}/tiptap-content`
+      )
+      .then((r) => r.data),
+  updateTiptapContent: (id: string, tiptapContent: Record<string, unknown>) =>
+    apiClient
+      .patch<DocumentTiptapContentResponseDto>(
+        `/api/modules/documents/templates/${id}/tiptap-content`,
+        { tiptapContent }
+      )
+      .then((r) => r.data),
+  exportTiptapDocx: (
+    id: string,
+    tiptapContent: Record<string, unknown>,
+    context?: Record<string, unknown>
+  ) =>
+    apiClient
+      .post<Blob>(
+        `/api/modules/documents/templates/${id}/export-docx`,
+        { tiptapContent, context },
+        { responseType: 'blob' }
       )
       .then((r) => r.data),
 

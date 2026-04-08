@@ -43,3 +43,32 @@ export function useUpdateDocumentTemplateContentBlocks() {
     },
   });
 }
+
+export function useDocumentTemplateTiptapContent(id: string) {
+  return useQuery({
+    queryKey: ['documentTemplate', id, 'tiptap-content'],
+    queryFn: () => documentsApi.getTiptapContent(id),
+    enabled: !!id,
+  });
+}
+
+export function useUpdateDocumentTemplateTiptapContent() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, tiptapContent }: { id: string; tiptapContent: Record<string, unknown> }) =>
+      documentsApi.updateTiptapContent(id, tiptapContent),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['documentTemplate', variables.id] });
+      toast({ title: 'Zapisano', description: 'Szablon dokumentu został zapisany' });
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: 'Błąd',
+        description: getApiErrorMessage(error, 'Nie udało się zapisać szablonu'),
+        variant: 'destructive',
+      });
+    },
+  });
+}

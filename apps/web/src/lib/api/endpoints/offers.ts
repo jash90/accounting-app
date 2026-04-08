@@ -199,4 +199,41 @@ export const offerTemplatesApi = {
     );
     return data;
   },
+
+  getTiptapContent: async (id: string): Promise<OfferTiptapContentResponseDto> => {
+    const { data } = await apiClient.get<OfferTiptapContentResponseDto>(
+      `${TEMPLATES_URL}/${id}/tiptap-content`
+    );
+    return data;
+  },
+
+  updateTiptapContent: async (
+    id: string,
+    tiptapContent: Record<string, unknown>
+  ): Promise<OfferTiptapContentResponseDto> => {
+    const { data } = await apiClient.patch<OfferTiptapContentResponseDto>(
+      `${TEMPLATES_URL}/${id}/tiptap-content`,
+      { tiptapContent }
+    );
+    return data;
+  },
+
+  exportTiptapDocx: async (
+    id: string,
+    tiptapContent: Record<string, unknown>,
+    context?: Record<string, unknown>
+  ): Promise<Blob> => {
+    const { data } = await apiClient.post<Blob>(
+      `${TEMPLATES_URL}/${id}/export-docx`,
+      { tiptapContent, context },
+      { responseType: 'blob' }
+    );
+    return data;
+  },
 };
+
+export interface OfferTiptapContentResponseDto {
+  name: string;
+  tiptapContent?: Record<string, unknown> | null;
+  placeholders?: string[] | null;
+}
