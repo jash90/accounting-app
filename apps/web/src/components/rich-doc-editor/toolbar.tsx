@@ -52,7 +52,6 @@ import {
   Type,
   Underline as UnderlineIcon,
   Undo,
-  Video,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -209,12 +208,6 @@ export function RichDocEditorToolbar({ editor, disabled = false }: Props) {
     const url = window.prompt('Adres URL obrazu:');
     if (!url) return;
     editor.chain().focus().setImage({ src: url }).run();
-  };
-
-  const setYoutube = () => {
-    const url = window.prompt('Adres URL filmu YouTube:');
-    if (!url) return;
-    editor.chain().focus().setYoutubeVideo({ src: url }).run();
   };
 
   const currentParagraphLabel = state.h1
@@ -583,10 +576,9 @@ export function RichDocEditorToolbar({ editor, disabled = false }: Props) {
 
         <Separator orientation="vertical" className="mx-0.5 h-6" />
 
-        {/* Insert: link / image / youtube / table / details / code block / hr */}
+        {/* Insert: link / image / table / details / code block / hr */}
         {iconBtn(state.link, setLink, LinkIcon, 'Wstaw link')}
         {iconBtn(false, setImage, ImageIcon, 'Wstaw obraz')}
-        {iconBtn(false, setYoutube, Video, 'Wstaw YouTube')}
         {withTooltip(
           <Button
             type="button"
