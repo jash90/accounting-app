@@ -1,0 +1,105 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Header from '@/components/layout/Header.astro';
+import Footer from '@/components/layout/Footer.astro';
+
+const contactInfo = [
+  { label: 'Email', value: 'kontakt@apptax.pl', href: 'mailto:kontakt@apptax.pl' },
+  { label: 'Telefon', value: '+48 123 456 789', href: 'tel:+48123456789' },
+  { label: 'Adres', value: 'Warszawa, Polska', href: null },
+  { label: 'Godziny pracy', value: 'Pon–Pt 9:00–17:00', href: null },
+];
+---
+
+<BaseLayout title="Kontakt - AppTax" description="Skontaktuj się z zespołem AppTax. Email, telefon, formularz kontaktowy.">
+  <Header />
+  <main>
+    <section class="py-20 lg:py-28">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-2xl text-center">
+          <h1 class="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
+            Skontaktuj się z nami
+          </h1>
+          <p class="mt-4 text-lg text-muted-foreground">
+            Masz pytania? Chętnie pomożemy. Napisz do nas lub wypełnij formularz.
+          </p>
+        </div>
+
+        <div class="mt-16 grid grid-cols-1 gap-12 lg:grid-cols-2">
+          <!-- Contact info -->
+          <div class="space-y-4">
+            {contactInfo.map((item) => (
+              <div class="rounded-xl border border-border bg-card p-6">
+                <div class="text-sm font-medium text-muted-foreground">{item.label}</div>
+                {item.href ? (
+                  <a href={item.href} class="mt-1 block text-lg font-semibold text-primary hover:underline">
+                    {item.value}
+                  </a>
+                ) : (
+                  <div class="mt-1 text-lg font-semibold">{item.value}</div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <!-- Contact form -->
+          <div class="rounded-xl border border-border bg-card p-8">
+            <h2 class="text-xl font-semibold">Wyślij wiadomość</h2>
+            <form action="mailto:kontakt@apptax.pl" method="POST" enctype="text/plain" class="mt-6 space-y-4">
+              <div>
+                <label for="name" class="block text-sm font-medium">Imię i nazwisko</label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  required
+                  class="mt-1 w-full rounded-md border border-input bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="Jan Kowalski"
+                />
+              </div>
+              <div>
+                <label for="email" class="block text-sm font-medium">Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  required
+                  class="mt-1 w-full rounded-md border border-input bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="jan@biuro.pl"
+                />
+              </div>
+              <div>
+                <label for="subject" class="block text-sm font-medium">Temat</label>
+                <input
+                  type="text"
+                  id="subject"
+                  name="subject"
+                  class="mt-1 w-full rounded-md border border-input bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="Pytanie o plan Professional"
+                />
+              </div>
+              <div>
+                <label for="message" class="block text-sm font-medium">Wiadomość</label>
+                <textarea
+                  id="message"
+                  name="message"
+                  rows="5"
+                  required
+                  class="mt-1 w-full rounded-md border border-input bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="Twoja wiadomość..."
+                ></textarea>
+              </div>
+              <button
+                type="submit"
+                class="w-full rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                Wyślij wiadomość
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</BaseLayout>

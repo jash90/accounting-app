@@ -1,0 +1,157 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Header from '@/components/layout/Header.astro';
+import Footer from '@/components/layout/Footer.astro';
+import { modules } from '@/lib/content/modules';
+import { APP_URL } from '@/lib/content/navigation';
+
+const iconColors = [
+  'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+  'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
+  'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+  'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
+  'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',
+];
+---
+
+<BaseLayout title="AppTax - Inteligentna platforma księgowa z AI">
+  <Header />
+  <main>
+    <!-- Hero -->
+    <section class="bg-apptax-gradient py-24 text-white lg:py-32">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-3xl text-center">
+          <h1 class="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+            Inteligentna platforma księgowa z&nbsp;AI
+          </h1>
+          <p class="mt-6 text-lg text-white/80 sm:text-xl">
+            Zarządzaj biurem rachunkowym efektywniej. Automatyzuj zadania, śledź czas pracy,
+            rozliczaj klientów — wszystko w jednym miejscu, wspierane przez sztuczną inteligencję.
+          </p>
+          <div class="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <a
+              href={APP_URL}
+              class="inline-flex items-center justify-center rounded-md bg-white px-8 py-3.5 text-sm font-semibold text-apptax-navy transition-colors hover:bg-white/90"
+            >
+              Wypróbuj za darmo
+            </a>
+            <a
+              href="/moduly"
+              class="inline-flex items-center justify-center rounded-md border border-white/30 px-8 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+            >
+              Zobacz moduły
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="py-16">
+      <div class="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 sm:grid-cols-3 sm:px-6 lg:px-8">
+        {[
+          { value: '9', label: 'Modułów', desc: 'Kompleksowe narzędzia dla biura' },
+          { value: 'AI', label: 'Powered', desc: 'Asystent sztucznej inteligencji' },
+          { value: '100%', label: 'Polski', desc: 'Pełna lokalizacja interfejsu' },
+        ].map((stat) => (
+          <div class="text-center">
+            <div class="text-4xl font-bold text-primary">{stat.value}</div>
+            <div class="mt-1 font-semibold">{stat.label}</div>
+            <div class="mt-1 text-sm text-muted-foreground">{stat.desc}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Features Grid -->
+    <section class="bg-muted/30 py-20 lg:py-28">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-2xl text-center">
+          <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">
+            Wszystko, czego potrzebuje Twoje biuro
+          </h2>
+          <p class="mt-4 text-lg text-muted-foreground">
+            9 modułów zaprojektowanych specjalnie dla polskich biur rachunkowych
+          </p>
+        </div>
+
+        <div class="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {modules.map((mod, i) => (
+            <a
+              href={`/moduly#${mod.id}`}
+              class="group rounded-xl border border-border bg-card p-6 transition-shadow hover:shadow-apptax-md"
+            >
+              <div class={`flex h-12 w-12 items-center justify-center rounded-lg text-lg font-bold ${iconColors[i]}`}>
+                {mod.name.charAt(0)}
+              </div>
+              <h3 class="mt-4 font-semibold group-hover:text-primary">{mod.name}</h3>
+              <p class="mt-2 text-sm text-muted-foreground">{mod.shortDescription}</p>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- AI Highlight -->
+    <section class="bg-apptax-dark-gradient py-20 text-white lg:py-28">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-3xl text-center">
+          <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-apptax-teal/20 ai-glow">
+            <span class="text-2xl font-bold text-apptax-teal">AI</span>
+          </div>
+          <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">
+            Asystent AI nowej generacji
+          </h2>
+          <p class="mt-4 text-lg text-white/70">
+            Wykorzystaj moc sztucznej inteligencji do automatyzacji rutynowych zadań,
+            analizy danych klientów i generowania dokumentów.
+          </p>
+          <ul class="mt-8 space-y-3 text-left sm:mx-auto sm:max-w-md">
+            <li class="flex items-start gap-3">
+              <span class="mt-0.5 text-apptax-teal">✓</span>
+              <span class="text-white/80">Chat z AI w kontekście danych Twojej firmy</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="mt-0.5 text-apptax-teal">✓</span>
+              <span class="text-white/80">Automatyczne generowanie dokumentów i odpowiedzi</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="mt-0.5 text-apptax-teal">✓</span>
+              <span class="text-white/80">Oparty na Claude i OpenAI — najlepsze modele AI</span>
+            </li>
+          </ul>
+          <a
+            href={APP_URL}
+            class="mt-10 inline-flex items-center justify-center rounded-md bg-apptax-teal px-8 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-apptax-teal/90"
+          >
+            Wypróbuj asystenta AI
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="bg-apptax-gradient py-20 text-center text-white">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">
+          Gotowy, by usprawnić swoje biuro?
+        </h2>
+        <p class="mx-auto mt-4 max-w-xl text-lg text-white/70">
+          Dołącz do biur rachunkowych, które już korzystają z AppTax.
+          Zacznij za darmo — bez zobowiązań.
+        </p>
+        <a
+          href={APP_URL}
+          class="mt-10 inline-flex items-center justify-center rounded-md bg-white px-8 py-3.5 text-sm font-semibold text-apptax-navy transition-colors hover:bg-white/90"
+        >
+          Rozpocznij za darmo
+        </a>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</BaseLayout>

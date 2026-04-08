@@ -1,0 +1,93 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Header from '@/components/layout/Header.astro';
+import Footer from '@/components/layout/Footer.astro';
+import { APP_URL } from '@/lib/content/navigation';
+
+const values = [
+  {
+    letter: 'I',
+    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    name: 'Innowacja',
+    description: 'Wykorzystujemy AI i najnowsze technologie, by automatyzować rutynowe zadania i zwiększać efektywność pracy.',
+  },
+  {
+    letter: 'Z',
+    color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    name: 'Zaufanie',
+    description: 'Bezpieczeństwo danych naszych klientów jest absolutnym priorytetem. Transparentność w każdym działaniu.',
+  },
+  {
+    letter: 'P',
+    color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    name: 'Prostota',
+    description: 'Intuicyjny interfejs, który nie wymaga wielogodzinnych szkoleń. Technologia powinna ułatwiać, nie komplikować.',
+  },
+  {
+    letter: 'B',
+    color: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
+    name: 'Bezpieczeństwo',
+    description: 'Szyfrowanie end-to-end, regularne audyty bezpieczeństwa i pełna zgodność z RODO.',
+  },
+];
+---
+
+<BaseLayout title="O nas - AppTax" description="Poznaj zespół AppTax. Tworzymy narzędzia, które pozwalają polskim biurom rachunkowym pracować mądrzej.">
+  <Header />
+  <main>
+    <section class="py-20 text-center lg:py-28">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <h1 class="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">O AppTax</h1>
+      </div>
+    </section>
+
+    <section class="pb-20">
+      <div class="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
+        <p class="text-xl leading-relaxed text-muted-foreground">
+          Tworzymy narzędzia, które pozwalają polskim biurom rachunkowym pracować
+          <strong class="text-foreground">mądrzej, nie ciężej</strong>. Łączymy sprawdzone procesy
+          księgowe z nowoczesną technologią i sztuczną inteligencją, by każdy dzień pracy był
+          bardziej produktywny.
+        </p>
+        <p class="mt-6 text-xl leading-relaxed text-muted-foreground">
+          Wiemy, jak wygląda codzienna praca biura rachunkowego — od zarządzania dziesiątkami
+          klientów, przez śledzenie terminów, po rozliczenia i dokumentację. AppTax powstał,
+          by uprościć te procesy.
+        </p>
+      </div>
+    </section>
+
+    <section class="bg-muted/30 py-20 lg:py-28">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <h2 class="text-center text-3xl font-bold tracking-tight sm:text-4xl">Nasze wartości</h2>
+        <div class="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2">
+          {values.map((v) => (
+            <div class="rounded-xl border border-border bg-card p-8">
+              <div class={`flex h-12 w-12 items-center justify-center rounded-lg text-lg font-bold ${v.color}`}>
+                {v.letter}
+              </div>
+              <h3 class="mt-4 text-lg font-semibold">{v.name}</h3>
+              <p class="mt-2 text-muted-foreground">{v.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-apptax-gradient py-20 text-center text-white">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Dołącz do AppTax</h2>
+        <p class="mx-auto mt-4 max-w-xl text-lg text-white/70">
+          Przekonaj się, jak AppTax może zmienić sposób pracy Twojego biura.
+        </p>
+        <a
+          href={APP_URL}
+          class="mt-10 inline-flex items-center justify-center rounded-md bg-white px-8 py-3.5 text-sm font-semibold text-apptax-navy transition-colors hover:bg-white/90"
+        >
+          Rozpocznij za darmo
+        </a>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</BaseLayout>

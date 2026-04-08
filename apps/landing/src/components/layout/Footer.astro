@@ -1,0 +1,51 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-border bg-muted/30">
+  <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+      <div>
+        <img src="/apptax-logo-primary.svg" alt="AppTax" class="h-8" />
+        <p class="mt-4 text-sm text-muted-foreground">
+          Nowoczesna platforma księgowa wspierana przez sztuczną inteligencję. Stworzona z myślą o polskich biurach rachunkowych.
+        </p>
+      </div>
+
+      <div>
+        <h3 class="text-sm font-semibold">Produkt</h3>
+        <ul class="mt-4 space-y-2">
+          <li><a href="/moduly" class="text-sm text-muted-foreground transition-colors hover:text-foreground">Moduły</a></li>
+          <li><a href="/cennik" class="text-sm text-muted-foreground transition-colors hover:text-foreground">Cennik</a></li>
+          <li><a href="/moduly#ai-agent" class="text-sm text-muted-foreground transition-colors hover:text-foreground">Asystent AI</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="text-sm font-semibold">Firma</h3>
+        <ul class="mt-4 space-y-2">
+          <li><a href="/o-nas" class="text-sm text-muted-foreground transition-colors hover:text-foreground">O nas</a></li>
+          <li><a href="/kontakt" class="text-sm text-muted-foreground transition-colors hover:text-foreground">Kontakt</a></li>
+          <li><a href="/kontakt" class="text-sm text-muted-foreground transition-colors hover:text-foreground">Kariera</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="text-sm font-semibold">Pomoc</h3>
+        <ul class="mt-4 space-y-2">
+          <li><a href="/cennik#faq" class="text-sm text-muted-foreground transition-colors hover:text-foreground">FAQ</a></li>
+          <li><a href="/kontakt" class="text-sm text-muted-foreground transition-colors hover:text-foreground">Wsparcie</a></li>
+          <li><a href="#" class="text-sm text-muted-foreground transition-colors hover:text-foreground">Status</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 sm:flex-row">
+      <p class="text-sm text-muted-foreground">&copy; {year} AppTax. Wszelkie prawa zastrzeżone.</p>
+      <div class="flex gap-6">
+        <a href="#" class="text-sm text-muted-foreground transition-colors hover:text-foreground">Polityka prywatności</a>
+        <a href="#" class="text-sm text-muted-foreground transition-colors hover:text-foreground">Regulamin</a>
+      </div>
+    </div>
+  </div>
+</footer>
