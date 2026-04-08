@@ -6,6 +6,7 @@ import {
   IsBoolean,
   IsIn,
   IsNotEmpty,
+  IsObject,
   IsOptional,
   IsString,
   MaxLength,
@@ -66,4 +67,41 @@ export class DocumentTemplateResponseDto {
   @ApiProperty() createdById!: string;
   @ApiProperty() createdAt!: Date;
   @ApiProperty() updatedAt!: Date;
+}
+
+export class TiptapContentResponseDto {
+  @ApiProperty({ description: 'Template display name' })
+  name!: string;
+
+  @ApiPropertyOptional({
+    type: 'object',
+    additionalProperties: true,
+    nullable: true,
+    description: 'TipTap ProseMirror JSON document',
+  })
+  tiptapContent?: Record<string, unknown> | null;
+
+  @ApiPropertyOptional({ type: [String], nullable: true })
+  placeholders?: string[] | null;
+}
+
+export class UpdateTiptapContentDto {
+  @ApiProperty({
+    type: 'object',
+    additionalProperties: true,
+    description: 'TipTap ProseMirror JSON document',
+  })
+  @IsObject()
+  tiptapContent!: Record<string, unknown>;
+}
+
+export class ExportTiptapDocxDto {
+  @ApiProperty({ type: 'object', additionalProperties: true })
+  @IsObject()
+  tiptapContent!: Record<string, unknown>;
+
+  @ApiPropertyOptional({ type: 'object', additionalProperties: true })
+  @IsOptional()
+  @IsObject()
+  context?: Record<string, unknown>;
 }
