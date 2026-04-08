@@ -1,5 +1,7 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 
+import { marked } from 'marked';
+
 import { AIProvider, User } from '@accounting/common';
 import {
   AIConfigurationService,
@@ -30,6 +32,13 @@ export interface DocumentAiGenerateResult {
   outputTokens: number;
   totalTokens: number;
 }
+
+/**
+ * Lower temperature than the chat default — for document generation we
+ * want deterministic format compliance (HTML structure), not creative
+ * variation.
+ */
+const DOCUMENT_AI_TEMPERATURE = 0.2;
 
 /**
  * Generate document body content (HTML) from a free-form user prompt using
@@ -74,10 +83,12 @@ export class DocumentAiService {
       `Generating document content with ${config.provider}/${config.model} for user ${user.id}`
     );
 
+    // Override temperature for deterministic HTML output regardless of the
+    // shared chat config (which is usually 0.7 for creative chat).
     const response = await provider.chat(
       messages,
       config.model,
-      config.temperature,
+      DOCUMENT_AI_TEMPERATURE,
       config.maxTokens,
       apiKey
     );
@@ -116,6 +127,22 @@ export class DocumentAiService {
         'bez komentarzy, bez wyjasnien przed lub po. Nie dodawaj <html>, <head>, <body>,',
         '<style> ani <script>. NIE uzywaj inline style="..." Z WYJATKIEM text-align na',
         '<p>, <h1>-<h4> oraz <td>/<th>.',
+        '',
+        '## ZAKAZANE — jezeli zwrocisz cokolwiek z ponizszych, wynik jest BLEDNY',
+        '',
+        'ZLE: # Tytul                  -> DOBRE: <h1>Tytul</h1>',
+        'ZLE: ## Sekcja                -> DOBRE: <h2>Sekcja</h2>',
+        'ZLE: **bold**                 -> DOBRE: <strong>bold</strong>',
+        'ZLE: *kursywa*                -> DOBRE: <em>kursywa</em>',
+        'ZLE: - punkt                  -> DOBRE: <ul><li>punkt</li></ul>',
+        'ZLE: 1. punkt                 -> DOBRE: <ol><li>punkt</li></ol>',
+        'ZLE: pusta linia jako \\n\\n   -> DOBRE: <p></p> miedzy blokami',
+        'ZLE: <p>linia 1<br><br>linia 2</p>',
+        '         -> DOBRE: <p>linia 1</p><p></p><p>linia 2</p>',
+        'ZLE: class="text-center"      -> DOBRE: style="text-align: center"',
+        'ZLE: text-align:center        -> DOBRE: text-align: center  (ZE SPACJA po dwukropku)',
+        'ZLE: tytul jako pogrubiony akapit',
+        '         -> DOBRE: <h1>Tytul</h1> lub <h2>...</h2>',
       ].join('\n')
     );
 
@@ -201,6 +228,35 @@ export class DocumentAiService {
 
     // ── Context (template name + category-specific guidance) ────────────
     sections.push(this.buildContextSection(opts));
+
+    // ── Worked example (1-shot) ─────────────────────────────────────────
+    sections.push(
+      [
+        '# PRZYKLAD POPRAWNEGO OUTPUTU',
+        '',
+        'Dla promptu "Krotka faktura za jedna usluge" prawidlowy output to:',
+        '',
+        '<h1 style="text-align: center">FAKTURA VAT nr {{numer}}</h1>',
+        '<p><strong>Data wystawienia:</strong> {{data}}</p>',
+        '<p></p>',
+        '<h2>Sprzedawca</h2>',
+        '<p><strong>{{sprzedawca_nazwa}}</strong><br>{{sprzedawca_adres}}<br>NIP: <strong>{{sprzedawca_nip}}</strong></p>',
+        '<h2>Nabywca</h2>',
+        '<p><strong>{{nabywca_nazwa}}</strong><br>{{nabywca_adres}}<br>NIP: <strong>{{nabywca_nip}}</strong></p>',
+        '<p></p>',
+        '<table>',
+        '  <thead><tr><th>Lp</th><th>Usluga</th><th>Cena netto</th><th>VAT</th><th>Brutto</th></tr></thead>',
+        '  <tbody><tr><td>1</td><td>{{nazwa_uslugi}}</td><td>{{cena_netto}} zl</td><td>23%</td><td>{{cena_brutto}} zl</td></tr></tbody>',
+        '</table>',
+        '<p></p>',
+        '<p style="text-align: right"><strong>Razem do zaplaty: {{cena_brutto}} zl</strong></p>',
+        '<hr>',
+        '<p>Termin platnosci: <strong>{{termin}}</strong></p>',
+        '',
+        'Zauwaz: <h1>/<h2> dla naglowkow, <p></p> dla pustych linii, <strong> dla kluczowych',
+        'pojec, <table> dla cennika, style="text-align: ..." dla wyrownania, hr dla separatora.',
+      ].join('\n')
+    );
 
     // ── Existing content (extend mode) ─────────────────────────────────
     if (opts.currentHtml && opts.currentHtml.trim().length > 0) {
@@ -323,15 +379,84 @@ export class DocumentAiService {
   }
 
   /**
-   * Defensive cleanup: some models still wrap their output in markdown code
-   * fences despite the system prompt forbidding it. Strip the fence so the
-   * HTML drops cleanly into the editor.
+   * Multi-step defensive cleanup of the AI response so it ends up as
+   * something TipTap's HTML parser can faithfully turn into ProseMirror
+   * nodes that survive the round-trip into a .docx.
+   *
+   * The model is *supposed* to return clean HTML per the system prompt,
+   * but in practice GPT-class models often slip back into Markdown
+   * (`# Title`, `**bold**`, `\n\n` between paragraphs). When TipTap
+   * parses that as HTML it collapses everything into a single paragraph
+   * and we lose headings, alignment, and blank lines.
+   *
+   * Steps:
+   *   1. Strip ```html ... ``` fences (some models still wrap)
+   *   2. If the output has no HTML tags at all, treat it as Markdown
+   *      (or plain text — marked handles both) and convert
+   *   3. If the output has both Markdown markers AND HTML tags, run
+   *      marked anyway as a defensive pass (idempotent on real HTML)
+   *   4. Normalise text-align inline styles (no space after colon, etc.)
+   *   5. Promote runs of `\n\n` between block tags into explicit empty
+   *      `<p></p>` so TipTap parses them as real empty paragraphs
    */
   private sanitiseHtml(raw: string): string {
     let html = raw.trim();
-    const fenceRegex = /^```(?:html|HTML)?\s*\n?([\s\S]*?)\n?```$/;
-    const match = fenceRegex.exec(html);
-    if (match) html = match[1].trim();
-    return html;
+
+    // Step 1: strip code fences
+    const fenceRegex = /^```(?:html|HTML|markdown|md)?\s*\n?([\s\S]*?)\n?```\s*$/;
+    const fenceMatch = fenceRegex.exec(html);
+    if (fenceMatch) html = fenceMatch[1].trim();
+
+    // Step 2 + 3: detect markdown / plain text and convert
+    if (this.looksLikeMarkdownOrPlain(html)) {
+      this.logger.warn('AI returned Markdown / plain text instead of HTML — converting via marked');
+      try {
+        html = marked.parse(html, { async: false }) as string;
+      } catch (error) {
+        this.logger.warn(
+          `Markdown conversion failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+
+    // Step 4: normalise inline text-align (text-align:center → text-align: center)
+    html = html.replace(/text-align\s*:\s*(left|right|center|justify)/gi, 'text-align: $1');
+
+    // Step 5: promote bare `\n\n` runs between block tags to <p></p>.
+    // We only do this OUTSIDE of preformatted blocks so we don't corrupt
+    // <pre> contents. Simple heuristic: only operate on whitespace
+    // sequences that sit between two block-level closing/opening tags.
+    html = html.replace(
+      /(<\/(?:p|h[1-6]|ul|ol|li|table|tr|td|th|blockquote|hr|details|summary|div)>)\s*\n\s*\n\s*(<(?:p|h[1-6]|ul|ol|table|blockquote|hr|details|div)\b)/gi,
+      '$1<p></p>$2'
+    );
+
+    return html.trim();
+  }
+
+  /**
+   * Heuristic — true if the response looks like Markdown or plain text
+   * rather than HTML. We treat it as MD when:
+   *   - There are zero `<` characters (definitely not HTML)
+   *   - OR the very first non-whitespace char is `#`, `-`, `*`, or a digit
+   *     followed by `.` and a space (typical Markdown openings)
+   *   - OR the body contains lines starting with `# `, `## `, `### ` etc.
+   *     and contains no opening block tag like `<h1>`, `<p>`, `<ul>`
+   */
+  private looksLikeMarkdownOrPlain(text: string): boolean {
+    if (!text) return false;
+    if (!text.includes('<')) return true;
+
+    const hasBlockTag = /<\s*(?:h[1-6]|p|ul|ol|table|blockquote|div|section|article)\b/i.test(text);
+    if (hasBlockTag) return false;
+
+    // No block-level HTML tags but has SOME `<` (maybe `<br>`, `<strong>`,
+    // `<em>` only). If markdown markers are present, it's still markdown.
+    const hasMdHeader = /^\s{0,3}#{1,6}\s+/m.test(text);
+    const hasMdList = /^\s{0,3}[-*+]\s+/m.test(text);
+    const hasMdBold = /\*\*[^*\n]+\*\*/.test(text);
+    const hasMdNumberedList = /^\s{0,3}\d+\.\s+/m.test(text);
+
+    return hasMdHeader || hasMdList || hasMdBold || hasMdNumberedList;
   }
 }

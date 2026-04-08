@@ -66,10 +66,18 @@ export function AiGenerateDialog({
           ? await documentsApi.aiGenerate(templateId, trimmed, currentHtml)
           : await offerTemplatesApi.aiGenerate(templateId, trimmed, currentHtml);
 
+      // preserveWhitespace: 'full' tells ProseMirror's HTML parser to keep
+      // empty paragraphs and whitespace between block elements, so blank
+      // lines that the AI emits as <p></p> or as `\n\n` survive.
       if (replaceMode) {
-        editor.commands.setContent(result.html, { emitUpdate: true });
+        editor.commands.setContent(result.html, {
+          emitUpdate: true,
+          parseOptions: { preserveWhitespace: 'full' },
+        });
       } else {
-        editor.commands.insertContent(result.html);
+        editor.commands.insertContent(result.html, {
+          parseOptions: { preserveWhitespace: 'full' },
+        });
       }
 
       toast({

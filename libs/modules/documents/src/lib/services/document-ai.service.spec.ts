@@ -121,4 +121,72 @@ describe('DocumentAiService', () => {
     expect(systemMsg).toContain('NIE powtarzaj');
     expect(systemMsg).toContain('<h1>Umowa nr 1/2026</h1>');
   });
+
+  it('converts pure markdown response to HTML', async () => {
+    const { service } = build({
+      chatResult: {
+        content: '# Umowa\n\n**Strony:** ACME i XYZ.\n\n- punkt 1\n- punkt 2',
+        inputTokens: 10,
+        outputTokens: 20,
+        totalTokens: 30,
+      },
+    });
+    const result = await service.generate(user, { prompt: 'umowa testowa' });
+    expect(result.html).toContain('<h1>Umowa</h1>');
+    expect(result.html).toContain('<strong>Strony:</strong>');
+    expect(result.html).toContain('<ul>');
+    expect(result.html).toContain('<li>punkt 1</li>');
+  });
+
+  it('promotes \\n\\n between block tags into explicit empty <p></p>', async () => {
+    const { service } = build({
+      chatResult: {
+        content: '<h1>Tytul</h1>\n\n<p>Akapit pierwszy</p>\n\n<p>Akapit drugi</p>',
+        inputTokens: 5,
+        outputTokens: 10,
+        totalTokens: 15,
+      },
+    });
+    const result = await service.generate(user, { prompt: 'test blank lines' });
+    // Should insert explicit empty paragraphs between the blocks so TipTap
+    // parses them as real empty nodes (not collapsed whitespace).
+    expect(result.html).toContain('<h1>Tytul</h1><p></p><p>Akapit pierwszy</p>');
+    expect(result.html).toContain('<p>Akapit pierwszy</p><p></p><p>Akapit drugi</p>');
+  });
+
+  it('normalises text-align inline style with no space after colon', async () => {
+    const { service } = build({
+      chatResult: {
+        content: '<h1 style="text-align:center">Tytul</h1><p style="text-align:right">Prawo</p>',
+        inputTokens: 5,
+        outputTokens: 10,
+        totalTokens: 15,
+      },
+    });
+    const result = await service.generate(user, { prompt: 'centered title' });
+    expect(result.html).toContain('text-align: center');
+    expect(result.html).toContain('text-align: right');
+    // The unspaced version should be gone
+    expect(result.html).not.toContain('text-align:center');
+    expect(result.html).not.toContain('text-align:right');
+  });
+
+  it('uses lower temperature (0.2) for deterministic format compliance', async () => {
+    const { service, chat } = build();
+    await service.generate(user, { prompt: 'jakis prompt' });
+    // chat(messages, model, temperature, maxTokens, apiKey) — index 2 is temperature
+    expect(chat.mock.calls[0][2]).toBe(0.2);
+  });
+
+  it('embeds the worked example and ZAKAZANE section in the system prompt', async () => {
+    const { service, chat } = build();
+    await service.generate(user, { prompt: 'test prompt' });
+    const messages = chat.mock.calls[0][0] as Array<{ role: string; content: string }>;
+    const systemMsg = messages.find((m) => m.role === 'system')?.content ?? '';
+    expect(systemMsg).toContain('ZAKAZANE');
+    expect(systemMsg).toContain('# Tytul');
+    expect(systemMsg).toContain('<h1>Tytul</h1>');
+    expect(systemMsg).toContain('PRZYKLAD POPRAWNEGO OUTPUTU');
+    expect(systemMsg).toContain('FAKTURA VAT');
+  });
 });
