@@ -43,6 +43,9 @@ export class DocumentTemplate {
   @Column({ type: 'jsonb', nullable: true })
   contentBlocks?: ContentBlock[] | null;
 
+  @Column({ type: 'jsonb', nullable: true })
+  tiptapContent?: Record<string, unknown> | null;
+
   @Column({ type: 'varchar', length: 20, default: 'text' })
   documentSourceType!: 'text' | 'blocks';
 

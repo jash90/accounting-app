@@ -66,6 +66,9 @@ export class OfferTemplate {
   @Column({ type: 'jsonb', nullable: true })
   contentBlocks?: ContentBlock[];
 
+  @Column({ type: 'jsonb', nullable: true })
+  tiptapContent?: Record<string, unknown> | null;
+
   @Column({ type: 'varchar', length: 20, default: 'file' })
   documentSourceType!: 'file' | 'blocks';
 
