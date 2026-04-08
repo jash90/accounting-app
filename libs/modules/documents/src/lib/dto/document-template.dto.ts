@@ -35,6 +35,7 @@ export class CreateDocumentTemplateDto {
   @IsOptional()
   @IsIn(CATEGORIES)
   category?: DocumentCategory;
+  @ApiPropertyOptional() @IsOptional() @IsBoolean() isActive?: boolean;
 }
 
 export class UpdateDocumentTemplateDto {
