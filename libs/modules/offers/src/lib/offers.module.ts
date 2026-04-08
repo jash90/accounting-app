@@ -15,6 +15,7 @@ import {
 import { CommonModule } from '@accounting/common/backend';
 import { EmailModule } from '@accounting/email';
 import { StorageModule } from '@accounting/infrastructure/storage';
+import { DocumentsModule } from '@accounting/modules/documents';
 import { RBACModule } from '@accounting/rbac';
 
 import { LeadsController } from './controllers/leads.controller';
@@ -50,6 +51,7 @@ import { OffersService } from './services/offers.service';
     RBACModule,
     StorageModule,
     EmailModule,
+    DocumentsModule,
   ],
   controllers: [
     // More specific routes must be registered before generic routes

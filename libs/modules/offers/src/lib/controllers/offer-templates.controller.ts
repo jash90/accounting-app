@@ -33,6 +33,7 @@ import { Response } from 'express';
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { User } from '@accounting/common';
+import { TiptapDocxService, type TiptapJSONContent } from '@accounting/modules/documents';
 import {
   ModuleAccessGuard,
   PermissionGuard,
@@ -40,7 +41,11 @@ import {
   RequirePermission,
 } from '@accounting/rbac';
 
-import { UpdateContentBlocksDto } from '../dto/content-blocks.dto';
+import {
+  ExportOfferTiptapDocxDto,
+  UpdateContentBlocksDto,
+  UpdateOfferTiptapContentDto,
+} from '../dto/content-blocks.dto';
 import {
   OfferErrorResponseDto,
   OfferSuccessResponseDto,
@@ -68,7 +73,10 @@ import { OfferTemplatesService } from '../services/offer-templates.service';
 @UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
 @RequireModule('offers')
 export class OfferTemplatesController {
-  constructor(private readonly templatesService: OfferTemplatesService) {}
+  constructor(
+    private readonly templatesService: OfferTemplatesService,
+    private readonly tiptapDocx: TiptapDocxService
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -134,6 +142,51 @@ export class OfferTemplatesController {
   @RequirePermission('offers', 'read')
   async getContentBlocks(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.templatesService.getContentBlocks(id, user);
+  }
+
+  @Get(':id/tiptap-content')
+  @ApiOperation({ summary: 'Get TipTap JSON content for an offer template' })
+  @RequirePermission('offers', 'read')
+  async getTiptapContent(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return this.templatesService.getTiptapContent(id, user);
+  }
+
+  @Patch(':id/tiptap-content')
+  @ApiOperation({ summary: 'Update TipTap JSON content for an offer template' })
+  @RequirePermission('offers', 'write')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async updateTiptapContent(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateOfferTiptapContentDto,
+    @CurrentUser() user: User
+  ) {
+    return this.templatesService.updateTiptapContent(id, dto, user);
+  }
+
+  @Post(':id/export-docx')
+  @ApiOperation({ summary: 'Render TipTap content to a downloadable .docx' })
+  @RequirePermission('offers', 'read')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async exportTiptapDocx(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ExportOfferTiptapDocxDto,
+    @CurrentUser() user: User,
+    @Res({ passthrough: false }) res: Response
+  ) {
+    const template = await this.templatesService.findOne(id, user);
+    const buffer = await this.tiptapDocx.render(
+      dto.tiptapContent as unknown as TiptapJSONContent,
+      dto.context ?? {}
+    );
+    const safeName = (template.name || 'offer-template').replace(/[^\w\-. ]+/g, '_');
+    res
+      .status(200)
+      .setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      )
+      .setHeader('Content-Disposition', `attachment; filename="${safeName}.docx"`)
+      .send(buffer);
   }
 
   @Patch(':id/content-blocks')

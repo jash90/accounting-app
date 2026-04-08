@@ -13,7 +13,11 @@ import {
 import { calculatePagination, SystemCompanyService } from '@accounting/common/backend';
 import { StorageService } from '@accounting/infrastructure/storage';
 
-import { UpdateContentBlocksDto } from '../dto/content-blocks.dto';
+import {
+  UpdateContentBlocksDto,
+  UpdateOfferTiptapContentDto,
+  type OfferTiptapContentResponseDto,
+} from '../dto/content-blocks.dto';
 import { StandardPlaceholdersResponseDto } from '../dto/offer-response.dto';
 import {
   CreateOfferTemplateDto,
@@ -286,5 +290,30 @@ export class OfferTemplatesService {
 
   getStandardPlaceholders(): StandardPlaceholdersResponseDto {
     return { placeholders: STANDARD_PLACEHOLDERS };
+  }
+
+  async getTiptapContent(id: string, user: User): Promise<OfferTiptapContentResponseDto> {
+    const template = await this.findOne(id, user);
+    const placeholders = [
+      ...STANDARD_PLACEHOLDERS.map((p) => p.key),
+      ...(template.availablePlaceholders ?? []).map((p) => p.key),
+    ];
+    return {
+      name: template.name,
+      tiptapContent: template.tiptapContent ?? null,
+      placeholders,
+    };
+  }
+
+  async updateTiptapContent(
+    id: string,
+    dto: UpdateOfferTiptapContentDto,
+    user: User
+  ): Promise<OfferTiptapContentResponseDto> {
+    const template = await this.findOne(id, user);
+    template.tiptapContent = dto.tiptapContent;
+    template.updatedById = user.id;
+    await this.templateRepository.save(template);
+    return this.getTiptapContent(id, user);
   }
 }
