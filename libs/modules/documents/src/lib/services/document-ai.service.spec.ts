@@ -186,7 +186,34 @@ describe('DocumentAiService', () => {
     expect(systemMsg).toContain('ZAKAZANE');
     expect(systemMsg).toContain('# Tytul');
     expect(systemMsg).toContain('<h1>Tytul</h1>');
-    expect(systemMsg).toContain('PRZYKLAD POPRAWNEGO OUTPUTU');
+    expect(systemMsg).toContain('PRZYKLAD 1: UMOWA');
+    expect(systemMsg).toContain('PRZYKLAD 2: FAKTURA');
     expect(systemMsg).toContain('FAKTURA VAT');
+  });
+
+  it('embeds Polish document formatting conventions (§, justify, signature block)', async () => {
+    const { service, chat } = build();
+    await service.generate(user, {
+      prompt: 'umowa o uslugi ksiegowe',
+      category: 'contract',
+    });
+    const messages = chat.mock.calls[0][0] as Array<{ role: string; content: string }>;
+    const systemMsg = messages.find((m) => m.role === 'system')?.content ?? '';
+
+    // Polish formatting conventions section
+    expect(systemMsg).toContain('FORMATOWANIE POLSKICH DOKUMENTOW');
+    expect(systemMsg).toContain('text-align: justify');
+    expect(systemMsg).toContain('§ 1');
+    expect(systemMsg).toContain('Blok podpisow');
+    expect(systemMsg).toContain('Times New Roman');
+
+    // Value formatting guidance
+    expect(systemMsg).toContain('8 kwietnia 2026 r.');
+    expect(systemMsg).toContain('1 234,56 zl');
+    expect(systemMsg).toContain('123-456-78-90');
+
+    // Contract-specific worked example elements
+    expect(systemMsg).toContain('Kodeksu cywilnego');
+    expect(systemMsg).toContain('dwoch jednobrzmiacych');
   });
 });

@@ -60,9 +60,28 @@ export class TiptapDocxService {
     const html = this.toHtml(json);
     const filled = this.fillPlaceholders(html, context);
 
-    const fullDoc = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${filled}</body></html>`;
+    // Wrap the body in a container that carries the Polish document
+    // defaults (Times New Roman, 1.5 line-height, justified body) as
+    // inline CSS so html-to-docx applies them per-element. Global
+    // document-level options below set locale / margins / default font
+    // through proper Word docDefaults.
+    const fullDoc = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><div style="font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5;">${filled}</div></body></html>`;
 
     const result = (await HTMLtoDOCX(fullDoc, undefined, {
+      orientation: 'portrait',
+      font: 'Times New Roman',
+      fontSize: 24, // 12pt in half-points
+      margins: {
+        top: 1440, // 1 inch = 2.54 cm (standard Polish A4 margin)
+        right: 1440,
+        bottom: 1440,
+        left: 1440,
+        header: 720,
+        footer: 720,
+        gutter: 0,
+      },
+      lang: 'pl-PL',
+      title: 'Dokument',
       table: { row: { cantSplit: true } },
       footer: false,
       pageNumber: false,
