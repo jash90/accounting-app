@@ -33,6 +33,13 @@ export interface DocumentTiptapContentResponseDto {
   placeholders?: string[] | null;
 }
 
+export interface DocumentAiGenerateResponseDto {
+  html: string;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+}
+
 export interface GeneratedDocumentDto {
   id: string;
   name: string;
@@ -103,6 +110,15 @@ export const documentsApi = {
         `/api/modules/documents/templates/${id}/export-docx`,
         { tiptapContent, context },
         { responseType: 'blob' }
+      )
+      .then((r) => r.data),
+
+  aiGenerate: (id: string, prompt: string) =>
+    apiClient
+      .post<DocumentAiGenerateResponseDto>(
+        `/api/modules/documents/templates/${id}/ai-generate`,
+        { prompt },
+        { timeout: 180000 }
       )
       .then((r) => r.data),
 

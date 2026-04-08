@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { type Editor } from '@tiptap/react';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 
+import { AiGenerateButton } from '@/components/rich-doc-editor/ai-generate-button';
 import { RichDocEditor } from '@/components/rich-doc-editor/editor';
 import { ExportDocxButton } from '@/components/rich-doc-editor/export-docx-button';
 import { ImportDocxButton } from '@/components/rich-doc-editor/import-docx-button';
@@ -86,6 +87,14 @@ export default function DocumentTemplateEditorPage() {
           onReady={setEditorInstance}
           toolbarSlot={
             <>
+              {id && (
+                <AiGenerateButton
+                  editor={editorInstance}
+                  templateId={id}
+                  placeholders={data?.placeholders ?? []}
+                  endpoint="documents"
+                />
+              )}
               <ImportDocxButton editor={editorInstance} />
               <ExportDocxButton
                 filename={data?.name ?? 'dokument'}

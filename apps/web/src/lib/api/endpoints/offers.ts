@@ -230,10 +230,26 @@ export const offerTemplatesApi = {
     );
     return data;
   },
+
+  aiGenerate: async (id: string, prompt: string): Promise<OfferAiGenerateResponseDto> => {
+    const { data } = await apiClient.post<OfferAiGenerateResponseDto>(
+      `${TEMPLATES_URL}/${id}/ai-generate`,
+      { prompt },
+      { timeout: 180000 }
+    );
+    return data;
+  },
 };
 
 export interface OfferTiptapContentResponseDto {
   name: string;
   tiptapContent?: Record<string, unknown> | null;
   placeholders?: string[] | null;
+}
+
+export interface OfferAiGenerateResponseDto {
+  html: string;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
 }
