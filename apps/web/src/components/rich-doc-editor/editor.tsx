@@ -53,11 +53,10 @@ export function RichDocEditor({
     if (current !== incoming) {
       editor.commands.setContent(value as never, { emitUpdate: false });
     }
-     
   }, [value, editor]);
 
   return (
-    <div className="bg-background overflow-hidden rounded-md border">
+    <div className="bg-background rich-doc-editor overflow-hidden rounded-md border">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b">
         <RichDocEditorToolbar editor={editor} disabled={disabled} />
         <div className="flex items-center gap-2 pr-2">

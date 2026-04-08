@@ -125,12 +125,25 @@ export function RichDocEditorToolbar({ editor, disabled = false }: Props) {
         'Wyrównaj do prawej'
       )}
       <Separator orientation="vertical" className="mx-1 h-6" />
-      {btn(
-        false,
-        () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
-        TableIcon,
-        'Wstaw tabelę'
-      )}
+      {(() => {
+        const insideTable = editor.isActive('table');
+        return (
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            disabled={disabled || insideTable}
+            onClick={() =>
+              editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+            }
+            aria-label="Wstaw tabelę"
+            title={insideTable ? 'Nie można wstawić tabeli wewnątrz tabeli' : 'Wstaw tabelę'}
+            className="h-8 w-8"
+          >
+            <TableIcon className="h-4 w-4" />
+          </Button>
+        );
+      })()}
       <Separator orientation="vertical" className="mx-1 h-6" />
       {btn(false, () => editor.chain().focus().undo().run(), Undo, 'Cofnij')}
       {btn(false, () => editor.chain().focus().redo().run(), Redo, 'Ponów')}
