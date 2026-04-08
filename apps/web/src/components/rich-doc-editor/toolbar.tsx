@@ -1,11 +1,19 @@
 // Side-effect imports to load command type augmentations
+import '@tiptap/extension-character-count';
+import '@tiptap/extension-code-block-lowlight';
 import '@tiptap/extension-color';
+import '@tiptap/extension-details';
+import '@tiptap/extension-emoji';
 import '@tiptap/extension-highlight';
 import '@tiptap/extension-subscript';
 import '@tiptap/extension-superscript';
 import '@tiptap/extension-table';
+import '@tiptap/extension-task-item';
+import '@tiptap/extension-task-list';
 import '@tiptap/extension-text-align';
 import '@tiptap/extension-text-style';
+import '@tiptap/extension-typography';
+import '@tiptap/extension-youtube';
 
 import { useEditorState, type Editor } from '@tiptap/react';
 import {
@@ -14,7 +22,9 @@ import {
   AlignLeft,
   AlignRight,
   Bold,
+  ChevronDown,
   Code,
+  Code2,
   Columns3,
   Eraser,
   Heading1,
@@ -25,12 +35,15 @@ import {
   Italic,
   Link as LinkIcon,
   List,
+  ListChecks,
   ListOrdered,
   Minus,
+  PaintBucket,
   Pilcrow,
   Quote,
   Redo,
   Rows3,
+  Smile,
   Strikethrough,
   Subscript as SubIcon,
   Superscript as SupIcon,
@@ -39,6 +52,7 @@ import {
   Type,
   Underline as UnderlineIcon,
   Undo,
+  Video,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -85,6 +99,21 @@ const HIGHLIGHT_COLORS = [
 
 const FONT_SIZES = ['10px', '12px', '14px', '16px', '18px', '24px', '32px'];
 
+const FONT_FAMILIES = [
+  { label: 'Domyślna', value: '' },
+  { label: 'Sans-serif', value: 'ui-sans-serif, system-ui, sans-serif' },
+  { label: 'Serif', value: 'ui-serif, Georgia, serif' },
+  { label: 'Monospace', value: 'ui-monospace, SFMono-Regular, monospace' },
+  { label: 'Inter', value: 'Inter, sans-serif' },
+  { label: 'Times New Roman', value: '"Times New Roman", Times, serif' },
+  { label: 'Arial', value: 'Arial, sans-serif' },
+  { label: 'Courier New', value: '"Courier New", monospace' },
+];
+
+const LINE_HEIGHTS = ['1', '1.15', '1.5', '2', '2.5'];
+
+const POPULAR_EMOJIS = ['👍', '❤️', '🎉', '✅', '⚠️', '📌', '💡', '🔥', '⭐', '📎', '📝', '✨'];
+
 export function RichDocEditorToolbar({ editor, disabled = false }: Props) {
   const state = useEditorState({
     editor,
@@ -105,8 +134,10 @@ export function RichDocEditorToolbar({ editor, disabled = false }: Props) {
         paragraph: ed.isActive('paragraph') && !ed.isActive('heading'),
         bulletList: ed.isActive('bulletList'),
         orderedList: ed.isActive('orderedList'),
+        taskList: ed.isActive('taskList'),
         blockquote: ed.isActive('blockquote'),
         codeBlock: ed.isActive('codeBlock'),
+        details: ed.isActive('details'),
         link: ed.isActive('link'),
         alignLeft: ed.isActive({ textAlign: 'left' }),
         alignCenter: ed.isActive({ textAlign: 'center' }),
@@ -149,6 +180,12 @@ export function RichDocEditorToolbar({ editor, disabled = false }: Props) {
     const url = window.prompt('Adres URL obrazu:');
     if (!url) return;
     editor.chain().focus().setImage({ src: url }).run();
+  };
+
+  const setYoutube = () => {
+    const url = window.prompt('Adres URL filmu YouTube:');
+    if (!url) return;
+    editor.chain().focus().setYoutubeVideo({ src: url }).run();
   };
 
   const currentParagraphLabel = state.h1
@@ -209,6 +246,37 @@ export function RichDocEditorToolbar({ editor, disabled = false }: Props) {
         </DropdownMenuContent>
       </DropdownMenu>
 
+      {/* Font family */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            disabled={disabled}
+            className="h-8 gap-1 px-2 text-xs"
+            title="Krój pisma"
+          >
+            <Type className="h-3.5 w-3.5" />
+            <ChevronDown className="h-3 w-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuLabel className="text-xs">Krój pisma</DropdownMenuLabel>
+          {FONT_FAMILIES.map((f) => (
+            <DropdownMenuItem
+              key={f.label}
+              onSelect={() => {
+                if (!f.value) editor.chain().focus().unsetFontFamily().run();
+                else editor.chain().focus().setFontFamily(f.value).run();
+              }}
+            >
+              <span style={{ fontFamily: f.value || undefined }}>{f.label}</span>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
       {/* Font size */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -220,7 +288,8 @@ export function RichDocEditorToolbar({ editor, disabled = false }: Props) {
             className="h-8 gap-1 px-2 text-xs"
             title="Rozmiar czcionki"
           >
-            <Type className="h-3.5 w-3.5" />
+            <span className="text-xs font-bold">A</span>
+            <ChevronDown className="h-3 w-3" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
@@ -236,6 +305,38 @@ export function RichDocEditorToolbar({ editor, disabled = false }: Props) {
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => editor.chain().focus().unsetFontSize().run()}>
             Domyślny
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Line height */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            disabled={disabled}
+            className="h-8 gap-1 px-2 text-xs"
+            title="Interlinia"
+          >
+            ≡
+            <ChevronDown className="h-3 w-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuLabel className="text-xs">Interlinia</DropdownMenuLabel>
+          {LINE_HEIGHTS.map((lh) => (
+            <DropdownMenuItem
+              key={lh}
+              onSelect={() => editor.chain().focus().setLineHeight(lh).run()}
+            >
+              {lh}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => editor.chain().focus().unsetLineHeight().run()}>
+            Domyślna
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -351,6 +452,42 @@ export function RichDocEditorToolbar({ editor, disabled = false }: Props) {
         </DropdownMenuContent>
       </DropdownMenu>
 
+      {/* Background colour (different from highlight: applies via TextStyle mark) */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            disabled={disabled}
+            className="h-8 w-8"
+            title="Tło tekstu"
+            aria-label="Tło tekstu"
+          >
+            <PaintBucket className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="p-2">
+          <DropdownMenuLabel className="text-xs">Tło tekstu</DropdownMenuLabel>
+          <div className="grid grid-cols-6 gap-1 p-1">
+            {TEXT_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => editor.chain().focus().setBackgroundColor(c).run()}
+                className="h-6 w-6 rounded border"
+                style={{ backgroundColor: c }}
+                aria-label={`Tło ${c}`}
+              />
+            ))}
+          </div>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => editor.chain().focus().unsetBackgroundColor().run()}>
+            Wyczyść
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
       {/* Clear formatting */}
       {iconBtn(
         false,
@@ -373,6 +510,12 @@ export function RichDocEditorToolbar({ editor, disabled = false }: Props) {
         () => editor.chain().focus().toggleOrderedList().run(),
         ListOrdered,
         'Lista numerowana'
+      )}
+      {iconBtn(
+        state.taskList,
+        () => editor.chain().focus().toggleTaskList().run(),
+        ListChecks,
+        'Lista zadań'
       )}
 
       <Separator orientation="vertical" className="mx-0.5 h-6" />
@@ -405,9 +548,10 @@ export function RichDocEditorToolbar({ editor, disabled = false }: Props) {
 
       <Separator orientation="vertical" className="mx-0.5 h-6" />
 
-      {/* Insert: link / image / table / hr */}
+      {/* Insert: link / image / youtube / table / details / code block / hr */}
       {iconBtn(state.link, setLink, LinkIcon, 'Wstaw link')}
       {iconBtn(false, setImage, ImageIcon, 'Wstaw obraz')}
+      {iconBtn(false, setYoutube, Video, 'Wstaw YouTube')}
       <Button
         type="button"
         size="icon"
@@ -423,11 +567,55 @@ export function RichDocEditorToolbar({ editor, disabled = false }: Props) {
         <TableIcon className="h-4 w-4" />
       </Button>
       {iconBtn(
+        state.codeBlock,
+        () => editor.chain().focus().toggleCodeBlock().run(),
+        Code2,
+        'Blok kodu'
+      )}
+      {iconBtn(
+        state.details,
+        () => editor.chain().focus().setDetails().run(),
+        ChevronDown,
+        'Sekcja składana'
+      )}
+      {iconBtn(
         false,
         () => editor.chain().focus().setHorizontalRule().run(),
         Minus,
         'Pozioma linia'
       )}
+
+      {/* Emoji picker */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            disabled={disabled}
+            className="h-8 w-8"
+            title="Wstaw emoji"
+            aria-label="Wstaw emoji"
+          >
+            <Smile className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="p-2">
+          <DropdownMenuLabel className="text-xs">Emoji</DropdownMenuLabel>
+          <div className="grid grid-cols-6 gap-1 p-1 text-lg">
+            {POPULAR_EMOJIS.map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => editor.chain().focus().insertContent(e).run()}
+                className="hover:bg-muted h-7 w-7 rounded"
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {/* Contextual table-edit buttons */}
       {state.insideTable && (
