@@ -64,12 +64,9 @@ async function bootstrap() {
       origin: string | undefined,
       callback: (err: Error | null, allow?: boolean) => void
     ) => {
-      // Allow requests with no origin (like mobile apps, curl, Postman)
-      // In production, block no-origin requests to prevent CORS bypass
+      // Allow requests with no origin (health checks, mobile apps, curl, server-to-server)
+      // These are not browser requests and don't pose a CORS risk
       if (!origin) {
-        if (process.env.NODE_ENV === 'production') {
-          return callback(new Error('Origin header required in production'));
-        }
         return callback(null, true);
       }
 
