@@ -33,7 +33,7 @@ export class MigrateLegacyClientFields1772000000002 implements MigrationInterfac
     if (amlValues.length > 0) {
       // Get valid enum values
       const validEnumValues = await queryRunner.query(`
-        SELECT unnest(enum_range(NULL::aml_group_enum))::text as val
+        SELECT unnest(enum_range(NULL::clients_amlgroup_enum))::text as val
       `);
       const validSet = new Set(validEnumValues.map((r: { val: string }) => r.val));
 
@@ -43,10 +43,10 @@ export class MigrateLegacyClientFields1772000000002 implements MigrationInterfac
       if (migratable.length > 0) {
         const result = await queryRunner.query(`
           UPDATE clients
-          SET "amlGroupEnum" = "amlGroup"::aml_group_enum
+          SET "amlGroupEnum" = "amlGroup"::clients_amlgroup_enum
           WHERE "amlGroup" IS NOT NULL
             AND "amlGroupEnum" IS NULL
-            AND "amlGroup" IN (SELECT unnest(enum_range(NULL::aml_group_enum))::text)
+            AND "amlGroup" IN (SELECT unnest(enum_range(NULL::clients_amlgroup_enum))::text)
         `);
         _amlMigrated = result?.[1] ?? 0;
       }
