@@ -8,6 +8,7 @@ node_modules
 .DS_Store
 screenshots/
 dist
+.worktrees
 .serena
 .nx
 
