@@ -32,6 +32,10 @@ import { DocumentTemplate } from './document-template.entity';
 import { EmailAutoReplyTemplate } from './email-auto-reply-template.entity';
 import { EmailConfiguration } from './email-configuration.entity';
 import { GeneratedDocument } from './generated-document.entity';
+import { KsefAuditLog } from './ksef-audit-log.entity';
+import { KsefConfiguration } from './ksef-configuration.entity';
+import { KsefInvoice } from './ksef-invoice.entity';
+import { KsefSession } from './ksef-session.entity';
 import { Lead } from './lead.entity';
 import { Module } from './module.entity';
 import { MonthlySettlement } from './monthly-settlement.entity';
@@ -117,4 +121,10 @@ export const COMMON_ENTITIES = [
   // Documents
   DocumentTemplate,
   GeneratedDocument,
+
+  // KSeF
+  KsefConfiguration,
+  KsefSession,
+  KsefInvoice,
+  KsefAuditLog,
 ] as const;

@@ -300,4 +300,22 @@ export const queryKeys = {
     templates: ['documents', 'templates'] as const,
     generated: ['documents', 'generated'] as const,
   },
+  ksef: {
+    config: ['ksef', 'config'] as const,
+    invoices: {
+      all: ['ksef', 'invoices'] as const,
+      list: (filters?: unknown) => ['ksef', 'invoices', 'list', stableFilterKey(filters)] as const,
+      detail: (id: string) => ['ksef', 'invoices', id] as const,
+    },
+    sessions: {
+      all: ['ksef', 'sessions'] as const,
+      active: ['ksef', 'sessions', 'active'] as const,
+    },
+    stats: {
+      dashboard: ['ksef', 'stats', 'dashboard'] as const,
+    },
+    audit: {
+      list: (filters?: unknown) => ['ksef', 'audit', stableFilterKey(filters)] as const,
+    },
+  },
 };

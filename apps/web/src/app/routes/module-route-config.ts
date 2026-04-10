@@ -32,6 +32,13 @@ import {
   EmailTrashPage,
   EmployeeAIAgentDashboard,
   GeneratedDocumentsListPage,
+  KsefAuditLogPage,
+  KsefDashboardPage,
+  KsefInvoiceDetailPage,
+  KsefInvoicesListPage,
+  KsefSessionsPage,
+  KsefSettingsPage,
+  KsefSyncPage,
   LeadDetailPage,
   LeadsListPage,
   OfferDetailPage,
@@ -184,6 +191,20 @@ export const MODULE_ROUTES: ModuleRouteConfig[] = [
       { path: 'templates', component: DocumentsTemplatesListPage },
       { path: 'templates/:id/editor', component: DocumentTemplateEditorPage },
       { path: 'generated', component: GeneratedDocumentsListPage },
+    ],
+  },
+
+  // === KSeF ===
+  {
+    path: 'ksef',
+    routes: [
+      { path: '', component: KsefDashboardPage },
+      { path: 'invoices', component: KsefInvoicesListPage },
+      { path: 'invoices/:id', component: KsefInvoiceDetailPage },
+      { path: 'sessions', component: KsefSessionsPage },
+      { path: 'sync', component: KsefSyncPage },
+      { path: 'settings', component: KsefSettingsPage, layouts: ADMIN_COMPANY },
+      { path: 'audit', component: KsefAuditLogPage, layouts: ADMIN_COMPANY },
     ],
   },
 
