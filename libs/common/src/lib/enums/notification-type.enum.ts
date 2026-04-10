@@ -124,6 +124,14 @@ export enum NotificationType {
   PERMISSION_REVOKED = 'permission.revoked',
 
   // ========================================
+  // KSEF MODULE
+  // ========================================
+  KSEF_INVOICE_ACCEPTED = 'ksef.invoice.accepted',
+  KSEF_INVOICE_REJECTED = 'ksef.invoice.rejected',
+  KSEF_SESSION_ERROR = 'ksef.session.error',
+  KSEF_BATCH_COMPLETED = 'ksef.batch.completed',
+
+  // ========================================
   // SYSTEM
   // ========================================
   SYSTEM_ANNOUNCEMENT = 'system.announcement',
@@ -233,6 +241,12 @@ export const NotificationTypeLabels: Record<NotificationType, string> = {
   [NotificationType.PERMISSION_GRANTED]: 'Przyznano uprawnienia',
   [NotificationType.PERMISSION_REVOKED]: 'Odebrano uprawnienia',
 
+  // KSeF
+  [NotificationType.KSEF_INVOICE_ACCEPTED]: 'Faktura zaakceptowana przez KSeF',
+  [NotificationType.KSEF_INVOICE_REJECTED]: 'Faktura odrzucona przez KSeF',
+  [NotificationType.KSEF_SESSION_ERROR]: 'Błąd sesji KSeF',
+  [NotificationType.KSEF_BATCH_COMPLETED]: 'Wysyłka wsadowa KSeF zakończona',
+
   // System
   [NotificationType.SYSTEM_ANNOUNCEMENT]: 'Ogłoszenie systemowe',
   [NotificationType.SYSTEM_MAINTENANCE]: 'Planowana przerwa techniczna',
@@ -256,6 +270,7 @@ export function getModuleFromNotificationType(type: NotificationType): string {
     user: 'company',
     module: 'company',
     permission: 'company',
+    ksef: 'ksef',
     system: 'system',
   };
   return moduleMap[prefix] || 'system';
