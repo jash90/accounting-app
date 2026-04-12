@@ -1,11 +1,12 @@
+import { type PaginatedResponse } from '@/types/api';
 import { type CreateUserDto, type UpdateUserDto, type UserDto } from '@/types/dtos';
 
 import apiClient from '../client';
 
 export const usersApi = {
   getAll: async (): Promise<UserDto[]> => {
-    const { data } = await apiClient.get<UserDto[]>('/api/admin/users');
-    return data;
+    const { data } = await apiClient.get<PaginatedResponse<UserDto>>('/api/admin/users');
+    return data.data;
   },
 
   getById: async (id: string): Promise<UserDto> => {

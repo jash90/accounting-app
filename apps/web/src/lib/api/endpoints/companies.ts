@@ -1,3 +1,4 @@
+import { type PaginatedResponse } from '@/types/api';
 import {
   PermissionTargetType,
   type CompanyDto,
@@ -11,8 +12,8 @@ import apiClient from '../client';
 
 export const companiesApi = {
   getAll: async (): Promise<CompanyDto[]> => {
-    const { data } = await apiClient.get<CompanyDto[]>('/api/admin/companies');
-    return data;
+    const { data } = await apiClient.get<PaginatedResponse<CompanyDto>>('/api/admin/companies');
+    return data.data;
   },
 
   getById: async (id: string): Promise<CompanyDto> => {
