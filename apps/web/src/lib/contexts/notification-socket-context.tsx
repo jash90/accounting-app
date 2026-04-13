@@ -119,10 +119,11 @@ export function NotificationSocketProvider({ children }: NotificationSocketProvi
 
     return io(`${getWsBaseUrl()}/notifications`, {
       path: '/socket.io',
-      auth: {
-        token: accessToken,
-      },
-      transports: ['websocket', 'polling'],
+      // httpOnly cookie mode: send cookies instead of token in auth payload
+      ...(accessToken === '__cookie__'
+        ? { withCredentials: true }
+        : { auth: { token: accessToken } }),
+      transports: ['polling', 'websocket'],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,

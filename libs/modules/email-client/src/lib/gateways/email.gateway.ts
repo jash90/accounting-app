@@ -117,6 +117,16 @@ export class EmailGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
     if (authHeader) {
       return authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
     }
+
+    // Fallback: extract from httpOnly cookie (cookie-based auth mode)
+    const cookieHeader = client.handshake.headers?.cookie;
+    if (cookieHeader) {
+      const match = cookieHeader.match(/(?:^|;\s*)access_token=([^;]+)/);
+      if (match?.[1]) {
+        return match[1];
+      }
+    }
+
     return null;
   }
 
