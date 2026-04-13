@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { useQuery } from '@tanstack/react-query';
 
+import { silentRefreshScheduler } from '@/lib/api/client';
 import { authApi } from '@/lib/api/endpoints/auth';
 import { tokenStorage } from '@/lib/auth/token-storage';
 import { AUTH_EVENTS, authEventBus } from '@/lib/events/auth-events';
@@ -112,6 +113,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const checkToken = () => {
       const currentToken = tokenStorage.getAccessToken();
       dispatch({ type: 'SET_TOKEN', payload: currentToken });
+      // Start silent refresh timer if authenticated (handles page reload)
+      if (currentToken) {
+        silentRefreshScheduler.schedule();
+      }
     };
 
     // Check immediately on mount
