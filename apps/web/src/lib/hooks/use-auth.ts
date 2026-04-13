@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { type LoginDto, type RegisterDto } from '@/types/dtos';
 import { UserRole } from '@/types/enums';
 
+import { silentRefreshScheduler } from '../api/client';
 import { authApi } from '../api/endpoints/auth';
 import { tokenStorage } from '../auth/token-storage';
 
@@ -20,6 +21,7 @@ export const useAuth = () => {
     mutationFn: (credentials: LoginDto) => authApi.login(credentials),
     onSuccess: (data) => {
       tokenStorage.setAccessToken(data.access_token);
+      silentRefreshScheduler.schedule();
 
       // Invalidate auth query to update AuthContext
       queryClient.setQueryData(['auth', 'me'], data.user);
@@ -44,6 +46,7 @@ export const useAuth = () => {
     mutationFn: (userData: RegisterDto) => authApi.register(userData),
     onSuccess: (data) => {
       tokenStorage.setAccessToken(data.access_token);
+      silentRefreshScheduler.schedule();
 
       // Update auth query to update AuthContext
       queryClient.setQueryData(['auth', 'me'], data.user);
@@ -68,6 +71,7 @@ export const useAuth = () => {
 
   // Logout — clear httpOnly cookies on server + local state
   const logout = async () => {
+    silentRefreshScheduler.cancel();
     try {
       // Tell backend to clear httpOnly cookies
       await authApi.logout();
