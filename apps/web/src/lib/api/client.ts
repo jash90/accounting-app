@@ -74,12 +74,55 @@ class TokenRefreshManager {
    * The AuthProvider listens for this event and performs SPA-friendly navigation.
    */
   handleRefreshFailure(): void {
+    silentRefreshScheduler.cancel();
     tokenStorage.clearTokens();
     authEventBus.dispatchEvent(new CustomEvent(AUTH_EVENTS.SESSION_EXPIRED));
   }
 }
 
 const tokenRefreshManager = new TokenRefreshManager();
+
+/**
+ * Silent refresh scheduler — proactively refreshes the access token
+ * before it expires, preventing 401 errors during active sessions.
+ *
+ * Schedules a refresh 5 minutes before the access token expires (55 min after login).
+ * Falls back to the 401 interceptor if the timer doesn't fire.
+ */
+class SilentRefreshScheduler {
+  private timerId: ReturnType<typeof setTimeout> | null = null;
+  /** Refresh 5 minutes before expiry (access token TTL = 60 min) */
+  private static readonly REFRESH_BEFORE_EXPIRY_MS = 5 * 60 * 1000;
+  private static readonly ACCESS_TOKEN_TTL_MS = 60 * 60 * 1000;
+
+  schedule(): void {
+    this.cancel();
+    if (!tokenStorage.isAuthenticated()) return;
+
+    const delay =
+      SilentRefreshScheduler.ACCESS_TOKEN_TTL_MS - SilentRefreshScheduler.REFRESH_BEFORE_EXPIRY_MS;
+    this.timerId = setTimeout(() => this.performRefresh(), delay);
+  }
+
+  cancel(): void {
+    if (this.timerId) {
+      clearTimeout(this.timerId);
+      this.timerId = null;
+    }
+  }
+
+  private async performRefresh(): Promise<void> {
+    try {
+      await tokenRefreshManager.refresh();
+      // Re-schedule after successful refresh
+      this.schedule();
+    } catch {
+      tokenRefreshManager.handleRefreshFailure();
+    }
+  }
+}
+
+export const silentRefreshScheduler = new SilentRefreshScheduler();
 
 // ==================== Retry Logic for Transient Errors ====================
 
