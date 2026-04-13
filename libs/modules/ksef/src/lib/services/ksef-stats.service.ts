@@ -9,7 +9,10 @@ import {
   KsefSessionStatus,
 } from '@accounting/common';
 
+import { KSEF_API_PATHS } from '../constants';
 import { KsefDashboardStatsDto } from '../dto';
+import { KsefConfigService } from './ksef-config.service';
+import { KsefHttpClientService } from './ksef-http-client.service';
 
 @Injectable()
 export class KsefStatsService {
@@ -18,6 +21,8 @@ export class KsefStatsService {
     private readonly invoiceRepo: Repository<KsefInvoice>,
     @InjectRepository(KsefSession)
     private readonly sessionRepo: Repository<KsefSession>,
+    private readonly httpClient: KsefHttpClientService,
+    private readonly configService: KsefConfigService,
   ) {}
 
   async getDashboardStats(companyId: string): Promise<KsefDashboardStatsDto> {
@@ -67,5 +72,23 @@ export class KsefStatsService {
     dto.totalGrossAmount = parseFloat(amountResult?.totalGross ?? '0');
 
     return dto;
+  }
+
+  async checkHealth(companyId: string, userId: string): Promise<{ healthy: boolean; responseTimeMs: number; error?: string }> {
+    const startTime = Date.now();
+    try {
+      const config = await this.configService.getConfigOrFail(companyId);
+      await this.httpClient.request({
+        environment: config.environment,
+        method: 'GET',
+        path: KSEF_API_PATHS.PUBLIC_KEY,
+        companyId,
+        userId,
+        auditAction: 'HEALTH_CHECK',
+      });
+      return { healthy: true, responseTimeMs: Date.now() - startTime };
+    } catch (error) {
+      return { healthy: false, responseTimeMs: Date.now() - startTime, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   }
 }

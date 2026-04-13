@@ -44,4 +44,11 @@ export class KsefStatsController {
     const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     return this.statsService.getDashboardStats(companyId);
   }
+
+  @Get('health')
+  @ApiOperation({ summary: 'Check KSeF API health' })
+  async checkHealth(@CurrentUser() user: User) {
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
+    return this.statsService.checkHealth(companyId, user.id);
+  }
 }
