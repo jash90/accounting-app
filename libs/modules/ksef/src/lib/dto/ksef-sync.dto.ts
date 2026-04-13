@@ -11,6 +11,14 @@ export class KsefSyncRequestDto {
   dateTo!: string;
 }
 
+export class KsefSyncFailedInvoiceDto {
+  @ApiProperty({ description: 'Numer KSeF faktury' })
+  ksefNumber!: string;
+
+  @ApiProperty({ description: 'Treść błędu' })
+  error!: string;
+}
+
 export class KsefSyncResultDto {
   @ApiProperty({ description: 'Łączna liczba znalezionych faktur' })
   totalFound!: number;
@@ -26,4 +34,7 @@ export class KsefSyncResultDto {
 
   @ApiProperty({ description: 'Data synchronizacji' })
   syncedAt!: string;
+
+  @ApiProperty({ description: 'Szczegóły nieudanych faktur', type: [KsefSyncFailedInvoiceDto], required: false })
+  failedInvoices?: KsefSyncFailedInvoiceDto[];
 }
