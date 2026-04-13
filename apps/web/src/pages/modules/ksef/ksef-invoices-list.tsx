@@ -34,6 +34,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import type { KsefInvoiceFilters, KsefInvoiceResponse } from '@/lib/api/endpoints/ksef';
 import { useClients } from '@/lib/hooks/use-clients';
+import { KsefSessionExpiryBanner } from './components/ksef-session-expiry-banner';
 import {
   useKsefInvoices, useCreateKsefInvoice, useDeleteKsefInvoice,
   useGenerateKsefXml, useSubmitKsefInvoice, useBatchSubmitKsefInvoices,
@@ -298,6 +299,8 @@ export default function KsefInvoicesListPage() {
           </Button>
         }
       />
+
+      <KsefSessionExpiryBanner />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-4">
