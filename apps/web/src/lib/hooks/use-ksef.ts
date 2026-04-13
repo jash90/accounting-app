@@ -6,6 +6,7 @@ import {
   type CreateKsefInvoice,
   type KsefAuditLogFilters,
   type KsefInvoiceFilters,
+  type KsefInvoiceResponse,
   type KsefSyncRequest,
   type UpsertKsefConfig,
   type UpdateKsefInvoice,
@@ -96,7 +97,7 @@ export const useSubmitKsefInvoice = createMutationHook<unknown, string>({
     queryKeys.ksef.sessions.all,
     queryKeys.ksef.stats.dashboard,
   ],
-  successMessage: 'Faktura została wysłana do KSeF',
+  successMessage: 'Faktura wysłana do KSeF — oczekiwanie na potwierdzenie',
   errorMessage: 'Nie udało się wysłać faktury do KSeF',
 });
 
@@ -114,6 +115,13 @@ export const useBatchSubmitKsefInvoices = createMutationHook<unknown, string[]>(
 export const useGenerateKsefXml = createMutationHook<{ xml: string; hash: string }, string>({
   mutationFn: (id) => ksefApi.generateXml(id),
   errorMessage: 'Nie udało się wygenerować XML',
+});
+
+export const useCheckKsefInvoiceStatus = createMutationHook<KsefInvoiceResponse, string>({
+  mutationFn: (id) => ksefApi.getInvoiceStatus(id),
+  invalidateKeys: [queryKeys.ksef.invoices.all],
+  successMessage: 'Status faktury zaktualizowany',
+  errorMessage: 'Nie udało się sprawdzić statusu faktury',
 });
 
 // ============================================
@@ -134,6 +142,14 @@ export const useOpenKsefSession = createMutationHook({
   successMessage: 'Sesja KSeF została otwarta',
   errorMessage: 'Nie udało się otworzyć sesji KSeF',
 });
+
+export function useKsefSessions(filters?: { page?: number; limit?: number; sessionType?: string }) {
+  return useQuery({
+    queryKey: queryKeys.ksef.sessions.list(filters),
+    queryFn: () => ksefApi.getSessions(filters),
+    staleTime: 30_000,
+  });
+}
 
 export const useCloseKsefSession = createMutationHook<unknown, string>({
   mutationFn: (id) => ksefApi.closeSession(id),
@@ -162,6 +178,18 @@ export function useKsefDashboardStats() {
     queryKey: queryKeys.ksef.stats.dashboard,
     queryFn: () => ksefApi.getDashboardStats(),
     staleTime: 60 * 1000,
+  });
+}
+
+// ============================================
+// Health Hook
+// ============================================
+
+export function useKsefHealth() {
+  return useQuery({
+    queryKey: queryKeys.ksef.stats.health,
+    queryFn: () => ksefApi.checkHealth(),
+    staleTime: 10_000,
   });
 }
 
