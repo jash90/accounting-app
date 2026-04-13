@@ -5,10 +5,10 @@ import { Bell, WifiOff } from 'lucide-react';
 import { NotificationDropdown } from '@/components/notifications/notification-dropdown';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useNotificationSocket } from '@/lib/contexts/notification-socket-context';
 import { useUnreadNotificationCount } from '@/lib/hooks/use-notifications';
 import { cn } from '@/lib/utils/cn';
+
 
 /**
  * Custom hook to detect when notification count increases.
@@ -88,20 +88,5 @@ export function NotificationBell() {
     </Button>
   );
 
-  return (
-    <NotificationDropdown>
-      {!isConnected ? (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>{bellButton}</TooltipTrigger>
-            <TooltipContent>
-              <p>Brak połączenia real-time</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      ) : (
-        bellButton
-      )}
-    </NotificationDropdown>
-  );
+  return <NotificationDropdown>{bellButton}</NotificationDropdown>;
 }
