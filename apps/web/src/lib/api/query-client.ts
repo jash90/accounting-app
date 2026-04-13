@@ -310,12 +310,17 @@ export const queryKeys = {
     sessions: {
       all: ['ksef', 'sessions'] as const,
       active: ['ksef', 'sessions', 'active'] as const,
+      list: (filters?: unknown) => ['ksef', 'sessions', 'list', stableFilterKey(filters)] as const,
     },
     stats: {
       dashboard: ['ksef', 'stats', 'dashboard'] as const,
+      health: ['ksef', 'stats', 'health'] as const,
     },
     audit: {
       list: (filters?: unknown) => ['ksef', 'audit', stableFilterKey(filters)] as const,
+    },
+    sync: {
+      lastResult: ['ksef', 'sync', 'lastResult'] as const,
     },
   },
 };

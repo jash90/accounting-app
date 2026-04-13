@@ -84,30 +84,33 @@ export type UpdateKsefInvoice = Partial<CreateKsefInvoice>;
 export interface KsefInvoiceResponse {
   id: string;
   companyId: string;
-  clientId?: string;
-  client?: { id: string; name: string; nip?: string };
+  clientId?: string | null;
+  client?: { id: string; name: string; nip?: string } | null;
+  sessionId?: string | null;
   invoiceType: string;
   direction: string;
-  invoiceNumber?: string;
-  ksefReferenceNumber?: string;
+  invoiceNumber: string;
+  ksefNumber?: string | null;
+  ksefReferenceNumber?: string | null;
   status: string;
   issueDate: string;
-  dueDate?: string;
-  buyerData?: InvoiceBuyerData;
-  lineItems: KsefInvoiceLineItem[];
-  totalNetAmount: number;
-  totalVatAmount: number;
-  totalGrossAmount: number;
-  paymentMethod?: string;
-  bankAccount?: string;
+  dueDate?: string | null;
+  sellerNip: string;
+  sellerName: string;
+  buyerNip?: string | null;
+  buyerName: string;
+  netAmount: number;
+  vatAmount: number;
+  grossAmount: number;
   currency: string;
-  notes?: string;
-  xmlContent?: string;
-  xmlHash?: string;
-  correctedInvoiceId?: string;
-  submittedAt?: string;
-  ksefAcceptedAt?: string;
-  errorMessage?: string;
+  lineItems?: Record<string, unknown>[] | null;
+  validationErrors?: Record<string, unknown>[] | null;
+  submittedAt?: string | null;
+  acceptedAt?: string | null;
+  rejectedAt?: string | null;
+  correctedInvoiceId?: string | null;
+  createdById: string;
+  updatedById?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -123,7 +126,7 @@ export interface KsefInvoiceFilters {
   page?: number;
   limit?: number;
   sortBy?: string;
-  sortOrder?: 'ASC' | 'DESC';
+  sortOrder?: 'asc' | 'desc';
 }
 
 // ============================================
@@ -156,7 +159,8 @@ export interface KsefBatchSubmitResult {
   results: Array<{
     invoiceId: string;
     success: boolean;
-    error?: string;
+    ksefNumber?: string;
+    errorMessage?: string;
   }>;
 }
 
@@ -169,8 +173,9 @@ export interface KsefSyncResult {
   totalFound: number;
   newInvoices: number;
   updatedInvoices: number;
-  errors: string[];
+  errors: number;
   syncedAt: string;
+  failedInvoices?: Array<{ ksefNumber: string; error: string }>;
 }
 
 // ============================================
@@ -213,6 +218,12 @@ export interface KsefAuditLogFilters {
   dateTo?: string;
   page?: number;
   limit?: number;
+}
+
+export interface KsefHealthResult {
+  healthy: boolean;
+  responseTimeMs: number;
+  error?: string;
 }
 
 // ============================================
@@ -280,6 +291,8 @@ export const ksefApi = {
   // Stats
   getDashboardStats: () =>
     apiClient.get<KsefDashboardStats>(`${BASE}/stats/dashboard`).then((r) => r.data),
+  checkHealth: () =>
+    apiClient.get<KsefHealthResult>(`${BASE}/stats/health`).then((r) => r.data),
 
   // Audit
   getAuditLogs: (filters?: KsefAuditLogFilters) =>
