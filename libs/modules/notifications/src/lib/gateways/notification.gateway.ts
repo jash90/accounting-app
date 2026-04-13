@@ -9,6 +9,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
+
 import { Server, Socket } from 'socket.io';
 
 import { JwtPayload } from '@accounting/auth';
@@ -194,6 +195,15 @@ export class NotificationGateway
     const authHeader = client.handshake.auth?.token as string | undefined;
     if (authHeader) {
       return authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+    }
+
+    // Fallback: extract from httpOnly cookie (cookie-based auth mode)
+    const cookieHeader = client.handshake.headers?.cookie;
+    if (cookieHeader) {
+      const match = cookieHeader.match(/(?:^|;\s*)access_token=([^;]+)/);
+      if (match?.[1]) {
+        return match[1];
+      }
     }
 
     // Security: Reject tokens passed via query string (OWASP A07:2021)
