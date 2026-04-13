@@ -15,7 +15,7 @@ export const COOKIE_NAMES = {
  * - httpOnly: Prevents XSS attacks from accessing tokens via JavaScript
  * - secure: Ensures cookies are only sent over HTTPS in production
  * - sameSite: Protects against CSRF attacks
- * - path: Restricts cookie scope to API endpoints
+ * - path: '/' to ensure cookies are sent with both /api and /socket.io requests
  *
  * @param isProduction - Whether the app is running in production
  * @returns Cookie options object
@@ -25,7 +25,7 @@ export function getAccessTokenCookieOptions(isProduction: boolean): CookieOption
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? 'strict' : 'lax',
-    path: '/api',
+    path: '/',
     maxAge: 60 * 60 * 1000, // 1 hour in milliseconds
   };
 }
@@ -33,7 +33,7 @@ export function getAccessTokenCookieOptions(isProduction: boolean): CookieOption
 /**
  * Get secure cookie options for refresh tokens.
  * Refresh tokens have longer expiry.
- * Note: Using same path '/api' as access token to ensure consistent cookie clearing on logout.
+ * Note: Using same path '/' as access token to ensure consistent cookie clearing on logout.
  *
  * @param isProduction - Whether the app is running in production
  * @returns Cookie options object
@@ -43,14 +43,14 @@ export function getRefreshTokenCookieOptions(isProduction: boolean): CookieOptio
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? 'strict' : 'lax',
-    path: '/api', // Same path as access token for consistent clearing
+    path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
   };
 }
 
 /**
  * Get options for clearing a cookie (logout).
- * Uses the same '/api' path as set functions for consistency.
+ * Uses the same '/' path as set functions for consistency.
  *
  * @param isProduction - Whether the app is running in production
  * @returns Cookie options for clearing
@@ -60,6 +60,6 @@ export function getClearCookieOptions(isProduction: boolean): CookieOptions {
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? 'strict' : 'lax',
-    path: '/api',
+    path: '/',
   };
 }

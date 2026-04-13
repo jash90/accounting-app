@@ -62,8 +62,10 @@ export function EmailSocketProvider({ children }: { children: ReactNode }) {
     const { io } = await getSocketModule();
     return io(`${getWsBaseUrl()}/email`, {
       path: '/socket.io',
-      auth: { token: accessToken },
-      transports: ['websocket', 'polling'],
+      ...(accessToken === '__cookie__'
+        ? { withCredentials: true }
+        : { auth: { token: accessToken } }),
+      transports: ['polling', 'websocket'],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,

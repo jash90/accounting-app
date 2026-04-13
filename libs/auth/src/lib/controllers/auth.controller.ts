@@ -144,6 +144,15 @@ export class AuthController {
     const isProduction = process.env.NODE_ENV === 'production';
     res.clearCookie(COOKIE_NAMES.ACCESS_TOKEN, getClearCookieOptions(isProduction));
     res.clearCookie(COOKIE_NAMES.REFRESH_TOKEN, getClearCookieOptions(isProduction));
+    // Clear legacy cookies set with old path '/api' (pre-2026-04-13 deployments)
+    res.clearCookie(COOKIE_NAMES.ACCESS_TOKEN, {
+      ...getClearCookieOptions(isProduction),
+      path: '/api',
+    });
+    res.clearCookie(COOKIE_NAMES.REFRESH_TOKEN, {
+      ...getClearCookieOptions(isProduction),
+      path: '/api',
+    });
     return { message: ErrorMessages.SUCCESS.LOGOUT };
   }
 
