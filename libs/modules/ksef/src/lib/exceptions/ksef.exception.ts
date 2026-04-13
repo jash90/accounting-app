@@ -71,12 +71,14 @@ export class KsefRateLimitException extends HttpException {
 }
 
 export class KsefApiException extends BadGatewayException {
-  constructor(detail?: string) {
-    super(
-      detail
+  constructor(detail?: string, retryable = false) {
+    super({
+      statusCode: HttpStatus.BAD_GATEWAY,
+      message: detail
         ? `${KSEF_MESSAGES.CONNECTION_FAILED}: ${detail}`
-        : KSEF_MESSAGES.CONNECTION_FAILED
-    );
+        : KSEF_MESSAGES.CONNECTION_FAILED,
+      retryable,
+    });
   }
 }
 

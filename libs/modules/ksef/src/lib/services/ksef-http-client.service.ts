@@ -21,6 +21,8 @@ export interface KsefRequestOptions {
   auditAction: string;
   auditEntityType?: string;
   auditEntityId?: string;
+  /** Set to 'text' for XML responses (e.g., invoice download) */
+  responseType?: 'json' | 'text';
 }
 
 export interface KsefResponse<T = unknown> {
@@ -53,9 +55,10 @@ export class KsefHttpClientService {
       data: options.data,
       headers: {
         'Content-Type': 'application/json',
-        Accept: 'application/json',
+        Accept: options.responseType === 'text' ? 'application/xml, application/json' : 'application/json',
         ...options.headers,
       },
+      responseType: options.responseType ?? 'json',
       timeout: options.timeout ?? KSEF_DEFAULTS.REQUEST_TIMEOUT_MS,
     };
 
@@ -162,7 +165,9 @@ export class KsefHttpClientService {
       }
     }
 
-    throw new KsefApiException(lastError?.message ?? 'KSeF API request failed');
+    const wasServerError = lastError && 'response' in (lastError as unknown as Record<string, unknown>)
+      && [502, 503, 504].includes((lastError as unknown as { response?: { status?: number } }).response?.status ?? 0);
+    throw new KsefApiException(lastError?.message ?? 'KSeF API request failed', wasServerError);
   }
 
   private truncateResponse(data: unknown): string {
