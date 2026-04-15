@@ -5,28 +5,9 @@ import { simpleParser, type Source } from 'mailparser';
 import * as nodemailer from 'nodemailer';
 
 import { EncryptionService } from '@accounting/common/backend';
+import { EMAIL_REJECT_UNAUTHORIZED } from '@accounting/email';
 
 import { EmailConfigService } from './email-config.service';
-
-// TLS validation - configurable via env, defaults to true
-const REJECT_UNAUTHORIZED = process.env['EMAIL_REJECT_UNAUTHORIZED'] !== 'false';
-
-// CRITICAL: Enforce TLS validation in production environment
-if (process.env.NODE_ENV === 'production' && !REJECT_UNAUTHORIZED) {
-  throw new Error(
-    'SECURITY ERROR: EMAIL_REJECT_UNAUTHORIZED cannot be disabled in production environment. ' +
-      'This setting allows man-in-the-middle attacks. Remove the EMAIL_REJECT_UNAUTHORIZED=false ' +
-      'environment variable or set it to true for production deployments.'
-  );
-}
-
-// Security warning when TLS validation is disabled (non-production only)
-if (!REJECT_UNAUTHORIZED) {
-  // Logger not available at module load time; this is a static init warning
-  console.warn(
-    '⚠️  EMAIL_REJECT_UNAUTHORIZED is disabled. TLS certificate validation is OFF. This should only be used in development/testing environments.'
-  );
-}
 
 /**
  * Error message sanitization map - prevents leaking internal details
@@ -125,7 +106,7 @@ export class SmtpImapService {
         user: config.imapUser,
         pass: config.imapPassword,
       },
-      tls: { rejectUnauthorized: REJECT_UNAUTHORIZED },
+      tls: { rejectUnauthorized: EMAIL_REJECT_UNAUTHORIZED },
       logger: false,
     });
   }
@@ -238,7 +219,7 @@ export class SmtpImapService {
           pass: dto.smtpPassword,
         },
         tls: {
-          rejectUnauthorized: REJECT_UNAUTHORIZED,
+          rejectUnauthorized: EMAIL_REJECT_UNAUTHORIZED,
         },
         connectionTimeout: CONNECTION_TIMEOUT_MS,
       });
@@ -268,7 +249,7 @@ export class SmtpImapService {
         user: dto.imapUser,
         pass: dto.imapPassword,
       },
-      tls: { rejectUnauthorized: REJECT_UNAUTHORIZED },
+      tls: { rejectUnauthorized: EMAIL_REJECT_UNAUTHORIZED },
       logger: false,
     });
 
@@ -351,7 +332,7 @@ export class SmtpImapService {
           pass: smtpPassword,
         },
         tls: {
-          rejectUnauthorized: REJECT_UNAUTHORIZED,
+          rejectUnauthorized: EMAIL_REJECT_UNAUTHORIZED,
         },
       });
 
@@ -397,7 +378,7 @@ export class SmtpImapService {
           pass: smtpPassword,
         },
         tls: {
-          rejectUnauthorized: REJECT_UNAUTHORIZED,
+          rejectUnauthorized: EMAIL_REJECT_UNAUTHORIZED,
         },
       });
 

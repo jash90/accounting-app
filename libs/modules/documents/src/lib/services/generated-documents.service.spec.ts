@@ -200,9 +200,10 @@ describe('GeneratedDocumentsService', () => {
     });
 
     it('should generate a document from text-based template', async () => {
-      mockTemplateRepo.findOne.mockReset();
-      mockGeneratedDocRepo.create.mockReset();
-      mockGeneratedDocRepo.save.mockReset();
+      mockTemplateRepo.findOne.mockClear();
+      mockGeneratedDocRepo.create.mockClear();
+      mockGeneratedDocRepo.save.mockClear();
+      mockSystemCompanyService.getCompanyIdForUser.mockResolvedValue(mockCompanyId);
       mockTemplateRepo.findOne.mockResolvedValue(mockTextTemplate);
       const created = { id: 'doc-2', name: 'Tekst doc' } as any;
       mockGeneratedDocRepo.create.mockReturnValue(created);
@@ -218,8 +219,13 @@ describe('GeneratedDocumentsService', () => {
       expect(result).toEqual(created);
       expect(mockGeneratedDocRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
+          name: 'Tekst doc',
+          templateId: 'template-2',
+          generatedById: mockUserId,
+          companyId: mockCompanyId,
           metadata: expect.objectContaining({
-            renderedContent: expect.stringContaining('Anna'),
+            imie: 'Anna',
+            nip: '1234567890',
           }),
         })
       );

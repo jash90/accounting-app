@@ -1,18 +1,10 @@
 import { useState } from 'react';
+
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { PageHeader } from '@/components/common/page-header';
-import { ModulePermission } from '@/types/enums';
 import { ArrowLeft, Key, Package, Plus, Shield, Trash2 } from 'lucide-react';
 
-import { useEmployee } from '@/lib/hooks/use-employees';
-import {
-  useCompanyPermissionModules,
-  useEmployeeModulePermissions,
-  useGrantModuleAccess,
-  useRevokeModuleAccess,
-  useUpdateModulePermission,
-} from '@/lib/hooks/use-permissions';
+import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -25,6 +17,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
+import { useEmployee } from '@/lib/hooks/use-employees';
+import {
+  useCompanyPermissionModules,
+  useEmployeeModulePermissions,
+  useGrantModuleAccess,
+  useRevokeModuleAccess,
+  useUpdateModulePermission,
+} from '@/lib/hooks/use-permissions';
+import { ModulePermission } from '@/types/enums';
 
 interface AvailableModule {
   id: string;

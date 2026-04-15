@@ -102,7 +102,7 @@ export class TokenLimitService {
       throw new ForbiddenException('Only company owners can set user limits');
     }
 
-    const companyId = user.companyId;
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     if (!companyId) {
       throw new ForbiddenException('User not associated with company');
     }

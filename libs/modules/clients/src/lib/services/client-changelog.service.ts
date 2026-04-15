@@ -10,6 +10,7 @@ import {
   PaginationQueryDto,
   User,
 } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import { ClientChangelogEmailService } from './client-changelog-email.service';
@@ -26,21 +27,18 @@ export class ClientChangelogService {
     @InjectRepository(Client)
     private readonly clientRepository: Repository<Client>,
     private readonly changeLogService: ChangeLogService,
-    private readonly emailService: ClientChangelogEmailService
+    private readonly emailService: ClientChangelogEmailService,
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   async getClientChangelog(
     clientId: string,
     user: User
   ): Promise<{ logs: ChangeLog[]; total: number }> {
-    if (!user.companyId) {
-      throw new ForbiddenException(
-        'Access denied: user must belong to a company to view changelog'
-      );
-    }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const client = await this.clientRepository.findOne({
-      where: { id: clientId, companyId: user.companyId },
+      where: { id: clientId, companyId },
     });
 
     if (!client) {
@@ -56,18 +54,15 @@ export class ClientChangelogService {
     user: User,
     pagination?: PaginationQueryDto
   ): Promise<PaginatedResponseDto<ChangeLog>> {
-    if (!user.companyId) {
-      throw new ForbiddenException('User must belong to a company to view changelog');
-    }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const { page = 1, limit = 50 } = pagination || {};
     const skip = (page - 1) * limit;
 
-    const { logs, total } = await this.changeLogService.getCompanyChangeLogs(
-      'Client',
-      user.companyId,
-      { limit, offset: skip }
-    );
+    const { logs, total } = await this.changeLogService.getCompanyChangeLogs('Client', companyId, {
+      limit,
+      offset: skip,
+    });
 
     return new PaginatedResponseDto(logs, total, page, limit);
   }

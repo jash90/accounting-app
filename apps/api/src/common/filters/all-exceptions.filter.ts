@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 
-import { SentryExceptionCaptured } from '@sentry/nestjs';
+import { SentryExceptionCaptured as _SentryExceptionCaptured } from '@sentry/nestjs';
 import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -106,11 +106,28 @@ function sanitizeContext(
   return sanitize(context, 0) as Record<string, unknown> | undefined;
 }
 
+/**
+ * Safe wrapper for @SentryExceptionCaptured decorator.
+ * Bun's native TS transpiler doesn't provide method descriptors for legacy decorators,
+ * causing the original decorator to crash with "descriptor is undefined".
+ * This wrapper falls back to the original method when the descriptor is unavailable.
+ */
+function SafeSentryCaptured(): MethodDecorator {
+  return (target: object, propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+    if (!descriptor) return target as any;
+    try {
+      return _SentryExceptionCaptured()(target, propertyKey as string, descriptor) ?? descriptor;
+    } catch {
+      return descriptor;
+    }
+  };
+}
+
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
-  @SentryExceptionCaptured()
+  @SafeSentryCaptured()
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();

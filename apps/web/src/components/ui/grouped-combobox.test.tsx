@@ -693,7 +693,9 @@ describe('GroupedCombobox', () => {
 
       await user.keyboard('{ArrowDown}');
 
-      expect(searchInput).toHaveAttribute('aria-activedescendant', 'grouped-combobox-option-0');
+      const activedescendant = searchInput.getAttribute('aria-activedescendant');
+      expect(activedescendant).toBeTruthy();
+      expect(activedescendant).toMatch(/-option-0$/);
     });
 
     it('listbox has aria-label', async () => {

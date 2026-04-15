@@ -1,8 +1,9 @@
+import { type ConfigService } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 
 import { type Repository } from 'typeorm';
 
-import { NotificationType, type User, UserRole } from '@accounting/common';
+import { NotificationType, UserRole, type User } from '@accounting/common';
 import { type EmailConfigurationService, type EmailSenderService } from '@accounting/email';
 
 import { EmailChannelService } from './email-channel.service';
@@ -20,6 +21,7 @@ describe('EmailChannelService', () => {
   let mockEmailConfigService: jest.Mocked<EmailConfigurationService>;
   let mockEmailSenderService: jest.Mocked<EmailSenderService>;
   let mockNotificationService: jest.Mocked<NotificationService>;
+  let mockConfigService: jest.Mocked<ConfigService>;
 
   const createMockUser = (overrides: Partial<User> = {}): User =>
     ({
@@ -71,6 +73,10 @@ describe('EmailChannelService', () => {
       markEmailSent: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<NotificationService>;
 
+    mockConfigService = {
+      get: jest.fn().mockReturnValue(undefined),
+    } as unknown as jest.Mocked<ConfigService>;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         {
@@ -80,7 +86,8 @@ describe('EmailChannelService', () => {
               mockUserRepository,
               mockEmailConfigService,
               mockEmailSenderService,
-              mockNotificationService
+              mockNotificationService,
+              mockConfigService
             ),
         },
       ],
@@ -112,9 +119,7 @@ describe('EmailChannelService', () => {
 
     it('should mark notification as email sent when notificationId is provided', async () => {
       const recipient = createMockUser();
-      mockUserRepository.findOne
-        .mockResolvedValueOnce(recipient)
-        .mockResolvedValueOnce(null); // no actor
+      mockUserRepository.findOne.mockResolvedValueOnce(recipient).mockResolvedValueOnce(null); // no actor
 
       await service.handleEmailNotification(createPayload());
 
@@ -123,9 +128,7 @@ describe('EmailChannelService', () => {
 
     it('should not mark email sent when notificationId is missing', async () => {
       const recipient = createMockUser();
-      mockUserRepository.findOne
-        .mockResolvedValueOnce(recipient)
-        .mockResolvedValueOnce(null);
+      mockUserRepository.findOne.mockResolvedValueOnce(recipient).mockResolvedValueOnce(null);
 
       await service.handleEmailNotification(createPayload({ notificationId: undefined }));
 
@@ -153,9 +156,7 @@ describe('EmailChannelService', () => {
 
     it('should handle email sending failure gracefully without throwing', async () => {
       const recipient = createMockUser();
-      mockUserRepository.findOne
-        .mockResolvedValueOnce(recipient)
-        .mockResolvedValueOnce(null);
+      mockUserRepository.findOne.mockResolvedValueOnce(recipient).mockResolvedValueOnce(null);
       mockEmailSenderService.sendEmail.mockRejectedValue(new Error('SMTP connection failed'));
 
       // Should not throw — the service catches the error internally
@@ -165,9 +166,7 @@ describe('EmailChannelService', () => {
     it('should include actor name in email when actorId is provided', async () => {
       const recipient = createMockUser();
       const actor = createMockUser({ id: 'actor-1', firstName: 'Anna', lastName: 'Nowak' });
-      mockUserRepository.findOne
-        .mockResolvedValueOnce(recipient)
-        .mockResolvedValueOnce(actor);
+      mockUserRepository.findOne.mockResolvedValueOnce(recipient).mockResolvedValueOnce(actor);
 
       await service.handleEmailNotification(createPayload());
 

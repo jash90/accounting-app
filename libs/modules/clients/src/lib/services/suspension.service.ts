@@ -1,6 +1,6 @@
-import { SystemCompanyService } from '@accounting/common/backend';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import {
   Between,
   DataSource,
@@ -13,6 +13,7 @@ import {
 } from 'typeorm';
 
 import { Client, ClientSuspension, User, UserRole } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import {
   CreateSuspensionDto,

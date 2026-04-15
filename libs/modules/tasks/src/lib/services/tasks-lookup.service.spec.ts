@@ -12,7 +12,7 @@ describe('TasksLookupService', () => {
   let service: TasksLookupService;
   let userRepository: jest.Mocked<Repository<User>>;
   let clientRepository: jest.Mocked<Repository<Client>>;
-  let systemCompanyService: jest.Mocked<Pick<SystemCompanyService, 'getCompanyIdForUser'>>;
+  let _systemCompanyService: jest.Mocked<Pick<SystemCompanyService, 'getCompanyIdForUser'>>;
 
   const companyId = 'company-1';
   const mockUser = { id: 'user-1', companyId, role: UserRole.EMPLOYEE } as User;
@@ -29,7 +29,7 @@ describe('TasksLookupService', () => {
       find: jest.fn().mockResolvedValue([]),
     } as unknown as jest.Mocked<Repository<Client>>;
 
-    systemCompanyService = {
+    _systemCompanyService = {
       getCompanyIdForUser: jest.fn().mockResolvedValue(companyId),
     };
 
@@ -41,12 +41,12 @@ describe('TasksLookupService', () => {
             new TasksLookupService(
               userRepository as any,
               clientRepository as any,
-              systemCompanyService as any
+              _systemCompanyService as any
             ),
         },
         { provide: getRepositoryToken(User), useValue: userRepository },
         { provide: getRepositoryToken(Client), useValue: clientRepository },
-        { provide: SystemCompanyService, useValue: systemCompanyService },
+        { provide: SystemCompanyService, useValue: _systemCompanyService },
       ],
     }).compile();
 
@@ -75,12 +75,12 @@ describe('TasksLookupService', () => {
       });
     });
 
-    it('should return admin users when user is ADMIN', async () => {
-      const admins = [
+    it('should return users from system company when user is ADMIN', async () => {
+      const systemCompanyUsers = [
         { id: 'a-1', firstName: 'Super', lastName: 'Admin', email: 'admin@test.pl' },
       ] as User[];
 
-      userRepository.find.mockResolvedValue(admins);
+      userRepository.find.mockResolvedValue(systemCompanyUsers);
 
       const result = await service.getAssignees(mockAdminUser);
 
@@ -91,19 +91,22 @@ describe('TasksLookupService', () => {
         lastName: 'Admin',
         email: 'admin@test.pl',
       });
+      expect(_systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockAdminUser);
       expect(userRepository.find).toHaveBeenCalledWith({
-        where: { role: UserRole.ADMIN, isActive: true },
+        where: { companyId, isActive: true },
         select: ['id', 'firstName', 'lastName', 'email'],
         order: { firstName: 'ASC', lastName: 'ASC' },
       });
     });
 
-    it('should return empty array when user has no companyId and is not ADMIN', async () => {
+    it('should return empty array when systemCompanyService returns null', async () => {
       const userWithoutCompany = {
         id: 'user-orphan',
         companyId: null,
         role: UserRole.EMPLOYEE,
       } as unknown as User;
+
+      _systemCompanyService.getCompanyIdForUser.mockResolvedValue(null);
 
       const result = await service.getAssignees(userWithoutCompany);
 
@@ -139,7 +142,7 @@ describe('TasksLookupService', () => {
 
       await service.getClients(mockUser);
 
-      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
+      expect(_systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
     });
 
     it('should return empty array when no clients exist', async () => {
