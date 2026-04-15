@@ -1,6 +1,6 @@
-import { SystemCompanyService } from '@accounting/common/backend';
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { DataSource, In, Repository } from 'typeorm';
 
 import {
@@ -10,6 +10,7 @@ import {
   TimeEntryStatus,
   User,
 } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { TimeEntryInvalidStatusException, TimeEntryNotFoundException } from '../exceptions';
 

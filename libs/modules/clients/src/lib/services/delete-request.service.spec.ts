@@ -1,7 +1,7 @@
-import { SystemCompanyService } from '@accounting/common/backend';
 import { HttpStatus } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+
 import { DataSource, type EntityManager, type QueryRunner, type Repository } from 'typeorm';
 
 import {
@@ -15,6 +15,7 @@ import {
   ZusStatus,
   type User,
 } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import {
   ClientErrorCode,

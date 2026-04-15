@@ -1,19 +1,27 @@
 import { memo, useEffect, useReducer, useRef, useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
+
+import { ArrowLeft, Edit, Image, Plus, Settings, Tags, Trash2 } from 'lucide-react';
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog';
 import { PageHeader } from '@/components/common/page-header';
-import { useAuthContext } from '@/contexts/auth-context';
+import { ClientIconFormDialog } from '@/components/forms/client-icon-form-dialog';
+import { FieldDefinitionFormDialog } from '@/components/forms/field-definition-form-dialog';
+import { NotificationSettingsForm } from '@/components/forms/notification-settings-form';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
-  type ClientFieldDefinitionResponseDto,
-  type ClientIconResponseDto,
-  type CreateClientFieldDefinitionDto,
-  type UpdateClientFieldDefinitionDto,
-  type UpdateClientIconDto,
-} from '@/types/dtos';
-import { CustomFieldType, UserRole } from '@/types/enums';
-import { ArrowLeft, Edit, Image, Plus, Settings, Tags, Trash2 } from 'lucide-react';
-
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useAuthContext } from '@/contexts/auth-context';
 import {
   useClientFieldDefinitions,
   useClientIcons,
@@ -34,21 +42,14 @@ import {
   type UpdateClientFieldDefinitionFormData,
   type UpdateClientIconFormData,
 } from '@/lib/validation/schemas';
-import { ClientIconFormDialog } from '@/components/forms/client-icon-form-dialog';
-import { FieldDefinitionFormDialog } from '@/components/forms/field-definition-form-dialog';
-import { NotificationSettingsForm } from '@/components/forms/notification-settings-form';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  type ClientFieldDefinitionResponseDto,
+  type ClientIconResponseDto,
+  type CreateClientFieldDefinitionDto,
+  type UpdateClientFieldDefinitionDto,
+  type UpdateClientIconDto,
+} from '@/types/dtos';
+import { CustomFieldType, UserRole } from '@/types/enums';
 
 const FIELD_TYPE_LABELS: Record<CustomFieldType, string> = {
   [CustomFieldType.TEXT]: 'Tekst',

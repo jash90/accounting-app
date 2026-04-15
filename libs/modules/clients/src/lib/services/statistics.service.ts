@@ -1,6 +1,6 @@
-import { SystemCompanyService } from '@accounting/common/backend';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { MoreThanOrEqual, Repository } from 'typeorm';
 
 import {
@@ -15,6 +15,7 @@ import {
   VatStatus,
   ZusStatus,
 } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import {
   ClientStatisticsDto,

@@ -1,10 +1,11 @@
-import { SystemCompanyService } from '@accounting/common/backend';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+
 import { type Repository } from 'typeorm';
 
 import { Client, ClientReliefPeriod, ReliefType, User, UserRole } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { ClientNotFoundException } from '../exceptions';
 import { ReliefPeriodService } from './relief-period.service';

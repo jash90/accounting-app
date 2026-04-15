@@ -1,11 +1,6 @@
-import {
-  calculatePagination,
-  sanitizeForLog,
-  SystemCompanyService,
-} from '@accounting/common/backend';
-import { ChangeLogService } from '@accounting/infrastructure/change-log';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { DataSource, Repository } from 'typeorm';
 
 import {
@@ -22,6 +17,12 @@ import {
   TimeRoundingMethod,
   User,
 } from '@accounting/common';
+import {
+  calculatePagination,
+  sanitizeForLog,
+  SystemCompanyService,
+} from '@accounting/common/backend';
+import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import { CreateTimeEntryDto, TimeEntryFiltersDto, UpdateTimeEntryDto } from '../dto/time-entry.dto';
 import { StartTimerDto, StopTimerDto, UpdateTimerDto } from '../dto/timer.dto';

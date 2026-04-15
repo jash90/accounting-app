@@ -1,7 +1,6 @@
 import { useParams } from 'react-router-dom';
 
 import { BaseEmailList } from '@/components/email/base-email-list';
-
 import { useEmailFolder } from '@/lib/hooks/use-email-client';
 
 /**

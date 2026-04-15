@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { applyUpdate, User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 import { EmailConfigurationService } from '@accounting/email';
 
 import { EmailDraftSyncService, SyncResult } from './email-draft-sync.service';
@@ -31,21 +32,20 @@ export class EmailDraftService {
     @InjectRepository(EmailDraft)
     private readonly draftRepository: Repository<EmailDraft>,
     private readonly draftSyncService: EmailDraftSyncService,
-    private readonly emailConfigService: EmailConfigurationService
+    private readonly emailConfigService: EmailConfigurationService,
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   /**
    * Create new email draft with optional IMAP sync
    */
   async create(user: User, dto: CreateDraftDto, syncToImap = true): Promise<EmailDraft> {
-    if (!user.companyId) {
-      throw new ForbiddenException('User must belong to a company');
-    }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const draft = this.draftRepository.create({
       ...dto,
       userId: user.id,
-      companyId: user.companyId,
+      companyId,
       syncStatus: 'local', // Will be synced
     });
 
@@ -53,9 +53,8 @@ export class EmailDraftService {
 
     // Sync to IMAP if enabled
     if (syncToImap) {
-      const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
-        user.companyId
-      );
+      const emailConfig =
+        await this.emailConfigService.getDecryptedEmailConfigByCompanyId(companyId);
       if (emailConfig) {
         try {
           await this.draftSyncService.pushDraftToImap(savedDraft, emailConfig);
@@ -72,13 +71,10 @@ export class EmailDraftService {
   /**
    * Get all drafts for user's company
    */
-  findAll(user: User): Promise<EmailDraft[]> {
-    if (!user.companyId) {
-      throw new ForbiddenException('User must belong to a company');
-    }
-
+  async findAll(user: User): Promise<EmailDraft[]> {
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     return this.draftRepository.find({
-      where: { companyId: user.companyId },
+      where: { companyId },
       order: { updatedAt: 'DESC' },
       relations: ['user'],
     });
@@ -88,12 +84,10 @@ export class EmailDraftService {
    * Get draft by ID
    */
   async findOne(user: User, draftId: string): Promise<EmailDraft> {
-    if (!user.companyId) {
-      throw new ForbiddenException('User must belong to a company');
-    }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const draft = await this.draftRepository.findOne({
-      where: { id: draftId, companyId: user.companyId },
+      where: { id: draftId, companyId },
       relations: ['user'],
     });
 
@@ -116,9 +110,8 @@ export class EmailDraftService {
     }
 
     // companyId is validated in findOne() which throws if missing
-    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
-      user.companyId as string
-    );
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
+    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(companyId);
 
     if (emailConfig && draft.syncStatus === 'synced' && draft.imapUid) {
       try {
@@ -146,9 +139,8 @@ export class EmailDraftService {
     }
 
     // companyId is validated in findOne() which throws if missing
-    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
-      user.companyId as string
-    );
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
+    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(companyId);
 
     if (emailConfig && draft.imapUid) {
       try {
@@ -166,15 +158,12 @@ export class EmailDraftService {
   /**
    * Get drafts created by current user
    */
-  findMyDrafts(user: User): Promise<EmailDraft[]> {
-    if (!user.companyId) {
-      throw new ForbiddenException('User must belong to a company');
-    }
-
+  async findMyDrafts(user: User): Promise<EmailDraft[]> {
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     return this.draftRepository.find({
       where: {
         userId: user.id,
-        companyId: user.companyId,
+        companyId,
       },
       order: { updatedAt: 'DESC' },
     });
@@ -183,14 +172,11 @@ export class EmailDraftService {
   /**
    * Get AI-generated drafts only
    */
-  findAiDrafts(user: User): Promise<EmailDraft[]> {
-    if (!user.companyId) {
-      throw new ForbiddenException('User must belong to a company');
-    }
-
+  async findAiDrafts(user: User): Promise<EmailDraft[]> {
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     return this.draftRepository.find({
       where: {
-        companyId: user.companyId,
+        companyId,
         isAiGenerated: true,
       },
       order: { createdAt: 'DESC' },
@@ -226,13 +212,11 @@ export class EmailDraftService {
    * Delete all drafts for user's company
    */
   async removeAll(user: User): Promise<{ deleted: number; errors: string[] }> {
-    if (!user.companyId) {
-      throw new ForbiddenException('User must belong to a company');
-    }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     try {
-      this.logger.log(`Deleting all drafts for company ${user.companyId}`);
-      const deleteResult = await this.draftRepository.delete({ companyId: user.companyId });
+      this.logger.log(`Deleting all drafts for company ${companyId}`);
+      const deleteResult = await this.draftRepository.delete({ companyId });
       const deleted = deleteResult.affected || 0;
       this.logger.log(`Deleted ${deleted} drafts from database`);
       return { deleted, errors: [] };

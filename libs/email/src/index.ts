@@ -37,3 +37,6 @@ export * from './lib/utils/autoconfig-xml.parser';
 export * from './lib/utils/autodiscover-xml.parser';
 export * from './lib/utils/imap-connection.factory';
 export * from './lib/utils/imap-folder-discovery';
+
+// Constants
+export * from './lib/constants/email-tls.constants';

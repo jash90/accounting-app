@@ -1,22 +1,7 @@
 import { lazy, Suspense, useCallback, useMemo, useState, useTransition } from 'react';
+
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import { DataTable } from '@/components/common/data-table';
-import { PageHeader } from '@/components/common/page-header';
-import { TaskFilters } from '@/components/tasks/task-filters';
-import { TaskLabelList } from '@/components/tasks/task-label-badge';
-import { TaskPriorityBadge } from '@/components/tasks/task-priority-badge';
-import { TaskStatusBadge } from '@/components/tasks/task-status-badge';
-import { useAuthContext } from '@/contexts/auth-context';
-import { mapTaskLabels } from '@/lib/utils/task-label-mapper';
-import {
-  type CreateTaskDto,
-  type TaskFiltersDto,
-  type TaskResponseDto,
-  type UpdateTaskDto,
-} from '@/types/dtos';
-import { TaskStatusLabels, UserRole, type TaskStatus } from '@/types/enums';
 import { type ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale/pl';
@@ -34,8 +19,13 @@ import {
   Trash2,
 } from 'lucide-react';
 
-import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
-import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { DataTable } from '@/components/common/data-table';
+import { PageHeader } from '@/components/common/page-header';
+import { TaskFilters } from '@/components/tasks/task-filters';
+import { TaskLabelList } from '@/components/tasks/task-label-badge';
+import { TaskPriorityBadge } from '@/components/tasks/task-priority-badge';
+import { TaskStatusBadge } from '@/components/tasks/task-status-badge';
 import {
   useBulkUpdateTaskStatus,
   useCreateTask,
@@ -56,6 +46,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthContext } from '@/contexts/auth-context';
+import { useCrudDialogs } from '@/lib/hooks/use-crud-dialogs';
+import { useModulePermissions } from '@/lib/hooks/use-permissions';
+import { mapTaskLabels } from '@/lib/utils/task-label-mapper';
+import {
+  type CreateTaskDto,
+  type TaskFiltersDto,
+  type TaskResponseDto,
+  type UpdateTaskDto,
+} from '@/types/dtos';
+import { TaskStatusLabels, UserRole, type TaskStatus } from '@/types/enums';
 
 // Lazy-load heavy form dialog (547 lines) - direct import for tree-shaking
 const TaskFormDialog = lazy(() =>

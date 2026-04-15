@@ -1,12 +1,11 @@
+// TLS validation - secure by default, configurable via env
+import { EMAIL_REJECT_UNAUTHORIZED } from '../constants/email-tls.constants';
 import {
   type EmailConfig,
   type EmailConfigOptions,
   type ImapConfig,
   type SmtpConfig,
 } from '../interfaces/email-config.interface';
-
-// TLS validation - secure by default, configurable via env
-const REJECT_UNAUTHORIZED = process.env['EMAIL_REJECT_UNAUTHORIZED'] !== 'false';
 
 /**
  * Helper class for creating email configurations
@@ -55,7 +54,7 @@ export class EmailConfigHelper {
         pass: password,
       },
       tls: {
-        rejectUnauthorized: REJECT_UNAUTHORIZED,
+        rejectUnauthorized: EMAIL_REJECT_UNAUTHORIZED,
       },
     };
   }
@@ -76,7 +75,7 @@ export class EmailConfigHelper {
       user,
       password,
       tlsOptions: {
-        rejectUnauthorized: REJECT_UNAUTHORIZED,
+        rejectUnauthorized: EMAIL_REJECT_UNAUTHORIZED,
       },
     };
   }

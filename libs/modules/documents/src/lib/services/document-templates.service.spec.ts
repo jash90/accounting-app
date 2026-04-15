@@ -1,7 +1,7 @@
-import { SystemCompanyService } from '@accounting/common/backend';
 import { NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+
 import { type Repository } from 'typeorm';
 
 import {
@@ -11,6 +11,7 @@ import {
   type ContentBlock,
   type User,
 } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { DocumentTemplatesService } from './document-templates.service';
 

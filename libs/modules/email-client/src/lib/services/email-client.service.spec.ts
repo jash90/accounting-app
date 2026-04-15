@@ -1,7 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 
-import { type User, UserRole } from '@accounting/common';
+import { UserRole, type User } from '@accounting/common';
+import { type SystemCompanyService } from '@accounting/common/backend';
 import {
   type EmailConfigurationService,
   type EmailReaderService,
@@ -34,6 +35,7 @@ describe('EmailClientService', () => {
       'getDecryptedSystemAdminEmailConfig' | 'getDecryptedEmailConfigByCompanyId'
     >
   >;
+  let systemCompanyService: jest.Mocked<Pick<SystemCompanyService, 'getCompanyIdForUser'>>;
 
   const companyId = 'company-1';
   const mockImapConfig = {
@@ -88,6 +90,10 @@ describe('EmailClientService', () => {
       getDecryptedEmailConfigByCompanyId: jest.fn(),
     };
 
+    systemCompanyService = {
+      getCompanyIdForUser: jest.fn().mockResolvedValue(companyId),
+    };
+
     const module = await Test.createTestingModule({
       providers: [
         {
@@ -96,7 +102,8 @@ describe('EmailClientService', () => {
             new EmailClientService(
               emailReaderService as any,
               emailSenderService as any,
-              emailConfigService as any
+              emailConfigService as any,
+              systemCompanyService as any
             ),
         },
       ],
@@ -167,6 +174,7 @@ describe('EmailClientService', () => {
 
     it('should throw BadRequestException when user has no companyId', async () => {
       const noCompanyUser = { id: 'user-2', role: UserRole.EMPLOYEE } as User;
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(null);
 
       await expect(service.getInbox(noCompanyUser)).rejects.toThrow(BadRequestException);
     });

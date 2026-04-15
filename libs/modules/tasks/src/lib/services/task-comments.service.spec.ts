@@ -1,9 +1,10 @@
-import { SystemCompanyService } from '@accounting/common/backend';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+
 import { type Repository } from 'typeorm';
 
 import { Task, TaskComment, type User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { TaskCommentNotFoundException, TaskNotFoundException } from '../exceptions';
 import { TaskCommentsService } from './task-comments.service';
@@ -12,7 +13,7 @@ describe('TaskCommentsService', () => {
   let service: TaskCommentsService;
   let taskRepository: jest.Mocked<Repository<Task>>;
   let commentRepository: jest.Mocked<Repository<TaskComment>>;
-  let systemCompanyService: jest.Mocked<Pick<SystemCompanyService, 'getCompanyIdForUser'>>;
+  let _systemCompanyService: jest.Mocked<Pick<SystemCompanyService, 'getCompanyIdForUser'>>;
 
   const companyId = 'company-1';
   const userId = 'user-1';
@@ -51,7 +52,7 @@ describe('TaskCommentsService', () => {
       remove: jest.fn(),
     } as unknown as jest.Mocked<Repository<TaskComment>>;
 
-    systemCompanyService = {
+    _systemCompanyService = {
       getCompanyIdForUser: jest.fn().mockResolvedValue(companyId),
     };
 
@@ -63,12 +64,12 @@ describe('TaskCommentsService', () => {
             new TaskCommentsService(
               taskRepository as any,
               commentRepository as any,
-              systemCompanyService as any
+              _systemCompanyService as any
             ),
         },
         { provide: getRepositoryToken(Task), useValue: taskRepository },
         { provide: getRepositoryToken(TaskComment), useValue: commentRepository },
-        { provide: SystemCompanyService, useValue: systemCompanyService },
+        { provide: SystemCompanyService, useValue: _systemCompanyService },
       ],
     }).compile();
 
@@ -84,7 +85,7 @@ describe('TaskCommentsService', () => {
       const result = await service.findAllForTask(taskId, mockUser);
 
       expect(result).toEqual(comments);
-      expect(systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
+      expect(_systemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(mockUser);
       expect(taskRepository.findOne).toHaveBeenCalledWith({
         where: { id: taskId, companyId },
       });

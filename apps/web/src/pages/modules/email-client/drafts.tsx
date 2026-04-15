@@ -12,15 +12,6 @@ import {
   Trash2,
 } from 'lucide-react';
 
-import {
-  useDeleteAllEmailDrafts,
-  useEmailDraftConflicts,
-  useEmailDrafts,
-  useResolveEmailDraftConflict,
-  useSendEmailDraft,
-  useSyncEmailDrafts,
-} from '@/lib/hooks/use-email-client';
-import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -31,6 +22,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
+import {
+  useDeleteAllEmailDrafts,
+  useEmailDraftConflicts,
+  useEmailDrafts,
+  useResolveEmailDraftConflict,
+  useSendEmailDraft,
+  useSyncEmailDrafts,
+} from '@/lib/hooks/use-email-client';
+import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
 
 import { EmailSidebar } from './components/email-sidebar';
 

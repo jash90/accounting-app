@@ -1,9 +1,10 @@
-import { SystemCompanyService } from '@accounting/common/backend';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
 
 import { generateCsvBuffer, Lead, Offer, User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { LeadFiltersDto } from '../dto/lead.dto';
 import { OfferFiltersDto } from '../dto/offer.dto';

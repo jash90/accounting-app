@@ -3,10 +3,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ImapFlow } from 'imapflow';
 import * as nodemailer from 'nodemailer';
 
-import { DiscoveredConfig } from '../interfaces/autodiscovery.interface';
-
 // TLS validation - configurable via env, defaults to true in production
-const REJECT_UNAUTHORIZED = process.env['EMAIL_REJECT_UNAUTHORIZED'] !== 'false';
+import { EMAIL_REJECT_UNAUTHORIZED } from '../constants/email-tls.constants';
+import { DiscoveredConfig } from '../interfaces/autodiscovery.interface';
 
 /**
  * Connection verification result
@@ -89,7 +88,7 @@ export class EmailVerificationService {
             user: credentials.email,
             pass: credentials.password,
           },
-          tls: { rejectUnauthorized: REJECT_UNAUTHORIZED },
+          tls: { rejectUnauthorized: EMAIL_REJECT_UNAUTHORIZED },
           connectionTimeout: this.VERIFICATION_TIMEOUT,
           greetingTimeout: 5000,
         });
@@ -161,7 +160,7 @@ export class EmailVerificationService {
             user: credentials.email,
             pass: credentials.password,
           },
-          tls: { rejectUnauthorized: REJECT_UNAUTHORIZED },
+          tls: { rejectUnauthorized: EMAIL_REJECT_UNAUTHORIZED },
           logger: false,
         });
 
