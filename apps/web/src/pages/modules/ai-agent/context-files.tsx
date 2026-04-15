@@ -12,12 +12,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import {
-  useAiContextFile,
-  useAiContextFiles,
-  useDeleteAiContextFile,
-  useUploadAiContextFile,
-} from '@/lib/hooks/use-ai-agent';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -37,6 +31,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  useAiContextFile,
+  useAiContextFiles,
+  useDeleteAiContextFile,
+  useUploadAiContextFile,
+} from '@/lib/hooks/use-ai-agent';
 
 export default function ContextFilesPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);

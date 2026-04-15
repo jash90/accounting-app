@@ -1,6 +1,84 @@
 # AGENTS.md
 
-This file provides guidance to AI agents (GitHub Copilot, Cursor, Claude Code, etc.) working with code in this repository.
+<!-- Scope: Global project rules — behavioral guidelines, SOLID principles, architecture, commands -->
+<!-- Source: Consolidated from CLAUDE.md, .claude/rules/solid-*.md, and existing AGENTS.md -->
+
+Universal agent instructions for this repository. All AI coding agents must follow these rules.
+
+## Behavioral Guidelines
+
+These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+
+### 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them — don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+### 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+### 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+
+- Never "improve" adjacent code, comments, or formatting.
+- Never refactor things that aren't broken.
+- Always match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it — don't delete it.
+
+When your changes create orphans:
+
+- Remove imports/variables/functions that YOUR changes made unused.
+- Never remove pre-existing dead code unless asked.
+
+The test: every changed line must trace directly to the user's request.
+
+### 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+## SOLID Principles
+
+All new and modified code must follow SOLID. When SOLID conflicts with simplicity, simplicity wins for single-use code — SOLID wins for shared/reusable code.
+
+- **S — Single Responsibility**: One class/component = one reason to change. Services handle one domain, controllers handle HTTP only, components render UI only. But don't split prematurely: small cohesive classes stay in one file.
+- **O — Open-Closed**: Extend via new modules, factory calls, event listeners — not by editing working code. Never introduce extension points before a second use case exists.
+- **L — Liskov Substitution**: Subtypes must be drop-in replacements. Extended DTOs honor base validations, factory-generated hooks return consistent shapes. If overriding changes a contract, stop and state the assumption.
+- **I — Interface Segregation**: Small, focused interfaces. Separate Create/Update DTOs, granular hooks (`useTaskFilters` vs `useTaskList`), split lib exports (`common` vs `common/backend`). Never add optional props "just in case."
+- **D — Dependency Inversion**: Always use DI (not `new`), `ConfigService` (not `process.env`), API hooks (not raw `fetch`), `appStorage` (not `localStorage`). Never create interfaces for every class — NestJS DI already provides inversion.
 
 ## Project Context
 
@@ -38,11 +116,11 @@ async findAll(user: User): Promise<Entity[]> {
 
 ### Authorization Guards (Required Order)
 
-Controllers must apply guards in this exact order:
+`JwtAuthGuard` is registered globally via `APP_GUARD` — it runs on **all** endpoints automatically. Do **not** include it in `@UseGuards()`. Controllers only need the module-level guards:
 
 ```typescript
 @Controller('items')
-@UseGuards(JwtAuthGuard, ModuleAccessGuard, PermissionGuard)
+@UseGuards(ModuleAccessGuard, PermissionGuard)
 @RequireModule('module-slug')
 export class ItemsController {
   @Get()
@@ -51,25 +129,32 @@ export class ItemsController {
 }
 ```
 
+Some older controllers explicitly include `JwtAuthGuard` — this is harmless but redundant.
+
 ### System Admin Company Pattern
 
-ADMIN users access data via a special "System Admin Company". Services must handle this:
+ADMIN users access data via a special "System Admin Company". **Always use `SystemCompanyService.getCompanyIdForUser(user)`** — never inline the resolution logic.
 
 ```typescript
-private async getSystemCompany(): Promise<Company> {
-  return this.companyRepository.findOneOrFail({
-    where: { name: 'System Admin Company' },
-  });
-}
+// ✅ CORRECT — always use SystemCompanyService
+constructor(private readonly systemCompanyService: SystemCompanyService) {}
 
 async findAll(user: User): Promise<Entity[]> {
+  const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
+  return this.repository.find({ where: { companyId } });
+}
+
+// ❌ WRONG — never inline this logic
+async findAll(user: User): Promise<Entity[]> {
   if (user.role === UserRole.ADMIN) {
-    const systemCompany = await this.getSystemCompany();
-    return this.repository.find({ where: { companyId: systemCompany.id } });
+    const systemCompany = await this.companyRepository.findOneOrFail(...);
+    // ...
   }
   return this.repository.find({ where: { companyId: user.companyId } });
 }
 ```
+
+Import: `import { SystemCompanyService } from '@accounting/common/backend';`
 
 ## Common Commands
 
@@ -104,10 +189,33 @@ bun run lint:web         # Lint frontend
 | Owner    | `owner@acme.com`    | `Owner123456!`    |
 | Employee | `employee@acme.com` | `Employee123456!` |
 
+## Apps & Libs
+
+| App            | Stack                            | Notes                                               |
+| -------------- | -------------------------------- | --------------------------------------------------- |
+| `apps/api`     | NestJS 11 + TypeORM + PostgreSQL | REST API, WebSockets, Swagger on `/docs` (non-prod) |
+| `apps/web`     | React 19 + Vite + TanStack Query | SPA, Vite proxies `/api` and `/socket.io` to API    |
+| `apps/landing` | Astro                            | Separate Bun project, independent build             |
+
+| Path                           | Purpose                                                                                                               |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `@accounting/common`           | Shared enums, entities, DTOs, types (isomorphic)                                                                      |
+| `@accounting/common/backend`   | Node-only: EncryptionService, TypeORM utils, PDF bootstrap                                                            |
+| `@accounting/common/browser`   | Browser-only exports                                                                                                  |
+| `@accounting/auth`             | JWT auth module, guards, decorators (@Public, @Roles, @CurrentUser)                                                   |
+| `@accounting/rbac`             | RBAC module, permission guards (@RequireModule, @RequirePermission, @OwnerOrAdmin)                                    |
+| `@accounting/email`            | Email config and providers                                                                                            |
+| `@accounting/infrastructure/*` | email, storage (S3/local), change-log                                                                                 |
+| `@accounting/modules/*`        | Feature modules: ai-agent, clients, documents, email-client, notifications, offers, settlements, tasks, time-tracking |
+
+Frontend uses `@/*` alias mapped to `apps/web/src/*`.
+
 ## Path Aliases
 
 ```typescript
 // Backend
+
+// Frontend (all use @/* alias mapped to apps/web/src/*)
 import { apiClient } from '@/lib/api-client';
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
@@ -116,7 +224,6 @@ import { TasksModule } from '@accounting/modules/tasks';
 import { RequireModule, RequirePermission } from '@accounting/rbac';
 
 import { useAuth } from '@/lib/hooks/use-auth';
-// Frontend
 import { Button } from '@/components/ui/button';
 ```
 
@@ -140,13 +247,20 @@ libs/modules/[name]/
 
 ```
 apps/web/src/
-├── pages/modules/[name]/     # Page components
-├── components/forms/         # Form dialogs
+├── pages/modules/[name]/         # Page components (routed views)
+├── components/
+│   ├── [name]/                   # Module-specific components (clients/, tasks/, offers/, etc.)
+│   ├── modules/ai-agent/         # AI agent components (only module in modules/ subdir)
+│   ├── common/                   # Shared components (status-badge, data-table, etc.)
+│   ├── forms/                    # Reusable form components
+│   ├── layouts/                  # Layout components (sidebar, header)
+│   ├── ui/                       # shadcn/ui primitives
+│   └── template-editor/          # Document template editor
 ├── lib/
-│   ├── api/endpoints/        # API client functions
-│   ├── hooks/                # React Query hooks
-│   └── validation/schemas.ts # Zod schemas
-└── types/dtos.ts             # TypeScript DTOs
+│   ├── api/endpoints/            # API client functions
+│   ├── hooks/                    # React Query hooks
+│   └── validation/schemas.ts     # Zod schemas
+└── types/dtos.ts                 # TypeScript DTOs
 ```
 
 ## Key Patterns
@@ -261,18 +375,84 @@ export class OpenRouterProviderService extends AIProviderService {}
 2. **Wrong guard order** - Must be: JwtAuthGuard → ModuleAccessGuard → PermissionGuard
 3. **Missing entity registration** - Register in both `typeorm.config.ts` AND module
 4. **Forgetting migrations** - Always generate after entity changes
-5. **ADMIN data access** - ADMIN uses System Admin Company, not `user.companyId`
+5. **ADMIN data access** - Always use `SystemCompanyService.getCompanyIdForUser(user)` — never use `user.companyId` directly for multi-tenant queries
 6. **Non-null assertions** - Use `!` in entities for TypeORM columns
+
+### Entities Exempt from `companyId`
+
+The following entities intentionally lack a `companyId` column — they are scoped via their parent entity's foreign key:
+
+| Entity                                                        | Reason                                                     |
+| ------------------------------------------------------------- | ---------------------------------------------------------- |
+| `TaskDependency`                                              | Join table: scoped by parent task's `companyId`            |
+| `TaskComment`                                                 | Scoped by parent task's `companyId` via query join         |
+| `TaskLabelAssignment`                                         | Join table: scoped by parent task's `companyId`            |
+| `ClientIconAssignment`                                        | Join table: scoped by parent client's `companyId`          |
+| `UserModulePermission`                                        | User-scoped: filtered by user's `companyId` at query level |
+| `AIConfiguration`, `AIContext`, `AIConversation`, `AIMessage` | System-level: managed via `SystemCompanyService`           |
+| `TokenUsage`, `TokenLimit`                                    | System-level: not company-scoped                           |
+| `ChangeLog`                                                   | System-level audit: filtered by entity context             |
+
+When creating new entities, default to including `companyId`. Only omit it for system-level or pure join tables, and document the exception here.
+
+### Legitimate `user.companyId` Usages (Non-Multi-Tenant)
+
+The following patterns are **acceptable** uses of `user.companyId` — they are **not** multi-tenant data resolution:
+
+| Pattern                                                   | Location                                                                                                | Reason                                                                   |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Defensive guard: `user.role !== ADMIN && !user.companyId` | `ai-conversation.service.ts`, `token-usage.service.ts`                                                  | Fast-fail validation before `getCompanyIdForUser` call — not data access |
+| API controller pass-through: `user.companyId!`            | `email-config.controller.ts`, `company.controller.ts`, `modules.controller.ts`                          | Guard-validated endpoints where user is guaranteed to have companyId     |
+| SQL column reference: `user.companyId = :companyId`       | `notification-settings.service.ts`, `client-changelog-email.service.ts`, `task-notification.service.ts` | SQL string referencing DB column, not TS property                        |
+
+## Auth Flow
+
+JWT Bearer tokens. `JwtAuthGuard` is registered globally via `APP_GUARD` — all endpoints require auth unless marked `@Public()`. Additional guards: `RolesGuard`, `ThrottlerGuard` (100 req/60s, disable in dev via `DISABLE_THROTTLER`).
+
+## Key Patterns (Backend)
+
+- **Multi-tenancy**: Use `SystemCompanyService.getCompanyIdForUser(user)` — the only correct way to resolve companyId.
+- **Pagination**: `getManyAndCount()` + `new PaginatedResponseDto(data, total, page, limit)`.
+- **Soft deletes**: Methods named `softDelete*` (not `remove` or `delete`).
+- **LIKE safety**: `escapeLikePattern()` from `@accounting/common` for all ILIKE queries.
+- **FK violations**: `isForeignKeyViolation()` from `@accounting/common` — never raw error codes.
+- **Date range filters**: `applyDateRangeFilter()` and `resolvePresetDateRange()` from `@accounting/common/backend`.
+- **CSV parsing**: `parseCsvLine()` from `@accounting/common`.
+- **Logging**: `sanitizeForLog()` from `@accounting/common/backend`.
+- **Swagger CSV**: `@ApiCsvResponse()` decorator from `@accounting/common`.
+- **JWT config reuse**: `createJwtModuleConfig()` from `@accounting/auth`.
+- **Pagination math**: `calculatePagination()` from `@accounting/common/backend`.
+- **TypeORM `orderBy` alias bug**: Never use `.orderBy('aliasName', 'DESC')` with `.addSelect('COUNT(*)', 'aliasName')`. Use `.orderBy('COUNT(*)', 'DESC')` directly.
+
+## Key Patterns (Frontend)
+
+- **API responses**: `PaginatedResponse<T>` has `{ data: T[], meta: PaginationMeta }`. Access via `data.data`, total via `data.meta.total`.
+- **Query hooks**: `createQueryHook`, `createMutationHook`, `createExportHook` factories in `apps/web/src/lib/hooks/`. Skip `createMutationHook` for hooks with `onMutate` (optimistic updates).
+- **Blob exports**: `createBlobExport<TFilters>(url)` from `crud-factory.ts`.
+- **Search inputs**: `useDeferredValue` + `useEffect` pattern (see `offers-list.tsx`).
+- **Resource keys**: `createResourceKeys(prefix)` in `query-client.ts`.
+- **Status badges**: `createStatusBadge` factory in `components/common/status-badge.tsx`.
+- **CRUD dialogs**: `useCrudDialogs<T>` hook.
+- **Error messages**: `getApiErrorMessage(error, fallback)` from `query-filters.ts`.
+- **Query filters**: `buildQueryFilters(filters)` from `query-filters.ts`.
+- **Cache tiers**: `CACHE_TIERS` from `cache-config.ts` — `{frequent, standard, stable}`.
+- **Role checks**: `isOwnerOrAdmin(user?)` from `utils/user.ts`.
+- **Form types**: Use DTO types for mutation args, not Zod-inferred types.
+- **Enum schemas**: Use `z.nativeEnum()` for all enum fields in Zod schemas.
+
+## Lint-staged
+
+Husky + lint-staged runs ESLint `--fix` and Prettier on commit. If pre-commit fails, fix the issue and create a NEW commit (don't amend).
 
 ## Documentation References
 
-| Document                     | Purpose                             |
-| ---------------------------- | ----------------------------------- |
-| `docs/ARCHITECTURE_GUIDE.md` | System design, entity relationships |
-| `docs/MODULE_DEVELOPMENT.md` | Complete module creation tutorial   |
-| `docs/API_DOCUMENTATION.md`  | Backend API reference               |
-| `docs/FRONTEND_GUIDE.md`     | React patterns, components          |
-| `docs/DESIGN_SYSTEM.md`      | UI components, styling              |
+| Document                     | Purpose                                         |
+| ---------------------------- | ----------------------------------------------- |
+| `docs/ARCHITECTURE_GUIDE.md` | System design, entity relationships             |
+| `docs/module-development/`   | Complete module creation tutorial (split guide) |
+| `docs/API_DOCUMENTATION.md`  | Backend API reference                           |
+| `docs/FRONTEND_GUIDE.md`     | React patterns, components                      |
+| `docs/DESIGN_SYSTEM.md`      | UI components, styling                          |
 
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->

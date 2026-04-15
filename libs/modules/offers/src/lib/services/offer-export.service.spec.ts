@@ -1,9 +1,10 @@
-import { SystemCompanyService } from '@accounting/common/backend';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+
 import { type Repository } from 'typeorm';
 
 import { Lead, Offer, type User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { OfferExportService } from './offer-export.service';
 

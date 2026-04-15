@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
+
 import { useForm } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { useCompanyProfile, useUpdateCompanyProfile } from '@/lib/hooks/use-company-profile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useCompanyProfile, useUpdateCompanyProfile } from '@/lib/hooks/use-company-profile';
 
 function validateNip(nip: string | undefined): boolean {
   if (!nip) return true;

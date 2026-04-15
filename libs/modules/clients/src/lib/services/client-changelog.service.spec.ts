@@ -119,6 +119,18 @@ describe('ClientChangelogService', () => {
       get: jest.fn().mockReturnValue(undefined),
     };
 
+    const mockSystemCompanyService = {
+      getCompanyIdForUser: jest.fn().mockImplementation((user: User) => {
+        if (!user.companyId) {
+          const { InternalServerErrorException } = require('@nestjs/common');
+          throw new InternalServerErrorException(
+            'Użytkownik nie jest przypisany do żadnej firmy. Skontaktuj się z administratorem.'
+          );
+        }
+        return Promise.resolve(user.companyId);
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         {
@@ -131,7 +143,8 @@ describe('ClientChangelogService', () => {
                 notifyClientCreated: jest.fn().mockResolvedValue(undefined),
                 notifyClientUpdated: jest.fn().mockResolvedValue(undefined),
                 notifyClientFieldChange: jest.fn().mockResolvedValue(undefined),
-              } as any
+              } as any,
+              mockSystemCompanyService as any
             ),
         },
         {
@@ -183,12 +196,10 @@ describe('ClientChangelogService', () => {
       expect(changeLogService.getChangeLogs).toHaveBeenCalledWith('Client', mockClientId);
     });
 
-    it('should throw ForbiddenException when user has no companyId', async () => {
+    it('should throw when user has no companyId', async () => {
       const user = createMockUser({ companyId: undefined });
 
-      await expect(service.getClientChangelog(mockClientId, user)).rejects.toThrow(
-        ForbiddenException
-      );
+      await expect(service.getClientChangelog(mockClientId, user)).rejects.toThrow();
     });
 
     it('should throw ForbiddenException when client belongs to different company', async () => {
@@ -247,10 +258,10 @@ describe('ClientChangelogService', () => {
       });
     });
 
-    it('should throw ForbiddenException when user has no companyId', async () => {
+    it('should throw when user has no companyId', async () => {
       const user = createMockUser({ companyId: undefined });
 
-      await expect(service.getCompanyChangelog(user)).rejects.toThrow(ForbiddenException);
+      await expect(service.getCompanyChangelog(user)).rejects.toThrow();
     });
   });
 

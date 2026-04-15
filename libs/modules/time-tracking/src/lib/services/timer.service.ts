@@ -1,6 +1,6 @@
-import { SystemCompanyService } from '@accounting/common/backend';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { DataSource, Repository } from 'typeorm';
 
 import {
@@ -13,6 +13,7 @@ import {
   TimeEntryStatus,
   User,
 } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { StartTimerDto, StopTimerDto, UpdateTimerDto } from '../dto/timer.dto';
 import { TimerAlreadyRunningException, TimerNotRunningException } from '../exceptions';

@@ -1,6 +1,6 @@
-import { resolveBlockPlaceholders, SystemCompanyService } from '@accounting/common/backend';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import * as Handlebars from 'handlebars';
 import { Repository } from 'typeorm';
 
@@ -11,9 +11,10 @@ import {
   User,
   type ContentBlock,
 } from '@accounting/common';
+import { resolveBlockPlaceholders, SystemCompanyService } from '@accounting/common/backend';
 
-import { GenerateDocumentDto } from '../dto/generated-document.dto';
 import { DocumentPdfService } from './document-pdf.service';
+import { GenerateDocumentDto } from '../dto/generated-document.dto';
 
 @Injectable()
 export class GeneratedDocumentsService {

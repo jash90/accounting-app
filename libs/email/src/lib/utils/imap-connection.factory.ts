@@ -2,11 +2,10 @@ import { type Logger } from '@nestjs/common';
 
 import { ImapFlow, type ListResponse, type MailboxObject } from 'imapflow';
 
+// TLS validation - secure by default, configurable via env
+import { EMAIL_REJECT_UNAUTHORIZED } from '../constants/email-tls.constants';
 import { type ImapConfig } from '../interfaces/email-config.interface';
 import { type FetchEmailsOptions } from '../interfaces/email-message.interface';
-
-// TLS validation - secure by default, configurable via env
-const REJECT_UNAUTHORIZED = process.env['EMAIL_REJECT_UNAUTHORIZED'] !== 'false';
 
 // Timeout configuration for serverless environments (Vercel functions have 60s limit)
 const CONNECTION_TIMEOUT = 30000; // 30 seconds - time to establish connection
@@ -49,7 +48,7 @@ export function createImapFlowClient(config: ImapConfig): ImapFlow {
       pass: config.password,
     },
     logger: false,
-    tls: config.tlsOptions || { rejectUnauthorized: REJECT_UNAUTHORIZED },
+    tls: config.tlsOptions || { rejectUnauthorized: EMAIL_REJECT_UNAUTHORIZED },
     connectionTimeout: CONNECTION_TIMEOUT,
     greetingTimeout: GREETING_TIMEOUT,
     socketTimeout: SOCKET_TIMEOUT,

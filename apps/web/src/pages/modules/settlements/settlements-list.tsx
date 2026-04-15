@@ -1,10 +1,7 @@
 import { lazy, Suspense, useCallback, useMemo, useState, useTransition } from 'react';
+
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { ErrorBoundary } from '@/components/common/error-boundary';
-import { PageHeader } from '@/components/common/page-header';
-import { useAuthContext } from '@/contexts/auth-context';
-import { isOwnerOrAdmin } from '@/lib/utils/user';
 import { type ColumnDef } from '@tanstack/react-table';
 import {
   AlertTriangle,
@@ -15,6 +12,13 @@ import {
   RefreshCcw,
 } from 'lucide-react';
 
+import { ErrorBoundary } from '@/components/common/error-boundary';
+import { PageHeader } from '@/components/common/page-header';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/components/ui/use-toast';
+import { useAuthContext } from '@/contexts/auth-context';
 import {
   type GetSettlementsQueryDto,
   type SettlementResponseDto,
@@ -31,10 +35,7 @@ import {
   useUpdateSettlement,
   useUpdateSettlementStatus,
 } from '@/lib/hooks/use-settlements';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/components/ui/use-toast';
+import { isOwnerOrAdmin } from '@/lib/utils/user';
 
 import { createSettlementsListColumns } from './columns/settlements-list-columns';
 import { FiltersPanel, type SettlementFilters } from './components/filters-panel';

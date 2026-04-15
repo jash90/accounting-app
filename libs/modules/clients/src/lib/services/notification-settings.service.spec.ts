@@ -57,6 +57,17 @@ describe('NotificationSettingsService', () => {
     findOne: jest.fn(),
   };
 
+  const mockSystemCompanyService = {
+    getCompanyIdForUser: jest.fn().mockImplementation((user: User) => {
+      if (!user.companyId) {
+        throw new InternalServerErrorException(
+          'Użytkownik nie jest przypisany do żadnej firmy. Skontaktuj się z administratorem.'
+        );
+      }
+      return Promise.resolve(user.companyId);
+    }),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -70,7 +81,8 @@ describe('NotificationSettingsService', () => {
           useFactory: () =>
             new NotificationSettingsService(
               mockSettingsRepository as any,
-              mockUserRepository as any
+              mockUserRepository as any,
+              mockSystemCompanyService as any
             ),
         },
         {
@@ -121,6 +133,7 @@ describe('NotificationSettingsService', () => {
       await expect(service.getSettings(userWithoutCompany as User)).rejects.toThrow(
         InternalServerErrorException
       );
+      expect(mockSystemCompanyService.getCompanyIdForUser).toHaveBeenCalledWith(userWithoutCompany);
     });
 
     it('should throw InternalServerErrorException when settings creation fails', async () => {

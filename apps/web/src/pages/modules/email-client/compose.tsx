@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+
 import { useLocation, useSearchParams } from 'react-router-dom';
 
-import { EmailEditor } from '@/components/email/email-editor';
 import {
   ArrowLeft,
   ChevronDown,
@@ -16,6 +16,12 @@ import {
   X,
 } from 'lucide-react';
 
+import { EmailEditor } from '@/components/email/email-editor';
+import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/components/ui/use-toast';
 import {
   useCreateEmailDraft,
   useEmailDraft,
@@ -25,11 +31,6 @@ import {
   useUploadEmailAttachment,
 } from '@/lib/hooks/use-email-client';
 import { useEmailClientNavigation } from '@/lib/hooks/use-email-client-navigation';
-import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/components/ui/use-toast';
 
 interface LocationState {
   replyTo?: {

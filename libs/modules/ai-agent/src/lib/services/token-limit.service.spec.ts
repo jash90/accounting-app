@@ -179,6 +179,7 @@ describe('TokenLimitService', () => {
         companyId: null,
         role: UserRole.COMPANY_OWNER,
       } as unknown as User;
+      systemCompanyService.getCompanyIdForUser.mockResolvedValue(null);
 
       await expect(service.setUserLimit(mockUser.id, setDto, noCompanyOwner)).rejects.toThrow(
         'User not associated with company'

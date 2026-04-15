@@ -1,5 +1,6 @@
 
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { OnEvent } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -44,8 +45,8 @@ export class EmailChannelService {
   private readonly logger = new Logger(EmailChannelService.name);
   private readonly templatesDir: string;
 
-  private static resolveTemplatesDir(): string {
-    const envDir = process.env['NOTIFICATION_TEMPLATES_DIR'];
+  private static resolveTemplatesDir(configService: ConfigService): string {
+    const envDir = configService.get<string>('NOTIFICATION_TEMPLATES_DIR');
     if (!envDir) {
       return path.resolve(__dirname, '..', 'templates');
     }
@@ -62,9 +63,10 @@ export class EmailChannelService {
     private readonly userRepository: Repository<User>,
     private readonly emailConfigService: EmailConfigurationService,
     private readonly emailSenderService: EmailSenderService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly configService: ConfigService
   ) {
-    this.templatesDir = EmailChannelService.resolveTemplatesDir();
+    this.templatesDir = EmailChannelService.resolveTemplatesDir(configService);
   }
 
   @OnEvent('notification.email.send')

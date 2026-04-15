@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { applyUpdate, User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 import {
   EmailConfig,
   EmailConfigurationService,
@@ -41,7 +42,8 @@ export class EmailDraftSyncService {
     @InjectRepository(EmailDraft)
     private readonly draftRepository: Repository<EmailDraft>,
     private readonly emailReaderService: EmailReaderService,
-    private readonly emailConfigService: EmailConfigurationService
+    private readonly emailConfigService: EmailConfigurationService,
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   /**
@@ -56,15 +58,11 @@ export class EmailDraftSyncService {
       errors: [],
     };
 
-    if (!user.companyId) {
-      result.errors.push('User must belong to a company');
-      return result;
-    }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     try {
-      const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
-        user.companyId
-      );
+      const emailConfig =
+        await this.emailConfigService.getDecryptedEmailConfigByCompanyId(companyId);
       if (!emailConfig) {
         throw new Error('No email configuration found');
       }
@@ -77,7 +75,7 @@ export class EmailDraftSyncService {
 
       // Step 2: Fetch all drafts from database for this company
       const dbDrafts = await this.draftRepository.find({
-        where: { companyId: user.companyId },
+        where: { companyId },
       });
       this.logger.log(`Found ${dbDrafts.length} drafts in database`);
 
@@ -178,8 +176,9 @@ export class EmailDraftSyncService {
   ): Promise<EmailDraft> {
     const draftsMailbox = await this.emailReaderService.findDraftsMailbox(emailConfig.imap);
 
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const draft = this.draftRepository.create({
-      companyId: user.companyId as string, // Validated in syncDrafts caller
+      companyId,
       userId: user.id,
       to: imapDraft.to.map((a) => a.address),
       cc: imapDraft.cc?.map((a) => a.address),
@@ -267,21 +266,17 @@ export class EmailDraftSyncService {
     resolution: 'keep_local' | 'keep_imap',
     user: User
   ): Promise<EmailDraft> {
-    if (!user.companyId) {
-      throw new Error('User must belong to a company');
-    }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     const draft = await this.draftRepository.findOne({
-      where: { id: draftId, companyId: user.companyId },
+      where: { id: draftId, companyId },
     });
 
     if (!draft || draft.syncStatus !== 'conflict') {
       throw new Error('Draft not found or not in conflict state');
     }
 
-    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
-      user.companyId
-    );
+    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(companyId);
     if (!emailConfig) {
       throw new Error('No email configuration found');
     }
@@ -329,14 +324,11 @@ export class EmailDraftSyncService {
   /**
    * Get drafts with sync conflicts
    */
-  findConflicts(user: User): Promise<EmailDraft[]> {
-    if (!user.companyId) {
-      return Promise.resolve([]);
-    }
-
+  async findConflicts(user: User): Promise<EmailDraft[]> {
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     return this.draftRepository.find({
       where: {
-        companyId: user.companyId,
+        companyId,
         syncStatus: 'conflict',
       },
       order: { updatedAt: 'DESC' },
@@ -348,17 +340,13 @@ export class EmailDraftSyncService {
    */
   async deleteAllDrafts(user: User): Promise<{ deleted: number; errors: string[] }> {
     const result = { deleted: 0, errors: [] as string[] };
-
-    if (!user.companyId) {
-      result.errors.push('User must belong to a company');
-      return result;
-    }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     try {
-      this.logger.log(`Deleting all drafts for company ${user.companyId}`);
+      this.logger.log(`Deleting all drafts for company ${companyId}`);
 
       // Delete all from database
-      const deleteResult = await this.draftRepository.delete({ companyId: user.companyId });
+      const deleteResult = await this.draftRepository.delete({ companyId });
       result.deleted = deleteResult.affected || 0;
 
       this.logger.log(`Deleted ${result.deleted} drafts from database`);

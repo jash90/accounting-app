@@ -7,22 +7,22 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
+
 import { Repository } from 'typeorm';
 
 import { EmailConfiguration } from '@accounting/common';
 import { EncryptionService, SystemCompanyService } from '@accounting/common/backend';
 
+// TLS validation - secure by default, configurable via env
+// TODO: Future enhancement - move to per-company EmailConfiguration entity
+// to support multi-tenant TLS settings (requires migration + entity update)
 import { EmailReaderService } from './email-reader.service';
 import { EmailSenderService } from './email-sender.service';
+import { EMAIL_REJECT_UNAUTHORIZED } from '../constants/email-tls.constants';
 import { CreateEmailConfigDto } from '../dto/create-email-config.dto';
 import { EmailConfigResponseDto } from '../dto/email-config-response.dto';
 import { UpdateEmailConfigDto } from '../dto/update-email-config.dto';
 import { ImapConfig, SmtpConfig } from '../interfaces/email-config.interface';
-
-// TLS validation - secure by default, configurable via env
-// TODO: Future enhancement - move to per-company EmailConfiguration entity
-// to support multi-tenant TLS settings (requires migration + entity update)
-const REJECT_UNAUTHORIZED = process.env['EMAIL_REJECT_UNAUTHORIZED'] !== 'false';
 
 /**
  * Service for managing email configurations for users and companies
@@ -213,7 +213,7 @@ export class EmailConfigurationService {
       user: config.imapUser,
       password: await this.encryptionService.decrypt(config.imapPassword),
       tlsOptions: {
-        rejectUnauthorized: REJECT_UNAUTHORIZED,
+        rejectUnauthorized: EMAIL_REJECT_UNAUTHORIZED,
       },
     };
   }

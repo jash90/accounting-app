@@ -1,10 +1,11 @@
-import { sanitizeForLog } from '@accounting/common/backend';
-import { ChangeLogService } from '@accounting/infrastructure/change-log';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
 
 import { isOwnerOrAdmin, TimeEntry, User } from '@accounting/common';
+import { sanitizeForLog } from '@accounting/common/backend';
+import { ChangeLogService } from '@accounting/infrastructure/change-log';
 
 import { TimeEntryLockedException, TimeEntryUnlockNotAuthorizedException } from '../exceptions';
 import { TimeSettingsService } from './time-settings.service';

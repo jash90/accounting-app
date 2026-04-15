@@ -1,9 +1,10 @@
-import { SystemCompanyService } from '@accounting/common/backend';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Not, Repository } from 'typeorm';
 
 import { Client, User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { DuplicateCheckResultDto, DuplicateClientInfo } from '../dto/bulk-operations.dto';
 
