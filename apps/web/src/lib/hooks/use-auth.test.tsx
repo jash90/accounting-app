@@ -10,6 +10,12 @@ import { tokenStorage } from '../auth/token-storage';
 
 vi.mock('../api/endpoints/auth');
 vi.mock('../auth/token-storage');
+vi.mock('../api/client', () => ({
+  silentRefreshScheduler: {
+    schedule: vi.fn(),
+    cancel: vi.fn(),
+  },
+}));
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -65,15 +71,17 @@ describe('useAuth', () => {
     });
   });
 
-  it('should logout and clear tokens', () => {
+  it('should logout and clear tokens', async () => {
+    vi.mocked(authApi.logout).mockResolvedValue(undefined);
     vi.mocked(tokenStorage.clearTokens).mockImplementation(() => {});
 
     const { result } = renderHook(() => useAuth(), {
       wrapper: createWrapper(),
     });
 
-    result.current.logout();
+    await result.current.logout();
 
+    expect(authApi.logout).toHaveBeenCalled();
     expect(tokenStorage.clearTokens).toHaveBeenCalled();
   });
 
@@ -158,7 +166,8 @@ describe('useAuth', () => {
       });
     });
 
-    it('should handle logout when not authenticated', () => {
+    it('should handle logout when not authenticated', async () => {
+      vi.mocked(authApi.logout).mockRejectedValue(new Error('Not authenticated'));
       vi.mocked(tokenStorage.clearTokens).mockImplementation(() => {});
       vi.mocked(tokenStorage.getAccessToken).mockReturnValue(null);
 
@@ -167,7 +176,7 @@ describe('useAuth', () => {
       });
 
       // Should not throw when logging out while not authenticated
-      expect(() => result.current.logout()).not.toThrow();
+      await expect(result.current.logout()).resolves.not.toThrow();
       expect(tokenStorage.clearTokens).toHaveBeenCalled();
     });
   });

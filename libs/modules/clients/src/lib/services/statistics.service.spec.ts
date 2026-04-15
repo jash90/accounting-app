@@ -1,6 +1,6 @@
-import { SystemCompanyService } from '@accounting/common/backend';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+
 import { type Repository } from 'typeorm';
 
 import {
@@ -13,6 +13,7 @@ import {
   VatStatus,
   type User,
 } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import { ClientStatisticsService } from './statistics.service';
 

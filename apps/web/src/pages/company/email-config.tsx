@@ -1,10 +1,15 @@
 import { useState } from 'react';
 
-import { ConfirmDialog } from '@/components/common/confirm-dialog';
-import { PageHeader } from '@/components/common/page-header';
-import { formatDate } from '@/lib/utils/format-date';
 import { AlertCircle, Building2, Edit, Lock, Plus, Server, Trash2 } from 'lucide-react';
 
+import { ConfirmDialog } from '@/components/common/confirm-dialog';
+import { PageHeader } from '@/components/common/page-header';
+import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/components/ui/use-toast';
 import {
   useCompanyEmailConfig,
   useCreateCompanyEmailConfig,
@@ -13,16 +18,11 @@ import {
   useTestCompanySmtp,
   useUpdateCompanyEmailConfig,
 } from '@/lib/hooks/use-email-config';
+import { formatDate } from '@/lib/utils/format-date';
 import {
   type CreateEmailConfigFormData,
   type UpdateEmailConfigFormData,
 } from '@/lib/validation/schemas';
-import { EmailConfigFormDialog } from '@/components/forms/email-config-form-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/components/ui/use-toast';
 
 type CompanyEmailConfigData = ReturnType<typeof useCompanyEmailConfig>['data'];
 

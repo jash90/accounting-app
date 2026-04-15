@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { Client, User, UserRole } from '@accounting/common';
+import { Client, User } from '@accounting/common';
 import { SystemCompanyService } from '@accounting/common/backend';
 
 export interface AssigneeDto {
@@ -29,23 +29,17 @@ export class TasksLookupService {
   ) {}
 
   async getAssignees(user: User): Promise<AssigneeDto[]> {
-    let users: User[];
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
-    if (user.role === UserRole.ADMIN) {
-      users = await this.userRepository.find({
-        where: { role: UserRole.ADMIN, isActive: true },
-        select: ['id', 'firstName', 'lastName', 'email'],
-        order: { firstName: 'ASC', lastName: 'ASC' },
-      });
-    } else if (user.companyId) {
-      users = await this.userRepository.find({
-        where: { companyId: user.companyId, isActive: true },
-        select: ['id', 'firstName', 'lastName', 'email'],
-        order: { firstName: 'ASC', lastName: 'ASC' },
-      });
-    } else {
-      users = [];
+    if (!companyId) {
+      return [];
     }
+
+    const users = await this.userRepository.find({
+      where: { companyId, isActive: true },
+      select: ['id', 'firstName', 'lastName', 'email'],
+      order: { firstName: 'ASC', lastName: 'ASC' },
+    });
 
     return users.map((u) => ({
       id: u.id,

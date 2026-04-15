@@ -1,9 +1,10 @@
-import { SystemCompanyService } from '@accounting/common/backend';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { Repository } from 'typeorm';
 
 import { SettlementSettings, User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import {
   SettlementSettingsResponseDto,

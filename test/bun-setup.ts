@@ -77,7 +77,7 @@ process.env['NODE_ENV'] = 'test';
 
 /**
  * Helper to register design:paramtypes metadata for a class.
- * Use this when testing NestJS services that don't have explicit @Inject() decorators.
+ * Use this when testing NestJS services that don't use explicit @Inject() decorators.
  *
  * @example
  * // In your test file:

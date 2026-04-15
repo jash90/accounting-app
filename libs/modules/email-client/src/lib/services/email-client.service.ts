@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 
 import { ErrorMessages, User, UserRole } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 import {
   EmailConfigurationService,
   EmailReaderService,
@@ -18,6 +19,7 @@ import {
   SmtpConfig,
   type MailboxInfo,
 } from '@accounting/email';
+
 
 /** Default timeout for IMAP operations in milliseconds */
 const IMAP_OPERATION_TIMEOUT = 90000; // 90 seconds - Interia IMAP is slow
@@ -93,7 +95,8 @@ export class EmailClientService {
   constructor(
     private readonly emailReaderService: EmailReaderService,
     private readonly emailSenderService: EmailSenderService,
-    private readonly emailConfigService: EmailConfigurationService
+    private readonly emailConfigService: EmailConfigurationService,
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   /**
@@ -120,13 +123,12 @@ export class EmailClientService {
     }
 
     // For non-ADMIN users, use company email configuration
-    if (!user.companyId) {
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
+    if (!companyId) {
       throw new BadRequestException(ErrorMessages.EMAIL.USER_MUST_BELONG_TO_COMPANY);
     }
 
-    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(
-      user.companyId
-    );
+    const emailConfig = await this.emailConfigService.getDecryptedEmailConfigByCompanyId(companyId);
 
     if (!emailConfig) {
       throw new BadRequestException(ErrorMessages.EMAIL.COMPANY_CONFIG_MISSING);

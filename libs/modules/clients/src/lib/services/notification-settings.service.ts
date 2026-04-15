@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { applyUpdate, NotificationSettings, User } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 export interface UpdateNotificationSettingsDto {
   receiveOnCreate?: boolean;
@@ -20,22 +21,19 @@ export class NotificationSettingsService {
     @InjectRepository(NotificationSettings)
     private readonly settingsRepository: Repository<NotificationSettings>,
     @InjectRepository(User)
-    private readonly userRepository: Repository<User>
+    private readonly userRepository: Repository<User>,
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   async getSettings(user: User): Promise<NotificationSettings> {
-    if (!user.companyId) {
-      throw new InternalServerErrorException(
-        'User must belong to a company to have notification settings'
-      );
-    }
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Use atomic upsert to prevent race conditions
     // First try to find existing settings with companyId for tenant isolation
     let settings = await this.settingsRepository.findOne({
       where: {
         userId: user.id,
-        companyId: user.companyId,
+        companyId,
         moduleSlug: this.moduleSlug,
       },
     });
@@ -44,7 +42,7 @@ export class NotificationSettingsService {
       // Create default settings using upsert to handle concurrent requests
       const defaultSettings = {
         userId: user.id,
-        companyId: user.companyId,
+        companyId,
         moduleSlug: this.moduleSlug,
         receiveOnCreate: true,
         receiveOnUpdate: true,
@@ -64,7 +62,7 @@ export class NotificationSettingsService {
       settings = await this.settingsRepository.findOne({
         where: {
           userId: user.id,
-          companyId: user.companyId,
+          companyId,
           moduleSlug: this.moduleSlug,
         },
       });

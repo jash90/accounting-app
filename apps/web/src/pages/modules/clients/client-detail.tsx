@@ -1,18 +1,7 @@
 import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
+
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { ErrorBoundary } from '@/components/common/error-boundary';
-import { useAuthContext } from '@/contexts/auth-context';
-import { formatDate } from '@/lib/utils/format-date';
-import { type UpdateClientDto } from '@/types/dtos';
-import { type ClientIcon } from '@/types/entities';
-import {
-  EmploymentTypeLabels,
-  TaxSchemeLabels,
-  UserRole,
-  VatStatusLabels,
-  ZusStatusLabels,
-} from '@/types/enums';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -24,6 +13,14 @@ import {
   User,
 } from 'lucide-react';
 
+import { ErrorBoundary } from '@/components/common/error-boundary';
+import { type ClientReliefsData } from '@/components/forms/client-form-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { InfoItem } from '@/components/ui/info-item';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthContext } from '@/contexts/auth-context';
 import {
   useClient,
   useClientFieldDefinitions,
@@ -38,12 +35,16 @@ import {
   useDeleteReliefPeriod,
   useUpdateReliefPeriod,
 } from '@/lib/hooks/use-relief-periods';
-import { type ClientReliefsData } from '@/components/forms/client-form-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { InfoItem } from '@/components/ui/info-item';
-import { Skeleton } from '@/components/ui/skeleton';
+import { formatDate } from '@/lib/utils/format-date';
+import { type UpdateClientDto } from '@/types/dtos';
+import { type ClientIcon } from '@/types/entities';
+import {
+  EmploymentTypeLabels,
+  TaxSchemeLabels,
+  UserRole,
+  VatStatusLabels,
+  ZusStatusLabels,
+} from '@/types/enums';
 
 // Lazy-load conditionally rendered sidebar components for better bundle splitting
 // These are only visible on client detail page and often scrolled to

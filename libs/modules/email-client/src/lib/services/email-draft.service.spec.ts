@@ -4,7 +4,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { type Repository } from 'typeorm';
 
-import { type User, UserRole } from '@accounting/common';
+import { UserRole, type User } from '@accounting/common';
+import { type SystemCompanyService } from '@accounting/common/backend';
 import { type EmailConfigurationService } from '@accounting/email';
 
 import { type EmailDraftSyncService } from './email-draft-sync.service';
@@ -14,8 +15,21 @@ import { EmailDraft } from '../entities/email-draft.entity';
 describe('EmailDraftService', () => {
   let service: EmailDraftService;
   let draftRepository: jest.Mocked<Repository<EmailDraft>>;
-  let draftSyncService: jest.Mocked<Pick<EmailDraftSyncService, 'pushDraftToImap' | 'syncDrafts' | 'findConflicts' | 'resolveConflict' | 'updateDraftWithSync' | 'deleteDraftWithSync'>>;
-  let emailConfigService: jest.Mocked<Pick<EmailConfigurationService, 'getDecryptedEmailConfigByCompanyId'>>;
+  let draftSyncService: jest.Mocked<
+    Pick<
+      EmailDraftSyncService,
+      | 'pushDraftToImap'
+      | 'syncDrafts'
+      | 'findConflicts'
+      | 'resolveConflict'
+      | 'updateDraftWithSync'
+      | 'deleteDraftWithSync'
+    >
+  >;
+  let emailConfigService: jest.Mocked<
+    Pick<EmailConfigurationService, 'getDecryptedEmailConfigByCompanyId'>
+  >;
+  let systemCompanyService: jest.Mocked<SystemCompanyService>;
 
   const companyId = 'company-1';
   const userId = 'user-1';
@@ -36,7 +50,12 @@ describe('EmailDraftService', () => {
   } as EmailDraft;
 
   const mockEmailConfig = {
-    smtp: { host: 'smtp.test.com', port: 465, secure: true, auth: { user: 'test@test.com', pass: 'pass' } },
+    smtp: {
+      host: 'smtp.test.com',
+      port: 465,
+      secure: true,
+      auth: { user: 'test@test.com', pass: 'pass' },
+    },
     imap: { host: 'imap.test.com', port: 993, tls: true, user: 'test@test.com', password: 'pass' },
   };
 
@@ -65,6 +84,15 @@ describe('EmailDraftService', () => {
       getDecryptedEmailConfigByCompanyId: jest.fn(),
     };
 
+    systemCompanyService = {
+      getCompanyIdForUser: jest.fn().mockImplementation((user: User) => {
+        if (!user.companyId) {
+          throw new ForbiddenException('User must belong to a company');
+        }
+        return Promise.resolve(user.companyId);
+      }),
+    } as any;
+
     const module = await Test.createTestingModule({
       providers: [
         {
@@ -74,6 +102,7 @@ describe('EmailDraftService', () => {
               draftRepository as any,
               draftSyncService as any,
               emailConfigService as any,
+              systemCompanyService as any
             ),
         },
         { provide: getRepositoryToken(EmailDraft), useValue: draftRepository },
@@ -89,14 +118,16 @@ describe('EmailDraftService', () => {
     it('should create draft and sync to IMAP', async () => {
       draftRepository.create.mockReturnValue(mockDraft);
       draftRepository.save.mockResolvedValue(mockDraft);
-      emailConfigService.getDecryptedEmailConfigByCompanyId.mockResolvedValue(mockEmailConfig as any);
+      emailConfigService.getDecryptedEmailConfigByCompanyId.mockResolvedValue(
+        mockEmailConfig as any
+      );
       draftSyncService.pushDraftToImap.mockResolvedValue(undefined);
 
       const result = await service.create(mockUser, createDto as any);
 
       expect(result).toEqual(mockDraft);
       expect(draftRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ userId, companyId, syncStatus: 'local' }),
+        expect.objectContaining({ userId, companyId, syncStatus: 'local' })
       );
       expect(draftSyncService.pushDraftToImap).toHaveBeenCalled();
     });
@@ -113,13 +144,17 @@ describe('EmailDraftService', () => {
     it('should throw ForbiddenException when user has no companyId', async () => {
       const noCompanyUser = { id: 'user-2', role: UserRole.EMPLOYEE } as User;
 
-      await expect(service.create(noCompanyUser, createDto as any)).rejects.toThrow(ForbiddenException);
+      await expect(service.create(noCompanyUser, createDto as any)).rejects.toThrow(
+        ForbiddenException
+      );
     });
 
     it('should not fail when IMAP sync fails', async () => {
       draftRepository.create.mockReturnValue(mockDraft);
       draftRepository.save.mockResolvedValue(mockDraft);
-      emailConfigService.getDecryptedEmailConfigByCompanyId.mockResolvedValue(mockEmailConfig as any);
+      emailConfigService.getDecryptedEmailConfigByCompanyId.mockResolvedValue(
+        mockEmailConfig as any
+      );
       draftSyncService.pushDraftToImap.mockRejectedValue(new Error('IMAP error'));
 
       const result = await service.create(mockUser, createDto as any);
@@ -186,7 +221,7 @@ describe('EmailDraftService', () => {
       draftRepository.save.mockResolvedValue(mockDraft);
 
       await expect(
-        service.update(mockOwner, 'draft-1', { subject: 'Owner Update' } as any),
+        service.update(mockOwner, 'draft-1', { subject: 'Owner Update' } as any)
       ).resolves.toBeDefined();
     });
 
@@ -195,7 +230,7 @@ describe('EmailDraftService', () => {
       draftRepository.findOne.mockResolvedValue(mockDraft);
 
       await expect(
-        service.update(otherUser, 'draft-1', { subject: 'Hack' } as any),
+        service.update(otherUser, 'draft-1', { subject: 'Hack' } as any)
       ).rejects.toThrow(ForbiddenException);
     });
   });
@@ -204,12 +239,17 @@ describe('EmailDraftService', () => {
     it('should delete draft with IMAP sync when possible', async () => {
       const syncedDraft = { ...mockDraft, imapUid: 100, syncStatus: 'synced' } as EmailDraft;
       draftRepository.findOne.mockResolvedValue(syncedDraft);
-      emailConfigService.getDecryptedEmailConfigByCompanyId.mockResolvedValue(mockEmailConfig as any);
+      emailConfigService.getDecryptedEmailConfigByCompanyId.mockResolvedValue(
+        mockEmailConfig as any
+      );
       draftSyncService.deleteDraftWithSync.mockResolvedValue(undefined);
 
       await service.remove(mockUser, 'draft-1');
 
-      expect(draftSyncService.deleteDraftWithSync).toHaveBeenCalledWith(syncedDraft, mockEmailConfig);
+      expect(draftSyncService.deleteDraftWithSync).toHaveBeenCalledWith(
+        syncedDraft,
+        mockEmailConfig
+      );
     });
 
     it('should delete locally when no IMAP config', async () => {
@@ -283,7 +323,11 @@ describe('EmailDraftService', () => {
 
       await service.resolveConflict(mockUser, 'draft-1', 'keep_local');
 
-      expect(draftSyncService.resolveConflict).toHaveBeenCalledWith('draft-1', 'keep_local', mockUser);
+      expect(draftSyncService.resolveConflict).toHaveBeenCalledWith(
+        'draft-1',
+        'keep_local',
+        mockUser
+      );
     });
   });
 });

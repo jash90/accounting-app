@@ -1,9 +1,11 @@
+import { InternalServerErrorException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { type Repository } from 'typeorm';
 
 import { type User } from '@accounting/common';
+import { type SystemCompanyService } from '@accounting/common/backend';
 import { type EmailConfigurationService, type EmailReaderService } from '@accounting/email';
 
 import { EmailDraftSyncService } from './email-draft-sync.service';
@@ -25,6 +27,7 @@ describe('EmailDraftSyncService', () => {
   let emailConfigService: jest.Mocked<
     Pick<EmailConfigurationService, 'getDecryptedEmailConfigByCompanyId'>
   >;
+  let systemCompanyService: jest.Mocked<SystemCompanyService>;
 
   const companyId = 'company-1';
   const mockUser = { id: 'user-1', companyId, role: 'EMPLOYEE' } as User;
@@ -90,6 +93,17 @@ describe('EmailDraftSyncService', () => {
       getDecryptedEmailConfigByCompanyId: jest.fn(),
     };
 
+    systemCompanyService = {
+      getCompanyIdForUser: jest.fn().mockImplementation((user: User) => {
+        if (!user.companyId) {
+          throw new InternalServerErrorException(
+            'Użytkownik nie jest przypisany do żadnej firmy. Skontaktuj się z administratorem.'
+          );
+        }
+        return Promise.resolve(user.companyId);
+      }),
+    } as any;
+
     const module = await Test.createTestingModule({
       providers: [
         {
@@ -98,7 +112,8 @@ describe('EmailDraftSyncService', () => {
             new EmailDraftSyncService(
               draftRepository as any,
               emailReaderService as any,
-              emailConfigService as any
+              emailConfigService as any,
+              systemCompanyService as any
             ),
         },
         { provide: getRepositoryToken(EmailDraft), useValue: draftRepository },
@@ -109,13 +124,10 @@ describe('EmailDraftSyncService', () => {
   });
 
   describe('syncDrafts', () => {
-    it('should return early with error when user has no companyId', async () => {
+    it('should throw when user has no companyId', async () => {
       const noCompanyUser = { id: 'user-2' } as User;
 
-      const result = await service.syncDrafts(noCompanyUser);
-
-      expect(result.errors).toContain('User must belong to a company');
-      expect(result.synced).toBe(0);
+      await expect(service.syncDrafts(noCompanyUser)).rejects.toThrow();
     });
 
     it('should return error when no email configuration found', async () => {
@@ -335,9 +347,9 @@ describe('EmailDraftSyncService', () => {
     it('should throw when user has no companyId', async () => {
       const noCompanyUser = { id: 'user-2' } as User;
 
-      await expect(service.resolveConflict('draft-1', 'keep_local', noCompanyUser)).rejects.toThrow(
-        'User must belong to a company'
-      );
+      await expect(
+        service.resolveConflict('draft-1', 'keep_local', noCompanyUser)
+      ).rejects.toThrow();
     });
   });
 
@@ -355,12 +367,10 @@ describe('EmailDraftSyncService', () => {
       });
     });
 
-    it('should return empty array when user has no companyId', async () => {
+    it('should throw when user has no companyId', async () => {
       const noCompanyUser = { id: 'user-2' } as User;
 
-      const result = await service.findConflicts(noCompanyUser);
-
-      expect(result).toEqual([]);
+      await expect(service.findConflicts(noCompanyUser)).rejects.toThrow();
     });
   });
 
@@ -375,13 +385,10 @@ describe('EmailDraftSyncService', () => {
       expect(draftRepository.delete).toHaveBeenCalledWith({ companyId });
     });
 
-    it('should return error when user has no companyId', async () => {
+    it('should throw when user has no companyId', async () => {
       const noCompanyUser = { id: 'user-2' } as User;
 
-      const result = await service.deleteAllDrafts(noCompanyUser);
-
-      expect(result.errors).toContain('User must belong to a company');
-      expect(result.deleted).toBe(0);
+      await expect(service.deleteAllDrafts(noCompanyUser)).rejects.toThrow();
     });
   });
 });

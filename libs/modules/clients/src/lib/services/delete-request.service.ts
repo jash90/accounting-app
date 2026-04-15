@@ -1,6 +1,6 @@
-import { SystemCompanyService } from '@accounting/common/backend';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { DataSource, Repository } from 'typeorm';
 
 import {
@@ -10,6 +10,7 @@ import {
   User,
   UserRole,
 } from '@accounting/common';
+import { SystemCompanyService } from '@accounting/common/backend';
 
 import {
   ClientErrorCode,
