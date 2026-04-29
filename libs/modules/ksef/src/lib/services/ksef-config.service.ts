@@ -237,7 +237,21 @@ export class KsefConfigService {
     certificatePassword?: string
   ): Promise<KsefConfigResponseDto> {
     const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
-    const config = await this.getConfigOrFail(companyId);
+
+    // Idempotent upsert: a brand-new company has no row yet, but the user
+    // legitimately wants to upload XAdES credentials BEFORE saving the rest
+    // of the form. Auto-create a stub config with the operator-pinned env
+    // and XAdES auth method (implied by them uploading cert + key). The
+    // settings form's later "Save" will overwrite authMethod if needed.
+    let config = await this.configRepo.findOne({ where: { companyId } });
+    if (!config) {
+      config = this.configRepo.create({
+        companyId,
+        createdById: user.id,
+        environment: this.environmentFromEnv(),
+        authMethod: KsefAuthMethod.XADES,
+      });
+    }
 
     if (certPem) {
       try {
