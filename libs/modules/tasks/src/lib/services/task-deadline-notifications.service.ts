@@ -26,7 +26,7 @@ export class TaskDeadlineNotificationsService {
    * Daily cron job at 08:00 that sends notifications for overdue tasks.
    * Notifies task owners and company members via email.
    */
-  @Cron('0 8 * * *')
+  @Cron('0 8 * * *', { timeZone: 'Europe/Warsaw' })
   async processOverdueTasks(): Promise<void> {
     this.logger.log('Checking for overdue tasks...');
 
@@ -68,7 +68,7 @@ export class TaskDeadlineNotificationsService {
   /**
    * Daily cron job at 08:05 that sends notifications for tasks due within 3 days.
    */
-  @Cron('5 8 * * *')
+  @Cron('5 8 * * *', { timeZone: 'Europe/Warsaw' })
   async processDueSoonTasks(): Promise<void> {
     this.logger.log('Checking for tasks due soon...');
 

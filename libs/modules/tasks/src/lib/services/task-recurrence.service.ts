@@ -23,7 +23,7 @@ export class TaskRecurrenceService {
    * Daily cron job that processes all active templates with recurrence patterns
    * and creates the next occurrence if it's due today.
    */
-  @Cron('0 1 * * *')
+  @Cron('0 1 * * *', { timeZone: 'Europe/Warsaw' })
   async processRecurringTasks(): Promise<void> {
     this.logger.log('Processing recurring task templates...');
 
