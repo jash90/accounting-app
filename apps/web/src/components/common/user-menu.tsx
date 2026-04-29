@@ -66,7 +66,10 @@ export function UserMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="hover:bg-accent/10 cursor-pointer">
+        <DropdownMenuItem
+          onClick={() => navigate('/company/profile')}
+          className="hover:bg-accent/10 cursor-pointer"
+        >
           <User className="text-foreground mr-2 h-4 w-4" />
           Profil
         </DropdownMenuItem>
