@@ -50,6 +50,9 @@ export class KsefConfiguration {
   @Column({ type: 'text', nullable: true })
   encryptedCertificatePassword?: string | null;
 
+  @Column({ type: 'text', nullable: true })
+  encryptedPrivateKey?: string | null;
+
   @Column({ type: 'varchar', length: 10, nullable: true })
   nip?: string | null;
 

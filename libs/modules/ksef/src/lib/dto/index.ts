@@ -3,6 +3,7 @@ export {
   UpsertKsefConfigDto,
   KsefConfigResponseDto,
   KsefConnectionTestResultDto,
+  KsefPublicKeyCertificateInfoDto,
 } from './ksef-config.dto';
 
 // KSeF Invoice DTOs
@@ -17,6 +18,8 @@ export {
   KsefBatchSubmitItemResultDto,
   KsefBatchSubmitResultDto,
   KsefInvoiceStatusDto,
+  KsefInvoiceValidateErrorDto,
+  KsefInvoiceValidateResultDto,
 } from './ksef-invoice.dto';
 
 // KSeF Session DTOs
@@ -36,4 +39,4 @@ export {
 export { KsefDashboardStatsDto } from './ksef-stats.dto';
 
 // KSeF Sync DTOs
-export { KsefSyncRequestDto, KsefSyncResultDto } from './ksef-sync.dto';
+export { KsefSyncDirection, KsefSyncRequestDto, KsefSyncResultDto } from './ksef-sync.dto';

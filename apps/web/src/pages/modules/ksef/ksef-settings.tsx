@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertTriangle, CheckCircle2, Loader2, Settings, TestTube } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, FileUp, Loader2, Settings, TestTube, Upload, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -17,15 +17,17 @@ import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuthContext } from '@/contexts/auth-context';
 import type { KsefConfigResponse, KsefConnectionTestResult } from '@/lib/api/endpoints/ksef';
-import { useKsefConfig, useUpdateKsefConfig, useTestKsefConnection } from '@/lib/hooks/use-ksef';
+import { useKsefConfig, useUpdateKsefConfig, useTestKsefConnection, useUploadKsefCredentials } from '@/lib/hooks/use-ksef';
 import { formatDate } from '@/lib/utils/format-date';
 import { KsefEnvironment, KsefEnvironmentLabels, KsefAuthMethod, KsefAuthMethodLabels, UserRole } from '@/types/enums';
+
+const CERT_ACCEPT = '.pem,.crt,.cer';
+const KEY_ACCEPT = '.pem,.key';
 
 const configSchema = z.object({
   environment: z.nativeEnum(KsefEnvironment),
   authMethod: z.nativeEnum(KsefAuthMethod),
   token: z.string().optional(),
-  certificate: z.string().optional(),
   certificatePassword: z.string().optional(),
   nip: z.string().regex(/^\d{10}$/, 'NIP musi zawierać dokładnie 10 cyfr').or(z.literal('')).optional(),
   autoSendEnabled: z.boolean(),
@@ -37,8 +39,13 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
   const { user } = useAuthContext();
   const isAdmin = user?.role === UserRole.ADMIN;
   const updateConfig = useUpdateKsefConfig();
+  const uploadCredentials = useUploadKsefCredentials();
   const testConnection = useTestKsefConnection();
   const [testResult, setTestResult] = useState<KsefConnectionTestResult | null>(null);
+  const [certFile, setCertFile] = useState<File | null>(null);
+  const [keyFile, setKeyFile] = useState<File | null>(null);
+  const certInputRef = useRef<HTMLInputElement>(null);
+  const keyInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<ConfigFormValues>({
     resolver: zodResolver(configSchema),
@@ -46,7 +53,6 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
       environment: (config?.environment as KsefEnvironment) || KsefEnvironment.TEST,
       authMethod: (config?.authMethod as KsefAuthMethod) || KsefAuthMethod.TOKEN,
       token: '',
-      certificate: '',
       certificatePassword: '',
       nip: config?.nip || '',
       autoSendEnabled: config?.autoSendEnabled ?? false,
@@ -61,10 +67,26 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
       environment: values.environment,
       authMethod: values.authMethod,
       token: values.token || undefined,
-      certificate: values.certificate || undefined,
       certificatePassword: values.certificatePassword || undefined,
       nip: values.nip || undefined,
       autoSendEnabled: values.autoSendEnabled,
+    });
+  };
+
+  const handleUploadCredentials = () => {
+    if (!certFile && !keyFile) return;
+    const formData = new FormData();
+    if (certFile) formData.append('certificate', certFile);
+    if (keyFile) formData.append('privateKey', keyFile);
+    const password = form.getValues('certificatePassword');
+    if (password) formData.append('certificatePassword', password);
+    uploadCredentials.mutate(formData, {
+      onSuccess: () => {
+        setCertFile(null);
+        setKeyFile(null);
+        if (certInputRef.current) certInputRef.current.value = '';
+        if (keyInputRef.current) keyInputRef.current.value = '';
+      },
     });
   };
 
@@ -183,32 +205,115 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
                 />
               ) : (
                 <>
-                  <FormField
-                    control={form.control}
-                    name="certificate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Certyfikat XAdES (Base64)</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder={config?.hasCertificate ? '••••••••• (zapisany)' : 'Wpisz certyfikat'} {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-2">
+                    <FormLabel>Certyfikat X.509 (PEM)</FormLabel>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => certInputRef.current?.click()}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        {certFile ? 'Zmień plik' : 'Wybierz plik'}
+                      </Button>
+                      {certFile ? (
+                        <div className="flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1 text-sm">
+                          <FileUp className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="max-w-48 truncate">{certFile.name}</span>
+                          <button
+                            type="button"
+                            className="ml-1 text-muted-foreground hover:text-foreground"
+                            onClick={() => { setCertFile(null); if (certInputRef.current) certInputRef.current.value = ''; }}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ) : config?.hasCertificate ? (
+                        <span className="text-sm text-muted-foreground">Certyfikat zapisany</span>
+                      ) : null}
+                    </div>
+                    <input
+                      ref={certInputRef}
+                      type="file"
+                      accept={CERT_ACCEPT}
+                      className="hidden"
+                      onChange={(e) => setCertFile(e.target.files?.[0] ?? null)}
+                    />
+                    <p className="text-[0.8rem] text-muted-foreground">
+                      Plik .pem, .crt lub .cer
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <FormLabel>Klucz prywatny (PEM)</FormLabel>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => keyInputRef.current?.click()}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        {keyFile ? 'Zmień plik' : 'Wybierz plik'}
+                      </Button>
+                      {keyFile ? (
+                        <div className="flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1 text-sm">
+                          <FileUp className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="max-w-48 truncate">{keyFile.name}</span>
+                          <button
+                            type="button"
+                            className="ml-1 text-muted-foreground hover:text-foreground"
+                            onClick={() => { setKeyFile(null); if (keyInputRef.current) keyInputRef.current.value = ''; }}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ) : config?.hasPrivateKey ? (
+                        <span className="text-sm text-muted-foreground">Klucz zapisany</span>
+                      ) : null}
+                    </div>
+                    <input
+                      ref={keyInputRef}
+                      type="file"
+                      accept={KEY_ACCEPT}
+                      className="hidden"
+                      onChange={(e) => setKeyFile(e.target.files?.[0] ?? null)}
+                    />
+                    <p className="text-[0.8rem] text-muted-foreground">
+                      Plik .pem lub .key
+                    </p>
+                  </div>
+
                   <FormField
                     control={form.control}
                     name="certificatePassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Hasło certyfikatu</FormLabel>
+                        <FormLabel>Hasło klucza prywatnego</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="Hasło do certyfikatu" {...field} />
+                          <Input type="password" placeholder="Hasło do klucza prywatnego (opcjonalnie)" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+
+                  {(certFile || keyFile) && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={handleUploadCredentials}
+                      disabled={uploadCredentials.isPending}
+                    >
+                      {uploadCredentials.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="mr-2 h-4 w-4" />
+                      )}
+                      Wgraj pliki
+                    </Button>
+                  )}
                 </>
               )}
 

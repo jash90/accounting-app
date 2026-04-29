@@ -1,21 +1,36 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 
 import { KsefInvoice, KsefInvoiceStatus } from '@accounting/common';
 
-import { KSEF_API_PATHS } from '../constants';
+import { getKsefErrorMessage, KSEF_API_PATHS, KSEF_DEFAULTS } from '../constants';
+import { KsefAuthService } from './ksef-auth.service';
 import { KsefConfigService } from './ksef-config.service';
 import { KsefHttpClientService } from './ksef-http-client.service';
 import { KsefInvoiceService } from './ksef-invoice.service';
 import { KsefSessionService } from './ksef-session.service';
 
-interface InvoiceStatusResponse {
-  processingCode: number;
-  processingDescription: string;
-  ksefNumber?: string;
-  validationErrors?: Record<string, unknown>[];
+interface SessionInvoiceStatusResponse {
+  ordinalNumber: number;
+  referenceNumber: string;
+  ksefNumber?: string | null;
+  acquisitionDate?: string | null;
+  invoicingDate: string;
+  /** Pre-signed Azure SAS URL (no Bearer token!) for the per-invoice UPO. */
+  upoDownloadUrl?: string | null;
+  upoDownloadUrlExpirationDate?: string | null;
+  status: {
+    code: number;
+    description: string;
+    details?: string[];
+    /**
+     * KSeF v2 puts duplicate-invoice cross-references here:
+     *   { originalKsefNumber, originalSessionReferenceNumber }
+     */
+    extensions?: Record<string, unknown>;
+  };
 }
 
 @Injectable()
@@ -26,15 +41,25 @@ export class KsefSchedulerService {
     @InjectRepository(KsefInvoice)
     private readonly invoiceRepo: Repository<KsefInvoice>,
     private readonly httpClient: KsefHttpClientService,
+    private readonly authService: KsefAuthService,
     private readonly configService: KsefConfigService,
     private readonly invoiceService: KsefInvoiceService,
     private readonly sessionService: KsefSessionService,
   ) {}
 
-  @Cron('*/5 * * * *')
+  // Run every minute. KSeF typically finishes processing an invoice within
+  // 5–30 seconds, so a 1-minute poll keeps the UI's "Wysłana → Zaakceptowana"
+  // transition snappy without flooding KSeF with requests (we batch-process
+  // up to 50 invoices per company per tick).
+  @Cron('* * * * *')
   async pollPendingStatuses(): Promise<void> {
     const pendingInvoices = await this.invoiceRepo.find({
-      where: { status: KsefInvoiceStatus.SUBMITTED },
+      where: {
+        status: KsefInvoiceStatus.SUBMITTED,
+        ksefReferenceNumber: Not(IsNull()),
+        sessionId: Not(IsNull()),
+      },
+      relations: ['session'],
       take: 50,
       order: { submittedAt: 'ASC' },
     });
@@ -43,7 +68,7 @@ export class KsefSchedulerService {
 
     this.logger.log(`Polling status for ${pendingInvoices.length} submitted invoices`);
 
-    // Group by companyId for config lookup efficiency
+    // Group by companyId for config/auth efficiency
     const byCompany = new Map<string, KsefInvoice[]>();
     for (const inv of pendingInvoices) {
       const list = byCompany.get(inv.companyId) ?? [];
@@ -56,40 +81,119 @@ export class KsefSchedulerService {
         const config = await this.configService.getConfig(companyId);
         if (!config) continue;
 
+        // Get a valid auth token for this company
+        const userId = invoices[0].createdById;
+        let token: string;
+        try {
+          token = await this.authService.getValidToken(companyId, userId);
+        } catch {
+          this.logger.warn(`Cannot authenticate for company ${companyId}, skipping status poll`);
+          continue;
+        }
+
         for (const invoice of invoices) {
-          if (!invoice.ksefReferenceNumber) continue;
+          const sessionRef = invoice.session?.ksefSessionRef;
+          if (!sessionRef || !invoice.ksefReferenceNumber) continue;
 
           try {
-            const path = `/invoices/status/${invoice.ksefReferenceNumber}`;
+            // KSeF v2: GET /sessions/{sessionRef}/invoices/{invoiceRef}
+            const path = KSEF_API_PATHS.SESSION_ONLINE_INVOICE_STATUS
+              .replace('{sessionRef}', sessionRef)
+              .replace('{invoiceRef}', invoice.ksefReferenceNumber!);
 
-            const response = await this.httpClient.request<InvoiceStatusResponse>({
+            const response = await this.httpClient.request<SessionInvoiceStatusResponse>({
               environment: config.environment,
               method: 'GET',
               path,
+              headers: { Authorization: `Bearer ${token}` },
               companyId,
-              userId: invoice.createdById,
+              userId,
               auditAction: 'INVOICE_STATUS_POLL',
               auditEntityType: 'KsefInvoice',
               auditEntityId: invoice.id,
             });
 
-            const { processingCode, ksefNumber, validationErrors } = response.data;
+            const statusCode = response.data.status?.code;
+            const ksefNumber = response.data.ksefNumber;
 
-            // processingCode 200 = accepted, 400 = rejected
-            if (processingCode === 200) {
+            // 100/150 = still processing (no-op), 200 = accepted, 440 = duplicate (already
+            // accepted under a different reference), other 400+ = rejected. The 440 branch
+            // MUST run before the generic >= 400 fallback — otherwise a perfectly accepted
+            // duplicate would be flipped to REJECTED, hiding the original ksefNumber.
+            if (statusCode === 200 && ksefNumber) {
+              const upoCapture = await this.captureInvoiceUpo(response.data);
               await this.invoiceService.updateInvoiceStatus(
                 invoice.id,
                 KsefInvoiceStatus.ACCEPTED,
-                { ksefNumber },
+                { ksefNumber, ...upoCapture },
               );
-            } else if (processingCode >= 400) {
+              this.logger.log(`Invoice ${invoice.id} accepted: ${ksefNumber}`);
+            } else if (statusCode === 440) {
+              const extensions = (response.data.status?.extensions ?? {}) as Record<
+                string,
+                unknown
+              >;
+              const originalKsefNumber =
+                typeof extensions['originalKsefNumber'] === 'string'
+                  ? (extensions['originalKsefNumber'] as string)
+                  : null;
+              const originalSessionRef =
+                typeof extensions['originalSessionReferenceNumber'] === 'string'
+                  ? (extensions['originalSessionReferenceNumber'] as string)
+                  : null;
+
+              if (originalKsefNumber) {
+                // KSeF: this exact invoice payload was already accepted in a prior session.
+                // Treat it as ACCEPTED and link it to the canonical KSeF number — losing
+                // that linkage is the bug we're fixing here.
+                await this.invoiceService.updateInvoiceStatus(
+                  invoice.id,
+                  KsefInvoiceStatus.ACCEPTED,
+                  { ksefNumber: originalKsefNumber },
+                );
+                this.logger.warn(
+                  `Invoice ${invoice.id} reported as duplicate (440); linked to original ksefNumber=${originalKsefNumber}` +
+                    (originalSessionRef ? ` (originalSession=${originalSessionRef})` : ''),
+                );
+              } else {
+                // 440 without originalKsefNumber should never happen per spec — log loudly
+                // and fall back to REJECTED so the invoice doesn't get stuck SUBMITTED.
+                this.logger.error(
+                  `Invoice ${invoice.id} got 440 (duplicate) but no originalKsefNumber in extensions; marking as rejected. extensions=${JSON.stringify(
+                    extensions,
+                  )}`,
+                );
+                await this.invoiceService.updateInvoiceStatus(
+                  invoice.id,
+                  KsefInvoiceStatus.REJECTED,
+                  {
+                    validationErrors: [
+                      {
+                        code: 440,
+                        description: getKsefErrorMessage(440, response.data.status.description),
+                      },
+                    ],
+                  },
+                );
+              }
+            } else if (statusCode && statusCode >= 400) {
+              const details = response.data.status.details ?? [];
+              const validationErrors = [
+                {
+                  code: statusCode,
+                  description: getKsefErrorMessage(statusCode, response.data.status.description),
+                },
+                ...details.map((d) => ({ description: d })),
+              ];
               await this.invoiceService.updateInvoiceStatus(
                 invoice.id,
                 KsefInvoiceStatus.REJECTED,
                 { validationErrors },
               );
+              this.logger.warn(
+                `Invoice ${invoice.id} rejected: code ${statusCode} — ${response.data.status.description}`,
+              );
             }
-            // Other codes: still processing, no action needed
           } catch (error) {
             this.logger.warn(
               `Failed to poll status for invoice ${invoice.id}: ${
@@ -121,6 +225,66 @@ export class KsefSchedulerService {
           error instanceof Error ? error.message : String(error)
         }`,
       );
+    }
+  }
+
+  /**
+   * On a 200 response, KSeF returns a pre-signed Azure SAS URL for the per-
+   * invoice UPO. Download it eagerly so users get the legally-required
+   * confirmation document without another round-trip — and persist the URL
+   * + expiry as a fallback in case the eager fetch failed (e.g. transient
+   * network blip; the URL is valid for ~3 days, so a later retry can
+   * succeed before the link expires).
+   *
+   * Per spec the SAS URL must be requested WITHOUT the Bearer token, so we
+   * use a plain `fetch()` instead of going through `KsefHttpClientService`.
+   */
+  private async captureInvoiceUpo(
+    data: SessionInvoiceStatusResponse,
+  ): Promise<{
+    upoXml?: string | null;
+    upoDownloadUrl?: string | null;
+    upoDownloadUrlExpirationDate?: Date | null;
+  }> {
+    if (!data.upoDownloadUrl) {
+      return {};
+    }
+
+    const expirationDate = data.upoDownloadUrlExpirationDate
+      ? new Date(data.upoDownloadUrlExpirationDate)
+      : null;
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(
+        () => controller.abort(),
+        KSEF_DEFAULTS.UPLOAD_TIMEOUT_MS,
+      );
+      try {
+        const response = await fetch(data.upoDownloadUrl, { signal: controller.signal });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status} ${response.statusText}`);
+        }
+        const xml = await response.text();
+        return {
+          upoXml: xml,
+          upoDownloadUrl: data.upoDownloadUrl,
+          upoDownloadUrlExpirationDate: expirationDate,
+        };
+      } finally {
+        clearTimeout(timeout);
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Failed to download per-invoice UPO from SAS URL: ${
+          error instanceof Error ? error.message : String(error)
+        }. URL + expiry persisted so the UI can offer a fallback download button.`,
+      );
+      return {
+        upoXml: null,
+        upoDownloadUrl: data.upoDownloadUrl,
+        upoDownloadUrlExpirationDate: expirationDate,
+      };
     }
   }
 }

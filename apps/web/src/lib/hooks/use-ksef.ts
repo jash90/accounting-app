@@ -36,6 +36,13 @@ export const useTestKsefConnection = createMutationHook({
   errorMessage: 'Nie udało się przetestować połączenia z KSeF',
 });
 
+export const useUploadKsefCredentials = createMutationHook<unknown, FormData>({
+  mutationFn: (data) => ksefApi.uploadCredentials(data),
+  invalidateKeys: [queryKeys.ksef.config],
+  successMessage: 'Pliki certyfikatu zostały wgrane pomyślnie',
+  errorMessage: 'Nie udało się wgrać plików certyfikatu',
+});
+
 // ============================================
 // Invoice Query Hooks
 // ============================================
@@ -101,6 +108,19 @@ export const useSubmitKsefInvoice = createMutationHook<unknown, string>({
   errorMessage: 'Nie udało się wysłać faktury do KSeF',
 });
 
+export const useBatchDeleteKsefInvoices = createMutationHook<
+  { totalCount: number; successCount: number; failedCount: number },
+  string[]
+>({
+  mutationFn: (ids) => ksefApi.batchDelete(ids),
+  invalidateKeys: [queryKeys.ksef.invoices.all, queryKeys.ksef.stats.dashboard],
+  successMessageFn: (data) =>
+    data.failedCount > 0
+      ? `Usunięto ${data.successCount} z ${data.totalCount} faktur (${data.failedCount} błędów)`
+      : `Usunięto ${data.successCount} ${data.successCount === 1 ? 'fakturę' : 'faktur'}`,
+  errorMessage: 'Nie udało się usunąć faktur',
+});
+
 export const useBatchSubmitKsefInvoices = createMutationHook<unknown, string[]>({
   mutationFn: (ids) => ksefApi.batchSubmit(ids),
   invalidateKeys: [
@@ -110,6 +130,20 @@ export const useBatchSubmitKsefInvoices = createMutationHook<unknown, string[]>(
   ],
   successMessage: 'Faktury zostały wysłane do KSeF',
   errorMessage: 'Nie udało się wysłać faktur do KSeF',
+});
+
+export const useValidateKsefInvoice = createMutationHook<
+  { valid: boolean; issues: Array<{ field: string; code: string; message: string; severity: 'error' | 'warning' }> },
+  string
+>({
+  mutationFn: (id) => ksefApi.validateInvoice(id),
+  invalidateKeys: [queryKeys.ksef.invoices.all],
+  onSuccess: (_data, variables, queryClient) => {
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.ksef.invoices.detail(variables),
+    });
+  },
+  errorMessage: 'Nie udało się zwalidować faktury',
 });
 
 export const useGenerateKsefXml = createMutationHook<{ xml: string; hash: string }, string>({

@@ -3,6 +3,7 @@ import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import { Company, Client, KsefInvoice } from '@accounting/common';
 import { KsefXmlGenerationException } from '../exceptions';
 import { KsefInvoiceLineItemDto } from '../dto';
+import { isValidPolishNip as isValidPolishNipUtil } from '../utils/nip-validator';
 
 export interface InvoiceBuyerData {
   name: string;
@@ -49,10 +50,17 @@ export class KsefXmlService {
    * Generate FA(3) XML for a sales invoice.
    * Schema: schemat_FA(3)_v1-0E.xsd
    */
+  /**
+   * FA(3) XML namespace — must match schemat_FA(3)_v1-0E.xsd
+   */
+  private static readonly FA3_NS = 'http://crd.gov.pl/wzor/2025/06/25/13775/';
+  private static readonly ETD_NS = 'http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/';
+
   generateInvoiceXml(
     invoice: KsefInvoice,
     seller: Company,
     buyer: Client | InvoiceBuyerData,
+    correctedInvoice?: KsefInvoice | null,
   ): string {
     try {
       const lineItems = (invoice.lineItems ?? []) as unknown as KsefInvoiceLineItemDto[];
@@ -69,19 +77,20 @@ export class KsefXmlService {
       // Build VAT rate summary from line items
       const vatSummary = this.buildVatSummary(lineItems);
 
+      const now = new Date();
       const fa3 = {
         '?xml': { '@_version': '1.0', '@_encoding': 'UTF-8' },
         Faktura: {
-          '@_xmlns': 'http://crd.gov.pl/wzor/2023/06/29/12648/',
-          '@_xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+          '@_xmlns': KsefXmlService.FA3_NS,
+          '@_xmlns:etd': KsefXmlService.ETD_NS,
           Naglowek: {
             KodFormularza: {
               '@_kodSystemowy': 'FA (3)',
               '@_wersjaSchemy': '1-0E',
               '#text': 'FA',
             },
-            WariantFormularza: 1,
-            DataWytworzeniaFa: new Date().toISOString().split('T')[0],
+            WariantFormularza: 3,
+            DataWytworzeniaFa: now.toISOString().replace(/\.\d{3}Z$/, 'Z'),
             SystemInfo: 'AppTax Accounting Platform',
           },
           Podmiot1: {
@@ -94,17 +103,31 @@ export class KsefXmlService {
               AdresL1: [seller.street, seller.buildingNumber, seller.apartmentNumber].filter(Boolean).join(' '),
               AdresL2: [seller.postalCode, seller.city].filter(Boolean).join(' '),
             },
+            ...((seller as unknown as Record<string, unknown>).email ? {
+              DaneKontaktowe: {
+                Email: (seller as unknown as Record<string, unknown>).email as string,
+              },
+            } : {}),
           },
           Podmiot2: {
             DaneIdentyfikacyjne: {
-              ...(buyerData.nip ? { NIP: buyerData.nip } : {}),
+              // FA(3) xsd:choice: must have exactly one of NIP / KodUE+NrVatUE / KodKraju+NrID / BrakID
+              // Only use NIP if it's a valid 10-digit Polish NIP different from the seller (no self-invoicing)
+              ...(this.isValidPolishNip(buyerData.nip) && buyerData.nip !== seller.nip
+                ? { NIP: buyerData.nip }
+                : { BrakID: 1 }),
               Nazwa: buyerData.name,
             },
+            // FA(3): Adres in Podmiot2 is mandatory
             Adres: {
               KodKraju: buyerData.country ?? 'PL',
-              AdresL1: buyerData.street ?? '',
-              AdresL2: [buyerData.postalCode, buyerData.city].filter(Boolean).join(' '),
+              AdresL1: buyerData.street || '---',
+              AdresL2: [buyerData.postalCode, buyerData.city].filter(Boolean).join(' ') || '---',
             },
+            // JST=2, GV=2 means "nie dotyczy" — correct for standard B2B invoices.
+            // FA(3) made these mandatory. Future: derive from buyer entity type.
+            JST: 2,
+            GV: 2,
           },
           Fa: {
             KodWaluty: invoice.currency ?? 'PLN',
@@ -112,14 +135,49 @@ export class KsefXmlService {
               ? invoice.issueDate.toISOString().split('T')[0]
               : String(invoice.issueDate),
             P_2: invoice.invoiceNumber,
-            ...(invoice.dueDate ? {
-              P_6: invoice.dueDate instanceof Date
-                ? invoice.dueDate.toISOString().split('T')[0]
-                : String(invoice.dueDate),
-            } : {}),
+            ...((() => {
+              const salesDate = 'salesDate' in invoice ? (invoice as any).salesDate : null;
+              const p6Date = salesDate ?? invoice.issueDate;
+              return p6Date ? {
+                P_6: p6Date instanceof Date
+                  ? p6Date.toISOString().split('T')[0]
+                  : String(p6Date),
+              } : {};
+            })()),
             // VAT summary by rate
             ...this.buildVatFields(vatSummary),
-            P_15: Number(invoice.grossAmount).toFixed(2),
+            P_15: Number(invoice.grossAmount),
+            // Required annotations before FaWiersz
+            Adnotacje: {
+              // P_16=1 when split payment (MPP) applies — mandatory for gross > 15 000 PLN
+              P_16: Number(invoice.grossAmount) > 15000 ? 1 : 2,
+              P_17: 2, // TODO: set to 1 for self-invoicing
+              P_18: 2, // TODO: set to 1 for reverse charge
+              P_18A: 2, // TODO: set to 1 for intra-community supply
+              Zwolnienie: { P_19N: 1 }, // TODO: P_19=1 + P_19A/B/C if exemption applies
+              NoweSrodkiTransportu: { P_22N: 1 },
+              P_23: 2, // TODO: set to 1 for cash-basis accounting
+              PMarzy: { P_PMarzyN: 1 },
+            },
+            ...((() => {
+              const isCorrection = invoice.invoiceType === 'CORRECTION' && correctedInvoice;
+              return {
+                RodzajFaktury: isCorrection ? 'KOR' : 'VAT',
+                ...(isCorrection ? {
+                  DaneFaKorygowanej: {
+                    DataWystFaKorygowanej: correctedInvoice.issueDate instanceof Date
+                      ? correctedInvoice.issueDate.toISOString().split('T')[0]
+                      : String(correctedInvoice.issueDate),
+                    NrFaKorygowanej: correctedInvoice.invoiceNumber,
+                    ...(correctedInvoice.ksefNumber ? { NrKSeF: correctedInvoice.ksefNumber } : {}),
+                  },
+                  P_15ZK: (Number(invoice.grossAmount) - Number(correctedInvoice.grossAmount)).toFixed(2),
+                  ...(((invoice.metadata as any)?.correctionReason) ? {
+                    PrzyczynaKorekty: (invoice.metadata as any).correctionReason,
+                  } : {}),
+                } : {}),
+              };
+            })()),
             // Line items
             FaWiersz: lineItems.map((item, idx) => ({
               NrWierszaFa: idx + 1,
@@ -127,11 +185,23 @@ export class KsefXmlService {
               P_8A: item.unit ?? 'szt.',
               P_8B: item.quantity,
               P_9A: Number(item.unitNetPrice).toFixed(2),
-              P_11: Number(item.netAmount).toFixed(2),
-              P_11A: Number(item.netAmount).toFixed(2),
+              P_11: Number(item.netAmount),
               P_12: this.mapVatRate(item.vatRate),
-              ...(item.gtuCodes?.length ? { GTU: item.gtuCodes.join(',') } : {}),
+              ...(item.gtuCodes?.length ? { GTU: item.gtuCodes } : {}),
             })),
+            // Payment — inside Fa per FA(3) XSD sequence
+            Platnosc: {
+              TerminPlatnosci: {
+                Termin: invoice.dueDate instanceof Date
+                  ? invoice.dueDate.toISOString().split('T')[0]
+                  : (invoice.issueDate instanceof Date
+                    ? invoice.issueDate.toISOString().split('T')[0]
+                    : String(invoice.issueDate)),
+              },
+              FormaPlatnosci: this.mapPaymentMethod(
+                (invoice.metadata as Record<string, unknown>)?.paymentMethod as string | undefined,
+              ),
+            },
           },
         },
       };
@@ -153,6 +223,12 @@ export class KsefXmlService {
     const podmiot1 = faktura?.Podmiot1;
     const podmiot2 = faktura?.Podmiot2;
 
+    // FA(3) puts dueDate inside Platnosc/TerminPlatnosci/Termin or as P_6
+    const dueDate = fa?.Platnosc?.TerminPlatnosci?.Termin
+      ?? fa?.Platnosc?.TerminPlatnosci
+      ?? fa?.P_6
+      ?? '';
+
     return {
       invoiceNumber: fa?.P_2 ?? '',
       issueDate: fa?.P_1 ?? '',
@@ -160,8 +236,8 @@ export class KsefXmlService {
       sellerName: podmiot1?.DaneIdentyfikacyjne?.Nazwa ?? '',
       buyerNip: podmiot2?.DaneIdentyfikacyjne?.NIP,
       buyerName: podmiot2?.DaneIdentyfikacyjne?.Nazwa ?? '',
-      netAmount: parseFloat(fa?.P_11 ?? '0'),
-      vatAmount: parseFloat(String(Number(fa?.P_15 ?? 0) - Number(fa?.P_11 ?? 0))),
+      netAmount: this.sumP13Fields(fa),
+      vatAmount: parseFloat(fa?.P_15 ?? '0') - this.sumP13Fields(fa),
       grossAmount: parseFloat(fa?.P_15 ?? '0'),
       currency: fa?.KodWaluty ?? 'PLN',
       lineItems: this.parseLineItems(fa?.FaWiersz),
@@ -181,24 +257,31 @@ export class KsefXmlService {
 
   private buildVatFields(summary: Map<number, { net: number; vat: number }>): Record<string, string> {
     const fields: Record<string, string> = {};
-    // Map standard Polish VAT rates to FA(3) fields
+    // Map standard Polish VAT rates to FA(3) fields — in XSD sequence order.
+    // Iterating rateFieldMap (fixed order) rather than summary ensures the emitted
+    // XML elements always appear in the XSD-prescribed sequence regardless of
+    // which line items were added first.
     // P_13_1 = net at 23%, P_14_1 = vat at 23%
-    // P_13_2 = net at 8%, P_14_2 = vat at 8%
-    // P_13_3 = net at 5%, P_14_3 = vat at 5%
-    // P_13_6 = net at 0%
-    const rateFieldMap: Record<number, [string, string]> = {
-      23: ['P_13_1', 'P_14_1'],
-      8: ['P_13_2', 'P_14_2'],
-      5: ['P_13_3', 'P_14_3'],
-      0: ['P_13_6', 'P_13_6'], // 0% only has net field
-    };
+    // P_13_2 = net at 8%,  P_14_2 = vat at 8%
+    // P_13_3 = net at 5%,  P_14_3 = vat at 5%
+    // P_13_6 = net at 0%   (no VAT-amount field)
+    // P_13_7 = net exempt  (zwolniony, no VAT-amount field)
+    // P_13_11 = net not subject (nie podlega, no VAT-amount field)
+    const rateFieldMap = new Map<number, [string, string | null]>([
+      [23, ['P_13_1', 'P_14_1']],
+      [8,  ['P_13_2', 'P_14_2']],
+      [5,  ['P_13_3', 'P_14_3']],
+      [0,  ['P_13_6', null]],
+      [-1, ['P_13_7', null]],
+      [-2, ['P_13_11', null]],
+    ]);
 
-    for (const [rate, amounts] of summary) {
-      const fieldPair = rateFieldMap[rate];
-      if (fieldPair) {
-        fields[fieldPair[0]] = amounts.net.toFixed(2);
-        if (rate > 0) {
-          fields[fieldPair[1]] = amounts.vat.toFixed(2);
+    for (const [rate, fieldPair] of rateFieldMap) {
+      const amounts = summary.get(rate);
+      if (amounts) {
+        fields[fieldPair[0]] = String(amounts.net);
+        if (fieldPair[1] !== null) {
+          fields[fieldPair[1]] = String(amounts.vat);
         }
       }
     }
@@ -228,6 +311,26 @@ export class KsefXmlService {
       vatAmount: Number(w.P_11A ?? 0) - Number(w.P_11 ?? 0),
       grossAmount: Number(w.P_11A ?? 0),
     }));
+  }
+
+  private sumP13Fields(fa: Record<string, unknown>): number {
+    const fields = ['P_13_1', 'P_13_2', 'P_13_3', 'P_13_6', 'P_13_7', 'P_13_11'];
+    return fields.reduce((sum, field) => sum + parseFloat(String(fa?.[field] ?? '0')), 0);
+  }
+
+  private mapPaymentMethod(method?: string): number {
+    const map: Record<string, number> = {
+      'gotówka': 1, 'gotowka': 1, 'cash': 1,
+      'karta': 2, 'card': 2,
+      'kompensata': 5, 'offset': 5,
+      'przelew': 6, 'transfer': 6,
+    };
+    return map[method?.toLowerCase() ?? ''] ?? 6; // default: przelew
+  }
+
+  /** Returns true only for a valid 10-digit Polish NIP (digits only, checksum passes). */
+  private isValidPolishNip(nip?: string | null): boolean {
+    return isValidPolishNipUtil(nip);
   }
 
   private parseVatRate(p12: unknown): number {

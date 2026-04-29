@@ -13,6 +13,7 @@ export interface KsefConfigResponse {
   authMethod: string;
   hasToken: boolean;
   hasCertificate: boolean;
+  hasPrivateKey: boolean;
   nip?: string;
   autoSendEnabled: boolean;
   isActive: boolean;
@@ -27,6 +28,7 @@ export interface UpsertKsefConfig {
   authMethod: string;
   token?: string;
   certificate?: string;
+  privateKey?: string;
   certificatePassword?: string;
   nip?: string;
   autoSendEnabled?: boolean;
@@ -50,7 +52,7 @@ export interface KsefInvoiceLineItem {
   unit?: string;
   unitNetPrice: number;
   netAmount: number;
-  vatRate: string;
+  vatRate: number;
   vatAmount: number;
   grossAmount: number;
   gtuCodes?: string[];
@@ -68,6 +70,7 @@ export interface InvoiceBuyerData {
 export interface CreateKsefInvoice {
   invoiceType: string;
   issueDate: string;
+  salesDate?: string;
   dueDate?: string;
   clientId?: string;
   buyerData?: InvoiceBuyerData;
@@ -108,6 +111,11 @@ export interface KsefInvoiceResponse {
   submittedAt?: string | null;
   acceptedAt?: string | null;
   rejectedAt?: string | null;
+  /** Signed UPO XML — present once the scheduler successfully downloads it. */
+  upoXml?: string | null;
+  /** Pre-signed Azure SAS URL fallback for UPO. Fetch WITHOUT Authorization header. */
+  upoDownloadUrl?: string | null;
+  upoDownloadUrlExpirationDate?: string | null;
   correctedInvoiceId?: string | null;
   createdById: string;
   updatedById?: string | null;
@@ -164,9 +172,32 @@ export interface KsefBatchSubmitResult {
   }>;
 }
 
+export interface KsefBatchDeleteResult {
+  totalCount: number;
+  successCount: number;
+  failedCount: number;
+  results: Array<{
+    invoiceId: string;
+    success: boolean;
+    errorMessage?: string;
+  }>;
+}
+
+/**
+ * Which side of KSeF the sync should pull from. Mirrors `KsefSyncDirection`
+ * on the backend.
+ *
+ * - `incoming` — invoices we received as buyer (Subject2)
+ * - `outgoing` — sales invoices issued under our NIP (Subject1)
+ * - `both`     — both directions, deduped by KSeF number
+ */
+export type KsefSyncDirection = 'incoming' | 'outgoing' | 'both';
+
 export interface KsefSyncRequest {
   dateFrom: string;
   dateTo: string;
+  /** Defaults to `incoming` on the backend when omitted. */
+  direction?: KsefSyncDirection;
 }
 
 export interface KsefSyncResult {
@@ -242,6 +273,12 @@ export const ksefApi = {
     apiClient
       .post<KsefConnectionTestResult>(`${BASE}/config/test-connection`)
       .then((r) => r.data),
+  uploadCredentials: (data: FormData) =>
+    apiClient
+      .post<KsefConfigResponse>(`${BASE}/config/upload-credentials`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then((r) => r.data),
 
   // Invoices
   getInvoices: (filters?: KsefInvoiceFilters) =>
@@ -255,6 +292,10 @@ export const ksefApi = {
   updateInvoice: (id: string, data: UpdateKsefInvoice) =>
     apiClient.patch<KsefInvoiceResponse>(`${BASE}/invoices/${id}`, data).then((r) => r.data),
   deleteInvoice: (id: string) => apiClient.delete(`${BASE}/invoices/${id}`),
+  validateInvoice: (id: string) =>
+    apiClient
+      .post<{ valid: boolean; issues: Array<{ field: string; code: string; message: string; severity: 'error' | 'warning' }> }>(`${BASE}/invoices/${id}/validate`)
+      .then((r) => r.data),
   generateXml: (id: string) =>
     apiClient
       .post<{ xml: string; hash: string }>(`${BASE}/invoices/${id}/generate-xml`)
@@ -264,6 +305,10 @@ export const ksefApi = {
   batchSubmit: (ids: string[]) =>
     apiClient
       .post<KsefBatchSubmitResult>(`${BASE}/invoices/batch-submit`, { ids })
+      .then((r) => r.data),
+  batchDelete: (ids: string[]) =>
+    apiClient
+      .post<KsefBatchDeleteResult>(`${BASE}/invoices/batch-delete`, { ids })
       .then((r) => r.data),
   getInvoiceStatus: (id: string) =>
     apiClient.get<KsefInvoiceResponse>(`${BASE}/invoices/${id}/status`).then((r) => r.data),

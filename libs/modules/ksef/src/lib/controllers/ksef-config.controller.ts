@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -7,12 +8,17 @@ import {
   HttpStatus,
   Post,
   Put,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import {
   ApiBearerAuth,
+  ApiConsumes,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -97,5 +103,54 @@ export class KsefConfigController {
     @CurrentUser() user: User,
   ): Promise<KsefConnectionTestResultDto> {
     return this.configService.testConnection(user);
+  }
+
+  @Post('upload-credentials')
+  @ApiOperation({
+    summary: 'Upload certificate and private key files',
+    description:
+      'Uploads PEM certificate and/or private key files. Content is read, encrypted, and saved to the database. Files are not stored on disk.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiResponse({ status: 200, type: KsefConfigResponseDto })
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'certificate', maxCount: 1 },
+        { name: 'privateKey', maxCount: 1 },
+      ],
+      {
+        storage: memoryStorage(),
+        limits: { fileSize: 1024 * 1024 }, // 1 MB
+      },
+    ),
+  )
+  async uploadCredentials(
+    @UploadedFiles()
+    files: {
+      certificate?: Express.Multer.File[];
+      privateKey?: Express.Multer.File[];
+    },
+    @Body() body: { certificatePassword?: string },
+    @CurrentUser() user: User,
+  ): Promise<KsefConfigResponseDto> {
+    const certFile = files?.certificate?.[0];
+    const keyFile = files?.privateKey?.[0];
+
+    if (!certFile && !keyFile) {
+      throw new BadRequestException(
+        'Wymagany jest co najmniej jeden plik: certyfikat lub klucz prywatny',
+      );
+    }
+
+    const certPem = certFile ? certFile.buffer.toString('utf-8').trim() : undefined;
+    const keyPem = keyFile ? keyFile.buffer.toString('utf-8').trim() : undefined;
+
+    return this.configService.uploadCredentialFiles(
+      user,
+      certPem,
+      keyPem,
+      body.certificatePassword,
+    );
   }
 }

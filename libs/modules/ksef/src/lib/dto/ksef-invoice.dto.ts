@@ -51,26 +51,23 @@ export class KsefInvoiceLineItemDto {
 
   @ApiProperty({ description: 'Kwota netto' })
   @IsNumber()
-  @Min(0)
   @Type(() => Number)
   netAmount!: number;
 
-  @ApiProperty({ description: 'Stawka VAT (%)' })
+  @ApiProperty({ description: 'Stawka VAT (% lub -1=zw, -2=np)' })
   @IsNumber()
-  @Min(0)
+  @Min(-2, { message: 'Stawka VAT musi wynosić -2 (np), -1 (zw), 0, 5, 8 lub 23' })
   @Max(100)
   @Type(() => Number)
   vatRate!: number;
 
   @ApiProperty({ description: 'Kwota VAT' })
   @IsNumber()
-  @Min(0)
   @Type(() => Number)
   vatAmount!: number;
 
   @ApiProperty({ description: 'Kwota brutto' })
   @IsNumber()
-  @Min(0)
   @Type(() => Number)
   grossAmount!: number;
 
@@ -137,6 +134,11 @@ export class CreateKsefInvoiceDto {
   @IsDateString()
   dueDate?: string;
 
+  @ApiPropertyOptional({ description: 'Data sprzedaży/dostawy (ISO date string)' })
+  @IsOptional()
+  @IsDateString()
+  salesDate?: string;
+
   @ApiPropertyOptional({ description: 'ID klienta (istniejący)' })
   @IsOptional()
   @IsUUID('4', { message: 'Nieprawidłowy format ID klienta' })
@@ -178,6 +180,12 @@ export class CreateKsefInvoiceDto {
   @IsString()
   @MaxLength(2000)
   notes?: string;
+
+  @ApiPropertyOptional({ description: 'Przyczyna korekty (wymagane dla faktur korygujących)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  correctionReason?: string;
 
   @ApiPropertyOptional({ description: 'ID faktury korygowanej' })
   @IsOptional()
@@ -328,6 +336,9 @@ export class KsefInvoiceResponseDto {
   @ApiPropertyOptional()
   dueDate?: string | null;
 
+  @ApiPropertyOptional()
+  salesDate?: string | null;
+
   @ApiProperty()
   sellerNip!: string;
 
@@ -366,6 +377,26 @@ export class KsefInvoiceResponseDto {
 
   @ApiPropertyOptional()
   rejectedAt?: string | null;
+
+  /**
+   * Signed UPO (Urzędowe Poświadczenie Odbioru) XML returned by KSeF after
+   * the invoice was accepted. Captured eagerly when the scheduler polls;
+   * may be null if the eager download failed and the user hasn't opened
+   * the fallback link yet.
+   */
+  @ApiPropertyOptional({ description: 'Treść UPO (XML) dla zaakceptowanej faktury' })
+  upoXml?: string | null;
+
+  /**
+   * Pre-signed Azure SAS URL for downloading the UPO. Stored as a fallback
+   * when `upoXml` couldn't be captured eagerly. KSeF spec REQUIRES that
+   * this URL be fetched without an Authorization header.
+   */
+  @ApiPropertyOptional({ description: 'Adres do pobrania UPO (SAS URL, bez tokenu autoryzacji)' })
+  upoDownloadUrl?: string | null;
+
+  @ApiPropertyOptional({ description: 'Data wygaśnięcia adresu pobrania UPO' })
+  upoDownloadUrlExpirationDate?: string | null;
 
   @ApiPropertyOptional()
   correctedInvoiceId?: string | null;
@@ -411,6 +442,33 @@ export class KsefBatchSubmitResultDto {
 
   @ApiProperty({ type: [KsefBatchSubmitItemResultDto] })
   results!: KsefBatchSubmitItemResultDto[];
+}
+
+// ── KSeF API XML Validation ──────────────────────────────────────────────
+
+export class KsefInvoiceValidateErrorDto {
+  @ApiPropertyOptional()
+  code?: string;
+
+  @ApiPropertyOptional()
+  description?: string;
+
+  @ApiPropertyOptional()
+  details?: string;
+}
+
+export class KsefInvoiceValidateResultDto {
+  @ApiProperty({ description: 'Czy faktura jest zgodna ze schemą KSeF' })
+  valid!: boolean;
+
+  @ApiProperty({ description: 'Wersja schemy wykryta przez KSeF', enum: ['v2', 'v3'] })
+  invoiceVersion!: string;
+
+  @ApiPropertyOptional({ description: 'Kanoniczna forma XML (Base64)' })
+  canonicalForm?: string;
+
+  @ApiPropertyOptional({ description: 'Pierwszy wykryty błąd niezgodności', type: KsefInvoiceValidateErrorDto })
+  error?: KsefInvoiceValidateErrorDto;
 }
 
 // ── Invoice status ───────────────────────────────────────────────────────

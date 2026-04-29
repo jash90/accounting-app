@@ -84,6 +84,9 @@ export class KsefInvoice {
   @Column({ type: 'date', nullable: true })
   dueDate?: Date | null;
 
+  @Column({ type: 'date', nullable: true })
+  salesDate?: Date | null;
+
   @Column({ type: 'varchar', length: 10 })
   sellerNip!: string;
 
@@ -122,6 +125,30 @@ export class KsefInvoice {
 
   @Column({ type: 'jsonb', nullable: true })
   validationErrors?: Record<string, unknown>[] | null;
+
+  /**
+   * The signed UPO XML returned by KSeF after the invoice was processed.
+   * Captured by the scheduler when it sees status 200 — we follow the
+   * pre-signed Azure SAS `upoDownloadUrl` and persist the body here so the
+   * UI can hand it to the user without another round-trip to KSeF.
+   */
+  @Column({ type: 'text', nullable: true })
+  upoXml?: string | null;
+
+  /**
+   * Pre-signed Azure SAS URL pointing to the UPO XML. Stored as a fallback
+   * when capturing `upoXml` failed (network blip, link expired before we
+   * polled, etc.) — the UI can offer a "Pobierz UPO z KSeF" button against
+   * this URL until it expires (`upoDownloadUrlExpirationDate`).
+   *
+   * The URL is unauthenticated (KSeF spec says explicitly NOT to send a
+   * Bearer token), so it's safe to surface to the browser.
+   */
+  @Column({ type: 'varchar', nullable: true })
+  upoDownloadUrl?: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  upoDownloadUrlExpirationDate?: Date | null;
 
   @Column({ type: 'timestamp', nullable: true })
   submittedAt?: Date | null;

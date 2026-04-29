@@ -18,7 +18,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Response } from 'express';
+import type { Response } from 'express';
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { User } from '@accounting/common';
@@ -133,7 +133,8 @@ export class KsefSessionController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: User,
   ): Promise<KsefSessionResponseDto> {
-    const session = await this.sessionService.closeSession(id, user.id);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
+    const session = await this.sessionService.closeSession(id, companyId, user.id);
 
     const dto = new KsefSessionResponseDto();
     dto.id = session.id;
@@ -178,9 +179,11 @@ export class KsefSessionController {
   @RequirePermission('ksef', 'read')
   async downloadUpo(
     @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: User,
     @Res() res: Response,
   ): Promise<void> {
-    const upoContent = await this.sessionService.getUpoContent(id);
+    const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
+    const upoContent = await this.sessionService.getUpoContent(id, companyId);
 
     if (!upoContent) {
       throw new NotFoundException('UPO nie jest jeszcze dostepne dla tej sesji');
