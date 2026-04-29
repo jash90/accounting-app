@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { Company, User } from '@accounting/common';
+import { Company, RefreshToken, User } from '@accounting/common';
 
 import { ACCESS_JWT_SERVICE, REFRESH_JWT_SERVICE } from './constants/jwt.constants';
 import { AuthController } from './controllers/auth.controller';
@@ -24,7 +24,7 @@ function getRequiredSecret(configService: ConfigService, key: string): string {
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Company]), PassportModule],
+  imports: [TypeOrmModule.forFeature([User, Company, RefreshToken]), PassportModule],
   controllers: [AuthController],
   providers: [
     AuthService,

@@ -1,10 +1,12 @@
+import { ConfigService } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 import * as bcrypt from 'bcryptjs';
 import { beforeEach, describe, expect, it, mock, type Mock } from 'bun:test';
+import { DataSource } from 'typeorm';
 
-import { Company, User, UserRole } from '@accounting/common';
+import { Company, RefreshToken, User, UserRole } from '@accounting/common';
 
 import { AuthService } from './auth.service';
 import { ACCESS_JWT_SERVICE, REFRESH_JWT_SERVICE } from '../constants/jwt.constants';
@@ -27,6 +29,12 @@ describe('AuthService', () => {
     findOne: mock(() => {}),
   };
 
+  const mockRefreshTokenRepository = {
+    findOne: mock(() => {}),
+    save: mock((row: unknown) => Promise.resolve({ id: 'rt-1', ...(row as object) })),
+    update: mock(() => Promise.resolve()),
+  };
+
   const mockAccessJwtService = {
     sign: mock(() => {}),
     verify: mock(() => {}),
@@ -37,19 +45,54 @@ describe('AuthService', () => {
     verify: mock(() => {}),
   };
 
+  const mockConfigService = {
+    get: mock((key: string) => (key === 'JWT_REFRESH_EXPIRES_IN' ? '7d' : undefined)),
+  };
+
+  // Tracks the manager calls inside `dataSource.transaction(cb)`.
+  const txManagerMock = {
+    increment: mock(() => Promise.resolve()),
+    update: mock(() => Promise.resolve()),
+    save: mock((_entity: unknown, row: unknown) =>
+      Promise.resolve({ id: 'rt-tx', ...(row as object) })
+    ),
+  };
+
+  const mockDataSource = {
+    transaction: mock(<T>(cb: (mgr: typeof txManagerMock) => Promise<T>) => cb(txManagerMock)),
+  };
+
   beforeEach(async () => {
     // Reset all mocks
     (mockUserRepository.findOne as Mock<typeof mockUserRepository.findOne>).mockReset();
     (mockUserRepository.create as Mock<typeof mockUserRepository.create>).mockReset();
     (mockUserRepository.save as Mock<typeof mockUserRepository.save>).mockReset();
+    (mockUserRepository.increment as Mock<typeof mockUserRepository.increment>).mockReset();
     (
       mockUserRepository.createQueryBuilder as Mock<typeof mockUserRepository.createQueryBuilder>
     ).mockReset();
     (mockCompanyRepository.findOne as Mock<typeof mockCompanyRepository.findOne>).mockReset();
+    (
+      mockRefreshTokenRepository.findOne as Mock<typeof mockRefreshTokenRepository.findOne>
+    ).mockReset();
+    (mockRefreshTokenRepository.save as Mock<typeof mockRefreshTokenRepository.save>).mockReset();
+    (
+      mockRefreshTokenRepository.update as Mock<typeof mockRefreshTokenRepository.update>
+    ).mockReset();
     (mockAccessJwtService.sign as Mock<typeof mockAccessJwtService.sign>).mockReset();
     (mockAccessJwtService.verify as Mock<typeof mockAccessJwtService.verify>).mockReset();
     (mockRefreshJwtService.sign as Mock<typeof mockRefreshJwtService.sign>).mockReset();
     (mockRefreshJwtService.verify as Mock<typeof mockRefreshJwtService.verify>).mockReset();
+    (txManagerMock.increment as Mock<typeof txManagerMock.increment>).mockReset();
+    (txManagerMock.update as Mock<typeof txManagerMock.update>).mockReset();
+    (txManagerMock.save as Mock<typeof txManagerMock.save>).mockReset();
+    // Provide sensible defaults consumed by generateTokens / invalidateTokens.
+    (
+      mockRefreshTokenRepository.save as Mock<typeof mockRefreshTokenRepository.save>
+    ).mockImplementation((row: unknown) => Promise.resolve({ id: 'rt-1', ...(row as object) }));
+    (txManagerMock.save as Mock<typeof txManagerMock.save>).mockImplementation(
+      (_entity: unknown, row: unknown) => Promise.resolve({ id: 'rt-tx', ...(row as object) })
+    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -63,12 +106,24 @@ describe('AuthService', () => {
           useValue: mockCompanyRepository,
         },
         {
+          provide: getRepositoryToken(RefreshToken),
+          useValue: mockRefreshTokenRepository,
+        },
+        {
           provide: ACCESS_JWT_SERVICE,
           useValue: mockAccessJwtService,
         },
         {
           provide: REFRESH_JWT_SERVICE,
           useValue: mockRefreshJwtService,
+        },
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
+        },
+        {
+          provide: DataSource,
+          useValue: mockDataSource,
         },
       ],
     }).compile();
@@ -210,18 +265,24 @@ describe('AuthService', () => {
   });
 
   describe('invalidateTokens', () => {
-    it('should increment tokenVersion for the given user', async () => {
-      (mockUserRepository.increment as Mock<typeof mockUserRepository.increment>).mockResolvedValue(
-        undefined
-      );
-
+    it('should increment tokenVersion AND mark all unused refresh tokens used', async () => {
       await service.invalidateTokens('user-123');
 
-      expect(mockUserRepository.increment).toHaveBeenCalledWith(
+      // Runs inside dataSource.transaction(...) — assertions go on the manager mock.
+      expect(mockDataSource.transaction).toHaveBeenCalledTimes(1);
+      expect(txManagerMock.increment).toHaveBeenCalledWith(
+        User,
         { id: 'user-123' },
         'tokenVersion',
         1
       );
+      // All still-valid refresh tokens for this user are flipped to used.
+      expect(txManagerMock.update).toHaveBeenCalledTimes(1);
+      const [entity, where, set] = (txManagerMock.update as Mock<typeof txManagerMock.update>).mock
+        .calls[0] as unknown as [unknown, { userId: string }, { usedAt: Date }];
+      expect(entity).toBe(RefreshToken);
+      expect(where.userId).toBe('user-123');
+      expect(set.usedAt).toBeInstanceOf(Date);
     });
   });
 });
