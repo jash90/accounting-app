@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Controller,
+  FileTypeValidator,
   Get,
   MaxFileSizeValidator,
   Param,
@@ -35,6 +36,19 @@ import {
 import { EmailAttachmentService } from '../services/email-attachment.service';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+/**
+ * MIME-type whitelist for email attachments.
+ *
+ * Anchored to start (^) so a malicious upload can't smuggle a payload type
+ * inside a longer string, e.g. `text/html;boundary=application/pdf`.
+ *
+ * Covers the realistic email-attachment surface: documents, images, spreadsheets,
+ * archives, plain/csv text. Explicitly excludes executables, HTML, SVG (script
+ * payload), and arbitrary `application/octet-stream`.
+ */
+const ALLOWED_MIME_PATTERN =
+  /^(application\/(pdf|msword|vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet|presentationml\.presentation)|vnd\.ms-excel|vnd\.ms-powerpoint|zip|x-zip-compressed|json)|image\/(jpeg|png|gif|webp|heic|heif)|text\/(plain|csv|markdown))$/;
 
 @ApiTags('Email Client - Attachments')
 @ApiBearerAuth('JWT-auth')
@@ -79,7 +93,12 @@ export class EmailAttachmentsController {
     @CurrentUser() user: User,
     @UploadedFile(
       new ParseFilePipe({
-        validators: [new MaxFileSizeValidator({ maxSize: MAX_FILE_SIZE })],
+        validators: [
+          new MaxFileSizeValidator({ maxSize: MAX_FILE_SIZE }),
+          // SECURITY: reject executables, HTML, SVG (XSS via download), and
+          // arbitrary octet-streams. Whitelist of legitimate email attachments.
+          new FileTypeValidator({ fileType: ALLOWED_MIME_PATTERN }),
+        ],
         fileIsRequired: true,
       })
     )
