@@ -5,6 +5,7 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import cookieParser from 'cookie-parser';
+import { type NextFunction, type Request, type Response } from 'express';
 import helmet from 'helmet';
 
 import { AppModule } from './app/app.module';
@@ -56,21 +57,43 @@ async function bootstrap() {
   // Security
   app.use(helmet());
   app.use(cookieParser());
-  // Auth uses httpOnly cookies + `withCredentials: true`. Browser-issued
-  // cross-origin <form> POSTs CAN send those cookies, so missing-Origin requests
-  // are a CSRF surface in production. Reject them in prod and keep dev permissive
-  // for local tools (curl, Postman, server-to-server health checks).
+
+  // CSRF defense layer: reject missing-Origin in production, but only for
+  // state-changing methods. Safe methods (GET/HEAD/OPTIONS) cannot cause
+  // server-side state changes, and legitimate non-browser callers commonly
+  // omit Origin — Railway's health probe (`GET /api/health`), Sentry,
+  // monitoring, server-to-server checks. Blocking those broke deploys.
+  //
+  // Modern browsers ALWAYS send Origin on cross-origin POST/PUT/PATCH/DELETE,
+  // so a missing Origin on a state-changing request in production is suspicious
+  // and gets a 403. Same-origin requests still pass because their Origin header
+  // matches the server's host (and is included by every modern browser).
+  const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (
+      process.env.NODE_ENV === 'production' &&
+      !req.headers.origin &&
+      !SAFE_METHODS.has(req.method)
+    ) {
+      res.status(403).json({
+        statusCode: 403,
+        message: 'Origin header required for state-changing requests',
+        error: 'Forbidden',
+      });
+      return;
+    }
+    next();
+  });
+
   app.enableCors({
     origin: (
       origin: string | undefined,
       callback: (err: Error | null, allow?: boolean) => void
     ) => {
-      // Missing Origin: allowed in dev (curl/Postman/health checks); rejected in prod.
+      // Missing Origin: allowed for safe-method requests (state-changing ones
+      // were already filtered by the middleware above in production).
       if (!origin) {
-        if (process.env.NODE_ENV !== 'production') {
-          return callback(null, true);
-        }
-        return callback(new Error('Origin header required'));
+        return callback(null, true);
       }
 
       // Allow all localhost origins (any port) - ONLY in development
