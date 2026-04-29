@@ -60,12 +60,21 @@ export class EmailAttachmentService {
   ): Promise<{ buffer: Buffer; filename: string }> {
     const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
-    if (!filePath.startsWith(companyId)) {
+    // SECURITY: prevent multi-tenant data leak via path traversal.
+    // A naive `startsWith(companyId)` is bypassed by `<companyId>/../<other>/file`.
+    // Normalize the path and reject any traversal segment, then verify the
+    // first segment is exactly the user's companyId.
+    const normalized = path.posix.normalize(filePath.replace(/\\/g, '/'));
+    if (
+      normalized.includes('..') ||
+      normalized.startsWith('/') ||
+      normalized.split('/')[0] !== companyId
+    ) {
       throw new BadRequestException('Access denied');
     }
 
-    const buffer = await this.storageService.downloadFile(filePath);
-    const filename = filePath.split('/').pop() || 'download';
+    const buffer = await this.storageService.downloadFile(normalized);
+    const filename = normalized.split('/').pop() || 'download';
 
     return { buffer, filename };
   }
