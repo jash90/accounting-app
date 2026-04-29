@@ -12,12 +12,21 @@
       CSP Security Notes:
       - 'unsafe-inline' for scripts: Required by Vite HMR in dev and React hydration. Consider nonce-based approach for stricter security.
       - 'unsafe-inline' for styles: Required by Radix UI for dynamic CSS injection.
+      - worker-src 'self' blob:: Sentry browser SDK spawns a blob: Web Worker for the
+        Replay/event-capture pipeline. Without an explicit `worker-src`, browsers fall
+        back to `script-src`, which does not whitelist blob: — the worker is blocked.
       - connect-src: Specific Railway production domain to prevent connections to arbitrary Railway apps.
-      - img-src https: allows loading images from any HTTPS source (avatars, etc.)
+        Includes *.ingest.sentry.io for Sentry event ingestion.
+      - img-src: data:, https:, blob: — Sentry Replay attaches blob: snapshots; avatars
+        and remote assets use https:.
+
+      Note: Vercel sends an HTTP CSP header from `vercel.json` too. The browser applies
+      the intersection of both — any directive added here MUST also be present (no
+      stricter) in `vercel.json`. Keep them in sync when changing.
 
       TODO: Implement nonce-based CSP for scripts when Vite adds proper support.
     -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' http://localhost:3000 ws://localhost:3000 https://api-production-ffd9.up.railway.app wss://api-production-ffd9.up.railway.app https://api-production-02a2.up.railway.app wss://api-production-02a2.up.railway.app;" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self'; connect-src 'self' http://localhost:3000 ws://localhost:3000 https://api-production-ffd9.up.railway.app wss://api-production-ffd9.up.railway.app https://api-production-02a2.up.railway.app wss://api-production-02a2.up.railway.app https://*.ingest.sentry.io;" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/apptax-favicon.svg" />
