@@ -108,8 +108,12 @@ function DataTableInner<TData, TValue>({
   pageIndex,
   onPageChange,
 }: DataTableProps<TData, TValue>) {
-  const isServerPagination = typeof totalCount === 'number';
   'use no memo';
+  // The directive above MUST be the first statement in the function
+  // body — the React Compiler only honors `'use no memo'` when it's at
+  // the top of a function. Putting any code (variable declaration,
+  // expression) before it silently turns the directive into a no-op.
+  const isServerPagination = typeof totalCount === 'number';
   const [sorting, setSorting] = useState<SortingState>([]);
   const [internalRowSelection, setInternalRowSelection] = useState<RowSelectionState>({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});

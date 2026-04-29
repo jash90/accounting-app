@@ -20,7 +20,12 @@ import { KsefInvoiceType } from '../enums/ksef-invoice-type.enum';
 
 @Entity('ksef_invoices')
 @Index(['companyId', 'status'])
-@Unique(['companyId', 'invoiceNumber'])
+// Invoice numbers are NOT company-global — they are unique per direction.
+// A vendor's incoming invoice can legitimately share a number with one of
+// our own outgoing invoices. Including `direction` in the unique key lets
+// sync's reconciliation lookup (downloadSingle) match the right row
+// instead of overwriting an unrelated outgoing invoice with vendor data.
+@Unique(['companyId', 'invoiceNumber', 'direction'])
 @Index(['ksefNumber'], { unique: true, where: '"ksefNumber" IS NOT NULL' })
 @Index(['companyId', 'issueDate'])
 @Index(['clientId'])

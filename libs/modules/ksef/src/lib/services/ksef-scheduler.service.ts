@@ -6,6 +6,7 @@ import { IsNull, Not, Repository } from 'typeorm';
 import { KsefInvoice, KsefInvoiceStatus } from '@accounting/common';
 
 import { getKsefErrorMessage, KSEF_API_PATHS, KSEF_DEFAULTS } from '../constants';
+import { KsefAuditLogService } from './ksef-audit-log.service';
 import { KsefAuthService } from './ksef-auth.service';
 import { KsefConfigService } from './ksef-config.service';
 import { KsefHttpClientService } from './ksef-http-client.service';
@@ -36,6 +37,19 @@ interface SessionInvoiceStatusResponse {
 @Injectable()
 export class KsefSchedulerService {
   private readonly logger = new Logger(KsefSchedulerService.name);
+  /**
+   * In-process re-entry guard for `pollPendingStatuses`. NestJS `@Cron`
+   * does NOT prevent overlapping invocations by default — and since this
+   * job batches up to 50 invoices per company and follows pre-signed SAS
+   * URLs (each with up to `UPLOAD_TIMEOUT_MS` budget), a slow tick can
+   * easily exceed 60s and let the next tick start while the previous is
+   * still draining. That cascade thrashes both KSeF and our own DB.
+   *
+   * Note: this is a single-process guard. Multi-replica deployments
+   * (Railway horizontal scaling) need a DB advisory lock instead — that
+   * is intentionally out of scope here.
+   */
+  private isPolling = false;
 
   constructor(
     @InjectRepository(KsefInvoice)
@@ -45,6 +59,7 @@ export class KsefSchedulerService {
     private readonly configService: KsefConfigService,
     private readonly invoiceService: KsefInvoiceService,
     private readonly sessionService: KsefSessionService,
+    private readonly auditLogService: KsefAuditLogService,
   ) {}
 
   // Run every minute. KSeF typically finishes processing an invoice within
@@ -53,6 +68,19 @@ export class KsefSchedulerService {
   // up to 50 invoices per company per tick).
   @Cron('* * * * *')
   async pollPendingStatuses(): Promise<void> {
+    if (this.isPolling) {
+      this.logger.warn('Skipping invoice status poll — previous tick still running');
+      return;
+    }
+    this.isPolling = true;
+    try {
+      await this.runPollPendingStatuses();
+    } finally {
+      this.isPolling = false;
+    }
+  }
+
+  private async runPollPendingStatuses(): Promise<void> {
     const pendingInvoices = await this.invoiceRepo.find({
       where: {
         status: KsefInvoiceStatus.SUBMITTED,
@@ -121,7 +149,11 @@ export class KsefSchedulerService {
             // MUST run before the generic >= 400 fallback — otherwise a perfectly accepted
             // duplicate would be flipped to REJECTED, hiding the original ksefNumber.
             if (statusCode === 200 && ksefNumber) {
-              const upoCapture = await this.captureInvoiceUpo(response.data);
+              const upoCapture = await this.captureInvoiceUpo(response.data, {
+                companyId,
+                userId,
+                invoiceId: invoice.id,
+              });
               await this.invoiceService.updateInvoiceStatus(
                 invoice.id,
                 KsefInvoiceStatus.ACCEPTED,
@@ -241,6 +273,7 @@ export class KsefSchedulerService {
    */
   private async captureInvoiceUpo(
     data: SessionInvoiceStatusResponse,
+    audit: { companyId: string; userId: string; invoiceId: string },
   ): Promise<{
     upoXml?: string | null;
     upoDownloadUrl?: string | null;
@@ -254,6 +287,7 @@ export class KsefSchedulerService {
       ? new Date(data.upoDownloadUrlExpirationDate)
       : null;
 
+    const startedAt = Date.now();
     try {
       const controller = new AbortController();
       const timeout = setTimeout(
@@ -263,9 +297,37 @@ export class KsefSchedulerService {
       try {
         const response = await fetch(data.upoDownloadUrl, { signal: controller.signal });
         if (!response.ok) {
+          // Audit-log the failure before throwing — the SAS-URL fetch
+          // bypasses KsefHttpClientService (no Bearer token allowed) so
+          // we have to log it ourselves. Polish e-invoice compliance
+          // requires a demonstrable good-faith attempt trail.
+          await this.auditLogService.log({
+            companyId: audit.companyId,
+            userId: audit.userId,
+            action: 'UPO_FETCH',
+            entityType: 'KsefInvoice',
+            entityId: audit.invoiceId,
+            httpMethod: 'GET',
+            httpUrl: data.upoDownloadUrl,
+            httpStatusCode: response.status,
+            errorMessage: `HTTP ${response.status} ${response.statusText}`,
+            durationMs: Date.now() - startedAt,
+          });
           throw new Error(`HTTP ${response.status} ${response.statusText}`);
         }
         const xml = await response.text();
+        await this.auditLogService.log({
+          companyId: audit.companyId,
+          userId: audit.userId,
+          action: 'UPO_FETCH',
+          entityType: 'KsefInvoice',
+          entityId: audit.invoiceId,
+          httpMethod: 'GET',
+          httpUrl: data.upoDownloadUrl,
+          httpStatusCode: response.status,
+          responseSnippet: `Captured UPO XML (${xml.length} bytes)`,
+          durationMs: Date.now() - startedAt,
+        });
         return {
           upoXml: xml,
           upoDownloadUrl: data.upoDownloadUrl,
@@ -275,6 +337,22 @@ export class KsefSchedulerService {
         clearTimeout(timeout);
       }
     } catch (error) {
+      // Network-level failures (abort, DNS, etc.) — audit-log here too.
+      // The HTTP-level failures already logged inside the try block.
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (!errorMessage.startsWith('HTTP ')) {
+        await this.auditLogService.log({
+          companyId: audit.companyId,
+          userId: audit.userId,
+          action: 'UPO_FETCH',
+          entityType: 'KsefInvoice',
+          entityId: audit.invoiceId,
+          httpMethod: 'GET',
+          httpUrl: data.upoDownloadUrl,
+          errorMessage,
+          durationMs: Date.now() - startedAt,
+        });
+      }
       this.logger.warn(
         `Failed to download per-invoice UPO from SAS URL: ${
           error instanceof Error ? error.message : String(error)

@@ -419,17 +419,43 @@ export class KsefSessionService {
     metadata['upoDownloadUrlExpirationDate'] = page.downloadUrlExpirationDate;
 
     let captured = false;
+    const startedAt = Date.now();
     try {
       const xml = await this.fetchUpoXml(page.downloadUrl);
       session.upoContent = xml;
       session.upoReference = page.referenceNumber ?? session.upoReference ?? null;
       captured = true;
+      // Audit-log the successful UPO capture. SAS URL fetches bypass
+      // KsefHttpClientService (no Bearer header allowed), so we have
+      // to log them here for compliance traceability.
+      await this.auditLogService.log({
+        companyId: session.companyId,
+        userId: session.createdById,
+        action: 'UPO_FETCH',
+        entityType: 'KsefSession',
+        entityId: session.id,
+        httpMethod: 'GET',
+        httpUrl: page.downloadUrl,
+        httpStatusCode: 200,
+        responseSnippet: `Captured session UPO XML (${xml.length} bytes)`,
+        durationMs: Date.now() - startedAt,
+      });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.warn(
-        `Failed to download session UPO XML from SAS URL for session ${session.id}: ${
-          error instanceof Error ? error.message : String(error)
-        }. URL + expiry stashed in metadata for a later retry.`,
+        `Failed to download session UPO XML from SAS URL for session ${session.id}: ${errorMessage}. URL + expiry stashed in metadata for a later retry.`,
       );
+      await this.auditLogService.log({
+        companyId: session.companyId,
+        userId: session.createdById,
+        action: 'UPO_FETCH',
+        entityType: 'KsefSession',
+        entityId: session.id,
+        httpMethod: 'GET',
+        httpUrl: page.downloadUrl,
+        errorMessage,
+        durationMs: Date.now() - startedAt,
+      });
     }
 
     session.metadata = metadata;
