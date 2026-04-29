@@ -11,8 +11,14 @@
  * SECURITY: Actual JWT tokens are NEVER stored in localStorage.
  * They exist only in httpOnly cookies inaccessible to JavaScript.
  *
+ * All localStorage access goes through `safeStorage` so that Safari Private
+ * Browsing (which throws QuotaExceededError on every setItem) does NOT crash
+ * the app on first load.
+ *
  * @see https://owasp.org/www-community/HttpOnly
  */
+
+import { safeStorage } from '../utils/safe-storage';
 
 const AUTH_FLAG_KEY = 'is_authenticated';
 const TOKEN_CHANGE_EVENT = 'auth-token-change';
@@ -34,12 +40,12 @@ const notifyTokenChange = (): void => {
  */
 function migrateLegacyTokens(): void {
   if (typeof window === 'undefined') return;
-  const legacyAccess = localStorage.getItem(LEGACY_ACCESS_TOKEN_KEY);
+  const legacyAccess = safeStorage.getItem(LEGACY_ACCESS_TOKEN_KEY);
   if (legacyAccess) {
     // User had tokens in localStorage — set the auth flag and purge tokens
-    localStorage.setItem(AUTH_FLAG_KEY, 'true');
-    localStorage.removeItem(LEGACY_ACCESS_TOKEN_KEY);
-    localStorage.removeItem(LEGACY_REFRESH_TOKEN_KEY);
+    safeStorage.setItem(AUTH_FLAG_KEY, 'true');
+    safeStorage.removeItem(LEGACY_ACCESS_TOKEN_KEY);
+    safeStorage.removeItem(LEGACY_REFRESH_TOKEN_KEY);
   }
 }
 
@@ -53,18 +59,16 @@ export const tokenStorage = {
    * The sentinel '__cookie__' tells the interceptor that auth is cookie-based.
    */
   getAccessToken: (): string | null => {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem(AUTH_FLAG_KEY) === 'true' ? '__cookie__' : null;
+    return safeStorage.getItem(AUTH_FLAG_KEY) === 'true' ? '__cookie__' : null;
   },
 
   /**
    * Mark the user as authenticated (flag only — token is in httpOnly cookie).
    * The token parameter is accepted for API compatibility but NOT stored.
    */
-   
+
   setAccessToken: (_token: string): void => {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(AUTH_FLAG_KEY, 'true');
+    safeStorage.setItem(AUTH_FLAG_KEY, 'true');
     notifyTokenChange();
   },
 
@@ -78,23 +82,21 @@ export const tokenStorage = {
   /**
    * No-op — refresh token is stored in httpOnly cookie by the backend.
    */
-   
+
   setRefreshToken: (_token: string): void => {
     // No-op: refresh token is in httpOnly cookie
   },
 
   clearTokens: (): void => {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem(LEGACY_ACCESS_TOKEN_KEY);
-    localStorage.removeItem(LEGACY_REFRESH_TOKEN_KEY);
-    localStorage.removeItem(AUTH_FLAG_KEY);
+    safeStorage.removeItem(LEGACY_ACCESS_TOKEN_KEY);
+    safeStorage.removeItem(LEGACY_REFRESH_TOKEN_KEY);
+    safeStorage.removeItem(AUTH_FLAG_KEY);
     notifyTokenChange();
   },
 
   /** Whether the user appears to be authenticated (has auth flag). */
   isAuthenticated: (): boolean => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem(AUTH_FLAG_KEY) === 'true';
+    return safeStorage.getItem(AUTH_FLAG_KEY) === 'true';
   },
 
   /**
