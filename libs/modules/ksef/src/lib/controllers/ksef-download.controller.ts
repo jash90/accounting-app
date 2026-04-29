@@ -26,7 +26,7 @@ import {
   RequirePermission,
 } from '@accounting/rbac';
 
-import { KsefSyncRequestDto, KsefSyncResultDto } from '../dto';
+import { KsefSyncDirection, KsefSyncRequestDto, KsefSyncResultDto } from '../dto';
 import { KsefDownloadService } from '../services/ksef-download.service';
 
 @ApiTags('KSeF - Download')
@@ -42,9 +42,10 @@ export class KsefDownloadController {
 
   @Post('sync')
   @ApiOperation({
-    summary: 'Sync incoming invoices from KSeF',
+    summary: 'Sync invoices from KSeF',
     description:
-      'Queries KSeF for incoming invoices in the specified date range and downloads new ones.',
+      'Queries KSeF for invoices in the specified date range and direction, then downloads any new ones into the local database. ' +
+      'Direction defaults to `incoming` (we are the buyer); pass `outgoing` for sales invoices issued under our NIP, or `both` for both directions in one run.',
   })
   @ApiResponse({ status: 200, type: KsefSyncResultDto })
   @RequirePermission('ksef', 'write')
@@ -54,11 +55,12 @@ export class KsefDownloadController {
     @CurrentUser() user: User,
   ): Promise<KsefSyncResultDto> {
     const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
-    return this.downloadService.syncIncoming(
+    return this.downloadService.syncByDirection(
       companyId,
       user.id,
       dto.dateFrom,
       dto.dateTo,
+      dto.direction ?? KsefSyncDirection.INCOMING,
     );
   }
 

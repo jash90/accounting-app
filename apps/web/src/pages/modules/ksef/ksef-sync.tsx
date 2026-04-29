@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { KsefSyncResult } from '@/lib/api/endpoints/ksef';
+import type { KsefSyncDirection, KsefSyncResult } from '@/lib/api/endpoints/ksef';
 import { useSyncKsefInvoices } from '@/lib/hooks/use-ksef';
 import { formatDate } from '@/lib/utils/format-date';
 
@@ -19,6 +19,10 @@ export default function KsefSyncPage() {
 
   const [dateFrom, setDateFrom] = useState(thirtyDaysAgo);
   const [dateTo, setDateTo] = useState(today);
+  // Default 'both' — most users want a full reconciliation in one click.
+  // Backend defaults to 'incoming' for backwards compatibility, but the UI
+  // surfaces 'both' as the friendly default.
+  const [direction, setDirection] = useState<KsefSyncDirection>('both');
   const [syncResult, setSyncResult] = useState<KsefSyncResult | null>(null);
 
   const isDateRangeInvalid = dateFrom && dateTo && dateFrom > dateTo;
@@ -29,7 +33,7 @@ export default function KsefSyncPage() {
     if (!dateFrom || !dateTo) return;
     setSyncResult(null);
     syncMutation.mutate(
-      { dateFrom, dateTo },
+      { dateFrom, dateTo, direction },
       { onSuccess: (data) => setSyncResult(data as KsefSyncResult) }
     );
   };
@@ -53,8 +57,29 @@ export default function KsefSyncPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Podaj zakres dat, aby pobrać faktury przychodzące z KSeF.
+            Podaj zakres dat i kierunek, aby pobrać faktury z KSeF.
           </p>
+          <div className="space-y-2">
+            <Label>Kierunek</Label>
+            <div className="flex gap-2">
+              {([
+                { value: 'incoming', label: 'Przychodzące', hint: 'gdzie firma jest nabywcą' },
+                { value: 'outgoing', label: 'Wychodzące', hint: 'gdzie firma jest sprzedawcą' },
+                { value: 'both', label: 'Oba', hint: 'oba kierunki w jednym przebiegu' },
+              ] satisfies Array<{ value: KsefSyncDirection; label: string; hint: string }>).map((opt) => (
+                <Button
+                  key={opt.value}
+                  type="button"
+                  variant={direction === opt.value ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setDirection(opt.value)}
+                  title={opt.hint}
+                >
+                  {opt.label}
+                </Button>
+              ))}
+            </div>
+          </div>
           <div className="flex gap-2">
             {[
               { label: '7 dni', days: 7 },

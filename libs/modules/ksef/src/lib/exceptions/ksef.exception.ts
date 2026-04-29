@@ -71,14 +71,25 @@ export class KsefRateLimitException extends HttpException {
 }
 
 export class KsefApiException extends BadGatewayException {
-  constructor(detail?: string, retryable = false) {
+  /**
+   * The numeric `exceptionCode` (or `status.code`) returned by KSeF, when
+   * we could parse one from the response body. Used by call sites that
+   * want to recover from specific failures without string-matching the
+   * exception message — e.g. the `/security/public-key-certificates`
+   * cache-bust on 415, or future per-code retry policies.
+   */
+  readonly ksefExceptionCode?: number;
+
+  constructor(detail?: string, retryable = false, exceptionCode?: number) {
     super({
       statusCode: HttpStatus.BAD_GATEWAY,
       message: detail
         ? `${KSEF_MESSAGES.CONNECTION_FAILED}: ${detail}`
         : KSEF_MESSAGES.CONNECTION_FAILED,
       retryable,
+      ksefExceptionCode: exceptionCode,
     });
+    this.ksefExceptionCode = exceptionCode;
   }
 }
 

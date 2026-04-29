@@ -12,12 +12,14 @@ import {
 import { SystemCompanyService } from '@accounting/common/backend';
 
 import { KSEF_API_PATHS } from '../constants';
-import { KsefSyncResultDto } from '../dto';
+import { KsefSyncDirection, KsefSyncResultDto } from '../dto';
 import type { KsefInvoiceMetadata, KsefQueryInvoicesResponse } from '../generated';
 import { KsefAuditLogService } from './ksef-audit-log.service';
+import { KsefAuthService } from './ksef-auth.service';
 import { KsefConfigService } from './ksef-config.service';
 import { KsefCryptoService } from './ksef-crypto.service';
 import { KsefHttpClientService } from './ksef-http-client.service';
+import { KsefXmlService } from './ksef-xml.service';
 
 @Injectable()
 export class KsefDownloadService {
@@ -29,18 +31,30 @@ export class KsefDownloadService {
     @InjectRepository(Client)
     private readonly clientRepo: Repository<Client>,
     private readonly httpClient: KsefHttpClientService,
+    private readonly authService: KsefAuthService,
     private readonly configService: KsefConfigService,
     private readonly cryptoService: KsefCryptoService,
     private readonly auditLogService: KsefAuditLogService,
     private readonly systemCompanyService: SystemCompanyService,
+    private readonly xmlService: KsefXmlService,
   ) {}
 
   async downloadSingle(
     ksefNumber: string,
     companyId: string,
     userId: string,
+    /**
+     * Direction the caller wants to register. When omitted, the method
+     * auto-detects: an invoice whose seller NIP matches the company's
+     * configured NIP is OUTGOING; otherwise INCOMING. Sync passes the
+     * direction explicitly because it knows which Subject1/Subject2 query
+     * the metadata came from; the bare-fetch endpoint can rely on the
+     * fallback (it's a low-volume admin tool).
+     */
+    direction?: KsefInvoiceDirection,
   ): Promise<KsefInvoice> {
     const config = await this.configService.getConfigOrFail(companyId);
+    const token = await this.authService.getValidToken(companyId, userId);
 
     const path = KSEF_API_PATHS.INVOICE_GET.replace(
       '{ksefNumber}',
@@ -53,6 +67,7 @@ export class KsefDownloadService {
       environment: config.environment,
       method: 'GET',
       path,
+      headers: { Authorization: `Bearer ${token}` },
       companyId,
       userId,
       auditAction: 'INVOICE_DOWNLOAD',
@@ -66,11 +81,16 @@ export class KsefDownloadService {
       : (response.data as Record<string, unknown>).invoiceXml as string;
 
     // Parse the XML to extract metadata
-    const { KsefXmlService } = await import('./ksef-xml.service');
-    const xmlService = new KsefXmlService();
-    const parsedInvoice = xmlService.parseInvoiceXml(invoiceXml);
+    const parsedInvoice = this.xmlService.parseInvoiceXml(invoiceXml);
 
-    // Check if invoice already exists
+    // Auto-detect direction when the caller didn't pass one.
+    const resolvedDirection =
+      direction ??
+      (config.nip && parsedInvoice.sellerNip === config.nip
+        ? KsefInvoiceDirection.OUTGOING
+        : KsefInvoiceDirection.INCOMING);
+
+    // Check if invoice already exists by ksefNumber (canonical KSeF id).
     const existing = await this.invoiceRepo.findOne({
       where: { ksefNumber, companyId },
     });
@@ -81,16 +101,70 @@ export class KsefDownloadService {
       return this.invoiceRepo.save(existing);
     }
 
-    // Try to match seller to a client by NIP (incoming = seller is the counterparty)
-    const client = parsedInvoice.sellerNip
-      ? await this.matchClientByNip(companyId, parsedInvoice.sellerNip)
+    // Reconcile by (companyId, invoiceNumber): KSeF is the source of truth.
+    //
+    // Why this matters: if a user issued an invoice locally and we recorded
+    // it with status REJECTED (e.g. an early submission attempt failed
+    // before status reconciliation, or an offline edit went stale), KSeF
+    // may STILL have it on file as accepted under its canonical
+    // ksefNumber. Without this branch, sync hits the unique constraint
+    // `(companyId, invoiceNumber)` on every retry and the rejected row
+    // sticks forever. Adopt the KSeF state — clear stale REJECTED/ERROR
+    // flags, attach the canonical ksefNumber, and store the authoritative
+    // XML.
+    if (parsedInvoice.invoiceNumber) {
+      const existingByNumber = await this.invoiceRepo.findOne({
+        where: { invoiceNumber: parsedInvoice.invoiceNumber, companyId },
+      });
+      if (existingByNumber) {
+        existingByNumber.ksefNumber = ksefNumber;
+        existingByNumber.status = KsefInvoiceStatus.ACCEPTED;
+        existingByNumber.xmlContent = invoiceXml;
+        existingByNumber.xmlHash = this.cryptoService.computeSha256(invoiceXml);
+        existingByNumber.rawKsefResponse = { invoiceXml, ksefNumber } as unknown as Record<string, unknown>;
+        existingByNumber.acceptedAt = existingByNumber.acceptedAt ?? new Date();
+        // Wipe stale local-only state — KSeF accepted this invoice, so
+        // rejection / validation errors are no longer accurate.
+        existingByNumber.rejectedAt = null;
+        existingByNumber.validationErrors = null;
+        // Direction in DB may have been UNKNOWN or wrong; re-stamp from
+        // the data we just resolved.
+        existingByNumber.direction = direction ?? existingByNumber.direction;
+
+        const saved = await this.invoiceRepo.save(existingByNumber);
+
+        await this.auditLogService.log({
+          companyId,
+          userId,
+          action: 'INVOICE_RECONCILED',
+          entityType: 'KsefInvoice',
+          entityId: saved.id,
+          responseSnippet: `Adopted KSeF state for ${parsedInvoice.invoiceNumber} → ${ksefNumber} (was ${existingByNumber.status})`,
+        });
+
+        return saved;
+      }
+    }
+
+    // Match the counterparty to a client by NIP. The counterparty depends
+    // on direction: for incoming purchases that's the seller; for outgoing
+    // sales that's the buyer.
+    const counterpartyNip =
+      resolvedDirection === KsefInvoiceDirection.OUTGOING
+        ? parsedInvoice.buyerNip
+        : parsedInvoice.sellerNip;
+    const client = counterpartyNip
+      ? await this.matchClientByNip(companyId, counterpartyNip)
       : null;
 
     const invoice = this.invoiceRepo.create({
       companyId,
       clientId: client?.id ?? null,
-      invoiceType: KsefInvoiceType.PURCHASE,
-      direction: KsefInvoiceDirection.INCOMING,
+      invoiceType:
+        resolvedDirection === KsefInvoiceDirection.OUTGOING
+          ? KsefInvoiceType.SALES
+          : KsefInvoiceType.PURCHASE,
+      direction: resolvedDirection,
       invoiceNumber: parsedInvoice.invoiceNumber || ksefNumber,
       ksefNumber,
       status: KsefInvoiceStatus.ACCEPTED,
@@ -137,6 +211,7 @@ export class KsefDownloadService {
     userId: string,
   ): Promise<KsefInvoiceMetadata[]> {
     const config = await this.configService.getConfigOrFail(companyId);
+    const token = await this.authService.getValidToken(companyId, userId);
     const allInvoices: KsefInvoiceMetadata[] = [];
     const subjectType = filters.subjectType ?? 'Subject2';
 
@@ -159,6 +234,7 @@ export class KsefDownloadService {
             ...(filters.dateTo ? { to: filters.dateTo } : {}),
           },
         },
+        headers: { Authorization: `Bearer ${token}` },
         companyId,
         userId,
         auditAction: 'INVOICE_QUERY_METADATA',
@@ -184,24 +260,61 @@ export class KsefDownloadService {
     return allInvoices;
   }
 
-  async syncIncoming(
+  /**
+   * Sync invoices from KSeF for the given direction.
+   *
+   * - `incoming` queries `Subject2` (we are the buyer) — purchase invoices
+   *   issued by counterparties.
+   * - `outgoing` queries `Subject1` (we are the seller) — our own sales,
+   *   useful for reconciliation when invoices were issued from a different
+   *   system on the same NIP.
+   * - `both` runs both queries and dedupes by KSeF number — the result
+   *   counts an invoice once even if it would otherwise show up in both.
+   *
+   * Each downloaded invoice is persisted via `downloadSingle` with the
+   * matching direction so the local row's `direction` / `invoiceType` /
+   * counterparty `clientId` are set correctly.
+   */
+  async syncByDirection(
     companyId: string,
     userId: string,
     dateFrom: string,
     dateTo: string,
+    direction: KsefSyncDirection,
   ): Promise<KsefSyncResultDto> {
-    const metadata = await this.queryInvoiceMetadata(
-      { dateFrom, dateTo },
-      companyId,
-      userId,
-    );
+    const lookups: Array<{ subjectType: 'Subject1' | 'Subject2'; invoiceDirection: KsefInvoiceDirection }> = [];
+    if (direction === KsefSyncDirection.INCOMING || direction === KsefSyncDirection.BOTH) {
+      lookups.push({ subjectType: 'Subject2', invoiceDirection: KsefInvoiceDirection.INCOMING });
+    }
+    if (direction === KsefSyncDirection.OUTGOING || direction === KsefSyncDirection.BOTH) {
+      lookups.push({ subjectType: 'Subject1', invoiceDirection: KsefInvoiceDirection.OUTGOING });
+    }
+
+    // Aggregate all metadata across the requested directions, deduping by
+    // ksefNumber (a single invoice cannot legitimately appear in both
+    // Subject1 and Subject2 for the same NIP, but defend against the
+    // pathological case anyway).
+    const seen = new Set<string>();
+    const items: Array<{ ksefNumber: string; direction: KsefInvoiceDirection }> = [];
+    for (const { subjectType, invoiceDirection } of lookups) {
+      const metadata = await this.queryInvoiceMetadata(
+        { dateFrom, dateTo, subjectType },
+        companyId,
+        userId,
+      );
+      for (const m of metadata) {
+        if (seen.has(m.ksefNumber)) continue;
+        seen.add(m.ksefNumber);
+        items.push({ ksefNumber: m.ksefNumber, direction: invoiceDirection });
+      }
+    }
 
     let newInvoices = 0;
     let updatedInvoices = 0;
     let errors = 0;
     const failedInvoices: Array<{ ksefNumber: string; error: string }> = [];
 
-    for (const item of metadata) {
+    for (const item of items) {
       try {
         const existing = await this.invoiceRepo.findOne({
           where: { ksefNumber: item.ksefNumber, companyId },
@@ -212,7 +325,7 @@ export class KsefDownloadService {
           continue;
         }
 
-        await this.downloadSingle(item.ksefNumber, companyId, userId);
+        await this.downloadSingle(item.ksefNumber, companyId, userId, item.direction);
         newInvoices++;
       } catch (error) {
         errors++;
@@ -229,7 +342,8 @@ export class KsefDownloadService {
       userId,
       action: 'SYNC_COMPLETED',
       responseSnippet: JSON.stringify({
-        totalFound: metadata.length,
+        direction,
+        totalFound: items.length,
         newInvoices,
         updatedInvoices,
         errors,
@@ -237,13 +351,26 @@ export class KsefDownloadService {
     });
 
     const result = new KsefSyncResultDto();
-    result.totalFound = metadata.length;
+    result.totalFound = items.length;
     result.newInvoices = newInvoices;
     result.updatedInvoices = updatedInvoices;
     result.errors = errors;
     result.syncedAt = new Date().toISOString();
     result.failedInvoices = failedInvoices.length > 0 ? failedInvoices : undefined;
     return result;
+  }
+
+  /**
+   * @deprecated Use `syncByDirection(companyId, userId, dateFrom, dateTo, KsefSyncDirection.INCOMING)`.
+   * Kept as a thin wrapper for backward compatibility with internal callers.
+   */
+  async syncIncoming(
+    companyId: string,
+    userId: string,
+    dateFrom: string,
+    dateTo: string,
+  ): Promise<KsefSyncResultDto> {
+    return this.syncByDirection(companyId, userId, dateFrom, dateTo, KsefSyncDirection.INCOMING);
   }
 
   private async matchClientByNip(
