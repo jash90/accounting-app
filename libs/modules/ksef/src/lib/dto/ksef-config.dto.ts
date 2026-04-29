@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsEnum, IsOptional, IsString, Length, Matches, ValidateIf } from 'class-validator';
+
+import {
+  IsBoolean,
+  IsEnum,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  ValidateIf,
+} from 'class-validator';
 
 import { KsefAuthMethod, KsefEnvironment } from '@accounting/common';
 
@@ -94,6 +103,36 @@ export class KsefConfigResponseDto {
 
   @ApiProperty()
   updatedAt!: string;
+
+  @ApiProperty({
+    description:
+      'Whether the caller may change the KSeF environment. Mirrors the ' +
+      '`KSEF_ALLOW_ENV_CHANGE` env flag. Frontend gates the selector on this.',
+  })
+  canChangeEnvironment!: boolean;
+}
+
+/**
+ * Operator-set KSeF policy surfaced to clients. Returned by
+ * `GET /modules/ksef/config/policy`. Independent of any persisted
+ * configuration so the settings UI can render correctly even before a
+ * config row exists for the company.
+ */
+export class KsefConfigPolicyDto {
+  @ApiProperty({
+    description:
+      'Whether users may change the KSeF environment. When false, environment ' +
+      'is pinned to `KSEF_ENVIRONMENT` and overwritten on every save.',
+  })
+  canChangeEnvironment!: boolean;
+
+  @ApiProperty({
+    enum: KsefEnvironment,
+    description:
+      'The environment the operator pinned via `KSEF_ENVIRONMENT`. Used by ' +
+      'the frontend to show the locked value when `canChangeEnvironment` is false.',
+  })
+  environment!: KsefEnvironment;
 }
 
 export class KsefPublicKeyCertificateInfoDto {
@@ -131,7 +170,8 @@ export class KsefConnectionTestResultDto {
 
   @ApiPropertyOptional({
     type: [KsefPublicKeyCertificateInfoDto],
-    description: 'MoF public certificates the API returned (one per usage). Useful for diagnosing env mismatches.',
+    description:
+      'MoF public certificates the API returned (one per usage). Useful for diagnosing env mismatches.',
   })
   publicKeyCertificates?: KsefPublicKeyCertificateInfoDto[];
 }

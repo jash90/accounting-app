@@ -302,6 +302,7 @@ export const queryKeys = {
   },
   ksef: {
     config: ['ksef', 'config'] as const,
+    configPolicy: ['ksef', 'config', 'policy'] as const,
     invoices: {
       all: ['ksef', 'invoices'] as const,
       list: (filters?: unknown) => ['ksef', 'invoices', 'list', stableFilterKey(filters)] as const,

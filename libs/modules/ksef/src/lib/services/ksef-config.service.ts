@@ -1,18 +1,21 @@
+
 import { BadRequestException, forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import * as crypto from 'crypto';
 import { Repository } from 'typeorm';
 
-import { KsefAuthMethod, KsefConfiguration, KsefEnvironment, User, UserRole } from '@accounting/common';
+import { KsefAuthMethod, KsefConfiguration, KsefEnvironment, User } from '@accounting/common';
 import { EncryptionService, SystemCompanyService } from '@accounting/common/backend';
 
+import { KSEF_API_PATHS, KSEF_MESSAGES } from '../constants';
 import {
+  KsefConfigPolicyDto,
   KsefConfigResponseDto,
   KsefConnectionTestResultDto,
   KsefPublicKeyCertificateInfoDto,
   UpsertKsefConfigDto,
 } from '../dto';
-import { KSEF_API_PATHS, KSEF_MESSAGES } from '../constants';
 import { KsefConfigurationNotFoundException } from '../exceptions';
 import { KsefAuthService } from './ksef-auth.service';
 import { KsefCryptoService } from './ksef-crypto.service';
@@ -30,7 +33,7 @@ export class KsefConfigService {
     private readonly httpClient: KsefHttpClientService,
     @Inject(forwardRef(() => KsefAuthService))
     private readonly authService: KsefAuthService,
-    private readonly cryptoService: KsefCryptoService,
+    private readonly cryptoService: KsefCryptoService
   ) {}
 
   async getConfig(companyId: string): Promise<KsefConfiguration | null> {
@@ -45,10 +48,7 @@ export class KsefConfigService {
     return config;
   }
 
-  async createOrUpdate(
-    dto: UpsertKsefConfigDto,
-    user: User,
-  ): Promise<KsefConfigResponseDto> {
+  async createOrUpdate(dto: UpsertKsefConfigDto, user: User): Promise<KsefConfigResponseDto> {
     const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     let config = await this.configRepo.findOne({ where: { companyId } });
@@ -60,14 +60,16 @@ export class KsefConfigService {
       });
     }
 
-    // Only ADMIN can choose the environment; others use KSEF_ENVIRONMENT env var
-    if (user.role === UserRole.ADMIN) {
+    // Whether users (regardless of role) may change the KSeF environment is
+    // controlled by the `KSEF_ALLOW_ENV_CHANGE` env flag. When the flag is on,
+    // we honour the value the client sent. When it's off, the operator pins
+    // every company to the `KSEF_ENVIRONMENT` env var value — even an existing
+    // DB row that disagreed is overwritten on the next save (by design, so a
+    // policy switch propagates without a manual DB sweep).
+    if (this.isEnvChangeAllowed()) {
       config.environment = dto.environment;
     } else {
-      const envFromFlag = process.env.KSEF_ENVIRONMENT as KsefEnvironment | undefined;
-      config.environment = envFromFlag && Object.values(KsefEnvironment).includes(envFromFlag)
-        ? envFromFlag
-        : KsefEnvironment.DEMO;
+      config.environment = this.environmentFromEnv();
     }
     config.authMethod = dto.authMethod;
     config.updatedById = user.id;
@@ -82,9 +84,7 @@ export class KsefConfigService {
 
     // Encrypt sensitive credentials before saving
     if (dto.token !== undefined) {
-      config.encryptedToken = dto.token
-        ? await this.encryptionService.encrypt(dto.token)
-        : null;
+      config.encryptedToken = dto.token ? await this.encryptionService.encrypt(dto.token) : null;
     }
 
     if (dto.certificate !== undefined) {
@@ -125,9 +125,7 @@ export class KsefConfigService {
     // would otherwise wrap AES keys with the wrong environment's cert.
     this.cryptoService.invalidatePublicKeyCache(config.environment);
 
-    this.logger.log(
-      `KSeF config ${config.id ? 'updated' : 'created'} for company ${companyId}`,
-    );
+    this.logger.log(`KSeF config ${config.id ? 'updated' : 'created'} for company ${companyId}`);
 
     return this.toResponseDto(config);
   }
@@ -159,7 +157,7 @@ export class KsefConfigService {
       const publicKeyCertificates = await this.fetchCertificateInfoSafely(
         config.environment,
         companyId,
-        user.id,
+        user.id
       );
 
       // Update config with test result
@@ -178,8 +176,7 @@ export class KsefConfigService {
       };
     } catch (error) {
       const responseTimeMs = Date.now() - startTime;
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
 
       // Update config with failure result
       config.lastConnectionTestAt = new Date();
@@ -200,7 +197,7 @@ export class KsefConfigService {
   private async fetchCertificateInfoSafely(
     environment: KsefConfiguration['environment'],
     companyId: string,
-    userId: string,
+    userId: string
   ): Promise<KsefPublicKeyCertificateInfoDto[] | undefined> {
     const usages: Array<'KsefTokenEncryption' | 'SymmetricKeyEncryption'> = [
       'KsefTokenEncryption',
@@ -214,7 +211,7 @@ export class KsefConfigService {
           environment,
           companyId,
           userId,
-          usage,
+          usage
         );
         results.push({
           subject: info.subject,
@@ -225,7 +222,7 @@ export class KsefConfigService {
         });
       } catch (error) {
         this.logger.warn(
-          `Could not describe ${usage} certificate for env ${environment}: ${(error as Error).message}`,
+          `Could not describe ${usage} certificate for env ${environment}: ${(error as Error).message}`
         );
       }
     }
@@ -237,7 +234,7 @@ export class KsefConfigService {
     user: User,
     certPem?: string,
     keyPem?: string,
-    certificatePassword?: string,
+    certificatePassword?: string
   ): Promise<KsefConfigResponseDto> {
     const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const config = await this.getConfigOrFail(companyId);
@@ -261,7 +258,7 @@ export class KsefConfigService {
         throw new BadRequestException(
           certificatePassword
             ? 'Nieprawidłowy klucz prywatny lub hasło'
-            : 'Nieprawidłowy klucz prywatny',
+            : 'Nieprawidłowy klucz prywatny'
         );
       }
       config.encryptedPrivateKey = await this.encryptionService.encrypt(keyPem);
@@ -314,7 +311,7 @@ export class KsefConfigService {
       if (!config.encryptedCertificatePassword) missing.push('hasło certyfikatu');
       if (missing.length > 0) {
         throw new BadRequestException(
-          `Konfiguracja XAdES wymaga uzupełnienia pól: ${missing.join(', ')}.`,
+          `Konfiguracja XAdES wymaga uzupełnienia pól: ${missing.join(', ')}.`
         );
       }
       return;
@@ -323,10 +320,44 @@ export class KsefConfigService {
     if (config.authMethod === KsefAuthMethod.TOKEN) {
       if (!config.encryptedToken) {
         throw new BadRequestException(
-          'Konfiguracja uwierzytelniania tokenem wymaga uzupełnienia pola "Token KSeF".',
+          'Konfiguracja uwierzytelniania tokenem wymaga uzupełnienia pola "Token KSeF".'
         );
       }
     }
+  }
+
+  /**
+   * Surface the env-driven KSeF policy to clients. Drives whether the
+   * frontend renders the environment selector as editable or read-only —
+   * and lets the user see which fixed environment they're pinned to when
+   * the flag is off. Cheap and side-effect free; safe to call on every
+   * settings page load.
+   */
+  getPolicy(): KsefConfigPolicyDto {
+    const dto = new KsefConfigPolicyDto();
+    dto.canChangeEnvironment = this.isEnvChangeAllowed();
+    dto.environment = this.environmentFromEnv();
+    return dto;
+  }
+
+  /**
+   * `true` when `KSEF_ALLOW_ENV_CHANGE=true` (case-insensitive). Any other
+   * value — `false`, missing, malformed — leaves the operator-set
+   * environment in force. Defaulting to `false` is the safe choice for a
+   * regulated integration.
+   */
+  private isEnvChangeAllowed(): boolean {
+    return (process.env.KSEF_ALLOW_ENV_CHANGE ?? '').toLowerCase() === 'true';
+  }
+
+  /**
+   * Resolves the operator-set KSeF environment from `KSEF_ENVIRONMENT`,
+   * falling back to DEMO when unset or invalid. Never throws — a misconfig
+   * here would otherwise wedge the entire settings flow.
+   */
+  private environmentFromEnv(): KsefEnvironment {
+    const raw = process.env.KSEF_ENVIRONMENT as KsefEnvironment | undefined;
+    return raw && Object.values(KsefEnvironment).includes(raw) ? raw : KsefEnvironment.DEMO;
   }
 
   toResponseDto(config: KsefConfiguration): KsefConfigResponseDto {
@@ -345,6 +376,7 @@ export class KsefConfigService {
     dto.lastConnectionTestResult = config.lastConnectionTestResult ?? undefined;
     dto.createdAt = config.createdAt.toISOString();
     dto.updatedAt = config.updatedAt.toISOString();
+    dto.canChangeEnvironment = this.isEnvChangeAllowed();
     return dto;
   }
 }
