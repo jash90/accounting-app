@@ -137,7 +137,16 @@ export class KsefConfigController {
       certificate?: Express.Multer.File[];
       privateKey?: Express.Multer.File[];
     },
-    @Body() body: { certificatePassword?: string },
+    @Body()
+    body: {
+      certificatePassword?: string;
+      // Non-secret config fields the UI lets users edit on the same screen as
+      // the file upload. Accepting them here means a single click can prepare
+      // a complete XAdES configuration, including the NIP that the auth flow
+      // requires — instead of forcing a separate "Save" round-trip first.
+      nip?: string;
+      autoSendEnabled?: string | boolean;
+    },
     @CurrentUser() user: User
   ): Promise<KsefConfigResponseDto> {
     const certFile = files?.certificate?.[0];
@@ -152,11 +161,18 @@ export class KsefConfigController {
     const certPem = certFile ? certFile.buffer.toString('utf-8').trim() : undefined;
     const keyPem = keyFile ? keyFile.buffer.toString('utf-8').trim() : undefined;
 
-    return this.configService.uploadCredentialFiles(
-      user,
+    // multipart/form-data carries everything as strings; coerce the boolean.
+    const autoSendEnabled =
+      body.autoSendEnabled === undefined
+        ? undefined
+        : body.autoSendEnabled === true || body.autoSendEnabled === 'true';
+
+    return this.configService.uploadCredentialFiles(user, {
       certPem,
       keyPem,
-      body.certificatePassword
-    );
+      certificatePassword: body.certificatePassword,
+      nip: body.nip,
+      autoSendEnabled,
+    });
   }
 }

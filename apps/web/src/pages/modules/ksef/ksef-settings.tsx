@@ -121,8 +121,15 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
     const formData = new FormData();
     if (certFile) formData.append('certificate', certFile);
     if (keyFile) formData.append('privateKey', keyFile);
+    // Send the non-secret form values along with the files so a single click
+    // produces a config the XAdES auth flow will accept — XAdES auth requires
+    // NIP, and forcing the user to click "Wgraj pliki" → main "Zapisz"
+    // → "Test połączenia" before anything works was a footgun.
     const password = form.getValues('certificatePassword');
     if (password) formData.append('certificatePassword', password);
+    const nip = form.getValues('nip');
+    if (nip) formData.append('nip', nip);
+    formData.append('autoSendEnabled', String(form.getValues('autoSendEnabled')));
     uploadCredentials.mutate(formData, {
       onSuccess: () => {
         setCertFile(null);

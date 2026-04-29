@@ -232,10 +232,19 @@ export class KsefConfigService {
 
   async uploadCredentialFiles(
     user: User,
-    certPem?: string,
-    keyPem?: string,
-    certificatePassword?: string
+    payload: {
+      certPem?: string;
+      keyPem?: string;
+      certificatePassword?: string;
+      // Persisted alongside the credentials so a single "Wgraj pliki" click
+      // produces a config the XAdES auth flow will accept (auth requires NIP
+      // before any KSeF call). UI sends the current form values whether or
+      // not the user clicked the main "Save" button first.
+      nip?: string;
+      autoSendEnabled?: boolean;
+    }
   ): Promise<KsefConfigResponseDto> {
+    const { certPem, keyPem, certificatePassword, nip, autoSendEnabled } = payload;
     const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
 
     // Idempotent upsert: a brand-new company has no row yet, but the user
@@ -251,6 +260,16 @@ export class KsefConfigService {
         environment: this.environmentFromEnv(),
         authMethod: KsefAuthMethod.XADES,
       });
+    }
+
+    // Persist non-secret config fields if the client included them. Skipping
+    // unset fields keeps this endpoint additive — it never zeroes a NIP that
+    // a previous "Save" had already stored.
+    if (nip !== undefined && nip !== '') {
+      config.nip = nip;
+    }
+    if (autoSendEnabled !== undefined) {
+      config.autoSendEnabled = autoSendEnabled;
     }
 
     if (certPem) {
