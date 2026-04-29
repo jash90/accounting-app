@@ -405,3 +405,47 @@ export const ReliefTypeDurationMonths: Record<ReliefType, number> = {
   [ReliefType.ULGA_NA_START]: 6,
   [ReliefType.MALY_ZUS]: 36,
 };
+
+// ============================================
+// KSeF Enums (re-exported from @accounting/common with frontend-only color maps)
+// ============================================
+
+export {
+  KsefInvoiceStatus,
+  KsefInvoiceStatusLabels,
+  KsefInvoiceType,
+  KsefInvoiceTypeLabels,
+  KsefInvoiceDirection,
+  KsefInvoiceDirectionLabels,
+  KsefSessionStatus,
+  KsefSessionStatusLabels,
+  KsefSessionType,
+  KsefSessionTypeLabels,
+  KsefEnvironment,
+  KsefEnvironmentLabels,
+  KsefAuthMethod,
+  KsefAuthMethodLabels,
+} from '@accounting/common/browser';
+
+import type {
+  KsefInvoiceStatus,
+  KsefSessionStatus,
+} from '@accounting/common/browser';
+
+export const KsefInvoiceStatusColors: Record<KsefInvoiceStatus, string> = {
+  DRAFT: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+  PENDING_SUBMISSION: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
+  SUBMITTED: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  ACCEPTED: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+  REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+  ERROR: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
+  CANCELLED: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+};
+
+export const KsefSessionStatusColors: Record<KsefSessionStatus, string> = {
+  OPENING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
+  ACTIVE: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+  CLOSING: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  CLOSED: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+  ERROR: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+};

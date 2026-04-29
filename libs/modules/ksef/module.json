@@ -1,0 +1,17 @@
+{
+  "$schema": "../../../schemas/module.schema.json",
+  "slug": "ksef",
+  "name": "KSeF e-Faktury",
+  "description": "Integracja z Krajowym Systemem e-Faktur (KSeF 2.0)",
+  "version": "1.0.0",
+  "isActive": true,
+  "permissions": ["read", "write", "delete", "manage"],
+  "defaultPermissions": ["read"],
+  "icon": "receipt",
+  "category": "accounting",
+  "dependencies": ["clients"],
+  "config": {
+    "enableAutoSend": false,
+    "enableBatchSubmission": false
+  }
+}

@@ -20,6 +20,7 @@ import { EmailClientModule, EmailDraft } from '@accounting/modules/email-client'
 import { NotificationsModule } from '@accounting/modules/notifications';
 import { OffersModule } from '@accounting/modules/offers';
 import { SettlementsModule } from '@accounting/modules/settlements';
+import { KsefModule } from '@accounting/modules/ksef';
 import { TasksModule } from '@accounting/modules/tasks';
 import { TimeTrackingModule } from '@accounting/modules/time-tracking';
 
@@ -127,6 +128,7 @@ const optionalModules =
     TimeTrackingModule,
     OffersModule,
     SettlementsModule,
+    KsefModule,
     NotificationsModule,
     ModulesModule,
     SeedersModule,

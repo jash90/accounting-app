@@ -148,6 +148,17 @@ export const DocumentTemplateEditorPage = lazy(
   () => import('@/pages/modules/documents/template-editor')
 );
 
+// KSeF Pages
+export const KsefDashboardPage = lazy(() => import('@/pages/modules/ksef/ksef-dashboard'));
+export const KsefInvoicesListPage = lazy(() => import('@/pages/modules/ksef/ksef-invoices-list'));
+export const KsefInvoiceDetailPage = lazy(
+  () => import('@/pages/modules/ksef/ksef-invoice-detail')
+);
+export const KsefSessionsPage = lazy(() => import('@/pages/modules/ksef/ksef-sessions'));
+export const KsefSettingsPage = lazy(() => import('@/pages/modules/ksef/ksef-settings'));
+export const KsefAuditLogPage = lazy(() => import('@/pages/modules/ksef/ksef-audit-log'));
+export const KsefSyncPage = lazy(() => import('@/pages/modules/ksef/ksef-sync'));
+
 // Notifications Pages
 export const NotificationsInboxPage = lazy(
   () => import('@/pages/notifications/notifications-inbox')
