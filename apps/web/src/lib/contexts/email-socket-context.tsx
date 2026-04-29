@@ -14,6 +14,7 @@ import type { io as ioType, Socket } from 'socket.io-client';
 
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthContext } from '@/contexts/auth-context';
+import { authApi } from '@/lib/api/endpoints/auth';
 import { getWsBaseUrl } from '@/lib/api/ws-url';
 import { tokenStorage } from '@/lib/auth/token-storage';
 
@@ -57,14 +58,20 @@ export function EmailSocketProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const createSocket = useCallback(async (): Promise<Socket | null> => {
-    const accessToken = tokenStorage.getAccessToken();
-    if (!accessToken) return null;
+    if (!tokenStorage.isAuthenticated()) return null;
+    // Bearer-ticket auth: cookies do not reach the direct WS origin in
+    // split-host deploys (frontend on Vercel, API on Railway). Fetch a
+    // short-lived JWT via REST and pass it through Socket.IO `auth`.
+    // The function form re-runs on every reconnect attempt.
     const { io } = await getSocketModule();
     return io(`${getWsBaseUrl()}/email`, {
       path: '/socket.io',
-      ...(accessToken === '__cookie__'
-        ? { withCredentials: true }
-        : { auth: { token: accessToken } }),
+      auth: (cb: (data: { token: string }) => void) => {
+        authApi
+          .getWsToken()
+          .then(({ token }) => cb({ token }))
+          .catch(() => cb({ token: '' }));
+      },
       transports: ['polling', 'websocket'],
       reconnection: true,
       reconnectionAttempts: 5,

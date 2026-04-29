@@ -286,6 +286,32 @@ export class AuthService {
   }
 
   /**
+   * Issues a short-lived JWT meant for Socket.IO handshakes.
+   *
+   * Why this exists: in production the browser stores auth cookies under the
+   * Vercel host (login goes through the `/api/*` rewrite), so the cookie is
+   * never sent to the Railway WebSocket origin. Cookie-based auth on the WS
+   * gateway therefore never finds a token. The frontend fetches this ticket
+   * over the working same-origin REST path and passes it via Socket.IO
+   * `auth.token` — the gateway's `extractToken` checks that channel first.
+   *
+   * The token uses the same secret/payload as a normal access token, so the
+   * gateway verifies it without any code changes. TTL is short (5 min) — long
+   * enough to survive transient reconnects, short enough to limit damage if
+   * the ticket leaks (e.g. via browser history).
+   */
+  issueWsToken(user: User): string {
+    const payload: Record<string, string | number | null> = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      companyId: user.companyId,
+      tokenVersion: user.tokenVersion,
+    };
+    return this.accessJwtService.sign(payload, { expiresIn: '5m' });
+  }
+
+  /**
    * Issues a fresh token family (login / register / legacy-refresh upgrade).
    * Persists the refresh-token row and signs the JWT pair carrying its `jti`.
    */

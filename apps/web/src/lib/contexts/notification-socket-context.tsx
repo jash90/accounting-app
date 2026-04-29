@@ -14,11 +14,11 @@ import type { io as ioType, Socket } from 'socket.io-client';
 
 import { useToast } from '@/components/ui/use-toast';
 import { useAuthContext } from '@/contexts/auth-context';
+import { authApi } from '@/lib/api/endpoints/auth';
 import { queryKeys } from '@/lib/api/query-client';
 import { getWsBaseUrl } from '@/lib/api/ws-url';
 import { tokenStorage } from '@/lib/auth/token-storage';
 import type { NotificationResponseDto } from '@/types/notifications';
-
 
 const loadSocketIo = () => import('socket.io-client');
 
@@ -111,18 +111,22 @@ export function NotificationSocketProvider({ children }: NotificationSocketProvi
   // Create socket connection with proper race condition handling
   // Uses the cached module promise to avoid duplicate imports
   const createSocket = useCallback(async (): Promise<Socket | null> => {
-    const accessToken = tokenStorage.getAccessToken();
-    if (!accessToken) return null;
+    if (!tokenStorage.isAuthenticated()) return null;
 
-    // Use cached module promise - only loads socket.io-client once
+    // Bearer-ticket auth: cookies are bound to the frontend host (Vercel) and
+    // never reach the direct WS origin (Railway). Fetch a short-lived JWT via
+    // the working REST path and pass it through Socket.IO `auth`. The function
+    // form re-runs on every reconnect attempt so the ticket is always fresh.
     const { io } = await getSocketModule();
 
     return io(`${getWsBaseUrl()}/notifications`, {
       path: '/socket.io',
-      // httpOnly cookie mode: send cookies instead of token in auth payload
-      ...(accessToken === '__cookie__'
-        ? { withCredentials: true }
-        : { auth: { token: accessToken } }),
+      auth: (cb: (data: { token: string }) => void) => {
+        authApi
+          .getWsToken()
+          .then(({ token }) => cb({ token }))
+          .catch(() => cb({ token: '' }));
+      },
       transports: ['polling', 'websocket'],
       reconnection: true,
       reconnectionAttempts: 5,

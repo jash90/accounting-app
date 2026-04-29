@@ -49,4 +49,15 @@ export const authApi = {
     const { data } = await apiClient.post<{ message: string }>('/api/auth/logout');
     return data;
   },
+
+  /**
+   * Fetch a short-lived ticket for Socket.IO handshakes. Required because
+   * auth cookies are bound to the frontend host (Vercel) and never reach the
+   * direct WebSocket origin (Railway). The returned token is passed as
+   * `auth.token` to socket.io-client.
+   */
+  getWsToken: async (): Promise<{ token: string }> => {
+    const { data } = await apiClient.get<{ token: string }>('/api/auth/ws-token');
+    return data;
+  },
 };
