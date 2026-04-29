@@ -56,18 +56,21 @@ async function bootstrap() {
   // Security
   app.use(helmet());
   app.use(cookieParser());
-  // CSRF mitigation: This API uses Bearer tokens (Authorization header), which cannot be
-  // set by cross-origin forms. This provides strong CSRF protection without CSRF tokens.
-  // See: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+  // Auth uses httpOnly cookies + `withCredentials: true`. Browser-issued
+  // cross-origin <form> POSTs CAN send those cookies, so missing-Origin requests
+  // are a CSRF surface in production. Reject them in prod and keep dev permissive
+  // for local tools (curl, Postman, server-to-server health checks).
   app.enableCors({
     origin: (
       origin: string | undefined,
       callback: (err: Error | null, allow?: boolean) => void
     ) => {
-      // Allow requests with no origin (health checks, mobile apps, curl, server-to-server)
-      // These are not browser requests and don't pose a CORS risk
+      // Missing Origin: allowed in dev (curl/Postman/health checks); rejected in prod.
       if (!origin) {
-        return callback(null, true);
+        if (process.env.NODE_ENV !== 'production') {
+          return callback(null, true);
+        }
+        return callback(new Error('Origin header required'));
       }
 
       // Allow all localhost origins (any port) - ONLY in development
