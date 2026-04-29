@@ -25,6 +25,7 @@ describe('KsefSchedulerService.pollPendingStatuses', () => {
   let configService: { getConfig: jest.Mock };
   let invoiceService: { updateInvoiceStatus: jest.Mock };
   let sessionService: { expireStaleSessions: jest.Mock };
+  let auditLogService: { log: jest.Mock };
   let originalFetch: typeof globalThis.fetch;
   let fetchMock: jest.Mock;
 
@@ -51,6 +52,7 @@ describe('KsefSchedulerService.pollPendingStatuses', () => {
     };
     invoiceService = { updateInvoiceStatus: jest.fn() };
     sessionService = { expireStaleSessions: jest.fn() };
+    auditLogService = { log: jest.fn() };
 
     originalFetch = globalThis.fetch;
     fetchMock = jest.fn();
@@ -63,6 +65,7 @@ describe('KsefSchedulerService.pollPendingStatuses', () => {
       configService as never,
       invoiceService as never,
       sessionService as never,
+      auditLogService as never,
     );
   });
 

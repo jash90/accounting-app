@@ -101,20 +101,33 @@ export class KsefDownloadService {
       return this.invoiceRepo.save(existing);
     }
 
-    // Reconcile by (companyId, invoiceNumber): KSeF is the source of truth.
+    // Reconcile by (companyId, invoiceNumber, direction): KSeF is the
+    // source of truth.
     //
-    // Why this matters: if a user issued an invoice locally and we recorded
-    // it with status REJECTED (e.g. an early submission attempt failed
-    // before status reconciliation, or an offline edit went stale), KSeF
-    // may STILL have it on file as accepted under its canonical
-    // ksefNumber. Without this branch, sync hits the unique constraint
-    // `(companyId, invoiceNumber)` on every retry and the rejected row
-    // sticks forever. Adopt the KSeF state — clear stale REJECTED/ERROR
-    // flags, attach the canonical ksefNumber, and store the authoritative
-    // XML.
+    // Why direction is part of the lookup: invoice numbers are NOT
+    // company-global. A vendor's invoice number ("FV/2026/04/0001") can
+    // legitimately collide with one of our own outgoing invoice numbers.
+    // Without the direction filter, a `BOTH`-direction sync would match
+    // our outgoing row when pulling the vendor's incoming invoice — and
+    // overwrite our row with the vendor's KSeF number, status, and XML.
+    // The unique constraint forecloses recovery, so this is data
+    // corruption with no escape hatch. Always scope by direction.
+    //
+    // Why this branch matters at all: if a user issued an invoice
+    // locally and we recorded it with status REJECTED (e.g. an early
+    // submission attempt failed before status reconciliation, or an
+    // offline edit went stale), KSeF may STILL have it on file as
+    // accepted under its canonical ksefNumber. Without this branch,
+    // sync hits the unique constraint and the rejected row sticks
+    // forever. Adopt the KSeF state — clear stale REJECTED/ERROR flags,
+    // attach the canonical ksefNumber, and store the authoritative XML.
     if (parsedInvoice.invoiceNumber) {
       const existingByNumber = await this.invoiceRepo.findOne({
-        where: { invoiceNumber: parsedInvoice.invoiceNumber, companyId },
+        where: {
+          invoiceNumber: parsedInvoice.invoiceNumber,
+          companyId,
+          direction: resolvedDirection,
+        },
       });
       if (existingByNumber) {
         existingByNumber.ksefNumber = ksefNumber;
@@ -127,9 +140,10 @@ export class KsefDownloadService {
         // rejection / validation errors are no longer accurate.
         existingByNumber.rejectedAt = null;
         existingByNumber.validationErrors = null;
-        // Direction in DB may have been UNKNOWN or wrong; re-stamp from
-        // the data we just resolved.
-        existingByNumber.direction = direction ?? existingByNumber.direction;
+        // Direction is part of the lookup so this is now a no-op, but
+        // we keep the assignment for forward-compat in case the lookup
+        // is ever relaxed (e.g. direction-agnostic admin tool path).
+        existingByNumber.direction = resolvedDirection;
 
         const saved = await this.invoiceRepo.save(existingByNumber);
 
@@ -139,7 +153,7 @@ export class KsefDownloadService {
           action: 'INVOICE_RECONCILED',
           entityType: 'KsefInvoice',
           entityId: saved.id,
-          responseSnippet: `Adopted KSeF state for ${parsedInvoice.invoiceNumber} → ${ksefNumber} (was ${existingByNumber.status})`,
+          responseSnippet: `Adopted KSeF state for ${parsedInvoice.invoiceNumber} (${resolvedDirection}) → ${ksefNumber} (was ${existingByNumber.status})`,
         });
 
         return saved;
