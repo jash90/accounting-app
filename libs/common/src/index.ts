@@ -61,6 +61,7 @@ export { ApiCsvResponse } from './lib/decorators/api-csv-response.decorator';
 
 // Entities
 export * from './lib/entities/user.entity';
+export * from './lib/entities/refresh-token.entity';
 export * from './lib/entities/company.entity';
 export * from './lib/entities/module.entity';
 export * from './lib/entities/company-module-access.entity';

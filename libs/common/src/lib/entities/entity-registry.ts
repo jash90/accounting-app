@@ -44,6 +44,7 @@ import { Notification } from './notification.entity';
 import { OfferActivity } from './offer-activity.entity';
 import { OfferTemplate } from './offer-template.entity';
 import { Offer } from './offer.entity';
+import { RefreshToken } from './refresh-token.entity';
 import { SettlementComment } from './settlement-comment.entity';
 import { SettlementSettings } from './settlement-settings.entity';
 import { TaskComment } from './task-comment.entity';
@@ -69,6 +70,7 @@ export const COMMON_ENTITIES = [
   Module,
   CompanyModuleAccess,
   UserModulePermission,
+  RefreshToken,
 
   // AI Agent
   AIConfiguration,
