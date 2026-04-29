@@ -2,6 +2,7 @@
 export {
   UpsertKsefConfigDto,
   KsefConfigResponseDto,
+  KsefConfigPolicyDto,
   KsefConnectionTestResultDto,
   KsefPublicKeyCertificateInfoDto,
 } from './ksef-config.dto';
@@ -23,10 +24,7 @@ export {
 } from './ksef-invoice.dto';
 
 // KSeF Session DTOs
-export {
-  KsefSessionResponseDto,
-  KsefSessionStatusDto,
-} from './ksef-session.dto';
+export { KsefSessionResponseDto, KsefSessionStatusDto } from './ksef-session.dto';
 
 // KSeF Audit DTOs
 export {

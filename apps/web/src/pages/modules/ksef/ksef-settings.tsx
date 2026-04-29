@@ -1,25 +1,59 @@
 import { useRef, useState } from 'react';
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { AlertTriangle, CheckCircle2, FileUp, Loader2, Settings, TestTube, Upload, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  FileUp,
+  Loader2,
+  Settings,
+  TestTube,
+  Upload,
+  X,
+} from 'lucide-react';
 import { z } from 'zod';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useAuthContext } from '@/contexts/auth-context';
 import type { KsefConfigResponse, KsefConnectionTestResult } from '@/lib/api/endpoints/ksef';
-import { useKsefConfig, useUpdateKsefConfig, useTestKsefConnection, useUploadKsefCredentials } from '@/lib/hooks/use-ksef';
+import {
+  useKsefConfig,
+  useKsefConfigPolicy,
+  useTestKsefConnection,
+  useUpdateKsefConfig,
+  useUploadKsefCredentials,
+} from '@/lib/hooks/use-ksef';
 import { formatDate } from '@/lib/utils/format-date';
-import { KsefEnvironment, KsefEnvironmentLabels, KsefAuthMethod, KsefAuthMethodLabels, UserRole } from '@/types/enums';
+import {
+  KsefAuthMethod,
+  KsefAuthMethodLabels,
+  KsefEnvironment,
+  KsefEnvironmentLabels,
+} from '@/types/enums';
 
 const CERT_ACCEPT = '.pem,.crt,.cer';
 const KEY_ACCEPT = '.pem,.key';
@@ -29,15 +63,24 @@ const configSchema = z.object({
   authMethod: z.nativeEnum(KsefAuthMethod),
   token: z.string().optional(),
   certificatePassword: z.string().optional(),
-  nip: z.string().regex(/^\d{10}$/, 'NIP musi zawierać dokładnie 10 cyfr').or(z.literal('')).optional(),
+  nip: z
+    .string()
+    .regex(/^\d{10}$/, 'NIP musi zawierać dokładnie 10 cyfr')
+    .or(z.literal(''))
+    .optional(),
   autoSendEnabled: z.boolean(),
 });
 
 type ConfigFormValues = z.infer<typeof configSchema>;
 
 function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
-  const { user } = useAuthContext();
-  const isAdmin = user?.role === UserRole.ADMIN;
+  // The environment selector is gated by the operator-set `KSEF_ALLOW_ENV_CHANGE`
+  // env flag, surfaced via the policy endpoint. Falls back to `false` until the
+  // policy loads — safer to start locked than to flash an editable selector
+  // that disappears once the policy resolves.
+  const { data: policy } = useKsefConfigPolicy();
+  const canChangeEnvironment =
+    policy?.canChangeEnvironment ?? config?.canChangeEnvironment ?? false;
   const updateConfig = useUpdateKsefConfig();
   const uploadCredentials = useUploadKsefCredentials();
   const testConnection = useTestKsefConnection();
@@ -125,7 +168,7 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Środowisko</FormLabel>
-                      {isAdmin ? (
+                      {canChangeEnvironment ? (
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
@@ -134,7 +177,9 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
                           </FormControl>
                           <SelectContent>
                             {Object.values(KsefEnvironment).map((env) => (
-                              <SelectItem key={env} value={env}>{KsefEnvironmentLabels[env]}</SelectItem>
+                              <SelectItem key={env} value={env}>
+                                {KsefEnvironmentLabels[env]}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -142,7 +187,9 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
                         <Input value={KsefEnvironmentLabels[field.value] || field.value} disabled />
                       )}
                       <FormDescription>
-                        {isAdmin ? 'Środowisko KSeF do komunikacji' : 'Środowisko ustawione przez administratora'}
+                        {canChangeEnvironment
+                          ? 'Środowisko KSeF do komunikacji'
+                          : 'Środowisko ustawione przez administratora systemu'}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -162,7 +209,9 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
                         </FormControl>
                         <SelectContent>
                           {Object.values(KsefAuthMethod).map((method) => (
-                            <SelectItem key={method} value={method}>{KsefAuthMethodLabels[method]}</SelectItem>
+                            <SelectItem key={method} value={method}>
+                              {KsefAuthMethodLabels[method]}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -178,7 +227,8 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                Uwaga: przełączasz na środowisko produkcyjne KSeF. Wszystkie faktury będą rejestrowane w systemie podatkowym.
+                Uwaga: przełączasz na środowisko produkcyjne KSeF. Wszystkie faktury będą
+                rejestrowane w systemie podatkowym.
               </AlertDescription>
             </Alert>
           )}
@@ -196,9 +246,17 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
                     <FormItem>
                       <FormLabel>Token KSeF</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder={config?.hasToken ? '••••••••• (zapisany)' : 'Wpisz token KSeF'} {...field} />
+                        <Input
+                          type="password"
+                          placeholder={
+                            config?.hasToken ? '••••••••• (zapisany)' : 'Wpisz token KSeF'
+                          }
+                          {...field}
+                        />
                       </FormControl>
-                      <FormDescription>Pozostaw puste, aby zachować istniejący token</FormDescription>
+                      <FormDescription>
+                        Pozostaw puste, aby zachować istniejący token
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -224,7 +282,10 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
                           <button
                             type="button"
                             className="ml-1 text-muted-foreground hover:text-foreground"
-                            onClick={() => { setCertFile(null); if (certInputRef.current) certInputRef.current.value = ''; }}
+                            onClick={() => {
+                              setCertFile(null);
+                              if (certInputRef.current) certInputRef.current.value = '';
+                            }}
                           >
                             <X className="h-3.5 w-3.5" />
                           </button>
@@ -240,9 +301,7 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
                       className="hidden"
                       onChange={(e) => setCertFile(e.target.files?.[0] ?? null)}
                     />
-                    <p className="text-[0.8rem] text-muted-foreground">
-                      Plik .pem, .crt lub .cer
-                    </p>
+                    <p className="text-[0.8rem] text-muted-foreground">Plik .pem, .crt lub .cer</p>
                   </div>
 
                   <div className="space-y-2">
@@ -264,7 +323,10 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
                           <button
                             type="button"
                             className="ml-1 text-muted-foreground hover:text-foreground"
-                            onClick={() => { setKeyFile(null); if (keyInputRef.current) keyInputRef.current.value = ''; }}
+                            onClick={() => {
+                              setKeyFile(null);
+                              if (keyInputRef.current) keyInputRef.current.value = '';
+                            }}
                           >
                             <X className="h-3.5 w-3.5" />
                           </button>
@@ -280,9 +342,7 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
                       className="hidden"
                       onChange={(e) => setKeyFile(e.target.files?.[0] ?? null)}
                     />
-                    <p className="text-[0.8rem] text-muted-foreground">
-                      Plik .pem lub .key
-                    </p>
+                    <p className="text-[0.8rem] text-muted-foreground">Plik .pem lub .key</p>
                   </div>
 
                   <FormField
@@ -292,7 +352,11 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
                       <FormItem>
                         <FormLabel>Hasło klucza prywatnego</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="Hasło do klucza prywatnego (opcjonalnie)" {...field} />
+                          <Input
+                            type="password"
+                            placeholder="Hasło do klucza prywatnego (opcjonalnie)"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -324,7 +388,12 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
                   <FormItem>
                     <FormLabel>NIP</FormLabel>
                     <FormControl>
-                      <Input placeholder="1234567890" maxLength={10} inputMode="numeric" {...field} />
+                      <Input
+                        placeholder="1234567890"
+                        maxLength={10}
+                        inputMode="numeric"
+                        {...field}
+                      />
                     </FormControl>
                     <FormDescription>NIP firmy do komunikacji z KSeF</FormDescription>
                     <FormMessage />
@@ -346,7 +415,9 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
                   <FormItem className="flex items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base">Automatyczne wysyłanie</FormLabel>
-                      <FormDescription>Automatycznie wysyłaj faktury do KSeF po utworzeniu</FormDescription>
+                      <FormDescription>
+                        Automatycznie wysyłaj faktury do KSeF po utworzeniu
+                      </FormDescription>
                     </div>
                     <FormControl>
                       <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -369,8 +440,17 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span>
-                          <Button type="button" variant="outline" onClick={handleTestConnection} disabled={testConnection.isPending || !config}>
-                            {testConnection.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <TestTube className="mr-2 h-4 w-4" />}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleTestConnection}
+                            disabled={testConnection.isPending || !config}
+                          >
+                            {testConnection.isPending ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <TestTube className="mr-2 h-4 w-4" />
+                            )}
                             Testuj
                           </Button>
                         </span>
@@ -382,10 +462,16 @@ function KsefSettingsForm({ config }: { config: KsefConfigResponse | null }) {
 
                 {testResult && (
                   <Alert variant={testResult.success ? 'default' : 'destructive'}>
-                    {testResult.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                    {testResult.success ? (
+                      <CheckCircle2 className="h-4 w-4" />
+                    ) : (
+                      <AlertTriangle className="h-4 w-4" />
+                    )}
                     <AlertDescription>
                       {testResult.message}
-                      <span className="ml-2 text-xs text-muted-foreground">({testResult.responseTimeMs}ms)</span>
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        ({testResult.responseTimeMs}ms)
+                      </span>
                     </AlertDescription>
                   </Alert>
                 )}
@@ -411,9 +497,8 @@ export default function KsefSettingsPage() {
     );
   }
 
-  const resolvedConfig = config && typeof config === 'object' && 'id' in config
-    ? config as KsefConfigResponse
-    : null;
+  const resolvedConfig =
+    config && typeof config === 'object' && 'id' in config ? (config as KsefConfigResponse) : null;
 
   return <KsefSettingsForm key={resolvedConfig?.id ?? 'new'} config={resolvedConfig} />;
 }

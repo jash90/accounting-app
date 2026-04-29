@@ -8,8 +8,8 @@ import {
   type KsefInvoiceFilters,
   type KsefInvoiceResponse,
   type KsefSyncRequest,
-  type UpsertKsefConfig,
   type UpdateKsefInvoice,
+  type UpsertKsefConfig,
 } from '../api/endpoints/ksef';
 import { queryKeys } from '../api/query-client';
 
@@ -21,6 +21,21 @@ export function useKsefConfig() {
   return useQuery({
     queryKey: queryKeys.ksef.config,
     queryFn: () => ksefApi.getConfig(),
+  });
+}
+
+/**
+ * Operator-set KSeF policy from `KSEF_ALLOW_ENV_CHANGE` and `KSEF_ENVIRONMENT`.
+ * Available even before a config row exists, so the settings UI can decide
+ * whether to render the environment selector.
+ *
+ * Cached longer than the config itself — env vars only change on redeploy.
+ */
+export function useKsefConfigPolicy() {
+  return useQuery({
+    queryKey: queryKeys.ksef.configPolicy,
+    queryFn: () => ksefApi.getConfigPolicy(),
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -133,7 +148,10 @@ export const useBatchSubmitKsefInvoices = createMutationHook<unknown, string[]>(
 });
 
 export const useValidateKsefInvoice = createMutationHook<
-  { valid: boolean; issues: Array<{ field: string; code: string; message: string; severity: 'error' | 'warning' }> },
+  {
+    valid: boolean;
+    issues: Array<{ field: string; code: string; message: string; severity: 'error' | 'warning' }>;
+  },
   string
 >({
   mutationFn: (id) => ksefApi.validateInvoice(id),

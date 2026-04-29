@@ -21,6 +21,21 @@ export interface KsefConfigResponse {
   lastConnectionTestResult?: string;
   createdAt: string;
   updatedAt: string;
+  /**
+   * Mirrors the `KSEF_ALLOW_ENV_CHANGE` env flag on the API. The settings UI
+   * uses this to render the environment selector as editable or read-only.
+   */
+  canChangeEnvironment: boolean;
+}
+
+/**
+ * Operator-set KSeF policy. Returned by `GET /modules/ksef/config/policy`,
+ * available even before a config row exists for the company.
+ */
+export interface KsefConfigPolicy {
+  canChangeEnvironment: boolean;
+  /** The pinned environment (from `KSEF_ENVIRONMENT`) used when change is disabled. */
+  environment: string;
 }
 
 export interface UpsertKsefConfig {
@@ -266,13 +281,13 @@ const BASE = '/api/modules/ksef';
 export const ksefApi = {
   // Config
   getConfig: () => apiClient.get<KsefConfigResponse>(`${BASE}/config`).then((r) => r.data),
+  getConfigPolicy: () =>
+    apiClient.get<KsefConfigPolicy>(`${BASE}/config/policy`).then((r) => r.data),
   updateConfig: (data: UpsertKsefConfig) =>
     apiClient.put<KsefConfigResponse>(`${BASE}/config`, data).then((r) => r.data),
   deleteConfig: () => apiClient.delete(`${BASE}/config`),
   testConnection: () =>
-    apiClient
-      .post<KsefConnectionTestResult>(`${BASE}/config/test-connection`)
-      .then((r) => r.data),
+    apiClient.post<KsefConnectionTestResult>(`${BASE}/config/test-connection`).then((r) => r.data),
   uploadCredentials: (data: FormData) =>
     apiClient
       .post<KsefConfigResponse>(`${BASE}/config/upload-credentials`, data, {
@@ -294,7 +309,15 @@ export const ksefApi = {
   deleteInvoice: (id: string) => apiClient.delete(`${BASE}/invoices/${id}`),
   validateInvoice: (id: string) =>
     apiClient
-      .post<{ valid: boolean; issues: Array<{ field: string; code: string; message: string; severity: 'error' | 'warning' }> }>(`${BASE}/invoices/${id}/validate`)
+      .post<{
+        valid: boolean;
+        issues: Array<{
+          field: string;
+          code: string;
+          message: string;
+          severity: 'error' | 'warning';
+        }>;
+      }>(`${BASE}/invoices/${id}/validate`)
       .then((r) => r.data),
   generateXml: (id: string) =>
     apiClient
@@ -336,8 +359,7 @@ export const ksefApi = {
   // Stats
   getDashboardStats: () =>
     apiClient.get<KsefDashboardStats>(`${BASE}/stats/dashboard`).then((r) => r.data),
-  checkHealth: () =>
-    apiClient.get<KsefHealthResult>(`${BASE}/stats/health`).then((r) => r.data),
+  checkHealth: () => apiClient.get<KsefHealthResult>(`${BASE}/stats/health`).then((r) => r.data),
 
   // Audit
   getAuditLogs: (filters?: KsefAuditLogFilters) =>

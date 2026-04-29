@@ -15,14 +15,9 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
 import { memoryStorage } from 'multer';
-import {
-  ApiBearerAuth,
-  ApiConsumes,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
 
 import { CurrentUser, JwtAuthGuard } from '@accounting/auth';
 import { User } from '@accounting/common';
@@ -35,6 +30,7 @@ import {
 } from '@accounting/rbac';
 
 import {
+  KsefConfigPolicyDto,
   KsefConfigResponseDto,
   KsefConnectionTestResultDto,
   UpsertKsefConfigDto,
@@ -50,7 +46,7 @@ import { KsefConfigService } from '../services/ksef-config.service';
 export class KsefConfigController {
   constructor(
     private readonly configService: KsefConfigService,
-    private readonly systemCompanyService: SystemCompanyService,
+    private readonly systemCompanyService: SystemCompanyService
   ) {}
 
   @Get()
@@ -59,13 +55,25 @@ export class KsefConfigController {
     description: 'Returns the KSeF configuration for the current company.',
   })
   @ApiResponse({ status: 200, type: KsefConfigResponseDto })
-  async getConfig(
-    @CurrentUser() user: User,
-  ): Promise<KsefConfigResponseDto | null> {
+  async getConfig(@CurrentUser() user: User): Promise<KsefConfigResponseDto | null> {
     const companyId = await this.systemCompanyService.getCompanyIdForUser(user);
     const config = await this.configService.getConfig(companyId);
     if (!config) return null;
     return this.configService.toResponseDto(config);
+  }
+
+  @Get('policy')
+  @ApiOperation({
+    summary: 'Get KSeF policy (env-driven)',
+    description:
+      'Returns the operator-set KSeF policy: whether the environment can be ' +
+      'changed (`KSEF_ALLOW_ENV_CHANGE`) and which environment is pinned ' +
+      '(`KSEF_ENVIRONMENT`). Independent of any persisted config so the ' +
+      'settings UI can render correctly even before a config row exists.',
+  })
+  @ApiResponse({ status: 200, type: KsefConfigPolicyDto })
+  getPolicy(): KsefConfigPolicyDto {
+    return this.configService.getPolicy();
   }
 
   @Put()
@@ -77,7 +85,7 @@ export class KsefConfigController {
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async createOrUpdate(
     @Body() dto: UpsertKsefConfigDto,
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ): Promise<KsefConfigResponseDto> {
     return this.configService.createOrUpdate(dto, user);
   }
@@ -99,9 +107,7 @@ export class KsefConfigController {
     description: 'Tests the connection to the KSeF API using the stored configuration.',
   })
   @ApiResponse({ status: 200, type: KsefConnectionTestResultDto })
-  async testConnection(
-    @CurrentUser() user: User,
-  ): Promise<KsefConnectionTestResultDto> {
+  async testConnection(@CurrentUser() user: User): Promise<KsefConnectionTestResultDto> {
     return this.configService.testConnection(user);
   }
 
@@ -122,8 +128,8 @@ export class KsefConfigController {
       {
         storage: memoryStorage(),
         limits: { fileSize: 1024 * 1024 }, // 1 MB
-      },
-    ),
+      }
+    )
   )
   async uploadCredentials(
     @UploadedFiles()
@@ -132,14 +138,14 @@ export class KsefConfigController {
       privateKey?: Express.Multer.File[];
     },
     @Body() body: { certificatePassword?: string },
-    @CurrentUser() user: User,
+    @CurrentUser() user: User
   ): Promise<KsefConfigResponseDto> {
     const certFile = files?.certificate?.[0];
     const keyFile = files?.privateKey?.[0];
 
     if (!certFile && !keyFile) {
       throw new BadRequestException(
-        'Wymagany jest co najmniej jeden plik: certyfikat lub klucz prywatny',
+        'Wymagany jest co najmniej jeden plik: certyfikat lub klucz prywatny'
       );
     }
 
@@ -150,7 +156,7 @@ export class KsefConfigController {
       user,
       certPem,
       keyPem,
-      body.certificatePassword,
+      body.certificatePassword
     );
   }
 }
