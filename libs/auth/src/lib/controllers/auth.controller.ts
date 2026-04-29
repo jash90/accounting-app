@@ -105,6 +105,32 @@ export class AuthController {
     return user;
   }
 
+  @Get('ws-token')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Issue a short-lived ticket for Socket.IO handshakes',
+    description:
+      'In split deploys (frontend on Vercel, API on Railway) the auth cookie ' +
+      'is bound to the frontend host and never reaches the WS origin. Clients ' +
+      'fetch this ticket over the working REST path and pass it as Socket.IO ' +
+      '`auth.token`. The ticket is a 5-minute JWT verified by the same gateway ' +
+      'logic as a regular access token.',
+  })
+  @ApiOkResponse({
+    description: 'Returns a short-lived token suitable for the WS handshake',
+    schema: {
+      type: 'object',
+      properties: { token: { type: 'string' } },
+      required: ['token'],
+    },
+  })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized - Invalid or missing JWT token' })
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  async getWsToken(@CurrentUser() user: User): Promise<{ token: string }> {
+    return { token: this.authService.issueWsToken(user) };
+  }
+
   @Patch('change-password')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')
