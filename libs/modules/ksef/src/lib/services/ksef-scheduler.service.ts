@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
+
 import { IsNull, Not, Repository } from 'typeorm';
 
 import { KsefInvoice, KsefInvoiceStatus } from '@accounting/common';
@@ -59,14 +60,14 @@ export class KsefSchedulerService {
     private readonly configService: KsefConfigService,
     private readonly invoiceService: KsefInvoiceService,
     private readonly sessionService: KsefSessionService,
-    private readonly auditLogService: KsefAuditLogService,
+    private readonly auditLogService: KsefAuditLogService
   ) {}
 
   // Run every minute. KSeF typically finishes processing an invoice within
   // 5–30 seconds, so a 1-minute poll keeps the UI's "Wysłana → Zaakceptowana"
   // transition snappy without flooding KSeF with requests (we batch-process
   // up to 50 invoices per company per tick).
-  @Cron('* * * * *')
+  @Cron('* * * * *', { timeZone: 'Europe/Warsaw' })
   async pollPendingStatuses(): Promise<void> {
     if (this.isPolling) {
       this.logger.warn('Skipping invoice status poll — previous tick still running');
@@ -125,9 +126,10 @@ export class KsefSchedulerService {
 
           try {
             // KSeF v2: GET /sessions/{sessionRef}/invoices/{invoiceRef}
-            const path = KSEF_API_PATHS.SESSION_ONLINE_INVOICE_STATUS
-              .replace('{sessionRef}', sessionRef)
-              .replace('{invoiceRef}', invoice.ksefReferenceNumber!);
+            const path = KSEF_API_PATHS.SESSION_ONLINE_INVOICE_STATUS.replace(
+              '{sessionRef}',
+              sessionRef
+            ).replace('{invoiceRef}', invoice.ksefReferenceNumber!);
 
             const response = await this.httpClient.request<SessionInvoiceStatusResponse>({
               environment: config.environment,
@@ -157,7 +159,7 @@ export class KsefSchedulerService {
               await this.invoiceService.updateInvoiceStatus(
                 invoice.id,
                 KsefInvoiceStatus.ACCEPTED,
-                { ksefNumber, ...upoCapture },
+                { ksefNumber, ...upoCapture }
               );
               this.logger.log(`Invoice ${invoice.id} accepted: ${ksefNumber}`);
             } else if (statusCode === 440) {
@@ -181,19 +183,19 @@ export class KsefSchedulerService {
                 await this.invoiceService.updateInvoiceStatus(
                   invoice.id,
                   KsefInvoiceStatus.ACCEPTED,
-                  { ksefNumber: originalKsefNumber },
+                  { ksefNumber: originalKsefNumber }
                 );
                 this.logger.warn(
                   `Invoice ${invoice.id} reported as duplicate (440); linked to original ksefNumber=${originalKsefNumber}` +
-                    (originalSessionRef ? ` (originalSession=${originalSessionRef})` : ''),
+                    (originalSessionRef ? ` (originalSession=${originalSessionRef})` : '')
                 );
               } else {
                 // 440 without originalKsefNumber should never happen per spec — log loudly
                 // and fall back to REJECTED so the invoice doesn't get stuck SUBMITTED.
                 this.logger.error(
                   `Invoice ${invoice.id} got 440 (duplicate) but no originalKsefNumber in extensions; marking as rejected. extensions=${JSON.stringify(
-                    extensions,
-                  )}`,
+                    extensions
+                  )}`
                 );
                 await this.invoiceService.updateInvoiceStatus(
                   invoice.id,
@@ -205,7 +207,7 @@ export class KsefSchedulerService {
                         description: getKsefErrorMessage(440, response.data.status.description),
                       },
                     ],
-                  },
+                  }
                 );
               }
             } else if (statusCode && statusCode >= 400) {
@@ -220,17 +222,17 @@ export class KsefSchedulerService {
               await this.invoiceService.updateInvoiceStatus(
                 invoice.id,
                 KsefInvoiceStatus.REJECTED,
-                { validationErrors },
+                { validationErrors }
               );
               this.logger.warn(
-                `Invoice ${invoice.id} rejected: code ${statusCode} — ${response.data.status.description}`,
+                `Invoice ${invoice.id} rejected: code ${statusCode} — ${response.data.status.description}`
               );
             }
           } catch (error) {
             this.logger.warn(
               `Failed to poll status for invoice ${invoice.id}: ${
                 error instanceof Error ? error.message : String(error)
-              }`,
+              }`
             );
           }
         }
@@ -238,13 +240,13 @@ export class KsefSchedulerService {
         this.logger.warn(
           `Failed to process company ${companyId}: ${
             error instanceof Error ? error.message : String(error)
-          }`,
+          }`
         );
       }
     }
   }
 
-  @Cron('0 * * * *')
+  @Cron('0 * * * *', { timeZone: 'Europe/Warsaw' })
   async expireStaleSessions(): Promise<void> {
     try {
       const count = await this.sessionService.expireStaleSessions();
@@ -253,9 +255,7 @@ export class KsefSchedulerService {
       }
     } catch (error) {
       this.logger.error(
-        `Failed to expire stale sessions: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        `Failed to expire stale sessions: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }
@@ -273,7 +273,7 @@ export class KsefSchedulerService {
    */
   private async captureInvoiceUpo(
     data: SessionInvoiceStatusResponse,
-    audit: { companyId: string; userId: string; invoiceId: string },
+    audit: { companyId: string; userId: string; invoiceId: string }
   ): Promise<{
     upoXml?: string | null;
     upoDownloadUrl?: string | null;
@@ -290,10 +290,7 @@ export class KsefSchedulerService {
     const startedAt = Date.now();
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(
-        () => controller.abort(),
-        KSEF_DEFAULTS.UPLOAD_TIMEOUT_MS,
-      );
+      const timeout = setTimeout(() => controller.abort(), KSEF_DEFAULTS.UPLOAD_TIMEOUT_MS);
       try {
         const response = await fetch(data.upoDownloadUrl, { signal: controller.signal });
         if (!response.ok) {
@@ -356,7 +353,7 @@ export class KsefSchedulerService {
       this.logger.warn(
         `Failed to download per-invoice UPO from SAS URL: ${
           error instanceof Error ? error.message : String(error)
-        }. URL + expiry persisted so the UI can offer a fallback download button.`,
+        }. URL + expiry persisted so the UI can offer a fallback download button.`
       );
       return {
         upoXml: null,
