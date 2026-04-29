@@ -11,6 +11,7 @@ import {
   FolderOpen,
   Mail,
   Package,
+  Receipt,
   Settings,
   Users,
   type LucideIcon,
@@ -38,6 +39,7 @@ const iconMap: Record<string, LucideIcon> = {
   'bar-chart-3': BarChart3,
   'credit-card': CreditCard,
   'folder-open': FolderOpen,
+  receipt: Receipt,
 };
 
 /**

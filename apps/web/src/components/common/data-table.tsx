@@ -71,6 +71,24 @@ interface DataTableProps<TData, TValue> {
   onSelectionChange?: (selectedRows: TData[]) => void;
   getRowId?: (row: TData) => string;
   columnVisibility?: string[];
+  /**
+   * Server-side pagination support. When `totalCount` is provided the table
+   * stops doing client-side slicing and assumes `data` is already a single
+   * page. The pagination footer renders the real total and the Next/Prev
+   * buttons call `onPageChange(zeroBasedPageIndex)` instead of mutating the
+   * internal table state.
+   *
+   * - `totalCount`   — full record count from the server (e.g. `meta.total`)
+   * - `pageIndex`    — zero-based index of the current page (controlled)
+   * - `onPageChange` — called when the user clicks Prev / Next
+   *
+   * When all three are omitted the table falls back to client-side
+   * pagination over `data`, which is the original behavior. Mixed-mode
+   * (e.g. providing only `totalCount`) is treated as server-side.
+   */
+  totalCount?: number;
+  pageIndex?: number;
+  onPageChange?: (pageIndex: number) => void;
 }
 
 function DataTableInner<TData, TValue>({
@@ -86,8 +104,16 @@ function DataTableInner<TData, TValue>({
   onSelectionChange,
   getRowId,
   columnVisibility: visibleColumnIds,
+  totalCount,
+  pageIndex,
+  onPageChange,
 }: DataTableProps<TData, TValue>) {
   'use no memo';
+  // The directive above MUST be the first statement in the function
+  // body — the React Compiler only honors `'use no memo'` when it's at
+  // the top of a function. Putting any code (variable declaration,
+  // expression) before it silently turns the directive into a no-op.
+  const isServerPagination = typeof totalCount === 'number';
   const [sorting, setSorting] = useState<SortingState>([]);
   const [internalRowSelection, setInternalRowSelection] = useState<RowSelectionState>({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -98,17 +124,27 @@ function DataTableInner<TData, TValue>({
     return new Set(selectedRows.map((row) => getRowId(row)));
   }, [selectedRows, getRowId]);
 
-  // Derive row selection state during render (not in useEffect)
-  // This avoids an extra render cycle and keeps state in sync
+  // Derive row selection state during render (not in useEffect) — avoids
+  // an extra render cycle and keeps state in sync with the parent.
+  //
+  // IMPORTANT: When `getRowId` is set on the TanStack table, the row
+  // selection state is keyed by **row ID** (e.g. UUID), not by row index.
+  // The previous implementation built an index-keyed state which TanStack
+  // then ignored — clicking a row checkbox toggled internal state but
+  // `onSelectionChange` (which looked up `data[parseInt(key)]`) received
+  // an empty array because `parseInt("uuid-…")` is `NaN`. Result: master
+  // checkbox worked (it goes through `toggleAllPageRowsSelected`), but
+  // individual row clicks never propagated.
   const rowSelection = useMemo(() => {
-    if (!selectable || !getRowId) return internalRowSelection;
+    if (!selectable) return internalRowSelection;
+    if (!getRowId) return internalRowSelection;
     const newSelection: RowSelectionState = {};
-    data.forEach((row, index) => {
+    for (const row of data) {
       const rowId = getRowId(row);
       if (selectedRowIds.has(rowId)) {
-        newSelection[index] = true;
+        newSelection[rowId] = true;
       }
-    });
+    }
     return newSelection;
   }, [selectedRowIds, data, selectable, getRowId, internalRowSelection]);
 
@@ -163,7 +199,16 @@ function DataTableInner<TData, TValue>({
     columns: allColumns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: enableSorting ? getSortedRowModel() : undefined,
-    getPaginationRowModel: enablePagination ? getPaginationRowModel() : undefined,
+    // In server-pagination mode we deliberately skip the client-side
+    // pagination row model — `data` is already a single page, so slicing
+    // it again would chop it down to zero rows.
+    getPaginationRowModel:
+      enablePagination && !isServerPagination ? getPaginationRowModel() : undefined,
+    manualPagination: isServerPagination,
+    pageCount: isServerPagination
+      ? Math.max(1, Math.ceil((totalCount ?? 0) / pageSize))
+      : undefined,
+    rowCount: isServerPagination ? totalCount : undefined,
     onSortingChange: setSorting,
     onRowSelectionChange: (updaterOrValue) => {
       const newSelection =
@@ -171,12 +216,23 @@ function DataTableInner<TData, TValue>({
 
       setInternalRowSelection(newSelection);
 
-      // Call onSelectionChange with the actual row data
+      // Resolve selection keys → row data. When `getRowId` is provided the
+      // keys are row IDs (UUIDs); without it, TanStack falls back to
+      // numeric indexes. Handle both — the previous code unconditionally
+      // did `parseInt(key)` and silently dropped UUID-keyed selections.
       if (onSelectionChange) {
-        const selectedRowData = Object.keys(newSelection)
-          .filter((key) => newSelection[key])
-          .map((key) => data[parseInt(key, 10)])
-          .filter(Boolean);
+        const keys = Object.keys(newSelection).filter((key) => newSelection[key]);
+        let selectedRowData: TData[];
+        if (getRowId) {
+          const rowsById = new Map<string, TData>(data.map((row) => [getRowId(row), row]));
+          selectedRowData = keys
+            .map((key) => rowsById.get(key))
+            .filter((r): r is TData => r != null);
+        } else {
+          selectedRowData = keys
+            .map((key) => data[parseInt(key, 10)])
+            .filter((r): r is TData => r != null);
+        }
         onSelectionChange(selectedRowData);
       }
     },
@@ -184,6 +240,9 @@ function DataTableInner<TData, TValue>({
       sorting,
       rowSelection: selectable ? rowSelection : {},
       columnVisibility: derivedColumnVisibility,
+      ...(isServerPagination
+        ? { pagination: { pageIndex: pageIndex ?? 0, pageSize } }
+        : {}),
     },
     onColumnVisibilityChange: setColumnVisibility,
     enableRowSelection: selectable,
@@ -274,43 +333,68 @@ function DataTableInner<TData, TValue>({
         </TableBody>
       </Table>
 
-      {enablePagination && data.length > 0 && (
-        <div className="flex items-center justify-between px-2">
-          <p className="text-muted-foreground text-sm">
-            Wyświetlanie{' '}
-            <span className="text-foreground font-medium">
-              {table.getState().pagination.pageIndex * pageSize + 1}
-            </span>{' '}
-            -{' '}
-            <span className="text-foreground font-medium">
-              {Math.min((table.getState().pagination.pageIndex + 1) * pageSize, data.length)}
-            </span>{' '}
-            z <span className="text-foreground font-medium">{data.length}</span> wyników
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="border-accent hover:bg-accent/20 hover:border-accent"
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Poprzednia
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="border-accent hover:bg-accent/20 hover:border-accent"
-            >
-              Następna
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
+      {enablePagination && data.length > 0 && (() => {
+        // In server-pagination mode the parent owns `pageIndex` and the
+        // total count comes from the API. In client mode we stick with
+        // TanStack's internal state and the local `data` length.
+        const currentPageIndex = isServerPagination
+          ? (pageIndex ?? 0)
+          : table.getState().pagination.pageIndex;
+        const totalRows = isServerPagination ? (totalCount ?? 0) : data.length;
+        const startRow = currentPageIndex * pageSize + 1;
+        const endRow = Math.min((currentPageIndex + 1) * pageSize, totalRows);
+        const canPrev = isServerPagination ? currentPageIndex > 0 : table.getCanPreviousPage();
+        const canNext = isServerPagination
+          ? endRow < totalRows
+          : table.getCanNextPage();
+        const handlePrev = () => {
+          if (isServerPagination) {
+            onPageChange?.(Math.max(0, currentPageIndex - 1));
+          } else {
+            table.previousPage();
+          }
+        };
+        const handleNext = () => {
+          if (isServerPagination) {
+            onPageChange?.(currentPageIndex + 1);
+          } else {
+            table.nextPage();
+          }
+        };
+
+        return (
+          <div className="flex items-center justify-between px-2">
+            <p className="text-muted-foreground text-sm">
+              Wyświetlanie{' '}
+              <span className="text-foreground font-medium">{startRow}</span>{' '}-{' '}
+              <span className="text-foreground font-medium">{endRow}</span>{' '}
+              z <span className="text-foreground font-medium">{totalRows}</span> wyników
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrev}
+                disabled={!canPrev}
+                className="border-accent hover:bg-accent/20 hover:border-accent"
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Poprzednia
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNext}
+                disabled={!canNext}
+                className="border-accent hover:bg-accent/20 hover:border-accent"
+              >
+                Następna
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

@@ -21,6 +21,13 @@ export * from './lib/enums/offer-status.enum';
 export * from './lib/enums/offer-activity-type.enum';
 export * from './lib/enums/settlement-status.enum';
 export * from './lib/enums/relief-type.enum';
+export * from './lib/enums/ksef-environment.enum';
+export * from './lib/enums/ksef-invoice-status.enum';
+export * from './lib/enums/ksef-auth-method.enum';
+export * from './lib/enums/ksef-invoice-type.enum';
+export * from './lib/enums/ksef-session-type.enum';
+export * from './lib/enums/ksef-invoice-direction.enum';
+export * from './lib/enums/ksef-session-status.enum';
 
 // Constants
 export * from './lib/constants';
@@ -97,6 +104,10 @@ export * from './lib/entities/settlement-settings.entity';
 export * from './lib/entities/document-template.entity';
 export * from './lib/entities/generated-document.entity';
 export * from './lib/entities/email-auto-reply-template.entity';
+export * from './lib/entities/ksef-configuration.entity';
+export * from './lib/entities/ksef-session.entity';
+export * from './lib/entities/ksef-invoice.entity';
+export * from './lib/entities/ksef-audit-log.entity';
 export { COMMON_ENTITIES } from './lib/entities/entity-registry';
 export { AIProvider } from './lib/entities/ai-configuration.entity';
 export { AIMessageRole } from './lib/entities/ai-message.entity';

@@ -53,7 +53,8 @@
       "@accounting/modules/notifications": ["libs/modules/notifications/src/index.ts"],
       "@accounting/modules/documents": ["libs/modules/documents/src/index.ts"],
       "@accounting/modules/offers": ["libs/modules/offers/src/index.ts"],
-      "@accounting/modules/settlements": ["libs/modules/settlements/src/index.ts"]
+      "@accounting/modules/settlements": ["libs/modules/settlements/src/index.ts"],
+      "@accounting/modules/ksef": ["libs/modules/ksef/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"]
