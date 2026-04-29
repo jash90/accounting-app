@@ -43,6 +43,24 @@ export class ModuleAccessGuard implements CanActivate {
       throw new ForbiddenException(ErrorMessages.FORBIDDEN.NOT_AUTHENTICATED);
     }
 
+    // SECURITY: every `@RequireModule(...)` controller is tenant-scoped.
+    // RolesGuard alone only matches role; downstream services rely on every
+    // call site filtering `WHERE companyId = ?`. To cover the case where a
+    // service forgets that filter (or returns data via an unscoped query),
+    // we enforce here that the caller is associated with a company.
+    //
+    // Convention: ADMIN / COMPANY_OWNER / EMPLOYEE all have a `companyId` —
+    // even system admins operate within their own admin company. A `null`
+    // companyId means a half-registered user (auth.service.register sets it
+    // to null until onboarding completes), which must NEVER reach a tenant
+    // route.
+    if (!user.companyId) {
+      this.logger.warn(
+        `User ${user.id} (role=${user.role ?? 'unknown'}) hit @RequireModule('${requiredModule}') without a companyId`
+      );
+      throw new ForbiddenException(ErrorMessages.FORBIDDEN.MODULE_ACCESS_DENIED(requiredModule));
+    }
+
     // Fast check: verify module exists before doing full RBAC check
     // This prevents unnecessary database queries for non-existent modules
     if (this.moduleDiscoveryService && !this.moduleDiscoveryService.moduleExists(requiredModule)) {
