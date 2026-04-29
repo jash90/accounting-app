@@ -86,14 +86,18 @@ const tokenRefreshManager = new TokenRefreshManager();
  * Silent refresh scheduler — proactively refreshes the access token
  * before it expires, preventing 401 errors during active sessions.
  *
- * Schedules a refresh 5 minutes before the access token expires (55 min after login).
+ * IMPORTANT: these values MUST stay in sync with the backend `JWT_EXPIRES_IN`
+ * env var (defaults to 15m in `libs/auth/src/lib/auth.module.ts:36`). If the
+ * backend TTL changes, update `ACCESS_TOKEN_TTL_MS` here.
+ *
+ * Schedules a refresh 2 minutes before expiry (i.e. ~13 min after login).
  * Falls back to the 401 interceptor if the timer doesn't fire.
  */
 class SilentRefreshScheduler {
   private timerId: ReturnType<typeof setTimeout> | null = null;
-  /** Refresh 5 minutes before expiry (access token TTL = 60 min) */
-  private static readonly REFRESH_BEFORE_EXPIRY_MS = 5 * 60 * 1000;
-  private static readonly ACCESS_TOKEN_TTL_MS = 60 * 60 * 1000;
+  /** Refresh 2 minutes before expiry (access token TTL = 15 min) */
+  private static readonly REFRESH_BEFORE_EXPIRY_MS = 2 * 60 * 1000;
+  private static readonly ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000;
 
   schedule(): void {
     this.cancel();
