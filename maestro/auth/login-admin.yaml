@@ -1,0 +1,40 @@
+url: ${BASE_URL}/login
+name: "Web — login as ADMIN lands on admin panel"
+tags:
+  - smoke
+  - auth
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+  EMAIL: "admin@system.com"
+  PASSWORD: "Admin123456!"
+---
+- runFlow:
+    file: ../_helpers/login-admin.yaml
+    env:
+      BASE_URL: ${BASE_URL}
+      EMAIL: ${EMAIL}
+      PASSWORD: ${PASSWORD}
+
+# Admin dashboard renders "Panel Administratora" with system-stats cards.
+- assertVisible: "Panel Administratora"
+- assertVisible: "Przegląd statystyk systemowych i zarządzanie"
+
+# Sidebar label "PANEL ADMINA" (vs COMPANY_OWNER's "FIRMA" or EMPLOYEE's "MODUŁY")
+- assertVisible: "PANEL ADMINA"
+
+# Admin-exclusive sidebar links (no module list — admin manages users/companies/modules)
+- assertVisible: "Użytkownicy"
+- assertVisible: "Firmy"
+
+# System-stats cards on the dashboard
+- assertVisible: "Wszyscy użytkownicy"
+- assertVisible: "Wszystkie firmy"
+
+# Welcome banner unique to admin layout
+- assertVisible: "Witaj w AppTax Admin"
+
+# Negative check: not on /login
+- assertNotVisible: "Wprowadź hasło"
+# Negative check: not in COMPANY_OWNER layout
+- assertNotVisible: "Panel Firmy"
+- assertNotVisible: "Pracownicy"

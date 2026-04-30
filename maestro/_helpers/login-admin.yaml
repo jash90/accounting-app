@@ -1,0 +1,27 @@
+url: ${BASE_URL}/login
+name: "Helper: login as ADMIN"
+tags:
+  - helper
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+  EMAIL: "admin@system.com"
+  PASSWORD: "Admin123456!"
+---
+# Reusable login subflow for ADMIN role — lands on /admin with the system
+# admin sidebar ("PANEL ADMINA"). The 7 form-fill steps below MUST stay in
+# sync with `login.yaml` and `login-employee.yaml`. Maestro 2.3.0 does not
+# propagate env vars through nested runFlow chains, so a parameterized base
+# helper does not work.
+# Differences vs. the other role helpers are isolated to:
+#   - env defaults (EMAIL / PASSWORD)
+#   - the LANDING text in extendedWaitUntil
+- launchApp
+- assertVisible: "Witaj ponownie"
+- tapOn: "Email"
+- inputText: ${EMAIL}
+- tapOn: "Hasło"
+- inputText: ${PASSWORD}
+- tapOn: "Zaloguj się"
+- extendedWaitUntil:
+    visible: "Panel Administratora"
+    timeout: 15000
