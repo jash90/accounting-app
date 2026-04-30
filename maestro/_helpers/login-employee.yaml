@@ -7,8 +7,12 @@ env:
   EMAIL: "a.kowalska@biuro-nowak.pl"
   PASSWORD: "Demo12345678!"
 ---
-# Reusable login subflow for EMPLOYEE role.
-# Lands on /modules (not /company) with "Panel" heading and "MODUŁY" sidebar label.
+# Reusable login subflow for EMPLOYEE role — lands on /modules with employee
+# sidebar. The 7 form-fill steps below MUST stay in sync with `login.yaml`.
+# (See login.yaml for why we can't extract a shared base via runFlow.)
+# Differences vs. login.yaml are isolated to:
+#   - env defaults (EMAIL / PASSWORD)
+#   - the LANDING text in extendedWaitUntil
 - launchApp
 - assertVisible: "Witaj ponownie"
 - tapOn: "Email"
