@@ -1,0 +1,30 @@
+url: ${BASE_URL}/login
+name: "Web — login fails with invalid credentials"
+tags:
+  - smoke
+  - auth
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+---
+- launchApp
+- assertVisible: "Witaj ponownie"
+
+# Submit form with bogus credentials
+- tapOn: "Email"
+- inputText: "nieistniejacy@example.com"
+- tapOn: "Hasło"
+- inputText: "ZleHaslo123!"
+- tapOn: "Zaloguj się"
+
+# Backend returns 401 → form-error alert renders. The alert text comes from
+# `apps/web/src/pages/public/login-page.tsx:135-146`. The displayed text is
+# whichever wins: error.response.data.message > error.message > Polish fallback.
+# Prod API returns "Nieprawidłowe dane logowania" (Polish, from
+# ErrorMessages.AUTH.INVALID_CREDENTIALS); the substring also matches the
+# longer frontend fallback "Nieprawidłowe dane logowania. Spróbuj ponownie."
+- extendedWaitUntil:
+    visible: "Nieprawidłowe dane logowania"
+    timeout: 10000
+
+# We must still be on /login — dashboard heading must NOT appear
+- assertNotVisible: "Panel Firmy"

@@ -1,0 +1,23 @@
+url: ${BASE_URL}/login
+name: "Web — login as COMPANY_OWNER (smoke)"
+tags:
+  - smoke
+  - auth
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+  EMAIL: "nowak@biuro-nowak.pl"
+  PASSWORD: "Demo12345678!"
+---
+- runFlow:
+    file: ../_helpers/login.yaml
+    env:
+      BASE_URL: ${BASE_URL}
+      EMAIL: ${EMAIL}
+      PASSWORD: ${PASSWORD}
+
+# After successful login: company dashboard layout
+- assertVisible: "Pulpit"
+- assertVisible: "Pracownicy"
+
+# Negative check: we left /login (password placeholder is gone)
+- assertNotVisible: "Wprowadź hasło"

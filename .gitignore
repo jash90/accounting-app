@@ -60,3 +60,8 @@ apps/web-e2e/playwright-report/
 /test-screenshots/
 /*.png
 !apps/**/*.png
+
+# Maestro: ignore CLI-downloaded sample apps and the auto-generated
+# screenshots/debug subdirectory. Track only authored flow YAML and helpers.
+/samples/
+/maestro/.maestro/

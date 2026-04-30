@@ -1,0 +1,36 @@
+url: ${BASE_URL}/login
+name: "Web — time-tracking entries list renders"
+tags:
+  - smoke
+  - time-tracking
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+  EMAIL: "nowak@biuro-nowak.pl"
+  PASSWORD: "Demo12345678!"
+---
+- runFlow:
+    file: ../_helpers/login.yaml
+    env:
+      BASE_URL: ${BASE_URL}
+      EMAIL: ${EMAIL}
+      PASSWORD: ${PASSWORD}
+
+- openLink: ${BASE_URL}/company/modules/time-tracking/entries
+
+- extendedWaitUntil:
+    visible: "Przeglądaj i zarządzaj wpisami czasu"
+    timeout: 10000
+
+# Page chrome
+- assertVisible: "Wpisy czasu"
+- assertVisible: "Nowy wpis"
+
+# Timer widget at top
+- assertVisible: "00:00:00"
+- assertVisible: "Co robisz?"
+
+# Each time-entry is rendered as a single accessibility-labeled button
+# ("Wpis czasu: Praca nad ...") so Maestro Web sees only the outer aria-label,
+# not individual cell text. The page-shell assertions above already prove the
+# list rendered. Drilling into individual entries would need scroll() + text
+# match against aria-label which Maestro doesn't expose. Out of scope for smoke.

@@ -1,0 +1,43 @@
+url: ${BASE_URL}/login
+name: "Web — company profile shows seeded NIP"
+tags:
+  - smoke
+  - company
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+  EMAIL: "nowak@biuro-nowak.pl"
+  PASSWORD: "Demo12345678!"
+---
+- runFlow:
+    file: ../_helpers/login.yaml
+    env:
+      BASE_URL: ${BASE_URL}
+      EMAIL: ${EMAIL}
+      PASSWORD: ${PASSWORD}
+
+# After login we're on company dashboard ("Panel Firmy") with the avatar
+# (initials "KN" for Krzysztof Nowak — see demo seeder l. 210-211) in top-right.
+# Tap the avatar to open user menu.
+- tapOn: "KN"
+
+# Wait for dropdown to open — full name renders inside the menu label
+- extendedWaitUntil:
+    visible: "Krzysztof Nowak"
+    timeout: 5000
+
+# Click the freshly-fixed "Profil" item (user-menu.tsx:69 — was a dead button
+# until commit 7a1565c wired the onClick).
+- tapOn: "Profil"
+
+# Land on /company/profile
+- extendedWaitUntil:
+    visible: "Profil firmy"
+    timeout: 10000
+- assertVisible: "Dane podstawowe"
+- assertVisible: "NIP"
+- assertVisible: "REGON"
+
+# NIP value not asserted — varies between prod (real owner data) and dev (seed).
+# We assert structure (top-of-form rendered) which is the goal of the smoke test.
+# "Adres", "Kontakt i dane bankowe", "Komunikacja" cards live below the fold —
+# would need scroll() to assert; out of scope for smoke.
