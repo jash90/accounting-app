@@ -23,9 +23,15 @@ env:
 # Sidebar label "MODUŁY" (vs COMPANY_OWNER's "FIRMA")
 - assertVisible: "MODUŁY"
 
-# Employee sidebar lacks "Pracownicy" and "Moduły" management links.
-# We assert their absence to verify the role-restricted sidebar.
+# Sidebar visibility per RBAC-TEST-PLAN.md P2 — EMPLOYEE must NOT see
+# any management or admin links, nor labels from other layouts.
 - assertNotVisible: "Pracownicy"
+- assertNotVisible: "Użytkownicy"
+- assertNotVisible: "Firmy"
+- assertNotVisible: "FIRMA"
+- assertNotVisible: "PANEL ADMINA"
+- assertNotVisible: "Panel Firmy"
+- assertNotVisible: "Panel Administratora"
 
 # Negative check: not on /login
 - assertNotVisible: "Wprowadź hasło"

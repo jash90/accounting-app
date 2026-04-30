@@ -1,0 +1,44 @@
+url: ${BASE_URL}/login
+name: "Web — EMPLOYEE cannot access company-owner routes"
+tags:
+  - smoke
+  - auth
+  - rbac
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+  EMAIL: "a.kowalska@biuro-nowak.pl"
+  PASSWORD: "Demo12345678!"
+---
+- runFlow:
+    file: ../_helpers/login-employee.yaml
+    env:
+      BASE_URL: ${BASE_URL}
+      EMAIL: ${EMAIL}
+      PASSWORD: ${PASSWORD}
+
+# /company/* is gated by OWNER_ROLES → EMPLOYEE gets /unauthorized.
+# RBAC-TEST-PLAN.md P1 cases #5, #7-#9.
+# (#6 — /company/profile — already covered by employee-rbac-denied.yaml)
+
+- openLink: ${BASE_URL}/company
+- extendedWaitUntil:
+    visible: "Unauthorized"
+    timeout: 10000
+- assertVisible: "You don't have permission to access this page."
+- assertNotVisible: "Panel Firmy"
+
+- openLink: ${BASE_URL}/company/employees
+- extendedWaitUntil:
+    visible: "Unauthorized"
+    timeout: 10000
+- assertNotVisible: "Zarządzaj pracownikami firmy"
+
+- openLink: ${BASE_URL}/company/modules
+- extendedWaitUntil:
+    visible: "Unauthorized"
+    timeout: 10000
+
+- openLink: ${BASE_URL}/company/email-config
+- extendedWaitUntil:
+    visible: "Unauthorized"
+    timeout: 10000

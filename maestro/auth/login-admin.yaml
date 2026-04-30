@@ -35,6 +35,17 @@ env:
 
 # Negative check: not on /login
 - assertNotVisible: "Wprowadź hasło"
-# Negative check: not in COMPANY_OWNER layout
+
+# Sidebar visibility per RBAC-TEST-PLAN.md P2 — ADMIN must NOT see
+# COMPANY_OWNER / EMPLOYEE layout markers nor business-module links.
 - assertNotVisible: "Panel Firmy"
 - assertNotVisible: "Pracownicy"
+- assertNotVisible: "FIRMA"
+# Note: cannot assertNotVisible "MODUŁY" — Maestro Web text match is
+# case-insensitive, and ADMIN sidebar has a "Moduły" link.
+- assertNotVisible: "Klienci"
+- assertNotVisible: "Zadania"
+- assertNotVisible: "Logowanie czasu"
+- assertNotVisible: "Rozliczenia"
+- assertNotVisible: "Oferty"
+- assertNotVisible: "KSeF e-Faktury"
