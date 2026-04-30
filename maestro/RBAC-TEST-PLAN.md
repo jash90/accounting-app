@@ -154,33 +154,73 @@ All four covered in `auth/unauthenticated-redirects.yaml` — single flow, no lo
 
 `EmployeePermissionsPage` lets COMPANY_OWNER toggle Read/Write/Delete per module per employee. The matrix powers feature visibility:
 
-| #   | Setup                                         | Test                                                              |
-| --- | --------------------------------------------- | ----------------------------------------------------------------- |
-| 21  | EMPLOYEE without Read on `Klienci`            | open `/modules/clients` → `/module-access-denied` or empty layout |
-| 22  | EMPLOYEE with Read but no Write on `Klienci`  | "Dodaj klienta" button hidden / disabled                          |
-| 23  | EMPLOYEE with Read but no Delete on `Klienci` | per-row action menu lacks `Usuń`                                  |
-| 24  | (repeat for each of 8 modules × 3 perms)      | 24 sub-cases                                                      |
+| #   | Setup                                         | Test                                                              | Status                |
+| --- | --------------------------------------------- | ----------------------------------------------------------------- | --------------------- |
+| 21  | EMPLOYEE without Read on `Klienci`            | open `/modules/clients` → `/module-access-denied` or empty layout | TODO (blocked-seeder) |
+| 22  | EMPLOYEE with Read but no Write on `Klienci`  | "Dodaj klienta" button hidden / disabled                          | TODO (blocked-seeder) |
+| 23  | EMPLOYEE with Read but no Delete on `Klienci` | per-row action menu lacks `Usuń`                                  | TODO (blocked-seeder) |
+| —   | Permissions page renders for any employee     | drilldown via id selector → assert R/W/D matrix                   | ✅ DONE — see below   |
 
-### Blockers
+### Partial unblock (commit 3c78029)
 
-1. **No way to toggle permissions via UI from a Maestro flow** — `Zarządzaj uprawnieniami` button is icon-only with `aria-label`, Maestro Web's `tapOn` doesn't match aria. See `company/employees-permissions.yaml` (tagged `wip`).
-2. **Demo seeder grants ALL permissions to both seeded employees**. Need either:
-   - A new seeded employee with deliberately reduced permissions (e.g. `e.read-only@biuro-nowak.pl`), or
-   - A second EmployeePermissionsPage flow that mutates state — but this contradicts the "read-only smoke" default.
+The first blocker — icon-only row buttons — was fixed by adding stable HTML `id` attributes to all three row action buttons in `apps/web/src/pages/company/employees/employees-list.tsx`:
 
-### Recommended unblock path
+```tsx
+<Button id={`employee-permissions-${row.original.email}`} ... />
+<Button id={`employee-edit-${row.original.email}`} ... />
+<Button id={`employee-delete-${row.original.email}`} ... />
+```
 
-- Add visible text or HTML `id="..."` to the `Zarządzaj uprawnieniami` / `Edytuj pracownika` / `Usuń pracownika` buttons in `employees-list.tsx` (UX win + testability)
-- Add a third seeded employee with a curated permission profile to `demo-data-seeder.service.ts` (e.g. read-only on Klienci, no Documents access at all)
-- Then implement the 24-case matrix as ~3 flow files (one per scope: page-access, write-buttons, delete-buttons)
+`maestro/company/employees-permissions.yaml` has been un-tagged from `wip` → now part of the smoke suite. It taps `id: "employee-permissions-a.kowalska@biuro-nowak.pl"` directly, lands on the permissions page, asserts the R/W/D matrix renders.
 
-**Effort:** large, multi-day, requires app + seeder changes. Park until P1-P3 done.
+### Remaining blocker — seeder
+
+Cases #21-#23 (and the 24-case full matrix that extrapolates) still need an EMPLOYEE with curated, _limited_ permissions to compare against. The current seeded `a.kowalska@biuro-nowak.pl` has all permissions checked.
+
+### Concrete unblock plan for #21-#23
+
+1. Extend `apps/api/src/seeders/demo-data-seeder.service.ts` to create a third employee:
+
+   ```ts
+   // After Marek Wiśniewski (around line 270)
+   let emp3 = await this.userRepo.findOne({
+     where: { email: 'r.read-only@biuro-nowak.pl' },
+   });
+   if (!emp3) {
+     emp3 = await this.userRepo.save(
+       this.userRepo.create({
+         email: 'r.read-only@biuro-nowak.pl',
+         password,
+         firstName: 'Roman',
+         lastName: 'Read-Only',
+         role: UserRole.EMPLOYEE,
+         companyId: companyB.id,
+         isActive: true,
+       })
+     );
+   }
+   // Then call `assignModuleAccess(emp3, modules)` with a deliberately
+   // narrow profile — e.g. Read-only on Klienci, NO access at all to
+   // Dokumenty / KSeF.
+   ```
+
+2. The seeder is idempotent and skips when "Biuro Rachunkowe Nowak" already exists. So this code only runs on a fresh DB. Two options to deploy on prod:
+   - (a) Manual: SSH + `bun run seed:demo` after backing up
+   - (b) Migration: write a one-off TypeORM migration that adds Roman + permissions when companyB exists already
+   - Option (b) is preferred for CI safety
+3. Add Maestro flows once the user exists:
+   - `maestro/_helpers/login-employee-readonly.yaml` (4-th role helper, copy from `login-employee.yaml` and swap email + landing assertion if needed)
+   - `maestro/auth/employee-readonly-cannot-write.yaml` — login as Roman, navigate to `/modules/clients`, assert `Dodaj klienta` button NOT visible
+   - `maestro/auth/employee-readonly-cannot-delete.yaml` — assert per-row delete action NOT in row menu
+   - `maestro/auth/employee-readonly-no-documents.yaml` — open `/modules/documents`, assert `/module-access-denied` or empty state
+
+**Effort once seeder lands:** ~3 flow files + 1 helper, ~1.5h. Currently blocked on seeder change requiring careful prod migration.
 
 ---
 
 ## Priority 5 — Token edge cases
 
-Out of scope for Maestro Web. Better in Playwright (`apps/web-e2e/`) or backend e2e (`apps/api-e2e/`).
+Out of scope for Maestro Web. The reasoning is concrete, not just convention — see below.
 
 | #   | Scenario                                                    | Where to test                     |
 | --- | ----------------------------------------------------------- | --------------------------------- |
@@ -190,7 +230,46 @@ Out of scope for Maestro Web. Better in Playwright (`apps/web-e2e/`) or backend 
 | 28  | User deactivated mid-session (`setUserActiveStatus(false)`) | Playwright                        |
 | 29  | `tokenVersion` bump invalidates active sessions             | Playwright + DB seeding           |
 
-These scenarios need API mocking, clock manipulation, or DB writes mid-test — features Maestro Web does not have.
+### Why Maestro Web cannot cover these
+
+1. **No browser-clock control.** Maestro Web has no equivalent of Playwright's `page.clock.fastForward()`. To test an expired token you need to skip the wall clock past `exp`. Without that, the test would have to wait the actual expiry duration (~1h for access token).
+2. **No JS injection at the session level.** Maestro Web's commands operate on the visible DOM. There is no documented way to write to `document.cookie` or `localStorage` mid-flow to inject a tampered token.
+3. **No mid-test DB write.** Cases #28 and #29 require deactivating the user or bumping `tokenVersion` _while the browser holds a live session_. Maestro test harness cannot reach the DB.
+4. **No API-only test mode.** Cases #26 (tampered JWT) and #27 (orphaned user) are best exercised at the API level without UI involvement; Maestro Web is a UI driver.
+
+### Concrete next steps in Playwright (`apps/web-e2e/`)
+
+The existing `apps/web-e2e/src/fixtures/auth.fixtures.ts` already models authenticated contexts per role. To cover P5:
+
+1. **#25 expired token:**
+   - In an `auth.spec.ts` test, after logging in, call `page.clock.install({ time: ... })` and `page.clock.fastForward('1h')`.
+   - Trigger a protected request (any module navigation).
+   - Assert the response is 401 and the UI redirects to `/login` (the app already has `setAuthNavigateCallback` wired).
+
+2. **#28 mid-session deactivation:**
+   - Use `request.post('/api/admin/users/:id/deactivate', ...)` from the test (or directly via TypeORM in a pre-test hook).
+   - In the same browser, click a button. Assert the next API call returns 401 and UI redirects.
+
+3. **#29 tokenVersion bump:**
+   - Same shape: bump `User.tokenVersion` via DB or admin API. Next request returns 401.
+
+### Concrete next steps in API e2e (`apps/api-e2e/`)
+
+For #26 and #27 — pure API tests:
+
+1. **#26 tampered JWT:**
+
+   ```ts
+   const token = jwt.sign({...}, 'WRONG_SECRET');
+   const res = await request(app).get('/api/clients').set('Authorization', `Bearer ${token}`);
+   expect(res.status).toBe(401);
+   ```
+
+2. **#27 orphaned user:**
+   - Seed a user, get their token, then delete the company they belong to.
+   - Replay the request, expect 401 (or 403 with explicit `USER_ORPHANED` errorCode if app implements it).
+
+**Effort:** ~3-4h in Playwright + ~2h in API e2e. Both tooling layers already exist; only specs need writing.
 
 ---
 
@@ -198,48 +277,95 @@ These scenarios need API mocking, clock manipulation, or DB writes mid-test — 
 
 The most security-critical class. Currently zero coverage in any test layer.
 
-| #   | Scenario                                                            | Expected           |
-| --- | ------------------------------------------------------------------- | ------------------ |
-| 30  | Company A owner navigates to `/clients/<id-of-Company-B-client>`    | 404                |
-| 31  | Company A employee navigates to `/tasks/<id-of-Company-B-task>`     | 404                |
-| 32  | Company A direct API call `GET /api/clients/<companyB-id>`          | 403                |
-| 33  | Company A creates an offer with `companyId=B` in payload            | 403 / silent strip |
-| 34  | Cross-tenant settlement / invoice / lead / time-entry detail access | 404 each           |
+| #   | Scenario                                                            | Expected           | Where to test |
+| --- | ------------------------------------------------------------------- | ------------------ | ------------- |
+| 30  | Company A owner navigates to `/clients/<id-of-Company-B-client>`    | 404                | API e2e + UI  |
+| 31  | Company A employee navigates to `/tasks/<id-of-Company-B-task>`     | 404                | API e2e + UI  |
+| 32  | Company A direct API call `GET /api/clients/<companyB-id>`          | 403                | API e2e       |
+| 33  | Company A creates an offer with `companyId=B` in payload            | 403 / silent strip | API e2e       |
+| 34  | Cross-tenant settlement / invoice / lead / time-entry detail access | 404 each           | API e2e + UI  |
 
-### Blockers
+### Why this is hard in Maestro Web
 
-- Demo seeder has only Company B ("Biuro Rachunkowe Nowak"). Need Company A added (e.g. "Test Company A" with its own owner + employees + clients) for cross-tenant scenarios.
-- Maestro Web is not the right layer for #32-#33 (raw API). API e2e (`apps/api-e2e/`) is.
-- #30, #31, #34 are reachable from Maestro Web once the seeder has two companies — but require knowing a Company B entity ID, which means the test must first log in as the OTHER company to read it. Two browser sessions in one Maestro run is unsupported.
+- A single Maestro run can only hold one browser session. To verify "owner of Company A cannot see Company B's data" you need IDs that exist in Company B — but Maestro can't log in as B _and_ A in the same run, nor query the DB.
+- Hard-coding Company B IDs in tests creates seeder-coupling: change the seed → all tests break.
+- The actual security boundary lives in the backend (`SystemCompanyService.getCompanyIdForUser` + per-service `where: { companyId }` clauses). Testing it via UI is the wrong abstraction level — you're testing the request goes through the right path, not the path itself.
 
-### Recommended unblock path
+### Concrete unblock plan — API e2e first (`apps/api-e2e/`)
 
-- API e2e (`apps/api-e2e/`) with both companies seeded — cleanest, fastest, exercises the actual security boundary.
-- Maestro web only for the "owner sees friendly 404" UI affordance, after seeder grows a second company.
+This is the cheapest, fastest, most truthful coverage. Steps:
 
-**Effort:** medium for API e2e (existing harness in `apps/api-e2e/`), large for Maestro web (needs seeder work first).
+1. **Extend the seeder** (`apps/api/src/seeders/demo-data-seeder.service.ts`) with a second company:
+
+   ```ts
+   // After Company B "Biuro Rachunkowe Nowak"
+   const companyA = await this.seedCompanyA(); // separate method
+   // companyA: name "Biuro Rachunkowe Adamski", own owner + employee
+   //           + 5 clients with deterministic emails (e.g. companyA-client-1@...)
+   ```
+
+2. **Add cross-tenant test file** `apps/api-e2e/src/cross-tenant-isolation.spec.ts`:
+
+   ```ts
+   describe('Cross-tenant isolation', () => {
+     let ownerATokens, ownerBTokens, companyBClientId;
+
+     beforeAll(async () => {
+       ownerATokens = await login('adamski@biuro-adamski.pl', 'Demo12345678!');
+       ownerBTokens = await login('nowak@biuro-nowak.pl', 'Demo12345678!');
+       const { data } = await request(app)
+         .get('/api/clients')
+         .set('Authorization', `Bearer ${ownerBTokens.access_token}`);
+       companyBClientId = data.data[0].id;
+     });
+
+     it('GET /api/clients/<companyB-id> with Company A owner token returns 404', async () => {
+       const res = await request(app)
+         .get(`/api/clients/${companyBClientId}`)
+         .set('Authorization', `Bearer ${ownerATokens.access_token}`);
+       expect(res.status).toBe(404);
+     });
+
+     // Repeat for tasks, leads, settlements, offers, time-entries, KSeF invoices
+   });
+   ```
+
+3. **Optional Maestro UI veneer** (only after API coverage exists):
+   - One flow that asserts "if you somehow have a stale URL pointing at another company's resource, the UI shows a 404 page rather than leaking data". E.g. `maestro/modules/cross-tenant-404.yaml`.
+   - This requires a hardcoded Company B ID baked into the test — fragile against seed changes — so only worth adding if the security audit demands UI-level evidence.
+
+### Why prefer API e2e over Maestro
+
+- 7 seconds vs ~50 seconds per case — 100+ cases are tractable
+- Tests the actual permission boundary, not the UI's reaction to it
+- No ID coupling between two browser sessions
+- Existing harness in `apps/api-e2e/` already runs on every CI
+
+**Effort:** ~1 day for seeder + ~6 cases in API e2e (one per resource type). Skip Maestro web for this priority unless a specific UX bug surfaces.
 
 ---
 
 ## Suggested execution order
 
-1. ✅ **P2 — sidebar visibility** — DONE in commit (see git log)
+1. ✅ **P2 — sidebar visibility** — DONE
 2. ✅ **P1 — denied-access matrix** — 4 new flow files DONE
 3. ✅ **P3 — logged-out redirects** — 1 new flow file DONE
-4. **P4 — module permissions** — only after employees-list buttons get visible text or `id="..."` (separate ticket)
-5. **P5 — token edge cases** — defer to Playwright in `apps/web-e2e/` (existing fixtures already model auth)
-6. **P6 — cross-tenant isolation** — defer to `apps/api-e2e/`, add second company to seeder first
+4. 🟡 **P4 — module permissions** — partially DONE (permissions page reachable via `id:` selector after frontend fix in commit `3c78029`). Read/Write/Delete denial cases still blocked on seeder change. See P4 section above.
+5. ⏳ **P5 — token edge cases** — out of scope for Maestro (concrete reasons in P5 section). Implement in `apps/web-e2e/` (Playwright `--clock`) and `apps/api-e2e/`.
+6. ⏳ **P6 — cross-tenant isolation** — out of scope for Maestro. Implement in `apps/api-e2e/` after extending seeder with Company A. Concrete code sketch in P6 section.
 
 Coverage summary (Maestro web):
 
-| Priority | Coverage                      | Flows added              |
-| -------- | ----------------------------- | ------------------------ |
-| P1       | 16/16 routes                  | 4 files (consolidated)   |
-| P2       | 3/3 roles                     | 0 files (edits in place) |
-| P3       | 4/4 routes                    | 1 file                   |
-| P4       | 0% (blocked)                  | —                        |
-| P5       | 0% (out of scope for Maestro) | —                        |
-| P6       | 0% (out of scope for Maestro) | —                        |
+| Priority | Coverage                                                                              | Flows added                                                                         |
+| -------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| P1       | 16/16 routes                                                                          | 4 files (consolidated)                                                              |
+| P2       | 3/3 roles                                                                             | 0 files (edits in place)                                                            |
+| P3       | 4/4 routes                                                                            | 1 file                                                                              |
+| P4       | 1/4 cases (permissions page UI reachable; R/W/D denials need curated seeded employee) | 0 new files; un-WIP'd existing employees-permissions.yaml + frontend `id="..."` fix |
+| P5       | 0/5 (Playwright is correct layer)                                                     | —                                                                                   |
+| P6       | 0/5 (API e2e is correct layer)                                                        | —                                                                                   |
+
+The remaining 7 cases (P4 #21-#23, P5 #25-#29, P6 #30-#34) are tracked above with explicit code sketches and effort estimates. Open separate tickets when ready to execute.
 
 ---
 
