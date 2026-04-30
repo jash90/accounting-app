@@ -97,6 +97,54 @@ If you prefer to test on a per-PR Vercel preview URL, pass `-e BASE_URL=https://
 | Icon-only buttons (aria-label only) aren't matched by text                                                                                         | Tap by surrounding text or by index                        |
 | Suite-level run (`maestro test maestro/`) sometimes fails on the 4th+ flow with "Unable to launch app" because browser state retains between flows | Use `./maestro/run-all.sh` which restarts maestro per flow |
 
+## Composition principle — flows are built from blocks
+
+**A flow MUST be composed from small, named, reusable blocks (subflows in `_helpers/`) instead of repeating step sequences inline.** Inline duplication is allowed only when (a) the sequence is unique to one flow, or (b) Maestro's runFlow constraints (below) prevent extraction.
+
+### Why blocks
+
+- One canonical place to update when the UI changes (e.g. login form gets a captcha → fix in 1 file, not in 12)
+- Call sites read like English: `runFlow login-admin.yaml` instead of 7 lines of input/tap
+- Negative-path tests (`login-invalid`, `login-empty`) and positive-path tests share the same opener, so a regression on the `Witaj ponownie` heading fails one test, not all of them silently
+
+### Existing blocks (audit as of commit `902a2e9`)
+
+| Block                          | Used by | Purpose                                      |
+| ------------------------------ | ------- | -------------------------------------------- |
+| `_helpers/login.yaml`          | 6 flows | COMPANY_OWNER login → land on `Panel Firmy`  |
+| `_helpers/login-employee.yaml` | 2 flows | EMPLOYEE login → land on employee `/modules` |
+| `_helpers/login-admin.yaml`    | 1 flow  | ADMIN login → land on `Panel Administratora` |
+
+3 blocks, 9 of 12 active flows compose with them. The 3 that don't (`login.yaml`, `login-invalid.yaml`, `login-empty.yaml`) intentionally inline because they ARE the auth tests — they exercise the form directly rather than depending on a helper.
+
+### Hard constraint — Maestro 2.3.0 does NOT propagate env vars through nested `runFlow` chains
+
+This is the one rule that bends most cleanly-extracted abstractions. Tested empirically and committed as a permanent gotcha (see commit `854d4cd`):
+
+```
+test/auth/login.yaml      ← top level (env values resolve fine)
+  └─ _helpers/login.yaml  ← runFlow subflow (env from caller works ✅)
+      └─ _helpers/X.yaml  ← runFlow subflow of subflow (env arrives as literal "${EMAIL}" ❌)
+```
+
+Practical implications:
+
+1. A block can only be one level deep when called from a test flow. Don't try to refactor 3 role helpers into 1 base helper that they all delegate to — `inputText: ${EMAIL}` in the inner-most flow will be typed literally.
+2. Reusable blocks should have **complete env defaults** of their own. Top-level callers can override via the `env:` block of `runFlow:`, but the subflow must remain runnable with its own defaults if env is missing.
+3. The 3 login helpers therefore each carry the same 7 form-fill steps. The duplication is documented in each file with a "MUST stay in sync" comment.
+
+### When to extract a new block
+
+Apply the **rule of three**: extract only after the same step sequence appears in 3+ flows AND would survive the env-propagation constraint above.
+
+Patterns that almost qualify today (NOT yet extracted):
+
+- "Go to clients list page" — used by `clients-list.yaml` and `clients-search-no-results.yaml` (2 callers — wait for a third)
+- "Tap sidebar Pracownicy + wait for heading" — used by `employees-list.yaml` and the wip `employees-permissions.yaml` (2 callers)
+- "Login + openLink to a specific module URL" — used by `tasks-kanban.yaml`, `time-tracking-entries.yaml`, `clients-search-no-results.yaml` (3 callers BUT each URL differs, and parameterizing the URL hits the env-propagation limit; so this stays inline)
+
+When you find yourself writing the third copy of any short step sequence, stop and ask: can this be a `_helpers/<verb>-<noun>.yaml` block instead?
+
 ## Adding a new flow
 
 Template (smoke flow for a new module):
