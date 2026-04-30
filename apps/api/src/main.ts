@@ -31,8 +31,32 @@ async function bootstrap() {
   // Validate critical environment variables before starting
   validateEnvironment();
 
-  // One-time seed mode: Run full seeder and exit
+  // One-time seed mode: Run full seeder and exit.
+  //
+  // SAFETY: SeederService.seed() unconditionally TRUNCATEs 22 tables before
+  // re-seeding base data. Running this in production wipes all real customer
+  // data and replaces it with the test fixture. A previous incident
+  // (commit b93c8c2 deploy on prod) destroyed Company B + all derived
+  // entities because RUN_SEED=true was set on prod. The base SeederService
+  // is not idempotent — it always truncates, by design (it's a dev fixture).
+  //
+  // Hard-block RUN_SEED in production. To seed prod (e.g. on first deploy),
+  // unset NODE_ENV or use a separate one-shot script that only adds missing
+  // entities (idempotent).
   if (process.env.RUN_SEED === 'true') {
+    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PROD_SEED !== 'true') {
+      logger.error(
+        'RUN_SEED=true is BLOCKED in production. The base seeder unconditionally TRUNCATEs all tables — it would wipe customer data.'
+      );
+      logger.error(
+        'If you really need to run the full seeder on production, set ALLOW_PROD_SEED=true alongside RUN_SEED=true. You probably do NOT want this.'
+      );
+      logger.error(
+        'For idempotent partial seeding (e.g. add a missing test user), write a dedicated one-shot script.'
+      );
+      process.exit(1);
+    }
+
     logger.log('Running one-time database seed...');
     const app = await NestFactory.createApplicationContext(AppModule);
     try {
@@ -40,8 +64,24 @@ async function bootstrap() {
       const seeder = seedersModule.get(SeederService);
       await seeder.seed();
       logger.log('Base seeding completed, running demo data seeder...');
-      const demoSeeder = app.get(DemoDataSeederService);
-      await demoSeeder.seed();
+      // DemoDataSeedersModule is conditionally imported in AppModule —
+      // gated by `NODE_ENV !== 'production' && ENABLE_DEMO_SEEDER === 'true'`.
+      // If not loaded, app.get() throws UnknownElementException; treat that
+      // as "demo seeder not available in this build" and skip rather than
+      // crashing — the base seed has already completed at this point.
+      try {
+        const demoSeeder = app.get(DemoDataSeederService);
+        await demoSeeder.seed();
+        logger.log('Demo data seeding completed');
+      } catch (demoErr) {
+        if ((demoErr as Error).constructor.name === 'UnknownElementException') {
+          logger.warn(
+            'DemoDataSeederService not registered in this build — skipping demo seed (base seed completed)'
+          );
+        } else {
+          throw demoErr;
+        }
+      }
       logger.log('Seeding completed successfully');
     } catch (error) {
       logger.error('Seeding failed:', error);
