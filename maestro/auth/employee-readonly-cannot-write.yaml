@@ -1,0 +1,38 @@
+url: ${BASE_URL}/login
+name: "Web — read-only employee sees Klienci list but no Add button"
+tags:
+  - wip-needs-seed
+  - auth
+  - rbac
+# WHY wip-needs-seed: depends on `r.read-only@biuro-nowak.pl` user
+# being present on prod (added to demo-data-seeder.service.ts but
+# requires backend deploy + seeder re-run on boot to take effect).
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+  EMAIL: "r.read-only@biuro-nowak.pl"
+  PASSWORD: "Demo12345678!"
+---
+- runFlow:
+    file: ../_helpers/login-readonly.yaml
+    env:
+      BASE_URL: ${BASE_URL}
+      EMAIL: ${EMAIL}
+      PASSWORD: ${PASSWORD}
+
+# Roman has Read on Klienci but not Write — the list should render
+# but write actions should be hidden or disabled.
+- openLink: ${BASE_URL}/modules/clients/list
+- extendedWaitUntil:
+    visible: "Zarządzaj listą klientów"
+    timeout: 10000
+
+# Read evidence: list and column headers visible
+- assertVisible: "NIP"
+- assertVisible: "Email"
+
+# Write evidence: the "Dodaj klienta" button must NOT be visible/enabled
+# (when role-gating in the UI is correct, it is omitted entirely or the
+# button is rendered disabled — Maestro `assertNotVisible` covers both
+# the omitted case; the disabled case may need refinement based on
+# the actual implementation).
+- assertNotVisible: "Dodaj klienta"

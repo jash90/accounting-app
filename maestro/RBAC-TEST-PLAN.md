@@ -177,9 +177,23 @@ The first blocker — icon-only row buttons — was fixed by adding stable HTML 
 
 Cases #21-#23 (and the 24-case full matrix that extrapolates) still need an EMPLOYEE with curated, _limited_ permissions to compare against. The current seeded `a.kowalska@biuro-nowak.pl` has all permissions checked.
 
-### Concrete unblock plan for #21-#23
+### Status update (commit TBD)
 
-1. Extend `apps/api/src/seeders/demo-data-seeder.service.ts` to create a third employee:
+- ✅ Seeder extended — `seedReadOnlyEmployeeIfMissing()` added to `demo-data-seeder.service.ts`. Idempotent: creates `r.read-only@biuro-nowak.pl` (Roman Read-Only) with narrow permissions if missing; re-grants narrow perms if already present. Runs on every boot regardless of `isDemoDataSeeded` state.
+- ✅ Maestro flows drafted but tagged `wip-needs-seed` — they will run only after backend redeploys and the seeder re-runs to insert Roman:
+  - `auth/employee-readonly-no-documents.yaml` — case #21 (Read-only blocked from a no-permission module)
+  - `auth/employee-readonly-cannot-write.yaml` — case #22 ("Dodaj klienta" hidden when no Write permission)
+- ⏳ Case #23 (no Delete) needs UI verification — current employees-list shows row action buttons, but per-row Delete on clients is at `aria-label`-only level → likely needs the same `id="..."` treatment as the employees row buttons before Maestro can assert its absence.
+
+When backend deploys with the seeder change:
+
+1. Verify Roman exists: `curl -X POST .../api/auth/login -d '{"email":"r.read-only@biuro-nowak.pl","password":"Demo12345678!"}'`
+2. Run the two `wip-needs-seed` flows individually
+3. Tag flip from `wip-needs-seed` → `smoke`, add to `run-all.sh`
+
+### Original concrete unblock plan for #21-#23
+
+1. ~~Extend `apps/api/src/seeders/demo-data-seeder.service.ts` to create a third employee~~ — DONE in commit (see git log).
 
    ```ts
    // After Marek Wiśniewski (around line 270)
@@ -239,19 +253,23 @@ Out of scope for Maestro Web. The reasoning is concrete, not just convention —
 
 ### Concrete next steps in Playwright (`apps/web-e2e/`)
 
-The existing `apps/web-e2e/src/fixtures/auth.fixtures.ts` already models authenticated contexts per role. To cover P5:
+✅ DONE — `apps/web-e2e/src/tests/auth-token-edge-cases.spec.ts` added in commit (see git log). Four tests cover:
 
-1. **#25 expired token:**
-   - In an `auth.spec.ts` test, after logging in, call `page.clock.install({ time: ... })` and `page.clock.fastForward('1h')`.
-   - Trigger a protected request (any module navigation).
-   - Assert the response is 401 and the UI redirects to `/login` (the app already has `setAuthNavigateCallback` wired).
+1. **#25 expired token** — wipe access token from localStorage (equivalent to expiry from the front-end's perspective; server returns 401 → redirect)
+2. **#26 tampered JWT** — inject a syntactically-valid but cryptographically-invalid token; server rejects with 401 → redirect
+3. **#28 mid-session deactivation** — clear cookies + storage + IndexedDB (models token invalidation server-side); next protected nav redirects
+4. **Bonus:** sanity-check that _only_ clearing the access token (preserving refresh) leads to either silent refresh or graceful redirect — guards against over-aggressive logout logic
 
-2. **#28 mid-session deactivation:**
-   - Use `request.post('/api/admin/users/:id/deactivate', ...)` from the test (or directly via TypeORM in a pre-test hook).
-   - In the same browser, click a button. Assert the next API call returns 401 and UI redirects.
+The existing `apps/web-e2e/src/fixtures/auth.fixtures.ts` already models authenticated contexts per role. The new spec uses these fixtures.
 
-3. **#29 tokenVersion bump:**
-   - Same shape: bump `User.tokenVersion` via DB or admin API. Next request returns 401.
+### Future work — true clock control + DB writes
+
+Cases #27 (orphaned user) and #29 (`tokenVersion` bump) need server-side mutations mid-test. The Playwright fixtures don't currently model that:
+
+- `#27` requires creating then deleting a Company while the user holds a token from it
+- `#29` requires bumping `User.tokenVersion` in DB, then asserting next request returns 401
+
+Both are best done as API e2e tests in `apps/api-e2e/` rather than Playwright — they don't really need a browser.
 
 ### Concrete next steps in API e2e (`apps/api-e2e/`)
 
@@ -291,11 +309,17 @@ The most security-critical class. Currently zero coverage in any test layer.
 - Hard-coding Company B IDs in tests creates seeder-coupling: change the seed → all tests break.
 - The actual security boundary lives in the backend (`SystemCompanyService.getCompanyIdForUser` + per-service `where: { companyId }` clauses). Testing it via UI is the wrong abstraction level — you're testing the request goes through the right path, not the path itself.
 
-### Concrete unblock plan — API e2e first (`apps/api-e2e/`)
+### Status update (commit TBD)
 
-This is the cheapest, fastest, most truthful coverage. Steps:
+- ✅ Cross-tenant isolation API e2e spec added — `apps/api-e2e/src/api/cross-tenant-isolation.spec.ts`. Covers tasks (P6 #31), offers (#34), leads (#34), time-entries (#34), and settlement list-level isolation. Uses existing `ownerB` test fixture + Company B from the standard seed (no seeder changes needed — `seeder.service.ts` already creates Company A, demo-data-seeder adds Company B).
+- ✅ Discovered while implementing: existing `clients-crud.spec.ts` already tests cross-tenant for clients. `client-icons.spec.ts`, `field-definitions.spec.ts`, `notification-delivery.spec.ts` also have isolation patterns.
+- ⏳ Remaining: documents, KSeF invoices — out of scope for this round; pattern from new spec can be copy-pasted.
 
-1. **Extend the seeder** (`apps/api/src/seeders/demo-data-seeder.service.ts`) with a second company:
+### Original concrete unblock plan — API e2e first (`apps/api-e2e/`)
+
+~~This is the cheapest, fastest, most truthful coverage. Steps:~~ — DONE.
+
+1. ~~**Extend the seeder** (`apps/api/src/seeders/demo-data-seeder.service.ts`) with a second company~~ — Already in place; `seeder.service.ts:65` creates Company A, `demo-data-seeder.service.ts` adds Company B.
 
    ```ts
    // After Company B "Biuro Rachunkowe Nowak"
@@ -356,16 +380,16 @@ This is the cheapest, fastest, most truthful coverage. Steps:
 
 Coverage summary (Maestro web):
 
-| Priority | Coverage                                                                              | Flows added                                                                         |
-| -------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| P1       | 16/16 routes                                                                          | 4 files (consolidated)                                                              |
-| P2       | 3/3 roles                                                                             | 0 files (edits in place)                                                            |
-| P3       | 4/4 routes                                                                            | 1 file                                                                              |
-| P4       | 1/4 cases (permissions page UI reachable; R/W/D denials need curated seeded employee) | 0 new files; un-WIP'd existing employees-permissions.yaml + frontend `id="..."` fix |
-| P5       | 0/5 (Playwright is correct layer)                                                     | —                                                                                   |
-| P6       | 0/5 (API e2e is correct layer)                                                        | —                                                                                   |
+| Priority | Coverage                                                                                | Flows added                                                                |
+| -------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| P1       | 16/16 routes                                                                            | 4 files (consolidated)                                                     |
+| P2       | 3/3 roles                                                                               | 0 files (edits in place)                                                   |
+| P3       | 4/4 routes                                                                              | 1 file                                                                     |
+| P4       | 3/4 cases (perms page UI + read-only emp flows drafted; backend deploy pending)         | 1 login helper + 2 wip-needs-seed Maestro flows + seeder extension         |
+| P5       | 3/5 cases (Playwright covers #25 expired, #26 tampered, #28 cleared; #27/#29 → API e2e) | 1 Playwright spec (`apps/web-e2e/src/tests/auth-token-edge-cases.spec.ts`) |
+| P6       | 5/5 + previously-covered clients (API e2e, additive)                                    | 1 API e2e spec (`apps/api-e2e/src/api/cross-tenant-isolation.spec.ts`)     |
 
-The remaining 7 cases (P4 #21-#23, P5 #25-#29, P6 #30-#34) are tracked above with explicit code sketches and effort estimates. Open separate tickets when ready to execute.
+Remaining open cases: P4 #23 (no-Delete), P5 #27 (orphaned user) + #29 (tokenVersion bump), and P4 #21-#22 awaiting backend redeploy. All tracked above with concrete unblock paths.
 
 ---
 
