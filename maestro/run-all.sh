@@ -20,9 +20,10 @@ cd "$(dirname "$0")/.."
 FLOWS=(
   # auth (login + edge cases + RBAC)
   maestro/auth/login.yaml
+  maestro/auth/login-employee.yaml
+  maestro/auth/login-admin.yaml
   maestro/auth/login-invalid.yaml
   maestro/auth/login-empty.yaml
-  maestro/auth/login-employee.yaml
   maestro/auth/employee-rbac-denied.yaml
   # company (owner-only pages)
   maestro/company/profile-nip.yaml

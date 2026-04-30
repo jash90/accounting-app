@@ -35,10 +35,12 @@ maestro/
 ├── run-all.sh                         # runs every smoke flow in a fresh browser session
 ├── _helpers/
 │   ├── login.yaml                     # subflow: COMPANY_OWNER login, ends on /company
-│   └── login-employee.yaml            # subflow: EMPLOYEE login, ends on /modules
+│   ├── login-employee.yaml            # subflow: EMPLOYEE login, ends on /modules
+│   └── login-admin.yaml               # subflow: ADMIN login, ends on /admin
 ├── auth/
 │   ├── login.yaml                     # happy-path COMPANY_OWNER login
 │   ├── login-employee.yaml            # EMPLOYEE login → /modules + employee sidebar
+│   ├── login-admin.yaml               # ADMIN login → /admin + system-stats panel
 │   ├── login-invalid.yaml             # 401 + Polish error rendered
 │   ├── login-empty.yaml               # Zod validation: email + password length
 │   └── employee-rbac-denied.yaml      # EMPLOYEE → /company/profile → /unauthorized
@@ -60,6 +62,16 @@ maestro/
 | `BASE_URL` | `https://accounting-app-prod.vercel.app`          |
 | `EMAIL`    | `nowak@biuro-nowak.pl` (COMPANY_OWNER, demo seed) |
 | `PASSWORD` | `Demo12345678!`                                   |
+
+Per-role helpers default to seeded credentials matching the role:
+
+| Role          | Helper                         | Email                       | Landing                              |
+| ------------- | ------------------------------ | --------------------------- | ------------------------------------ |
+| COMPANY_OWNER | `_helpers/login.yaml`          | `nowak@biuro-nowak.pl`      | `Panel Firmy`                        |
+| EMPLOYEE      | `_helpers/login-employee.yaml` | `a.kowalska@biuro-nowak.pl` | `Przegląd Twojego obszaru roboczego` |
+| ADMIN         | `_helpers/login-admin.yaml`    | `admin@system.com`          | `Panel Administratora`               |
+
+All three role helpers share the same 7-step form-fill pattern. The duplication is intentional — see commit `854d4cd` for why a parameterized base does not work in Maestro 2.3.0.
 
 The dev URL `accounting-development.vercel.app` is intentionally NOT used by default — at the time of authoring it was on a 41-day-old build. Production has the latest master (Vercel auto-promotes on push). To target dev once it's caught up, override with `-e BASE_URL=...`.
 
