@@ -30,6 +30,9 @@ describe('Cross-tenant data isolation E2E', () => {
     leadId?: string;
     settlementId?: string;
     timeEntryId?: string;
+    documentTemplateId?: string;
+    ksefInvoiceId?: string;
+    aiConversationId?: string;
   } = {};
 
   beforeAll(async () => {
@@ -45,6 +48,11 @@ describe('Cross-tenant data isolation E2E', () => {
       created.offerId && agent.delete(`/modules/offers/${created.offerId}`),
       created.leadId && agent.delete(`/modules/offers/leads/${created.leadId}`),
       created.timeEntryId && agent.delete(`/modules/time-tracking/entries/${created.timeEntryId}`),
+      created.documentTemplateId &&
+        agent.delete(`/modules/documents/templates/${created.documentTemplateId}`),
+      created.ksefInvoiceId && agent.delete(`/modules/ksef/invoices/${created.ksefInvoiceId}`),
+      created.aiConversationId &&
+        agent.delete(`/modules/ai-agent/conversations/${created.aiConversationId}`),
     ].filter(Boolean);
 
     for (const req of cleanups) {
@@ -261,6 +269,163 @@ describe('Cross-tenant data isolation E2E', () => {
         .get(`/modules/settlements/${aSettlementId}`)
         .set(...authHeader(ownerBToken))
         .expect(404);
+    });
+  });
+
+  // ============================================================
+  // Document templates (P6 — gap closure)
+  // ============================================================
+  describe('Document templates', () => {
+    it('Company A owner can create a document template', async () => {
+      const res = await agent
+        .post('/modules/documents/templates')
+        .set(...authHeader(ownerAToken))
+        .send({
+          name: `Cross-tenant isolation template ${Date.now()}`,
+          description: 'Owned by Company A — Company B must not see this',
+        });
+
+      if (![200, 201].includes(res.status)) {
+        throw new Error(`Unexpected status ${res.status}: ${JSON.stringify(res.body)}`);
+      }
+      created.documentTemplateId = res.body.id;
+      expect(created.documentTemplateId).toBeDefined();
+    });
+
+    it('Company B owner cannot GET Company A document template', async () => {
+      await agent
+        .get(`/modules/documents/templates/${created.documentTemplateId}`)
+        .set(...authHeader(ownerBToken))
+        .expect(404);
+    });
+
+    it('Company B owner cannot PATCH Company A document template', async () => {
+      await agent
+        .patch(`/modules/documents/templates/${created.documentTemplateId}`)
+        .set(...authHeader(ownerBToken))
+        .send({ name: 'Hijacked template name' })
+        .expect(404);
+    });
+
+    it('Company B owner cannot DELETE Company A document template', async () => {
+      await agent
+        .delete(`/modules/documents/templates/${created.documentTemplateId}`)
+        .set(...authHeader(ownerBToken))
+        .expect(404);
+    });
+  });
+
+  // ============================================================
+  // KSeF invoices (P6 — gap closure)
+  // ============================================================
+  // KSeF invoice creation requires the company to have a NIP set
+  // (see ksef-invoice.service.ts:158 — throws BadRequestException if
+  // company.nip is missing). Both seeded companies have NIP per
+  // demo-data-seeder.service.ts:224, so creation should succeed.
+  describe('KSeF invoices', () => {
+    it('Company A owner can create a draft KSeF invoice', async () => {
+      const res = await agent
+        .post('/modules/ksef/invoices')
+        .set(...authHeader(ownerAToken))
+        .send({
+          invoiceType: 'STANDARD',
+          issueDate: new Date().toISOString().substring(0, 10),
+          buyerData: {
+            name: 'Cross-tenant test buyer',
+          },
+          lineItems: [
+            {
+              description: 'Cross-tenant isolation test line',
+              quantity: 1,
+              unit: 'szt',
+              unitNetPrice: 100,
+              netAmount: 100,
+              vatRate: 23,
+              vatAmount: 23,
+              grossAmount: 123,
+            },
+          ],
+        });
+
+      if (![200, 201].includes(res.status)) {
+        throw new Error(`Unexpected status ${res.status}: ${JSON.stringify(res.body)}`);
+      }
+      created.ksefInvoiceId = res.body.id;
+      expect(created.ksefInvoiceId).toBeDefined();
+    });
+
+    it('Company B owner cannot GET Company A KSeF invoice', async () => {
+      await agent
+        .get(`/modules/ksef/invoices/${created.ksefInvoiceId}`)
+        .set(...authHeader(ownerBToken))
+        .expect(404);
+    });
+
+    it('Company B owner cannot PATCH Company A KSeF invoice', async () => {
+      await agent
+        .patch(`/modules/ksef/invoices/${created.ksefInvoiceId}`)
+        .set(...authHeader(ownerBToken))
+        .send({ buyerData: { name: 'Hijacked buyer' } })
+        .expect(404);
+    });
+
+    it("Company B owner's invoice list does not contain Company A invoice", async () => {
+      const res = await agent
+        .get('/modules/ksef/invoices')
+        .set(...authHeader(ownerBToken))
+        .query({ page: 1, limit: 100 })
+        .expect(200);
+
+      const ids = (res.body.data ?? []).map((inv: { id: string }) => inv.id);
+      expect(ids).not.toContain(created.ksefInvoiceId);
+    });
+  });
+
+  // ============================================================
+  // AI conversations (P6 — gap closure)
+  // ============================================================
+  describe('AI conversations', () => {
+    it('Company A owner can create an AI conversation', async () => {
+      const res = await agent
+        .post('/modules/ai-agent/conversations')
+        .set(...authHeader(ownerAToken))
+        .send({
+          title: `Cross-tenant isolation AI conv ${Date.now()}`,
+        });
+
+      if (![200, 201].includes(res.status)) {
+        throw new Error(`Unexpected status ${res.status}: ${JSON.stringify(res.body)}`);
+      }
+      created.aiConversationId = res.body.id;
+      expect(created.aiConversationId).toBeDefined();
+    });
+
+    it('Company B owner cannot GET Company A AI conversation', async () => {
+      await agent
+        .get(`/modules/ai-agent/conversations/${created.aiConversationId}`)
+        .set(...authHeader(ownerBToken))
+        .expect(404);
+    });
+
+    it('Company B owner cannot DELETE Company A AI conversation', async () => {
+      await agent
+        .delete(`/modules/ai-agent/conversations/${created.aiConversationId}`)
+        .set(...authHeader(ownerBToken))
+        .expect(404);
+    });
+
+    it("Company B owner's conversation list does not contain Company A conversation", async () => {
+      const res = await agent
+        .get('/modules/ai-agent/conversations')
+        .set(...authHeader(ownerBToken))
+        .query({ page: 1, limit: 100 })
+        .expect(200);
+
+      // Endpoint may return either {data: [...]} pagination shape or
+      // a bare array — handle both
+      const list = Array.isArray(res.body) ? res.body : (res.body.data ?? []);
+      const ids = list.map((c: { id: string }) => c.id);
+      expect(ids).not.toContain(created.aiConversationId);
     });
   });
 });
