@@ -69,6 +69,7 @@ export default function EmployeesListPage() {
       cell: ({ row }) => (
         <div className="flex gap-1">
           <Button
+            id={`employee-permissions-${row.original.email}`}
             size="icon"
             variant="ghost"
             className="hover:bg-accent/10 h-8 w-8"
@@ -77,10 +78,12 @@ export default function EmployeesListPage() {
               navigate(`/company/employees/${row.original.id}/permissions`);
             }}
             title="Zarządzaj uprawnieniami"
+            aria-label="Zarządzaj uprawnieniami"
           >
             <Key className="text-accent h-4 w-4" />
           </Button>
           <Button
+            id={`employee-edit-${row.original.email}`}
             size="icon"
             variant="ghost"
             className="hover:bg-accent/10 h-8 w-8"
@@ -89,10 +92,12 @@ export default function EmployeesListPage() {
               setEditingEmployee(row.original);
             }}
             title="Edytuj pracownika"
+            aria-label="Edytuj pracownika"
           >
             <Edit className="text-primary h-4 w-4" />
           </Button>
           <Button
+            id={`employee-delete-${row.original.email}`}
             size="icon"
             variant="ghost"
             className="hover:bg-destructive/10 h-8 w-8"
@@ -101,6 +106,7 @@ export default function EmployeesListPage() {
               setDeletingEmployee(row.original);
             }}
             title="Usuń pracownika"
+            aria-label="Usuń pracownika"
           >
             <Trash2 className="text-destructive h-4 w-4" />
           </Button>
