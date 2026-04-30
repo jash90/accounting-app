@@ -1,0 +1,47 @@
+url: ${BASE_URL}/login
+name: "Web — employees list shows seeded pracownicy"
+tags:
+  - smoke
+  - employees
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+  EMAIL: "nowak@biuro-nowak.pl"
+  PASSWORD: "Demo12345678!"
+---
+- runFlow:
+    file: ../_helpers/login.yaml
+    env:
+      BASE_URL: ${BASE_URL}
+      EMAIL: ${EMAIL}
+      PASSWORD: ${PASSWORD}
+
+# Sidebar "Pracownicy" → /company/employees
+- tapOn: "Pracownicy"
+
+- extendedWaitUntil:
+    visible: "Zarządzaj pracownikami firmy"
+    timeout: 10000
+
+# Page chrome
+- assertVisible: "Pracownicy"
+- assertVisible: "Dodaj pracownika"
+
+# Table columns
+- assertVisible: "Imię"
+- assertVisible: "Nazwisko"
+- assertVisible: "Status"
+
+# Both seeded employees rendered as rows (demo-data-seeder.service.ts:243-271)
+- assertVisible: "Anna"
+- assertVisible: "Kowalska"
+- assertVisible: "a.kowalska@biuro-nowak.pl"
+- assertVisible: "Marek"
+- assertVisible: "Wiśniewski"
+- assertVisible: "m.wisniewski@biuro-nowak.pl"
+
+# Status badge per row
+- assertVisible: "Aktywny"
+
+# Note: per-row action buttons ("Zarządzaj uprawnieniami", "Edytuj pracownika",
+# "Usuń pracownika") are icon-only (aria-label without visible text) so Maestro
+# cannot match them by text. See company/employees-permissions.yaml for context.

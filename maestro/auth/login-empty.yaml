@@ -1,0 +1,23 @@
+url: ${BASE_URL}/login
+name: "Web — empty login form shows Zod validation errors"
+tags:
+  - smoke
+  - auth
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+---
+- launchApp
+- assertVisible: "Witaj ponownie"
+
+# Click submit without filling anything. Zod schema in
+# `apps/web/src/lib/validation/schemas.ts` enforces email format + min password
+# length 12 → react-hook-form renders inline FormMessage under each field.
+- tapOn: "Zaloguj się"
+
+# Per-field validation messages (visible as small red text under each input)
+- assertVisible: "Nieprawidłowy adres email"
+- assertVisible: "Hasło musi mieć co najmniej 12 znaków"
+
+# Stay on /login — no API call was made
+- assertNotVisible: "Panel Firmy"
+- assertNotVisible: "Nieprawidłowe dane logowania"

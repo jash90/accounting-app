@@ -18,10 +18,18 @@ set -u
 cd "$(dirname "$0")/.."
 
 FLOWS=(
+  # auth (login + edge cases + RBAC)
   maestro/auth/login.yaml
   maestro/auth/login-invalid.yaml
+  maestro/auth/login-empty.yaml
+  maestro/auth/login-employee.yaml
+  maestro/auth/employee-rbac-denied.yaml
+  # company (owner-only pages)
   maestro/company/profile-nip.yaml
+  maestro/company/employees-list.yaml
+  # modules (per-feature smoke)
   maestro/modules/clients-list.yaml
+  maestro/modules/clients-search-no-results.yaml
   maestro/modules/tasks-kanban.yaml
   maestro/modules/time-tracking-entries.yaml
 )

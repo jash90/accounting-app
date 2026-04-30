@@ -30,20 +30,27 @@ maestro test --headless --screen-size 1280x800 maestro/auth/login.yaml
 
 ```
 maestro/
-├── README.md                      # this file
-├── config.yaml                    # workspace config (includeTags/excludeTags)
-├── run-all.sh                     # runs every smoke flow in a fresh browser session
+├── README.md                          # this file
+├── config.yaml                        # workspace config (includeTags/excludeTags)
+├── run-all.sh                         # runs every smoke flow in a fresh browser session
 ├── _helpers/
-│   └── login.yaml                 # subflow: COMPANY_OWNER login, ends on dashboard
+│   ├── login.yaml                     # subflow: COMPANY_OWNER login, ends on /company
+│   └── login-employee.yaml            # subflow: EMPLOYEE login, ends on /modules
 ├── auth/
-│   ├── login.yaml                 # happy-path login
-│   └── login-invalid.yaml         # 401 + Polish error rendered
+│   ├── login.yaml                     # happy-path COMPANY_OWNER login
+│   ├── login-employee.yaml            # EMPLOYEE login → /modules + employee sidebar
+│   ├── login-invalid.yaml             # 401 + Polish error rendered
+│   ├── login-empty.yaml               # Zod validation: email + password length
+│   └── employee-rbac-denied.yaml      # EMPLOYEE → /company/profile → /unauthorized
 ├── company/
-│   └── profile-nip.yaml           # avatar → "Profil" → /company/profile renders
+│   ├── profile-nip.yaml               # avatar → "Profil" → /company/profile
+│   ├── employees-list.yaml            # sidebar Pracownicy → both seeded pracownicy
+│   └── employees-permissions.yaml     # WIP — icon-only buttons not tappable
 └── modules/
-    ├── clients-list.yaml          # sidebar Klienci → dashboard → Lista klientów
-    ├── tasks-kanban.yaml          # /tasks/kanban — first 3 columns visible
-    └── time-tracking-entries.yaml # /time-tracking/entries — list + timer widget
+    ├── clients-list.yaml              # sidebar Klienci → dashboard → Lista
+    ├── clients-search-no-results.yaml # search bogus → "Brak wyników"
+    ├── tasks-kanban.yaml              # /tasks/kanban — first 3 columns
+    └── time-tracking-entries.yaml     # /time-tracking/entries — list + timer
 ```
 
 ## Defaults
@@ -119,6 +126,8 @@ Workflow:
 
 ## Known follow-ups
 
+- **i18n on `/unauthorized` page**: route renders English heading "Unauthorized" + "You don't have permission to access this page." — should match the rest of the app (Polish). Asserted in `auth/employee-rbac-denied.yaml` matches current English text; will need updating when localized.
+- **Icon-only buttons block deeper E2E**: per-row action buttons in the employees list (`Zarządzaj uprawnieniami`, `Edytuj pracownika`, `Usuń pracownika`) and time-tracking timer (`Rozpocznij timer`) carry their label only as `aria-label`. Maestro Web's text matcher cannot tap them. Either add visible text alongside the icon, or add HTML `id="..."` attrs. Without one of those, `company/employees-permissions.yaml` stays tagged `wip`.
 - **i18n on dev backend**: dev Railway backend (`api-production-02a2`) returns English error messages (`"Invalid credentials"`); prod backend correctly returns `"Nieprawidłowe dane logowania"`. Tests are written for prod's behavior.
 - **Stale dev frontend**: `accounting-development` Vercel project's production alias hasn't been promoted in 41+ days. Either fix the deploy pipeline or stop calling that URL "dev".
 - **Below-the-fold assertions**: several flows had to drop assertions for elements below the viewport (e.g. all 7 kanban columns, "Adres" card on profile, pagination footers). A future iteration can add `scroll` actions to verify.
