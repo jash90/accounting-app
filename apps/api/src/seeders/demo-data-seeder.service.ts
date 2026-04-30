@@ -108,6 +108,11 @@ export class DemoDataSeederService {
 
     if (await this.isDemoDataSeeded()) {
       this.logger.warn('Demo data already seeded (Biuro Rachunkowe Nowak exists). Skipping.');
+      // Even when the bulk demo data is already seeded, the read-only test
+      // employee may not exist yet — it was added later. This call is
+      // idempotent (skips if Roman already exists) so it's safe to run
+      // on every boot.
+      await this.seedReadOnlyEmployeeIfMissing();
       return;
     }
 
@@ -165,11 +170,99 @@ export class DemoDataSeederService {
     await this.seedAIData(companyA, ownerA);
     await this.seedAIData(companyB, ownerB);
 
+    // Add the curated read-only employee for RBAC tests (idempotent — safe
+    // even on first run; only creates Roman if he doesn't exist).
+    await this.seedReadOnlyEmployeeIfMissing();
+
     this.logger.log('Demo data seeding completed!');
     this.logger.log('Company B credentials:');
     this.logger.log('  Owner:      nowak@biuro-nowak.pl / Demo12345678!');
     this.logger.log('  Employee 1: a.kowalska@biuro-nowak.pl / Demo12345678!');
     this.logger.log('  Employee 2: m.wisniewski@biuro-nowak.pl / Demo12345678!');
+    this.logger.log('  Read-only:  r.read-only@biuro-nowak.pl / Demo12345678!');
+  }
+
+  /**
+   * Idempotently creates a third Company B employee `Roman Read-Only` with a
+   * deliberately narrow permission profile (Read-only on Klienci/Zadania/
+   * Logowanie czasu, no permissions on Dokumenty/KSeF/Oferty/Rozliczenia).
+   *
+   * Powers RBAC-TEST-PLAN.md P4 cases #21-#23: tests that an EMPLOYEE
+   * without Read access to a module gets blocked, an EMPLOYEE with Read
+   * but no Write does not see the "Add" button, and so on.
+   *
+   * Runs on every boot. If Roman already exists, this is a noop. The
+   * permission rows it inserts are also skipped if already present.
+   */
+  private async seedReadOnlyEmployeeIfMissing(): Promise<void> {
+    const password = await hash('Demo12345678!', 10);
+
+    const companyB = await this.companyRepo.findOne({
+      where: { name: 'Biuro Rachunkowe Nowak' },
+    });
+    if (!companyB) {
+      // Company B not seeded yet — bail; the main seed() will eventually
+      // create Roman in its own pass.
+      return;
+    }
+
+    const existing = await this.userRepo.findOne({
+      where: { email: 'r.read-only@biuro-nowak.pl' },
+    });
+    if (existing) {
+      // Already present — make sure permissions are still narrow (idempotent
+      // re-grant in case modules were added since last seed).
+      await this.grantReadOnlyPermissions(existing, companyB.ownerId);
+      return;
+    }
+
+    const roman = await this.userRepo.save(
+      this.userRepo.create({
+        email: 'r.read-only@biuro-nowak.pl',
+        password,
+        firstName: 'Roman',
+        lastName: 'Read-Only',
+        role: UserRole.EMPLOYEE,
+        companyId: companyB.id,
+        isActive: true,
+      })
+    );
+
+    await this.grantReadOnlyPermissions(roman, companyB.ownerId);
+    this.logger.log(`Created read-only test employee: ${roman.email}`);
+  }
+
+  /**
+   * Grants Roman exactly Read on Klienci, Zadania, Logowanie czasu — no
+   * permission rows on the other modules (so feature gating denies access).
+   */
+  private async grantReadOnlyPermissions(employee: User, grantedById: string): Promise<void> {
+    const READ_ONLY_MODULE_SLUGS = ['clients', 'tasks', 'time-tracking'];
+
+    const modules = await this.moduleRepo.find({ where: { isActive: true } });
+    const readOnlyModules = modules.filter((m) => READ_ONLY_MODULE_SLUGS.includes(m.slug));
+
+    for (const module of readOnlyModules) {
+      const existing = await this.permissionRepo.findOne({
+        where: { userId: employee.id, moduleId: module.id },
+      });
+      if (existing) {
+        // Force narrow permissions even if a previous broader grant exists
+        if (existing.permissions.length !== 1 || existing.permissions[0] !== 'read') {
+          existing.permissions = ['read'];
+          await this.permissionRepo.save(existing);
+        }
+      } else {
+        await this.permissionRepo.save(
+          this.permissionRepo.create({
+            userId: employee.id,
+            moduleId: module.id,
+            permissions: ['read'],
+            grantedById,
+          })
+        );
+      }
+    }
   }
 
   private async isDemoDataSeeded(): Promise<boolean> {

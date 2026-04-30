@@ -1,0 +1,35 @@
+url: ${BASE_URL}/login
+name: "Web — read-only employee blocked from Dokumenty module"
+tags:
+  - wip-needs-seed
+  - auth
+  - rbac
+# WHY wip-needs-seed: this flow logs in as `r.read-only@biuro-nowak.pl`,
+# a curated test employee added to demo-data-seeder.service.ts but NOT
+# yet present on the prod backend. After the next prod backend deploy
+# that includes the seeder change (and the seeder runs on boot), this
+# flow becomes runnable — change the tag to `smoke` at that point.
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+  EMAIL: "r.read-only@biuro-nowak.pl"
+  PASSWORD: "Demo12345678!"
+---
+- runFlow:
+    file: ../_helpers/login-readonly.yaml
+    env:
+      BASE_URL: ${BASE_URL}
+      EMAIL: ${EMAIL}
+      PASSWORD: ${PASSWORD}
+
+# Roman has NO permission row on the Dokumenty module — the route should
+# render the access-denied page rather than the documents dashboard.
+- openLink: ${BASE_URL}/modules/documents
+
+# Either /module-access-denied or /unauthorized — both signify denial
+- extendedWaitUntil:
+    visible: "Brak dostępu"
+    timeout: 10000
+
+# Negative checks — must NOT see the documents page chrome
+- assertNotVisible: "Szablony dokumentów"
+- assertNotVisible: "Wygenerowane dokumenty"

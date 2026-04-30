@@ -1,0 +1,25 @@
+url: ${BASE_URL}/login
+name: "Helper: login as read-only EMPLOYEE (Roman Read-Only)"
+tags:
+  - helper
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+  EMAIL: "r.read-only@biuro-nowak.pl"
+  PASSWORD: "Demo12345678!"
+---
+# Reusable login subflow for the curated narrow-permission test employee
+# (added to demo-data-seeder.service.ts in commit TBD). Roman has Read-only
+# permissions on Klienci/Zadania/Logowanie czasu and no permissions on the
+# remaining 5 modules. The 7 form-fill steps below MUST stay in sync with
+# `login.yaml` / `login-employee.yaml` / `login-admin.yaml` (Maestro 2.3.0
+# does not propagate env through nested runFlow chains).
+- launchApp
+- assertVisible: "Witaj ponownie"
+- tapOn: "Email"
+- inputText: ${EMAIL}
+- tapOn: "Hasło"
+- inputText: ${PASSWORD}
+- tapOn: "Zaloguj się"
+- extendedWaitUntil:
+    visible: "Przegląd Twojego obszaru roboczego"
+    timeout: 15000

@@ -7,3 +7,4 @@ excludeTags:
   - helper
   - manual
   - wip
+  - wip-needs-seed # awaiting backend seeder deploy (Roman Read-Only)
