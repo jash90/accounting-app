@@ -1,0 +1,42 @@
+url: ${BASE_URL}/login
+name: "Web — clients search with bogus query shows empty state"
+tags:
+  - smoke
+  - clients
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+  EMAIL: "nowak@biuro-nowak.pl"
+  PASSWORD: "Demo12345678!"
+---
+- runFlow:
+    file: ../_helpers/login.yaml
+    env:
+      BASE_URL: ${BASE_URL}
+      EMAIL: ${EMAIL}
+      PASSWORD: ${PASSWORD}
+
+- openLink: ${BASE_URL}/company/modules/clients/list
+
+- extendedWaitUntil:
+    visible: "Zarządzaj listą klientów biura rachunkowego"
+    timeout: 10000
+
+# Sanity: at least one seeded client visible before search
+- assertVisible: "Dodaj klienta"
+
+# Type a bogus query into the search input. Placeholder "Nazwa, NIP, email..."
+# uniquely identifies the search box.
+- tapOn:
+    text: "Nazwa, NIP, email..."
+- inputText: "XYZ_NIE_ISTNIEJE_KLIENT_TEST_AAA"
+
+# Debounced search → table replaces rows with "Brak wyników" empty state.
+# An "Filtry Aktywne" badge + "Wyczyść filtry" button appear on the filter bar.
+- extendedWaitUntil:
+    visible: "Brak wyników"
+    timeout: 8000
+- assertVisible: "Wyczyść filtry"
+
+# None of the seeded client names should be in the table
+- assertNotVisible: "Apex Consulting"
+- assertNotVisible: "Abnetio"

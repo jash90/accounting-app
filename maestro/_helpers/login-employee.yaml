@@ -1,0 +1,21 @@
+url: ${BASE_URL}/login
+name: "Helper: login as EMPLOYEE (Anna Kowalska)"
+tags:
+  - helper
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+  EMAIL: "a.kowalska@biuro-nowak.pl"
+  PASSWORD: "Demo12345678!"
+---
+# Reusable login subflow for EMPLOYEE role.
+# Lands on /modules (not /company) with "Panel" heading and "MODUŁY" sidebar label.
+- launchApp
+- assertVisible: "Witaj ponownie"
+- tapOn: "Email"
+- inputText: ${EMAIL}
+- tapOn: "Hasło"
+- inputText: ${PASSWORD}
+- tapOn: "Zaloguj się"
+- extendedWaitUntil:
+    visible: "Przegląd Twojego obszaru roboczego"
+    timeout: 15000

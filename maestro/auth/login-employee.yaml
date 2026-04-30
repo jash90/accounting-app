@@ -1,0 +1,31 @@
+url: ${BASE_URL}/login
+name: "Web — login as EMPLOYEE lands on modules with employee layout"
+tags:
+  - smoke
+  - auth
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+  EMAIL: "a.kowalska@biuro-nowak.pl"
+  PASSWORD: "Demo12345678!"
+---
+- runFlow:
+    file: ../_helpers/login-employee.yaml
+    env:
+      BASE_URL: ${BASE_URL}
+      EMAIL: ${EMAIL}
+      PASSWORD: ${PASSWORD}
+
+# Employee dashboard renders "Panel" (not "Panel Firmy" — that's COMPANY_OWNER).
+# Subtitle is unique enough to disambiguate.
+- assertVisible: "Panel"
+- assertVisible: "Przegląd Twojego obszaru roboczego"
+
+# Sidebar label "MODUŁY" (vs COMPANY_OWNER's "FIRMA")
+- assertVisible: "MODUŁY"
+
+# Employee sidebar lacks "Pracownicy" and "Moduły" management links.
+# We assert their absence to verify the role-restricted sidebar.
+- assertNotVisible: "Pracownicy"
+
+# Negative check: not on /login
+- assertNotVisible: "Wprowadź hasło"
