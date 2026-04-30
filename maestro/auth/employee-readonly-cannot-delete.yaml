@@ -1,0 +1,57 @@
+url: ${BASE_URL}/login
+name: "Web — read-only employee sees client list but row Delete affordance is hidden"
+tags:
+  - wip-needs-seed
+  - auth
+  - rbac
+# WHY wip-needs-seed: depends on `r.read-only@biuro-nowak.pl` (Roman) being
+# present on prod (added to demo-data-seeder.service.ts but requires backend
+# deploy + seeder boot to take effect). Roman has Read-only on Klienci, so
+# the row "Otwórz menu akcji" / per-row delete action must NOT surface.
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+  EMAIL: "r.read-only@biuro-nowak.pl"
+  PASSWORD: "Demo12345678!"
+---
+- runFlow:
+    file: ../_helpers/login-readonly.yaml
+    env:
+      BASE_URL: ${BASE_URL}
+      EMAIL: ${EMAIL}
+      PASSWORD: ${PASSWORD}
+
+# Roman has Read on Klienci → the list renders.
+- openLink: ${BASE_URL}/modules/clients/list
+- extendedWaitUntil:
+    visible: "Zarządzaj listą klientów"
+    timeout: 10000
+
+# Read evidence — list + columns visible
+- assertVisible: "NIP"
+- assertVisible: "Email"
+
+# Delete evidence — three independent assertions because the absence of
+# Delete in a read-only context can surface in multiple places:
+#
+# 1) The per-row "Otwórz menu akcji" kebab opens a dropdown that contains
+#    the destructive "Usuń" item. With no Delete permission, either the
+#    kebab is gated entirely OR the menu lacks the Usuń item.
+# 2) Bulk-action toolbar (when rows selected) shows "Usuń zaznaczone".
+#    With no Delete permission, that bulk action must not appear.
+# 3) Direct text "Usuń klienta" / "Usuń" in any visible affordance must
+#    not be present.
+#
+# Maestro Web text matching is case-insensitive substring, so a single
+# `assertNotVisible: "Usuń"` covers (1)+(2)+(3) because:
+#   - "Usuń zaznaczone" lower-cases to "usuń zaznaczone" → contains "usuń"
+#   - "Usuń klienta" → contains "usuń"
+#   - bare "Usuń" → trivially contains "usuń"
+# Catch: this would also flag any unrelated "Usuń" appearing on the page.
+# Per chrome-devtools snapshot of /modules/clients/list, the only places
+# where "Usuń" surfaces are the action affordances we want to negate.
+- assertNotVisible: "Usuń"
+
+# Bulk toolbar must also not surface; this is also negated above but we
+# assert the disambiguating "Dodaj klienta" too, since lacking Write
+# permission should hide it. (Matches RBAC P4 #22 in the same flow.)
+- assertNotVisible: "Dodaj klienta"

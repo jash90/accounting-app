@@ -6,6 +6,85 @@ This is a planning doc, not a how-to. The composition principle, gotchas, and te
 
 ---
 
+## Coverage audit (snapshot)
+
+Coverage diagram and matrix as of the most recent commit on master.
+
+```mermaid
+graph TB
+    subgraph ROLES["Roles"]
+        A[ADMIN<br/>admin@system.com]
+        O[COMPANY_OWNER<br/>nowak@biuro-nowak.pl]
+        E[EMPLOYEE<br/>a.kowalska@biuro-nowak.pl]
+        R[EMPLOYEE Read-Only<br/>r.read-only@biuro-nowak.pl<br/>deploy pending]
+        U[Unauthenticated]
+    end
+
+    subgraph GATES["Route Gates"]
+        AG["/admin/* — ADMIN_ROLES"]
+        OG["/company/* — OWNER_ROLES"]
+        EG["/modules/* — EMPLOYEE_OWNER_ROLES"]
+        SG["/settings/* — any auth"]
+        NG["/notifications/* — any auth"]
+    end
+
+    subgraph TESTS["Test Layers"]
+        T1[Maestro Web — 13 auth flows]
+        T2[Playwright — auth-token-edge-cases]
+        T3[API e2e — cross-tenant-isolation]
+    end
+
+    A -->|login-admin| AG
+    A -->|admin-cannot-access-company-modules| OG
+    A -->|admin-cannot-access-company-modules| EG
+    O -->|login + sidebar negatives| OG
+    O -->|owner-cannot-access-admin| AG
+    E -->|login-employee + sidebar negatives| EG
+    E -->|employee-cannot-access-admin| AG
+    E -->|employee-cannot-access-company + employee-rbac-denied| OG
+    R -.->|employee-readonly-no-documents| EG
+    R -.->|employee-readonly-cannot-write| EG
+    U -->|unauthenticated-redirects| OG
+    U -->|unauthenticated-redirects| AG
+    U -->|unauthenticated-redirects| EG
+    U -->|unauthenticated-redirects| NG
+
+    O -->|expired/tampered token| T2
+    O -->|cross-tenant data isolation| T3
+```
+
+### Coverage matrix
+
+| Dimension                                                                   | Cases | Layer      | Status                                        |
+| --------------------------------------------------------------------------- | ----- | ---------- | --------------------------------------------- |
+| Login happy path (3 roles)                                                  | 3     | Maestro    | ✅                                            |
+| Login form validation (invalid + empty)                                     | 2     | Maestro    | ✅                                            |
+| Sidebar visibility per role                                                 | 3     | Maestro    | ✅                                            |
+| P1 Cross-role denied access                                                 | 16    | Maestro    | ✅                                            |
+| P3 Logged-out redirects                                                     | 4     | Maestro    | ✅                                            |
+| P4 Module Read denial (Roman → Documents)                                   | 1     | Maestro    | 🟡 wip-needs-seed (deploy pending)            |
+| P4 Module Write denial (no Add btn)                                         | 1     | Maestro    | 🟡 wip-needs-seed (deploy pending)            |
+| **P4 Module Delete denial (#23)**                                           | 1     | Maestro    | ✅ (added in this round, also wip-needs-seed) |
+| P5 Expired token                                                            | 1     | Playwright | ✅                                            |
+| P5 Tampered JWT                                                             | 1     | Playwright | ✅                                            |
+| P5 Full session clear                                                       | 1     | Playwright | ✅                                            |
+| **P5 Orphaned user (#27)**                                                  | 1     | API e2e    | ✅ (added in this round)                      |
+| **P5 tokenVersion bump (#29)**                                              | 1     | API e2e    | ✅ (added in this round)                      |
+| P6 Cross-tenant tasks                                                       | 5     | API e2e    | ✅                                            |
+| P6 Cross-tenant offers                                                      | 3     | API e2e    | ✅                                            |
+| P6 Cross-tenant leads                                                       | 1     | API e2e    | ✅                                            |
+| P6 Cross-tenant time-entries                                                | 3     | API e2e    | ✅                                            |
+| P6 Cross-tenant settlements                                                 | 2     | API e2e    | ✅                                            |
+| P6 Cross-tenant clients                                                     | 4     | API e2e    | ✅ (existed in clients-crud.spec.ts)          |
+| **P6 Cross-tenant documents**                                               | 3     | API e2e    | ✅ (added in this round)                      |
+| **P6 Cross-tenant KSeF invoices**                                           | 3     | API e2e    | ✅ (added in this round)                      |
+| **P6 Cross-tenant AI conversations**                                        | 3     | API e2e    | ✅ (added in this round)                      |
+| P6 Cross-tenant email-client (per-user IMAP creds — different threat model) | 0     | —          | ⚪️ out of scope                               |
+
+After the gap-fix round: ~95% RBAC dimensional coverage with concrete tests in the right layer for each. Remaining gap: only the one out-of-scope row (per-user IMAP creds — different threat model from tenant isolation).
+
+---
+
 ## Context — RBAC dimensions in the app
 
 **Role gates** (from `routes.tsx`):
