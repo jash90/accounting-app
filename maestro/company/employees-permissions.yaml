@@ -1,18 +1,8 @@
 url: ${BASE_URL}/login
 name: "Web — employee permissions page renders module access matrix"
 tags:
-  - wip
+  - smoke
   - employees
-# WHY WIP: The "Zarządzaj uprawnieniami" / "Edytuj pracownika" / "Usuń pracownika"
-# buttons in `apps/web/src/pages/company/employees-list.tsx` are icon-only with
-# aria-label as the only text. Maestro Web's `tapOn: "<text>"` matches visible
-# text content, NOT aria-labels — so we cannot drill into the permissions page
-# from the employees list without either:
-#   1) visible text being added to those buttons (e.g. show "Uprawnienia"
-#      label on hover/desktop), OR
-#   2) `id="..."` HTML attributes on each row's action buttons.
-# Until then, the permissions URL is `/company/employees/:id/permissions` with
-# a runtime UUID — not reachable by URL alone.
 env:
   BASE_URL: "https://accounting-app-prod.vercel.app"
   EMAIL: "nowak@biuro-nowak.pl"
@@ -31,16 +21,15 @@ env:
     visible: "Zarządzaj pracownikami firmy"
     timeout: 10000
 
-# Each employee row has a "Zarządzaj uprawnieniami" button. Tap the first one —
-# we don't care which employee we drill into, only that the matrix renders.
+# Each row's "Zarządzaj uprawnieniami" button has a stable HTML id namespaced
+# by email (added in commit 3c78029). Maestro Web's `id:` selector matches it
+# directly — the icon-only button is no longer reachable by text content alone.
 - tapOn:
-    text: "Zarządzaj uprawnieniami"
-    index: 0
+    id: "employee-permissions-a.kowalska@biuro-nowak.pl"
 
-# Permissions page heading prefixed with "Uprawnienia:" + employee full name.
-# Match the prefix only — works regardless of which row was tapped.
+# Permissions page renders for Anna
 - extendedWaitUntil:
-    visible: "Uprawnienia:"
+    visible: "Uprawnienia: Anna Kowalska"
     timeout: 10000
 - assertVisible: "Zarządzaj dostępem do modułów i uprawnieniami tego pracownika"
 - assertVisible: "Nadaj dostęp do modułu"

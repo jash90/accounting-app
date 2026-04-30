@@ -35,6 +35,7 @@ FLOWS=(
   # company (owner-only pages)
   maestro/company/profile-nip.yaml
   maestro/company/employees-list.yaml
+  maestro/company/employees-permissions.yaml
   # modules (per-feature smoke)
   maestro/modules/clients-list.yaml
   maestro/modules/clients-search-no-results.yaml
