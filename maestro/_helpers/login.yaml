@@ -1,0 +1,21 @@
+url: ${BASE_URL}/login
+name: "Helper: login as COMPANY_OWNER"
+tags:
+  - helper
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+  EMAIL: "nowak@biuro-nowak.pl"
+  PASSWORD: "Demo12345678!"
+---
+# Reusable login subflow. Called by every authenticated module flow via runFlow.
+# Leaves the browser on the COMPANY_OWNER dashboard ("Panel Firmy").
+- launchApp
+- assertVisible: "Witaj ponownie"
+- tapOn: "Email"
+- inputText: ${EMAIL}
+- tapOn: "Hasło"
+- inputText: ${PASSWORD}
+- tapOn: "Zaloguj się"
+- extendedWaitUntil:
+    visible: "Panel Firmy"
+    timeout: 15000

@@ -1,0 +1,9 @@
+# Maestro workspace config.
+# Default `maestro test maestro/` runs only flows tagged "smoke" and skips
+# helpers (tag: helper) plus any work-in-progress flows (tag: wip).
+includeTags:
+  - smoke
+excludeTags:
+  - helper
+  - manual
+  - wip

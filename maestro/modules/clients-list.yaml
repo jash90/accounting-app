@@ -1,0 +1,43 @@
+url: ${BASE_URL}/login
+name: "Web — clients module dashboard + list render"
+tags:
+  - smoke
+  - clients
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+  EMAIL: "nowak@biuro-nowak.pl"
+  PASSWORD: "Demo12345678!"
+---
+- runFlow:
+    file: ../_helpers/login.yaml
+    env:
+      BASE_URL: ${BASE_URL}
+      EMAIL: ${EMAIL}
+      PASSWORD: ${PASSWORD}
+
+# Sidebar "Klienci" → /company/modules/clients (module DASHBOARD, not list)
+- tapOn: "Klienci"
+
+- extendedWaitUntil:
+    visible: "Moduł Klienci"
+    timeout: 10000
+
+# Dashboard widgets
+- assertVisible: "Wszyscy klienci"
+- assertVisible: "Aktywni"
+- assertVisible: "Typy zatrudnienia"
+- assertVisible: "Lista klientów"
+
+# Drill into list via the "Lista klientów" card. The card has an "Otwórz"
+# button — there's a second one for "Ustawienia modułu", so we tap the first.
+- tapOn:
+    text: "Otwórz"
+    index: 0
+
+- extendedWaitUntil:
+    visible: "Zarządzaj listą klientów biura rachunkowego"
+    timeout: 10000
+
+- assertVisible: "Dodaj klienta"
+- assertVisible: "NIP"
+# "Wyświetlanie" pagination footer is below the fold — would need scroll() to assert.
