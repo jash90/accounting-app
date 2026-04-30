@@ -7,8 +7,14 @@ env:
   EMAIL: "nowak@biuro-nowak.pl"
   PASSWORD: "Demo12345678!"
 ---
-# Reusable login subflow. Called by every authenticated module flow via runFlow.
-# Leaves the browser on the COMPANY_OWNER dashboard ("Panel Firmy").
+# Reusable login subflow — leaves the browser on the COMPANY_OWNER dashboard
+# ("Panel Firmy"). The 7 form-fill steps below MUST stay in sync with
+# `login-employee.yaml`. Maestro 2.3.0 does not propagate env vars through a
+# nested runFlow chain (parent → wrapper → form-helper), so a parameterized
+# base helper does not work — the inner flow receives literal "${EMAIL}" etc.
+# Differences vs. login-employee.yaml are isolated to:
+#   - env defaults (EMAIL / PASSWORD)
+#   - the LANDING text in extendedWaitUntil
 - launchApp
 - assertVisible: "Witaj ponownie"
 - tapOn: "Email"
