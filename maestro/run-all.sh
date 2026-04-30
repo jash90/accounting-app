@@ -18,13 +18,20 @@ set -u
 cd "$(dirname "$0")/.."
 
 FLOWS=(
-  # auth (login + edge cases + RBAC)
+  # auth — happy paths
   maestro/auth/login.yaml
   maestro/auth/login-employee.yaml
   maestro/auth/login-admin.yaml
+  # auth — form edge cases
   maestro/auth/login-invalid.yaml
   maestro/auth/login-empty.yaml
+  # auth — RBAC denied access (per-role × forbidden routes)
   maestro/auth/employee-rbac-denied.yaml
+  maestro/auth/employee-cannot-access-admin.yaml
+  maestro/auth/employee-cannot-access-company.yaml
+  maestro/auth/owner-cannot-access-admin.yaml
+  maestro/auth/admin-cannot-access-company-modules.yaml
+  maestro/auth/unauthenticated-redirects.yaml
   # company (owner-only pages)
   maestro/company/profile-nip.yaml
   maestro/company/employees-list.yaml

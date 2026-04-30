@@ -1,0 +1,43 @@
+url: ${BASE_URL}/login
+name: "Web — COMPANY_OWNER cannot access admin routes"
+tags:
+  - smoke
+  - auth
+  - rbac
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+  EMAIL: "nowak@biuro-nowak.pl"
+  PASSWORD: "Demo12345678!"
+---
+- runFlow:
+    file: ../_helpers/login.yaml
+    env:
+      BASE_URL: ${BASE_URL}
+      EMAIL: ${EMAIL}
+      PASSWORD: ${PASSWORD}
+
+# /admin/* is gated by ADMIN_ROLES — COMPANY_OWNER must NOT pass.
+# RBAC-TEST-PLAN.md P1 cases #10-#13.
+
+- openLink: ${BASE_URL}/admin
+- extendedWaitUntil:
+    visible: "Unauthorized"
+    timeout: 10000
+- assertVisible: "You don't have permission to access this page."
+- assertNotVisible: "Panel Administratora"
+- assertNotVisible: "Witaj w AppTax Admin"
+
+- openLink: ${BASE_URL}/admin/users
+- extendedWaitUntil:
+    visible: "Unauthorized"
+    timeout: 10000
+
+- openLink: ${BASE_URL}/admin/companies
+- extendedWaitUntil:
+    visible: "Unauthorized"
+    timeout: 10000
+
+- openLink: ${BASE_URL}/admin/email-config
+- extendedWaitUntil:
+    visible: "Unauthorized"
+    timeout: 10000

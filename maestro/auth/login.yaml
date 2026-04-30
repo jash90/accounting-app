@@ -18,6 +18,16 @@ env:
 # After successful login: company dashboard layout
 - assertVisible: "Pulpit"
 - assertVisible: "Pracownicy"
+- assertVisible: "FIRMA"
 
 # Negative check: we left /login (password placeholder is gone)
 - assertNotVisible: "Wprowadź hasło"
+
+# Sidebar visibility per RBAC-TEST-PLAN.md P2 — COMPANY_OWNER must NOT see
+# admin-only nav items or labels from other layouts.
+- assertNotVisible: "Użytkownicy"
+- assertNotVisible: "Firmy"
+- assertNotVisible: "PANEL ADMINA"
+- assertNotVisible: "Panel Administratora"
+# Note: cannot assertNotVisible "MODUŁY" — Maestro Web text match is
+# case-insensitive, and COMPANY_OWNER sidebar has a "Moduły" link.

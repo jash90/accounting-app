@@ -1,0 +1,39 @@
+url: ${BASE_URL}/login
+name: "Web — ADMIN cannot access company-owner or employee routes"
+tags:
+  - smoke
+  - auth
+  - rbac
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+  EMAIL: "admin@system.com"
+  PASSWORD: "Admin123456!"
+---
+- runFlow:
+    file: ../_helpers/login-admin.yaml
+    env:
+      BASE_URL: ${BASE_URL}
+      EMAIL: ${EMAIL}
+      PASSWORD: ${PASSWORD}
+
+# ADMIN has no companyId — verified in Chrome that /company/* and /modules/*
+# both redirect ADMIN to /unauthorized. RBAC-TEST-PLAN.md P1 cases #14-#16.
+
+- openLink: ${BASE_URL}/company
+- extendedWaitUntil:
+    visible: "Unauthorized"
+    timeout: 10000
+- assertVisible: "You don't have permission to access this page."
+- assertNotVisible: "Panel Firmy"
+
+- openLink: ${BASE_URL}/company/profile
+- extendedWaitUntil:
+    visible: "Unauthorized"
+    timeout: 10000
+- assertNotVisible: "Profil firmy"
+
+- openLink: ${BASE_URL}/modules
+- extendedWaitUntil:
+    visible: "Unauthorized"
+    timeout: 10000
+- assertNotVisible: "Przegląd Twojego obszaru roboczego"

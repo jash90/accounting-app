@@ -1,0 +1,40 @@
+url: ${BASE_URL}/login
+name: "Web — protected routes redirect unauthenticated users to login"
+tags:
+  - smoke
+  - auth
+  - rbac
+env:
+  BASE_URL: "https://accounting-app-prod.vercel.app"
+---
+# Fresh browser session, no login. RBAC-TEST-PLAN.md P3 cases #17-#20.
+- launchApp
+- assertVisible: "Witaj ponownie"
+
+# COMPANY_OWNER-gated route → bounce back to /login form
+- openLink: ${BASE_URL}/company/profile
+- extendedWaitUntil:
+    visible: "Witaj ponownie"
+    timeout: 10000
+- assertNotVisible: "Profil firmy"
+
+# ADMIN-gated route → bounce back to /login
+- openLink: ${BASE_URL}/admin
+- extendedWaitUntil:
+    visible: "Witaj ponownie"
+    timeout: 10000
+- assertNotVisible: "Panel Administratora"
+
+# EMPLOYEE_OWNER-gated route → bounce back to /login
+- openLink: ${BASE_URL}/modules
+- extendedWaitUntil:
+    visible: "Witaj ponownie"
+    timeout: 10000
+
+# Authenticated-only utility route → bounce back to /login
+- openLink: ${BASE_URL}/notifications
+- extendedWaitUntil:
+    visible: "Witaj ponownie"
+    timeout: 10000
+- assertVisible: "Email"
+- assertVisible: "Hasło"
